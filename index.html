@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Linda – Deine persönliche Assistentin (Comic)</title>
 
   <!-- Manifest & Meta -->
@@ -44,12 +44,8 @@
     .comic-name { margin-top:.5rem; font-family:'Segoe Script','Comic Sans MS',cursive; font-size:1.3rem; color:#333 }
 
     /* Chat */
-    .chat-area { flex:1; display:flex; flex-direction:column; position:relative; overflow:hidden; }
+    .chat-area { flex:1; display:flex; flex-direction:column; position:relative; }
     .chat-area header { padding:1rem; font-size:1.2rem; background:#fff; border-bottom:1px solid #e1e4e8 }
-    .chat-controls { position:absolute; top:0.5rem; right:0.5rem; display:flex; gap:0.5rem; z-index:5 }
-    .control-btn { background:rgba(255,255,255,0.8); border:1px solid #e1e4e8; border-radius:0.5rem; width:2.3rem; height:2.3rem; display:flex; align-items:center; justify-content:center; font-size:1.1rem; color:#57606a; cursor:pointer }
-    .control-btn:hover { background:#fff; color:#24292e }
-    .btn-active { background:#0059b3 !important; color:#fff !important }
 
     /* Chat window */
     #chat { flex:1; overflow-y:auto; padding:1rem; display:flex; flex-direction:column; gap:1rem; background:#f7f7f8 }
@@ -83,8 +79,9 @@
       <div class="modal-content">
         <p>Um diesen Chatbot nutzen zu können, ist deine Zustimmung zur Datenschutzerklärung erforderlich:</p>
         <ul>
-          <li>Daten werden an OpenAI (USA) und Make (EU) übermittelt.</li>
-          <li>Bitte keine sensiblen Daten eingeben.</li>
+          <li>Deine Eingaben werden an OpenAI (USA) und Make (EU) übermittelt.</li>
+          <li>Die übermittelten Daten werden zur Generierung von Antworten verarbeitet.</li>
+          <li>Bitte gib <strong>keine sensiblen oder personenbezogenen Daten</strong> ein!</li>
         </ul>
       </div>
       <div class="modal-footer">
@@ -99,9 +96,12 @@
     <div class="modal-card">
       <div class="modal-head"><i class="fa-solid fa-bullhorn"></i>&nbsp;Nutzungshinweise</div>
       <div class="modal-content">
+        <p>Bitte beachten:</p>
         <ul>
-          <li>KI-generierte Antworten; keine Gewähr für Richtigkeit.</li>
-          <li>Haftung ausgeschlossen; Nutzung auf eigene Verantwortung.</li>
+          <li>Alle Antworten sind KI-generiert und können unvollständig oder fehlerhaft sein.</li>
+          <li>Es besteht keine Gewähr für Richtigkeit, Vollständigkeit oder Aktualität.</li>
+          <li>Haftung wird ausgeschlossen; Nutzung auf eigene Verantwortung.</li>
+          <li>Der Bot ersetzt keine professionelle Beratung.</li>
         </ul>
       </div>
       <div class="modal-footer">
@@ -119,10 +119,6 @@
       </aside>
       <section class="chat-area">
         <header>Linda – Deine persönliche Assistentin</header>
-        <div class="chat-controls">
-          <button id="tools-btn" class="control-btn" title="Einstellungen"><i class="fa-solid fa-gear"></i></button>
-          <button id="gender-btn" class="control-btn" title="Gender-Format"><i class="fa-solid fa-venus-mars"></i></button>
-        </div>
         <div id="chat"></div>
         <div class="input-bar">
           <button id="btnSessions" title="Gespeicherte Chats"><i class="fa-solid fa-list"></i></button>
@@ -155,11 +151,8 @@
       const mainContainer = document.getElementById('mainContainer');
       const sessionsModal = document.getElementById('sessions-modal');
       const chatEl        = document.getElementById('chat');
-      const genderBtn     = document.getElementById('gender-btn');
-      const toolsBtn      = document.getElementById('tools-btn');
-      let genderFormat    = false;
 
-      // Modalfolge
+      // Modal sequence
       document.getElementById('acceptPrivacy').onclick = () => {
         privacyModal.style.display = 'none';
         usageModal.style.display   = 'flex';
@@ -170,17 +163,7 @@
         initChat();
       };
 
-      // Tools-Button (Platzhalter)
-      toolsBtn.onclick = () => {
-        alert('Einstellungen öffnen (placeholder)');
-      };
-      // Gender-Button
-      genderBtn.onclick = () => {
-        genderFormat = !genderFormat;
-        genderBtn.classList.toggle('btn-active', genderFormat);
-      };
-
-      // Chat-Funktionen
+      // Chat functions
       const STORAGE_KEY = 'chat-sessions';
       let sessions = [], activeId = null, messages = [];
 
@@ -199,113 +182,160 @@
         const id = Date.now().toString();
         const session = { id, name: '', messages: [initialMsg] };
         sessions.unshift(session);
-        activeId = id; saveSessions(); return session;
+        activeId = id;
+        saveSessions();
+        return session;
       }
       function loadSession(id) {
         const s = sessions.find(x => x.id === id);
         if (!s) return;
-        activeId = id; messages = s.messages.slice(); renderMessages(); hideSessionsModal();
+        activeId = id;
+        messages = s.messages.slice();
+        renderMessages();
+        hideSessionsModal();
       }
       function updateSession() {
         const s = sessions.find(x => x.id === activeId);
         if (!s) return;
         s.messages = messages.slice();
-        const firstUser = messages.find(m => m.role === 'user');
-        s.name = firstUser ? firstUser.content.substring(0,32) : 'Chat';
-        saveSessions(); renderSessionList();
+        const first = messages.find(m => m.role === 'user');
+        s.name = first ? first.content.substr(0, 32) : 'Chat';
+        saveSessions();
+        renderSessionList();
       }
       function deleteSession(id) {
         sessions = sessions.filter(x => x.id !== id);
         if (activeId === id) {
           if (sessions.length) loadSession(sessions[0].id);
-          else { const s = createSession(); messages = s.messages.slice(); renderMessages(); }
+          else {
+            const s = createSession();
+            messages = s.messages.slice();
+            renderMessages();
+          }
         }
-        saveSessions(); renderSessionList();
+        saveSessions();
+        renderSessionList();
       }
       function renderMessages() {
         chatEl.innerHTML = '';
-        for (const m of messages) {
+        messages.forEach(m => {
           const d = document.createElement('div');
-          d.className = 'message ' + (m.role==='assistant'?'bot':'user');
-          d.innerHTML = `<strong>${m.role==='assistant'?'Linda':'Du'}:</strong><br>${marked.parse(m.content)}`;
+          d.className = 'message ' + (m.role==='assistant' ? 'bot' : 'user');
+          d.innerHTML = `<strong>${m.role==='assistant' ? 'Linda' : 'Du'}:</strong><br>${marked.parse(m.content)}`;
           chatEl.appendChild(d);
-        }
+        });
         chatEl.scrollTop = chatEl.scrollHeight;
       }
       function renderSessionList() {
-        const listEl = document.getElementById('sessions-list');
-        listEl.innerHTML = sessions.map(s => `
+        const el = document.getElementById('sessions-list');
+        el.innerHTML = sessions.map(s => `
           <div class="session-item" data-id="${s.id}">
             <span>${s.name||'Chat'}</span>
             <button class="del-session" data-id="${s.id}">🗑️</button>
           </div>
         `).join('');
-        document.querySelectorAll('.session-item').forEach(el => el.onclick = ()=>loadSession(el.dataset.id));
-        document.querySelectorAll('.del-session').forEach(btn=>btn.onclick=e=>{ e.stopPropagation(); deleteSession(btn.dataset.id); });
+        document.querySelectorAll('.session-item').forEach(e => e.onclick = () => loadSession(e.dataset.id));
+        document.querySelectorAll('.del-session').forEach(btn => btn.onclick = e => {
+          e.stopPropagation();
+          deleteSession(btn.dataset.id);
+        });
       }
       function showSessionsModal() {
-        renderSessionList(); sessionsModal.style.display='flex';
+        renderSessionList();
+        sessionsModal.style.display = 'flex';
       }
       function hideSessionsModal() {
-        sessionsModal.style.display='none';
+        sessionsModal.style.display = 'none';
       }
 
       document.getElementById('btnSessions').onclick = showSessionsModal;
       document.getElementById('sessions-close').onclick = hideSessionsModal;
-      document.getElementById('btnNew').onclick = ()=>{ if(confirm('Neuer Chat?')){ const s=createSession(); messages=s.messages.slice(); renderMessages(); } };
-      document.getElementById('btnDel').onclick = ()=>{ if(confirm('Dies chat löschen?'))
-
+      document.getElementById('btnNew').onclick = () => {
+        if (confirm('Neuer Chat?')) {
+          const s = createSession();
+          messages = s.messages.slice();
+          renderMessages();
+        }
+      };
+      document.getElementById('btnDel').onclick = () => {
+        if (confirm('Chat löschen?')) {
+          messages = [];
+          updateSession();
+          renderMessages();
+        }
       };
 
-      // Spracheingabe
-      const SpeechRec = window.SpeechRecognition||window.webkitSpeechRecognition;
-      if (SpeechRec) {
-        const rec = new SpeechRec();
-        rec.lang='de-DE'; rec.interimResults=false; rec.maxAlternatives=1;
-        rec.onstart = ()=>document.getElementById('mic-btn').classList.add('recording');
-        rec.onend   = ()=>document.getElementById('mic-btn').classList.remove('recording');
-        rec.onresult= e=>document.getElementById('q').value = e.results[0][0].transcript;
-        document.getElementById('mic-btn').onclick = ()=>rec.start();
+      // Speech recognition
+      const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (SR) {
+        const rec = new SR();
+        rec.lang = 'de-DE';
+        rec.interimResults = false;
+        rec.maxAlternatives = 1;
+        rec.onstart = () => document.getElementById('mic-btn').classList.add('recording');
+        rec.onend = () => document.getElementById('mic-btn').classList.remove('recording');
+        rec.onresult = e => document.getElementById('q').value = e.results[0][0].transcript;
+        document.getElementById('mic-btn').onclick = () => rec.start();
       } else {
         document.getElementById('mic-btn').disabled = true;
       }
 
-      // Nachricht senden
+      // Send message
       async function send() {
         const inp = document.getElementById('q');
         const text = inp.value.trim();
         if (!text) return;
-        messages.push({role:'user',content:text});
-        renderMessages(); inp.value='';
-        messages.push({role:'assistant',content:'⏳ Einen Moment bitte ...'});
-        renderMessages(); updateSession();
+        messages.push({ role: 'user', content: text });
+        renderMessages();
+        inp.value = '';
+        messages.push({ role: 'assistant', content: '⏳ Einen Moment bitte ...' });
+        renderMessages();
+        updateSession();
 
-        const payload = {
-          question: text,
-          history: messages.map(m=>({role:m.role, content:m.content})),
-          genderFormat
-        };
         try {
           const res = await fetch('/api/bot', {
-            method:'POST',
-            headers:{'Content-Type':'application/json'},
-            body:JSON.stringify(payload)
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              question: text,
+              history: messages.map(m => ({ role: m.role, content: m.content }))
+            })
           });
           const reply = await res.text();
-          messages = messages.map(m=>m.role==='assistant'&&m.content.startsWith('⏳')?{role:'assistant',content:reply}:m);
+          messages = messages.map(m =>
+            m.role === 'assistant' && m.content.startsWith('⏳')
+              ? { role: 'assistant', content: reply }
+              : m
+          );
         } catch {
-          messages.push({role:'assistant',content:'❌ Es ist ein Fehler aufgetreten.'});
+          messages.push({ role: 'assistant', content: '❌ Fehler aufgetreten.' });
         }
-        updateSession(); renderMessages();
+
+        updateSession();
+        renderMessages();
       }
 
       document.getElementById('send-btn').onclick = send;
       document.getElementById('q').addEventListener('keydown', e => {
-        if(e.key==='Enter'&&!e.shiftKey){ e.preventDefault(); send(); }
+        if (e.key === 'Enter' && !e.shiftKey) {
+          e.preventDefault();
+          send();
+        }
       });
 
+      function initChat() {
+        loadSessions();
+        if (sessions.length === 0) {
+          const s = createSession();
+          messages = s.messages.slice();
+        } else {
+          loadSession(sessions[0].id);
+        }
+        renderMessages();
+      }
+
       // Start
-      privacyModal.style.display='flex';
+      privacyModal.style.display = 'flex';
     });
   </script>
 </body>
