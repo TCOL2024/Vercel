@@ -58,6 +58,21 @@
     .input-bar button { background:none; border:none; font-size:1.5rem; cursor:pointer; color:#57606a; margin-right:.5rem }
     .input-bar input { flex:1; border:none; outline:none; background:#f0f4f8; border-radius:.5rem; padding:0.75rem; font-size:1rem }
 
+    /* Toggle-Change Button */
+    #toggle-change {
+      background: none;
+      border: none;
+      font-size: 1rem;
+      cursor: pointer;
+      padding: 0.5rem 1rem;
+      margin-right: 0.5rem;
+      border-radius: 0.5rem;
+    }
+    #toggle-change.active {
+      background: #0059b3;
+      color: #fff;
+    }
+
     /* Sessions */
     .session-item { display:flex; justify-content:space-between; padding:.5rem 0; border-bottom:1px solid #e3eefa; cursor:pointer }
 
@@ -68,6 +83,12 @@
       .chat-area header { font-size:1rem; }
       #chat { padding:0.5rem; }
       .input-bar { padding:.5rem; }
+      html, body { overflow:auto; height:auto; }
+    }
+
+    /* Changed state */
+    body.changed {
+      text-transform: uppercase;
     }
   </style>
 </head>
@@ -149,6 +170,7 @@
           <button id="btnSessions" title="Gespeicherte Chats"><i class="fa-solid fa-list"></i></button>
           <button id="btnNew" title="Neuer Chat"><i class="fa-solid fa-plus"></i></button>
           <button id="btnDel" title="Chat löschen"><i class="fa-solid fa-trash"></i></button>
+          <button id="toggle-change" title="Alle Texte ändern">Aa</button>
           <input id="q" type="text" placeholder="Deine Frage…" autocomplete="off" />
           <button id="mic-btn" title="Spracheingabe"><i class="fa-solid fa-microphone"></i></button>
           <button id="send-btn" title="Senden"><i class="fa-solid fa-paper-plane"></i></button>
@@ -176,6 +198,7 @@
       const mainContainer = document.getElementById('mainContainer');
       const sessionsModal = document.getElementById('sessions-modal');
       const chatEl        = document.getElementById('chat');
+      const toggleBtn     = document.getElementById('toggle-change');
 
       // Modal sequence
       document.getElementById('acceptPrivacy').onclick = () => {
@@ -186,6 +209,12 @@
         usageModal.style.display    = 'none';
         mainContainer.style.display = 'flex';
         initChat();
+      };
+
+      // Toggle all text change
+      toggleBtn.onclick = () => {
+        document.body.classList.toggle('changed');
+        toggleBtn.classList.toggle('active');
       };
 
       // Chat functions
