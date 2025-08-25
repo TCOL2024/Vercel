@@ -3,110 +3,167 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Mitarbeiter-Selbstauskunft – 12‑Monats‑Workflow</title>
+  <title>Mitarbeiter-Selbstauskunft – 12‑Monats‑Workflow (Degreed‑Style)</title>
   <style>
+    /* ===== Degreed‑inspired theme ===== */
     :root{
-      --bg: #0b0c10;
-      --card: #ffffff;
-      --text: #0f172a;
-      --muted: #6b7280;
-      --brand: #2563eb;
-      --brand-2: #3b82f6;
-      --ok: #16a34a;
+      --bg: #0b1220;
+      --surface: #0f172a;
+      --card: #111827;
+      --text: #e5e7eb;
+      --muted: #9ca3af;
+      --brand: #0A66FF; /* Degreed-esque blue */
+      --brand-2: #5BA1FF;
+      --accent: #10b981; /* success */
       --warn: #f59e0b;
-      --err: #dc2626;
-      --radius: 16px;
-      --shadow: 0 10px 30px rgba(2,6,23,0.12);
+      --err: #ef4444;
+      --radius: 18px;
+      --shadow: 0 10px 30px rgba(2,6,23,0.35);
+      --frost: rgba(255,255,255,0.06);
     }
-    @media (prefers-color-scheme: dark){
-      :root{
-        --bg: #0b1220;
-        --card: #0f172a;
-        --text: #e5e7eb;
-        --muted: #9ca3af;
-        --brand: #60a5fa;
-        --brand-2: #93c5fd;
-      }
-    }
-    html,body{height:100%;}
+
+    * { box-sizing: border-box; }
+    html,body{height:100%}
     body{
-      margin:0; font-family: system-ui,-apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
-      background: radial-gradient(1200px 800px at 10% 0%, rgba(37,99,235,0.08), transparent 60%),
-                  radial-gradient(1000px 600px at 90% 10%, rgba(16,185,129,0.08), transparent 60%),
-                  var(--bg);
+      margin:0; 
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
       color: var(--text);
+      background:
+        radial-gradient(1200px 700px at 5% 0%, rgba(10,102,255,0.14), transparent 60%),
+        radial-gradient(900px 600px at 100% 0%, rgba(16,185,129,0.12), transparent 60%),
+        var(--bg);
     }
-    .wrap{max-width: 980px; margin: 40px auto; padding: 0 20px;}
-    .card{
-      background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow);
-      overflow: hidden; border: 1px solid rgba(99,102,241,0.08);
-    }
-    header.hero{padding: 28px 28px 16px; border-bottom: 1px solid rgba(148,163,184,0.22);} 
-    header.hero h1{margin:0 0 8px; font-size: clamp(22px, 2.6vw, 30px); letter-spacing: .2px;}
-    header.hero p{margin:0; color: var(--muted);}
 
-    .content{padding: 24px 28px 28px; display: grid; gap: 20px;}
+    .wrap{max-width: 1100px; margin: 42px auto; padding: 0 20px;}
+
+    .shell{
+      background: linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02));
+      border: 1px solid rgba(148,163,184,0.18);
+      border-radius: 26px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      backdrop-filter: blur(6px);
+    }
+
+    /* Header */
+    header.hero{
+      position: relative;
+      padding: 28px 28px 16px;
+      background: linear-gradient(180deg, rgba(10,102,255,0.18), rgba(10,102,255,0.00));
+      border-bottom: 1px solid rgba(148,163,184,0.18);
+    }
+    header.hero .top{display:flex; gap:16px; align-items:center; justify-content:space-between}
+    .brand-left{display:flex; gap:14px; align-items:center}
+    .avatar{width:40px; height:40px; border-radius:50%; display:grid; place-items:center; background: linear-gradient(135deg, var(--brand), var(--brand-2)); font-weight:700}
+    .title h1{margin:0; font-size: clamp(22px, 2.6vw, 30px); letter-spacing: .2px}
+    .title p{margin:4px 0 0; color: var(--muted)}
+
+    .chip{font-size: 12px; padding: 6px 10px; border-radius: 999px; border:1px solid rgba(148,163,184,0.25); background: rgba(255,255,255,0.03)}
+
+    /* Stepper */
+    .stepper{display:flex; gap:8px; flex-wrap:wrap; margin-top:10px}
+    .step{
+      display:flex; align-items:center; gap:8px; padding:8px 12px; border-radius:999px;
+      border:1px solid rgba(148,163,184,0.25); color: var(--muted); font-size: 13px;
+      background: rgba(255,255,255,0.02);
+      transition: all .25s ease;
+    }
+    .step.active{border-color: var(--brand); color: #fff; background: linear-gradient(180deg, var(--brand), var(--brand-2)); box-shadow: 0 4px 12px rgba(10,102,255,0.35)}
+    .step svg{opacity:.8}
+
+    /* Content */
+    .content{padding: 24px 28px 28px; display: grid; gap: 22px;}
     .row{display: grid; grid-template-columns: 1fr 1fr; gap: 16px;}
-    @media (max-width: 720px){ .row{grid-template-columns: 1fr;} }
+    @media (max-width: 800px){ .row{grid-template-columns: 1fr;} }
 
-    label{font-size: 14px; color: var(--muted); display:block; margin: 0 0 6px;}
-    input, select, textarea{width:100%; box-sizing: border-box; border-radius: 12px; 
-      border:1px solid rgba(148,163,184,0.35); padding: 12px 14px; background: transparent; color: var(--text);}
-    textarea{min-height: 110px;}
+    label{font-size: 13px; color: var(--muted); display:block; margin: 0 0 6px;}
+    input, select, textarea{
+      width:100%; border-radius: 14px; border:1px solid rgba(148,163,184,0.28);
+      padding: 12px 14px; background: var(--card); color: var(--text);
+    }
+    textarea{min-height: 110px}
 
     .btns{display:flex; gap:12px; flex-wrap: wrap; align-items:center}
-    .btn{border:none; border-radius: 12px; padding: 12px 16px; cursor:pointer; font-weight:600;}
-    .btn-primary{background: linear-gradient(180deg, var(--brand), var(--brand-2)); color:white;}
-    .btn-ghost{background: transparent; color: var(--brand); border: 1px solid var(--brand);}
-    .btn-muted{background: transparent; color: var(--muted); border: 1px dashed var(--muted);} 
-    .btn-danger{background: transparent; color: var(--err); border: 1px solid var(--err);} 
+    .btn{border:none; border-radius: 14px; padding: 12px 16px; cursor:pointer; font-weight:700; letter-spacing:.2px}
+    .btn-primary{background: linear-gradient(90deg, var(--brand), var(--brand-2)); color:white; box-shadow: 0 6px 18px rgba(10,102,255,0.35);}
+    .btn-ghost{background: rgba(255,255,255,0.04); color: var(--text); border: 1px solid rgba(148,163,184,0.28)}
+    .btn-muted{background: transparent; color: var(--muted); border: 1px dashed var(--muted)} 
+    .btn-danger{background: transparent; color: var(--err); border: 1px solid var(--err)}
+    .btn:hover{transform: translateY(-1px); filter: brightness(1.05)}
 
-    .badge{font-size:12px; padding: 4px 8px; border-radius: 999px; border:1px solid rgba(148,163,184,0.35); color:var(--muted)}
-    .badge.ok{color:#065f46; border-color:#065f46}
-    .badge.warn{color:#92400e; border-color:#92400e}
-
-    .stepper{display:flex; gap: 8px; flex-wrap:wrap;}
-    .step{
-      display:flex; align-items:center; gap:8px; padding:6px 10px; border-radius:999px;
-      border:1px solid rgba(148,163,184,0.35); color: var(--muted); font-size: 13px;
-    }
-    .step.active{border-color: var(--brand); color: var(--brand);}
-
-    .section{display:none}
-    .section.active{display:block}
-
-    .inline-qa{display:grid; gap:12px}
+    /* Pills Yes/No */
     .yn{display:flex; gap:10px}
     .yn input{display:none}
-    .yn label{margin:0; padding: 10px 14px; border-radius: 999px; cursor: pointer; border:1px solid rgba(148,163,184,0.5);}
-    .yn input:checked + label{border-color: var(--brand); color: var(--brand); font-weight: 600}
+    .yn label{margin:0; padding: 10px 14px; border-radius: 999px; cursor: pointer; border:1px solid rgba(148,163,184,0.45); background: rgba(255,255,255,0.02)}
+    .yn input:checked + label{border-color: var(--brand); color: #fff; background: linear-gradient(90deg, var(--brand), var(--brand-2)); box-shadow: 0 4px 12px rgba(10,102,255,0.35)}
 
     .list{display:grid; gap:12px}
-    .item{padding:14px; border:1px solid rgba(148,163,184,0.35); border-radius: 14px}
+    .item{padding:14px; border:1px solid rgba(148,163,184,0.28); border-radius: 14px; background: var(--card)}
 
     .help{font-size:13px; color: var(--muted)}
-    .divider{height:1px; background: rgba(148,163,184,0.25); margin: 8px 0 4px}
-    .footer{display:flex; justify-content:space-between; align-items:center; gap:8px; padding-top: 8px; border-top: 1px dashed rgba(148,163,184,0.35)}
+    .divider{height:1px; background: rgba(148,163,184,0.25); margin: 10px 0 6px}
+    .footer{display:flex; justify-content:space-between; align-items:center; gap:8px; padding-top: 10px; border-top: 1px dashed rgba(148,163,184,0.35)}
 
-    .summary pre{max-height: 340px; overflow:auto; background: rgba(2,6,23,0.06); padding: 12px; border-radius: 12px}
+    .badge{font-size:12px; padding: 4px 8px; border-radius: 999px; border:1px solid rgba(148,163,184,0.35); color:var(--muted)}
+    .badge.ok{color:#34d399; border-color:#34d399}
+    .badge.warn{color:#f59e0b; border-color:#f59e0b}
+
+    /* ===== Summary ("cool" finish) ===== */
+    #sec-4{position: relative}
+    .summary-wrap{
+      display:grid; gap:18px;
+    }
+    .summary-hero{
+      position: relative; overflow:hidden;
+      background: linear-gradient(135deg, rgba(10,102,255,0.25), rgba(16,185,129,0.18));
+      border:1px solid rgba(148,163,184,0.25);
+      border-radius: 20px; padding: 20px;
+    }
+    .summary-hero h2{margin:0 0 6px}
+    .summary-hero p{margin:0; color:#d1d5db}
+
+    .score{
+      display:flex; align-items:center; gap:18px; margin-top:10px
+    }
+    .donut{width:90px; height:90px; border-radius:50%; display:grid; place-items:center; background: conic-gradient(var(--brand) var(--pct, 0%), rgba(255,255,255,0.15) 0);}
+    .donut::after{content: attr(data-label); font-weight:800}
+
+    .summary-grid{display:grid; grid-template-columns:1.2fr 1fr; gap:16px}
+    @media (max-width: 900px){ .summary-grid{grid-template-columns:1fr} }
+
+    .card{background: var(--card); border: 1px solid rgba(148,163,184,0.25); border-radius: 16px; padding:16px}
+    .timeline{display:grid; gap:12px; position: relative}
+    .timeline .titem{display:grid; gap:6px; padding-left:20px; border-left:2px solid rgba(148,163,184,0.25); position: relative}
+    .timeline .titem::before{content:""; position:absolute; left:-7px; top:6px; width:10px; height:10px; border-radius:50%; background: var(--brand); box-shadow: 0 0 0 3px rgba(10,102,255,0.25)}
+
+    .jsonbox{max-height: 300px; overflow:auto; background: rgba(255,255,255,0.04); padding:12px; border-radius: 12px; border:1px solid rgba(148,163,184,0.18)}
+
+    .cta-row{display:flex; gap:10px; flex-wrap:wrap}
+
+    /* Confetti Canvas */
+    #confetti{position:absolute; inset:0; pointer-events:none}
   </style>
 </head>
 <body>
   <div class="wrap">
-    <div class="card" role="region" aria-label="Mitarbeiter‑Selbstauskunft">
+    <div class="shell" role="region" aria-label="Mitarbeiter‑Selbstauskunft">
       <header class="hero">
-        <h1>Selbstauskunft – 12‑Monats‑Workflow</h1>
-        <p>Schrittfolge: <span class="stepper" id="stepper">
-          <span class="step active" data-step="1">1 · Personaldaten</span>
-          <span class="step" data-step="2">2 · Prüfung Datenbestand</span>
-          <span class="step" data-step="3">3 · Abfragen</span>
-          <span class="step" data-step="4">4 · Zusammenfassung</span>
-        </span></p>
+        <div class="top">
+          <div class="brand-left">
+            <div class="avatar" id="avatar">U</div>
+            <div class="title">
+              <h1>Selbstauskunft – 12‑Monats‑Workflow</h1>
+              <p>Erfassen · Prüfen · Abfragen · Zusammenfassung</p>
+            </div>
+          </div>
+          <span class="chip" id="chip-window">Zeitraum: –</span>
+        </div>
+        <div class="stepper" id="stepper"></div>
       </header>
 
       <div class="content">
         <!-- Section 1: Personaldaten -->
-        <section class="section active" id="sec-1">
+        <section class="section" id="sec-1">
           <div class="row">
             <div>
               <label for="vorname">Vorname</label>
@@ -145,9 +202,9 @@
         </section>
 
         <!-- Section 2: Prüfung Datenbestand -->
-        <section class="section" id="sec-2">
+        <section class="section" id="sec-2" style="display:none">
           <p><strong>Systemprüfung:</strong> Es wird gesucht, ob für diese Person bereits Daten hinterlegt sind.</p>
-          <div id="existing-info" class="inline-qa"></div>
+          <div id="existing-info" class="list"></div>
           <div class="btns">
             <button class="btn btn-primary" id="btn-continue-to-qa">Weiter zu Abfragen</button>
             <button class="btn btn-muted" id="btn-back-1">Zurück</button>
@@ -155,38 +212,36 @@
         </section>
 
         <!-- Section 3: Abfragen -->
-        <section class="section" id="sec-3">
-          <div class="inline-qa">
-            <div>
+        <section class="section" id="sec-3" style="display:none">
+          <div class="list">
+            <div class="card">
               <label>Haben Sie in den letzten 12 Monaten <strong>externe Schulungen</strong> absolviert?</label>
-              <div class="yn">
+              <div class="yn" style="margin-top:6px">
                 <input type="radio" name="extTrain" id="extNo" value="no" checked>
                 <label for="extNo">Nein</label>
                 <input type="radio" name="extTrain" id="extYes" value="yes">
                 <label for="extYes">Ja</label>
               </div>
-              <div id="ext-container" hidden>
-                <div class="help">Bitte jede Schulung eintragen. Es sind nur Daten zwischen <span id="ext-min"></span> und <span id="ext-max"></span> zulässig.</div>
-                <div class="list" id="ext-list"></div>
+              <div id="ext-container" hidden style="margin-top:10px">
+                <div class="help">Bitte jede Schulung eintragen. Nur Daten zwischen <span id="ext-min"></span> und <span id="ext-max"></span> sind zulässig.</div>
+                <div class="list" id="ext-list" style="margin-top:10px"></div>
                 <div class="btns">
                   <button type="button" class="btn btn-ghost" id="btn-add-ext">+ Schulung hinzufügen</button>
                 </div>
               </div>
             </div>
 
-            <div class="divider"></div>
-
-            <div>
+            <div class="card">
               <label>Haben Sie in den letzten 12 Monaten <strong>internes Wissen dokumentiert</strong> (z. B. Wiki, SOP, SharePoint)?</label>
-              <div class="yn">
+              <div class="yn" style="margin-top:6px">
                 <input type="radio" name="intDoc" id="intNo" value="no" checked>
                 <label for="intNo">Nein</label>
                 <input type="radio" name="intDoc" id="intYes" value="yes">
                 <label for="intYes">Ja</label>
               </div>
-              <div id="int-container" hidden>
-                <div class="help">Beschreiben Sie bitte kurz Inhalt und Ablageort. Nur Einträge zwischen <span id="int-min"></span> und <span id="int-max"></span>.</div>
-                <div class="list" id="int-list"></div>
+              <div id="int-container" hidden style="margin-top:10px">
+                <div class="help">Beschreiben Sie kurz Inhalt und Ablageort. Nur Einträge zwischen <span id="int-min"></span> und <span id="int-max"></span>.</div>
+                <div class="list" id="int-list" style="margin-top:10px"></div>
                 <div class="btns">
                   <button type="button" class="btn btn-ghost" id="btn-add-int">+ Wissenseintrag hinzufügen</button>
                 </div>
@@ -202,53 +257,99 @@
           </div>
         </section>
 
-        <!-- Section 4: Zusammenfassung -->
-        <section class="section" id="sec-4">
-          <div class="summary">
-            <p><strong>Überblick & Export</strong></p>
-            <pre id="json-out" aria-live="polite"></pre>
+        <!-- Section 4: Zusammenfassung (cool) -->
+        <section class="section" id="sec-4" style="display:none">
+          <canvas id="confetti"></canvas>
+          <div class="summary-wrap">
+            <div class="summary-hero">
+              <h2 id="sum-title">Top! Zusammenfassung bereit</h2>
+              <p>Dein 12‑Monats‑Fenster: <span id="win-min"></span> bis <span id="win-max"></span>. <span class="chip" id="badge-count">0 Einträge</span></p>
+              <div class="score">
+                <div class="donut" id="donut" data-label="0%"></div>
+                <div>
+                  <div class="chip" id="chip-complete">Vervollständigung: 0%</div>
+                  <div class="chip" id="chip-state">Status: Entwurf</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="summary-grid">
+              <div class="card">
+                <h3 style="margin:0 0 8px">Externe Schulungen</h3>
+                <div id="ext-timeline" class="timeline"></div>
+              </div>
+              <div class="card">
+                <h3 style="margin:0 0 8px">Intern dokumentiertes Wissen</h3>
+                <div id="int-timeline" class="timeline"></div>
+              </div>
+            </div>
+
+            <div class="card">
+              <h3 style="margin:0 0 8px">Daten (JSON)</h3>
+              <div class="jsonbox"><pre id="json-out" aria-live="polite"></pre></div>
+            </div>
+
+            <div class="cta-row">
+              <button class="btn btn-primary" id="btn-save-all">Lokal speichern</button>
+              <button class="btn btn-ghost" id="btn-download-json">JSON herunterladen</button>
+              <button class="btn btn-ghost" id="btn-print">Drucken/Export</button>
+              <button class="btn btn-ghost" id="btn-new">Neuer Durchlauf</button>
+              <button class="btn btn-danger" id="btn-reset-user">Alle lokalen Daten löschen</button>
+            </div>
+            <p class="help">Hinweis: Standardmäßig wird nichts an Server gesendet. Integration zu SharePoint/Make ist vorbereitet (siehe Platzhalter im Code).</p>
           </div>
-          <div class="btns">
-            <button class="btn btn-primary" id="btn-save-all">Lokal speichern</button>
-            <button class="btn btn-ghost" id="btn-download-json">JSON herunterladen</button>
-            <button class="btn btn-ghost" id="btn-new">Neuer Durchlauf</button>
-            <button class="btn btn-danger" id="btn-reset-user">Alle lokalen Daten zu diesem Nutzer löschen</button>
-          </div>
-          <p class="help">Hinweis: Standardmäßig wird nichts an Server gesendet. Die Integration zu SharePoint/Make kann einfach ergänzt werden (Platzhalter im Code).</p>
         </section>
       </div>
     </div>
   </div>
 
   <script>
-    // --- Helper: stepper ---
-    const stepperEls = Array.from(document.querySelectorAll('#stepper .step'));
-    function setStep(step){
-      stepperEls.forEach(el=> el.classList.toggle('active', Number(el.dataset.step)===step));
-      document.querySelectorAll('.section').forEach((sec, idx)=>{
-        sec.classList.toggle('active', idx === (step-1));
+    // ===== Utilities & state =====
+    const stepNames = ['1 · Personaldaten','2 · Prüfung','3 · Abfragen','4 · Zusammenfassung'];
+    const stepper = document.getElementById('stepper');
+    function renderStepper(active=1){
+      stepper.innerHTML = '';
+      stepNames.forEach((name, idx)=>{
+        const el = document.createElement('div');
+        el.className = 'step' + (idx+1===active? ' active':'');
+        el.dataset.step = String(idx+1);
+        el.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M20 7L9 18L4 13" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg> ${name}`;
+        stepper.appendChild(el);
       });
     }
 
-    // --- Date window: last 12 months ---
+    function setStep(step){
+      renderStepper(step);
+      document.querySelectorAll('.section').forEach((sec, idx)=>{
+        sec.style.display = (idx === (step-1)) ? 'block' : 'none';
+      });
+      window.scrollTo({top:0, behavior:'smooth'});
+    }
+    renderStepper(1);
+
+    function initials(vor, nach){
+      const v = (vor||'').trim()[0]||'U';
+      const n = (nach||'').trim()[0]||'';
+      return (v+n).toUpperCase();
+    }
+
+    // Date window (12 months)
     function formatISODate(d){ return d.toISOString().slice(0,10); }
     const today = new Date();
     const maxDate = formatISODate(today);
     const past = new Date(); past.setMonth(past.getMonth()-12);
     const minDate = formatISODate(past);
-    document.getElementById('ext-min').textContent = minDate;
-    document.getElementById('ext-max').textContent = maxDate;
-    document.getElementById('int-min').textContent = minDate;
-    document.getElementById('int-max').textContent = maxDate;
+    document.getElementById('chip-window').textContent = `Zeitraum: ${minDate} – ${maxDate}`;
+    document.getElementById('win-min').textContent = minDate;
+    document.getElementById('win-max').textContent = maxDate;
 
-    // --- State ---
+    // State
     let person = {}; // {vorname, nachname, email, mitid, abteilung, standort}
-    let answers = { extTrainings: [], intDocs: [] };
+    let answers = { flags: {extYes:false, intYes:false}, extTrainings: [], intDocs: [] };
 
     const status1 = document.getElementById('status-1');
     const status3 = document.getElementById('status-3');
 
-    // --- DOM refs ---
     const inputs = {
       vorname: document.getElementById('vorname'),
       nachname: document.getElementById('nachname'),
@@ -258,7 +359,7 @@
       standort: document.getElementById('standort')
     };
 
-    // Fill demo data
+    // Demo fill
     document.getElementById('btn-fill-demo').addEventListener('click', ()=>{
       inputs.vorname.value = 'Alex';
       inputs.nachname.value = 'Muster';
@@ -266,10 +367,10 @@
       inputs.mitid.value = 'A12345';
       inputs.abteilung.value = 'Vertrieb';
       inputs.standort.value = 'Oldenburg';
+      document.getElementById('avatar').textContent = initials(inputs.vorname.value, inputs.nachname.value);
     });
 
     function keyForUser(p){
-      // Prefer Mitarbeiter-ID, else email
       return (p.mitid && String(p.mitid).trim()) || (p.email && String(p.email).toLowerCase().trim());
     }
 
@@ -295,7 +396,6 @@
 
     // Section 1: Save & check
     document.getElementById('btn-save-person').addEventListener('click', ()=>{
-      // Basic validation
       const p = {
         vorname: inputs.vorname.value.trim(),
         nachname: inputs.nachname.value.trim(),
@@ -311,6 +411,7 @@
       try{ savePersonToLocal(p); } catch(e){ alert(e.message); return; }
       person = p;
       status1.textContent = 'Gespeichert'; status1.classList.add('ok');
+      document.getElementById('avatar').textContent = initials(p.vorname, p.nachname);
       populateExistingInfo();
       setStep(2);
     });
@@ -326,9 +427,10 @@
       const hasAnswers = !!existingAnswers;
 
       const info = document.createElement('div');
-      info.innerHTML = `<div class="item">
-        <div><strong>Gefundene Person</strong>: ${existingPerson ? existingPerson.vorname + ' ' + existingPerson.nachname : '—'}</div>
-        <div class="help">Schlüssel: <code>${key}</code></div>
+      info.className = 'item';
+      info.innerHTML = `<div style="display:flex; justify-content:space-between; align-items:center; gap:8px">
+        <div><strong>Gefundene Person</strong>: ${existingPerson ? existingPerson.vorname + ' ' + existingPerson.nachname : '—'}<div class="help">Schlüssel: <code>${key}</code></div></div>
+        <span class="chip">${existingPerson ? 'vorhanden' : 'neu'}</span>
       </div>`;
       container.appendChild(info);
 
@@ -351,7 +453,7 @@
         });
       }
       document.getElementById('btn-start-fresh').addEventListener('click', ()=>{
-        answers = { extTrainings: [], intDocs: [] };
+        answers = { flags: {extYes:false, intYes:false}, extTrainings: [], intDocs: [] };
         clearQA();
         setStep(3);
       });
@@ -360,16 +462,16 @@
     document.getElementById('btn-continue-to-qa').addEventListener('click', ()=> setStep(3));
     document.getElementById('btn-back-2').addEventListener('click', ()=> setStep(2));
 
-    // --- QA Section handlers ---
+    // QA Section handlers
     const extContainer = document.getElementById('ext-container');
     const intContainer = document.getElementById('int-container');
     const extList = document.getElementById('ext-list');
     const intList = document.getElementById('int-list');
 
-    document.getElementById('extYes').addEventListener('change', ()=>{ extContainer.hidden = false; });
-    document.getElementById('extNo').addEventListener('change', ()=>{ extContainer.hidden = true; });
-    document.getElementById('intYes').addEventListener('change', ()=>{ intContainer.hidden = false; });
-    document.getElementById('intNo').addEventListener('change', ()=>{ intContainer.hidden = true; });
+    document.getElementById('extYes').addEventListener('change', ()=>{ extContainer.hidden = false; answers.flags.extYes = true; });
+    document.getElementById('extNo').addEventListener('change', ()=>{ extContainer.hidden = true; answers.flags.extYes = false; });
+    document.getElementById('intYes').addEventListener('change', ()=>{ intContainer.hidden = false; answers.flags.intYes = true; });
+    document.getElementById('intNo').addEventListener('change', ()=>{ intContainer.hidden = true; answers.flags.intYes = false; });
 
     function addExtItem(item={titel:'', anbieter:'', datum:'', stunden:'', nachweis:''}){
       const idx = crypto.randomUUID();
@@ -403,9 +505,7 @@
         </div>
         <div class="btns" style="justify-content:end"><button type="button" class="btn btn-danger">Entfernen</button></div>
       `;
-      div.querySelector('.btn-danger').addEventListener('click', ()=>{
-        extList.removeChild(div);
-      });
+      div.querySelector('.btn-danger').addEventListener('click', ()=>{ extList.removeChild(div); });
       extList.appendChild(div);
     }
 
@@ -441,9 +541,7 @@
         </div>
         <div class="btns" style="justify-content:end"><button type="button" class="btn btn-danger">Entfernen</button></div>
       `;
-      div.querySelector('.btn-danger').addEventListener('click', ()=>{
-        intList.removeChild(div);
-      });
+      div.querySelector('.btn-danger').addEventListener('click', ()=>{ intList.removeChild(div); });
       intList.appendChild(div);
     }
 
@@ -520,15 +618,16 @@
     }
 
     document.getElementById('btn-to-summary').addEventListener('click', ()=>{
-      try{
-        answers = collectQA();
-      }catch(err){ alert(err.message); return; }
+      try{ answers = collectQA(); }catch(err){ alert(err.message); return; }
       const key = keyForUser(person);
-      document.getElementById('json-out').textContent = JSON.stringify({ person, answers, meta: { createdAt: new Date().toISOString(), window: { minDate, maxDate } } }, null, 2);
+      const payload = { person, answers, meta: { createdAt: new Date().toISOString(), window: { minDate, maxDate } } };
+      document.getElementById('json-out').textContent = JSON.stringify(payload, null, 2);
+      // compute score & badges and build timelines
+      buildSummary(payload);
       setStep(4);
+      runConfetti();
     });
 
-    // Save & export
     document.getElementById('btn-save-all').addEventListener('click', ()=>{
       try{ saveAnswersToLocal(keyForUser(person), answers); } catch(e){ alert(e.message); return; }
       status3.textContent = 'Gespeichert'; status3.classList.add('ok');
@@ -545,9 +644,10 @@
       document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
     });
 
+    document.getElementById('btn-print').addEventListener('click', ()=> window.print());
+
     document.getElementById('btn-new').addEventListener('click', ()=>{
-      clearQA();
-      setStep(1);
+      clearQA(); setStep(1);
     });
 
     document.getElementById('btn-reset-user').addEventListener('click', ()=>{
@@ -556,21 +656,97 @@
         const key = keyForUser(person);
         localStorage.removeItem(`person:${key}`);
         localStorage.removeItem(`answers:${key}`);
-        alert('Gelöscht.');
-        setStep(1);
+        alert('Gelöscht.'); setStep(1);
       }
     });
 
-    // --- Integration placeholders ---
+    // Summary builder
+    function buildSummary(payload){
+      const { person, answers } = payload;
+      const countFields = ['vorname','nachname','email','mitid','abteilung','standort'].filter(k=> (person[k]||'').trim()).length;
+      const toggles = (answers.flags.extYes?1:0) + (answers.flags.intYes?1:0);
+      const volume = answers.extTrainings.length + answers.intDocs.length;
+      const totalPossible = 6 + 2 + 6; // approx weights => 6 person fields + 2 toggles + 6 entries allowance baseline
+      const scoreRaw = Math.min(100, Math.round(((countFields + toggles + Math.min(volume,6)) / totalPossible) * 100));
+
+      const donut = document.getElementById('donut');
+      donut.style.setProperty('--pct', scoreRaw + '%');
+      donut.setAttribute('data-label', scoreRaw + '%');
+      document.getElementById('chip-complete').textContent = `Vervollständigung: ${scoreRaw}%`;
+      document.getElementById('chip-state').textContent = scoreRaw === 100 ? 'Status: vollständig' : (scoreRaw >= 60 ? 'Status: gut' : 'Status: Entwurf');
+      document.getElementById('badge-count').textContent = `${volume} Einträge`;
+
+      const extT = document.getElementById('ext-timeline');
+      const intT = document.getElementById('int-timeline');
+      extT.innerHTML = '';
+      intT.innerHTML = '';
+
+      if(answers.flags.extYes && answers.extTrainings.length){
+        answers.extTrainings
+          .sort((a,b)=> (a.datum||'').localeCompare(b.datum||''))
+          .forEach(e=>{
+            const it = document.createElement('div'); it.className = 'titem';
+            it.innerHTML = `<div><strong>${e.titel||'—'}</strong> · ${e.anbieter||''}</div>
+            <div class="help">${e.datum||''} · ${e.stunden? e.stunden+' UE · ': ''}${e.nachweis? `<a href="${e.nachweis}" target="_blank" rel="noopener">Nachweis</a>`:''}</div>`;
+            extT.appendChild(it);
+          });
+      }else{
+        extT.innerHTML = '<div class="help">Keine externen Schulungen erfasst.</div>';
+      }
+
+      if(answers.flags.intYes && answers.intDocs.length){
+        answers.intDocs
+          .sort((a,b)=> (a.datum||'').localeCompare(b.datum||''))
+          .forEach(e=>{
+            const it = document.createElement('div'); it.className = 'titem';
+            it.innerHTML = `<div><strong>${e.titel||'—'}</strong> · ${e.art||''}</div>
+            <div class="help">${e.datum||''} · ${e.ort? `<a href="${e.ort}" target="_blank" rel="noopener">Ablage</a>`:'—'}<br>${e.beschreibung? e.beschreibung.replace(/</g,'&lt;') : ''}</div>`;
+            intT.appendChild(it);
+          });
+      }else{
+        intT.innerHTML = '<div class="help">Keine internen Wissenseinträge erfasst.</div>';
+      }
+
+      // Title flair
+      const sumTitle = document.getElementById('sum-title');
+      sumTitle.textContent = scoreRaw >= 80 ? 'Stark! Zusammenfassung bereit ✅' : 'Gut! Du bist fast fertig ✨';
+    }
+
+    // Confetti (tiny)
+    function runConfetti(){
+      const cv = document.getElementById('confetti');
+      const ctx = cv.getContext('2d');
+      const W = cv.width = cv.offsetWidth; const H = cv.height = 200; // header height
+      const pieces = Array.from({length: 70}).map(()=>({
+        x: Math.random()*W,
+        y: Math.random()*H/2,
+        r: 2+Math.random()*4,
+        vx: -1 + Math.random()*2,
+        vy: 1 + Math.random()*2,
+        col: `hsl(${Math.random()*360},90%,60%)`
+      }));
+      let t = 0; const maxT = 120; // ~2s
+      function draw(){
+        ctx.clearRect(0,0,W,H);
+        pieces.forEach(p=>{
+          ctx.fillStyle = p.col;
+          ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI*2); ctx.fill();
+          p.x += p.vx; p.y += p.vy; p.vy += 0.02;
+          if(p.y>H || p.x<0 || p.x>W){ p.x=Math.random()*W; p.y=-10; p.vx=-1+Math.random()*2; p.vy=1+Math.random()*2; }
+        });
+        t++; if(t<maxT) requestAnimationFrame(draw); else ctx.clearRect(0,0,W,H);
+      }
+      draw();
+    }
+
+    // Integration placeholders
     async function sendToMake(payload){
       // Beispiel: per Fetch an Make‑Webhook (URL hier eintragen)
       // return fetch('https://hook.integromat.com/abc123', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)});
       return Promise.resolve();
     }
-
     async function sendToSharePoint(payload){
       // Beispiel: MS Graph/SharePoint REST – hier nur Platzhalter
-      // fetch('https://graph.microsoft.com/v1.0/sites/{siteId}/lists/{listId}/items', { ... })
       return Promise.resolve();
     }
   </script>
