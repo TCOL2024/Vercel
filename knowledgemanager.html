@@ -1,0 +1,578 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Mitarbeiter-Selbstauskunft – 12‑Monats‑Workflow</title>
+  <style>
+    :root{
+      --bg: #0b0c10;
+      --card: #ffffff;
+      --text: #0f172a;
+      --muted: #6b7280;
+      --brand: #2563eb;
+      --brand-2: #3b82f6;
+      --ok: #16a34a;
+      --warn: #f59e0b;
+      --err: #dc2626;
+      --radius: 16px;
+      --shadow: 0 10px 30px rgba(2,6,23,0.12);
+    }
+    @media (prefers-color-scheme: dark){
+      :root{
+        --bg: #0b1220;
+        --card: #0f172a;
+        --text: #e5e7eb;
+        --muted: #9ca3af;
+        --brand: #60a5fa;
+        --brand-2: #93c5fd;
+      }
+    }
+    html,body{height:100%;}
+    body{
+      margin:0; font-family: system-ui,-apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+      background: radial-gradient(1200px 800px at 10% 0%, rgba(37,99,235,0.08), transparent 60%),
+                  radial-gradient(1000px 600px at 90% 10%, rgba(16,185,129,0.08), transparent 60%),
+                  var(--bg);
+      color: var(--text);
+    }
+    .wrap{max-width: 980px; margin: 40px auto; padding: 0 20px;}
+    .card{
+      background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow);
+      overflow: hidden; border: 1px solid rgba(99,102,241,0.08);
+    }
+    header.hero{padding: 28px 28px 16px; border-bottom: 1px solid rgba(148,163,184,0.22);} 
+    header.hero h1{margin:0 0 8px; font-size: clamp(22px, 2.6vw, 30px); letter-spacing: .2px;}
+    header.hero p{margin:0; color: var(--muted);}
+
+    .content{padding: 24px 28px 28px; display: grid; gap: 20px;}
+    .row{display: grid; grid-template-columns: 1fr 1fr; gap: 16px;}
+    @media (max-width: 720px){ .row{grid-template-columns: 1fr;} }
+
+    label{font-size: 14px; color: var(--muted); display:block; margin: 0 0 6px;}
+    input, select, textarea{width:100%; box-sizing: border-box; border-radius: 12px; 
+      border:1px solid rgba(148,163,184,0.35); padding: 12px 14px; background: transparent; color: var(--text);}
+    textarea{min-height: 110px;}
+
+    .btns{display:flex; gap:12px; flex-wrap: wrap; align-items:center}
+    .btn{border:none; border-radius: 12px; padding: 12px 16px; cursor:pointer; font-weight:600;}
+    .btn-primary{background: linear-gradient(180deg, var(--brand), var(--brand-2)); color:white;}
+    .btn-ghost{background: transparent; color: var(--brand); border: 1px solid var(--brand);}
+    .btn-muted{background: transparent; color: var(--muted); border: 1px dashed var(--muted);} 
+    .btn-danger{background: transparent; color: var(--err); border: 1px solid var(--err);} 
+
+    .badge{font-size:12px; padding: 4px 8px; border-radius: 999px; border:1px solid rgba(148,163,184,0.35); color:var(--muted)}
+    .badge.ok{color:#065f46; border-color:#065f46}
+    .badge.warn{color:#92400e; border-color:#92400e}
+
+    .stepper{display:flex; gap: 8px; flex-wrap:wrap;}
+    .step{
+      display:flex; align-items:center; gap:8px; padding:6px 10px; border-radius:999px;
+      border:1px solid rgba(148,163,184,0.35); color: var(--muted); font-size: 13px;
+    }
+    .step.active{border-color: var(--brand); color: var(--brand);}
+
+    .section{display:none}
+    .section.active{display:block}
+
+    .inline-qa{display:grid; gap:12px}
+    .yn{display:flex; gap:10px}
+    .yn input{display:none}
+    .yn label{margin:0; padding: 10px 14px; border-radius: 999px; cursor: pointer; border:1px solid rgba(148,163,184,0.5);}
+    .yn input:checked + label{border-color: var(--brand); color: var(--brand); font-weight: 600}
+
+    .list{display:grid; gap:12px}
+    .item{padding:14px; border:1px solid rgba(148,163,184,0.35); border-radius: 14px}
+
+    .help{font-size:13px; color: var(--muted)}
+    .divider{height:1px; background: rgba(148,163,184,0.25); margin: 8px 0 4px}
+    .footer{display:flex; justify-content:space-between; align-items:center; gap:8px; padding-top: 8px; border-top: 1px dashed rgba(148,163,184,0.35)}
+
+    .summary pre{max-height: 340px; overflow:auto; background: rgba(2,6,23,0.06); padding: 12px; border-radius: 12px}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card" role="region" aria-label="Mitarbeiter‑Selbstauskunft">
+      <header class="hero">
+        <h1>Selbstauskunft – 12‑Monats‑Workflow</h1>
+        <p>Schrittfolge: <span class="stepper" id="stepper">
+          <span class="step active" data-step="1">1 · Personaldaten</span>
+          <span class="step" data-step="2">2 · Prüfung Datenbestand</span>
+          <span class="step" data-step="3">3 · Abfragen</span>
+          <span class="step" data-step="4">4 · Zusammenfassung</span>
+        </span></p>
+      </header>
+
+      <div class="content">
+        <!-- Section 1: Personaldaten -->
+        <section class="section active" id="sec-1">
+          <div class="row">
+            <div>
+              <label for="vorname">Vorname</label>
+              <input id="vorname" autocomplete="given-name" required />
+            </div>
+            <div>
+              <label for="nachname">Nachname</label>
+              <input id="nachname" autocomplete="family-name" required />
+            </div>
+          </div>
+          <div class="row">
+            <div>
+              <label for="email">E‑Mail</label>
+              <input id="email" type="email" autocomplete="email" required />
+            </div>
+            <div>
+              <label for="mitid">Mitarbeiter‑ID (optional)</label>
+              <input id="mitid" />
+            </div>
+          </div>
+          <div class="row">
+            <div>
+              <label for="abteilung">Abteilung (optional)</label>
+              <input id="abteilung" />
+            </div>
+            <div>
+              <label for="standort">Standort (optional)</label>
+              <input id="standort" />
+            </div>
+          </div>
+          <div class="btns">
+            <button class="btn btn-primary" id="btn-save-person">Speichern & prüfen</button>
+            <button class="btn btn-ghost" id="btn-fill-demo" type="button" title="Beispieldaten einfüllen">Beispieldaten</button>
+            <span class="badge" id="status-1">Bereit</span>
+          </div>
+        </section>
+
+        <!-- Section 2: Prüfung Datenbestand -->
+        <section class="section" id="sec-2">
+          <p><strong>Systemprüfung:</strong> Es wird gesucht, ob für diese Person bereits Daten hinterlegt sind.</p>
+          <div id="existing-info" class="inline-qa"></div>
+          <div class="btns">
+            <button class="btn btn-primary" id="btn-continue-to-qa">Weiter zu Abfragen</button>
+            <button class="btn btn-muted" id="btn-back-1">Zurück</button>
+          </div>
+        </section>
+
+        <!-- Section 3: Abfragen -->
+        <section class="section" id="sec-3">
+          <div class="inline-qa">
+            <div>
+              <label>Haben Sie in den letzten 12 Monaten <strong>externe Schulungen</strong> absolviert?</label>
+              <div class="yn">
+                <input type="radio" name="extTrain" id="extNo" value="no" checked>
+                <label for="extNo">Nein</label>
+                <input type="radio" name="extTrain" id="extYes" value="yes">
+                <label for="extYes">Ja</label>
+              </div>
+              <div id="ext-container" hidden>
+                <div class="help">Bitte jede Schulung eintragen. Es sind nur Daten zwischen <span id="ext-min"></span> und <span id="ext-max"></span> zulässig.</div>
+                <div class="list" id="ext-list"></div>
+                <div class="btns">
+                  <button type="button" class="btn btn-ghost" id="btn-add-ext">+ Schulung hinzufügen</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="divider"></div>
+
+            <div>
+              <label>Haben Sie in den letzten 12 Monaten <strong>internes Wissen dokumentiert</strong> (z. B. Wiki, SOP, SharePoint)?</label>
+              <div class="yn">
+                <input type="radio" name="intDoc" id="intNo" value="no" checked>
+                <label for="intNo">Nein</label>
+                <input type="radio" name="intDoc" id="intYes" value="yes">
+                <label for="intYes">Ja</label>
+              </div>
+              <div id="int-container" hidden>
+                <div class="help">Beschreiben Sie bitte kurz Inhalt und Ablageort. Nur Einträge zwischen <span id="int-min"></span> und <span id="int-max"></span>.</div>
+                <div class="list" id="int-list"></div>
+                <div class="btns">
+                  <button type="button" class="btn btn-ghost" id="btn-add-int">+ Wissenseintrag hinzufügen</button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="footer">
+            <div class="btns">
+              <button class="btn btn-primary" id="btn-to-summary">Zur Zusammenfassung</button>
+              <button class="btn btn-muted" id="btn-back-2">Zurück</button>
+            </div>
+            <span class="badge" id="status-3">Eingaben nicht gespeichert</span>
+          </div>
+        </section>
+
+        <!-- Section 4: Zusammenfassung -->
+        <section class="section" id="sec-4">
+          <div class="summary">
+            <p><strong>Überblick & Export</strong></p>
+            <pre id="json-out" aria-live="polite"></pre>
+          </div>
+          <div class="btns">
+            <button class="btn btn-primary" id="btn-save-all">Lokal speichern</button>
+            <button class="btn btn-ghost" id="btn-download-json">JSON herunterladen</button>
+            <button class="btn btn-ghost" id="btn-new">Neuer Durchlauf</button>
+            <button class="btn btn-danger" id="btn-reset-user">Alle lokalen Daten zu diesem Nutzer löschen</button>
+          </div>
+          <p class="help">Hinweis: Standardmäßig wird nichts an Server gesendet. Die Integration zu SharePoint/Make kann einfach ergänzt werden (Platzhalter im Code).</p>
+        </section>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // --- Helper: stepper ---
+    const stepperEls = Array.from(document.querySelectorAll('#stepper .step'));
+    function setStep(step){
+      stepperEls.forEach(el=> el.classList.toggle('active', Number(el.dataset.step)===step));
+      document.querySelectorAll('.section').forEach((sec, idx)=>{
+        sec.classList.toggle('active', idx === (step-1));
+      });
+    }
+
+    // --- Date window: last 12 months ---
+    function formatISODate(d){ return d.toISOString().slice(0,10); }
+    const today = new Date();
+    const maxDate = formatISODate(today);
+    const past = new Date(); past.setMonth(past.getMonth()-12);
+    const minDate = formatISODate(past);
+    document.getElementById('ext-min').textContent = minDate;
+    document.getElementById('ext-max').textContent = maxDate;
+    document.getElementById('int-min').textContent = minDate;
+    document.getElementById('int-max').textContent = maxDate;
+
+    // --- State ---
+    let person = {}; // {vorname, nachname, email, mitid, abteilung, standort}
+    let answers = { extTrainings: [], intDocs: [] };
+
+    const status1 = document.getElementById('status-1');
+    const status3 = document.getElementById('status-3');
+
+    // --- DOM refs ---
+    const inputs = {
+      vorname: document.getElementById('vorname'),
+      nachname: document.getElementById('nachname'),
+      email: document.getElementById('email'),
+      mitid: document.getElementById('mitid'),
+      abteilung: document.getElementById('abteilung'),
+      standort: document.getElementById('standort')
+    };
+
+    // Fill demo data
+    document.getElementById('btn-fill-demo').addEventListener('click', ()=>{
+      inputs.vorname.value = 'Alex';
+      inputs.nachname.value = 'Muster';
+      inputs.email.value = 'alex.muster@example.com';
+      inputs.mitid.value = 'A12345';
+      inputs.abteilung.value = 'Vertrieb';
+      inputs.standort.value = 'Oldenburg';
+    });
+
+    function keyForUser(p){
+      // Prefer Mitarbeiter-ID, else email
+      return (p.mitid && String(p.mitid).trim()) || (p.email && String(p.email).toLowerCase().trim());
+    }
+
+    function savePersonToLocal(p){
+      const key = keyForUser(p);
+      if(!key){ throw new Error('Kein Schlüssel (Mitarbeiter‑ID oder E‑Mail)'); }
+      localStorage.setItem(`person:${key}`, JSON.stringify(p));
+    }
+
+    function loadPersonFromLocal(key){
+      const raw = localStorage.getItem(`person:${key}`);
+      return raw ? JSON.parse(raw) : null;
+    }
+
+    function loadAnswersFromLocal(key){
+      const raw = localStorage.getItem(`answers:${key}`);
+      return raw ? JSON.parse(raw) : null;
+    }
+
+    function saveAnswersToLocal(key, a){
+      localStorage.setItem(`answers:${key}`, JSON.stringify(a));
+    }
+
+    // Section 1: Save & check
+    document.getElementById('btn-save-person').addEventListener('click', ()=>{
+      // Basic validation
+      const p = {
+        vorname: inputs.vorname.value.trim(),
+        nachname: inputs.nachname.value.trim(),
+        email: inputs.email.value.trim(),
+        mitid: inputs.mitid.value.trim(),
+        abteilung: inputs.abteilung.value.trim(),
+        standort: inputs.standort.value.trim()
+      };
+      if(!p.vorname || !p.nachname || !p.email){
+        alert('Bitte Vorname, Nachname und E‑Mail ausfüllen.');
+        return;
+      }
+      try{ savePersonToLocal(p); } catch(e){ alert(e.message); return; }
+      person = p;
+      status1.textContent = 'Gespeichert'; status1.classList.add('ok');
+      populateExistingInfo();
+      setStep(2);
+    });
+
+    document.getElementById('btn-back-1').addEventListener('click', ()=> setStep(1));
+
+    function populateExistingInfo(){
+      const container = document.getElementById('existing-info');
+      container.innerHTML = '';
+      const key = keyForUser(person);
+      const existingPerson = loadPersonFromLocal(key);
+      const existingAnswers = loadAnswersFromLocal(key);
+      const hasAnswers = !!existingAnswers;
+
+      const info = document.createElement('div');
+      info.innerHTML = `<div class="item">
+        <div><strong>Gefundene Person</strong>: ${existingPerson ? existingPerson.vorname + ' ' + existingPerson.nachname : '—'}</div>
+        <div class="help">Schlüssel: <code>${key}</code></div>
+      </div>`;
+      container.appendChild(info);
+
+      const dataPanel = document.createElement('div');
+      dataPanel.className = 'item';
+      dataPanel.innerHTML = `<div style="display:flex; justify-content:space-between; align-items:center; gap:8px">
+        <div><strong>Vorliegende Antworten</strong>: ${hasAnswers ? '<span class="badge ok">vorhanden</span>' : '<span class="badge warn">keine</span>'}</div>
+        <div class="btns">
+          ${hasAnswers ? '<button id="btn-load-existing" class="btn btn-ghost">Vorhandene laden</button>' : ''}
+          <button id="btn-start-fresh" class="btn btn-primary">Neu beginnen</button>
+        </div>
+      </div>`;
+      container.appendChild(dataPanel);
+
+      if(hasAnswers){
+        document.getElementById('btn-load-existing').addEventListener('click', ()=>{
+          answers = existingAnswers;
+          hydrateQAFromAnswers();
+          setStep(3);
+        });
+      }
+      document.getElementById('btn-start-fresh').addEventListener('click', ()=>{
+        answers = { extTrainings: [], intDocs: [] };
+        clearQA();
+        setStep(3);
+      });
+    }
+
+    document.getElementById('btn-continue-to-qa').addEventListener('click', ()=> setStep(3));
+    document.getElementById('btn-back-2').addEventListener('click', ()=> setStep(2));
+
+    // --- QA Section handlers ---
+    const extContainer = document.getElementById('ext-container');
+    const intContainer = document.getElementById('int-container');
+    const extList = document.getElementById('ext-list');
+    const intList = document.getElementById('int-list');
+
+    document.getElementById('extYes').addEventListener('change', ()=>{ extContainer.hidden = false; });
+    document.getElementById('extNo').addEventListener('change', ()=>{ extContainer.hidden = true; });
+    document.getElementById('intYes').addEventListener('change', ()=>{ intContainer.hidden = false; });
+    document.getElementById('intNo').addEventListener('change', ()=>{ intContainer.hidden = true; });
+
+    function addExtItem(item={titel:'', anbieter:'', datum:'', stunden:'', nachweis:''}){
+      const idx = crypto.randomUUID();
+      const div = document.createElement('div');
+      div.className = 'item';
+      div.dataset.key = idx;
+      div.innerHTML = `
+        <div class="row">
+          <div>
+            <label>Titel/Name der Schulung</label>
+            <input value="${item.titel||''}" placeholder="z.B. Datenschutz Update"/>
+          </div>
+          <div>
+            <label>Anbieter</label>
+            <input value="${item.anbieter||''}" placeholder="z.B. IHK Akademie"/>
+          </div>
+        </div>
+        <div class="row">
+          <div>
+            <label>Datum</label>
+            <input type="date" min="${minDate}" max="${maxDate}" value="${item.datum||''}"/>
+          </div>
+          <div>
+            <label>Unterrichtsstunden (optional)</label>
+            <input type="number" min="0" step="0.5" value="${item.stunden||''}" placeholder="z.B. 8"/>
+          </div>
+        </div>
+        <div>
+          <label>Nachweis/Link (optional)</label>
+          <input value="${item.nachweis||''}" placeholder="URL zu Zertifikat/Ordner"/>
+        </div>
+        <div class="btns" style="justify-content:end"><button type="button" class="btn btn-danger">Entfernen</button></div>
+      `;
+      div.querySelector('.btn-danger').addEventListener('click', ()=>{
+        extList.removeChild(div);
+      });
+      extList.appendChild(div);
+    }
+
+    function addIntItem(item={titel:'', art:'', ort:'', datum:'', beschreibung:''}){
+      const idx = crypto.randomUUID();
+      const div = document.createElement('div');
+      div.className = 'item';
+      div.dataset.key = idx;
+      div.innerHTML = `
+        <div class="row">
+          <div>
+            <label>Titel/Kurzbezeichnung</label>
+            <input value="${item.titel||''}" placeholder="z.B. Onboarding‑SOP Vertrieb"/>
+          </div>
+          <div>
+            <label>Form/Art</label>
+            <input value="${item.art||''}" placeholder="Wiki‑Artikel, SOP, Checkliste, Video…"/>
+          </div>
+        </div>
+        <div class="row">
+          <div>
+            <label>Ablageort/Link</label>
+            <input value="${item.ort||''}" placeholder="SharePoint‑Pfad / URL"/>
+          </div>
+          <div>
+            <label>Datum</label>
+            <input type="date" min="${minDate}" max="${maxDate}" value="${item.datum||''}"/>
+          </div>
+        </div>
+        <div>
+          <label>Kurzbeschreibung</label>
+          <textarea placeholder="Was wurde dokumentiert und wozu?">${item.beschreibung||''}</textarea>
+        </div>
+        <div class="btns" style="justify-content:end"><button type="button" class="btn btn-danger">Entfernen</button></div>
+      `;
+      div.querySelector('.btn-danger').addEventListener('click', ()=>{
+        intList.removeChild(div);
+      });
+      intList.appendChild(div);
+    }
+
+    document.getElementById('btn-add-ext').addEventListener('click', ()=> addExtItem());
+    document.getElementById('btn-add-int').addEventListener('click', ()=> addIntItem());
+
+    function collectQA(){
+      const extYes = document.getElementById('extYes').checked;
+      const intYes = document.getElementById('intYes').checked;
+      const extTrainings = [];
+      const intDocs = [];
+      if(extYes){
+        Array.from(extList.children).forEach(div=>{
+          const [titel, anbieter] = div.querySelectorAll('input');
+          const date = div.querySelector('input[type=date]');
+          const stunden = div.querySelectorAll('input')[3];
+          const nachweis = div.querySelectorAll('input')[4];
+          if(date.value && (date.value < minDate || date.value > maxDate)){
+            throw new Error(`Schulung "${titel.value||''}": Datum außerhalb des zulässigen Bereichs (${minDate} bis ${maxDate}).`);
+          }
+          if(titel.value || anbieter.value || date.value || stunden.value || nachweis.value){
+            extTrainings.push({
+              titel: titel.value.trim(),
+              anbieter: anbieter.value.trim(),
+              datum: date.value,
+              stunden: stunden.value ? Number(stunden.value) : null,
+              nachweis: nachweis.value.trim()
+            });
+          }
+        });
+      }
+      if(intYes){
+        Array.from(intList.children).forEach(div=>{
+          const inputsAll = div.querySelectorAll('input');
+          const titel = inputsAll[0];
+          const art = inputsAll[1];
+          const ort = inputsAll[2];
+          const datum = div.querySelector('input[type=date]');
+          const beschreibung = div.querySelector('textarea');
+          if(datum.value && (datum.value < minDate || datum.value > maxDate)){
+            throw new Error(`Interner Eintrag "${titel.value||''}": Datum außerhalb des zulässigen Bereichs (${minDate} bis ${maxDate}).`);
+          }
+          if(titel.value || art.value || ort.value || datum.value || beschreibung.value){
+            intDocs.push({
+              titel: titel.value.trim(),
+              art: art.value.trim(),
+              ort: ort.value.trim(),
+              datum: datum.value,
+              beschreibung: beschreibung.value.trim()
+            });
+          }
+        });
+      }
+      return { flags: { extYes, intYes }, extTrainings, intDocs };
+    }
+
+    function clearQA(){
+      document.getElementById('extNo').checked = true; extContainer.hidden = true; extList.innerHTML = '';
+      document.getElementById('intNo').checked = true; intContainer.hidden = true; intList.innerHTML = '';
+      status3.textContent = 'Eingaben nicht gespeichert'; status3.classList.remove('ok');
+    }
+
+    function hydrateQAFromAnswers(){
+      clearQA();
+      if(answers.flags?.extYes){
+        document.getElementById('extYes').checked = true; extContainer.hidden = false;
+        (answers.extTrainings||[]).forEach(addExtItem);
+      }
+      if(answers.flags?.intYes){
+        document.getElementById('intYes').checked = true; intContainer.hidden = false;
+        (answers.intDocs||[]).forEach(addIntItem);
+      }
+      status3.textContent = 'Vorhandene Eingaben geladen'; status3.classList.add('ok');
+    }
+
+    document.getElementById('btn-to-summary').addEventListener('click', ()=>{
+      try{
+        answers = collectQA();
+      }catch(err){ alert(err.message); return; }
+      const key = keyForUser(person);
+      document.getElementById('json-out').textContent = JSON.stringify({ person, answers, meta: { createdAt: new Date().toISOString(), window: { minDate, maxDate } } }, null, 2);
+      setStep(4);
+    });
+
+    // Save & export
+    document.getElementById('btn-save-all').addEventListener('click', ()=>{
+      try{ saveAnswersToLocal(keyForUser(person), answers); } catch(e){ alert(e.message); return; }
+      status3.textContent = 'Gespeichert'; status3.classList.add('ok');
+      alert('Daten lokal gespeichert.');
+    });
+
+    document.getElementById('btn-download-json').addEventListener('click', ()=>{
+      const blob = new Blob([
+        JSON.stringify({ person, answers, meta: { exportedAt: new Date().toISOString() } }, null, 2)
+      ], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = `selbstauskunft_${(person.mitid||person.email||'user')}.json`;
+      document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+    });
+
+    document.getElementById('btn-new').addEventListener('click', ()=>{
+      clearQA();
+      setStep(1);
+    });
+
+    document.getElementById('btn-reset-user').addEventListener('click', ()=>{
+      if(!person || !keyForUser(person)) { alert('Kein Nutzer geladen.'); return; }
+      if(confirm('Alle lokalen Daten zu diesem Nutzer endgültig löschen?')){
+        const key = keyForUser(person);
+        localStorage.removeItem(`person:${key}`);
+        localStorage.removeItem(`answers:${key}`);
+        alert('Gelöscht.');
+        setStep(1);
+      }
+    });
+
+    // --- Integration placeholders ---
+    async function sendToMake(payload){
+      // Beispiel: per Fetch an Make‑Webhook (URL hier eintragen)
+      // return fetch('https://hook.integromat.com/abc123', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)});
+      return Promise.resolve();
+    }
+
+    async function sendToSharePoint(payload){
+      // Beispiel: MS Graph/SharePoint REST – hier nur Platzhalter
+      // fetch('https://graph.microsoft.com/v1.0/sites/{siteId}/lists/{listId}/items', { ... })
+      return Promise.resolve();
+    }
+  </script>
+</body>
+</html>
