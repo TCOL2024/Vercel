@@ -1,0 +1,435 @@
+import React, { useEffect, useMemo, useState } from "react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Slider } from "@/components/ui/slider";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Download, Upload, RefreshCw, AlertTriangle, Settings2, Users, BookOpen, GraduationCap, TrendingUp } from "lucide-react";
+import {
+  BarChart, Bar, XAxis, YAxis, Tooltip as RTooltip, ResponsiveContainer,
+  PieChart, Pie, Cell,
+  LineChart, Line,
+  AreaChart, Area, Legend
+} from "recharts";
+
+// ===== Types =====
+// Shape of a single user submission (compatible with your form export)
+// { person: {...}, answers: { flags: {extYes, intYes}, extTrainings: [...], intDocs: [...] }, meta: {...} }
+
+const COLORS = ["#0A66FF", "#10B981", "#F59E0B", "#EF4444", "#8B5CF6", "#14B8A6", "#F43F5E", "#6366F1"]; // degreed-ish + modern
+
+function monthKey(d) { return new Date(d).toISOString().slice(0,7); }
+function clamp(n, a, b){ return Math.max(a, Math.min(b, n)); }
+function seededRand(seed){ // deterministic pseudo random (xorshift-ish)
+  let x = Math.sin(seed) * 10000; return x - Math.floor(x);
+}
+function hashStr(s){ let h=0; for(let i=0;i<s.length;i++){ h = ((h<<5)-h) + s.charCodeAt(i); h|=0; } return Math.abs(h); }
+
+// ===== Demo data generator =====
+function makeDemoRecord(i, dept="Vertrieb"){
+  const firsts = ["Alex","Sam","Chris","Jana","Mira","Paul","Lea","Tom","Noah","Nina","Eva","Ben","Lara","Jonas","Marie"]; 
+  const lasts  = ["Muster","Becker","Schmidt","Klein","Schulz","Vogel","Franz","Lehmann","Koch","Wolf"]; 
+  const f = firsts[i % firsts.length];
+  const l = lasts[(i*3) % lasts.length];
+  const email = `${f.toLowerCase()}.${l.toLowerCase()}@example.com`;
+  const id = `D-${dept.slice(0,3).toUpperCase()}-${1000+i}`;
+  const seed = hashStr(email);
+  const tenureYears = Math.floor(seededRand(seed)*33); // 0..32
+  const baseAge = 22 + tenureYears + Math.floor(seededRand(seed+7)*10); // 22 + tenure + 0..9
+  const age = clamp(baseAge, 22, 67);
+  const sites = ["Oldenburg","Bremen","Hannover","Münster"]; 
+  const person = { vorname: f, nachname: l, email, mitid: id, abteilung: dept, standort: sites[i%sites.length], tenureYears, age };
+
+  // trainings in last 12m
+  const extCount = Math.floor(seededRand(seed+3)*3); // 0..2
+  const monthsBack = (m)=>{ const d = new Date(); d.setMonth(d.getMonth()-m); return d; };
+  const extTrainings = Array.from({length: extCount}).map((_,k)=>{
+    const m = 1 + Math.floor(seededRand(seed+30+k)*11);
+    const d = monthsBack(m);
+    return {
+      titel: ["Datenschutz Update","Führung kompakt","Excel Advanced","Agile Basics"][ (k+i)%4 ],
+      anbieter: ["IHK Akademie","Udemy","LinkedIn Learning","interne Akademie"][ (k+i)%4 ],
+      datum: d.toISOString().slice(0,10),
+      stunden: [4,6,8,2][ (k+i)%4 ],
+      nachweis: ""
+    };
+  });
+
+  // internal docs
+  const intCount = Math.floor(seededRand(seed+11)*3); // 0..2
+  const arts = ["SOP","Wiki","Checkliste","Video","Template"];
+  const intDocs = Array.from({length: intCount}).map((_,k)=>{
+    const m = 1 + Math.floor(seededRand(seed+40+k)*11);
+    const d = monthsBack(m);
+    return {
+      titel: ["Onboarding Sales","Preislistentool","Telefonleitfaden","CRM-HowTo"][ (k+i)%4 ],
+      art: arts[(k+i)%arts.length],
+      ort: "https://sharepoint.example.com/…",
+      datum: d.toISOString().slice(0,10),
+      beschreibung: "Kurzbeschreibung"
+    };
+  });
+
+  return {
+    person,
+    answers: { flags: { extYes: extTrainings.length>0, intYes: intDocs.length>0 }, extTrainings, intDocs },
+    meta: { createdAt: new Date().toISOString() }
+  };
+}
+
+function makeDemoData(dept="Vertrieb", n=25){
+  return Array.from({length:n}).map((_,i)=> makeDemoRecord(i, dept));
+}
+
+// ===== Aggregations =====
+function groupBy(arr, fn){ return arr.reduce((acc,x)=>{ const k = fn(x); (acc[k]||(acc[k]=[])).push(x); return acc; }, {}); }
+
+function tenureBucket(y){
+  if(y <= 2) return "0–2";
+  if(y <= 5) return "3–5";
+  if(y <= 10) return "6–10";
+  if(y <= 20) return "11–20";
+  return "21+";
+}
+
+function monthsRange(back=12){
+  const out=[]; const d=new Date();
+  for(let i=back-1;i>=0;i--){ const dd = new Date(d); dd.setMonth(d.getMonth()-i); out.push(dd.toISOString().slice(0,7)); }
+  return out;
+}
+
+function calcKPIs(records){
+  const employees = records.length;
+  const withExt = records.filter(r=> r.answers.flags.extYes).length;
+  const withInt = records.filter(r=> r.answers.flags.intYes).length;
+  const hours = records.flatMap(r=> r.answers.extTrainings).reduce((s,t)=> s + (Number(t.stunden)||0), 0);
+  const docs = records.flatMap(r=> r.answers.intDocs).length;
+  return {
+    employees,
+    shareExt: employees? Math.round(withExt/employees*100):0,
+    shareInt: employees? Math.round(withInt/employees*100):0,
+    hours, docs
+  };
+}
+
+function calcTenureData(records){
+  const buckets = groupBy(records, r=> tenureBucket(r.person.tenureYears ?? 0));
+  const order = ["0–2","3–5","6–10","11–20","21+"];
+  return order.map(k=> ({ bucket: k, count: (buckets[k]?.length)||0 }));
+}
+
+function calcClusterData(records){
+  const all = records.flatMap(r=> r.answers.intDocs.map(d=> d.art || "Unbekannt"));
+  const map = all.reduce((acc,a)=> { acc[a]=(acc[a]||0)+1; return acc; }, {});
+  return Object.entries(map).map(([name,value])=> ({ name, value }));
+}
+
+function calcHoursSeries(records){
+  const months = monthsRange(12);
+  const map = Object.fromEntries(months.map(m=> [m,0]));
+  records.forEach(r=> r.answers.extTrainings.forEach(t=>{
+    const m = monthKey(t.datum);
+    if(m in map) map[m] += Number(t.stunden)||0;
+  }));
+  return months.map(m=> ({ month: m, hours: map[m] }));
+}
+
+function calcAttritionScenario(records, {retirementAge=63, months=24, churnRate=0.08}){
+  // Returns monthly expected departures split by retirement vs churn
+  const now = new Date();
+  const timeline = Array.from({length: months}).map((_,i)=>{
+    const d = new Date(now); d.setMonth(d.getMonth()+i); return { key: d.toISOString().slice(0,7), retire:0, churn:0 };
+  });
+  // Retirement: if age + months_to_point/12 >= retirementAge then count it in the bin when threshold passed.
+  records.forEach(r=>{
+    const age = r.person.age ?? (22 + (r.person.tenureYears||0));
+    // assume birthday mid-year for simplicity
+    const yearsToRet = retirementAge - age;
+    if(yearsToRet <= (months/12) && yearsToRet >= 0){
+      const monthIndex = Math.min(timeline.length-1, Math.max(0, Math.round(yearsToRet*12)));
+      timeline[monthIndex].retire += 1;
+    }
+  });
+  // Churn: distribute expected churn over months (Poisson approx) using monthly rate from annual churnRate
+  const monthly = 1 - Math.pow(1 - churnRate, 1/12);
+  const N = records.length;
+  for(let i=0;i<timeline.length;i++){
+    // expected leavers this month from non-retired population (simple flat model)
+    const expected = (N * monthly) / (timeline.length); // spread evenly baseline
+    timeline[i].churn += expected;
+  }
+  return timeline;
+}
+
+function sum(arr, key){ return arr.reduce((s,x)=> s + (Number(x[key])||0), 0); }
+
+// ===== UI Helpers =====
+function KPI({icon:Icon, label, value, hint}){
+  return (
+    <Card className="bg-slate-900/40 border-slate-700/60">
+      <CardContent className="p-4 flex items-center gap-3">
+        <div className="p-2 rounded-xl bg-blue-500/15 text-blue-400"><Icon size={18}/></div>
+        <div className="flex-1">
+          <div className="text-slate-300 text-sm">{label}</div>
+          <div className="text-xl font-bold">{value}</div>
+          {hint && <div className="text-slate-400 text-xs">{hint}</div>}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function ChartCard({title, children}){
+  return (
+    <Card className="bg-slate-900/40 border-slate-700/60">
+      <CardContent className="p-4">
+        <div className="flex items-center justify-between mb-2">
+          <h3 className="font-semibold text-slate-200">{title}</h3>
+        </div>
+        <div className="h-64">
+          {children}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function Table({rows}){
+  return (
+    <div className="overflow-auto border border-slate-700/60 rounded-xl">
+      <table className="min-w-full text-sm">
+        <thead className="bg-slate-800/60 text-slate-300">
+          <tr>
+            <th className="px-3 py-2 text-left">Mitarbeiter</th>
+            <th className="px-3 py-2 text-left">Abteilung</th>
+            <th className="px-3 py-2 text-left">Zugehörigkeit (J)</th>
+            <th className="px-3 py-2 text-left">Alter</th>
+            <th className="px-3 py-2 text-left">Interne Docs</th>
+            <th className="px-3 py-2 text-left">Ext. Stunden</th>
+            <th className="px-3 py-2 text-left">Ruhestand in (Mon)</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((r,idx)=> (
+            <tr key={idx} className="odd:bg-slate-900/30">
+              <td className="px-3 py-2">{r.name}</td>
+              <td className="px-3 py-2">{r.abteilung}</td>
+              <td className="px-3 py-2">{r.tenure}</td>
+              <td className="px-3 py-2">{r.age}</td>
+              <td className="px-3 py-2">{r.docs}</td>
+              <td className="px-3 py-2">{r.hours}</td>
+              <td className="px-3 py-2">{r.retireIn ?? "—"}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+export default function DashboardDummy(){
+  const [records, setRecords] = useState([]);
+  const [dept, setDept] = useState("Vertrieb");
+  const [horizon, setHorizon] = useState(24); // months
+  const [retAge, setRetAge] = useState(63);
+  const [churn, setChurn] = useState(0.08);
+  const [importText, setImportText] = useState("");
+
+  // Load from localStorage once
+  useEffect(()=>{
+    const raw = localStorage.getItem("deptDashboardRecords");
+    if(raw){ try{ setRecords(JSON.parse(raw)); }catch{} }
+    else { setRecords(makeDemoData("Vertrieb", 26).concat(makeDemoData("HR", 12)).concat(makeDemoData("IT", 18))); }
+  },[]);
+  useEffect(()=>{ localStorage.setItem("deptDashboardRecords", JSON.stringify(records)); },[records]);
+
+  const allDepts = useMemo(()=> Array.from(new Set(records.map(r=> r.person.abteilung))).sort(), [records]);
+  const deptRecords = useMemo(()=> records.filter(r=> r.person.abteilung === dept), [records, dept]);
+
+  const kpis = useMemo(()=> calcKPIs(deptRecords), [deptRecords]);
+  const tenureData = useMemo(()=> calcTenureData(deptRecords), [deptRecords]);
+  const clusterData = useMemo(()=> calcClusterData(deptRecords), [deptRecords]);
+  const hoursSeries = useMemo(()=> calcHoursSeries(deptRecords), [deptRecords]);
+  const scenario = useMemo(()=> calcAttritionScenario(deptRecords, {retirementAge: retAge, months: horizon, churnRate: churn}), [deptRecords, retAge, horizon, churn]);
+
+  const atRiskRows = useMemo(()=>{
+    return deptRecords.map(r=>{
+      const hours = r.answers.extTrainings.reduce((s,t)=> s + (Number(t.stunden)||0), 0);
+      const docs = r.answers.intDocs.length;
+      const age = r.person.age ?? (22 + (r.person.tenureYears||0));
+      const retireIn = age >= retAge ? 0 : Math.max(0, Math.round((retAge - age)*12));
+      return { name: `${r.person.vorname} ${r.person.nachname}`, abteilung: r.person.abteilung, tenure: r.person.tenureYears||0, age: Math.round(age), docs, hours, retireIn };
+    }).sort((a,b)=> (b.docs - a.docs) || (b.hours - a.hours));
+  }, [deptRecords, retAge]);
+
+  // Import logic (paste JSON lines or array)
+  function handleImport(){
+    try{
+      let lines = importText.trim();
+      if(!lines) return;
+      let arr = [];
+      if(lines.startsWith("[")) arr = JSON.parse(lines);
+      else arr = lines.split("\n").map(l=> JSON.parse(l));
+      // Basic validation
+      const cleaned = arr.filter(x=> x && x.person && x.answers);
+      setRecords(prev=> prev.concat(cleaned));
+      setImportText("");
+      alert(`${cleaned.length} Datensätze importiert.`);
+    }catch(e){ alert("Fehler beim Import: " + e.message); }
+  }
+
+  function clearAll(){ if(confirm("Alle lokal gespeicherten Dashboard-Daten löschen?")){ localStorage.removeItem("deptDashboardRecords"); setRecords([]); }}
+
+  return (
+    <div className="min-h-screen bg-gradient-to-b from-slate-950 to-slate-900 text-slate-100 p-6">
+      <div className="max-w-7xl mx-auto grid gap-6">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight">Abteilungs‑Dashboard (Dummy)</h1>
+            <p className="text-slate-400">Übersicht nach Zugehörigkeit, Wissensclustern, Unterrichtsstunden & Wissensabfluss‑Szenario</p>
+          </div>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={()=> setRecords(prev=> prev.concat(makeDemoData(dept, 10)))}><RefreshCw className="mr-2 h-4 w-4"/>Demo‑Personen +10</Button>
+            <Button variant="outline" onClick={clearAll}><AlertTriangle className="mr-2 h-4 w-4"/>Reset</Button>
+          </div>
+        </div>
+
+        {/* Controls */}
+        <Card className="bg-slate-900/40 border-slate-700/60">
+          <CardContent className="p-4 grid md:grid-cols-4 gap-4 items-end">
+            <div>
+              <div className="text-xs uppercase text-slate-400 mb-1">Abteilung</div>
+              <Select value={dept} onValueChange={setDept}>
+                <SelectTrigger className="bg-slate-900/50">
+                  <SelectValue placeholder="Abteilung wählen" />
+                </SelectTrigger>
+                <SelectContent>
+                  {allDepts.map(d=> <SelectItem key={d} value={d}>{d}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <div className="text-xs uppercase text-slate-400 mb-1">Horizont (Monate)</div>
+              <Slider value={[horizon]} onValueChange={v=> setHorizon(v[0])} min={6} max={48} step={1}/>
+              <div className="text-xs text-slate-400 mt-1">{horizon} Monate</div>
+            </div>
+            <div>
+              <div className="text-xs uppercase text-slate-400 mb-1">Rentenalter</div>
+              <Slider value={[retAge]} onValueChange={v=> setRetAge(v[0])} min={60} max={67} step={1}/>
+              <div className="text-xs text-slate-400 mt-1">{retAge} Jahre</div>
+            </div>
+            <div>
+              <div className="text-xs uppercase text-slate-400 mb-1">Fluktuation p.a.</div>
+              <Slider value={[Math.round(churn*100)]} onValueChange={v=> setChurn(v[0]/100)} min={0} max={25} step={1}/>
+              <div className="text-xs text-slate-400 mt-1">{Math.round(churn*100)}%</div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* KPIs */}
+        <div className="grid md:grid-cols-5 gap-4">
+          <KPI icon={Users} label="Mitarbeiter" value={kpis.employees} />
+          <KPI icon={GraduationCap} label="Mit ext. Schulung (12M)" value={`${kpis.shareExt}%`} hint={`${kpis.employees?kpis.employees:0} Pers.`}/>
+          <KPI icon={BookOpen} label="Interne Dokumente (12M)" value={kpis.docs} hint={`${kpis.shareInt}% haben dokumentiert`}/>
+          <KPI icon={TrendingUp} label="Unterrichtsstunden (12M)" value={kpis.hours} hint="Summe aus externen Schulungen"/>
+          <KPI icon={Settings2} label="Erwartete Abgänge (Monat)" value={`${(sum(calcAttritionScenario(deptRecords,{retirementAge:retAge, months:12, churnRate:churn}).slice(0,1),"retire") + sum(calcAttritionScenario(deptRecords,{retirementAge:retAge, months:12, churnRate:churn}).slice(0,1),"churn")).toFixed(1)}`}/>
+        </div>
+
+        {/* Charts grid */}
+        <div className="grid lg:grid-cols-3 gap-4">
+          <ChartCard title="Zugehörigkeit – Verteilung">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={tenureData}>
+                <XAxis dataKey="bucket" stroke="#9ca3af"/>
+                <YAxis stroke="#9ca3af" allowDecimals={false}/>
+                <RTooltip contentStyle={{background:"#0f172a", border:"1px solid #334155", color:"#e5e7eb"}}/>
+                <Bar dataKey="count" fill="#0A66FF" radius={[8,8,0,0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </ChartCard>
+
+          <ChartCard title="Wissenscluster (interne Doks)">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie dataKey="value" data={clusterData} nameKey="name" outerRadius={90} innerRadius={45}>
+                  {clusterData.map((entry, index) => (<Cell key={`c-${index}`} fill={COLORS[index % COLORS.length]} />))}
+                </Pie>
+                <Legend verticalAlign="bottom" height={36} wrapperStyle={{color:"#e5e7eb"}}/>
+                <RTooltip contentStyle={{background:"#0f172a", border:"1px solid #334155", color:"#e5e7eb"}}/>
+              </PieChart>
+            </ResponsiveContainer>
+          </ChartCard>
+
+          <ChartCard title="Unterrichtsstunden nach Monat (12M)">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={hoursSeries}>
+                <XAxis dataKey="month" stroke="#9ca3af"/>
+                <YAxis stroke="#9ca3af"/>
+                <RTooltip contentStyle={{background:"#0f172a", border:"1px solid #334155", color:"#e5e7eb"}}/>
+                <Line type="monotone" dataKey="hours" stroke="#5BA1FF" strokeWidth={2} dot={false}/>
+              </LineChart>
+            </ResponsiveContainer>
+          </ChartCard>
+        </div>
+
+        <div className="grid lg:grid-cols-2 gap-4">
+          <ChartCard title="Szenario: Wissensabfluss (Rente vs. Fluktuation)">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={scenario}>
+                <XAxis dataKey="key" stroke="#9ca3af"/>
+                <YAxis stroke="#9ca3af"/>
+                <RTooltip contentStyle={{background:"#0f172a", border:"1px solid #334155", color:"#e5e7eb"}}/>
+                <Legend wrapperStyle={{color:"#e5e7eb"}}/>
+                <Area type="monotone" dataKey="retire" stackId="1" stroke="#10B981" fill="#10B981" fillOpacity={0.3}/>
+                <Area type="monotone" dataKey="churn" stackId="1" stroke="#F59E0B" fill="#F59E0B" fillOpacity={0.25}/>
+              </AreaChart>
+            </ResponsiveContainer>
+          </ChartCard>
+
+          <Card className="bg-slate-900/40 border-slate-700/60">
+            <CardContent className="p-4">
+              <h3 className="font-semibold text-slate-200 mb-2">Top Wissensträger – Handlungsbedarf</h3>
+              <p className="text-slate-400 text-sm mb-3">Sortiert nach internen Dokumenten (dann Stunden). Ziehe frühzeitig Wissen ab und plane Tandems.</p>
+              <Table rows={atRiskRows.slice(0,10)} />
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Import / Export */}
+        <Tabs defaultValue="import" className="w-full">
+          <TabsList>
+            <TabsTrigger value="import"><Upload className="mr-2 h-4 w-4"/>Import</TabsTrigger>
+            <TabsTrigger value="export"><Download className="mr-2 h-4 w-4"/>Export</TabsTrigger>
+          </TabsList>
+          <TabsContent value="import">
+            <Card className="bg-slate-900/40 border-slate-700/60">
+              <CardContent className="p-4 grid gap-3">
+                <p className="text-slate-300 text-sm">Füge JSON‑Datensätze (eine Zeile pro Datensatz) ein – kompatibel mit dem Formular‑Export.</p>
+                <Textarea value={importText} onChange={(e)=> setImportText(e.target.value)} placeholder='{"person":{...},"answers":{...}}\n{"person":{...},"answers":{...}}' className="bg-slate-900/40 min-h-[140px]"/>
+                <div className="flex gap-2">
+                  <Button onClick={handleImport}><Upload className="mr-2 h-4 w-4"/>Importieren</Button>
+                  <Button variant="outline" onClick={()=> setImportText(JSON.stringify(makeDemoData(dept,3), null, 0))}><RefreshCw className="mr-2 h-4 w-4"/>Demo‑JSON einfügen</Button>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+          <TabsContent value="export">
+            <Card className="bg-slate-900/40 border-slate-700/60">
+              <CardContent className="p-4 grid gap-3">
+                <p className="text-slate-300 text-sm">Aktuellen Abteilungs‑Ausschnitt als JSON kopieren.</p>
+                <Textarea readOnly value={JSON.stringify(deptRecords, null, 2)} className="bg-slate-900/40 min-h-[200px]"/>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+
+        <p className="text-slate-500 text-xs">
+          Hinweis: Dies ist ein Dummy. Ruhestands‑/Fluktuationsannahmen sind modellhaft. Optional kannst du echte Felder (Geburtsjahr, Vertragsende, Exit‑Reason) in <code>person</code> nutzen – das Dashboard liest sie automatisch, wenn vorhanden.
+        </p>
+      </div>
+    </div>
+  );
+}
