@@ -7,7 +7,7 @@ export default async function handler(req, res) {
   if (req.method !== "POST")    return res.status(405).send("Method Not Allowed");
 
   // Zum Test: harte URL (ENV erst später wieder zuschalten)
-  const url = "https://hook.us2.make.com/5e92q8frgmrood9tkbjp69zcr4itow8h";
+  const url = "https://hook.us2.make.com/sfpbejl2im7hx86dlstw8hsfu88xe9po";
 
   // Body robust parsen (je nach Vercel-Parser)
   let body = {};
