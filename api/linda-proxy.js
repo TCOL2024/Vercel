@@ -1,45 +1,38 @@
-// /api/linda-proxy.js  (bei Next App: /app/api/linda-proxy/route.js -> siehe Kommentar)
-export default async function handler(req, res) {
+// /api/linda-proxy.js  — CommonJS + Node 20
+module.exports = async (req, res) => {
+  // CORS
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
-  if (req.method === "OPTIONS") return res.status(204).send("");
-  if (req.method !== "POST")   return res.status(405).send("Method Not Allowed");
 
- const url = process.env.MAKE_WEBHOOK_URL_LINDA || process.env.lindaversgpt5;
-if (!url) return res.status(500).json({ error: "Env not found" });
-    return res.status(500).json({ error: "Missing env MAKE_WEBHOOK_URL_LINDA" });
-  }
+  // OPTIONS / falsche Methode
+  if (req.method === "OPTIONS") return res.status(204).send("");
+  if (req.method !== "POST")    return res.status(405).send("Method Not Allowed");
+
+  // ❗ Erst hardcodet testen. Wenn es läuft, auf ENV umstellen.
+  const url = "https://hook.us2.make.com/5e92q8frgmrood9tkbjp69zcr4itow8h";
+  // Alternativ später: const url = process.env.MAKE_WEBHOOK_URL_LINDA;
+
+  // Body sicherstellen (bei „Other“-Projekten ist req.body evtl. undefined)
+  let bodyObj = {};
+  try {
+    // Wenn Vercel „Other“: req.body ist schon ein Objekt ODER leer
+    bodyObj = typeof req.body === "string" ? JSON.parse(req.body || "{}") : (req.body || {});
+  } catch (_) { bodyObj = {}; }
 
   try {
     const upstream = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(req.body || {})
+      body: JSON.stringify(bodyObj)
     });
 
-    const ct = upstream.headers.get("content-type") || "text/plain";
+    const ct   = upstream.headers.get("content-type") || "text/plain";
     const text = await upstream.text();
+
     res.setHeader("Content-Type", ct);
     return res.status(upstream.status).send(text);
   } catch (e) {
     return res.status(502).json({ error: "Relay error", detail: String(e) });
   }
-}
-
-/* Next.js App Router? Dann statt oben:
-export async function OPTIONS(){ return new Response("",{status:204,headers:{
-  "Access-Control-Allow-Origin":"*","Access-Control-Allow-Methods":"POST, OPTIONS","Access-Control-Allow-Headers":"Content-Type"}});}
-export async function POST(req){
-  const url = process.env.MAKE_WEBHOOK_URL_LINDA;
-  if(!url) return new Response(JSON.stringify({error:"Missing env MAKE_WEBHOOK_URL_LINDA"}),{status:500,headers:{"Access-Control-Allow-Origin":"*","Content-Type":"application/json"}});
-  const body = await req.json().catch(()=> ({}));
-  try{
-    const up = await fetch(url,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
-    const txt = await up.text(); const ct = up.headers.get("content-type")||"text/plain";
-    return new Response(txt,{status:up.status,headers:{"Access-Control-Allow-Origin":"*","Content-Type":ct}});
-  }catch(e){
-    return new Response(JSON.stringify({error:"Relay error",detail:String(e)}),{status:502,headers:{"Access-Control-Allow-Origin":"*","Content-Type":"application/json"}});
-  }
-}
-*/
+};
