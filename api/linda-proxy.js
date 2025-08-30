@@ -6,8 +6,8 @@ export default async function handler(req, res) {
   if (req.method === "OPTIONS") return res.status(204).send("");
   if (req.method !== "POST")   return res.status(405).send("Method Not Allowed");
 
-  const url = process.env.MAKE_WEBHOOK_URL_LINDA;   // <- exakt dieser Name!
-  if (!url) {
+ const url = process.env.MAKE_WEBHOOK_URL_LINDA || process.env.lindaversgpt5;
+if (!url) return res.status(500).json({ error: "Env not found" });
     return res.status(500).json({ error: "Missing env MAKE_WEBHOOK_URL_LINDA" });
   }
 
