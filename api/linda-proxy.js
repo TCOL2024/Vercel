@@ -9,7 +9,7 @@ export default async function handler(req, res) {
   // Zum Test: harte URL (ENV erst später wieder zuschalten)
   const url = "https://hook.us2.make.com/5e92q8frgmrood9tkbjp69zcr4itow8h";
 
-  // Body robust parsen (je nach Vercel-Parser ist req.body evtl. schon ein Objekt)
+  // Body robust parsen (je nach Vercel-Parser)
   let body = {};
   try { body = typeof req.body === "string" ? JSON.parse(req.body || "{}") : (req.body || {}); }
   catch { body = {}; }
