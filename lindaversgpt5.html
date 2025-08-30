@@ -29,7 +29,7 @@
         radial-gradient(1200px 600px at 100% 0%, #1b2440 5%, transparent 40%);
       color:#e5e7eb; display:flex; align-items:center; justify-content:center; padding:24px;
     }
-    .app{width:min(980px,100%); min-height:72vh; display:grid; grid-template-rows:auto 1fr auto;
+    .app{width:min(980px,100%); min-height:72vh; display:grid; grid-template-rows:auto auto 1fr auto;
       border:1px solid var(--border); border-radius:24px; overflow:hidden;
       background: linear-gradient(180deg,var(--glass1),var(--glass2)); backdrop-filter: blur(10px);
       box-shadow: 0 10px 25px rgba(0,0,0,.35);}
@@ -44,14 +44,24 @@
     .actions{display:flex; gap:8px}
     .iconbtn{background:rgba(255,255,255,.06); border:1px solid var(--border); color:#e5e7eb;
       padding:8px 12px; border-radius:10px; cursor:pointer; font-weight:600;}
+    .iconbtn:hover{border-color:var(--ring)}
+
+    .disclaimer{background:rgba(239,68,68,.15); border:1px solid rgba(239,68,68,.35);
+      color:#fecaca; padding:12px 16px; border-radius:12px; margin:14px 16px 0 16px; font-size:.9rem; line-height:1.5;}
+    .disclaimer strong{color:#f87171}
+
     .chat{padding:18px; overflow-y:auto;}
     .msg{display:grid; grid-template-columns:40px 1fr; gap:12px; margin:14px 0; align-items:flex-start}
     .who{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;font-weight:700;
       border:1px solid var(--border)}
     .msg.user .who{background:#1e293b; color:#cbd5e1}
     .msg.bot .who{background:#fff; color:#0b1022}
-    .bubble{border-radius:14px; padding:14px 16px; border:1px solid var(--border); background:#fff; color:#0b1022;}
+    .bubble{border-radius:14px; padding:14px 16px; border:1px solid var(--border); background:#fff; color:#0b1022; position:relative}
     .msg.user .bubble{background:var(--user); color:var(--usertext);}
+    .tools{position:absolute; top:8px; right:8px; display:flex; gap:6px; opacity:0; transition:.15s}
+    .bubble:hover .tools{opacity:1}
+    .toolbtn{padding:6px 8px; border:1px solid rgba(0,0,0,.08); border-radius:8px; background:#f3f4f6;
+      font-size:.85rem; color:#0b1022; cursor:pointer;}
     .bubble h1,.bubble h2,.bubble h3{margin:.35rem 0 .25rem}
     .bubble p{margin:.6rem 0}
     .bubble ul,.bubble ol{margin:.5rem 0 .5rem 1.25rem}
@@ -61,16 +71,14 @@
     .composer{display:flex; gap:10px; align-items:stretch; background:rgba(255,255,255,.06);
       border:1px solid var(--border); border-radius:14px; padding:8px}
     textarea{flex:1; resize:none; border:0; outline:0; background:transparent; color:#e5e7eb;
-      font:inherit; line-height:1.5;}
+      font:inherit; line-height:1.5; max-height:180px}
     .btn{border:0; cursor:pointer; border-radius:12px; padding:0 16px; font-weight:600;
       background:linear-gradient(135deg,var(--accent),var(--accent2)); color:white;}
-    .disclaimer{background:rgba(239,68,68,.15); border:1px solid rgba(239,68,68,.35);
-      color:#fecaca; padding:12px 16px; border-radius:12px; margin:16px; font-size:.9rem; line-height:1.5;}
-    .disclaimer strong{color:#f87171}
+    @media (max-width:640px){.app{min-height:90vh} .chat{padding:12px}}
   </style>
 </head>
 <body>
-  <main class="app">
+  <main class="app" role="application" aria-label="Linda Chat">
     <header class="header">
       <div class="brand">
         <div class="avatar">L</div>
@@ -78,19 +86,20 @@
       </div>
       <div class="actions">
         <button class="iconbtn" id="newChatBtn">Neuer Chat</button>
+        <button class="iconbtn" id="regenBtn" title="Letzte Antwort neu erzeugen">Neu erzeugen</button>
+        <button class="iconbtn" id="exportBtn">Export (.json)</button>
       </div>
     </header>
 
     <!-- Disclaimer -->
     <section class="disclaimer">
       <strong>Wichtiger Hinweis:</strong><br>
-      Bitte gib <u>keine personenbezogenen Daten</u> ein.<br>
-      Die Inhalte können unvollständig oder fehlerhaft sein.<br>
-      Jede Haftung für die Nutzung der Antworten ist ausgeschlossen.
+      Bitte gib <u>keine personenbezogenen Daten</u> ein. Inhalte können unvollständig oder fehlerhaft sein.
+      <u>Jede Haftung ist ausgeschlossen.</u>
     </section>
 
     <!-- Chat -->
-    <section id="chat" class="chat"></section>
+    <section id="chat" class="chat" aria-live="polite"></section>
 
     <footer class="footer">
       <form id="form" class="composer" autocomplete="off">
@@ -101,39 +110,199 @@
   </main>
 
   <script>
+    // === Konfiguration ===
     const relay = "/api/linda-proxy";
-    marked.setOptions({ breaks:true, gfm:true,
-      highlight:(code,lang)=>{ try{return hljs.highlight(code,{language:lang}).value}catch{return hljs.highlightAuto(code).value} }});
-
-    const chat=document.getElementById("chat");
-    const form=document.getElementById("form");
-    const q=document.getElementById("q"); const btn=document.getElementById("btn");
-
-    form.addEventListener("submit",async e=>{
-      e.preventDefault();
-      const frage=q.value.trim(); if(!frage) return;
-      addMsg("Du",frage,"user");
-      const typing=addMsg("Linda","…","bot");
-      q.value=""; q.disabled=true; btn.disabled=true;
-      try{
-        const res=await fetch(relay,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({message:frage})});
-        let text,ct=(res.headers.get("content-type")||"").toLowerCase();
-        if(ct.includes("application/json")){const d=await res.json();text=d.reply||d.antwort||d.output_text||JSON.stringify(d);}
-        else{text=await res.text();}
-        typing.remove(); addMsg("Linda",text,"bot",true);
-      }catch(err){typing.remove(); addMsg("Linda","❌ Fehler: "+(err.message||"Unbekannter Fehler"),"bot");}
-      finally{q.disabled=false; btn.disabled=false; q.focus();}
+    marked.setOptions({
+      breaks:true, gfm:true,
+      highlight:(code,lang)=>{ try{return hljs.highlight(code,{language:lang}).value}catch{return hljs.highlightAuto(code).value} }
     });
 
-    function addMsg(who,msg,cls,isMD){
-      const node=document.createElement("div"); node.className="msg "+cls;
-      node.innerHTML=`<div class="who">${who[0]}</div><div class="bubble"><div class="content"></div></div>`;
-      if(isMD){node.querySelector(".content").innerHTML=DOMPurify.sanitize(marked.parse(msg));}
-      else{node.querySelector(".content").textContent=msg;}
-      chat.appendChild(node); chat.scrollTop=chat.scrollHeight;
-      node.querySelectorAll("pre code").forEach(b=>hljs.highlightElement(b));
+    // === State & Storage ===
+    const STORAGE_KEY = "linda-history";
+    let history = loadHistory();          // [{role:'assistant'|'user', content:'...'}]
+    let lastUser = "";                    // letzte Frage (für Regenerate)
+
+    // === UI-Refs ===
+    const chat   = document.getElementById("chat");
+    const form   = document.getElementById("form");
+    const q      = document.getElementById("q");
+    const btn    = document.getElementById("btn");
+    const newBtn = document.getElementById("newChatBtn");
+    const regen  = document.getElementById("regenBtn");
+    const exportBtn = document.getElementById("exportBtn");
+
+    // === Initial render ===
+    if (history.length === 0) {
+      addBot("Hallo! Wie kann ich dir helfen?");
+      saveHistory();
+    } else {
+      history.forEach(m => m.role === "user" ? addUser(m.content,false) : addBot(m.content,false));
+      scrollBottom();
+    }
+    autosize(); q.focus();
+
+    // === Events ===
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const frage = q.value.trim();
+      if (!frage) return;
+      lastUser = frage;
+
+      addUser(frage);
+      history.push({role:"user", content: frage}); saveHistory();
+
+      const typingNode = addBotTyping();
+      q.value = ""; autosize();
+      q.disabled = true; btn.disabled = true; regen.disabled = true;
+
+      try {
+        const res = await fetch(relay, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          // >>> WICHTIG: Verlauf mitsenden! <<<
+          body: JSON.stringify({ message: frage, history })
+        });
+
+        let text;
+        const ct = (res.headers.get("content-type") || "").toLowerCase();
+        if (ct.includes("application/json")) {
+          const data = await res.json();
+          text = data.reply || data.antwort || data.output_text || JSON.stringify(data);
+        } else {
+          text = await res.text();
+        }
+
+        typingNode.remove();
+        addBot(text);
+        history.push({role:"assistant", content: text}); saveHistory();
+      } catch (err) {
+        typingNode.remove();
+        const msg = "❌ Fehler: " + (err?.message || "Unbekannter Fehler");
+        addBot(msg);
+        history.push({role:"assistant", content: msg}); saveHistory();
+      } finally {
+        q.disabled = false; btn.disabled = false; regen.disabled = false; q.focus();
+      }
+    });
+
+    q.addEventListener("input", autosize);
+    q.addEventListener("keydown", e => {
+      if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); form.requestSubmit(); }
+    });
+
+    newBtn.addEventListener("click", () => {
+      if (!confirm("Neuen Chat starten? Verlauf wird lokal gelöscht.")) return;
+      history = []; saveHistory();
+      chat.innerHTML = "";
+      addBot("Neuer Chat gestartet. Was möchtest du wissen?");
+      q.focus();
+    });
+
+    regen.addEventListener("click", async () => {
+      if (!lastUser) return;
+
+      // letzte Bot-Antwort aus Verlauf entfernen
+      for (let i = history.length - 1; i >= 0; i--) {
+        if (history[i].role === "assistant") { history.splice(i,1); break; }
+      }
+      const lastBubble = [...chat.querySelectorAll(".msg.bot")].pop();
+      if (lastBubble) lastBubble.remove();
+      saveHistory();
+
+      const typingNode = addBotTyping();
+      q.disabled = true; btn.disabled = true; regen.disabled = true;
+
+      try {
+        const res = await fetch(relay, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          // Verlauf weiterhin mitsenden
+          body: JSON.stringify({ message: lastUser, history })
+        });
+        const ct = (res.headers.get("content-type") || "").toLowerCase();
+        const data = ct.includes("application/json") ? await res.json() : { reply: await res.text() };
+        const text = data.reply || data.antwort || data.output_text || JSON.stringify(data);
+
+        typingNode.remove();
+        addBot(text);
+        history.push({role:"assistant", content: text}); saveHistory();
+      } catch (e) {
+        typingNode.remove();
+        const msg = "❌ Fehler: " + (e?.message || "Unbekannter Fehler");
+        addBot(msg);
+        history.push({role:"assistant", content: msg}); saveHistory();
+      } finally {
+        q.disabled = false; btn.disabled = false; regen.disabled = false;
+      }
+    });
+
+    exportBtn.addEventListener("click", () => {
+      const blob = new Blob([JSON.stringify({messages: history}, null, 2)], {type:"application/json"});
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = "linda_chat_export.json";
+      document.body.appendChild(a); a.click(); a.remove();
+    });
+
+    // === Render helpers ===
+    function templateMsg(who, cls) {
+      const wrap = document.createElement("div");
+      wrap.className = `msg ${cls}`;
+      wrap.innerHTML = `
+        <div class="who" aria-hidden="true">${who[0]}</div>
+        <div class="bubble">
+          <div class="tools"></div>
+          <div class="content"></div>
+        </div>
+      `;
+      return wrap;
+    }
+
+    function addUser(text, store = true) {
+      const node = templateMsg("Du", "user");
+      node.querySelector(".content").textContent = text;
+      chat.appendChild(node); scrollBottom();
+      if (store) { history.push({role:"user", content:text}); saveHistory(); }
       return node;
     }
+
+    function addBot(markdown, store = true) {
+      const node = templateMsg("Linda", "bot");
+      const html = DOMPurify.sanitize(marked.parse(markdown ?? ""));
+      node.querySelector(".content").innerHTML = html;
+
+      // Tools: Kopieren
+      const tools = node.querySelector(".tools");
+      const copyBtn = document.createElement("button");
+      copyBtn.className = "toolbtn";
+      copyBtn.textContent = "Kopieren";
+      copyBtn.addEventListener("click", () => {
+        const temp = document.createElement("div");
+        temp.innerHTML = html;
+        const text = temp.textContent || temp.innerText || "";
+        navigator.clipboard.writeText(text);
+        copyBtn.textContent = "Kopiert ✓";
+        setTimeout(()=> copyBtn.textContent = "Kopieren", 1200);
+      });
+      tools.appendChild(copyBtn);
+
+      chat.appendChild(node); scrollBottom();
+      if (store) { history.push({role:"assistant", content:markdown}); saveHistory(); }
+      node.querySelectorAll("pre code").forEach(block => hljs.highlightElement(block));
+      return node;
+    }
+
+    function addBotTyping() {
+      const node = templateMsg("Linda", "bot");
+      node.querySelector(".content").innerHTML = `<span class="typing"><i></i><i></i><i></i></span>`;
+      chat.appendChild(node); scrollBottom();
+      return node;
+    }
+
+    function scrollBottom(){ chat.scrollTop = chat.scrollHeight; }
+    function autosize(){ q.style.height="auto"; q.style.height=Math.min(q.scrollHeight,180)+"px"; }
+    function loadHistory(){ try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]"); } catch { return []; } }
+    function saveHistory(){ try { localStorage.setItem(STORAGE_KEY, JSON.stringify(history)); } catch {} }
   </script>
 </body>
 </html>
