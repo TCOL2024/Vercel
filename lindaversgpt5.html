@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8"/>
+  <title>Linda - Dein Proximus Bot</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <style>
+    body { font-family: sans-serif; background: #f0f4f8; padding: 2rem; }
+    #chat { background: #fff; padding: 1rem; border-radius: 8px; max-width: 600px; margin: auto; }
+    .line { margin-bottom: .5rem; }
+    .user { color: #1e6cff; font-weight: bold; }
+    .bot  { color: #008000; font-weight: bold; }
+    #form { display: flex; gap:.5rem; margin-top: 1rem; max-width: 600px; margin-left:auto; margin-right:auto; }
+    #q { flex:1; padding:.5rem; font-size:1rem; }
+    #btn { padding: .5rem 1rem; }
+  </style>
+</head>
+<body>
+  <div id="chat">
+    <div class="line bot">Linda: Hallo! Wie kann ich Dir helfen?</div>
+  </div>
+  <form id="form">
+    <input id="q" type="text" placeholder="Deine Frage…" required />
+    <button id="btn">Senden</button>
+  </form>
+
+  <script>
+    // ❗ Statt AllOrigins rufen wir einen eigenen Relay-Endpunkt auf (Netlify/Vercel/CF Worker).
+    // Netlify Functions Standardpfad:
+    const relay = "/.netlify/functions/linda-proxy";
+
+    const chat = document.getElementById("chat");
+    const form = document.getElementById("form");
+    const q    = document.getElementById("q");
+    const btn  = document.getElementById("btn");
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const frage = q.value.trim();
+      if (!frage) return;
+
+      append("Du", frage, "user");
+      const botIdx = append("Bot", "…warte", "bot");
+      q.value = "";
+      q.disabled = true; btn.disabled = true;
+
+      try {
+        const res = await fetch(relay, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ message: frage })
+        });
+
+        if (!res.ok) {
+          const t = await res.text().catch(()=> "");
+          throw new Error(`Relay ${res.status} ${res.statusText} ${t || ""}`.trim());
+        }
+
+        // Antwort kann JSON ODER Text sein – wir fangen beides ab
+        let text;
+        const ct = res.headers.get("content-type") || "";
+        if (ct.includes("application/json")) {
+          const data = await res.json();
+          text = data.reply || data.antwort || data.output_text || JSON.stringify(data);
+        } else {
+          text = await res.text();
+        }
+        update(botIdx, "Bot", text);
+      } catch (err) {
+        update(botIdx, "Bot", "Fehler: " + (err.message || "Unbekannter Fehler"));
+      } finally {
+        q.disabled = false; btn.disabled = false; q.focus();
+      }
+    });
+
+    function append(who, msg, cls) {
+      const d = document.createElement("div");
+      d.className = "line " + cls;
+      d.textContent = who + ": " + msg;
+      chat.appendChild(d);
+      chat.scrollTop = chat.scrollHeight;
+      return d; // Referenz zurückgeben, damit wir später aktualisieren können
+    }
+    function update(node, who, msg) {
+      node.textContent = who + ": " + msg;
+      chat.scrollTop = chat.scrollHeight;
+    }
+  </script>
+</body>
+</html>
