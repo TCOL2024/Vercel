@@ -2,44 +2,277 @@
 <html lang="de">
 <head>
   <meta charset="UTF-8"/>
-  <title>Linda - Dein Proximus Bot (GPT5-Testversion)</title>
-  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Linda – Dein Proximus Bot (GPT-5)</title>
+
+  <!-- Font & Icons -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+
+  <!-- Markdown & Sanitizer (für saubere, sichere Darstellung) -->
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.7/dist/purify.min.js"></script>
+
+  <!-- Code-Highlighting (optional, aber hübsch für Antworten mit Code) -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/styles/github.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/lib/highlight.min.js"></script>
+
   <style>
-    body { font-family: sans-serif; background: #f0f4f8; padding: 2rem; }
-    #chat { background: #fff; padding: 1rem; border-radius: 8px; max-width: 600px; margin: auto; }
-    .line { margin-bottom: .5rem; }
-    .user { color: #1e6cff; font-weight: bold; }
-    .bot  { color: #008000; font-weight: bold; }
-    #form { display: flex; gap:.5rem; margin-top: 1rem; max-width: 600px; margin-left:auto; margin-right:auto; }
-    #q { flex:1; padding:.5rem; font-size:1rem; }
-    #btn { padding: .5rem 1rem; }
+    :root{
+      --bg: #0f172a;          /* slate-900 */
+      --bg-grad: radial-gradient(1200px 600px at 10% -10%, #1e293b 10%, transparent 50%),
+                 radial-gradient(1200px 600px at 100% 0%, #1b2440 5%, transparent 40%);
+      --card: #0b1022;
+      --muted: #94a3b8;
+      --accent: #6aa5ff;
+      --accent-2: #3b82f6;
+      --bot: #0f172a;
+      --bot-bubble: #ffffff;
+      --user: #dbeafe;
+      --user-text: #0b1022;
+      --ring: rgba(99,102,241,.35);
+      --shadow: 0 10px 25px rgba(0,0,0,.35);
+      --radius: 16px;
+    }
+
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+      margin: 0;
+      font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji", sans-serif;
+      background: var(--bg);
+      background-image: var(--bg-grad);
+      color: #e5e7eb;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    .app {
+      width: min(960px, 100%);
+      min-height: 70vh;
+      background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
+      border: 1px solid rgba(255,255,255,.08);
+      border-radius: 24px;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(10px);
+      overflow: hidden;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+    }
+
+    .header {
+      display:flex; align-items:center; gap:12px;
+      padding: 16px 20px;
+      border-bottom: 1px solid rgba(255,255,255,.08);
+      background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,0));
+    }
+    .avatar {
+      width: 36px; height: 36px; border-radius: 50%;
+      background: linear-gradient(135deg,#3b82f6,#60a5fa);
+      display:grid; place-items:center; color:#fff; font-weight:700;
+      box-shadow: 0 6px 18px rgba(59,130,246,.4);
+    }
+    .title { font-weight: 700; letter-spacing:.2px; }
+    .subtitle { color: var(--muted); font-size: .9rem; }
+
+    .chat {
+      padding: 18px;
+      overflow-y: auto;
+      scroll-behavior: smooth;
+      background:
+        radial-gradient(800px 400px at 50% 0%, rgba(99,102,241,.06), transparent 60%),
+        radial-gradient(600px 320px at 80% 20%, rgba(56,189,248,.05), transparent 70%);
+    }
+
+    .msg {
+      display: grid;
+      grid-template-columns: 40px 1fr;
+      gap: 12px;
+      margin: 14px 0;
+      align-items: flex-start;
+    }
+
+    .msg .who {
+      width: 40px; height: 40px; border-radius: 12px;
+      display:grid; place-items:center;
+      font-weight: 700; font-size: .9rem;
+      border: 1px solid rgba(255,255,255,.1);
+    }
+    .msg.user .who {
+      background: linear-gradient(135deg,#1e293b,#111827);
+      color:#cbd5e1;
+    }
+    .msg.bot .who {
+      background: #ffffff;
+      color:#0b1022;
+    }
+
+    .bubble {
+      border-radius: 14px;
+      padding: 14px 16px;
+      line-height: 1.55;
+      border: 1px solid rgba(255,255,255,.08);
+      box-shadow: 0 4px 16px rgba(0,0,0,.25);
+      max-width: 100%;
+      overflow-x: auto;
+    }
+    .msg.user .bubble {
+      background: var(--user);
+      color: var(--user-text);
+      border-color: rgba(59,130,246,.25);
+    }
+    .msg.bot .bubble {
+      background: var(--bot-bubble);
+      color: #0b1022;
+    }
+
+    /* Markdown-Inhalte hübsch */
+    .bubble h1, .bubble h2, .bubble h3 { margin: .4rem 0 .3rem; }
+    .bubble h1 { font-size: 1.25rem; }
+    .bubble h2 { font-size: 1.15rem; }
+    .bubble h3 { font-size: 1.05rem; }
+    .bubble p { margin: .6rem 0; }
+    .bubble ul, .bubble ol { margin: .5rem 0 .5rem 1.25rem; }
+    .bubble code { background:#0f172a10; padding: .15rem .35rem; border-radius: 6px; }
+    .bubble pre { background: #0f172a; color:#e5e7eb; border-radius: 10px; padding: 12px; overflow: auto; border: 1px solid rgba(255,255,255,.08); }
+    .bubble a { color: #2563eb; text-decoration: none; }
+    .bubble a:hover { text-decoration: underline; }
+
+    .footer {
+      padding: 14px;
+      border-top: 1px solid rgba(255,255,255,.08);
+      background: linear-gradient(180deg, rgba(255,255,255,0), rgba(255,255,255,.04));
+    }
+    .composer {
+      display:flex; gap: 10px; align-items: stretch;
+      background: rgba(255,255,255,.06);
+      border: 1px solid rgba(255,255,255,.12);
+      border-radius: 14px;
+      padding: 8px;
+      box-shadow: inset 0 0 0 1px transparent;
+    }
+    .composer:focus-within { box-shadow: inset 0 0 0 1px var(--ring); border-color: var(--ring); }
+    textarea {
+      flex:1; resize:none; border:0; outline:0; background: transparent; color: #e5e7eb;
+      font: inherit; line-height: 1.5; max-height: 180px; padding: 6px 8px;
+    }
+    .btn {
+      border: 0; outline: 0; cursor: pointer; border-radius: 12px;
+      padding: 0 16px; font-weight: 600; letter-spacing:.2px;
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      color: white;
+      display:flex; align-items:center; gap:8px;
+      box-shadow: 0 10px 20px rgba(59,130,246,.35);
+      transition: transform .06s ease;
+    }
+    .btn:active { transform: translateY(1px); }
+    .btn[disabled] { opacity: .6; cursor: not-allowed; }
+
+    .typing {
+      display:inline-flex; gap:4px; align-items:center;
+    }
+    .typing i {
+      width:6px; height:6px; border-radius:50%;
+      background:#94a3b8; display:inline-block;
+      animation: blink 1.2s infinite ease-in-out;
+    }
+    .typing i:nth-child(2){ animation-delay:.15s }
+    .typing i:nth-child(3){ animation-delay:.3s }
+    @keyframes blink{
+      0%,80%,100%{ transform: translateY(0); opacity:.4 }
+      40%{ transform: translateY(-2px); opacity:1 }
+    }
+
+    .hint {
+      font-size: .85rem; color: var(--muted);
+      text-align:center; padding: 6px 12px 14px 12px;
+    }
+
+    @media (max-width: 640px) {
+      .app{ min-height: 90vh; }
+      .header { padding: 12px 14px; }
+      .chat { padding: 12px; }
+      .footer { padding: 10px; }
+    }
   </style>
 </head>
 <body>
-  <div id="chat">
-    <div class="line bot">Linda: Hallo! Wie kann ich Dir helfen?</div>
-  </div>
-  <form id="form">
-    <input id="q" type="text" placeholder="Deine Frage..." required />
-    <button id="btn">Senden</button>
-  </form>
+  <main class="app" role="application" aria-label="Linda Chat">
+    <header class="header">
+      <div class="avatar" aria-hidden="true">L</div>
+      <div>
+        <div class="title">Linda – Dein Proximus Bot</div>
+        <div class="subtitle">GPT-5 + Vector Store</div>
+      </div>
+    </header>
+
+    <section id="chat" class="chat" aria-live="polite">
+      <!-- Initiale Bot-Nachricht -->
+    </section>
+
+    <div class="hint">Hinweis: Keine sensiblen Personendaten eingeben.</div>
+
+    <footer class="footer">
+      <form id="form" class="composer" autocomplete="off">
+        <textarea id="q" rows="1" placeholder="Deine Frage …" required></textarea>
+        <button id="btn" class="btn" type="submit" aria-label="Senden">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M22 2L11 13"></path><path d="M22 2l-7 20-4-9-9-4 20-7z"></path>
+          </svg>
+          Senden
+        </button>
+      </form>
+    </footer>
+  </main>
 
   <script>
-    const relay = "/api/linda-proxy"; // <- Vercel API
+    // === Konfiguration ===
+    const relay = "/api/linda-proxy"; // Vercel API
+    marked.setOptions({
+      breaks: true,
+      gfm: true,
+      highlight: (code, lang) => {
+        try { return hljs.highlight(code, {language: lang}).value; }
+        catch { return hljs.highlightAuto(code).value; }
+      }
+    });
 
-    const chat = document.getElementById("chat");
-    const form = document.getElementById("form");
-    const q    = document.getElementById("q");
-    const btn  = document.getElementById("btn");
+    // === UI-Referenzen ===
+    const chat   = document.getElementById("chat");
+    const form   = document.getElementById("form");
+    const q      = document.getElementById("q");
+    const btn    = document.getElementById("btn");
+
+    // Startnachricht
+    addBot("Hallo! Wie kann ich dir helfen?");
+
+    // Autosize Textarea
+    const autosize = () => {
+      q.style.height = "auto";
+      q.style.height = Math.min(q.scrollHeight, 180) + "px";
+    };
+    q.addEventListener("input", autosize);
+    autosize();
+
+    // Enter = senden (Shift+Enter = neue Zeile)
+    q.addEventListener("keydown", e => {
+      if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();
+        form.requestSubmit();
+      }
+    });
 
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
       const frage = q.value.trim();
       if (!frage) return;
 
-      append("Du", frage, "user");
-      const botNode = append("Bot", "…warte", "bot");
+      addUser(frage);
+      const typingNode = addBotTyping();
+
       q.value = "";
+      autosize();
       q.disabled = true; btn.disabled = true;
 
       try {
@@ -49,37 +282,64 @@
           body: JSON.stringify({ message: frage })
         });
 
-        if (!res.ok) {
-          const t = await res.text().catch(()=> "");
-          throw new Error(`Relay ${res.status} ${res.statusText} ${t || ""}`.trim());
-        }
-
         let text;
-        const ct = res.headers.get("content-type") || "";
+        const ct = (res.headers.get("content-type") || "").toLowerCase();
         if (ct.includes("application/json")) {
           const data = await res.json();
           text = data.reply || data.antwort || data.output_text || JSON.stringify(data);
         } else {
           text = await res.text();
         }
-        update(botNode, "Bot", text);
+
+        typingNode.remove();
+        addBot(text);
       } catch (err) {
-        update(botNode, "Bot", "Fehler: " + (err.message || "Unbekannter Fehler"));
+        typingNode.remove();
+        addBot("❌ Fehler: " + (err?.message || "Unbekannter Fehler"));
       } finally {
         q.disabled = false; btn.disabled = false; q.focus();
       }
     });
 
-    function append(who, msg, cls) {
-      const d = document.createElement("div");
-      d.className = "line " + cls;
-      d.textContent = who + ": " + msg;
-      chat.appendChild(d);
-      chat.scrollTop = chat.scrollHeight;
-      return d;
+    // === Rendering-Funktionen ===
+    function addUser(text) {
+      const node = templateMsg("Du", "user");
+      node.querySelector(".bubble").textContent = text;
+      chat.appendChild(node);
+      scrollBottom();
+      return node;
     }
-    function update(node, who, msg) {
-      node.textContent = who + ": " + msg;
+
+    function addBot(markdown) {
+      const node = templateMsg("Linda", "bot");
+      const safe = DOMPurify.sanitize(marked.parse(markdown ?? ""));
+      node.querySelector(".bubble").innerHTML = safe;
+      chat.appendChild(node);
+      scrollBottom();
+      return node;
+    }
+
+    function addBotTyping() {
+      const node = templateMsg("Linda", "bot");
+      node.querySelector(".bubble").innerHTML = `
+        <span class="typing"><i></i><i></i><i></i></span>
+      `;
+      chat.appendChild(node);
+      scrollBottom();
+      return node;
+    }
+
+    function templateMsg(who, cls) {
+      const wrap = document.createElement("div");
+      wrap.className = `msg ${cls}`;
+      wrap.innerHTML = `
+        <div class="who">${who[0]}</div>
+        <div class="bubble"></div>
+      `;
+      return wrap;
+    }
+
+    function scrollBottom() {
       chat.scrollTop = chat.scrollHeight;
     }
   </script>
