@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <title>Onno • Knowledge Assistant (Lilli-ähnliche Demo)</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <style>
+    :root{
+      --bg:#ffffff; --panel:#f6f7f9; --panel-2:#eef1f5; --ink:#0f1720; --muted:#5b6673;
+      --accent:#2563eb; --accent-2:#0ea5e9; --border:#e6e8ec; --shadow:0 1px 2px rgba(0,0,0,.06),0 8px 24px rgba(0,0,0,.06);
+      --radius:12px;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{margin:0;background:#fff;color:var(--ink);font:15px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;}
+    a{color:var(--accent);text-decoration:none} a:hover{text-decoration:underline}
+
+    .app{display:grid;grid-template-columns:280px 1fr 320px;grid-template-rows:56px 1fr 88px;height:100vh;overflow:hidden;}
+    .topbar{grid-column:1/4;grid-row:1/2;display:flex;align-items:center;gap:12px;padding:0 16px;border-bottom:1px solid var(--border);background:#fff;position:sticky;top:0;z-index:5}
+    .logo{width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,var(--accent),var(--accent-2));box-shadow:var(--shadow)}
+    .title{font-weight:650}
+    .chip{padding:6px 10px;border-radius:999px;background:var(--panel);color:var(--muted);border:1px solid var(--border);font-size:12px}
+    .mode-toggle{margin-left:auto;display:flex;gap:6px;background:var(--panel);border:1px solid var(--border);border-radius:999px;padding:3px}
+    .mode-toggle button{border:0;background:transparent;padding:6px 10px;border-radius:999px;cursor:pointer;color:var(--muted)}
+    .mode-toggle button.active{background:#fff;color:var(--ink);box-shadow:var(--shadow)}
+
+    .nav{grid-column:1/2;grid-row:2/4;border-right:1px solid var(--border);background:#fff;overflow:auto;padding:14px}
+    .nav h3{margin:6px 0 8px 0;font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+    .btn{display:inline-flex;align-items:center;gap:8px;padding:10px 12px;border-radius:10px;border:1px solid var(--border);background:#fff;cursor:pointer}
+    .btn.full{width:100%;justify-content:center}
+    .btn.secondary{background:var(--panel)}
+    .history{margin-top:10px;display:flex;flex-direction:column;gap:8px}
+    .history .item{padding:10px;border:1px solid var(--border);border-radius:10px;background:var(--panel);cursor:pointer}
+    .small{font-size:12px;color:var(--muted)}
+    .kbd{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;background:var(--panel-2);border:1px solid var(--border);padding:2px 6px;border-radius:6px;font-size:12px}
+
+    .chat{grid-column:2/3;grid-row:2/3;background:var(--panel);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden}
+    .messages{padding:18px;overflow:auto;display:flex;flex-direction:column;gap:14px}
+    .card{background:#fff;border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);padding:14px 14px 10px 14px}
+    .assistant .header{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+    .assistant .avatar{width:24px;height:24px;border-radius:8px;background:linear-gradient(135deg,var(--accent),var(--accent-2))}
+    .assistant .who{font-weight:600}
+    .meta{font-size:12px;color:var(--muted)}
+    .answer h4{margin:8px 0 6px 0}
+    .bullets{margin:8px 0 6px 18px}
+    .actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+    .action{border:1px solid var(--border);background:var(--panel);padding:8px 10px;border-radius:10px;cursor:pointer;font-size:13px}
+    .sources{margin-top:10px;border-top:1px dashed var(--border);padding-top:10px;display:grid;grid-template-columns:1fr;gap:8px}
+    .source{display:flex;gap:10px;padding:8px;border:1px solid var(--border);border-radius:10px;background:var(--panel-2)}
+    .source .ico{width:18px;height:18px;border-radius:4px;background:var(--accent);opacity:.8}
+    .source .s-title{font-weight:600}
+    .followups{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+    .pill{border:1px solid var(--border);padding:6px 10px;border-radius:999px;background:#fff;cursor:pointer;font-size:13px}
+
+    .composer{grid-column:2/3;grid-row:3/4;background:#fff;border-top:1px solid var(--border);display:flex;align-items:center;gap:10px;padding:10px 12px}
+    .textarea{flex:1;position:relative;border:1px solid var(--border);border-radius:12px;background:var(--panel);display:flex;align-items:center;padding:8px 10px}
+    .textarea textarea{width:100%;border:0;background:transparent;resize:none;max-height:120px;outline:none;font:inherit}
+    .send{border:0;background:linear-gradient(135deg,var(--accent),var(--accent-2));color:#fff;padding:10px 14px;border-radius:10px;cursor:pointer;box-shadow:var(--shadow)}
+
+    .side{grid-column:3/4;grid-row:2/4;background:#fff;overflow:auto;padding:14px}
+    .side h3{margin:6px 0 8px 0;font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+    .expert{display:grid;grid-template-columns:36px 1fr;gap:10px;padding:10px;border:1px solid var(--border);border-radius:10px;background:var(--panel)}
+    .avatar{width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,var(--accent),var(--accent-2))}
+    .expert .name{font-weight:600}
+    .tag{font-size:12px;color:var(--muted)}
+    .quick{margin-top:10px;display:grid;gap:8px}
+    .quick .q{padding:10px;border:1px solid var(--border);border-radius:10px;background:var(--panel)}
+
+    /* Disclaimer Modal */
+    .modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.35);display:none;align-items:center;justify-content:center;padding:20px;z-index:99}
+    .modal{max-width:720px;width:100%;background:#fff;border-radius:16px;box-shadow:var(--shadow);border:1px solid var(--border);padding:20px}
+    .modal h2{margin:8px 0 6px 0}
+    .modal p{color:var(--muted)}
+    .modal .list{margin:10px 0 0 18px}
+    .modal .row{display:flex;gap:8px;align-items:center;margin-top:14px}
+    .modal .row input{scale:1.1}
+    .modal .cta{display:flex;gap:10px;justify-content:flex-end;margin-top:10px}
+
+    @media (max-width:1100px){
+      .app{grid-template-columns:1fr;grid-template-rows:56px 1fr 88px 280px;}
+      .nav{grid-column:1/2;grid-row:4/5;border-top:1px solid var(--border);border-right:0;display:flex;gap:8px;overflow:auto;white-space:nowrap}
+      .side{display:none}
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <!-- Topbar -->
+    <div class="topbar">
+      <div class="logo" aria-hidden="true"></div>
+      <div class="title">Onno • Knowledge Assistant</div>
+      <span class="chip">Quellenmodus aktiv</span>
+      <div class="mode-toggle" role="group" aria-label="Quellenmodus">
+        <button id="btnInternal" class="active" aria-pressed="true">Internal</button>
+        <button id="btnExternal" aria-pressed="false">External</button>
+      </div>
+    </div>
+
+    <!-- Left Nav -->
+    <aside class="nav" aria-label="Navigation">
+      <div style="display:flex; gap:8px; margin-bottom:8px;">
+        <button class="btn full" id="newChat">+ Neue Anfrage</button>
+      </div>
+      <h3>Schnellzugriff</h3>
+      <div style="display:flex; gap:8px; flex-wrap:wrap;">
+        <button class="btn secondary" data-prompt="Erstelle eine 5-Slide-Übersicht zu Trends in der Krankenversicherung (DACH) – mit Quellen.">Deck-Draft</button>
+        <button class="btn secondary" data-prompt="Fasse die wichtigsten Änderungen AEVO 2023 in 7 Bullet Points zusammen – mit Quellen.">Kurz-Synthese</button>
+        <button class="btn secondary" data-prompt="Liste zentrale Risiken & Chancen für Duale Ausbildung 2026 als Tabelle – mit Quellen.">Risiken/Chancen</button>
+      </div>
+      <h3>Verlauf</h3>
+      <div class="history" id="history">
+        <div class="item">PKV: Beitragsanpassungen — Überblick <div class="small">vor 2 Std.</div></div>
+        <div class="item">AEVO: Prüfungsfragen-Ideen <div class="small">gestern</div></div>
+      </div>
+      <h3>Tastatur</h3>
+      <div class="small">Senden: <span class="kbd">Enter</span> • Zeilenumbruch: <span class="kbd">Shift+Enter</span></div>
+    </aside>
+
+    <!-- Main Chat -->
+    <main class="chat" role="main" aria-label="Chatbereich">
+      <div id="chat" class="messages" aria-live="polite">
+        <div class="card assistant">
+          <div class="header">
+            <div class="avatar" aria-hidden="true"></div>
+            <div class="who">Onno</div>
+            <div class="meta">Willkommen! Zuerst bitte den Hinweis unten bestätigen.</div>
+          </div>
+          <div class="followups">
+            <button class="pill" data-prompt="Gib mir eine Marktübersicht PKV vs. GKV, mit 5 Quellen.">PKV vs. GKV</button>
+            <button class="pill" data-prompt="Erstelle ein 1-seitiges Briefing zu Fachkräftemangel (DACH) mit aktuellen Quellen.">Fachkräftemangel</button>
+            <button class="pill" data-prompt="Welche DSGVO-Punkte beachten wir beim Wissens-Tracking von Schulungen?">DSGVO-Hinweise</button>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- Composer -->
+    <div class="composer" aria-label="Eingabebereich">
+      <form id="form" style="display:flex;gap:10px;flex:1">
+        <div class="textarea" style="flex:1">
+          <textarea id="q" rows="1" placeholder="Frag etwas oder gib eine Anweisung …" disabled></textarea>
+        </div>
+        <button class="send" id="btn" disabled>Senden ▸</button>
+      </form>
+    </div>
+
+    <!-- Right Panel -->
+    <aside class="side" aria-label="Experten & Hinweise">
+      <h3>Empfohlene Experten</h3>
+      <div class="expert">
+        <div class="avatar" aria-hidden="true"></div>
+        <div>
+          <div class="name">Dr. K. Meier</div>
+          <div class="tag">PKV • Tarifrecht • Kostenanalyse</div>
+          <div class="small"><a href="#" onclick="alert('Demo: Kontakt öffnen')">Kontakt aufnehmen</a></div>
+        </div>
+      </div>
+      <div class="expert">
+        <div class="avatar" aria-hidden="true"></div>
+        <div>
+          <div class="name">A. Schulz</div>
+          <div class="tag">AEVO • Prüfungsdidaktik</div>
+          <div class="small"><a href="#" onclick="alert('Demo: Kontakt öffnen')">Kontakt aufnehmen</a></div>
+        </div>
+      </div>
+
+      <h3>Quick Insights</h3>
+      <div class="quick">
+        <div class="q small">Modus: <span id="modeLabel">Internal</span></div>
+        <div class="q small">Top-Quellen: SharePoint/AEVO, PKV-Handbuch, DIHK-Leitfäden</div>
+      </div>
+    </aside>
+  </div>
+
+  <!-- Disclaimer Modal -->
+  <div class="modal-backdrop" id="disclaimer">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="dlbl">
+      <h2 id="dlbl">Hinweise zur Nutzung</h2>
+      <p>
+        • Keine personenbezogenen Daten eingeben. • Inhalte können fehlerhaft sein. • **Jegliche Haftung ist ausgeschlossen.**  
+        • Mit „Akzeptieren“ bestätigst du, dass du diese Hinweise gelesen hast.
+      </p>
+      <ul class="list">
+        <li>Onno kann Quellenvorschläge machen; prüfe fachlich-kritisch.</li>
+        <li>Bei rechtlichen Themen: keine Rechtsberatung; nutze Originalnormen.</li>
+      </ul>
+      <div class="row">
+        <input type="checkbox" id="acceptChk" />
+        <label for="acceptChk">Ich habe verstanden und akzeptiere die Hinweise.</label>
+      </div>
+      <div class="cta">
+        <button id="acceptBtn" class="btn">Akzeptieren</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ====== Konfiguration / Variablen (wie von dir vorgegeben) ======
+    const relay = "/api/linda-proxy";          // Server-/Make-Webhook/Function, die an OpenAI proxyt
+    const chat  = document.getElementById("chat");
+    const form  = document.getElementById("form");
+    const q     = document.getElementById("q");
+    const btn   = document.getElementById("btn");
+    const disclaimer = document.getElementById("disclaimer");
+    const acceptBtn  = document.getElementById("acceptBtn");
+
+    // ====== UI State ======
+    const btnInternal = document.getElementById('btnInternal');
+    const btnExternal = document.getElementById('btnExternal');
+    const modeLabel   = document.getElementById('modeLabel');
+    let mode = 'Internal'; // Internal | External
+    btnInternal.addEventListener('click', ()=> setMode('Internal'));
+    btnExternal.addEventListener('click', ()=> setMode('External'));
+    function setMode(m){
+      mode = m; modeLabel.textContent = mode;
+      btnInternal.classList.toggle('active', mode==='Internal');
+      btnInternal.setAttribute('aria-pressed', mode==='Internal');
+      btnExternal.classList.toggle('active', mode!=='Internal');
+      btnExternal.setAttribute('aria-pressed', mode!=='Internal');
+    }
+
+    // ====== Disclaimer erzwingen ======
+    window.addEventListener('load', ()=>{
+      disclaimer.style.display = 'flex';
+      q.disabled = true; btn.disabled = true;
+    });
+    acceptBtn.addEventListener('click', ()=>{
+      const chk = document.getElementById('acceptChk');
+      if(!chk.checked){ alert('Bitte Hinweise akzeptieren.'); return; }
+      disclaimer.style.display = 'none';
+      q.disabled = false; btn.disabled = false; q.focus();
+    });
+
+    // ====== Eingabe-Verhalten ======
+    q.addEventListener('input', autoResize);
+    q.addEventListener('keydown', (e)=>{
+      if(e.key==='Enter' && !e.shiftKey){
+        e.preventDefault();
+        form.requestSubmit();
+      }
+    });
+    function autoResize(){
+      q.style.height = 'auto';
+      q.style.height = Math.min(q.scrollHeight, 120) + 'px';
+    }
+
+    // ====== Senden & Streamen ======
+    form.addEventListener('submit', async (e)=>{
+      e.preventDefault();
+      const text = q.value.trim();
+      if(!text) return;
+      addUserCard(text);
+      q.value = ''; autoResize();
+      btn.disabled = true;
+
+      // Platzhalter für Streaming-Antwort
+      const answer = addAssistantCard();
+      try{
+        await streamFromRelay({
+          prompt: text,
+          mode,                     // "Internal" | "External" → für Routing/VectorStore
+          // Folgende Felder sind bewusst „selbsterklärend“ gehalten,
+          // damit dein Relay sie 1:1 in einen Responses-Call mappen kann:
+          system: `Du heißt Onno. Antworte fachlich präzise, neutral und mit Quellen am Ende.
+                    Gib bei Bedarf Rückfragen. Vermeide personenbezogene Daten. Nenne keine internen IDs.`,
+          model: "gpt-4o-mini",
+          tools: [{type:"file_search"}],            // dein Relay kann diese Tools aktivieren
+          vector_store_ids: mode === 'Internal' ? ["vs_sharepoint_main"] : ["vs_public_news"], // Beispiel-Routing
+          stream: true,
+          // Optional: Session / Thread (falls du im Backend Threads pflegst)
+          session_id: getOrCreateSession()
+        }, answer);
+      }catch(err){
+        appendToAnswer(answer, `\n\n[Fehler] ${err?.message || err}`);
+      }finally{
+        finishAnswer(answer);
+        btn.disabled = false;
+      }
+    });
+
+    // ====== Streaming-Client: unterstützt SSE oder Chunk-Text ======
+    async function streamFromRelay(body, answerEl){
+      const res = await fetch(relay, {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify(body)
+      });
+      if(!res.ok){
+        const t = await res.text().catch(()=> '');
+        throw new Error(`Relay ${res.status}: ${t.slice(0,200)}`);
+      }
+      const ctype = res.headers.get('content-type') || '';
+      if(ctype.includes('text/event-stream')){
+        await readSSE(res, answerEl);
+      }else{
+        await readChunked(res, answerEl);
+      }
+    }
+
+    async function readSSE(res, el){
+      const reader = res.body.getReader();
+      const dec = new TextDecoder();
+      let buf = '';
+      while(true){
+        const {value, done} = await reader.read();
+        if(done) break;
+        buf += dec.decode(value, {stream:true});
+        const parts = buf.split('\n\n');
+        buf = parts.pop() || '';
+        for(const part of parts){
+          if(!part.startsWith('data:')) continue;
+          const line = part.replace(/^data:\s?/, '');
+          if(line === '[DONE]') { return; }
+          try{
+            const msg = JSON.parse(line);
+            if(msg.delta) appendToAnswer(el, msg.delta);
+            if(msg.error){ appendToAnswer(el, `\n\n[Fehler] ${msg.error}`); }
+          }catch{
+            appendToAnswer(el, line);
+          }
+        }
+      }
+    }
+
+    async function readChunked(res, el){
+      const reader = res.body.getReader();
+      const dec = new TextDecoder();
+      while(true){
+        const {value, done} = await reader.read();
+        if(done) break;
+        appendToAnswer(el, dec.decode(value));
+      }
+    }
+
+    // ====== Rendering Helpers ======
+    function addUserCard(text){
+      const wrap = document.createElement('div');
+      wrap.className = 'card';
+      wrap.innerHTML = `<div class="meta">Du</div><div>${escapeHtml(text).replace(/\n/g,'<br/>')}</div>`;
+      chat.appendChild(wrap);
+      chat.scrollTop = chat.scrollHeight;
+    }
+
+    function addAssistantCard(){
+      const card = document.createElement('div');
+      card.className = 'card assistant';
+      card.innerHTML = `
+        <div class="header">
+          <div class="avatar" aria-hidden="true"></div>
+          <div class="who">Onno</div>
+          <div class="meta">Antwort wird generiert …</div>
+        </div>
+        <div class="answer">
+          <div class="actions" style="margin-bottom:6px">
+            <button class="action" onclick="copyCardText(this)">Copy</button>
+          </div>
+          <div class="stream" style="white-space:pre-wrap"></div>
+        </div>`;
+      chat.appendChild(card);
+      chat.scrollTop = chat.scrollHeight;
+      return card.querySelector('.stream');
+    }
+
+    function appendToAnswer(el, chunk){
+      el.textContent += chunk;
+      chat.scrollTop = chat.scrollHeight;
+    }
+
+    function finishAnswer(el){
+      // Optional: Quellen-Nachbearbeitung/Extraktion könnte hier erfolgen
+    }
+
+    function copyCardText(btn){
+      const card = btn.closest('.card');
+      const text = card.innerText.replace(/\n{2,}/g,'\n');
+      navigator.clipboard.writeText(text).then(()=>{
+        btn.textContent = 'Kopiert ✓';
+        setTimeout(()=>btn.textContent='Copy',1200);
+      });
+    }
+
+    // Verlauf-Pills & Quick Prompts
+    document.querySelectorAll('[data-prompt]').forEach(el=>{
+      el.addEventListener('click', ()=>{
+        q.value = el.getAttribute('data-prompt'); autoResize(); form.requestSubmit();
+      });
+    });
+    document.getElementById('newChat').addEventListener('click', ()=>{
+      chat.innerHTML = '';
+      const welcome = document.createElement('div');
+      welcome.className='card assistant';
+      welcome.innerHTML = `
+        <div class="header">
+          <div class="avatar" aria-hidden="true"></div>
+          <div class="who">Onno</div>
+          <div class="meta">Neue Sitzung gestartet</div>
+        </div>
+        <div class="followups">
+          <button class="pill" data-prompt="Gib mir eine strukturierte AEVO-FAQ mit Quellen.">AEVO-FAQ</button>
+          <button class="pill" data-prompt="Erstelle ein kurzes Briefing zu Pflegeversicherung (Leistungen, Beiträge, Beispiele) mit Quellen.">Pflege-Briefing</button>
+          <button class="pill" data-prompt="Erzeuge 10 Prüfungsfragen inkl. Musterlösungen zum Sozialrecht – mit Quellen.">Prüfungsfragen</button>
+        </div>`;
+      chat.appendChild(welcome);
+      welcome.querySelectorAll('[data-prompt]').forEach(el=>{
+        el.addEventListener('click', ()=>{
+          q.value = el.getAttribute('data-prompt'); autoResize(); form.requestSubmit();
+        });
+      });
+      chat.scrollTop = chat.scrollHeight;
+    });
+
+    // ====== Session Helper (optional) ======
+    function getOrCreateSession(){
+      const KEY='onno_session_id';
+      let id = sessionStorage.getItem(KEY);
+      if(!id){ id = 'sess_' + Math.random().toString(36).slice(2); sessionStorage.setItem(KEY,id); }
+      return id;
+    }
+
+    // ====== Utils ======
+    function escapeHtml(str){ return str.replace(/[&<>"']/g, m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+  </script>
+
+  <!--
+  ====================== BACKEND-ERWARTUNG (für dein Relay) ======================
+  Dein Endpoint /api/linda-proxy sollte einen POST mit JSON wie oben annehmen:
+  {
+    "prompt": "…",
+    "mode": "Internal" | "External",
+    "system": "Systemprompt…",
+    "model": "gpt-4o-mini",
+    "tools": [{"type":"file_search"}],
+    "vector_store_ids": ["vs_sharepoint_main"],
+    "stream": true,
+    "session_id": "sess_…"
+  }
+
+  Und dann eine OpenAI Responses-Anfrage daraus bauen (Node/Python/PHP – egal).
+  Node (Pseudocode):
+  -------------------------------------------------------------------------------
+  import { Readable } from 'node:stream';
+  export default async function handler(req, res){
+    const body = await readJson(req);
+    const resp = await fetch("https://api.openai.com/v1/responses", {
+      method:"POST",
+      headers:{
+        "Authorization": `Bearer ${process.env.OPENAI_API_KEY}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        model: body.model || "gpt-4o-mini",
+        input: [
+          {"role":"system","content":[{"type":"text","text": body.system || "Du heißt Onno …"}]},
+          {"role":"user","content":[{"type":"text","text": body.prompt }]}
+        ],
+        tools: body.tools || [{"type":"file_search"}],
+        tool_resources: body.vector_store_ids
+          ? { file_search:{ vector_store_ids: body.vector_store_ids } }
+          : undefined,
+        metadata: { session_id: body.session_id, mode: body.mode },
+        stream: true
+      })
+    });
+
+    // 1) Falls OpenAI bereits text/event-stream liefert, einfach durchpipen:
+    if ((resp.headers.get('content-type')||'').includes('text/event-stream')){
+      res.setHeader('Content-Type','text/event-stream');
+      res.setHeader('Cache-Control','no-cache');
+      res.setHeader('Connection','keep-alive');
+      resp.body.pipe(res);
+      return;
+    }
+
+    // 2) Sonst: normalen Chunk-Stream an den Client weitergeben:
+    res.setHeader('Content-Type','text/plain; charset=utf-8');
+    for await (const chunk of resp.body) res.write(chunk);
+    res.end();
+  }
+  -------------------------------------------------------------------------------
+  Hinweise:
+  • Kein API-Key im Browser! Immer über dein Relay.
+  • Mit vector_store_ids kannst du „Internal/External“ auf getrennte Stores routen.
+  • Wenn du Make verwendest: nutze dort HTTP-Module, setze die Header & leite den
+    Stream als „Pass-through“ (Binary) zurück – oder buffere und sende Textblöcke.
+  ============================================================================== -->
+</body>
+</html>
