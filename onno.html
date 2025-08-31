@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
   <meta charset="utf-8" />
-  <title>Onno • Knowledge Assistant (Lilli-ähnliche Demo)</title>
+  <title>Onno • Knowledge Assistant (mit PPT-Erstellung)</title>
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <style>
     :root{
@@ -15,7 +15,7 @@
     body{margin:0;background:#fff;color:var(--ink);font:15px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;}
     a{color:var(--accent);text-decoration:none} a:hover{text-decoration:underline}
 
-    .app{display:grid;grid-template-columns:280px 1fr 320px;grid-template-rows:56px 1fr 88px;height:100vh;overflow:hidden;}
+    .app{display:grid;grid-template-columns:280px 1fr 320px;grid-template-rows:56px 1fr 96px;height:100vh;overflow:hidden;}
     .topbar{grid-column:1/4;grid-row:1/2;display:flex;align-items:center;gap:12px;padding:0 16px;border-bottom:1px solid var(--border);background:#fff;position:sticky;top:0;z-index:5}
     .logo{width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,var(--accent),var(--accent-2));box-shadow:var(--shadow)}
     .title{font-weight:650}
@@ -77,11 +77,13 @@
     .modal .cta{display:flex;gap:10px;justify-content:flex-end;margin-top:10px}
 
     @media (max-width:1100px){
-      .app{grid-template-columns:1fr;grid-template-rows:56px 1fr 88px 280px;}
+      .app{grid-template-columns:1fr;grid-template-rows:56px 1fr 96px 280px;}
       .nav{grid-column:1/2;grid-row:4/5;border-top:1px solid var(--border);border-right:0;display:flex;gap:8px;overflow:auto;white-space:nowrap}
       .side{display:none}
     }
   </style>
+  <!-- PptxGenJS von CDN laden für clientseitigen PPT-Export -->
+  <script defer src="https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgen.bundle.js"></script>
 </head>
 <body>
   <div class="app">
@@ -177,7 +179,7 @@
     <div class="modal" role="dialog" aria-modal="true" aria-labelledby="dlbl">
       <h2 id="dlbl">Hinweise zur Nutzung</h2>
       <p>
-        • Keine personenbezogenen Daten eingeben. • Inhalte können fehlerhaft sein. • **Jegliche Haftung ist ausgeschlossen.**  
+        • Keine personenbezogenen Daten eingeben. • Inhalte können fehlerhaft sein. • <b>Jegliche Haftung ist ausgeschlossen.</b><br/>
         • Mit „Akzeptieren“ bestätigst du, dass du diese Hinweise gelesen hast.
       </p>
       <ul class="list">
@@ -195,8 +197,8 @@
   </div>
 
   <script>
-    // ====== Konfiguration / Variablen (wie von dir vorgegeben) ======
-    const relay = "/api/linda-proxy";          // Server-/Make-Webhook/Function, die an OpenAI proxyt
+    // ====== Von dir vorgegeben ======
+    const relay = "/api/linda-proxy";
     const chat  = document.getElementById("chat");
     const form  = document.getElementById("form");
     const q     = document.getElementById("q");
@@ -258,78 +260,47 @@
       try{
         await streamFromRelay({
           prompt: text,
-          mode,                     // "Internal" | "External" → für Routing/VectorStore
-          // Folgende Felder sind bewusst „selbsterklärend“ gehalten,
-          // damit dein Relay sie 1:1 in einen Responses-Call mappen kann:
+          mode,
           system: `Du heißt Onno. Antworte fachlich präzise, neutral und mit Quellen am Ende.
-                    Gib bei Bedarf Rückfragen. Vermeide personenbezogene Daten. Nenne keine internen IDs.`,
+                   Stelle bei Bedarf Rückfragen. Vermeide personenbezogene Daten.`,
           model: "gpt-4o-mini",
-          tools: [{type:"file_search"}],            // dein Relay kann diese Tools aktivieren
-          vector_store_ids: mode === 'Internal' ? ["vs_sharepoint_main"] : ["vs_public_news"], // Beispiel-Routing
+          tools: [{type:"file_search"}],
+          vector_store_ids: mode === 'Internal' ? ["vs_sharepoint_main"] : ["vs_public_news"],
           stream: true,
-          // Optional: Session / Thread (falls du im Backend Threads pflegst)
           session_id: getOrCreateSession()
         }, answer);
       }catch(err){
         appendToAnswer(answer, `\n\n[Fehler] ${err?.message || err}`);
       }finally{
-        finishAnswer(answer);
+        finalizeAssistantCard(answer);
         btn.disabled = false;
       }
     });
 
-    // ====== Streaming-Client: unterstützt SSE oder Chunk-Text ======
     async function streamFromRelay(body, answerEl){
-      const res = await fetch(relay, {
-        method:'POST',
-        headers:{'Content-Type':'application/json'},
-        body: JSON.stringify(body)
-      });
-      if(!res.ok){
-        const t = await res.text().catch(()=> '');
-        throw new Error(`Relay ${res.status}: ${t.slice(0,200)}`);
-      }
+      const res = await fetch(relay, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
+      if(!res.ok){ throw new Error(`Relay ${res.status}`); }
       const ctype = res.headers.get('content-type') || '';
-      if(ctype.includes('text/event-stream')){
-        await readSSE(res, answerEl);
-      }else{
-        await readChunked(res, answerEl);
-      }
+      if(ctype.includes('text/event-stream')) return readSSE(res, answerEl);
+      return readChunked(res, answerEl);
     }
-
     async function readSSE(res, el){
-      const reader = res.body.getReader();
-      const dec = new TextDecoder();
-      let buf = '';
+      const reader = res.body.getReader(); const dec = new TextDecoder(); let buf = '';
       while(true){
-        const {value, done} = await reader.read();
-        if(done) break;
+        const {value, done} = await reader.read(); if(done) break;
         buf += dec.decode(value, {stream:true});
-        const parts = buf.split('\n\n');
-        buf = parts.pop() || '';
+        const parts = buf.split('\n\n'); buf = parts.pop() || '';
         for(const part of parts){
           if(!part.startsWith('data:')) continue;
           const line = part.replace(/^data:\s?/, '');
           if(line === '[DONE]') { return; }
-          try{
-            const msg = JSON.parse(line);
-            if(msg.delta) appendToAnswer(el, msg.delta);
-            if(msg.error){ appendToAnswer(el, `\n\n[Fehler] ${msg.error}`); }
-          }catch{
-            appendToAnswer(el, line);
-          }
+          try{ const msg = JSON.parse(line); if(msg.delta) appendToAnswer(el, msg.delta); if(msg.error) appendToAnswer(el, `\n\n[Fehler] ${msg.error}`);}catch{ appendToAnswer(el, line); }
         }
       }
     }
-
     async function readChunked(res, el){
-      const reader = res.body.getReader();
-      const dec = new TextDecoder();
-      while(true){
-        const {value, done} = await reader.read();
-        if(done) break;
-        appendToAnswer(el, dec.decode(value));
-      }
+      const reader = res.body.getReader(); const dec = new TextDecoder();
+      while(true){ const {value, done} = await reader.read(); if(done) break; appendToAnswer(el, dec.decode(value)); }
     }
 
     // ====== Rendering Helpers ======
@@ -353,6 +324,8 @@
         <div class="answer">
           <div class="actions" style="margin-bottom:6px">
             <button class="action" onclick="copyCardText(this)">Copy</button>
+            <button class="action" onclick="createPresentationFromAnswer(this)">Create Presentation</button>
+            <button class="action" onclick="createPresentationViaOutline(this)">Create Presentation (Outline→PPT)</button>
           </div>
           <div class="stream" style="white-space:pre-wrap"></div>
         </div>`;
@@ -366,8 +339,8 @@
       chat.scrollTop = chat.scrollHeight;
     }
 
-    function finishAnswer(el){
-      // Optional: Quellen-Nachbearbeitung/Extraktion könnte hier erfolgen
+    function finalizeAssistantCard(el){
+      // Hier könntest du Quellen extrahieren oder Buttons anreichern.
     }
 
     function copyCardText(btn){
@@ -377,6 +350,120 @@
         btn.textContent = 'Kopiert ✓';
         setTimeout(()=>btn.textContent='Copy',1200);
       });
+    }
+
+    // ====== PPT-Erstellung – Variante A: Aus bereits gerendertem Text ======
+    async function createPresentationFromAnswer(btn){
+      const card = btn.closest('.card');
+      const content = card.querySelector('.stream')?.textContent?.trim() || '';
+      if(!content){ alert('Keine Antwort zum Umwandeln.'); return; }
+      const outline = outlineFromPlainText(content);
+      await buildPptFromOutline(outline, {title: outline.title || 'Onno-Deck', brand:'neutral'});
+    }
+
+    // ====== PPT-Erstellung – Variante B: Erst Outline von der KI holen ======
+    async function createPresentationViaOutline(btn){
+      const card = btn.closest('.card');
+      const textIn = card.querySelector('.stream')?.textContent?.trim() || '';
+      const topic  = (textIn && textIn.length>20) ? `Erzeuge eine 5–8 Folien Präsentations-Outline basierend auf dieser Antwort:\n\n${textIn}\n\n` : 'Erzeuge eine 5–8 Folien Präsentations-Outline zum Thema: Allgemeines Briefing.';
+      btn.disabled = true; btn.textContent = 'Outline wird erzeugt …';
+      try{
+        const resp = await fetch(relay, {
+          method:'POST',
+          headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({
+            action: "outline",
+            mode,
+            model: "gpt-4o-mini",
+            system: "Gib eine JSON-Outline für ein Folienset zurück (Titel, Folien[] mit heading, bullets[]).",
+            prompt: topic,
+            response_format: {
+              type: "json_schema",
+              json_schema: {
+                name: "deck_outline",
+                schema: {
+                  type: "object",
+                  required: ["title","slides"],
+                  properties: {
+                    title: { type:"string" },
+                    slides: {
+                      type:"array",
+                      minItems: 3,
+                      items: {
+                        type:"object",
+                        required:["heading"],
+                        properties:{
+                          heading:{type:"string"},
+                          bullets:{type:"array", items:{type:"string"}}
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          })
+        });
+        if(!resp.ok){ throw new Error('Outline-Request fehlgeschlagen'); }
+        const data = await resp.json();
+        const outline = normalizeOutline(data);
+        await buildPptFromOutline(outline, {title: outline.title || 'Onno-Deck', brand:'neutral'});
+      }catch(e){
+        alert('Fehler beim Outline-Request: '+ (e?.message||e));
+      }finally{
+        btn.disabled = false; btn.textContent = 'Create Presentation (Outline→PPT)';
+      }
+    }
+
+    // ====== Outline-Helfer ======
+    function outlineFromPlainText(text){
+      const lines = text.split(/\r?\n/).map(s=>s.trim()).filter(Boolean);
+      const slides = []; let current = { heading:'Zusammenfassung', bullets:[] };
+      for(const ln of lines){
+        if(/^#+\s/.test(ln)){ // Markdown-Headings
+          if(current.bullets.length || current.heading!=='Zusammenfassung') slides.push(current);
+          current = { heading: ln.replace(/^#+\s/,'').slice(0,120), bullets:[] };
+        }else if (/^[-*•]\s/.test(ln)){
+          current.bullets.push(ln.replace(/^[-*•]\s/,'').slice(0,200));
+        }
+      }
+      if(current.bullets.length || slides.length===0) slides.push(current);
+      return { title: 'Onno Synthese', slides };
+    }
+
+    function normalizeOutline(obj){
+      try{
+        if(typeof obj === 'string') return JSON.parse(obj);
+        return obj;
+      }catch{ return { title:'Onno Deck', slides:[{heading:'Inhalt', bullets:[]}] }; }
+    }
+
+    // ====== PPT-Builder mit PptxGenJS ======
+    async function buildPptFromOutline(outline, opts={}){
+      if(!window.PptxGenJS){ alert('PptxGenJS nicht geladen.'); return; }
+      const pptx = new PptxGenJS();
+      const brand = (opts.brand||'neutral');
+
+      // Titel-Folie
+      pptx.addSlide().addText(
+        [{ text: outline.title || 'Onno Deck', fontSize:36, bold:true, color:'363636' },
+         { text: '\nErstellt mit Onno', fontSize:14, color:'6b7280' }],
+        { x:0.5, y:1.2, w:9, h:1.5, align:'left' }
+      );
+
+      // Inhaltsfolien
+      (outline.slides||[]).forEach(sl=>{
+        const s = pptx.addSlide();
+        s.addText(sl.heading || 'Abschnitt', { x:0.5, y:0.5, w:9, h:0.6, fontSize:28, bold:true, color:'1f2937' });
+        const bullets = (sl.bullets||[]).map(b=>`• ${b}`);
+        s.addText(bullets.join('\n') || '• Punkt 1\n• Punkt 2', { x:0.7, y:1.3, w:8.6, h:4.5, fontSize:18, color:'111827', lineSpacing:20 });
+        // dezente Fußzeile
+        s.addText('Onno • Knowledge Assistant', { x:0.5, y:6.6, w:9, h:0.3, fontSize:10, color:'6b7280' });
+      });
+
+      // Download
+      const fname = (opts.title || 'Onno_Deck').replace(/[^\w\-]+/g,'_').slice(0,60) + '.pptx';
+      await pptx.writeFile({ fileName: fname });
     }
 
     // Verlauf-Pills & Quick Prompts
@@ -395,21 +482,18 @@
           <div class="who">Onno</div>
           <div class="meta">Neue Sitzung gestartet</div>
         </div>
-        <div class="followups">
-          <button class="pill" data-prompt="Gib mir eine strukturierte AEVO-FAQ mit Quellen.">AEVO-FAQ</button>
-          <button class="pill" data-prompt="Erstelle ein kurzes Briefing zu Pflegeversicherung (Leistungen, Beiträge, Beispiele) mit Quellen.">Pflege-Briefing</button>
-          <button class="pill" data-prompt="Erzeuge 10 Prüfungsfragen inkl. Musterlösungen zum Sozialrecht – mit Quellen.">Prüfungsfragen</button>
+        <div class="answer">
+          <div class="actions" style="margin-bottom:6px">
+            <button class="action" onclick="copyCardText(this)">Copy</button>
+            <button class="action" onclick="createPresentationViaOutline(this)">Create Presentation (Outline→PPT)</button>
+          </div>
+          <div>Starte mit einer Frage oder nutze eine Schnellaktion.</div>
         </div>`;
       chat.appendChild(welcome);
-      welcome.querySelectorAll('[data-prompt]').forEach(el=>{
-        el.addEventListener('click', ()=>{
-          q.value = el.getAttribute('data-prompt'); autoResize(); form.requestSubmit();
-        });
-      });
       chat.scrollTop = chat.scrollHeight;
     });
 
-    // ====== Session Helper (optional) ======
+    // ====== Session Helper ======
     function getOrCreateSession(){
       const KEY='onno_session_id';
       let id = sessionStorage.getItem(KEY);
@@ -422,66 +506,57 @@
   </script>
 
   <!--
-  ====================== BACKEND-ERWARTUNG (für dein Relay) ======================
-  Dein Endpoint /api/linda-proxy sollte einen POST mit JSON wie oben annehmen:
-  {
-    "prompt": "…",
-    "mode": "Internal" | "External",
-    "system": "Systemprompt…",
-    "model": "gpt-4o-mini",
-    "tools": [{"type":"file_search"}],
-    "vector_store_ids": ["vs_sharepoint_main"],
-    "stream": true,
-    "session_id": "sess_…"
-  }
+  ====================== RELAY-ERWARTUNG: OUTLINE-Aktion ======================
+  Dein /api/linda-proxy sollte zwei Fälle bedienen:
 
-  Und dann eine OpenAI Responses-Anfrage daraus bauen (Node/Python/PHP – egal).
-  Node (Pseudocode):
-  -------------------------------------------------------------------------------
-  import { Readable } from 'node:stream';
-  export default async function handler(req, res){
+  1) Standard-Chat (wie zuvor): stream:true → OpenAI /v1/responses (tools:file_search …) pass-through streamen.
+
+  2) action:"outline":
+     • Nimmt prompt/system/response_format entgegen
+     • Ruft OpenAI /v1/responses mit response_format.json_schema (oben) auf
+     • Gibt JSON zurück – Schema z. B.:
+        {
+          "title": "Trends in der PKV (DACH) 2026",
+          "slides": [
+            {"heading":"Marktüberblick","bullets":["Beitragstreiber ...","Regulatorik ..."]},
+            {"heading":"Chancen","bullets":["Digitalisierung ...","Prävention ..."]},
+            {"heading":"Risiken","bullets":["Kosteninflation ...","Demografie ..."]}
+          ]
+        }
+
+  Node (Kurz-Pseudocode):
+  ---------------------------------------------------------------------------
+  export default async function handler(req,res){
     const body = await readJson(req);
-    const resp = await fetch("https://api.openai.com/v1/responses", {
-      method:"POST",
-      headers:{
-        "Authorization": `Bearer ${process.env.OPENAI_API_KEY}`,
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        model: body.model || "gpt-4o-mini",
-        input: [
-          {"role":"system","content":[{"type":"text","text": body.system || "Du heißt Onno …"}]},
-          {"role":"user","content":[{"type":"text","text": body.prompt }]}
-        ],
-        tools: body.tools || [{"type":"file_search"}],
-        tool_resources: body.vector_store_ids
-          ? { file_search:{ vector_store_ids: body.vector_store_ids } }
-          : undefined,
-        metadata: { session_id: body.session_id, mode: body.mode },
-        stream: true
-      })
-    });
-
-    // 1) Falls OpenAI bereits text/event-stream liefert, einfach durchpipen:
-    if ((resp.headers.get('content-type')||'').includes('text/event-stream')){
-      res.setHeader('Content-Type','text/event-stream');
-      res.setHeader('Cache-Control','no-cache');
-      res.setHeader('Connection','keep-alive');
-      resp.body.pipe(res);
-      return;
+    if(body.action === 'outline'){
+      const oai = await fetch('https://api.openai.com/v1/responses',{
+        method:'POST',
+        headers:{
+          'Authorization':`Bearer ${process.env.OPENAI_API_KEY}`,
+          'Content-Type':'application/json'
+        },
+        body: JSON.stringify({
+          model: body.model || 'gpt-4o-mini',
+          input: [
+            {"role":"system","content":[{"type":"text","text": body.system || "Gib eine JSON-Outline ..."}]},
+            {"role":"user","content":[{"type":"text","text": body.prompt }]}
+          ],
+          response_format: body.response_format
+        })
+      });
+      const json = await oai.json();
+      // Responses liefert das JSON als message.content[0].text oder in output_text / output
+      const outline = json?.output ? json.output : tryParse(json?.output_text || json?.content?.[0]?.text);
+      res.setHeader('Content-Type','application/json'); res.end(JSON.stringify(outline||{})); return;
     }
 
-    // 2) Sonst: normalen Chunk-Stream an den Client weitergeben:
-    res.setHeader('Content-Type','text/plain; charset=utf-8');
-    for await (const chunk of resp.body) res.write(chunk);
-    res.end();
+    // sonst: normaler Chat-Stream (wie bereits in deiner bestehenden Relay-Logik)
   }
-  -------------------------------------------------------------------------------
-  Hinweise:
-  • Kein API-Key im Browser! Immer über dein Relay.
-  • Mit vector_store_ids kannst du „Internal/External“ auf getrennte Stores routen.
-  • Wenn du Make verwendest: nutze dort HTTP-Module, setze die Header & leite den
-    Stream als „Pass-through“ (Binary) zurück – oder buffere und sende Textblöcke.
-  ============================================================================== -->
+  ---------------------------------------------------------------------------
+
+  Vorteil:
+  • Du nutzt weiter dein Relay/Make-Webhook – kein API-Key im Browser.
+  • Outline ist strukturiert → saubere Folien.
+  ============================================================================ -->
 </body>
 </html>
