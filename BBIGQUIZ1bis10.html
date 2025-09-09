@@ -1,1 +1,360 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>BBiG-Quiz (§§ 1–10) – IHK-Niveau</title>
 
+  <!-- Tailwind via CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Icons -->
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+
+  <!-- Marked for Markdown rendering -->
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+  <!-- === Stil-Feintuning === -->
+  <style>
+    :root { --brand:#0ea5e9; }
+    .glass {
+      backdrop-filter: saturate(140%) blur(8px);
+      background: linear-gradient(180deg, rgba(255,255,255,.9), rgba(255,255,255,.75));
+    }
+    .card { border-radius: 1.25rem; box-shadow: 0 10px 30px rgba(0,0,0,.06); }
+    .q-badge { background: rgba(14,165,233, .12); color: var(--brand); }
+    .pill { border: 1px solid rgba(0,0,0,.06); }
+    .prose pre, .prose code { white-space: pre-wrap; word-break: break-word; }
+    .progress {
+      height: 10px; border-radius: 999px;
+      background: linear-gradient(90deg, var(--brand), #22c55e);
+      width: 0%;
+      transition: width .35s ease;
+    }
+  </style>
+</head>
+<body class="min-h-screen bg-gradient-to-br from-sky-50 via-white to-emerald-50 text-slate-800">
+
+  <!-- Header -->
+  <header class="sticky top-0 z-30 glass border-b border-slate-200/60">
+    <div class="max-w-5xl mx-auto px-4 py-4 flex items-center gap-4">
+      <div class="w-10 h-10 rounded-2xl bg-sky-100 grid place-items-center">
+        <i data-lucide="graduation-cap" class="w-6 h-6 stroke-[1.5] text-sky-600"></i>
+      </div>
+      <div class="flex-1">
+        <h1 class="text-xl font-semibold tracking-tight">BBiG-Quiz (§§ 1–10) – IHK-Niveau</h1>
+        <p class="text-sm text-slate-500">Beantworte alle 10 Fragen. Danach prüft die KI deine Antworten und gibt fundiertes Feedback mit Gesetzesbezug.</p>
+      </div>
+      <button id="resetBtn" class="pill px-4 py-2 rounded-full text-sm hover:bg-slate-50">Zurücksetzen</button>
+    </div>
+  </header>
+
+  <main class="max-w-5xl mx-auto px-4 py-8">
+    <!-- Status/Progress -->
+    <section class="card bg-white p-5 mb-6">
+      <div class="flex items-center gap-3">
+        <i data-lucide="target" class="w-5 h-5 text-sky-600"></i>
+        <div class="flex-1">
+          <div class="flex justify-between text-sm text-slate-600 mb-1">
+            <span id="progressText">0 / 10 beantwortet</span>
+            <span id="timer">00:00</span>
+          </div>
+          <div class="w-full bg-slate-100 rounded-full overflow-hidden">
+            <div id="progressBar" class="progress"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Quiz -->
+    <form id="quizForm" class="grid gap-6">
+      <!-- Fragen werden per JS eingefügt -->
+    </form>
+
+    <!-- Aktionen -->
+    <div class="mt-6 flex flex-wrap gap-3">
+      <button id="submitBtn" class="px-5 py-3 rounded-xl bg-sky-600 text-white hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-sky-400 flex items-center gap-2">
+        <i data-lucide="send" class="w-5 h-5"></i> Antworten prüfen lassen (KI)
+      </button>
+      <button id="exportBtn" class="px-5 py-3 rounded-xl border border-slate-200 hover:bg-slate-50 flex items-center gap-2">
+        <i data-lucide="download" class="w-5 h-5"></i> Antworten als JSON speichern
+      </button>
+      <span class="text-sm text-slate-500">Tipp: <kbd class="px-2 py-1 border rounded">Strg</kbd>+<kbd class="px-2 py-1 border rounded">Enter</kbd> sendet direkt.</span>
+    </div>
+
+    <!-- Ergebnis -->
+    <section id="resultWrap" class="mt-8 hidden">
+      <div class="card bg-white p-6">
+        <div class="flex items-center gap-2 mb-3">
+          <i data-lucide="sparkle" class="w-5 h-5 text-emerald-600"></i>
+          <h2 class="text-lg font-semibold">KI-Feedback & Musterlösungen</h2>
+        </div>
+        <article id="aiResult" class="prose prose-slate max-w-none"></article>
+      </div>
+    </section>
+
+    <!-- Fußnote -->
+    <p class="text-xs text-slate-500 mt-6">
+      Hinweis: Dieses Lern-Quiz dient der Wissensvertiefung. Es ersetzt keine Rechtsberatung. Bitte prüfe die jeweils aktuelle Fassung des BBiG.
+    </p>
+  </main>
+
+  <script>
+    // === Konfiguration ===
+    const relay = "/api/linda-proxy"; // Vercel API
+    marked.setOptions({
+      breaks: true,
+      gfm: true
+    });
+
+    const QUESTIONS = [
+      {
+        ref: "§1 BBiG – Zweck",
+        q: "Erläutere den Zweck des BBiG und grenze ihn kurz von landesrechtlich geregelten Berufen ab. Warum ist diese Abgrenzung für Betriebe relevant?",
+        type: "long"
+      },
+      {
+        ref: "§2 BBiG – Begriffsbestimmungen",
+        q: "Definiere ‚Berufsausbildungsvorbereitung‘, ‚Berufsausbildung‘ und ‚Fortbildung‘. Nenne je ein prägnantes Praxisbeispiel.",
+        type: "long"
+      },
+      {
+        ref: "§3 BBiG – Anwendungsbereich",
+        q: "Wann gilt das BBiG nicht? Führe zwei typische Ausnahmen an und erläutere kurz, was stattdessen greift.",
+        type: "long"
+      },
+      {
+        ref: "§4 BBiG – Anerkennung von Ausbildungsberufen",
+        q: "Welche Kriterien müssen Ausbildungsberufe erfüllen, um anerkannt zu werden, und welche Bedeutung hat die Ausbildungsordnung?",
+        type: "long"
+      },
+      {
+        ref: "§5 BBiG – Ausbildungsordnung",
+        q: "Welche Mindestinhalte muss eine Ausbildungsordnung enthalten? Nenne mindestens vier Kernbestandteile und ordne sie in eine sinnvolle Reihenfolge.",
+        type: "long"
+      },
+      {
+        ref: "§6 BBiG – Fortbildungsordnungen",
+        q: "Skizziere Aufbau und Ziel einer Fortbildungsordnung. Worin unterscheidet sich die Zielrichtung gegenüber der Ausbildungsordnung?",
+        type: "long"
+      },
+      {
+        ref: "§7 BBiG – Eignung von Ausbildungsstätten",
+        q: "Welche Anforderungen stellt das BBiG an die Eignung der Ausbildungsstätte? Nenne Risiken bei Verstößen für Betrieb und Auszubildende.",
+        type: "long"
+      },
+      {
+        ref: "§8 BBiG – Abkürzung/Verlängerung",
+        q: "Unter welchen Voraussetzungen ist eine Verkürzung bzw. Verlängerung der Ausbildungszeit möglich? Skizziere ein Entscheidungsverfahren für den Betrieb.",
+        type: "long"
+      },
+      {
+        ref: "§9 BBiG – Vertragsniederschrift",
+        q: "Welche Pflichtangaben gehören in den Berufsausbildungsvertrag? Was passiert bei fehlenden bzw. fehlerhaften Angaben?",
+        type: "long"
+      },
+      {
+        ref: "§10 BBiG – Teilzeitberufsausbildung",
+        q: "Wie wird eine Teilzeitberufsausbildung rechtssicher vereinbart und organisiert? Nenne typische Anwendungsfälle und Grenzen.",
+        type: "long"
+      }
+    ];
+
+    // === UI-Referenzen ===
+    const form = document.getElementById("quizForm");
+    const submitBtn = document.getElementById("submitBtn");
+    const exportBtn = document.getElementById("exportBtn");
+    const resetBtn  = document.getElementById("resetBtn");
+    const progressBar = document.getElementById("progressBar");
+    const progressText = document.getElementById("progressText");
+    const resultWrap = document.getElementById("resultWrap");
+    const aiResult = document.getElementById("aiResult");
+    const timerEl = document.getElementById("timer");
+
+    // === Timer ===
+    let startTs = Date.now();
+    setInterval(() => {
+      const s = Math.floor((Date.now() - startTs)/1000);
+      const m = String(Math.floor(s/60)).padStart(2,"0");
+      const r = String(s%60).padStart(2,"0");
+      timerEl.textContent = `${m}:${r}`;
+    }, 1000);
+
+    // === Fragen rendern ===
+    function renderQuestions() {
+      form.innerHTML = "";
+      QUESTIONS.forEach((item, idx) => {
+        const id = `q_${idx}`;
+        const card = document.createElement("section");
+        card.className = "card bg-white p-5";
+
+        card.innerHTML = `
+          <div class="flex items-center justify-between mb-3">
+            <span class="q-badge px-3 py-1 rounded-full text-xs font-medium">${item.ref}</span>
+            <span class="text-slate-400 text-xs">Frage ${idx+1} von ${QUESTIONS.length}</span>
+          </div>
+          <h3 class="text-base font-semibold mb-2">${item.q}</h3>
+          <div class="space-y-2">
+            <textarea id="${id}" name="${id}" rows="6" class="w-full p-4 rounded-xl border focus:outline-none focus:ring-2 focus:ring-sky-300" placeholder="Deine Antwort …"></textarea>
+            <div class="flex justify-between items-center text-xs text-slate-500">
+              <span>Tipp: strukturiere mit Unterüberschriften, Bulletpoints & kurzen Beispielen.</span>
+              <button type="button" data-fill="${id}" class="px-3 py-1 pill rounded-full hover:bg-slate-50">Beispiel-Gliederung einfügen</button>
+            </div>
+          </div>
+        `;
+        form.appendChild(card);
+      });
+
+      // Beispiel-Gliederung einsetzen
+      form.querySelectorAll("[data-fill]").forEach(btn=>{
+        btn.addEventListener("click", (e)=>{
+          const tid = e.currentTarget.getAttribute("data-fill");
+          const ta = document.getElementById(tid);
+          if (!ta) return;
+          ta.value = [
+            "### Kernaussage",
+            "- …",
+            "",
+            "### Rechtsgrundlagen / Begriffe",
+            "- …",
+            "",
+            "### Praxisbeispiel",
+            "- …",
+            "",
+            "### Fazit",
+            "- …"
+          ].join("\n");
+          updateProgress();
+        });
+      });
+
+      // Fortschritt tracken
+      form.querySelectorAll("textarea").forEach(ta=>{
+        ta.addEventListener("input", updateProgress);
+        ta.addEventListener("keydown", (ev)=>{
+          if ((ev.ctrlKey || ev.metaKey) && ev.key === "Enter") {
+            ev.preventDefault();
+            submitBtn.click();
+          }
+        });
+      });
+    }
+
+    function updateProgress() {
+      const tas = [...form.querySelectorAll("textarea")];
+      const filled = tas.filter(t=>t.value.trim().length>0).length;
+      const pct = Math.round((filled / QUESTIONS.length) * 100);
+      progressBar.style.width = pct + "%";
+      progressText.textContent = `${filled} / ${QUESTIONS.length} beantwortet`;
+    }
+
+    // === Nutzereingaben sammeln ===
+    function collectAnswers() {
+      const answers = QUESTIONS.map((q, i) => {
+        const v = document.getElementById(`q_${i}`).value.trim();
+        return { nr: i+1, ref: q.ref, question: q.q, answer: v };
+      });
+      return answers;
+    }
+
+    // === Prompt für die KI bauen ===
+    function buildPrompt(answers) {
+      return `
+Du bist eine neutrale IHK-Prüfer:in für Berufsbildungsrecht (BBiG, §§1–10). 
+Bewerte die Antworten fachlich präzise, kurz und strukturiert. 
+Vorgehen:
+1) Für jede Frage: **Kurzfeedback** (Stärken/Lücken), **Korrektur/Musterlösung** (stichpunktartig, mit §-Bezug), **Praxishinweis** (1 Satz).
+2) Am Ende: Gesamtresümee mit 0–100 Punkteschätzung (nicht amtlich).
+
+Referenz: BBiG §§1–10 (aktuelle Fassung).
+
+Eingaben (Fragen + Antworten):
+${answers.map(a =>
+`[Frage ${a.nr} – ${a.ref}]
+Frage: ${a.question}
+Antwort:
+${a.answer || "(leer)"}`
+).join("\n\n")}
+      `.trim();
+    }
+
+    // === An Relay senden ===
+    async function callAI(prompt) {
+      try {
+        // Versuche JSON-API (empfohlen)
+        const res = await fetch(relay, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ prompt })
+        });
+
+        // Fallbacks: JSON {answer}, Text, oder {content}
+        const text = await res.text();
+        try {
+          const j = JSON.parse(text);
+          return j.answer || j.content || JSON.stringify(j, null, 2);
+        } catch {
+          return text;
+        }
+      } catch (err) {
+        console.error(err);
+        return `**Fehler beim Aufruf des Prüf-Dienstes.**\n\nDetails: \`${String(err)}\``;
+      }
+    }
+
+    // === Events ===
+    submitBtn.addEventListener("click", async ()=>{
+      const answers = collectAnswers();
+      const prompt = buildPrompt(answers);
+
+      submitBtn.disabled = true;
+      submitBtn.classList.add("opacity-60");
+      submitBtn.innerHTML = `<svg class="animate-spin h-5 w-5" viewBox="0 0 24 24"></svg> Wird geprüft …`;
+
+      aiResult.innerHTML = `<div class="text-slate-500">Bitte warten … die KI prüft deine Antworten.</div>`;
+      resultWrap.classList.remove("hidden");
+
+      const aiText = await callAI(prompt);
+      aiResult.innerHTML = marked.parse(aiText || "_Keine Antwort erhalten._");
+
+      submitBtn.disabled = false;
+      submitBtn.classList.remove("opacity-60");
+      submitBtn.innerHTML = `<i data-lucide="send" class="w-5 h-5"></i> Erneut prüfen`;
+      lucide.createIcons();
+    });
+
+    exportBtn.addEventListener("click", ()=>{
+      const payload = {
+        startedAt: new Date(startTs).toISOString(),
+        durationSec: Math.floor((Date.now()-startTs)/1000),
+        answers: collectAnswers()
+      };
+      const blob = new Blob([JSON.stringify(payload, null, 2)], {type:"application/json"});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "bbig_quiz_antworten.json";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    });
+
+    resetBtn.addEventListener("click", ()=>{
+      if (!confirm("Alle Eingaben wirklich löschen?")) return;
+      startTs = Date.now();
+      renderQuestions();
+      updateProgress();
+      resultWrap.classList.add("hidden");
+      aiResult.innerHTML = "";
+      window.scrollTo({top:0, behavior:"smooth"});
+    });
+
+    // Init
+    renderQuestions();
+    updateProgress();
+    lucide.createIcons();
+  </script>
+</body>
+</html>
