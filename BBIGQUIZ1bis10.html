@@ -12,7 +12,7 @@
   <!-- Icons -->
   <script defer src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
 
-  <!-- Marked for Markdown rendering -->
+  <!-- Marked (optional) -->
   <script defer src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 
   <style>
@@ -26,6 +26,8 @@
     .btn-lg { padding: .9rem 1.1rem; border-radius: 0.9rem; }
     .safe-bottom { padding-bottom: max(env(safe-area-inset-bottom), 12px); }
     .sticky-actions { position: sticky; bottom: 0; z-index: 40; }
+    .toast { display:none; position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%); background:#111827; color:#fff; padding:10px 14px; border-radius: 10px; font-size: 14px; z-index: 50; }
+    .chip { font-size: 12px; padding: 4px 8px; border-radius: 999px; }
   </style>
 </head>
 <body class="min-h-screen bg-gradient-to-b from-white to-sky-50 text-slate-800 antialiased">
@@ -60,6 +62,7 @@
         <h1 class="text-xl font-semibold tracking-tight">BBiG-Quiz (§§ 1–10) – IHK-Niveau</h1>
         <p class="text-sm text-slate-500">Beantworte 10 Fragen. Du kannst jede Antwort einzeln per KI prüfen lassen oder am Ende alles sammeln.</p>
       </div>
+      <span id="ackState" class="chip bg-slate-200 text-slate-700">Hinweis offen</span>
     </div>
   </header>
 
@@ -83,12 +86,12 @@
 
   <!-- Quiz -->
   <main class="max-w-3xl mx-auto px-4 py-4">
-    <form id="form" class="grid gap-5">
+    <form id="form" class="grid gap-5" novalidate>
       <!-- Fragen werden per JS eingefügt -->
     </form>
 
     <!-- KI-Gesamtfeedback -->
-    <section id="resultWrap" class="mt-5 hidden">
+    <section id="resultWrap" class="mt-5 hidden" aria-live="polite">
       <div class="card bg-white p-4">
         <div class="flex items-center gap-2 mb-2">
           <i data-lucide="sparkle" class="w-5 h-5 text-emerald-700"></i>
@@ -112,9 +115,13 @@
     </div>
   </div>
 
+  <!-- Toast -->
+  <div id="toast" class="toast"></div>
+
   <script>
+  document.addEventListener("DOMContentLoaded", () => {
     // === Konfiguration ===
-    const relay = "/api/linda-proxy"; // Vercel API-Route (siehe unten)
+    const relay = "/api/linda-proxy"; // Vercel API (serverseitig zu Make)
 
     // UI Refs
     const form        = document.getElementById("form");
@@ -128,12 +135,25 @@
     const ack         = document.getElementById("ack");
     const ackBtn      = document.getElementById("ackBtn");
     const notice      = document.getElementById("notice");
+    const ackState    = document.getElementById("ackState");
+    const toastEl     = document.getElementById("toast");
 
-    // Markdown
-    document.addEventListener("DOMContentLoaded", () => {
-      if (window.marked) marked.setOptions({ breaks: true, gfm: true });
-      if (window.lucide) lucide.createIcons();
-    });
+    // Markdown (optional)
+    if (window.marked) marked.setOptions({ breaks: true, gfm: true });
+    if (window.lucide) lucide.createIcons();
+
+    // Globaler Fehler-Catcher => sichtbare Meldung
+    window.addEventListener("error", (e)=> showToast("Fehler: " + (e.message || e)));
+    window.addEventListener("unhandledrejection", (e)=> showToast("Fehler: " + (e.reason?.message || e.reason || e)));
+
+    // Timer
+    let startTs = Date.now();
+    setInterval(() => {
+      const s = Math.floor((Date.now() - startTs)/1000);
+      const m = String(Math.floor(s/60)).padStart(2,"0");
+      const r = String(s%60).padStart(2,"0");
+      timerEl.textContent = `${m}:${r}`;
+    }, 1000);
 
     // Fragen
     const QUESTIONS = [
@@ -149,14 +169,18 @@
       { ref: "§10 BBiG – Teilzeitberufsausbildung", q: "Wie wird eine Teilzeitberufsausbildung rechtssicher vereinbart und organisiert? Nenne typische Anwendungsfälle und Grenzen." }
     ];
 
-    // Timer
-    let startTs = Date.now();
-    setInterval(() => {
-      const s = Math.floor((Date.now() - startTs)/1000);
-      const m = String(Math.floor(s/60)).padStart(2,"0");
-      const r = String(s%60).padStart(2,"0");
-      timerEl.textContent = `${m}:${r}`;
-    }, 1000);
+    // Hinweis bestätigen
+    let accepted = false;
+    ackBtn.addEventListener("click", ()=>{
+      if (!ack.checked) {
+        showToast("Bitte die Checkbox bestätigen.");
+        return;
+      }
+      accepted = true;
+      notice.style.display = "none";
+      ackState.textContent = "Hinweis bestätigt";
+      ackState.className = "chip bg-emerald-100 text-emerald-700";
+    });
 
     // Autosize
     function autosize(el){
@@ -232,7 +256,7 @@
       // Einzel-KI-Check
       form.querySelectorAll("[data-ask]").forEach(btn=>{
         btn.addEventListener("click", async (e)=>{
-          if (!accepted) { alert("Bitte zuerst den Hinweis bestätigen."); return; }
+          if (!accepted) { showToast("Bitte zuerst den Hinweis bestätigen."); return; }
           const idx = Number(e.currentTarget.getAttribute("data-ask"));
           await askPerAnswer(idx, e.currentTarget);
         });
@@ -295,7 +319,7 @@ ${answer || "(leer)"}
 `.trim();
     }
 
-    // Relay-Aufruf (Vercel API)
+    // Relay-Aufruf
     async function callAI(payload) {
       const res = await fetch(relay, {
         method: "POST",
@@ -303,14 +327,20 @@ ${answer || "(leer)"}
         body: JSON.stringify(payload)
       });
       const text = await res.text();
+
+      if (!res.ok) {
+        throw new Error(`Relay-Fehler ${res.status}: ${text?.slice(0,200) || "keine Details"}`);
+      }
+
       try {
         const j = JSON.parse(text);
         return j.answer || j.content || j.result || text;
       } catch {
-        return text;
+        return text; // Plaintext vom Make-„Webhook response“
       }
     }
 
+    // Einzel-KI-Check
     async function askPerAnswer(idx, btnEl){
       const ta = document.getElementById(`q_${idx}`);
       const fb = document.getElementById(`fb_${idx}`);
@@ -323,17 +353,23 @@ ${answer || "(leer)"}
       fb.classList.remove("hidden");
       fb.innerHTML = `<div class="text-slate-500 text-sm">KI prüft diese Antwort …</div>`;
 
-      const aiText = await callAI({ prompt });
-      fb.innerHTML = (window.marked ? marked.parse(aiText || "_Keine Antwort erhalten._") : (aiText || "_Keine Antwort erhalten._"));
-
-      btnEl.disabled = false;
-      btnEl.innerHTML = oldHtml;
-      if (window.lucide) lucide.createIcons();
+      try {
+        const aiText = await callAI({ prompt });
+        fb.innerHTML = (window.marked ? marked.parse(aiText || "_Keine Antwort erhalten._") : (aiText || "_Keine Antwort erhalten._"));
+      } catch (e) {
+        fb.innerHTML = `<div class="text-red-600 text-sm">Fehler: ${String(e)}</div>`;
+        showToast("KI-Check fehlgeschlagen.");
+      } finally {
+        btnEl.disabled = false;
+        btnEl.innerHTML = oldHtml;
+        if (window.lucide) lucide.createIcons();
+      }
     }
 
     // Gesamtabgabe
     submitBtn.addEventListener("click", async ()=>{
-      if (!accepted) { alert("Bitte zuerst den Hinweis bestätigen."); return; }
+      if (!accepted) { showToast("Bitte zuerst den Hinweis bestätigen."); return; }
+
       const answers = collectAnswers();
       const prompt = buildPromptAll(answers);
 
@@ -344,13 +380,19 @@ ${answer || "(leer)"}
       resultWrap.classList.remove("hidden");
       aiResult.innerHTML = `<div class="text-slate-500 text-sm">Bitte warten … die KI erstellt Gesamt-Feedback.</div>`;
 
-      const aiText = await callAI({ prompt });
-      aiResult.innerHTML = (window.marked ? marked.parse(aiText || "_Keine Antwort erhalten._") : (aiText || "_Keine Antwort erhalten._"));
-
-      submitBtn.disabled = false;
-      submitBtn.innerHTML = old;
-      if (window.lucide) lucide.createIcons();
-      window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
+      try {
+        const aiText = await callAI({ prompt });
+        aiResult.innerHTML = (window.marked ? marked.parse(aiText || "_Keine Antwort erhalten._") : (aiText || "_Keine Antwort erhalten._"));
+        // sanft scrollen
+        window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
+      } catch (e) {
+        aiResult.innerHTML = `<div class="text-red-600 text-sm">Fehler beim Gesamt-Feedback: ${String(e)}</div>`;
+        showToast("Gesamt-Feedback fehlgeschlagen.");
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = old;
+        if (window.lucide) lucide.createIcons();
+      }
     });
 
     // Reset
@@ -372,20 +414,18 @@ ${answer || "(leer)"}
       updateProgress();
     }
 
-    // Hinweis bestätigen
-    let accepted = false;
-    ackBtn.addEventListener("click", ()=>{
-      if (!ack.checked) {
-        alert("Bitte die Checkbox bestätigen, dass du den Hinweis gelesen hast.");
-        return;
-      }
-      accepted = true;
-      notice.style.display = "none";
-    });
+    // Toast
+    function showToast(msg){
+      toastEl.textContent = msg;
+      toastEl.style.display = "block";
+      clearTimeout(showToast._t);
+      showToast._t = setTimeout(()=> toastEl.style.display = "none", 3000);
+    }
 
     // Init
     renderQuestions();
     initProgressListeners();
+  });
   </script>
 </body>
 </html>
