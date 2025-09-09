@@ -178,7 +178,7 @@
       timerEl.textContent = `${m}:${r}`;
     }, 1000);
 
-    // Fragen + Musterlösungen (aus deiner Freigabe)
+    // Fragen + Musterlösungen
     const QUESTIONS = [
       {
         ref:"V1 – VWL-Definition",
@@ -193,12 +193,12 @@
       {
         ref:"V3 – Ökonomisches Prinzip",
         q:"Erkläre Maximal- und Minimalprinzip je an einem Beispiel.",
-        tip:["Maximal: mit gegebenen Mitteln maximalen Nutzen erreichen (Budget X → größter Output).","Minimal: vorgegebenes Ziel mit minimalem Mitteleinsatz erreichen (Ziel Y → geringste Kosten)."]
+        tip:["Maximal: mit gegebenen Mitteln maximalen Nutzen (Budget X → größter Output).","Minimal: Ziel mit minimalem Mitteleinsatz (Ziel Y → geringste Kosten)."]
       },
       {
         ref:"V4 – Maslow & Nachfrage",
         q:"Wozu dient die Maslow-Pyramide wirtschaftlich? Nenne zwei Ebenen + Praxisbezug.",
-        tip:["Hierarchie von Bedürfnissen (z. B. physiologische, Sicherheit, soziale …).","Praxis: Nachfrage/Produktgestaltung/Motivation ausrichten; z. B. Sicherheitsfeatures vs. Wertschätzung."]
+        tip:["Hierarchie von Bedürfnissen (z. B. physiologische, Sicherheit, soziale …).","Praxis: Nachfrage/Produktgestaltung/Motivation ausrichten (z. B. Sicherheitsfeatures vs. Wertschätzung)."]
       },
       {
         ref:"V5 – Produktionsfaktoren",
@@ -316,7 +316,7 @@
           const tid = e.currentTarget.getAttribute("data-fill");
           const ta = document.getElementById(tid);
           if (!ta) return;
-          ta.value = ["• Kurzantwort","• Begründung","• Beispiel","(optional) Gesetz/Begriff: …"].join("\n");
+          ta.value = ["• Kurzantwort","• Begründung","• Beispiel","(optional) Begriff/Modell: …"].join("\n");
           autosize(ta); updateProgress();
         });
       });
@@ -357,17 +357,14 @@
       });
     }
 
-    // ————— Gemini-freundliche Prompts —————
+    // ——— Gemini-freundliche Prompts ———
     const sanitize = (s, cap=1100) => (s||"").trim().replace(/\s+/g," ").slice(0,cap);
 
     function buildPromptAll(answers) {
       const filled = answers.filter(a => (a.answer||"").trim().length>0);
       return [
-        "Du bist ein neutraler VWL-Dozent. Prüfe kurze Antworten prägnant.",
-        "Ausgabe je Frage:",
-        "- Kurzfeedback (1–2 Sätze)",
-        "- Richtige Lösung in max. 4 Stichpunkten",
-        "- (falls sinnvoll) 1 Praxisbezug oder Beispiel",
+        "Rolle: neutraler VWL-Dozent. Prüfe die Antworten prägnant.",
+        "Format je Frage: Kurzfeedback (1–2 Sätze) • Richtige Lösung (max. 4 Stichpunkte) • (optional) Praxisbezug.",
         "",
         "Fragen & Antworten:",
         ...filled.map(a => `Q${a.nr} (${a.ref})\nFrage: ${a.question}\nAntwort TN: ${sanitize(a.answer)}`)
@@ -377,18 +374,20 @@
     function buildPromptSingle(item, answer) {
       return [
         "Rolle: neutraler VWL-Dozent. Prüfe diese EINE Antwort knapp.",
-        "Gib aus:",
-        "- Kurzfeedback (1–2 Sätze)",
-        "- Richtige Lösung in max. 4 Stichpunkten",
-        "- (falls sinnvoll) 1 Praxisbezug/Beispiel",
+        "Format: Kurzfeedback (1–2 Sätze) • Richtige Lösung (max. 4 Stichpunkte) • (optional) Praxisbezug.",
         "",
         `Frage: ${item.q}`,
         `Antwort TN: ${sanitize(answer)}`
       ].join("\n");
     }
 
-    // ————— HTTP Call (mit Retry/Backoff) —————
-    async function callAI(payload, attempts=3){
+    // ——— HTTP Call (JSON für Gemini/Make) ———
+    async function callAIText(promptText, kind="single", attempts=3){
+      const payload = {
+        text: promptText,                // <<<<<< WICHTIG: Text in JSON-Feld "text"
+        meta: { source: "vwl-quiz", kind } // optional für Logging/Router
+      };
+
       for (let i=1; i<=attempts; i++){
         let res, text;
         try{
@@ -409,12 +408,15 @@
           await new Promise(r=>setTimeout(r, ra*1000));
           continue;
         }
+        if (res.status === 400) {
+          // Typischer JSON/Mapping-Fehler-Hinweis für Make/Gemini
+          showToast("Hinweis: Webhook erwartet JSON-Feld „text“. Mapping in Make prüfen.");
+        }
         if (!res.ok) throw new Error(`Webhook-Fehler ${res.status}: ${text?.slice(0,200) || "keine Details"}`);
 
         try {
           const j = JSON.parse(text);
-          // gängige Make/Gemini-Mappings: answer | content | result | output
-          return j.answer || j.content || j.result || j.output || text;
+          return j.answer || j.content || j.result || j.output || j.text || text;
         } catch {
           return text; // Plaintext aus „Webhook response“
         }
@@ -436,7 +438,7 @@
       fb.innerHTML = `<div class="text-slate-500 dark:text-slate-300/80">KI prüft diese Antwort …</div>`;
 
       try {
-        const aiText = await callAI({ prompt });
+        const aiText = await callAIText(prompt, "single");
         fb.innerHTML = (window.marked ? marked.parse(aiText || "_Keine Antwort erhalten._") : (aiText || "_Keine Antwort erhalten._"));
         buzz(15);
       } catch (e) {
@@ -449,7 +451,7 @@
       }
     }
 
-    // Gesamt-Feedback (sendet nur ausgefüllte Antworten)
+    // Gesamt-Feedback
     submitBtn.addEventListener("click", async ()=>{
       buzz(8);
       if (!accepted) { showToast("Bitte zuerst den Hinweis bestätigen."); buzz([10,40,10]); return; }
@@ -464,7 +466,7 @@
       aiResult.innerHTML = `<div class="text-slate-500 dark:text-slate-300/80">Bitte warten … die KI erstellt Gesamt-Feedback.</div>`;
 
       try {
-        const aiText = await callAI({ prompt });
+        const aiText = await callAIText(prompt, "batch");
         aiResult.innerHTML = (window.marked ? marked.parse(aiText || "_Keine Antwort erhalten._") : (aiText || "_Keine Antwort erhalten._"));
         window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
         buzz(15);
