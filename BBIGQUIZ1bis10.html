@@ -12,7 +12,7 @@
   <!-- Icons -->
   <script defer src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
 
-  <!-- Marked (optional for Bot-Feedback) -->
+  <!-- Marked (optional für Bot-Feedback) -->
   <script defer src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 
   <style>
@@ -27,6 +27,13 @@
     .safe-bottom { padding-bottom: max(env(safe-area-inset-bottom), 12px); }
     .sticky-actions { position: sticky; bottom: 0; z-index: 40; }
     .chip { font-size: 12px; padding: 4px 8px; border-radius: 999px; }
+    .tip {
+      display:none; margin-top:.5rem; border-left:3px solid #0ea5e9;
+      background:#f0f9ff; color:#0b3b52; padding:.65rem .75rem; border-radius:.75rem;
+    }
+    .tip p { margin: .15rem 0; }
+    .tip ul { margin:.25rem 0 0 .9rem; list-style:disc; }
+    .icon-btn { display:inline-flex; align-items:center; gap:.35rem; }
   </style>
 </head>
 <body class="min-h-screen bg-gradient-to-b from-white to-sky-50 text-slate-800 antialiased">
@@ -149,18 +156,103 @@
       timerEl.textContent = `${m}:${r}`;
     }, 1000);
 
-    // Fragen – schönes, klares Wording
+    // Fragen + Offline-Musterlösungen (Tooltips)
     const QUESTIONS = [
-      { ref: "V1 – Vertragsinhalte", q: "Nenne drei Inhalte, die zwingend in einen Berufsausbildungsvertrag gehören." },
-      { ref: "V2 – Ausbildungsordnung", q: "Was regelt eine Ausbildungsordnung? Nenne drei Punkte." },
-      { ref: "V3 – Ruhezeit Jugendliche", q: "Jugendliche: Was gilt zur täglichen Ruhezeit?" },
-      { ref: "V4 – Unterschrift Minderjährige", q: "Wer unterschreibt den Ausbildungsvertrag bei Minderjährigen mit gemeinsamem Sorgerecht der Eltern?" },
-      { ref: "V5 – Betrieblicher Ausbildungsplan", q: "Was versteht man unter dem betrieblichen Ausbildungsplan (kurz erklärt)?" },
-      { ref: "V6 – Digitale Zustellung", q: "Darf der Ausbildungsvertrag digital zugestellt werden?" },
-      { ref: "V7 – Probezeit", q: "Wie lange darf die Probezeit in der Ausbildung höchstens sein?" },
-      { ref: "V8 – Urlaub Max (27)", q: "Max ist 27: Wo ist sein Urlaubsanspruch geregelt?" },
-      { ref: "V9 – Nachtarbeit Bäckerei (19)", q: "Darf Anna-Lena (19) im Rahmen der Ausbildung nachts in der Bäckerei arbeiten?" },
-      { ref: "V10 – Schulweg → Betrieb", q: "Zählt der Weg von der Berufsschule zurück in den Betrieb als Arbeitszeit?" }
+      {
+        ref: "V1 – Vertragsinhalte",
+        q: "Nenne drei Inhalte, die zwingend in einen Berufsausbildungsvertrag gehören.",
+        tip: [
+          "Typische Pflichtangaben (Auszug):",
+          "• Art, Ziel und Beginn/Dauer der Ausbildung; Ausbildungsstätte",
+          "• sachliche/zeitliche Gliederung (Ausbildungsplan) & tägliche Ausbildungszeit",
+          "• Vergütung, Probezeit, Urlaub, Pflichten der Parteien, Kündigungsregel, Hinweis auf Tarif/BV",
+          "Rechtsgedanke: BBiG §11 (Niederschrift; elektronische Form ausgeschlossen)."
+        ]
+      },
+      {
+        ref: "V2 – Ausbildungsordnung",
+        q: "Was regelt eine Ausbildungsordnung? Nenne drei Punkte.",
+        tip: [
+          "Kerninhalte:",
+          "• Berufsbild/Fertigkeiten, Kenntnisse, Fähigkeiten",
+          "• Dauer der Ausbildung & Ausbildungsrahmenplan",
+          "• Prüfungsanforderungen (Zwischen-/Abschlussprüfung)",
+          "Rechtsgedanke: BBiG §§4–5."
+        ]
+      },
+      {
+        ref: "V3 – Ruhezeit Jugendliche",
+        q: "Jugendliche: Was gilt zur täglichen Ruhezeit?",
+        tip: [
+          "Grundsatz:",
+          "• Mindestens 12 Stunden ununterbrochene Freizeit zwischen zwei Arbeitstagen.",
+          "• Besondere Schutzvorschriften zu Nacht-/Sonn-Feiertagsarbeit.",
+          "Rechtsgrundlage: JArbSchG (§13 ff.)."
+        ]
+      },
+      {
+        ref: "V4 – Unterschrift Minderjährige",
+        q: "Wer unterschreibt den Ausbildungsvertrag bei Minderjährigen mit gemeinsamem Sorgerecht der Eltern?",
+        tip: [
+          "• Beide Eltern als gesetzliche Vertreter + der/die Minderjährige selbst (Zustimmung).",
+          "Rechtsgrundlage: BGB §§1626, 1629; BBiG §10 ff. (Vertragsschluss)."
+        ]
+      },
+      {
+        ref: "V5 – Betrieblicher Ausbildungsplan",
+        q: "Was versteht man unter dem betrieblichen Ausbildungsplan (kurz erklärt)?",
+        tip: [
+          "• Betriebliche Ausgestaltung des Ausbildungsrahmenplans.",
+          "• Zeitlich-sachliche Gliederung der Lernziele, Abteilungen, Einsätze.",
+          "• Dient Steuerung, Dokumentation und Qualitätssicherung.",
+          "Rechtsgedanke: BBiG §5 i. V. m. Eignung/Ausbildungsstätte (§§27 ff. a. F., heute §7)."
+        ]
+      },
+      {
+        ref: "V6 – Digitale Zustellung",
+        q: "Darf der Ausbildungsvertrag digital zugestellt werden?",
+        tip: [
+          "• Abschluss: Schriftform erforderlich; elektronische Form ausgeschlossen.",
+          "• Digitale Kopie/Übermittlung zulässig – Original mit eigenhändiger Unterschrift erforderlich.",
+          "Rechtsgrundlage: BBiG §11 (Niederschrift)."
+        ]
+      },
+      {
+        ref: "V7 – Probezeit",
+        q: "Wie lange darf die Probezeit in der Ausbildung höchstens sein?",
+        tip: [
+          "• Mindestens 1 Monat, höchstens 4 Monate.",
+          "Rechtsgrundlage: BBiG §20."
+        ]
+      },
+      {
+        ref: "V8 – Urlaub Max (27)",
+        q: "Max ist 27: Wo ist sein Urlaubsanspruch geregelt?",
+        tip: [
+          "• Gesetzlicher Mindesturlaub im BUrlG; ggf. mehr durch Tarifvertrag/Betriebsvereinbarung/Vertrag.",
+          "Rechtsgrundlage: BUrlG; Tarif-/Betriebsvereinbarungen."
+        ]
+      },
+      {
+        ref: "V9 – Nachtarbeit Bäckerei (19)",
+        q: "Darf Anna-Lena (19) im Rahmen der Ausbildung nachts in der Bäckerei arbeiten?",
+        tip: [
+          "• Mit 19 gilt ArbZG (nicht mehr JArbSchG). Nachtarbeit grundsätzlich möglich,",
+          "  wenn betriebs-/ausbildungsbedingt und ArbZG (Ruhezeiten/Schutz) eingehalten werden.",
+          "• Besondere branchentypische Zeitfenster beachten.",
+          "Rechtsgrundlage: ArbZG; (Jugendliche <18: JArbSchG mit Nachtarbeitsverbot/-ausnahmen)."
+        ]
+      },
+      {
+        ref: "V10 – Schulweg → Betrieb",
+        q: "Zählt der Weg von der Berufsschule zurück in den Betrieb als Arbeitszeit?",
+        tip: [
+          "• Grundsätzlich keine Arbeitszeit (Wegezeit).",
+          "• Ausnahme: Wenn vertraglich/tariflich/betrieblich angeordnet bzw. geregelt.",
+          "• Unterrichtszeit selbst ist anzurechnen (Details je nach Rechtslage/Alter).",
+          "Rechtsgedanke: BBiG (Anrechnung Berufsschule), ArbZG/BUrlG; kollektivrechtliche Regelungen."
+        ]
+      }
     ];
 
     // Hinweis bestätigen
@@ -188,6 +280,7 @@
       QUESTIONS.forEach((item, idx) => {
         const id = `q_${idx}`;
         const feedbackId = `fb_${idx}`;
+        const tipId = `tip_${idx}`;
         const card = document.createElement("section");
         card.className = "card bg-white p-4";
 
@@ -196,8 +289,16 @@
             <span class="q-badge px-3 py-1 rounded-full text-[11px] font-medium">${item.ref}</span>
             <span class="text-slate-400 text-[11px]">Frage ${idx+1} / ${QUESTIONS.length}</span>
           </div>
-          <h3 class="text-[15px] font-semibold mb-2">${item.q}</h3>
-          <div class="space-y-2">
+          <div class="flex items-start justify-between gap-2">
+            <h3 class="text-[15px] font-semibold mb-2 flex-1">${item.q}</h3>
+            <button type="button" class="icon-btn text-sky-700 hover:text-sky-900 text-[13px]" aria-expanded="false" aria-controls="${tipId}" data-tipbtn="${tipId}">
+              <i data-lucide="info" class="w-4 h-4"></i><span>🛈 Musterlösung</span>
+            </button>
+          </div>
+          <div id="${tipId}" class="tip" role="note" aria-live="polite">
+            ${item.tip.map(line => `<p>${line}</p>`).join("")}
+          </div>
+          <div class="space-y-2 mt-2">
             <textarea id="${id}" name="${id}" rows="4"
               class="w-full p-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-sky-300 text-[15px]"
               placeholder="Deine Antwort …"></textarea>
@@ -211,6 +312,17 @@
           </div>
         `;
         form.appendChild(card);
+      });
+
+      // Tooltip-Toggles
+      form.querySelectorAll("[data-tipbtn]").forEach(btn=>{
+        btn.addEventListener("click", (e)=>{
+          const tid = e.currentTarget.getAttribute("data-tipbtn");
+          const box = document.getElementById(tid);
+          const open = box.style.display === "block";
+          box.style.display = open ? "none" : "block";
+          e.currentTarget.setAttribute("aria-expanded", String(!open));
+        });
       });
 
       // Beispiel-Gliederung
@@ -272,7 +384,7 @@
       });
     }
 
-    // Vereinfachte Prompts für den Bot
+    // Vereinfachte Bot-Prompts
     function buildPromptAll(answers) {
       return `
 Du prüfst kurze Ausbildungsfragen. Antworte knapp, klar, mit §§/Gesetz (BBiG/JArbSchG/BUrlG/ArbZG etc.), wenn relevant.
