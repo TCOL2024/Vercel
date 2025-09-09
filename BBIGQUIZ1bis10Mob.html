@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="de">
+<html lang="de" class="h-full">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
@@ -8,6 +8,10 @@
 
   <!-- Tailwind via CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    // Tailwind dark mode via class
+    tailwind.config = { darkMode: 'class' };
+  </script>
 
   <!-- Icons -->
   <script defer src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
@@ -16,15 +20,10 @@
   <script defer src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 
   <style>
-    :root {
-      /* iPhone-ergonomics */
-      --tap: 48px;
-      --radius: 16px;
-      --brand: #0ea5e9;
-    }
+    :root { --tap: 48px; --r: 16px; --brand: #0ea5e9; }
     html { -webkit-text-size-adjust: 100%; }
     body { font-size: 17px; line-height: 1.45; }
-    .card { border-radius: var(--radius); box-shadow: 0 6px 18px rgba(0,0,0,.05); }
+    .card { border-radius: var(--r); box-shadow: 0 6px 18px rgba(0,0,0,.05); }
     .btn { height: var(--tap); min-height: var(--tap); border-radius: 14px; }
     .btn-icon { width: 22px; height: 22px; }
     .q-badge { background: rgba(14,165,233,.14); color: #065985; border-radius: 999px; padding: 4px 10px; font-size: 12px; }
@@ -34,20 +33,24 @@
     textarea { resize: none; font-size: 17px; line-height: 1.45; }
     .safe-bottom { padding-bottom: max(env(safe-area-inset-bottom), 14px); }
     .sticky-actions { position: sticky; bottom: 0; z-index: 50; backdrop-filter: saturate(140%) blur(8px); }
-    /* Desktop-Enhancement */
-    @media (min-width: 640px) { body { font-size: 18px; } }
+
+    /* Dark mode tweaks */
+    .dark body { background: #0b1220; color: #e6edf3; }
+    .dark .card { background: #0f172a; border-color: #1e293b; box-shadow: none; }
+    .dark .q-badge { background: rgba(56,189,248,.18); color: #7dd3fc; }
+    .dark .tip { background: #032d3d; color: #c3e8ff; border-left-color: #38bdf8; }
+    .dark .progress { background: linear-gradient(90deg, #38bdf8, #22c55e); }
   </style>
 </head>
-<body class="min-h-screen bg-white text-slate-900">
-
-  <!-- Hinweis / Disclaimer (Fix: auffällig & fingerfreundlich) -->
-  <div id="notice" class="sticky top-0 z-50 bg-amber-50 border-b border-amber-200">
+<body class="min-h-screen bg-white text-slate-900 dark:bg-[#0b1220] dark:text-[#e6edf3]">
+  <!-- Hinweis / Disclaimer -->
+  <div id="notice" class="sticky top-0 z-50 bg-amber-50 border-b border-amber-200 dark:bg-yellow-900/30 dark:border-yellow-800">
     <div class="mx-auto max-w-md px-4 py-3">
       <div class="flex items-start gap-3">
-        <i data-lucide="alert-triangle" class="w-6 h-6 text-amber-600"></i>
+        <i data-lucide="alert-triangle" class="w-6 h-6 text-amber-600 dark:text-yellow-400"></i>
         <div class="flex-1">
-          <p class="font-semibold text-amber-900">Hinweis (Beta)</p>
-          <p class="text-amber-900/90">
+          <p class="font-semibold text-amber-900 dark:text-yellow-200">Hinweis (Beta)</p>
+          <p class="text-amber-900/90 dark:text-yellow-100/90">
             Die KI-Prüfung wird getestet. Antworten müssen fachlich geprüft werden und ersetzen keine Rechtsberatung.
           </p>
           <label class="mt-3 flex items-center gap-3">
@@ -56,37 +59,41 @@
           </label>
         </div>
       </div>
-      <button id="ackBtn" class="btn mt-3 w-full bg-amber-600 text-white active:bg-amber-700">
-        Weiter
-      </button>
+      <div class="mt-3 grid grid-cols-2 gap-2">
+        <button id="ackBtn" class="btn w-full bg-amber-600 text-white active:bg-amber-700">Weiter</button>
+        <!-- Dark mode toggle -->
+        <button id="darkToggle" class="btn w-full border border-slate-300 bg-white text-slate-800 active:bg-slate-50 dark:bg-slate-800 dark:text-slate-100 dark:border-slate-700">
+          🌙 / ☀️ Dark-Mode
+        </button>
+      </div>
     </div>
   </div>
 
-  <!-- Header (kompakt, mobil) -->
+  <!-- Header -->
   <header class="mx-auto max-w-md px-4 pt-4">
     <div class="flex items-center gap-3">
-      <div class="w-11 h-11 rounded-2xl bg-sky-100 grid place-items-center">
-        <i data-lucide="graduation-cap" class="w-6 h-6 text-sky-700"></i>
+      <div class="w-11 h-11 rounded-2xl bg-sky-100 grid place-items-center dark:bg-sky-900/40">
+        <i data-lucide="graduation-cap" class="w-6 h-6 text-sky-700 dark:text-sky-300"></i>
       </div>
       <div class="flex-1">
         <h1 class="text-xl font-semibold">BBiG-Quiz – Kompaktfragen</h1>
-        <p class="text-[15px] text-slate-600">10 kurze Fragen • KI-Check pro Antwort oder gesamt</p>
+        <p class="text-[15px] text-slate-600 dark:text-slate-300/80">10 kurze Fragen • KI-Check pro Antwort oder gesamt</p>
       </div>
-      <span id="ackState" class="text-[12px] rounded-full px-2.5 py-1 bg-slate-200 text-slate-700">Hinweis offen</span>
+      <span id="ackState" class="text-[12px] rounded-full px-2.5 py-1 bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-100">Hinweis offen</span>
     </div>
   </header>
 
   <!-- Fortschritt -->
   <section class="mx-auto max-w-md px-4 mt-4">
-    <div class="card bg-white border border-slate-100 p-4">
+    <div class="card bg-white border border-slate-100 p-4 dark:bg-[#0f172a] dark:border-slate-700">
       <div class="flex items-center gap-3">
-        <i data-lucide="target" class="w-5 h-5 text-sky-700"></i>
+        <i data-lucide="target" class="w-5 h-5 text-sky-700 dark:text-sky-300"></i>
         <div class="flex-1">
-          <div class="flex justify-between text-[13px] text-slate-600 mb-1">
+          <div class="flex justify-between text-[13px] text-slate-600 mb-1 dark:text-slate-300/80">
             <span id="progressText">0 / 10 beantwortet</span>
             <span id="timer">00:00</span>
           </div>
-          <div class="w-full bg-slate-100 rounded-full overflow-hidden">
+          <div class="w-full bg-slate-100 rounded-full overflow-hidden dark:bg-slate-800">
             <div id="progressBar" class="progress"></div>
           </div>
         </div>
@@ -94,32 +101,29 @@
     </div>
   </section>
 
-  <!-- Quiz (mobile-first, einspaltig, große Touch-Ziele) -->
+  <!-- Quiz -->
   <main class="mx-auto max-w-md px-4 py-4">
-    <form id="form" class="grid gap-4" novalidate>
-      <!-- Fragen werden per JS eingefügt -->
-    </form>
+    <form id="form" class="grid gap-4" novalidate></form>
 
     <!-- KI-Gesamtfeedback -->
     <section id="resultWrap" class="mt-4 hidden" aria-live="polite">
-      <div class="card bg-white border border-slate-100 p-4">
+      <div class="card bg-white border border-slate-100 p-4 dark:bg-[#0f172a] dark:border-slate-700">
         <div class="flex items-center gap-2 mb-2">
-          <i data-lucide="sparkle" class="w-5 h-5 text-emerald-700"></i>
+          <i data-lucide="sparkle" class="w-5 h-5 text-emerald-700 dark:text-emerald-300"></i>
           <h2 class="text-base font-semibold">KI-Feedback (Gesamt)</h2>
         </div>
-        <article id="aiResult" class="prose prose-slate max-w-none text-[16px] leading-relaxed"></article>
+        <article id="aiResult" class="prose prose-slate max-w-none text-[16px] leading-relaxed dark:prose-invert"></article>
       </div>
     </section>
   </main>
 
-  <!-- Sticky Action-Bar (iPhone: große Buttons + Safe-Area) -->
-  <div class="sticky-actions bg-white/95 border-t border-slate-200 safe-bottom">
+  <!-- Sticky Action-Bar -->
+  <div class="sticky-actions bg-white/95 border-t border-slate-200 safe-bottom dark:bg-[#0b1220]/95 dark:border-slate-700">
     <div class="mx-auto max-w-md px-4 py-2 grid grid-cols-2 gap-2">
       <button id="submitBtn" class="btn w-full bg-sky-600 text-white active:bg-sky-700 flex items-center justify-center gap-2 disabled:opacity-60">
-        <i data-lucide="send" class="btn-icon"></i>
-        <span>Gesamt prüfen</span>
+        <i data-lucide="send" class="btn-icon"></i><span>Gesamt prüfen</span>
       </button>
-      <button id="resetBtn" class="btn w-full border border-slate-200 text-slate-800 bg-white active:bg-slate-50">
+      <button id="resetBtn" class="btn w-full border border-slate-200 text-slate-800 bg-white active:bg-slate-50 dark:bg-slate-800 dark:text-slate-100 dark:border-slate-700">
         Zurücksetzen
       </button>
     </div>
@@ -147,9 +151,26 @@
     const notice      = document.getElementById("notice");
     const ackState    = document.getElementById("ackState");
     const toastEl     = document.getElementById("toast");
+    const darkToggle  = document.getElementById("darkToggle");
 
+    // Markdown + Icons
     if (window.marked) marked.setOptions({ breaks: true, gfm: true });
     if (window.lucide) lucide.createIcons();
+
+    // Haptik
+    function buzz(pattern = 20){ try { if (navigator.vibrate) navigator.vibrate(pattern); } catch(e){} }
+
+    // Dark mode init
+    const rootEl = document.documentElement;
+    (function initTheme(){
+      const saved = localStorage.getItem("theme");
+      if (saved === "dark") rootEl.classList.add("dark");
+    })();
+    darkToggle.addEventListener("click", ()=>{
+      buzz(10);
+      const isDark = rootEl.classList.toggle("dark");
+      localStorage.setItem("theme", isDark ? "dark" : "light");
+    });
 
     // Timer
     let startTs = Date.now();
@@ -160,108 +181,45 @@
       timerEl.textContent = `${m}:${r}`;
     }, 1000);
 
-    // Fragen + mobile Tooltips (korrigiert: V1, V6, V10)
+    // Fragen + Musterlösungen (inkl. korrigierter V1, V6, V10)
     const QUESTIONS = [
-      {
-        ref: "V1 – Vertragsinhalte",
-        q: "Nenne drei Inhalte, die zwingend in einen Berufsausbildungsvertrag gehören.",
-        tip: [
+      { ref:"V1 – Vertragsinhalte", q:"Nenne drei Inhalte, die zwingend in einen Berufsausbildungsvertrag gehören.",
+        tip:[
           "Pflichtangaben (Auszug):",
           "• Parteien, Beginn & Dauer, Ausbildungsstätte",
           "• Ziel, sachliche & zeitliche Gliederung, tägliche Ausbildungszeit",
           "• Vergütung (ggf. Zusammensetzung), Probezeit, Urlaub, Überstunden, Kündigung, Hinweis auf Tarif/BV, Form des Ausbildungsnachweises",
           "Rechtsgrundlage: § 11 BBiG (Textform, Mindestinhalte, elektronische Übermittlung & Empfangsnachweis)."
-        ]
-      },
-      {
-        ref: "V2 – Ausbildungsordnung",
-        q: "Was regelt eine Ausbildungsordnung? Nenne drei Punkte.",
-        tip: [
-          "• Berufsbild (Fertigkeiten, Kenntnisse, Fähigkeiten)",
-          "• Dauer der Ausbildung & Ausbildungsrahmenplan",
-          "• Prüfungsanforderungen (Zwischen-/Abschlussprüfung)",
-          "Rechtsgrundlagen: §§ 4–5 BBiG."
-        ]
-      },
-      {
-        ref: "V3 – Ruhezeit Jugendliche",
-        q: "Jugendliche: Was gilt zur täglichen Ruhezeit?",
-        tip: [
-          "• Mindestens 12 Stunden ununterbrochene Freizeit zwischen zwei Arbeitstagen.",
-          "• Nacht-, Sonn- und Feiertagsarbeit mit Schutzregeln.",
-          "Rechtsgrundlage: JArbSchG (z. B. § 13)."
-        ]
-      },
-      {
-        ref: "V4 – Unterschrift Minderjährige",
-        q: "Wer unterschreibt den Ausbildungsvertrag bei Minderjährigen mit gemeinsamem Sorgerecht?",
-        tip: [
-          "• Beide Eltern (gesetzliche Vertreter) + der/die Minderjährige.",
-          "• § 181 BGB-Befreiung nach § 10 Abs. 3 BBiG.",
-          "Rechtsgrundlagen: §§ 1626, 1629 BGB; § 10 BBiG."
-        ]
-      },
-      {
-        ref: "V5 – Betrieblicher Ausbildungsplan",
-        q: "Was ist der betriebliche Ausbildungsplan (kurz)?",
-        tip: [
-          "• Betriebliche Ausgestaltung des Ausbildungsrahmenplans (§ 5 BBiG).",
-          "• Zeitlich-sachliche Gliederung: Lernziele, Abteilungen, Einsätze.",
-          "• Bezug in § 11 Abs. 1 S. 2 BBiG (Vertragsinhalte)."
-        ]
-      },
-      {
-        ref: "V6 – Digitale Zustellung",
-        q: "Darf der Ausbildungsvertrag digital zugestellt werden?",
-        tip: [
-          "• Ja: Abfassung in Textform & elektronische Übermittlung zulässig.",
-          "• Speichern/Ausdrucken durch Empfänger möglich; Empfangsnachweis & Aufbewahrung.",
-          "Rechtsgrundlagen: §§ 10, 11 BBiG."
-        ]
-      },
-      {
-        ref: "V7 – Probezeit",
-        q: "Wie lange darf die Probezeit höchstens sein?",
-        tip: [
-          "• Mindestens 1 Monat, höchstens 4 Monate.",
-          "Rechtsgrundlage: § 20 BBiG."
-        ]
-      },
-      {
-        ref: "V8 – Urlaub Max (27)",
-        q: "Max ist 27: Wo ist sein Urlaubsanspruch geregelt?",
-        tip: [
-          "• Mindesturlaub im BUrlG; ggf. mehr durch Tarifvertrag/BV/Arbeitsvertrag.",
-          "Rechtsgrundlagen: BUrlG; Kollektiv-/Individualrecht."
-        ]
-      },
-      {
-        ref: "V9 – Nachtarbeit Bäckerei (19)",
-        q: "Darf Anna-Lena (19) nachts in der Bäckerei arbeiten?",
-        tip: [
-          "• Ab 18 gilt ArbZG: Nacht-/Frühzeiten grundsätzlich möglich im gesetzlichen Rahmen.",
-          "• Branchenspezifika & Ruhezeiten beachten.",
-          "Rechtsgrundlage: ArbZG (≥18 J.)."
-        ]
-      },
-      {
-        ref: "V10 – Schulweg → Betrieb",
-        q: "Zählt der Weg von der Berufsschule zurück in den Betrieb als Arbeitszeit?",
-        tip: [
-          "• Ja: notwendige Wegezeiten zwischen Schule und Ausbildungsstätte werden angerechnet.",
-          "Rechtsgrundlage: § 15 Abs. 2 Nr. 1 BBiG."
-        ]
-      }
+        ]},
+      { ref:"V2 – Ausbildungsordnung", q:"Was regelt eine Ausbildungsordnung? Nenne drei Punkte.",
+        tip:["• Berufsbild (Fertigkeiten, Kenntnisse, Fähigkeiten)","• Dauer & Ausbildungsrahmenplan","• Prüfungsanforderungen (Zwischen-/Abschlussprüfung)","Rechtsgrundlagen: §§ 4–5 BBiG."]},
+      { ref:"V3 – Ruhezeit Jugendliche", q:"Jugendliche: Was gilt zur täglichen Ruhezeit?",
+        tip:["• Mind. 12 Stunden ununterbrochene Freizeit zwischen zwei Arbeitstagen.","• Nacht-/Sonn-/Feiertagsarbeit mit Schutzregeln.","Rechtsgrundlage: JArbSchG (z. B. § 13)."]},
+      { ref:"V4 – Unterschrift Minderjährige", q:"Wer unterschreibt den Ausbildungsvertrag bei Minderjährigen mit gemeinsamem Sorgerecht?",
+        tip:["• Beide Eltern (gesetzliche Vertreter) + der/die Minderjährige.","• § 181 BGB-Befreiung nach § 10 Abs. 3 BBiG.","Rechtsgrundlagen: §§ 1626, 1629 BGB; § 10 BBiG."]},
+      { ref:"V5 – Betrieblicher Ausbildungsplan", q:"Was ist der betriebliche Ausbildungsplan (kurz)?",
+        tip:["• Betriebliche Ausgestaltung des Ausbildungsrahmenplans (§ 5 BBiG).","• Zeitlich-sachliche Gliederung: Lernziele, Abteilungen, Einsätze.","• Bezug in § 11 Abs. 1 S. 2 BBiG (Vertragsinhalte)."]},
+      { ref:"V6 – Digitale Zustellung", q:"Darf der Ausbildungsvertrag digital zugestellt werden?",
+        tip:["• Ja: Abfassung in Textform & elektronische Übermittlung zulässig.","• Speichern/Ausdrucken möglich; Empfangsnachweis & Aufbewahrung.","Rechtsgrundlagen: §§ 10, 11 BBiG."]},
+      { ref:"V7 – Probezeit", q:"Wie lange darf die Probezeit höchstens sein?",
+        tip:["• Mindestens 1 Monat, höchstens 4 Monate.","Rechtsgrundlage: § 20 BBiG."]},
+      { ref:"V8 – Urlaub Max (27)", q:"Max ist 27: Wo ist sein Urlaubsanspruch geregelt?",
+        tip:["• Mindesturlaub im BUrlG; ggf. mehr durch Tarifvertrag/BV/Arbeitsvertrag.","Rechtsgrundlagen: BUrlG; Kollektiv-/Individualrecht."]},
+      { ref:"V9 – Nachtarbeit Bäckerei (19)", q:"Darf Anna-Lena (19) nachts in der Bäckerei arbeiten?",
+        tip:["• Ab 18 gilt ArbZG: Nacht-/Frühzeiten grundsätzlich möglich im gesetzlichen Rahmen.","• Branchenspezifika & Ruhezeiten beachten.","Rechtsgrundlage: ArbZG (≥18 J.)."]},
+      { ref:"V10 – Schulweg → Betrieb", q:"Zählt der Weg von der Berufsschule zurück in den Betrieb als Arbeitszeit?",
+        tip:["• Ja: notwendige Wegezeiten zwischen Schule und Ausbildungsstätte werden angerechnet.","Rechtsgrundlage: § 15 Abs. 2 Nr. 1 BBiG."]}
     ];
 
     // Hinweis bestätigen
     let accepted = false;
-    document.getElementById("ackBtn").addEventListener("click", ()=>{
-      if (!document.getElementById("ack").checked) { showToast("Bitte den Hinweis bestätigen."); return; }
+    ackBtn.addEventListener("click", ()=>{
+      if (!ack.checked) { showToast("Bitte den Hinweis bestätigen."); buzz([8,40,8]); return; }
       accepted = true;
-      document.getElementById("notice").style.display = "none";
-      document.getElementById("ackState").textContent = "Hinweis bestätigt";
-      document.getElementById("ackState").className = "text-[12px] rounded-full px-2.5 py-1 bg-emerald-100 text-emerald-700";
+      notice.style.display = "none";
+      ackState.textContent = "Hinweis bestätigt";
+      ackState.className = "text-[12px] rounded-full px-2.5 py-1 bg-emerald-100 text-emerald-700";
+      buzz(12);
     });
 
     // Autosize
@@ -275,18 +233,18 @@
         const feedbackId = `fb_${idx}`;
         const tipId = `tip_${idx}`;
         const card = document.createElement("section");
-        card.className = "card bg-white border border-slate-100 p-4";
+        card.className = "card bg-white border border-slate-100 p-4 dark:bg-[#0f172a] dark:border-slate-700";
 
         card.innerHTML = `
           <div class="flex items-center justify-between mb-2">
             <span class="q-badge">${item.ref}</span>
-            <span class="text-slate-500 text-[12px]">Frage ${idx+1}/10</span>
+            <span class="text-slate-500 text-[12px] dark:text-slate-300/80">Frage ${idx+1}/10</span>
           </div>
 
           <h3 class="text-[17px] font-semibold mb-2">${item.q}</h3>
 
           <button type="button"
-            class="btn w-full bg-sky-50 text-sky-900 border border-sky-100 active:bg-sky-100 flex items-center justify-center gap-2"
+            class="btn w-full bg-sky-50 text-sky-900 border border-sky-100 active:bg-sky-100 dark:bg-sky-900/20 dark:text-sky-100 dark:border-sky-800"
             aria-expanded="false" aria-controls="${tipId}" data-tipbtn="${tipId}">
             <i data-lucide="info" class="btn-icon"></i>
             Musterlösung anzeigen
@@ -298,12 +256,12 @@
 
           <div class="mt-3 space-y-3">
             <textarea id="${id}" name="${id}" rows="4"
-              class="w-full p-3 rounded-[14px] border border-slate-300 focus:outline-none focus:ring-2 focus:ring-sky-300"
+              class="w-full p-3 rounded-[14px] border border-slate-300 focus:outline-none focus:ring-2 focus:ring-sky-300 dark:bg-slate-800 dark:border-slate-600 dark:text-slate-100"
               placeholder="Deine Antwort …"></textarea>
 
             <div class="grid grid-cols-2 gap-2">
               <button type="button" data-fill="${id}"
-                class="btn w-full border border-slate-200 bg-white text-slate-800 active:bg-slate-50">
+                class="btn w-full border border-slate-200 bg-white text-slate-800 active:bg-slate-50 dark:bg-slate-800 dark:text-slate-100 dark:border-slate-700">
                 Gliederung
               </button>
               <button type="button" data-ask="${idx}"
@@ -312,26 +270,28 @@
               </button>
             </div>
 
-            <div id="${feedbackId}" class="prose prose-slate text-[16px] leading-relaxed max-w-none hidden"></div>
+            <div id="${feedbackId}" class="prose prose-slate text-[16px] leading-relaxed max-w-none hidden dark:prose-invert"></div>
           </div>
         `;
         form.appendChild(card);
       });
 
-      // Tip-Toggles (Akkordeon)
+      // Accordion for tips
       form.querySelectorAll("[data-tipbtn]").forEach(btn=>{
         btn.addEventListener("click", (e)=>{
+          buzz(8);
           const tid = e.currentTarget.getAttribute("data-tipbtn");
           const box = document.getElementById(tid);
-          const isOpen = box.style.display === "block";
-          box.style.display = isOpen ? "none" : "block";
-          e.currentTarget.setAttribute("aria-expanded", String(!isOpen));
+          const open = box.style.display === "block";
+          box.style.display = open ? "none" : "block";
+          e.currentTarget.setAttribute("aria-expanded", String(!open));
         });
       });
 
       // Gliederung + Autosize + Shortcut
       form.querySelectorAll("[data-fill]").forEach(btn=>{
         btn.addEventListener("click", (e)=>{
+          buzz(6);
           const tid = e.currentTarget.getAttribute("data-fill");
           const ta = document.getElementById(tid);
           if (!ta) return;
@@ -347,10 +307,11 @@
         });
       });
 
-      // Per-Frage KI-Check
+      // Per-Frage KI-Check (ROBUST)
       form.querySelectorAll("[data-ask]").forEach(btn=>{
         btn.addEventListener("click", async (e)=>{
-          if (!accepted) { showToast("Bitte zuerst den Hinweis bestätigen."); return; }
+          buzz(8);
+          if (!accepted) { showToast("Bitte zuerst den Hinweis bestätigen."); buzz([10,40,10]); return; }
           const idx = Number(e.currentTarget.getAttribute("data-ask"));
           await askPerAnswer(idx, e.currentTarget);
         });
@@ -375,7 +336,7 @@
       });
     }
 
-    // Bot-Prompts (knapp & klar)
+    // Bot-Prompts
     function buildPromptAll(answers) {
       return `
 Du prüfst Ausbildungsfragen. Antworte knapp, klar und ggf. mit §§ (BBiG/JArbSchG/BUrlG/ArbZG).
@@ -389,7 +350,6 @@ Fragen & Antworten:
 ${answers.map(a => `Q${a.nr} (${a.ref}): ${a.question}\nAntwort TN: ${a.answer || "(leer)"}`).join("\n\n")}
 `.trim();
     }
-
     function buildPromptSingle(idx, item, answer) {
       return `
 Prüfe diese eine Antwort. Sehr knapp.
@@ -403,7 +363,7 @@ Antwort TN: ${answer || "(leer)"}
 `.trim();
     }
 
-    // Relay
+    // Relay (mit Fehlern sichtbar machen)
     async function callAI(payload) {
       const res = await fetch(relay, {
         method: "POST",
@@ -426,16 +386,16 @@ Antwort TN: ${answer || "(leer)"}
       const old = btnEl.innerHTML;
       btnEl.disabled = true;
       btnEl.innerHTML = `<svg class="animate-spin" width="20" height="20" viewBox="0 0 24 24"></svg>`;
-
       fb.classList.remove("hidden");
-      fb.innerHTML = `<div class="text-slate-500">KI prüft diese Antwort …</div>`;
+      fb.innerHTML = `<div class="text-slate-500 dark:text-slate-300/80">KI prüft diese Antwort …</div>`;
 
       try {
         const aiText = await callAI({ prompt });
         fb.innerHTML = (window.marked ? marked.parse(aiText || "_Keine Antwort erhalten._") : (aiText || "_Keine Antwort erhalten._"));
+        buzz(15);
       } catch (e) {
-        fb.innerHTML = `<div class="text-red-600">Fehler: ${String(e)}</div>`;
-        showToast("KI-Check fehlgeschlagen.");
+        fb.innerHTML = `<div class="text-red-600 dark:text-red-400">Fehler: ${String(e)}</div>`;
+        showToast("KI-Check fehlgeschlagen."); buzz([10,40,10]);
       } finally {
         btnEl.disabled = false;
         btnEl.innerHTML = old;
@@ -445,7 +405,8 @@ Antwort TN: ${answer || "(leer)"}
 
     // Gesamt-Feedback
     submitBtn.addEventListener("click", async ()=>{
-      if (!accepted) { showToast("Bitte zuerst den Hinweis bestätigen."); return; }
+      buzz(8);
+      if (!accepted) { showToast("Bitte zuerst den Hinweis bestätigen."); buzz([10,40,10]); return; }
       const answers = collectAnswers();
       const prompt = buildPromptAll(answers);
 
@@ -454,15 +415,16 @@ Antwort TN: ${answer || "(leer)"}
       submitBtn.innerHTML = `<svg class="animate-spin" width="22" height="22" viewBox="0 0 24 24"></svg>`;
 
       resultWrap.classList.remove("hidden");
-      aiResult.innerHTML = `<div class="text-slate-500">Bitte warten … die KI erstellt Gesamt-Feedback.</div>`;
+      aiResult.innerHTML = `<div class="text-slate-500 dark:text-slate-300/80">Bitte warten … die KI erstellt Gesamt-Feedback.</div>`;
 
       try {
         const aiText = await callAI({ prompt });
         aiResult.innerHTML = (window.marked ? marked.parse(aiText || "_Keine Antwort erhalten._") : (aiText || "_Keine Antwort erhalten._"));
         window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
+        buzz(15);
       } catch (e) {
-        aiResult.innerHTML = `<div class="text-red-600">Fehler beim Gesamt-Feedback: ${String(e)}</div>`;
-        showToast("Gesamt-Feedback fehlgeschlagen.");
+        aiResult.innerHTML = `<div class="text-red-600 dark:text-red-400">Fehler beim Gesamt-Feedback: ${String(e)}</div>`;
+        showToast("Gesamt-Feedback fehlgeschlagen."); buzz([10,40,10]);
       } finally {
         submitBtn.disabled = false;
         submitBtn.innerHTML = old;
@@ -472,6 +434,7 @@ Antwort TN: ${answer || "(leer)"}
 
     // Reset
     resetBtn.addEventListener("click", ()=>{
+      buzz(8);
       if (!confirm("Alle Eingaben wirklich löschen?")) return;
       startTs = Date.now();
       renderQuestions(); updateProgress();
