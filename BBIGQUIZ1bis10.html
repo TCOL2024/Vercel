@@ -23,9 +23,7 @@
     .progress { height: 10px; border-radius: 999px; background: linear-gradient(90deg, var(--brand), #22c55e); width: 0%; transition: width .25s ease; }
     .prose pre, .prose code { white-space: pre-wrap; word-break: break-word; }
     textarea { -webkit-text-size-adjust: 100%; }
-    /* iPhone ergonomics: größere Touch-Ziele */
     .btn-lg { padding: .9rem 1.1rem; border-radius: 0.9rem; }
-    /* Safe-area padding für iPhones mit Notch */
     .safe-bottom { padding-bottom: max(env(safe-area-inset-bottom), 12px); }
     .sticky-actions { position: sticky; bottom: 0; z-index: 40; }
   </style>
@@ -101,7 +99,7 @@
     </section>
   </main>
 
-  <!-- Sticky Action-Bar (iPhone freundlich) -->
+  <!-- Sticky Action-Bar -->
   <div class="sticky-actions bg-white/95 border-t border-slate-200 backdrop-blur safe-bottom">
     <div class="max-w-3xl mx-auto px-4 py-2 flex gap-2">
       <button id="submitBtn" class="flex-1 btn-lg bg-sky-600 text-white font-medium hover:bg-sky-700 active:bg-sky-800 focus:outline-none focus:ring-2 focus:ring-sky-400 flex items-center justify-center gap-2 disabled:opacity-60">
@@ -116,8 +114,7 @@
 
   <script>
     // === Konfiguration ===
-    const webhook = "https://hook.us2.make.com/pkdx4lpoadncdgd9fdwvd2jlgnwfsgx6";
-    const proxy   = "https://api.allorigins.win/raw?url=";
+    const relay = "/api/linda-proxy"; // Vercel API-Route (siehe unten)
 
     // UI Refs
     const form        = document.getElementById("form");
@@ -138,7 +135,7 @@
       if (window.lucide) lucide.createIcons();
     });
 
-    // Daten
+    // Fragen
     const QUESTIONS = [
       { ref: "§1 BBiG – Zweck", q: "Erläutere den Zweck des BBiG und grenze ihn kurz von landesrechtlich geregelten Berufen ab. Warum ist diese Abgrenzung für Betriebe relevant?" },
       { ref: "§2 BBiG – Begriffsbestimmungen", q: "Definiere ‚Berufsausbildungsvorbereitung‘, ‚Berufsausbildung‘ und ‚Fortbildung‘. Nenne je ein prägnantes Praxisbeispiel." },
@@ -161,7 +158,7 @@
       timerEl.textContent = `${m}:${r}`;
     }, 1000);
 
-    // Autosize Textareas (leichtgewichtig, iPhone-tauglich)
+    // Autosize
     function autosize(el){
       el.style.height = "auto";
       el.style.height = (el.scrollHeight + 4) + "px";
@@ -196,7 +193,7 @@
         form.appendChild(card);
       });
 
-      // Beispiel-Gliederung einsetzen
+      // Beispiel-Gliederung
       form.querySelectorAll("[data-fill]").forEach(btn=>{
         btn.addEventListener("click", (e)=>{
           const tid = e.currentTarget.getAttribute("data-fill");
@@ -220,7 +217,7 @@
         });
       });
 
-      // Progress + Autosize + Ctrl/Cmd+Enter
+      // Progress + Autosize + Shortcuts
       form.querySelectorAll("textarea").forEach(ta=>{
         autosize(ta);
         ta.addEventListener("input", ()=>{ autosize(ta); updateProgress(); });
@@ -259,7 +256,7 @@
       });
     }
 
-    // Prompt Builder
+    // Prompts
     function buildPromptAll(answers) {
       return `
 Du bist eine neutrale IHK-Prüfer:in für Berufsbildungsrecht (BBiG, §§1–10).
@@ -298,13 +295,12 @@ ${answer || "(leer)"}
 `.trim();
     }
 
-    // Webhook Call via CORS-Proxy
-    async function callAI(prompt) {
-      const url = proxy + encodeURIComponent(webhook);
-      const res = await fetch(url, {
+    // Relay-Aufruf (Vercel API)
+    async function callAI(payload) {
+      const res = await fetch(relay, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt })
+        body: JSON.stringify(payload)
       });
       const text = await res.text();
       try {
@@ -315,21 +311,19 @@ ${answer || "(leer)"}
       }
     }
 
-    // Einzel-KI-Check
     async function askPerAnswer(idx, btnEl){
       const ta = document.getElementById(`q_${idx}`);
       const fb = document.getElementById(`fb_${idx}`);
       const item = QUESTIONS[idx];
       const prompt = buildPromptSingle(idx, item, ta.value.trim());
 
-      // Loading-Zustand
       btnEl.disabled = true;
       const oldHtml = btnEl.innerHTML;
       btnEl.innerHTML = `<svg class="animate-spin h-4 w-4" viewBox="0 0 24 24"></svg> Prüfen …`;
       fb.classList.remove("hidden");
       fb.innerHTML = `<div class="text-slate-500 text-sm">KI prüft diese Antwort …</div>`;
 
-      const aiText = await callAI(prompt);
+      const aiText = await callAI({ prompt });
       fb.innerHTML = (window.marked ? marked.parse(aiText || "_Keine Antwort erhalten._") : (aiText || "_Keine Antwort erhalten._"));
 
       btnEl.disabled = false;
@@ -350,13 +344,12 @@ ${answer || "(leer)"}
       resultWrap.classList.remove("hidden");
       aiResult.innerHTML = `<div class="text-slate-500 text-sm">Bitte warten … die KI erstellt Gesamt-Feedback.</div>`;
 
-      const aiText = await callAI(prompt);
+      const aiText = await callAI({ prompt });
       aiResult.innerHTML = (window.marked ? marked.parse(aiText || "_Keine Antwort erhalten._") : (aiText || "_Keine Antwort erhalten._"));
 
       submitBtn.disabled = false;
       submitBtn.innerHTML = old;
       if (window.lucide) lucide.createIcons();
-      // sanft scrollen
       window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
     });
 
@@ -379,7 +372,7 @@ ${answer || "(leer)"}
       updateProgress();
     }
 
-    // Hinweis bestätigen (blockiert Interaktion bis Zustimmung)
+    // Hinweis bestätigen
     let accepted = false;
     ackBtn.addEventListener("click", ()=>{
       if (!ack.checked) {
