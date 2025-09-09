@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
-  <title>BBiG-Quiz (§§ 1–10) – IHK-Niveau</title>
+  <title>BBiG-Quiz – Kompaktfragen (IHK-Niveau)</title>
 
   <!-- Tailwind via CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -12,7 +12,7 @@
   <!-- Icons -->
   <script defer src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
 
-  <!-- Marked (optional) -->
+  <!-- Marked (optional for Bot-Feedback) -->
   <script defer src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 
   <style>
@@ -26,7 +26,6 @@
     .btn-lg { padding: .9rem 1.1rem; border-radius: 0.9rem; }
     .safe-bottom { padding-bottom: max(env(safe-area-inset-bottom), 12px); }
     .sticky-actions { position: sticky; bottom: 0; z-index: 40; }
-    .toast { display:none; position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%); background:#111827; color:#fff; padding:10px 14px; border-radius: 10px; font-size: 14px; z-index: 50; }
     .chip { font-size: 12px; padding: 4px 8px; border-radius: 999px; }
   </style>
 </head>
@@ -59,8 +58,8 @@
         <i data-lucide="graduation-cap" class="w-6 h-6 stroke-[1.5] text-sky-700"></i>
       </div>
       <div class="flex-1">
-        <h1 class="text-xl font-semibold tracking-tight">BBiG-Quiz (§§ 1–10) – IHK-Niveau</h1>
-        <p class="text-sm text-slate-500">Beantworte 10 Fragen. Du kannst jede Antwort einzeln per KI prüfen lassen oder am Ende alles sammeln.</p>
+        <h1 class="text-xl font-semibold tracking-tight">BBiG-Quiz – Kompaktfragen</h1>
+        <p class="text-sm text-slate-500">Beantworte 10 kurze IHK-Fragen. Jede Antwort lässt sich einzeln oder gesammelt von der KI prüfen.</p>
       </div>
       <span id="ackState" class="chip bg-slate-200 text-slate-700">Hinweis offen</span>
     </div>
@@ -107,7 +106,7 @@
     <div class="max-w-3xl mx-auto px-4 py-2 flex gap-2">
       <button id="submitBtn" class="flex-1 btn-lg bg-sky-600 text-white font-medium hover:bg-sky-700 active:bg-sky-800 focus:outline-none focus:ring-2 focus:ring-sky-400 flex items-center justify-center gap-2 disabled:opacity-60">
         <i data-lucide="send" class="w-5 h-5"></i>
-        Alles prüfen (KI)
+        KI-Feedback gesamt
       </button>
       <button id="resetBtn" class="btn-lg px-4 border border-slate-200 text-slate-700 hover:bg-slate-50 rounded-lg">
         Zurücksetzen
@@ -116,12 +115,12 @@
   </div>
 
   <!-- Toast -->
-  <div id="toast" class="toast"></div>
+  <div id="toast" style="display:none; position:fixed; left:50%; bottom:18px; transform:translateX(-50%); background:#111827; color:#fff; padding:10px 14px; border-radius:10px; font-size:14px; z-index:50;"></div>
 
   <script>
   document.addEventListener("DOMContentLoaded", () => {
     // === Konfiguration ===
-    const relay = "/api/linda-proxy"; // Vercel API (serverseitig zu Make)
+    const relay = "/api/linda-proxy"; // Vercel API, postet serverseitig zu Make
 
     // UI Refs
     const form        = document.getElementById("form");
@@ -138,13 +137,8 @@
     const ackState    = document.getElementById("ackState");
     const toastEl     = document.getElementById("toast");
 
-    // Markdown (optional)
     if (window.marked) marked.setOptions({ breaks: true, gfm: true });
     if (window.lucide) lucide.createIcons();
-
-    // Globaler Fehler-Catcher => sichtbare Meldung
-    window.addEventListener("error", (e)=> showToast("Fehler: " + (e.message || e)));
-    window.addEventListener("unhandledrejection", (e)=> showToast("Fehler: " + (e.reason?.message || e.reason || e)));
 
     // Timer
     let startTs = Date.now();
@@ -155,18 +149,18 @@
       timerEl.textContent = `${m}:${r}`;
     }, 1000);
 
-    // Fragen
+    // Fragen – schönes, klares Wording
     const QUESTIONS = [
-      { ref: "§1 BBiG – Zweck", q: "Erläutere den Zweck des BBiG und grenze ihn kurz von landesrechtlich geregelten Berufen ab. Warum ist diese Abgrenzung für Betriebe relevant?" },
-      { ref: "§2 BBiG – Begriffsbestimmungen", q: "Definiere ‚Berufsausbildungsvorbereitung‘, ‚Berufsausbildung‘ und ‚Fortbildung‘. Nenne je ein prägnantes Praxisbeispiel." },
-      { ref: "§3 BBiG – Anwendungsbereich", q: "Wann gilt das BBiG nicht? Führe zwei typische Ausnahmen an und erläutere kurz, was stattdessen greift." },
-      { ref: "§4 BBiG – Anerkennung von Ausbildungsberufen", q: "Welche Kriterien müssen Ausbildungsberufe erfüllen, um anerkannt zu werden, und welche Bedeutung hat die Ausbildungsordnung?" },
-      { ref: "§5 BBiG – Ausbildungsordnung", q: "Welche Mindestinhalte muss eine Ausbildungsordnung enthalten? Nenne mindestens vier Kernbestandteile und ordne sie in eine sinnvolle Reihenfolge." },
-      { ref: "§6 BBiG – Fortbildungsordnungen", q: "Skizziere Aufbau und Ziel einer Fortbildungsordnung. Worin unterscheidet sich die Zielrichtung gegenüber der Ausbildungsordnung?" },
-      { ref: "§7 BBiG – Eignung von Ausbildungsstätten", q: "Welche Anforderungen stellt das BBiG an die Eignung der Ausbildungsstätte? Nenne Risiken bei Verstößen für Betrieb und Auszubildende." },
-      { ref: "§8 BBiG – Abkürzung/Verlängerung", q: "Unter welchen Voraussetzungen ist eine Verkürzung bzw. Verlängerung der Ausbildungszeit möglich? Skizziere ein Entscheidungsverfahren für den Betrieb." },
-      { ref: "§9 BBiG – Vertragsniederschrift", q: "Welche Pflichtangaben gehören in den Berufsausbildungsvertrag? Was passiert bei fehlenden bzw. fehlerhaften Angaben?" },
-      { ref: "§10 BBiG – Teilzeitberufsausbildung", q: "Wie wird eine Teilzeitberufsausbildung rechtssicher vereinbart und organisiert? Nenne typische Anwendungsfälle und Grenzen." }
+      { ref: "V1 – Vertragsinhalte", q: "Nenne drei Inhalte, die zwingend in einen Berufsausbildungsvertrag gehören." },
+      { ref: "V2 – Ausbildungsordnung", q: "Was regelt eine Ausbildungsordnung? Nenne drei Punkte." },
+      { ref: "V3 – Ruhezeit Jugendliche", q: "Jugendliche: Was gilt zur täglichen Ruhezeit?" },
+      { ref: "V4 – Unterschrift Minderjährige", q: "Wer unterschreibt den Ausbildungsvertrag bei Minderjährigen mit gemeinsamem Sorgerecht der Eltern?" },
+      { ref: "V5 – Betrieblicher Ausbildungsplan", q: "Was versteht man unter dem betrieblichen Ausbildungsplan (kurz erklärt)?" },
+      { ref: "V6 – Digitale Zustellung", q: "Darf der Ausbildungsvertrag digital zugestellt werden?" },
+      { ref: "V7 – Probezeit", q: "Wie lange darf die Probezeit in der Ausbildung höchstens sein?" },
+      { ref: "V8 – Urlaub Max (27)", q: "Max ist 27: Wo ist sein Urlaubsanspruch geregelt?" },
+      { ref: "V9 – Nachtarbeit Bäckerei (19)", q: "Darf Anna-Lena (19) im Rahmen der Ausbildung nachts in der Bäckerei arbeiten?" },
+      { ref: "V10 – Schulweg → Betrieb", q: "Zählt der Weg von der Berufsschule zurück in den Betrieb als Arbeitszeit?" }
     ];
 
     // Hinweis bestätigen
@@ -204,7 +198,9 @@
           </div>
           <h3 class="text-[15px] font-semibold mb-2">${item.q}</h3>
           <div class="space-y-2">
-            <textarea id="${id}" name="${id}" rows="4" class="w-full p-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-sky-300 text-[15px]" placeholder="Deine Antwort …"></textarea>
+            <textarea id="${id}" name="${id}" rows="4"
+              class="w-full p-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-sky-300 text-[15px]"
+              placeholder="Deine Antwort …"></textarea>
             <div class="flex flex-wrap gap-2">
               <button type="button" data-fill="${id}" class="px-3 py-2 text-[13px] pill rounded-lg hover:bg-slate-50">Beispiel-Gliederung</button>
               <button type="button" data-ask="${idx}" class="px-3 py-2 text-[13px] rounded-lg bg-sky-600 text-white hover:bg-sky-700 flex items-center gap-2 disabled:opacity-60">
@@ -224,24 +220,20 @@
           const ta = document.getElementById(tid);
           if (!ta) return;
           ta.value = [
-            "### Kernaussage",
+            "### Kurzantwort",
+            "- …",
+            "- …",
             "- …",
             "",
-            "### Rechtsgrundlagen / Begriffe",
+            "### Begründung/Norm (optional)",
             "- …",
-            "",
-            "### Praxisbeispiel",
-            "- …",
-            "",
-            "### Fazit",
-            "- …"
           ].join("\n");
           autosize(ta);
           updateProgress();
         });
       });
 
-      // Progress + Autosize + Shortcuts
+      // Textareas
       form.querySelectorAll("textarea").forEach(ta=>{
         autosize(ta);
         ta.addEventListener("input", ()=>{ autosize(ta); updateProgress(); });
@@ -280,42 +272,31 @@
       });
     }
 
-    // Prompts
+    // Vereinfachte Prompts für den Bot
     function buildPromptAll(answers) {
       return `
-Du bist eine neutrale IHK-Prüfer:in für Berufsbildungsrecht (BBiG, §§1–10).
-Bewerte die Antworten fachlich präzise, kompakt, strukturiert.
+Du prüfst kurze Ausbildungsfragen. Antworte knapp, klar, mit §§/Gesetz (BBiG/JArbSchG/BUrlG/ArbZG etc.), wenn relevant.
+Schema pro Frage:
+- Richtig/Falsch bzw. Kurzfeedback (1–2 Sätze)
+- Richtige Lösung stichpunktartig (max. 4 Bulletpoints)
+- Gesetz/§ (falls einschlägig)
+- 1 Praxistipp (ein Satz)
 
-Vorgehen:
-1) Pro Frage: **Kurzfeedback** (Stärken/Lücken), **Musterlösung** (stichpunktartig mit §-Bezügen), **Praxishinweis** (1 Satz).
-2) Abschluss: Gesamtresümee mit 0–100 Punkteschätzung (nicht amtlich).
-
-Referenz: BBiG §§1–10 (aktuelle Fassung).
-
-Eingaben (Fragen + Antworten):
-${answers.map(a =>
-`[Frage ${a.nr} – ${a.ref}]
-Frage: ${a.question}
-Antwort:
-${a.answer || "(leer)"}`
-).join("\n\n")}
+Fragen & Antworten:
+${answers.map(a => `Q${a.nr} (${a.ref}): ${a.question}\nAntwort TN: ${a.answer || "(leer)"}`).join("\n\n")}
       `.trim();
     }
 
     function buildPromptSingle(idx, item, answer) {
       return `
-Du bist eine neutrale IHK-Prüfer:in für Berufsbildungsrecht (BBiG, §§1–10).
-Bewerte NUR diese EINE Antwort kurz & präzise.
+Prüfe diese eine Antwort. Antworte kurz.
+- Kurzfeedback (1–2 Sätze)
+- Richtige Lösung in Stichpunkten (max. 4)
+- Gesetz/§ (falls einschlägig)
+- 1 Praxistipp (ein Satz)
 
-Ausgabe:
-- Kurzfeedback (Stärken/Lücken)
-- Knappe Musterlösung stichpunktartig, mit §-Bezügen
-- Praxishinweis (1 Satz)
-
-[Frage ${idx+1} – ${item.ref}]
 Frage: ${item.q}
-Antwort:
-${answer || "(leer)"}
+Antwort TN: ${answer || "(leer)"}
 `.trim();
     }
 
@@ -327,17 +308,11 @@ ${answer || "(leer)"}
         body: JSON.stringify(payload)
       });
       const text = await res.text();
-
-      if (!res.ok) {
-        throw new Error(`Relay-Fehler ${res.status}: ${text?.slice(0,200) || "keine Details"}`);
-      }
-
+      if (!res.ok) throw new Error(`Relay-Fehler ${res.status}: ${text?.slice(0,200) || "keine Details"}`);
       try {
         const j = JSON.parse(text);
         return j.answer || j.content || j.result || text;
-      } catch {
-        return text; // Plaintext vom Make-„Webhook response“
-      }
+      } catch { return text; }
     }
 
     // Einzel-KI-Check
@@ -366,10 +341,9 @@ ${answer || "(leer)"}
       }
     }
 
-    // Gesamtabgabe
+    // Gesamt-Feedback
     submitBtn.addEventListener("click", async ()=>{
       if (!accepted) { showToast("Bitte zuerst den Hinweis bestätigen."); return; }
-
       const answers = collectAnswers();
       const prompt = buildPromptAll(answers);
 
@@ -383,7 +357,6 @@ ${answer || "(leer)"}
       try {
         const aiText = await callAI({ prompt });
         aiResult.innerHTML = (window.marked ? marked.parse(aiText || "_Keine Antwort erhalten._") : (aiText || "_Keine Antwort erhalten._"));
-        // sanft scrollen
         window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
       } catch (e) {
         aiResult.innerHTML = `<div class="text-red-600 text-sm">Fehler beim Gesamt-Feedback: ${String(e)}</div>`;
