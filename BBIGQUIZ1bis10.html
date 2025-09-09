@@ -15,23 +15,14 @@
   <!-- Marked for Markdown rendering -->
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 
-  <!-- === Stil-Feintuning === -->
   <style>
     :root { --brand:#0ea5e9; }
-    .glass {
-      backdrop-filter: saturate(140%) blur(8px);
-      background: linear-gradient(180deg, rgba(255,255,255,.9), rgba(255,255,255,.75));
-    }
+    .glass { backdrop-filter: saturate(140%) blur(8px); background: linear-gradient(180deg, rgba(255,255,255,.9), rgba(255,255,255,.75)); }
     .card { border-radius: 1.25rem; box-shadow: 0 10px 30px rgba(0,0,0,.06); }
     .q-badge { background: rgba(14,165,233, .12); color: var(--brand); }
     .pill { border: 1px solid rgba(0,0,0,.06); }
     .prose pre, .prose code { white-space: pre-wrap; word-break: break-word; }
-    .progress {
-      height: 10px; border-radius: 999px;
-      background: linear-gradient(90deg, var(--brand), #22c55e);
-      width: 0%;
-      transition: width .35s ease;
-    }
+    .progress { height: 10px; border-radius: 999px; background: linear-gradient(90deg, var(--brand), #22c55e); width: 0%; transition: width .35s ease; }
   </style>
 </head>
 <body class="min-h-screen bg-gradient-to-br from-sky-50 via-white to-emerald-50 text-slate-800">
@@ -51,6 +42,7 @@
   </header>
 
   <main class="max-w-5xl mx-auto px-4 py-8">
+
     <!-- Status/Progress -->
     <section class="card bg-white p-5 mb-6">
       <div class="flex items-center gap-3">
@@ -67,8 +59,8 @@
       </div>
     </section>
 
-    <!-- Quiz -->
-    <form id="quizForm" class="grid gap-6">
+    <!-- Quiz (id=form für deine Variablen) -->
+    <form id="form" class="grid gap-6">
       <!-- Fragen werden per JS eingefügt -->
     </form>
 
@@ -94,6 +86,22 @@
       </div>
     </section>
 
+    <!-- Schnellfrage an die KI (nutzt chat, q) -->
+    <section class="mt-10 card bg-white p-6">
+      <div class="flex items-center gap-2 mb-3">
+        <i data-lucide="message-square" class="w-5 h-5 text-sky-600"></i>
+        <h3 class="text-base font-semibold">Schnellfrage an die KI</h3>
+      </div>
+      <div id="chat" class="space-y-3 max-h-64 overflow-auto p-3 bg-slate-50 rounded-xl border border-slate-200"></div>
+      <div class="mt-3 flex gap-2">
+        <input id="q" type="text" class="flex-1 p-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-sky-300" placeholder="Frage stellen (z. B. ‚Was unterscheidet §4 und §5 BBiG?‘)" />
+        <button id="askBtn" class="px-4 py-3 rounded-xl bg-sky-600 text-white hover:bg-sky-700">
+          Senden
+        </button>
+      </div>
+      <p class="text-xs text-slate-500 mt-2">Hinweis: Lerntool, keine Rechtsberatung.</p>
+    </section>
+
     <!-- Fußnote -->
     <p class="text-xs text-slate-500 mt-6">
       Hinweis: Dieses Lern-Quiz dient der Wissensvertiefung. Es ersetzt keine Rechtsberatung. Bitte prüfe die jeweils aktuelle Fassung des BBiG.
@@ -101,68 +109,31 @@
   </main>
 
   <script>
-    // === Konfiguration ===
-    const relay = "/api/linda-proxy"; // Vercel API
-    marked.setOptions({
-      breaks: true,
-      gfm: true
-    });
+    // === Konfiguration (deine Variablen eingebaut) ===
+    const webhook = "https://hook.us2.make.com/pkdx4lpoadncdgd9fdwvd2jlgnwfsgx6";
+    const proxy   = "https://api.allorigins.win/raw?url="; // CORS-Proxy
+    const chat    = document.getElementById("chat");
+    const form    = document.getElementById("form");
+    const q       = document.getElementById("q");
 
+    // Markdown
+    marked.setOptions({ breaks: true, gfm: true });
+
+    // === Fragenkatalog ===
     const QUESTIONS = [
-      {
-        ref: "§1 BBiG – Zweck",
-        q: "Erläutere den Zweck des BBiG und grenze ihn kurz von landesrechtlich geregelten Berufen ab. Warum ist diese Abgrenzung für Betriebe relevant?",
-        type: "long"
-      },
-      {
-        ref: "§2 BBiG – Begriffsbestimmungen",
-        q: "Definiere ‚Berufsausbildungsvorbereitung‘, ‚Berufsausbildung‘ und ‚Fortbildung‘. Nenne je ein prägnantes Praxisbeispiel.",
-        type: "long"
-      },
-      {
-        ref: "§3 BBiG – Anwendungsbereich",
-        q: "Wann gilt das BBiG nicht? Führe zwei typische Ausnahmen an und erläutere kurz, was stattdessen greift.",
-        type: "long"
-      },
-      {
-        ref: "§4 BBiG – Anerkennung von Ausbildungsberufen",
-        q: "Welche Kriterien müssen Ausbildungsberufe erfüllen, um anerkannt zu werden, und welche Bedeutung hat die Ausbildungsordnung?",
-        type: "long"
-      },
-      {
-        ref: "§5 BBiG – Ausbildungsordnung",
-        q: "Welche Mindestinhalte muss eine Ausbildungsordnung enthalten? Nenne mindestens vier Kernbestandteile und ordne sie in eine sinnvolle Reihenfolge.",
-        type: "long"
-      },
-      {
-        ref: "§6 BBiG – Fortbildungsordnungen",
-        q: "Skizziere Aufbau und Ziel einer Fortbildungsordnung. Worin unterscheidet sich die Zielrichtung gegenüber der Ausbildungsordnung?",
-        type: "long"
-      },
-      {
-        ref: "§7 BBiG – Eignung von Ausbildungsstätten",
-        q: "Welche Anforderungen stellt das BBiG an die Eignung der Ausbildungsstätte? Nenne Risiken bei Verstößen für Betrieb und Auszubildende.",
-        type: "long"
-      },
-      {
-        ref: "§8 BBiG – Abkürzung/Verlängerung",
-        q: "Unter welchen Voraussetzungen ist eine Verkürzung bzw. Verlängerung der Ausbildungszeit möglich? Skizziere ein Entscheidungsverfahren für den Betrieb.",
-        type: "long"
-      },
-      {
-        ref: "§9 BBiG – Vertragsniederschrift",
-        q: "Welche Pflichtangaben gehören in den Berufsausbildungsvertrag? Was passiert bei fehlenden bzw. fehlerhaften Angaben?",
-        type: "long"
-      },
-      {
-        ref: "§10 BBiG – Teilzeitberufsausbildung",
-        q: "Wie wird eine Teilzeitberufsausbildung rechtssicher vereinbart und organisiert? Nenne typische Anwendungsfälle und Grenzen.",
-        type: "long"
-      }
+      { ref: "§1 BBiG – Zweck", q: "Erläutere den Zweck des BBiG und grenze ihn kurz von landesrechtlich geregelten Berufen ab. Warum ist diese Abgrenzung für Betriebe relevant?", type: "long" },
+      { ref: "§2 BBiG – Begriffsbestimmungen", q: "Definiere ‚Berufsausbildungsvorbereitung‘, ‚Berufsausbildung‘ und ‚Fortbildung‘. Nenne je ein prägnantes Praxisbeispiel.", type: "long" },
+      { ref: "§3 BBiG – Anwendungsbereich", q: "Wann gilt das BBiG nicht? Führe zwei typische Ausnahmen an und erläutere kurz, was stattdessen greift.", type: "long" },
+      { ref: "§4 BBiG – Anerkennung von Ausbildungsberufen", q: "Welche Kriterien müssen Ausbildungsberufe erfüllen, um anerkannt zu werden, und welche Bedeutung hat die Ausbildungsordnung?", type: "long" },
+      { ref: "§5 BBiG – Ausbildungsordnung", q: "Welche Mindestinhalte muss eine Ausbildungsordnung enthalten? Nenne mindestens vier Kernbestandteile und ordne sie in eine sinnvolle Reihenfolge.", type: "long" },
+      { ref: "§6 BBiG – Fortbildungsordnungen", q: "Skizziere Aufbau und Ziel einer Fortbildungsordnung. Worin unterscheidet sich die Zielrichtung gegenüber der Ausbildungsordnung?", type: "long" },
+      { ref: "§7 BBiG – Eignung von Ausbildungsstätten", q: "Welche Anforderungen stellt das BBiG an die Eignung der Ausbildungsstätte? Nenne Risiken bei Verstößen für Betrieb und Auszubildende.", type: "long" },
+      { ref: "§8 BBiG – Abkürzung/Verlängerung", q: "Unter welchen Voraussetzungen ist eine Verkürzung bzw. Verlängerung der Ausbildungszeit möglich? Skizziere ein Entscheidungsverfahren für den Betrieb.", type: "long" },
+      { ref: "§9 BBiG – Vertragsniederschrift", q: "Welche Pflichtangaben gehören in den Berufsausbildungsvertrag? Was passiert bei fehlenden bzw. fehlerhaften Angaben?", type: "long" },
+      { ref: "§10 BBiG – Teilzeitberufsausbildung", q: "Wie wird eine Teilzeitberufsausbildung rechtssicher vereinbart und organisiert? Nenne typische Anwendungsfälle und Grenzen.", type: "long" }
     ];
 
     // === UI-Referenzen ===
-    const form = document.getElementById("quizForm");
     const submitBtn = document.getElementById("submitBtn");
     const exportBtn = document.getElementById("exportBtn");
     const resetBtn  = document.getElementById("resetBtn");
@@ -171,6 +142,7 @@
     const resultWrap = document.getElementById("resultWrap");
     const aiResult = document.getElementById("aiResult");
     const timerEl = document.getElementById("timer");
+    const askBtn = document.getElementById("askBtn");
 
     // === Timer ===
     let startTs = Date.now();
@@ -188,7 +160,6 @@
         const id = `q_${idx}`;
         const card = document.createElement("section");
         card.className = "card bg-white p-5";
-
         card.innerHTML = `
           <div class="flex items-center justify-between mb-3">
             <span class="q-badge px-3 py-1 rounded-full text-xs font-medium">${item.ref}</span>
@@ -229,7 +200,7 @@
         });
       });
 
-      // Fortschritt tracken
+      // Fortschritt tracken + Shortcut senden
       form.querySelectorAll("textarea").forEach(ta=>{
         ta.addEventListener("input", updateProgress);
         ta.addEventListener("keydown", (ev)=>{
@@ -251,20 +222,20 @@
 
     // === Nutzereingaben sammeln ===
     function collectAnswers() {
-      const answers = QUESTIONS.map((q, i) => {
-        const v = document.getElementById(`q_${i}`).value.trim();
+      return QUESTIONS.map((q, i) => {
+        const v = (document.getElementById(`q_${i}`)?.value || "").trim();
         return { nr: i+1, ref: q.ref, question: q.q, answer: v };
       });
-      return answers;
     }
 
-    // === Prompt für die KI bauen ===
+    // === Prompt für die KI ===
     function buildPrompt(answers) {
       return `
-Du bist eine neutrale IHK-Prüfer:in für Berufsbildungsrecht (BBiG, §§1–10). 
-Bewerte die Antworten fachlich präzise, kurz und strukturiert. 
+Du bist eine neutrale IHK-Prüfer:in für Berufsbildungsrecht (BBiG, §§1–10).
+Bewerte die Antworten fachlich präzise, kurz und strukturiert.
+
 Vorgehen:
-1) Für jede Frage: **Kurzfeedback** (Stärken/Lücken), **Korrektur/Musterlösung** (stichpunktartig, mit §-Bezug), **Praxishinweis** (1 Satz).
+1) Pro Frage: **Kurzfeedback** (Stärken/Lücken), **Korrektur/Musterlösung** (stichpunktartig, mit §-Bezug), **Praxishinweis** (1 Satz).
 2) Am Ende: Gesamtresümee mit 0–100 Punkteschätzung (nicht amtlich).
 
 Referenz: BBiG §§1–10 (aktuelle Fassung).
@@ -279,31 +250,34 @@ ${a.answer || "(leer)"}`
       `.trim();
     }
 
-    // === An Relay senden ===
+    // === Make Webhook via CORS-Proxy ansprechen ===
+    async function callAI_viaProxy(payload) {
+      const url = proxy + encodeURIComponent(webhook);
+      const res = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+      const text = await res.text();
+      try {
+        const j = JSON.parse(text);
+        return j.answer || j.content || j.result || text;
+      } catch {
+        return text; // falls Make plain text zurückgibt
+      }
+    }
+
+    // Sicherer Wrapper
     async function callAI(prompt) {
       try {
-        // Versuche JSON-API (empfohlen)
-        const res = await fetch(relay, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ prompt })
-        });
-
-        // Fallbacks: JSON {answer}, Text, oder {content}
-        const text = await res.text();
-        try {
-          const j = JSON.parse(text);
-          return j.answer || j.content || JSON.stringify(j, null, 2);
-        } catch {
-          return text;
-        }
+        return await callAI_viaProxy({ prompt });
       } catch (err) {
-        console.error(err);
+        console.error("Proxy/Webhook Fehler:", err);
         return `**Fehler beim Aufruf des Prüf-Dienstes.**\n\nDetails: \`${String(err)}\``;
       }
     }
 
-    // === Events ===
+    // === Events: Quiz absenden ===
     submitBtn.addEventListener("click", async ()=>{
       const answers = collectAnswers();
       const prompt = buildPrompt(answers);
@@ -324,6 +298,7 @@ ${a.answer || "(leer)"}`
       lucide.createIcons();
     });
 
+    // === Export ===
     exportBtn.addEventListener("click", ()=>{
       const payload = {
         startedAt: new Date(startTs).toISOString(),
@@ -341,6 +316,7 @@ ${a.answer || "(leer)"}`
       URL.revokeObjectURL(url);
     });
 
+    // === Reset ===
     resetBtn.addEventListener("click", ()=>{
       if (!confirm("Alle Eingaben wirklich löschen?")) return;
       startTs = Date.now();
@@ -349,6 +325,47 @@ ${a.answer || "(leer)"}`
       resultWrap.classList.add("hidden");
       aiResult.innerHTML = "";
       window.scrollTo({top:0, behavior:"smooth"});
+    });
+
+    // === Schnellfrage-Chat (nutzt chat, q) ===
+    function pushChat(role, text) {
+      const wrap = document.createElement("div");
+      wrap.className = "flex gap-2";
+      wrap.innerHTML = `
+        <div class="w-8 h-8 rounded-full ${role==='user'?'bg-sky-100':'bg-emerald-100'} grid place-items-center">
+          <i data-lucide="${role==='user'?'user':'bot'}" class="w-4 h-4 ${role==='user'?'text-sky-700':'text-emerald-800'}"></i>
+        </div>
+        <div class="flex-1 text-sm">
+          ${role==='user' ? `<p class="mb-1 font-medium text-slate-700">Du</p>` : `<p class="mb-1 font-medium text-slate-700">KI</p>`}
+          <div class="prose prose-slate">${role==='user' ? text : marked.parse(text)}</div>
+        </div>`;
+      chat.appendChild(wrap);
+      chat.scrollTop = chat.scrollHeight;
+      lucide.createIcons();
+    }
+
+    async function askQuick(question) {
+      if (!question.trim()) return;
+      pushChat('user', question);
+      try {
+        const reply = await callAI(question);
+        pushChat('assistant', reply || "_Keine Antwort erhalten._");
+      } catch (e) {
+        pushChat('assistant', `Fehler: \`${String(e)}\``);
+      }
+    }
+
+    askBtn.addEventListener("click", (e)=>{
+      e.preventDefault();
+      askQuick(q.value || "");
+      q.value = "";
+    });
+
+    q.addEventListener("keydown", (ev)=>{
+      if ((ev.ctrlKey || ev.metaKey) && ev.key === "Enter") {
+        ev.preventDefault();
+        askBtn.click();
+      }
     });
 
     // Init
