@@ -32,7 +32,6 @@
       background:#f0f9ff; color:#0b3b52; padding:.65rem .75rem; border-radius:.75rem;
     }
     .tip p { margin: .15rem 0; }
-    .tip ul { margin:.25rem 0 0 .9rem; list-style:disc; }
     .icon-btn { display:inline-flex; align-items:center; gap:.35rem; }
   </style>
 </head>
@@ -127,7 +126,7 @@
   <script>
   document.addEventListener("DOMContentLoaded", () => {
     // === Konfiguration ===
-    const relay = "/api/linda-proxy"; // Vercel API, postet serverseitig zu Make
+    const relay = "/api/linda-proxy"; // Vercel API → Make
 
     // UI Refs
     const form        = document.getElementById("form");
@@ -156,17 +155,17 @@
       timerEl.textContent = `${m}:${r}`;
     }, 1000);
 
-    // Fragen + Offline-Musterlösungen (Tooltips)
+    // Fragen + OFFLINE-Musterlösungen (korrigiert: V1, V6, V10)
     const QUESTIONS = [
       {
         ref: "V1 – Vertragsinhalte",
         q: "Nenne drei Inhalte, die zwingend in einen Berufsausbildungsvertrag gehören.",
         tip: [
           "Typische Pflichtangaben (Auszug):",
-          "• Art, Ziel und Beginn/Dauer der Ausbildung; Ausbildungsstätte",
-          "• sachliche/zeitliche Gliederung (Ausbildungsplan) & tägliche Ausbildungszeit",
-          "• Vergütung, Probezeit, Urlaub, Pflichten der Parteien, Kündigungsregel, Hinweis auf Tarif/BV",
-          "Rechtsgedanke: BBiG §11 (Niederschrift; elektronische Form ausgeschlossen)."
+          "• Name/Anschrift der Parteien; Beginn & Dauer; Ausbildungsstätte",
+          "• Ziel, sachliche & zeitliche Gliederung; tägliche Ausbildungszeit",
+          "• Vergütung (ggf. Zusammensetzung), Probezeit, Urlaub, Überstundenregelung, Kündigungsvoraussetzungen, Hinweis auf Tarif/BV, Form des Ausbildungsnachweises",
+          "Rechtsgrundlage: § 11 BBiG (Vertragsabfassung in Textform; Mindestinhalte; elektronische Übermittlung & Empfangsnachweis)."
         ]
       },
       {
@@ -174,47 +173,46 @@
         q: "Was regelt eine Ausbildungsordnung? Nenne drei Punkte.",
         tip: [
           "Kerninhalte:",
-          "• Berufsbild/Fertigkeiten, Kenntnisse, Fähigkeiten",
+          "• Berufsbild (Fertigkeiten, Kenntnisse, Fähigkeiten)",
           "• Dauer der Ausbildung & Ausbildungsrahmenplan",
           "• Prüfungsanforderungen (Zwischen-/Abschlussprüfung)",
-          "Rechtsgedanke: BBiG §§4–5."
+          "Rechtsgrundlagen: §§ 4–5 BBiG."
         ]
       },
       {
         ref: "V3 – Ruhezeit Jugendliche",
         q: "Jugendliche: Was gilt zur täglichen Ruhezeit?",
         tip: [
-          "Grundsatz:",
           "• Mindestens 12 Stunden ununterbrochene Freizeit zwischen zwei Arbeitstagen.",
-          "• Besondere Schutzvorschriften zu Nacht-/Sonn-Feiertagsarbeit.",
-          "Rechtsgrundlage: JArbSchG (§13 ff.)."
+          "• Weitere Schutzvorschriften zu Nacht-/Sonn- und Feiertagsarbeit.",
+          "Rechtsgrundlage: JArbSchG (z. B. § 13)."
         ]
       },
       {
         ref: "V4 – Unterschrift Minderjährige",
         q: "Wer unterschreibt den Ausbildungsvertrag bei Minderjährigen mit gemeinsamem Sorgerecht der Eltern?",
         tip: [
-          "• Beide Eltern als gesetzliche Vertreter + der/die Minderjährige selbst (Zustimmung).",
-          "Rechtsgrundlage: BGB §§1626, 1629; BBiG §10 ff. (Vertragsschluss)."
+          "• Beide Eltern (gesetzliche Vertreter) + der/die Minderjährige.",
+          "• Besonderheit: Befreiung von § 181 BGB gem. § 10 Abs. 3 BBiG.",
+          "Rechtsgrundlagen: §§ 1626, 1629 BGB; § 10 BBiG."
         ]
       },
       {
         ref: "V5 – Betrieblicher Ausbildungsplan",
         q: "Was versteht man unter dem betrieblichen Ausbildungsplan (kurz erklärt)?",
         tip: [
-          "• Betriebliche Ausgestaltung des Ausbildungsrahmenplans.",
-          "• Zeitlich-sachliche Gliederung der Lernziele, Abteilungen, Einsätze.",
-          "• Dient Steuerung, Dokumentation und Qualitätssicherung.",
-          "Rechtsgedanke: BBiG §5 i. V. m. Eignung/Ausbildungsstätte (§§27 ff. a. F., heute §7)."
+          "• Betriebliche Ausgestaltung des Ausbildungsrahmenplans (§ 5 BBiG).",
+          "• Zeitlich-sachliche Gliederung: Lernziele, Abteilungen, Einsätze.",
+          "• Dient Steuerung und Qualitätssicherung; Bezug auch in § 11 Abs. 1 S. 2 BBiG (Vertragsinhalte)."
         ]
       },
       {
         ref: "V6 – Digitale Zustellung",
         q: "Darf der Ausbildungsvertrag digital zugestellt werden?",
         tip: [
-          "• Abschluss: Schriftform erforderlich; elektronische Form ausgeschlossen.",
-          "• Digitale Kopie/Übermittlung zulässig – Original mit eigenhändiger Unterschrift erforderlich.",
-          "Rechtsgrundlage: BBiG §11 (Niederschrift)."
+          "• Ja: Vertragsabfassung in Textform; elektronische Abfassung/Übermittlung zulässig.",
+          "• Empfänger müssen speichern & ausdrucken können; Empfang ist nachzuweisen; Aufbewahrungspflicht.",
+          "Rechtsgrundlagen: §§ 10, 11 BBiG."
         ]
       },
       {
@@ -222,35 +220,32 @@
         q: "Wie lange darf die Probezeit in der Ausbildung höchstens sein?",
         tip: [
           "• Mindestens 1 Monat, höchstens 4 Monate.",
-          "Rechtsgrundlage: BBiG §20."
+          "Rechtsgrundlage: § 20 BBiG."
         ]
       },
       {
         ref: "V8 – Urlaub Max (27)",
         q: "Max ist 27: Wo ist sein Urlaubsanspruch geregelt?",
         tip: [
-          "• Gesetzlicher Mindesturlaub im BUrlG; ggf. mehr durch Tarifvertrag/Betriebsvereinbarung/Vertrag.",
-          "Rechtsgrundlage: BUrlG; Tarif-/Betriebsvereinbarungen."
+          "• Mindesturlaub im BUrlG; ggf. mehr durch Tarifvertrag/Betriebs- oder Dienstvereinbarung/Vertrag.",
+          "Rechtsgrundlagen: BUrlG; ggf. Kollektiv-/Individualrecht."
         ]
       },
       {
         ref: "V9 – Nachtarbeit Bäckerei (19)",
         q: "Darf Anna-Lena (19) im Rahmen der Ausbildung nachts in der Bäckerei arbeiten?",
         tip: [
-          "• Mit 19 gilt ArbZG (nicht mehr JArbSchG). Nachtarbeit grundsätzlich möglich,",
-          "  wenn betriebs-/ausbildungsbedingt und ArbZG (Ruhezeiten/Schutz) eingehalten werden.",
-          "• Besondere branchentypische Zeitfenster beachten.",
-          "Rechtsgrundlage: ArbZG; (Jugendliche <18: JArbSchG mit Nachtarbeitsverbot/-ausnahmen)."
+          "• Mit 19 gilt das ArbZG (Erwachsene): Nacht-/Frühzeiten grundsätzlich möglich im gesetzlichen Rahmen.",
+          "• Branchentypische Zeitfenster & Ruhezeiten beachten.",
+          "Rechtsgrundlage: ArbZG (für ≥18 J.)."
         ]
       },
       {
         ref: "V10 – Schulweg → Betrieb",
         q: "Zählt der Weg von der Berufsschule zurück in den Betrieb als Arbeitszeit?",
         tip: [
-          "• Grundsätzlich keine Arbeitszeit (Wegezeit).",
-          "• Ausnahme: Wenn vertraglich/tariflich/betrieblich angeordnet bzw. geregelt.",
-          "• Unterrichtszeit selbst ist anzurechnen (Details je nach Rechtslage/Alter).",
-          "Rechtsgedanke: BBiG (Anrechnung Berufsschule), ArbZG/BUrlG; kollektivrechtliche Regelungen."
+          "• Ja: Wegezeiten zwischen Berufsschule und Ausbildungsstätte sind anzurechnen.",
+          "Rechtsgrundlage: § 15 Abs. 2 Nr. 1 BBiG."
         ]
       }
     ];
@@ -357,7 +352,7 @@
         });
       });
 
-      // Einzel-KI-Check
+      // Einzel-KI-Check (wieder eingebaut & robust)
       form.querySelectorAll("[data-ask]").forEach(btn=>{
         btn.addEventListener("click", async (e)=>{
           if (!accepted) { showToast("Bitte zuerst den Hinweis bestätigen."); return; }
@@ -427,7 +422,7 @@ Antwort TN: ${answer || "(leer)"}
       } catch { return text; }
     }
 
-    // Einzel-KI-Check
+    // Einzel-KI-Check – FUNKTIONIERT PRO FRAGE
     async function askPerAnswer(idx, btnEl){
       const ta = document.getElementById(`q_${idx}`);
       const fb = document.getElementById(`fb_${idx}`);
