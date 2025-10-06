@@ -15,7 +15,7 @@
 
   <style>
     :root{
-      /* Nova-ähnliche Palette */
+      /* Nova-inspiriertes neutrales System */
       --surface: #ffffff;
       --surface-2: #f6f8fb;
       --ink: #0f172a;
@@ -24,7 +24,6 @@
       --brand: #0ea5e9;
       --brand-2: #2563eb;
       --ok: #10b981;
-      --warn: #f59e0b;
       --radius: 14px;
       --radius-sm: 10px;
       --shadow-1: 0 8px 28px rgba(2,8,23,.06);
@@ -40,17 +39,17 @@
         --border: #1f2937;
       }
     }
+
     body{ background: linear-gradient(to bottom, #fff, #f4f7fb); color: var(--ink); }
     .container{ max-width: 1000px; margin-inline: auto; padding-inline: 1rem; }
     .card{ background: var(--surface); border-radius: var(--radius); box-shadow: var(--shadow-1); }
     .chip{ font-size: 12px; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--border); color: var(--muted); background: var(--surface-2); }
-    .btn{ display:inline-flex; align-items:center; gap:.5rem; padding:.65rem .9rem; border-radius: var(--radius-sm); border:1px solid var(--border); background: var(--surface); color: var(--ink); }
+    .btn{ display:inline-flex; align-items:center; gap:.5rem; padding:.7rem 1rem; border-radius: var(--radius-sm); border:1px solid var(--border); background: var(--surface); color: var(--ink); touch-action: manipulation; }
     .btn:hover{ background:#f8fafc; }
     .btn-ghost{ background:transparent; }
     .btn-primary{ border-color: transparent; background: linear-gradient(180deg, var(--brand), var(--brand-2)); color:#fff; }
     .btn-primary:hover{ filter: brightness(0.98); }
-    .btn-danger{ border-color: transparent; background: linear-gradient(180deg, #f87171, #ef4444); color:#fff; }
-    .btn-lg{ padding:.9rem 1.05rem; border-radius: 12px; }
+    .btn-lg{ padding:.95rem 1.1rem; border-radius: 12px; }
     .btn:focus-visible{ outline: 3px solid color-mix(in oklab, var(--brand) 50%, transparent); outline-offset: 2px; }
     .q-badge{ background: color-mix(in oklab, var(--brand) 18%, #eaf6ff 82%); color: color-mix(in oklab, var(--brand) 80%, #0b3b52 20%); border: none; }
     .pill{ border: 1px solid var(--border); border-radius: var(--radius-sm); }
@@ -62,20 +61,33 @@
     details[open] summary .chev{ transform: rotate(180deg); }
     summary::-webkit-details-marker{ display:none; }
     summary{ list-style:none; }
-    /* Blauer Disclaimer */
+
+    /* Blauer Disclaimer (Nova) */
     .notice{ background: linear-gradient(135deg, #e0f2fe, #dbeafe); border-bottom: 1px solid rgba(2,8,23,.08); }
     .notice .inner{ backdrop-filter: blur(6px); }
+
     /* Modal */
     .modal-backdrop{ position:fixed; inset:0; background:rgba(2,6,23,.45); display:none; }
     .modal{ position:fixed; inset:0; display:none; align-items:center; justify-content:center; padding:16px; }
     .modal .panel{ width:100%; max-width:720px; border-radius:1rem; }
     .modal.open, .modal-backdrop.open{ display:flex; }
-    @media (max-width: 640px){ .sticky-actions{ padding-bottom: max(env(safe-area-inset-bottom), 12px); } }
+
+    /* iOS/Android safe-area */
+    .safe-bottom{ padding-bottom: max(env(safe-area-inset-bottom), 12px); }
+
     /* Print */
     @media print{
       .sticky, .sticky-actions, #notice, #openAsk, #openAskMobile { display:none!important; }
       body{ background: #fff!important; }
       .card{ box-shadow:none!important; border:1px solid #ddd; }
+      footer{ position: fixed; bottom: 10mm; left: 0; right: 0; }
+    }
+
+    /* Footer */
+    footer.app-footer{
+      font-family: Arial, Helvetica, sans-serif;
+      font-size:10px;
+      line-height:1.4;
     }
   </style>
 </head>
@@ -91,6 +103,7 @@
         <p class="font-semibold text-sky-900">Fachlicher Hinweis (Pilot)</p>
         <p class="text-sky-900/90">
           Die KI-Prüfung unterstützt beim Lernen. Ergebnisse müssen fachlich geprüft werden und ersetzen keine Rechtsberatung.
+          <strong>Es dürfen keine personenbezogenen oder sensiblen Daten eingegeben oder erfasst werden.</strong>
         </p>
         <label class="mt-2 inline-flex items-center gap-2">
           <input id="ack" type="checkbox" class="w-4 h-4 accent-sky-600" aria-describedby="ackDesc">
@@ -119,18 +132,22 @@
       </button>
     </div>
 
-    <!-- Steuerleiste Auswahl -->
-    <div class="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2 items-center">
+    <!-- Steuerleiste -->
+    <div class="mt-3 grid grid-cols-1 lg:grid-cols-2 gap-2 items-center">
       <div class="text-xs text-slate-600 flex items-center gap-2">
         <i data-lucide="lightbulb" class="w-4 h-4"></i>
         <span>Musterlösungen lassen sich pro Frage oder global ein-/ausblenden.</span>
       </div>
-      <div class="flex flex-wrap gap-2 justify-start sm:justify-end">
+      <div class="flex flex-wrap gap-2 justify-start lg:justify-end">
         <button id="toggleAllBtn" class="btn" aria-pressed="false" aria-controls="form">
           <i data-lucide="eye" class="w-4 h-4"></i><span>Alle Lösungen einblenden</span>
         </button>
         <button id="selectAllBtn" class="btn">Alle auswählen</button>
         <button id="clearSelBtn" class="btn">Auswahl löschen</button>
+        <label class="btn pill cursor-pointer">
+          <input id="autoSelectFilled" type="checkbox" class="w-4 h-4 accent-sky-600 mr-2">
+          Nur Antworten mit Inhalt automatisch auswählen
+        </label>
       </div>
     </div>
   </header>
@@ -173,7 +190,7 @@
   </main>
 
   <!-- Sticky Action-Bar -->
-  <div class="sticky-actions sticky bottom-0 bg-white/95 border-t border-slate-200 backdrop-blur">
+  <div class="sticky-actions sticky bottom-0 bg-white/95 border-t border-slate-200 backdrop-blur safe-bottom">
     <div class="container px-4 py-2 flex flex-wrap gap-2">
       <button id="openAskMobile" class="sm:hidden flex-1 btn btn-ghost">
         <i data-lucide="message-square" class="w-5 h-5"></i> Eigene Frage
@@ -226,13 +243,24 @@
     </div>
   </div>
 
+  <!-- Footer -->
+  <footer class="app-footer bg-slate-100 text-slate-700">
+    <div class="container px-4 py-4">
+      Diese Anwendung nutzt künstliche Intelligenz (KI). Du stimmst mit der Nutzung zu, dass Deine Texte und Antwort von OpenAI verarbeitet und geprüft werden.
+      Es werden keine personenbezogenen Daten von Dir erhoben, erfasst und verarbeitet. Dieses Tool darf nicht missbräuchlich verwendet werden.
+      Es dürfen keine personenbezogenen Daten, sensiblen Daten oder Daten erfasst werden, die Rückschlüsse auf eine Person, zum Beispiel Auszubildenden,
+      Ausbilder oder ähnliche Personen ermöglichen. Jegliche Haftung ist ausgeschlossen. Alle Antworten sind vom Anwender zu prüfen.
+      KI-generierte Antworten können fehlerhaft sein. Keine Haftung.
+    </div>
+  </footer>
+
   <script>
   document.addEventListener("DOMContentLoaded", () => {
     // === Konfiguration ===
     const relay = "/api/linda-proxy";   // Wenn leer, werden KI-Buttons ausgeblendet
     const BATCH_SIZE = 5;
     const MAX_ANSWER_CHARS = 1500;
-    const STORAGE_KEY = "BBIGQUIZ_V1_STATE";
+    const STORAGE_KEY = "BBIGQUIZ_V2_STATE";
 
     // UI-Refs
     const form        = document.getElementById("form");
@@ -254,6 +282,7 @@
     const toggleAllBtn= document.getElementById("toggleAllBtn");
     const selectAllBtn= document.getElementById("selectAllBtn");
     const clearSelBtn = document.getElementById("clearSelBtn");
+    const autoSelectFilled = document.getElementById("autoSelectFilled");
     const openAsk     = document.getElementById("openAsk");
     const openAskMobile = document.getElementById("openAskMobile");
     // Modal
@@ -297,7 +326,7 @@
         "≥18: ArbZG; Freistellungspflicht § 15 BBiG bleibt."
       ]},
       { ref:"V6 – Ruhezeit Jugendliche", q:"Welche tägliche Mindestruhezeit gilt für Jugendliche?", tip:[
-        "Mindestens 12 Stunden ununterbrochene Freizeit.","JArbSchG (z. B. § 13)."
+        "Mindestens 12 Stunden.","JArbSchG (z. B. § 13)."
       ]},
       { ref:"V7 – Vergütung", q:"Was gilt grundsätzlich zur Angemessenheit der Ausbildungsvergütung?", tip:[
         "Mindestens gesetzliche Mindestvergütung (§ 17 Abs. 2 BBiG) bzw. tariflich/branchenüblich; Anstieg je Ausbildungsjahr."
@@ -319,29 +348,29 @@
         "Bei Nichtbestehen der Prüfung oder besonderen Fällen (längere Ausfälle).","§ 8 Abs. 2 BBiG; einvernehmlich oder auf Antrag."
       ]},
       { ref:"V13 – Teilzeitberufsausbildung", q:"Wie funktioniert eine Teilzeitberufsausbildung und was bleibt unverändert?", tip:[
-        "Reduzierte tägliche/Wochenzeit; Lernziele bleiben; ggf. längere Gesamtdauer.","§ 7a BBiG; Gleichwertigkeit, Abstimmung mit IHK/Schule."
+        "Reduzierte tägliche/Wochenzeit; Lernziele bleiben; ggf. längere Gesamtdauer.","§ 7a BBiG."
       ]},
       { ref:"V14 – Datenschutz/Geheimnis", q:"Welche Pflichten haben Auszubildende zu Datenschutz und Betriebsgeheimnissen?", tip:[
-        "Wahrung von Geschäfts-/Betriebsgeheimnissen; Einhaltung DSGVO/BDSG.","Unterweisungen dokumentieren."
+        "Geheimhaltung; DSGVO/BDSG beachten.","Unterweisungen dokumentieren."
       ]},
       { ref:"V15 – Kündigung in der Ausbildung", q:"Welche Kündigungsregeln gelten in und nach der Probezeit?", tip:[
-        "Probezeit: jederzeit fristlos ohne Gründe (§ 22 Abs. 1 BBiG).",
+        "Probezeit: jederzeit fristlos (§ 22 Abs. 1 BBiG).",
         "Nach Probezeit: fristlos aus wichtigem Grund oder mit Frist (Berufsaufgabe/Wechsel) – schriftlich, Gründe nennen (§ 22 BBiG)."
       ]},
       { ref:"V16 – Schwangerschaft/Mutterschutz", q:"Welche Schutzregelungen gelten bei Schwangerschaft in der Ausbildung?", tip:[
-        "MuSchG: Schutzfristen, Beschäftigungsverbote, Kündigungsschutz.","Anpassung der Ausbildungsorganisation; Schule beachten."
+        "MuSchG: Schutzfristen, Beschäftigungsverbote, Kündigungsschutz.","Anpassung der Ausbildungsorganisation."
       ]},
       { ref:"V17 – Behinderung/Nachteilsausgleich", q:"Wie werden Auszubildende mit Behinderung in Prüfungen unterstützt?", tip:[
-        "Nachteilsausgleich (Zeitverlängerung, Hilfsmittel) auf Antrag mit Nachweisen.","Chancengleichheit, keine Notenverbesserung."
+        "Nachteilsausgleich (Zeitverlängerung, Hilfsmittel) auf Antrag.","Chancengleichheit, keine Notenverbesserung."
       ]},
       { ref:"V18 – Auslandsaufenthalt", q:"Sind Ausbildungsabschnitte im Ausland möglich und wie werden sie angerechnet?", tip:[
-        "Ja, bis zu festgelegten Zeitanteilen; müssen dem Ausbildungsziel dienen.","§ 2 Abs. 3 BBiG; Abstimmung & Dokumentation erforderlich."
+        "Ja, bis festgelegte Zeitanteile; Ausbildungsziel muss gewahrt bleiben.","§ 2 Abs. 3 BBiG."
       ]},
-      { ref:"V19 – Versetzung/Ausbildungsstätte", q:"Darf der Betrieb Azubis in andere Abteilungen/Niederlassungen versetzen?", tip:[
-        "Ja, wenn ausbildungsdienlich und abgedeckt; Zumutbarkeit & ggf. Reisekosten regeln.","§ 14 BBiG; billiges Ermessen."
+      { ref:"V19 – Versetzung/Ausbildungsstätte", q:"Darf der Betrieb Azubis versetzen?", tip:[
+        "Ja, wenn ausbildungsdienlich und zumutbar; Reisekosten klären.","§ 14 BBiG; billiges Ermessen."
       ]},
-      { ref:"V20 – Insolvenz des Betriebs", q:"Was passiert mit dem Ausbildungsverhältnis bei Insolvenz des Ausbildungsbetriebs?", tip:[
-        "Fortführung durch Insolvenzverwalter möglich; sonst Anschlussbetrieb (IHK unterstützt).","Ansprüche ggf. Insolvenzgeld; § 102 ff. InsO; Kammerhilfe."
+      { ref:"V20 – Insolvenz des Betriebs", q:"Was passiert bei Insolvenz des Ausbildungsbetriebs?", tip:[
+        "Fortführung möglich; sonst Anschlussbetrieb mit IHK-Unterstützung.","Ansprüche ggf. Insolvenzgeld."
       ]}
     ];
 
@@ -406,10 +435,13 @@
         form.appendChild(card);
       });
 
-      // Autosize + Progress
+      // Autosize + Progress + Autosave + AutoSelect-Filled
       form.querySelectorAll("textarea").forEach(ta=>{
         autosize(ta);
-        ta.addEventListener("input", ()=>{ autosize(ta); updateProgress(); scheduleSave(); });
+        ta.addEventListener("input", ()=>{
+          autosize(ta); updateProgress(); scheduleSave();
+          if (autoSelectFilled.checked) autoSelectUpdate();
+        });
         ta.addEventListener("keydown", (ev)=>{
           if ((ev.ctrlKey||ev.metaKey) && ev.key==="Enter"){ ev.preventDefault(); submitBtn.click(); }
         });
@@ -430,6 +462,7 @@
             "- …"
           ].join("\n");
           autosize(ta); updateProgress(); scheduleSave();
+          if (autoSelectFilled.checked) autoSelectUpdate();
         });
       });
 
@@ -465,6 +498,18 @@
       const n = selectedIndices().length;
       selText.textContent = `${n} ausgewählt`;
     }
+    function autoSelectUpdate(){
+      const tas = [...form.querySelectorAll("textarea")];
+      tas.forEach((ta, i)=>{
+        const has = (ta.value||"").trim().length>0;
+        const cb = document.getElementById(`sel_${i}`);
+        if (cb) cb.checked = has;
+      });
+      updateSelectionCount(); scheduleSave();
+    }
+    autoSelectFilled.addEventListener("change", ()=>{
+      if (autoSelectFilled.checked) autoSelectUpdate();
+    });
     selectAllBtn.addEventListener("click", ()=> setAllSelected(true));
     clearSelBtn.addEventListener("click", ()=> setAllSelected(false));
 
@@ -479,12 +524,12 @@
     }
 
     // === Prompt-Builder ===
-    function collectAnswers(indices=null, onlyWithContent=false){
+    function collectAnswers(indices=null){
       const useIdx = indices ?? QUESTIONS.map((_,i)=>i);
       return useIdx.map(i=>{
         const v=(document.getElementById(`q_${i}`)?.value||"").trim().slice(0, MAX_ANSWER_CHARS);
         return { nr:i+1, ref:QUESTIONS[i].ref, question:QUESTIONS[i].q, answer:v };
-      }).filter(a => onlyWithContent ? a.answer.length>0 : true);
+      });
     }
 
     function buildPromptAll(answers){
@@ -559,11 +604,15 @@ Antwort TN: ${answer || "(leer)"}
       }
     }
 
-    // === Gesamt-Feedback (nur Auswahl, batching) ===
+    // === Gesamt-Feedback (Auswahl, batching) ===
     submitBtn.addEventListener("click", async ()=>{
       if (!accepted){ showToast("Bitte zuerst den Hinweis bestätigen."); return; }
 
       let idxs = selectedIndices();
+      if (idxs.length===0 && autoSelectFilled.checked){
+        autoSelectUpdate();
+        idxs = selectedIndices();
+      }
       if (idxs.length===0){
         const filledIdx = QUESTIONS.map((_,i)=>i).filter(i => (document.getElementById(`q_${i}`)?.value || "").trim().length>0);
         idxs = filledIdx.length ? filledIdx : QUESTIONS.map((_,i)=>i);
@@ -602,21 +651,11 @@ Antwort TN: ${answer || "(leer)"}
     function saveState(){
       const answers = QUESTIONS.map((_,i)=> (document.getElementById(`q_${i}`)?.value||""));
       const selected = [...form.querySelectorAll("[data-select]")].map(cb=>cb.checked);
-      const state = {
-        ts: Date.now(),
-        accepted,
-        answers,
-        selected
-      };
-      try{
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-      }catch(e){ /* storage full or denied */ }
+      const state = { ts: Date.now(), accepted, answers, selected, autoSelect: autoSelectFilled.checked };
+      try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }catch(e){}
     }
     let saveTimer=null;
-    function scheduleSave(){
-      clearTimeout(saveTimer);
-      saveTimer = setTimeout(saveState, 800);
-    }
+    function scheduleSave(){ clearTimeout(saveTimer); saveTimer = setTimeout(saveState, 800); }
     function loadState(){
       try{
         const raw = localStorage.getItem(STORAGE_KEY);
@@ -634,27 +673,30 @@ Antwort TN: ${answer || "(leer)"}
             if (cb) cb.checked = !!val;
           });
         }
+        if (st.autoSelect){ autoSelectFilled.checked = true; }
         if (st.accepted){
-          accepted = true;
-          notice.style.display = "none";
-          ack.checked = true;
-          ackState.textContent = "Hinweis bestätigt";
-          ackState.className = "chip";
+          accepted = true; notice.style.display = "none";
+          ack.checked = true; ackState.textContent = "Hinweis bestätigt"; ackState.className = "chip";
         }
-        updateSelectionCount();
-        updateProgress();
-      }catch(e){ /* ignore */ }
+        updateSelectionCount(); updateProgress();
+      }catch(e){}
     }
 
-    // === Export: PDF & Markdown ===
-    function buildExportData(){
+    // === Export: MD & PDF (ausgebaut) ===
+    function buildExportIndices(){
       let idxs = selectedIndices();
+      if (idxs.length===0 && autoSelectFilled.checked){
+        autoSelectUpdate();
+        idxs = selectedIndices();
+      }
       if (idxs.length===0){
         const withContent = QUESTIONS.map((_,i)=>i).filter(i => (document.getElementById(`q_${i}`)?.value || "").trim().length>0);
         idxs = withContent.length ? withContent : QUESTIONS.map((_,i)=>i);
       }
-      const answers = collectAnswers(idxs, false);
-      return answers;
+      return idxs;
+    }
+    function buildExportData(){
+      return collectAnswers(buildExportIndices());
     }
 
     function exportMarkdown(){
@@ -663,8 +705,8 @@ Antwort TN: ${answer || "(leer)"}
       const md = [
         `# BBiG-Quiz – Antworten`,
         ``,
-        `Exportzeitpunkt: ${new Date().toLocaleString()}`,
-        `Auswahl: ${data.length} Frage(n)`,
+        `Export: ${new Date().toLocaleString()} — Anzahl: ${data.length}`,
+        `Hinweis: Keine personenbezogenen Daten erfassen.`,
         `---`,
         ``,
         ...data.map(a=>[
@@ -674,8 +716,6 @@ Antwort TN: ${answer || "(leer)"}
           `**Antwort:**`,
           ``,
           a.answer ? a.answer : "_(leer)_",
-          ``,
-          `---`,
           ``,
         ].join("\n"))
       ].join("\n");
@@ -689,24 +729,22 @@ Antwort TN: ${answer || "(leer)"}
 
     function exportPDF(){
       const data = buildExportData();
-      const win = window.open("", "_blank");
       const styles = `
         <style>
-          body{ font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial; color:#0f172a; }
+          body{ font-family: Arial, Helvetica, sans-serif; color:#0f172a; }
           h1{ font-size:20px; margin:0 0 6px; }
           .meta{ color:#475569; font-size:12px; margin-bottom:12px; }
           .q{ page-break-inside: avoid; border:1px solid #e5e7eb; border-radius:10px; padding:10px 12px; margin:10px 0; }
           .ref{ display:inline-block; font-size:12px; padding:2px 8px; border:1px solid #e5e7eb; border-radius:999px; color:#334155; background:#f8fafc; margin-bottom:6px; }
           .fr{ font-weight:600; margin:4px 0; }
           pre{ white-space:pre-wrap; word-wrap:break-word; background:#f8fafc; padding:8px; border-radius:8px; border:1px solid #e5e7eb; }
+          footer{ position: fixed; bottom: 12mm; left: 0; right: 0; text-align:center; font-size:10px; color:#64748b; }
           @page{ margin: 16mm; }
-          header{ position: running(pageHeader); }
         </style>
       `;
-      const meta = `<div class="meta">Export: ${new Date().toLocaleString()} – Anzahl: ${data.length}</div>`;
+      const meta = `<div class="meta">Export: ${new Date().toLocaleString()} — Anzahl: ${data.length} — Hinweis: Keine personenbezogenen Daten erfassen.</div>`;
       const html = `
-        <html>
-        <head><meta charset="utf-8">${styles}<title>BBiG-Quiz – Export</title></head>
+        <html><head><meta charset="utf-8">${styles}<title>BBiG-Quiz – Export</title></head>
         <body>
           <h1>BBiG-Quiz – Antworten</h1>
           ${meta}
@@ -718,12 +756,10 @@ Antwort TN: ${answer || "(leer)"}
               <div class="fr">Antwort</div>
               <pre>${(a.answer||"(leer)").replace(/[<>&]/g, s => ({'<':'&lt;','>':'&gt;','&':'&amp;'}[s]))}</pre>
             </section>`).join("")}
+          <footer>Diese Ausgabe wurde automatisch erstellt. Prüfe alle Inhalte. Keine personenbezogenen Daten erfassen.</footer>
         </body></html>`;
-      win.document.open();
-      win.document.write(html);
-      win.document.close();
-      win.focus();
-      win.print(); // Nutzer kann „Als PDF sichern“ wählen
+      const win = window.open("", "_blank");
+      win.document.open(); win.document.write(html); win.document.close(); win.focus(); win.print();
     }
 
     exportMdBtn.addEventListener("click", exportMarkdown);
@@ -732,7 +768,6 @@ Antwort TN: ${answer || "(leer)"}
     // === Reset ===
     resetBtn.addEventListener("click", ()=>{
       if (!confirm("Alle Eingaben wirklich löschen?")) return;
-      startTs = Date.now();
       localStorage.removeItem(STORAGE_KEY);
       renderQuestions();
       resultWrap.classList.add("hidden");
@@ -753,17 +788,8 @@ Antwort TN: ${answer || "(leer)"}
     toggleAllBtn.addEventListener("click", ()=> setAllDetails(!allOpen));
 
     // === Modal: Eigene Frage ===
-    function openModal(){
-      askBackdrop.classList.add("open");
-      askModal.classList.add("open");
-      askText.focus();
-    }
-    function closeModal(){
-      askBackdrop.classList.remove("open");
-      askModal.classList.remove("open");
-      askResult.classList.add("hidden");
-      askText.value = "";
-    }
+    function openModal(){ askBackdrop.classList.add("open"); askModal.classList.add("open"); askText.focus(); }
+    function closeModal(){ askBackdrop.classList.remove("open"); askModal.classList.remove("open"); askResult.classList.add("hidden"); askText.value = ""; }
     openAsk?.addEventListener("click", openModal);
     openAskMobile?.addEventListener("click", openModal);
     askClose.addEventListener("click", closeModal);
@@ -783,7 +809,7 @@ Antwort TN: ${answer || "(leer)"}
       askResult.innerHTML = `<div class="text-slate-500 text-sm">KI antwortet …</div>`;
 
       try{
-        const prompt = `Beantworte diese individuelle Frage zum Berufsbildungs-/Arbeitsrecht knapp, fundiert und mit §§, falls einschlägig:\n\n${q}`;
+        const prompt = `Beantworte diese individuelle Frage zum Berufsbildungs-/Arbeitsrecht knapp, fundiert und mit §§, falls einschlägig. Erinnere an das Verbot personenbezogener Daten.\n\n${q}`;
         const resp = await callAI({ prompt });
         askResult.innerHTML = (window.marked ? marked.parse(resp || "_Keine Antwort erhalten._") : (resp || "_Keine Antwort erhalten._"));
       }catch(e){
@@ -805,7 +831,7 @@ Antwort TN: ${answer || "(leer)"}
 
     // Init
     renderQuestions();
-    loadState();   // nach dem Rendern laden
+    loadState();
   });
   </script>
 </body>
