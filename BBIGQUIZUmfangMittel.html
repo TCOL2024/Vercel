@@ -5,32 +5,22 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <title>BBiG-Quiz – Kompaktfragen (IHK-Niveau)</title>
-
-  <!-- Tailwind via CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
-
-  <!-- Icons -->
   <script defer src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
-
-  <!-- Marked (optional für Bot-Feedback) -->
   <script defer src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-
   <style>
     :root { --brand:#0ea5e9; }
-    .card { border-radius: 1.15rem; box-shadow: 0 8px 24px rgba(0,0,0,.06); }
-    .q-badge { background: rgba(14,165,233, .12); color: var(--brand); }
-    .pill { border: 1px solid rgba(0,0,0,.07); }
-    .progress { height: 10px; border-radius: 999px; background: linear-gradient(90deg, var(--brand), #22c55e); width: 0%; transition: width .25s ease; }
-    textarea { -webkit-text-size-adjust: 100%; }
-    .btn-lg { padding: .9rem 1.1rem; border-radius: 0.9rem; }
-    .safe-bottom { padding-bottom: max(env(safe-area-inset-bottom), 12px); }
-    .sticky-actions { position: sticky; bottom: 0; z-index: 40; }
-    .chip { font-size: 12px; padding: 4px 8px; border-radius: 999px; }
-    .tip {
-      display:none; margin-top:.5rem; border-left:3px solid #0ea5e9;
-      background:#f0f9ff; color:#0b3b52; padding:.65rem .75rem; border-radius:.75rem;
-    }
-    .tip p { margin: .15rem 0; }
+    .card { border-radius:1.15rem; box-shadow:0 8px 24px rgba(0,0,0,.06); }
+    .q-badge { background:rgba(14,165,233,.12); color:var(--brand); }
+    .pill { border:1px solid rgba(0,0,0,.07); }
+    .progress { height:10px; border-radius:999px; background:linear-gradient(90deg,var(--brand),#22c55e); width:0%; transition:width .25s ease; }
+    textarea { -webkit-text-size-adjust:100%; }
+    .btn-lg { padding:.9rem 1.1rem; border-radius:.9rem; }
+    .safe-bottom { padding-bottom:max(env(safe-area-inset-bottom),12px); }
+    .sticky-actions { position:sticky; bottom:0; z-index:40; }
+    .chip { font-size:12px; padding:4px 8px; border-radius:999px; }
+    .tip { display:none; margin-top:.5rem; border-left:3px solid #0ea5e9; background:#f0f9ff; color:#0b3b52; padding:.65rem .75rem; border-radius:.75rem; }
+    .tip p { margin:.15rem 0; }
     .icon-btn { display:inline-flex; align-items:center; gap:.35rem; }
     figure.tip-figure { margin:.5rem 0 0 0; }
     figure.tip-figure img { width:100%; height:auto; border-radius:.6rem; box-shadow:0 4px 16px rgba(0,0,0,.06); }
@@ -39,17 +29,13 @@
 </head>
 <body class="min-h-screen bg-gradient-to-b from-white to-sky-50 text-slate-800 antialiased">
 
-  <!-- Hinweis / Disclaimer -->
+  <!-- Hinweis -->
   <div id="notice" class="sticky top-0 z-50 bg-amber-50 border-b border-amber-200">
     <div class="max-w-3xl mx-auto px-4 py-3 flex items-start gap-3">
-      <div class="mt-0.5">
-        <i data-lucide="alert-triangle" class="w-5 h-5 text-amber-600"></i>
-      </div>
+      <div class="mt-0.5"><i data-lucide="alert-triangle" class="w-5 h-5 text-amber-600"></i></div>
       <div class="text-sm leading-snug">
         <p class="font-medium text-amber-900">Hinweis (Beta):</p>
-        <p class="text-amber-800">
-          Die KI-Prüfung befindet sich im Test. Antworten müssen fachlich geprüft werden und ersetzen keine Rechtsberatung.
-        </p>
+        <p class="text-amber-800">Die KI-Prüfung befindet sich im Test. Antworten müssen fachlich geprüft werden und ersetzen keine Rechtsberatung.</p>
         <label class="mt-2 flex items-center gap-2 text-amber-900">
           <input id="ack" type="checkbox" class="w-4 h-4 accent-amber-600">
           <span>Ich habe den Hinweis gelesen.</span>
@@ -78,8 +64,7 @@
         <i data-lucide="lightbulb" class="w-4 h-4"></i>
         <span>Tipp: Du kannst alle Lösungen mit einem Klick ein-/ausblenden.</span>
       </div>
-      <button id="toggleAllBtn"
-              class="pill px-3 py-2 rounded-lg text-sm hover:bg-slate-50 flex items-center gap-2"
+      <button id="toggleAllBtn" class="pill px-3 py-2 rounded-lg text-sm hover:bg-slate-50 flex items-center gap-2"
               aria-pressed="false" aria-controls="form">
         <i data-lucide="eye" class="w-4 h-4"></i>
         <span>Alle Lösungen einblenden</span>
@@ -87,7 +72,7 @@
     </div>
   </header>
 
-  <!-- Progress -->
+  <!-- Fortschritt -->
   <section class="max-w-3xl mx-auto px-4 mt-4">
     <div class="card bg-white p-4">
       <div class="flex items-center gap-3">
@@ -107,11 +92,9 @@
 
   <!-- Quiz -->
   <main class="max-w-3xl mx-auto px-4 py-4">
-    <form id="form" class="grid gap-5" novalidate>
-      <!-- Fragen werden per JS eingefügt -->
-    </form>
+    <form id="form" class="grid gap-5" novalidate></form>
 
-    <!-- KI-Gesamtfeedback -->
+    <!-- KI-Feedback -->
     <section id="resultWrap" class="mt-5 hidden" aria-live="polite">
       <div class="card bg-white p-4">
         <div class="flex items-center gap-2 mb-2">
@@ -123,380 +106,244 @@
     </section>
   </main>
 
-  <!-- Sticky Action-Bar -->
+  <!-- Sticky Actions -->
   <div class="sticky-actions bg-white/95 border-t border-slate-200 backdrop-blur safe-bottom">
     <div class="max-w-3xl mx-auto px-4 py-2 flex gap-2">
       <button id="submitBtn" class="flex-1 btn-lg bg-sky-600 text-white font-medium hover:bg-sky-700 active:bg-sky-800 focus:outline-none focus:ring-2 focus:ring-sky-400 flex items-center justify-center gap-2 disabled:opacity-60">
-        <i data-lucide="send" class="w-5 h-5"></i>
-        KI-Feedback gesamt
+        <i data-lucide="send" class="w-5 h-5"></i> KI-Feedback gesamt
       </button>
-      <button id="resetBtn" class="btn-lg px-4 border border-slate-200 text-slate-700 hover:bg-slate-50 rounded-lg">
-        Zurücksetzen
-      </button>
+      <button id="resetBtn" class="btn-lg px-4 border border-slate-200 text-slate-700 hover:bg-slate-50 rounded-lg">Zurücksetzen</button>
     </div>
   </div>
 
-  <!-- Toast -->
   <div id="toast" style="display:none; position:fixed; left:50%; bottom:18px; transform:translateX(-50%); background:#111827; color:#fff; padding:10px 14px; border-radius:10px; font-size:14px; z-index:50;"></div>
 
   <script>
   document.addEventListener("DOMContentLoaded", () => {
-    // === Konfiguration ===
-    const relay = "/api/linda-proxy"; // Vercel API → Make
+    const relay = "/api/linda-proxy";
 
-    // UI Refs
-    const form        = document.getElementById("form");
-    const submitBtn   = document.getElementById("submitBtn");
-    const resetBtn    = document.getElementById("resetBtn");
-    const progressBar = document.getElementById("progressBar");
-    const progressTxt = document.getElementById("progressText");
-    const resultWrap  = document.getElementById("resultWrap");
-    const aiResult    = document.getElementById("aiResult");
-    const timerEl     = document.getElementById("timer");
-    const ack         = document.getElementById("ack");
-    const ackBtn      = document.getElementById("ackBtn");
-    const notice      = document.getElementById("notice");
-    const ackState    = document.getElementById("ackState");
-    const toastEl     = document.getElementById("toast");
-    const toggleAllBtn= document.getElementById("toggleAllBtn");
+    const form = document.getElementById("form"),
+          submitBtn = document.getElementById("submitBtn"),
+          resetBtn = document.getElementById("resetBtn"),
+          progressBar = document.getElementById("progressBar"),
+          progressTxt = document.getElementById("progressText"),
+          resultWrap = document.getElementById("resultWrap"),
+          aiResult = document.getElementById("aiResult"),
+          timerEl = document.getElementById("timer"),
+          ack = document.getElementById("ack"),
+          ackBtn = document.getElementById("ackBtn"),
+          notice = document.getElementById("notice"),
+          ackState = document.getElementById("ackState"),
+          toastEl = document.getElementById("toast"),
+          toggleAllBtn = document.getElementById("toggleAllBtn");
 
-    if (window.marked) marked.setOptions({ breaks: true, gfm: true });
+    if (window.marked) marked.setOptions({ breaks:true, gfm:true });
     if (window.lucide) lucide.createIcons();
 
     // Timer
     let startTs = Date.now();
     setInterval(() => {
-      const s = Math.floor((Date.now() - startTs)/1000);
+      const s = Math.floor((Date.now()-startTs)/1000);
       const m = String(Math.floor(s/60)).padStart(2,"0");
       const r = String(s%60).padStart(2,"0");
       timerEl.textContent = `${m}:${r}`;
     }, 1000);
 
-    // === Bildzuordnung: Folie139–Folie148 zu Fragen V1–V10 ===
+    // ---------- Bildsuche robust ----------
+    const IMAGE_DIRS = ["./", "./img/"];
+    const IMAGE_EXTS = ["png","webp","jpg","jpeg"];
     const IMAGE_MAP = {
-      0: "Folie139-10-04-25_11-39-23-813",
-      1: "Folie140-10-04-25_11-39-23-825",
-      2: "Folie141-10-04-25_11-39-23-831",
-      3: "Folie142-10-04-25_11-39-23-837",
-      4: "Folie143-10-04-25_11-39-23-854",
-      5: "Folie144-10-04-25_11-39-23-860",
-      6: "Folie145-10-04-25_11-39-23-867",
-      7: "Folie146-10-04-25_11-39-23-873",
-      8: "Folie147-10-04-25_11-39-23-881",
-      9: "Folie148-10-04-25_11-39-23-894"
+      0:"Folie139-10-04-25_11-39-23-813",
+      1:"Folie140-10-04-25_11-39-23-825",
+      2:"Folie141-10-04-25_11-39-23-831",
+      3:"Folie142-10-04-25_11-39-23-837",
+      4:"Folie143-10-04-25_11-39-23-854",
+      5:"Folie144-10-04-25_11-39-23-860",
+      6:"Folie145-10-04-25_11-39-23-867",
+      7:"Folie146-10-04-25_11-39-23-873",
+      8:"Folie147-10-04-25_11-39-23-881",
+      9:"Folie148-10-04-25_11-39-23-894"
     };
 
-    // Hilfsfunktion: Bild-Figure für eine Frage erzeugen
-    function buildTipFigure(idx, altTxt){
-      const fileBase = IMAGE_MAP[idx];
-      if (!fileBase) return "";
-      // WebP bevorzugt, PNG-Fallback; fehlt die Datei, blendet onerror die Figure aus.
+    async function findImageUrl(base) {
+      for (const dir of IMAGE_DIRS) {
+        for (const ext of IMAGE_EXTS) {
+          const url = `${dir}${base}.${ext}`;
+          try {
+            // HEAD ist auf manchen Hosts nicht erlaubt -> fallback GET, aber ohne CORS-Credential
+            const res = await fetch(url, { method: "GET" });
+            console.debug("Teste Bild:", url, res.status);
+            if (res.ok) return url;
+          } catch (e) {
+            console.debug("Bild nicht gefunden:", url);
+          }
+        }
+      }
+      return null;
+    }
+
+    async function buildTipFigure(idx, altTxt){
+      const base = IMAGE_MAP[idx];
+      if (!base) return "";
+      const url = await findImageUrl(base);
+      if (!url) return ""; // nichts anzeigen
       return `
         <figure class="tip-figure" data-fig-for="q_${idx}">
-          <picture>
-            <source srcset="${fileBase}.webp" type="image/webp">
-            <img src="${fileBase}.png"
-                 alt="${altTxt}"
-                 loading="lazy" decoding="async"
-                 onerror="this.closest('figure').style.display='none'">
-          </picture>
-          <figcaption>Abbildung zur Musterlösung (${fileBase})</figcaption>
+          <img src="${url}" alt="${altTxt}" loading="lazy" decoding="async">
+          <figcaption>Abbildung zur Musterlösung (${base})</figcaption>
         </figure>
       `;
     }
 
-    // === 20 IHK-Kompaktfragen (mit Tipps/Musterpunkten) ===
+    // ---------- Fragen ----------
     const QUESTIONS = [
-      {
-        ref: "V1 – Mindestinhalte Vertrag",
-        q: "Nenne vier Pflichtangaben, die zwingend in den Berufsausbildungsvertrag gehören.",
-        tip: [
-          "Typisch: Parteien, Beginn/Dauer, Ziel/Berufsbezeichnung, sachliche & zeitliche Gliederung, Vergütung, Probezeit, Urlaub, tägliche Ausbildungszeit, Kündigung, Hinweise auf Tarif/BV, Form des Ausbildungsnachweises.",
-          "§ 11 BBiG; Abfassung in Textform; elektronische Übermittlung zulässig."
-        ]
-      },
-      {
-        ref: "V2 – Ausbildungsordnung",
-        q: "Welche drei Kernpunkte regelt eine Ausbildungsordnung?",
-        tip: [
-          "Berufsbild, Dauer, Ausbildungsrahmenplan; Prüfungen (Zwischen-/Abschluss).",
-          "§§ 4–5 BBiG."
-        ]
-      },
-      {
-        ref: "V3 – Probezeit",
-        q: "Wie lang muss/darf die Probezeit sein – und warum ist sie wichtig?",
-        tip: [
-          "Mindestens 1, höchstens 4 Monate; beidseitig fristlose Kündigung möglich.",
-          "§ 20 BBiG; Zweck: Eignungsprüfung beider Seiten."
-        ]
-      },
-      {
-        ref: "V4 – Minderjährige: Unterschrift",
-        q: "Wer unterschreibt den Vertrag bei Minderjährigen mit gemeinsamem Sorgerecht?",
-        tip: [
-          "Beide Sorgeberechtigten + der/die Minderjährige.",
-          "§ 10 BBiG; §§ 1626, 1629 BGB; Befreiung von § 181 BGB möglich (§ 10 Abs. 3 BBiG)."
-        ]
-      },
-      {
-        ref: "V5 – Berufsschulzeit & Arbeitszeit",
-        q: "Wie werden Berufsschulzeiten auf die Arbeitszeit angerechnet (über 18 vs. unter 18)?",
-        tip: [
-          "U18: besondere Anrechnungs- und Freistellungsregeln (JArbSchG).",
-          "Wegezeiten Schule→Betrieb in der Regel anrechenbar (§ 15 Abs. 2 Nr. 1 BBiG).",
-          "≥18: ArbZG; Freistellungspflicht § 15 BBiG bleibt."
-        ]
-      },
-      {
-        ref: "V6 – Ruhezeit Jugendliche",
-        q: "Welche tägliche Mindestruhezeit gilt für Jugendliche?",
-        tip: [
-          "Mindestens 12 Stunden ununterbrochene Freizeit.",
-          "JArbSchG (z. B. § 13)."
-        ]
-      },
-      {
-        ref: "V7 – Vergütung",
-        q: "Was gilt grundsätzlich zur Angemessenheit der Ausbildungsvergütung?",
-        tip: [
-          "Mindestens gesetzliche Mindestvergütung (§ 17 Abs. 2 BBiG) bzw. tariflich/branchenüblich; Anstieg je Ausbildungsjahr."
-        ]
-      },
-      {
-        ref: "V8 – Überstunden",
-        q: "Sind Überstunden in der Ausbildung zulässig – und wie werden sie behandelt?",
-        tip: [
-          "Nur ausbildungsdienlich, begrenzt, zu vergüten/auszugleichen; Jugendarbeitsschutz beachten.",
-          "BBiG i.V.m. ArbZG/JArbSchG; Dokumentation."
-        ]
-      },
-      {
-        ref: "V9 – Betrieblicher Ausbildungsplan",
-        q: "Was ist der betriebliche Ausbildungsplan und wozu dient er?",
-        tip: [
-          "Betriebsinterne Ausgestaltung des Rahmenplans; zeitlich-sachliche Gliederung.",
-          "Qualitätssicherung & Nachweis; § 5 BBiG, Verweis in § 11 Abs. 1 S. 2 BBiG."
-        ]
-      },
-      {
-        ref: "V10 – Report/Berichtsheft",
-        q: "Welche Bedeutung hat das Berichtsheft und wer kontrolliert es?",
-        tip: [
-          "Nachweis des Ausbildungsstandes; Voraussetzung zur Prüfungszulassung.",
-          "Elektronisch zulässig; Kontrolle durch Ausbilder/in. § 13 Nr. 7, § 14 BBiG."
-        ]
-      },
-      {
-        ref: "V11 – Verkürzung/Anrechnung",
-        q: "Unter welchen Voraussetzungen kann die Ausbildungsdauer verkürzt werden?",
-        tip: [
-          "Vorbildung/Abschlüsse, gute Leistungen, Anrechnung beruflicher Vorbildung.",
-          "§ 8 BBiG; Zustimmung Betrieb/Schule/IHK."
-        ]
-      },
-      {
-        ref: "V12 – Verlängerung",
-        q: "Wann kommt eine Verlängerung der Ausbildung in Betracht?",
-        tip: [
-          "Bei Nichtbestehen der Prüfung oder besonderen Fällen (längere Ausfälle).",
-          "§ 8 Abs. 2 BBiG; einvernehmlich oder auf Antrag."
-        ]
-      },
-      {
-        ref: "V13 – Teilzeitberufsausbildung",
-        q: "Wie funktioniert eine Teilzeitberufsausbildung und was bleibt unverändert?",
-        tip: [
-          "Reduzierte tägliche/Wochenzeit; Gesamtlernziele unverändert; ggf. verlängerte Gesamtdauer.",
-          "§ 7a BBiG; Gleichwertigkeit der Qualifikation, Abstimmung mit IHK/Schule."
-        ]
-      },
-      {
-        ref: "V14 – Datenschutz/Geheimnis",
-        q: "Welche Pflichten haben Auszubildende zu Datenschutz und Betriebsgeheimnissen?",
-        tip: [
-          "Wahrung von Geschäfts- und Betriebsgeheimnissen; Einhaltung der DSGVO/BDSG.",
-          "Pflichten aus Vertrag und Gesetz; Unterweisungen dokumentieren."
-        ]
-      },
-      {
-        ref: "V15 – Kündigung in der Ausbildung",
-        q: "Welche Kündigungsregeln gelten in und nach der Probezeit?",
-        tip: [
-          "Probezeit: jederzeit fristlos ohne Gründe (§ 22 Abs. 1 BBiG).",
-          "Nach Probezeit: fristlos aus wichtigem Grund oder vom Azubi mit Frist (Berufsaufgabe/Wechsel); Schriftform, Gründe nennen (§ 22 BBiG)."
-        ]
-      },
-      {
-        ref: "V16 – Schwangerschaft/Mutterschutz",
-        q: "Welche Schutzregelungen gelten bei Schwangerschaft in der Ausbildung?",
-        tip: [
-          "Mutterschutz (MuSchG): Schutzfristen, Beschäftigungsverbote, Kündigungsschutz.",
-          "Anpassung der Ausbildungsorganisation; schulische Regelungen beachten."
-        ]
-      },
-      {
-        ref: "V17 – Behinderung/Nachteilsausgleich",
-        q: "Wie werden Auszubildende mit Behinderung in Prüfungen unterstützt?",
-        tip: [
-          "Nachteilsausgleich (z. B. Zeitverlängerung, Hilfsmittel) auf Antrag mit Nachweisen.",
-          "Chancengleichheit, keine Notenverbesserung; BBiG i.V.m. Prüfungsordnungen."
-        ]
-      },
-      {
-        ref: "V18 – Auslandsaufenthalt",
-        q: "Sind Ausbildungsabschnitte im Ausland möglich und wie werden sie angerechnet?",
-        tip: [
-          "Ja, bis zu festgelegten Zeitanteilen; müssen dem Ausbildungsziel dienen.",
-          "§ 2 Abs. 3 BBiG; Abstimmung & Dokumentation erforderlich."
-        ]
-      },
-      {
-        ref: "V19 – Versetzung/Ausbildungsstätte",
-        q: "Darf der Betrieb Azubis in andere Abteilungen/Niederlassungen versetzen?",
-        tip: [
-          "Ja, wenn ausbildungsdienlich und im Ausbildungsplan/Vertrag abgedeckt; Pendeldistanzen verhältnismäßig.",
-          "§ 14 BBiG (Ausbildungsziel), billiges Ermessen; Reisekostenregelung klären."
-        ]
-      },
-      {
-        ref: "V20 – Insolvenz des Betriebs",
-        q: "Was passiert mit dem Ausbildungsverhältnis bei Insolvenz des Ausbildungsbetriebs?",
-        tip: [
-          "Fortführung durch Insolvenzverwalter möglich; ansonsten Suche nach Anschlussbetrieb (IHK unterstützt).",
-          "Ansprüche ggf. über Insolvenzgeld; § 102 ff. InsO; Kammerhilfe."
-        ]
-      }
+      { ref:"V1 – Mindestinhalte Vertrag", q:"Nenne vier Pflichtangaben, die zwingend in den Berufsausbildungsvertrag gehören.",
+        tip:["Typisch: Parteien, Beginn/Dauer, Ziel/Berufsbezeichnung, sachliche & zeitliche Gliederung, Vergütung, Probezeit, Urlaub, tägliche Ausbildungszeit, Kündigung, Hinweise auf Tarif/BV, Form des Ausbildungsnachweises.","§ 11 BBiG; Abfassung in Textform; elektronische Übermittlung zulässig."]},
+      { ref:"V2 – Ausbildungsordnung", q:"Welche drei Kernpunkte regelt eine Ausbildungsordnung?",
+        tip:["Berufsbild, Dauer, Ausbildungsrahmenplan; Prüfungen (Zwischen-/Abschluss).","§§ 4–5 BBiG."]},
+      { ref:"V3 – Probezeit", q:"Wie lang muss/darf die Probezeit sein – und warum ist sie wichtig?",
+        tip:["Mindestens 1, höchstens 4 Monate; beidseitig fristlose Kündigung möglich.","§ 20 BBiG; Zweck: Eignungsprüfung beider Seiten."]},
+      { ref:"V4 – Minderjährige: Unterschrift", q:"Wer unterschreibt den Vertrag bei Minderjährigen mit gemeinsamem Sorgerecht?",
+        tip:["Beide Sorgeberechtigten + der/die Minderjährige.","§ 10 BBiG; §§ 1626, 1629 BGB; Befreiung von § 181 BGB möglich (§ 10 Abs. 3 BBiG)."]},
+      { ref:"V5 – Berufsschulzeit & Arbeitszeit", q:"Wie werden Berufsschulzeiten auf die Arbeitszeit angerechnet (über 18 vs. unter 18)?",
+        tip:["U18: besondere Anrechnungs- und Freistellungsregeln (JArbSchG).","Wegezeiten Schule→Betrieb in der Regel anrechenbar (§ 15 Abs. 2 Nr. 1 BBiG).","≥18: ArbZG; Freistellungspflicht § 15 BBiG bleibt."]},
+      { ref:"V6 – Ruhezeit Jugendliche", q:"Welche tägliche Mindestruhezeit gilt für Jugendliche?",
+        tip:["Mindestens 12 Stunden ununterbrochene Freizeit.","JArbSchG (z. B. § 13)."]},
+      { ref:"V7 – Vergütung", q:"Was gilt grundsätzlich zur Angemessenheit der Ausbildungsvergütung?",
+        tip:["Mindestens gesetzliche Mindestvergütung (§ 17 Abs. 2 BBiG) bzw. tariflich/branchenüblich; Anstieg je Ausbildungsjahr."]},
+      { ref:"V8 – Überstunden", q:"Sind Überstunden in der Ausbildung zulässig – und wie werden sie behandelt?",
+        tip:["Nur ausbildungsdienlich, begrenzt, zu vergüten/auszugleichen; Jugendarbeitsschutz beachten.","BBiG i.V.m. ArbZG/JArbSchG; Dokumentation."]},
+      { ref:"V9 – Betrieblicher Ausbildungsplan", q:"Was ist der betriebliche Ausbildungsplan und wozu dient er?",
+        tip:["Betriebsinterne Ausgestaltung des Rahmenplans; zeitlich-sachliche Gliederung.","Qualitätssicherung & Nachweis; § 5 BBiG, Verweis in § 11 Abs. 1 S. 2 BBiG."]},
+      { ref:"V10 – Report/Berichtsheft", q:"Welche Bedeutung hat das Berichtsheft und wer kontrolliert es?",
+        tip:["Nachweis des Ausbildungsstandes; Voraussetzung zur Prüfungszulassung.","Elektronisch zulässig; Kontrolle durch Ausbilder/in. § 13 Nr. 7, § 14 BBiG."]},
+      { ref:"V11 – Verkürzung/Anrechnung", q:"Unter welchen Voraussetzungen kann die Ausbildungsdauer verkürzt werden?",
+        tip:["Vorbildung/Abschlüsse, gute Leistungen, Anrechnung beruflicher Vorbildung.","§ 8 BBiG; Zustimmung Betrieb/Schule/IHK."]},
+      { ref:"V12 – Verlängerung", q:"Wann kommt eine Verlängerung der Ausbildung in Betracht?",
+        tip:["Bei Nichtbestehen der Prüfung oder besonderen Fällen (längere Ausfälle).","§ 8 Abs. 2 BBiG; einvernehmlich oder auf Antrag."]},
+      { ref:"V13 – Teilzeitberufsausbildung", q:"Wie funktioniert eine Teilzeitberufsausbildung und was bleibt unverändert?",
+        tip:["Reduzierte tägliche/Wochenzeit; Gesamtlernziele unverändert; ggf. verlängerte Gesamtdauer.","§ 7a BBiG; Gleichwertigkeit, Abstimmung mit IHK/Schule."]},
+      { ref:"V14 – Datenschutz/Geheimnis", q:"Welche Pflichten haben Auszubildende zu Datenschutz und Betriebsgeheimnissen?",
+        tip:["Wahrung von Geschäfts- und Betriebsgeheimnissen; Einhaltung der DSGVO/BDSG.","Unterweisungen dokumentieren."]},
+      { ref:"V15 – Kündigung in der Ausbildung", q:"Welche Kündigungsregeln gelten in und nach der Probezeit?",
+        tip:["Probezeit: jederzeit fristlos ohne Gründe (§ 22 Abs. 1 BBiG).","Nach Probezeit: fristlos aus wichtigem Grund oder vom Azubi mit Frist (Berufsaufgabe/Wechsel); Schriftform, Gründe nennen (§ 22 BBiG)."]},
+      { ref:"V16 – Schwangerschaft/Mutterschutz", q:"Welche Schutzregelungen gelten bei Schwangerschaft in der Ausbildung?",
+        tip:["MuSchG: Schutzfristen, Beschäftigungsverbote, Kündigungsschutz.","Anpassung der Ausbildungsorganisation; Schule beachten."]},
+      { ref:"V17 – Behinderung/Nachteilsausgleich", q:"Wie werden Auszubildende mit Behinderung in Prüfungen unterstützt?",
+        tip:["Nachteilsausgleich (z. B. Zeitverlängerung, Hilfsmittel) auf Antrag mit Nachweisen.","Chancengleichheit, keine Notenverbesserung."]},
+      { ref:"V18 – Auslandsaufenthalt", q:"Sind Ausbildungsabschnitte im Ausland möglich und wie werden sie angerechnet?",
+        tip:["Ja, bis zu festgelegten Zeitanteilen; müssen dem Ausbildungsziel dienen.","§ 2 Abs. 3 BBiG; Abstimmung & Dokumentation erforderlich."]},
+      { ref:"V19 – Versetzung/Ausbildungsstätte", q:"Darf der Betrieb Azubis in andere Abteilungen/Niederlassungen versetzen?",
+        tip:["Ja, wenn ausbildungsdienlich und abgedeckt; Zumutbarkeit & ggf. Reisekosten regeln.","§ 14 BBiG; billiges Ermessen."]},
+      { ref:"V20 – Insolvenz des Betriebs", q:"Was passiert mit dem Ausbildungsverhältnis bei Insolvenz des Ausbildungsbetriebs?",
+        tip:["Fortführung durch Insolvenzverwalter möglich; sonst Anschlussbetrieb (IHK unterstützt).","Ansprüche ggf. Insolvenzgeld; § 102 ff. InsO; Kammerhilfe."]}
     ];
 
     // Hinweis bestätigen
-    let accepted = false;
+    let accepted=false;
     ackBtn.addEventListener("click", ()=>{
-      if (!ack.checked) { showToast("Bitte die Checkbox bestätigen."); return; }
-      accepted = true;
-      notice.style.display = "none";
-      ackState.textContent = "Hinweis bestätigt";
-      ackState.className = "chip bg-emerald-100 text-emerald-700";
+      if(!ack.checked){ showToast("Bitte die Checkbox bestätigen."); return; }
+      accepted=true; notice.style.display="none";
+      ackState.textContent="Hinweis bestätigt";
+      ackState.className="chip bg-emerald-100 text-emerald-700";
     });
 
-    // Autosize
     function autosize(el){ el.style.height="auto"; el.style.height=(el.scrollHeight+4)+"px"; }
 
-    // Render
-    function renderQuestions() {
-      form.innerHTML = "";
-      QUESTIONS.forEach((item, idx) => {
-        const id = `q_${idx}`;
-        const feedbackId = `fb_${idx}`;
-        const tipId = `tip_${idx}`;
-        const card = document.createElement("section");
-        card.className = "card bg-white p-4";
+    // Render (mit asynchroner Bildsuche)
+    async function renderQuestions(){
+      form.innerHTML="";
+      for (let idx=0; idx<QUESTIONS.length; idx++){
+        const item = QUESTIONS[idx];
+        const id=`q_${idx}`, tipId=`tip_${idx}`, fbId=`fb_${idx}`;
 
+        // Bild (falls vorhanden) ermitteln
+        const figHtml = await buildTipFigure(idx, item.ref);
+
+        const card = document.createElement("section");
+        card.className="card bg-white p-4";
         card.innerHTML = `
           <div class="flex items-center justify-between mb-2">
             <span class="q-badge px-3 py-1 rounded-full text-[11px] font-medium">${item.ref}</span>
-            <span class="text-slate-400 text-[11px]">Frage ${idx+1} / ${QUESTIONS.length}</span>
+            <span class="text-slate-400 text-[11px]">Frage ${idx+1}/${QUESTIONS.length}</span>
           </div>
           <div class="flex items-start justify-between gap-2">
             <h3 class="text-[15px] font-semibold mb-2 flex-1">${item.q}</h3>
-            <button type="button" class="icon-btn text-sky-700 hover:text-sky-900 text-[13px]" aria-expanded="false" aria-controls="${tipId}" data-tipbtn="${tipId}">
+            <button type="button" class="icon-btn text-sky-700 hover:text-sky-900 text-[13px]"
+                    aria-expanded="false" aria-controls="${tipId}" data-tipbtn="${tipId}">
               <i data-lucide="info" class="w-4 h-4"></i><span>🛈 Musterlösung</span>
             </button>
           </div>
           <div id="${tipId}" class="tip" role="note" aria-live="polite">
-            ${item.tip.map(line => `<p>${line}</p>`).join("")}
-            ${buildTipFigure(idx, item.ref)}
+            ${item.tip.map(t=>`<p>${t}</p>`).join("")}
+            ${figHtml}
             <div class="mt-2 flex flex-wrap gap-2">
               <button type="button" data-ask="${idx}" class="px-3 py-2 text-[13px] rounded-lg bg-sky-600 text-white hover:bg-sky-700 flex items-center gap-2 disabled:opacity-60">
                 <i data-lucide="sparkles" class="w-4 h-4"></i> KI-Check zu dieser Antwort
               </button>
             </div>
-            <div id="${feedbackId}" class="prose prose-slate text-sm max-w-none hidden mt-2"></div>
+            <div id="${fbId}" class="prose prose-slate text-sm max-w-none hidden mt-2"></div>
           </div>
           <div class="space-y-2 mt-2">
-            <textarea id="${id}" name="${id}" rows="4"
+            <textarea id="${id}" rows="4"
               class="w-full p-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-sky-300 text-[15px]"
               placeholder="Deine Antwort …"></textarea>
             <div class="flex flex-wrap gap-2">
               <button type="button" data-fill="${id}" class="px-3 py-2 text-[13px] pill rounded-lg hover:bg-slate-50">Beispiel-Gliederung</button>
             </div>
-          </div>
-        `;
+          </div>`;
         form.appendChild(card);
-      });
+      }
 
-      // Tooltip-Toggles
+      // Toggles
       form.querySelectorAll("[data-tipbtn]").forEach(btn=>{
         btn.addEventListener("click", (e)=>{
-          const tid = e.currentTarget.getAttribute("data-tipbtn");
-          const box = document.getElementById(tid);
-          const open = box.style.display === "block";
-          box.style.display = open ? "none" : "block";
+          const tid=e.currentTarget.getAttribute("data-tipbtn");
+          const box=document.getElementById(tid);
+          const open=box.style.display==="block";
+          box.style.display=open?"none":"block";
           e.currentTarget.setAttribute("aria-expanded", String(!open));
         });
       });
 
-      // Beispiel-Gliederung
+      // Beispiel-Gliederung + Autosize + Progress
       form.querySelectorAll("[data-fill]").forEach(btn=>{
-        btn.addEventListener("click", (e)=>{
-          const tid = e.currentTarget.getAttribute("data-fill");
-          const ta = document.getElementById(tid);
-          if (!ta) return;
-          ta.value = [
-            "### Kurzantwort",
-            "- …",
-            "- …",
-            "- …",
-            "",
-            "### Begründung/Norm (optional)",
-            "- …",
-          ].join("\n");
-          autosize(ta);
-          updateProgress();
+        btn.addEventListener("click", e=>{
+          const tid=e.currentTarget.getAttribute("data-fill");
+          const ta=document.getElementById(tid);
+          ta.value = ["### Kurzantwort","- …","- …","- …","","### Begründung/Norm (optional)","- …"].join("\n");
+          autosize(ta); updateProgress();
         });
       });
-
-      // Textareas
       form.querySelectorAll("textarea").forEach(ta=>{
         autosize(ta);
         ta.addEventListener("input", ()=>{ autosize(ta); updateProgress(); });
         ta.addEventListener("keydown", (ev)=>{
-          if ((ev.ctrlKey || ev.metaKey) && ev.key === "Enter") {
-            ev.preventDefault();
-            submitBtn.click();
-          }
-        });
-      });
-
-      // Einzel-KI-Check
-      form.querySelectorAll("[data-ask]").forEach(btn=>{
-        btn.addEventListener("click", async (e)=>{
-          if (!accepted) { showToast("Bitte zuerst den Hinweis bestätigen."); return; }
-          const idx = Number(e.currentTarget.getAttribute("data-ask"));
-          await askPerAnswer(idx, e.currentTarget);
+          if((ev.ctrlKey||ev.metaKey)&&ev.key==="Enter"){ ev.preventDefault(); submitBtn.click(); }
         });
       });
 
       if (window.lucide) lucide.createIcons();
     }
 
-    function updateProgress() {
-      const tas = [...form.querySelectorAll("textarea")];
-      const filled = tas.filter(t=>t.value.trim().length>0).length;
-      const pct = Math.round((filled / QUESTIONS.length) * 100);
-      progressBar.style.width = pct + "%";
-      progressTxt.textContent = `${filled} / ${QUESTIONS.length} beantwortet`;
+    // Progress
+    function updateProgress(){
+      const tas=[...form.querySelectorAll("textarea")];
+      const filled=tas.filter(t=>t.value.trim().length>0).length;
+      const pct=Math.round((filled/QUESTIONS.length)*100);
+      progressBar.style.width=pct+"%";
+      progressTxt.textContent=`${filled} / ${QUESTIONS.length} beantwortet`;
     }
 
-    function collectAnswers() {
-      return QUESTIONS.map((q, i) => {
-        const v = (document.getElementById(`q_${i}`)?.value || "").trim();
-        return { nr: i+1, ref: q.ref, question: q.q, answer: v };
+    function collectAnswers(){
+      return QUESTIONS.map((q,i)=>{
+        const v=(document.getElementById(`q_${i}`)?.value||"").trim();
+        return { nr:i+1, ref:q.ref, question:q.q, answer:v };
       });
     }
 
-    // Vereinfachte Bot-Prompts
-    function buildPromptAll(answers) {
+    // Prompts
+    function buildPromptAll(answers){
       return `
 Du prüfst kurze Ausbildungsfragen. Antworte knapp, klar, mit §§/Gesetz (BBiG/JArbSchG/BUrlG/ArbZG/MuSchG/DSGVO etc.), wenn relevant.
 Schema pro Frage:
@@ -506,11 +353,11 @@ Schema pro Frage:
 - 1 Praxistipp (ein Satz)
 
 Fragen & Antworten:
-${answers.map(a => `Q${a.nr} (${a.ref}): ${a.question}\nAntwort TN: ${a.answer || "(leer)"}`).join("\n\n")}
-      `.trim();
+${answers.map(a=>`Q${a.nr} (${a.ref}): ${a.question}\nAntwort TN: ${a.answer || "(leer)"}`).join("\n\n")}
+`.trim();
     }
 
-    function buildPromptSingle(idx, item, answer) {
+    function buildPromptSingle(idx,item,answer){
       return `
 Prüfe diese eine Antwort. Antworte kurz.
 - Kurzfeedback (1–2 Sätze)
@@ -523,120 +370,97 @@ Antwort TN: ${answer || "(leer)"}
 `.trim();
     }
 
-    // Relay-Aufruf
-    async function callAI(payload) {
-      const res = await fetch(relay, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
-      });
+    async function callAI(payload){
+      const res = await fetch(relay,{ method:"POST", headers:{ "Content-Type":"application/json" }, body:JSON.stringify(payload) });
       const text = await res.text();
-      if (!res.ok) throw new Error(`Relay-Fehler ${res.status}: ${text?.slice(0,200) || "keine Details"}`);
-      try {
-        const j = JSON.parse(text);
-        return j.answer || j.content || j.result || text;
-      } catch { return text; }
+      if(!res.ok) throw new Error(`Relay-Fehler ${res.status}: ${text?.slice(0,200) || "keine Details"}`);
+      try { const j = JSON.parse(text); return j.answer || j.content || j.result || text; }
+      catch { return text; }
     }
 
     // Einzel-KI-Check
     async function askPerAnswer(idx, btnEl){
-      const ta = document.getElementById(`q_${idx}`);
-      const fb = document.getElementById(`fb_${idx}`);
-      const item = QUESTIONS[idx];
-      const prompt = buildPromptSingle(idx, item, (ta?.value || "").trim());
+      const ta=document.getElementById(`q_${idx}`);
+      const fbId=`fb_${idx}`;
+      const fb=document.getElementById(fbId);
+      const item=QUESTIONS[idx];
+      const prompt=buildPromptSingle(idx,item,(ta?.value||"").trim());
 
-      btnEl.disabled = true;
-      const oldHtml = btnEl.innerHTML;
-      btnEl.innerHTML = `<svg class="animate-spin h-4 w-4" viewBox="0 0 24 24"></svg> Prüfen …`;
+      btnEl.disabled=true;
+      const old=btnEl.innerHTML;
+      btnEl.innerHTML=`<svg class="animate-spin h-4 w-4" viewBox="0 0 24 24"></svg> Prüfen …`;
       fb.classList.remove("hidden");
-      fb.innerHTML = `<div class="text-slate-500 text-sm">KI prüft diese Antwort …</div>`;
+      fb.innerHTML=`<div class="text-slate-500 text-sm">KI prüft diese Antwort …</div>`;
 
-      try {
-        const aiText = await callAI({ prompt });
-        fb.innerHTML = (window.marked ? marked.parse(aiText || "_Keine Antwort erhalten._") : (aiText || "_Keine Antwort erhalten._"));
-      } catch (e) {
-        fb.innerHTML = `<div class="text-red-600 text-sm">Fehler: ${String(e)}</div>`;
+      try { const aiText=await callAI({ prompt });
+            fb.innerHTML = (window.marked ? marked.parse(aiText || "_Keine Antwort erhalten._") : (aiText || "_Keine Antwort erhalten._"));
+      } catch(e){
+        fb.innerHTML=`<div class="text-red-600 text-sm">Fehler: ${String(e)}</div>`;
         showToast("KI-Check fehlgeschlagen.");
       } finally {
-        btnEl.disabled = false;
-        btnEl.innerHTML = oldHtml;
-        if (window.lucide) lucide.createIcons();
+        btnEl.disabled=false; btnEl.innerHTML=old;
+        if(window.lucide) lucide.createIcons();
       }
     }
 
     // Gesamt-Feedback
     submitBtn.addEventListener("click", async ()=>{
-      if (!accepted) { showToast("Bitte zuerst den Hinweis bestätigen."); return; }
-      const answers = collectAnswers();
-      const prompt = buildPromptAll(answers);
+      if(!accepted){ showToast("Bitte zuerst den Hinweis bestätigen."); return; }
+      const answers=collectAnswers();
+      const prompt=buildPromptAll(answers);
 
-      submitBtn.disabled = true;
-      const old = submitBtn.innerHTML;
-      submitBtn.innerHTML = `<svg class="animate-spin h-5 w-5" viewBox="0 0 24 24"></svg> Wird geprüft …`;
+      submitBtn.disabled=true;
+      const old=submitBtn.innerHTML;
+      submitBtn.innerHTML=`<svg class="animate-spin h-5 w-5" viewBox="0 0 24 24"></svg> Wird geprüft …`;
 
       resultWrap.classList.remove("hidden");
-      aiResult.innerHTML = `<div class="text-slate-500 text-sm">Bitte warten … die KI erstellt Gesamt-Feedback.</div>`;
+      aiResult.innerHTML=`<div class="text-slate-500 text-sm">Bitte warten … die KI erstellt Gesamt-Feedback.</div>`;
 
       try {
-        const aiText = await callAI({ prompt });
-        aiResult.innerHTML = (window.marked ? marked.parse(aiText || "_Keine Antwort erhalten._") : (aiText || "_Keine Antwort erhalten._"));
-        window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
-      } catch (e) {
-        aiResult.innerHTML = `<div class="text-red-600 text-sm">Fehler beim Gesamt-Feedback: ${String(e)}</div>`;
+        const aiText=await callAI({ prompt });
+        aiResult.innerHTML=(window.marked?marked.parse(aiText||"_Keine Antwort erhalten._"):(aiText||"_Keine Antwort erhalten._"));
+        window.scrollTo({ top: document.body.scrollHeight, behavior:"smooth" });
+      } catch(e){
+        aiResult.innerHTML=`<div class="text-red-600 text-sm">Fehler beim Gesamt-Feedback: ${String(e)}</div>`;
         showToast("Gesamt-Feedback fehlgeschlagen.");
       } finally {
-        submitBtn.disabled = false;
-        submitBtn.innerHTML = old;
-        if (window.lucide) lucide.createIcons();
+        submitBtn.disabled=false; submitBtn.innerHTML=old;
+        if(window.lucide) lucide.createIcons();
       }
     });
 
     // Reset
     resetBtn.addEventListener("click", ()=>{
-      if (!confirm("Alle Eingaben wirklich löschen?")) return;
-      startTs = Date.now();
+      if(!confirm("Alle Eingaben wirklich löschen?")) return;
+      startTs=Date.now();
       renderQuestions();
-      updateProgress();
       resultWrap.classList.add("hidden");
-      aiResult.innerHTML = "";
+      aiResult.innerHTML="";
       window.scrollTo({top:0, behavior:"smooth"});
     });
 
-    // Fortschritt initial
-    function initProgressListeners(){
-      form.querySelectorAll("textarea").forEach(ta=>{
-        ta.addEventListener("input", updateProgress);
-      });
-      updateProgress();
-    }
-
     // Globaler Lösungen-Toggle
-    let allShown = false;
+    let allShown=false;
     function setAllTips(show){
-      const tips = form.querySelectorAll(".tip");
-      tips.forEach(t => t.style.display = show ? "block" : "none");
-      const btns = form.querySelectorAll("[data-tipbtn]");
-      btns.forEach(b => b.setAttribute("aria-expanded", String(show)));
-      allShown = show;
+      const tips=form.querySelectorAll(".tip");
+      tips.forEach(t=>t.style.display=show?"block":"none");
+      allShown=show;
       toggleAllBtn.setAttribute("aria-pressed", String(show));
       toggleAllBtn.querySelector("span").textContent = show ? "Alle Lösungen ausblenden" : "Alle Lösungen einblenden";
-      const icon = toggleAllBtn.querySelector("i");
-      if (icon && window.lucide) { icon.setAttribute("data-lucide", show ? "eye-off" : "eye"); lucide.createIcons(); }
+      const icon=toggleAllBtn.querySelector("i");
+      if(icon){ icon.setAttribute("data-lucide", show ? "eye-off" : "eye"); if(window.lucide) lucide.createIcons(); }
     }
     toggleAllBtn.addEventListener("click", ()=> setAllTips(!allShown));
 
-    // Toast
     function showToast(msg){
-      toastEl.textContent = msg;
-      toastEl.style.display = "block";
+      toastEl.textContent=msg;
+      toastEl.style.display="block";
       clearTimeout(showToast._t);
-      showToast._t = setTimeout(()=> toastEl.style.display = "none", 3000);
+      showToast._t=setTimeout(()=>toastEl.style.display="none",3000);
     }
 
     // Init
-    function updateProgress(){ /* oben definiert – bleibt hier leer, da bereits gesetzt */ }
     renderQuestions();
-    initProgressListeners();
   });
   </script>
 </body>
