@@ -24,6 +24,10 @@
       body{ background: linear-gradient(to bottom, #0b1220, #0b1220 40%, #111827 100%); }
       :root{ --surface:#0f172a; --surface-2:#0b1327; --ink:#e5e7eb; --muted:#9aa6b2; --border:#1f2937; }
     }
+    html, body { font-size: 16px; }
+    @media (max-width: 640px){
+      html, body { font-size: 17px; } /* bessere Lesbarkeit auf iPhone/Android */
+    }
     body{ background: linear-gradient(to bottom, #fff, #f4f7fb); color: var(--ink); }
     .container{ max-width: 1100px; margin-inline: auto; padding-inline: 1rem; }
     .card{ background: var(--surface); border-radius: var(--radius); box-shadow: var(--shadow-1); }
@@ -33,6 +37,7 @@
     .btn-primary{ border-color:transparent; background:linear-gradient(180deg, var(--brand), var(--brand-2)); color:#fff; }
     .btn-primary:hover{ filter:brightness(0.98); }
     .btn-ghost{ background:transparent; }
+    .btn-sm{ padding:.5rem .7rem; border-radius:10px; }
     .btn-lg{ padding:.95rem 1.1rem; border-radius:12px; }
     .btn:focus-visible{ outline:3px solid color-mix(in oklab, var(--brand) 50%, transparent); outline-offset:2px; }
 
@@ -48,14 +53,13 @@
     .notice{ background:linear-gradient(135deg, #e0f2fe, #dbeafe); border-bottom:1px solid rgba(2,8,23,.08); }
     .notice .inner{ backdrop-filter:blur(6px); }
 
-    /* Cluster-Auswahl (Laschen + Pills) */
+    /* Cluster-Auswahl */
     .cluster-wrap{ background: var(--surface); border-radius: 16px; box-shadow: var(--shadow-1); border:1px solid var(--border); }
-    .cluster-row{ display:flex; gap:.5rem; overflow:auto; scrollbar-width:none; padding:.6rem; }
-    .cluster-row::-webkit-scrollbar{ display:none; }
+    .cluster-row{ display:flex; flex-wrap:wrap; gap:.5rem; padding:.6rem; }
     .cluster{
       display:flex; align-items:center; gap:.55rem; padding:.6rem .9rem;
       border-radius: 999px; border:1px solid var(--border); background:#fff; color:#0b3b52;
-      font-weight:600; font-size:.93rem; white-space:nowrap;
+      font-weight:600; font-size:.93rem; white-space:nowrap; min-height: 42px;
     }
     .cluster .count{ font-weight:500; color:var(--muted); font-size:.8rem; }
     .cluster[aria-pressed="true"]{
@@ -67,7 +71,7 @@
 
     .cluster-bottom{
       border-top:1px solid var(--border); background:#fff; padding:.5rem .8rem; border-radius:0 0 16px 16px;
-      display:flex; align-items:center; gap:.75rem; color:#475569; font-size:.85rem;
+      display:flex; flex-wrap:wrap; align-items:center; gap:.5rem; color:#475569; font-size:.85rem;
     }
     .badge-on{ background: #ecfeff; color:#0369a1; border:1px solid #bae6fd; border-radius:999px; padding:2px 8px; font-size:.75rem; }
     .badge-count{ background:#eef2ff; color:#3730a3; border:1px solid #c7d2fe; border-radius:999px; padding:2px 8px; font-size:.75rem; }
@@ -116,10 +120,11 @@
         </label>
       </div>
       <div class="ml-auto flex items-center gap-2">
-        <a class="btn" href="https://www.gesetze-im-internet.de/bbig_2005/BBiG.pdf" target="_blank" rel="noopener">
+        <!-- Dauerhafte Gesetzes-Links (auch unten im Footer nochmals) -->
+        <a class="btn btn-sm" href="https://www.gesetze-im-internet.de/bbig_2005/BBiG.pdf" target="_blank" rel="noopener">
           <i data-lucide="book-open" class="w-4 h-4"></i> BBiG
         </a>
-        <a class="btn" href="https://www.gesetze-im-internet.de/jarbschg/JArbSchG.pdf" target="_blank" rel="noopener">
+        <a class="btn btn-sm" href="https://www.gesetze-im-internet.de/jarbschg/JArbSchG.pdf" target="_blank" rel="noopener">
           <i data-lucide="shield" class="w-4 h-4"></i> JArbSchG
         </a>
         <span id="ackState" class="chip">Hinweis offen</span>
@@ -138,9 +143,18 @@
         <h1 class="text-xl sm:text-2xl font-semibold tracking-tight truncate">BBiG-Quiz – Kompaktfragen</h1>
         <p class="text-sm text-slate-500">80 Fragen in Clustern. KI-Feedback gezielt auswählen. Autosave.</p>
       </div>
-      <button id="openAsk" type="button" class="hidden sm:inline-flex btn btn-primary">
-        <i data-lucide="message-square" class="w-4 h-4"></i> Eigene Frage
-      </button>
+      <div class="hidden sm:flex items-center gap-2">
+        <!-- Die Links auch hier erneut, dauerhaft im Header sichtbar -->
+        <a class="btn btn-sm" href="https://www.gesetze-im-internet.de/bbig_2005/BBiG.pdf" target="_blank" rel="noopener">
+          <i data-lucide="book-open" class="w-4 h-4"></i> BBiG
+        </a>
+        <a class="btn btn-sm" href="https://www.gesetze-im-internet.de/jarbschg/JArbSchG.pdf" target="_blank" rel="noopener">
+          <i data-lucide="shield" class="w-4 h-4"></i> JArbSchG
+        </a>
+        <button id="openAsk" type="button" class="btn btn-primary">
+          <i data-lucide="message-square" class="w-4 h-4"></i> Eigene Frage
+        </button>
+      </div>
     </div>
 
     <!-- Cluster-Auswahl -->
@@ -195,11 +209,20 @@
 
   <!-- Sticky Action-Bar -->
   <div class="sticky-actions sticky bottom-0 bg-white/95 border-t border-slate-200 backdrop-blur safe-bottom">
-    <div class="container px-4 py-2 flex flex-wrap gap-2">
+    <div class="container px-4 py-2 flex flex-wrap items-center gap-2">
       <button id="openAskMobile" type="button" class="sm:hidden flex-1 btn btn-ghost">
         <i data-lucide="message-square" class="w-5 h-5"></i> Eigene Frage
       </button>
       <div class="flex-1"></div>
+      <div class="flex items-center gap-2">
+        <!-- Kleine, dauerhafte Gesetzeslinks auch unten -->
+        <a class="btn btn-sm" href="https://www.gesetze-im-internet.de/bbig_2005/BBiG.pdf" target="_blank" rel="noopener" aria-label="BBiG (neues Tab)">
+          <i data-lucide="book-open" class="w-4 h-4"></i>
+        </a>
+        <a class="btn btn-sm" href="https://www.gesetze-im-internet.de/jarbschg/JArbSchG.pdf" target="_blank" rel="noopener" aria-label="JArbSchG (neues Tab)">
+          <i data-lucide="shield" class="w-4 h-4"></i>
+        </a>
+      </div>
       <button id="submitBtn" type="button" class="btn btn-primary btn-lg flex-1 sm:flex-none">
         <i data-lucide="send" class="w-5 h-5"></i> KI-Feedback für Auswahl
       </button>
@@ -210,7 +233,7 @@
   <!-- Toast -->
   <div id="toast" role="status" aria-live="polite" style="display:none; position:fixed; left:50%; bottom:18px; transform:translateX(-50%); background:#111827; color:#fff; padding:10px 14px; border-radius:10px; font-size:14px; z-index:100;"></div>
 
-  <!-- Modal: Eigene Frage (Chat) -->
+  <!-- Modal: Eigene Frage (Chat mit History) -->
   <div id="askBackdrop" class="modal-backdrop"></div>
   <div id="askModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="askTitle" aria-describedby="askDesc">
     <div class="panel card p-4 sm:p-5" role="document">
@@ -220,11 +243,16 @@
         </div>
         <div class="flex-1">
           <h3 id="askTitle" class="text-base font-semibold">Eigene Frage (Chat)</h3>
-          <p id="askDesc" class="text-sm text-slate-500">Stelle deine Frage, die Antwort erscheint darunter. Du kannst Rückfragen stellen.</p>
+          <p id="askDesc" class="text-sm text-slate-500">Stelle deine Frage. Antworten erscheinen darunter. Rückfragen sind möglich. Verlässt du das Fenster, bleibt der Verlauf erhalten.</p>
         </div>
-        <button id="askClose" type="button" class="btn" aria-label="Fenster schließen" data-close>
-          <i data-lucide="x" class="w-4 h-4"></i>
-        </button>
+        <div class="flex items-center gap-2">
+          <button id="askClear" type="button" class="btn btn-sm" title="Historie löschen">
+            <i data-lucide="trash-2" class="w-4 h-4"></i>
+          </button>
+          <button id="askClose" type="button" class="btn" aria-label="Fenster schließen" data-close>
+            <i data-lucide="x" class="w-4 h-4"></i>
+          </button>
+        </div>
       </div>
 
       <div id="askChat" class="chat mt-3 space-y-2" aria-live="polite">
@@ -233,7 +261,7 @@
 
       <div class="mt-3 composer">
         <textarea id="askInput" rows="2" class="w-full p-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-sky-300 text-[15px]" placeholder="Deine Frage … (Shift+Enter = neue Zeile)"></textarea>
-        <button id="askSend" type="button" class="btn btn-primary">
+        <button id="askSend" type="button" class="btn btn-primary" aria-label="Nachricht senden">
           <i data-lucide="send" class="w-5 h-5"></i>
         </button>
       </div>
@@ -242,22 +270,35 @@
 
   <!-- Footer -->
   <footer class="app-footer bg-slate-100 text-slate-700">
-    <div class="container px-4 py-4">
-      Diese Anwendung nutzt künstliche Intelligenz (KI). Du stimmst mit der Nutzung zu, dass Deine Texte und Antwort von OpenAI verarbeitet und geprüft werden.
-      Es werden keine personenbezogenen Daten von Dir erhoben, erfasst und verarbeitet. Dieses Tool darf nicht missbräuchlich verwendet werden.
-      Es dürfen keine personenbezogenen Daten, sensiblen Daten oder Daten erfasst werden, die Rückschlüsse auf eine Person, zum Beispiel Auszubildenden,
-      Ausbilder oder ähnliche Personen ermöglichen. Jegliche Haftung ist ausgeschlossen. Alle Antworten sind vom Anwender zu prüfen.
-      KI-generierte Antworten können fehlerhaft sein. Keine Haftung.
+    <div class="container px-4 py-4 flex flex-wrap items-center gap-3">
+      <span class="flex-1">
+        Diese Anwendung nutzt künstliche Intelligenz (KI). Du stimmst mit der Nutzung zu, dass Deine Texte und Antwort von OpenAI verarbeitet und geprüft werden.
+        Es werden keine personenbezogenen Daten von Dir erhoben, erfasst und verarbeitet. Dieses Tool darf nicht missbräuchlich verwendet werden.
+        Es dürfen keine personenbezogenen Daten, sensiblen Daten oder Daten erfasst werden, die Rückschlüsse auf eine Person, zum Beispiel Auszubildenden,
+        Ausbilder oder ähnliche Personen ermöglichen. Jegliche Haftung ist ausgeschlossen. Alle Antworten sind vom Anwender zu prüfen.
+        KI-generierte Antworten können fehlerhaft sein. Keine Haftung.
+      </span>
+      <div class="flex items-center gap-2">
+        <a class="btn btn-sm" href="https://www.gesetze-im-internet.de/bbig_2005/BBiG.pdf" target="_blank" rel="noopener">
+          <i data-lucide="book-open" class="w-4 h-4"></i> BBiG
+        </a>
+        <a class="btn btn-sm" href="https://www.gesetze-im-internet.de/jarbschg/JArbSchG.pdf" target="_blank" rel="noopener">
+          <i data-lucide="shield" class="w-4 h-4"></i> JArbSchG
+        </a>
+      </div>
     </div>
   </footer>
 
   <script>
   document.addEventListener("DOMContentLoaded", () => {
+    // === Konfiguration ===
     const relay = "/api/linda-proxy";
     const BATCH_SIZE = 5;
     const MAX_ANSWER_CHARS = 1500;
-    const STORAGE_KEY = "BBIGQUIZ_V5_STATE";
+    const STORAGE_KEY = "BBIGQUIZ_V6_STATE";
+    const CHAT_KEY = "BBIGQUIZ_V6_CHAT";
 
+    // UI-Refs
     const form = document.getElementById("form");
     const submitBtn = document.getElementById("submitBtn");
     const resetBtn = document.getElementById("resetBtn");
@@ -272,11 +313,13 @@
     const notice = document.getElementById("notice");
     const ackState = document.getElementById("ackState");
     const toastEl = document.getElementById("toast");
+
+    // Cluster UI
     const clustersRow = document.getElementById("clustersRow");
     const metaActive = document.getElementById("metaActive");
     const metaCount  = document.getElementById("metaCount");
 
-    // Modal
+    // Modal (Chat)
     const askBackdrop  = document.getElementById("askBackdrop");
     const askModal     = document.getElementById("askModal");
     const askClose     = document.getElementById("askClose");
@@ -285,6 +328,7 @@
     const askChat      = document.getElementById("askChat");
     const askInput     = document.getElementById("askInput");
     const askSend      = document.getElementById("askSend");
+    const askClear     = document.getElementById("askClear");
 
     if (window.marked) marked.setOptions({ breaks:true, gfm:true });
     if (window.lucide) lucide.createIcons();
@@ -298,23 +342,155 @@
       timerEl.textContent = `${m}:${r}`;
     },1000);
 
-    // === Fragenpools (80) – gleich wie zuvor (gekürzt hier nicht gezeigt) ===
-    // --- BEGIN: gleiche Daten wie in der letzten Version (BANK_CORE, BANK_BASICS, BANK_RECHT_EINSTIEG, ... ) ---
-    // (Um Platz zu sparen: exakt dieselben Arrays wie in deiner letzten Version einfügen)
-    // HINWEIS: In deiner App bitte die vollständigen Arrays aus der vorherigen Antwort übernehmen.
-    // --- END Daten ---
+    // === Fragenpools (80) ===
+    const BANK_CORE = [
+      { ref:"V1 – Mindestinhalte Vertrag", q:"Nenne vier Pflichtangaben, die zwingend in den Berufsausbildungsvertrag gehören.", tip:[
+        "Typisch: Parteien, Beginn/Dauer, Ziel/Berufsbezeichnung, sachliche & zeitliche Gliederung, Vergütung, Probezeit, Urlaub, tägliche Ausbildungszeit, Kündigung, Hinweise auf Tarif/BV, Form des Ausbildungsnachweises.",
+        "§ 11 BBiG; Textform/elektronisch zulässig."
+      ]},
+      { ref:"V2 – Ausbildungsordnung", q:"Welche drei Kernpunkte regelt eine Ausbildungsordnung?", tip:[
+        "Berufsbild, Dauer/Ausbildungsrahmenplan, Prüfungen.","§§ 4–5 BBiG."
+      ]},
+      { ref:"V3 – Probezeit", q:"Wie lang muss/darf die Probezeit sein – und warum ist sie wichtig?", tip:[
+        "Mind. 1, max. 4 Monate; Eignungsprüfung beider Seiten.","§ 20 BBiG."
+      ]},
+      { ref:"V4 – Minderjährige: Unterschrift", q:"Wer unterschreibt den Vertrag bei Minderjährigen mit gemeinsamem Sorgerecht?", tip:[
+        "Beide Sorgeberechtigte + Minderjährige/r.","§ 10 BBiG; §§ 1626, 1629 BGB."
+      ]},
+      { ref:"V5 – Berufsschulzeit & Arbeitszeit", q:"Wie werden Berufsschulzeiten auf die Arbeitszeit angerechnet (U18 vs. ≥18)?", tip:[
+        "U18: besondere Anrechnung (JArbSchG).","Wegezeiten Schule→Betrieb anrechenbar (§ 15 Abs. 2 Nr. 1 BBiG).","≥18: ArbZG; Freistellung nach § 15 BBiG."
+      ]},
+      { ref:"V6 – Ruhezeit Jugendliche", q:"Welche tägliche Mindestruhezeit gilt für Jugendliche?", tip:["Mindestens 12 Stunden.","JArbSchG."]},
+      { ref:"V7 – Vergütung", q:"Was gilt zur Angemessenheit der Ausbildungsvergütung?", tip:[
+        "MiAV als Untergrenze; tariflich/branchenüblich; Steigerung je Jahr.","§ 17 BBiG."
+      ]},
+      { ref:"V8 – Überstunden", q:"Sind Überstunden zulässig – und wie werden sie behandelt?", tip:[
+        "Nur ausbildungsdienlich; Vergütung/Zeitausgleich; Jugendarbeitsschutz beachten.","ArbZG/JArbSchG; BBiG."
+      ]},
+      { ref:"V9 – Betrieblicher Ausbildungsplan", q:"Wozu dient der betriebliche Ausbildungsplan?", tip:[
+        "Umsetzung Rahmenplan, zeitl./sachl. Gliederung, Qualitätssicherung.","§ 5 BBiG; Verweis § 11 Abs. 1 S. 2."
+      ]},
+      { ref:"V10 – Berichtsheft", q:"Welche Bedeutung hat das Berichtsheft und wer kontrolliert es?", tip:[
+        "Zulassungsvoraussetzung; elektronisch möglich; Kontrolle Ausbilder/in.","§ 13 Nr.7, § 14 BBiG."
+      ]},
+      { ref:"V11 – Verkürzung", q:"Wann kann die Ausbildungsdauer verkürzt werden?", tip:["Vorbildung/Leistung/Anrechnung; Einvernehmen nötig.","§ 8 BBiG."]},
+      { ref:"V12 – Verlängerung", q:"Wann kommt eine Verlängerung in Betracht?", tip:["Nichtbestehen oder besondere Fälle.","§ 8 Abs. 2 BBiG."]},
+      { ref:"V13 – Teilzeitberufsausbildung", q:"Wie funktioniert Teilzeit in der Ausbildung und was bleibt unverändert?", tip:["Reduzierte Zeiten, Lernziel bleibt; evtl. längere Gesamtdauer.","§ 7a BBiG."]},
+      { ref:"V14 – Datenschutz/Geheimnis", q:"Welche Pflichten haben Azubis zu Datenschutz und Betriebsgeheimnissen?", tip:["DSGVO/BDSG beachten; Unterweisungen dokumentieren."]},
+      { ref:"V15 – Kündigung", q:"Welche Kündigungsregeln gelten in und nach der Probezeit?", tip:[
+        "Probezeit: jederzeit fristlos (§ 22 Abs. 1).","Danach: fristlos aus wichtigem Grund oder mit Frist (Berufsaufgabe/Wechsel) – schriftlich, Gründe nennen (§ 22)."
+      ]},
+      { ref:"V16 – Schwangerschaft/Mutterschutz", q:"Welche Schutzregeln gelten bei Schwangerschaft in der Ausbildung?", tip:["MuSchG: Schutzfristen, Beschäftigungsverbote, Kündigungsschutz."]},
+      { ref:"V17 – Nachteilsausgleich", q:"Wie werden Auszubildende mit Behinderung in Prüfungen unterstützt?", tip:["Nachteilsausgleich (Zeit, Hilfsmittel) auf Antrag; Chancengleichheit."]},
+      { ref:"V18 – Ausland", q:"Sind Ausbildungsabschnitte im Ausland möglich und wie werden sie angerechnet?", tip:["Ja; Ausbildungsziel wahren; bis zul. Zeitanteile.","§ 2 Abs. 3 BBiG."]},
+      { ref:"V19 – Versetzung", q:"Darf der Betrieb Azubis versetzen?", tip:["Ja, wenn ausbildungsdienlich/zumutbar; Reisekosten klären.","§ 14 BBiG."]},
+      { ref:"V20 – Insolvenz", q:"Was passiert bei Insolvenz des Ausbildungsbetriebs?", tip:["Fortführung/Anschlussbetrieb/IHK-Unterstützung; ggf. Insolvenzgeld."]}
+    ];
 
-    // Für diese Antwort: Wir rekonstruieren kurz die Struktur:
-    const BANK_CORE = [ /* ... wie zuvor (20) ... */ ];
-    const BANK_BASICS = [ /* ... (10) ... */ ];
-    const BANK_RECHT_EINSTIEG = [ /* ... (10) ... */ ];
-    const BANK_ARBEITSZEIT_URLAUB = [ /* ... (10) ... */ ];
-    const BANK_ORGA_PLANUNG = [ /* ... (8) ... */ ];
-    const BANK_BETEILIGTE_EIGNUNG = [ /* ... (8) ... */ ];
-    const BANK_MITBESTIMMUNG = [ /* ... (8) ... */ ];
-    const BANK_PRUEFUNG = [ /* ... (8) ... */ ];
-    const BANK_DATENSCHUTZ_ETHIK = [ /* ... (8) ... */ ];
-    const BANK_BIBB_SYSTEM = [ /* ... (8) ... */ ];
+    const BANK_BASICS = [
+      { ref:"G1 – Jugendberufsagentur", q:"Was ist die Aufgabe einer Jugendberufsagentur und wer kooperiert dort?", tip:["Unter 25 unterstützen; Bündelung AA/Jobcenter/Kommunen/Schulen."]},
+      { ref:"G2 – Nutzen Ausbildung", q:"Nenne drei Argumente, warum sich Ausbildung für Betriebe lohnt.", tip:["Fachkräfte, Flexibilität, Innovation/Kommunikation."]},
+      { ref:"G3 – Personalplanung", q:"Welche Dimensionen der Personalbedarfsplanung sind relevant?", tip:["Quantitativ, qualitativ, zeitlich."]},
+      { ref:"G4 – Recruiting-Kanäle", q:"Nenne vier Wege, um Auszubildende zu finden.", tip:["Schule/Agentur, Social Media, Messen, Mitarbeitende werben Azubis."]},
+      { ref:"G5 – Kennenlernprozess", q:"Welche Elemente umfasst ein typischer Auswahlprozess für Azubis?", tip:["Bewerbung, Screening, Gespräch/Test, Entscheidung."]},
+      { ref:"G6 – Motivation Bewerber", q:"Nenne drei mögliche Motive von Bewerbenden für eine Ausbildung.", tip:["Interesse/Berufseinstieg, finanzielle Gründe, Eltern/Tradition."]},
+      { ref:"G7 – Anforderungsprofil", q:"Welche drei Kompetenzfelder sind beim Anforderungsprofil zentral?", tip:["Fachlich, sozial, persönlich."]},
+      { ref:"G8 – Eignungsfeststellung", q:"Wie kann die Eignung vor und in der Probezeit festgestellt werden?", tip:["Zeugnisse, Gespräche/Tests, Beobachtung in Probezeit."]},
+      { ref:"G9 – Nachhaltigkeit", q:"Wie ist Nachhaltigkeit in der Ausbildung verankert (kurz)?", tip:["Lernziele/Handlungsfelder; Projekte/Modelle; Rolle der Ausbilder."]},
+      { ref:"G10 – SDGs", q:"Was sind die 17 SDGs und wozu dienen sie in der Ausbildung?", tip:["Globale Ziele; Orientierung für nachhaltiges Handeln."]}
+    ];
+
+    const BANK_RECHT_EINSTIEG = [
+      { ref:"R1 – Art. 12 GG", q:"Was garantiert Art. 12 GG in Bezug auf Beruf, Arbeitsplatz und Ausbildungsstätte?", tip:["Freie Wahl; Einschränkbar durch Gesetz."]},
+      { ref:"R2 – AGG Ziel", q:"Was ist das Ziel des AGG (§1) im Kontext der Ausbildung?", tip:["Benachteiligungen verhindern/beseitigen."]},
+      { ref:"R3 – AGG Bereich", q:"Nenne einen Anwendungsbereich des AGG nach §2, der Ausbildung betrifft.", tip:["Zugang zu Berufsbildung/Berufsausbildung."]},
+      { ref:"R4 – §1 BBiG", q:"Welche vier Säulen der Berufsbildung nennt §1 BBiG?", tip:["Vorbereitung, Ausbildung, Fortbildung, Umschulung."]},
+      { ref:"R5 – BvB", q:"Was ist Zweck der Berufsausbildungsvorbereitung (BvB)?", tip:["Heranführung an Ausbildung; Grundlagen berufl. Handlungsfähigkeit."]},
+      { ref:"R6 – EQ", q:"Was ist die Einstiegsqualifizierung (EQ) und wer wird gefördert?", tip:["Langzeitpraktikum nach SGB III; junge Bewerbende, ggf. Geflüchtete."]},
+      { ref:"R7 – MiAV", q:"Wie wirkt die Mindestausbildungsvergütung (§17 BBiG) mit Tarifverträgen zusammen?", tip:["MiAV Untergrenze; Tarif bleibt maßgeblich; Angemessenheit."]},
+      { ref:"R8 – Tarif & Günstigkeit", q:"Was bedeutet das Günstigkeitsprinzip im Verhältnis Vertrag/Tarif?", tip:["Abweichungen nur zugunsten der Beschäftigten."]},
+      { ref:"R9 – Ausbildungsnachweis", q:"Welche Rolle spielt der Ausbildungsnachweis im Zulassungsverfahren?", tip:["Kann angefordert werden; fehlend kann ausschließen."]},
+      { ref:"R10 – Digitale Ausbildung", q:"Welche Aussage trifft §28 BBiG zur (auch digitalen) Durchführung?", tip:["Eignung der Ausbildungsstätte/Person; moderne Formen zulässig."]}
+    ];
+
+    const BANK_ARBEITSZEIT_URLAUB = [
+      { ref:"A1 – U18 Arbeitszeit", q:"Wie lauten Wochen-/Tagesgrenzen der Arbeitszeit für Jugendliche?", tip:["Max 40 h/Woche, 8 h/Tag (Ausnahmen beachten)."]},
+      { ref:"A2 – U18 Ruhepausen", q:"Welche Pausen sind für Jugendliche einzuhalten?", tip:[">4,5–6 h: 30 Min; >6 h: 60 Min; min. 15-Min-Blöcke."]},
+      { ref:"A3 – U18 Ruhezeit", q:"Wie lang ist die tägliche Freizeit (Ruhezeit) für Jugendliche?", tip:["Mindestens 12 Stunden."]},
+      { ref:"A4 – U18 Sonn-/Feiertag", q:"Was gilt für Sonn-/Feiertagsbeschäftigung Jugendlicher grob?", tip:["Grundsatz Verbot; Ausnahmen; 2 freie Sonntage/Monat."]},
+      { ref:"A5 – ≥18 Arbeitszeit", q:"Nenne Grund- und Höchstarbeitszeit nach ArbZG.", tip:["8 h/Tag, bis 10 h mit Ausgleich; max 48 h/Woche."]},
+      { ref:"A6 – ≥18 Pausen/Ruhezeit", q:"Welche Pausen und Ruhezeit gelten für Erwachsene?", tip:["6–9 h: 30 Min; >9 h: 45 Min; Ruhezeit 11 h."]},
+      { ref:"A7 – Mehrarbeit Doku", q:"Welche Mehrarbeit ist zu protokollieren und wie lange?", tip:[">8 h/Tag dokumentieren; 2 Jahre aufbewahren (§16 ArbZG)."]},
+      { ref:"A8 – Urlaub BUrlG", q:"Wie rechnet sich der Mindesturlaub bei 5-Tage-Woche?", tip:["Mindestens 20 Arbeitstage (=4 Wochen)."]},
+      { ref:"A9 – Urlaub U18", q:"Wie hoch ist der Mindesturlaub für Jugendliche je Alter (Kurzüberblick)?", tip:["u16:30 WT (~25 AT), u17:27, u18:25; ab 18:24 WT (~20 AT)."]},
+      { ref:"A10 – §15 BBiG", q:"Was bedeutet Freistellung nach §15 BBiG (zwei Beispiele)?", tip:["Unterricht/Prüfungen; Anrechnung inkl. Wegezeiten."]}
+    ];
+
+    const BANK_ORGA_PLANUNG = [
+      { ref:"O1 – Vollständige Handlung", q:"Welche sechs Schritte umfasst das Modell der vollständigen Handlung?", tip:["Informieren, Planen, Entscheiden, Ausführen, Kontrollieren, Bewerten."]},
+      { ref:"O2 – Lernzielebenen", q:"Unterscheide Richt-, Grob- und Feinlernziel kurz.", tip:["Richt: Gebiet; Grob: Fähigkeit; Fein: Teilziel/operationalisiert."]},
+      { ref:"O3 – Ausbildungsplan sachlich", q:"Nenne drei Kriterien der sachlichen Gliederung.", tip:["Einheiten/Abteilungen, Überschaubarkeit, Probezeit nutzbar."]},
+      { ref:"O4 – Ausbildungsplan zeitlich", q:"Nenne drei Kriterien der zeitlichen Gliederung.", tip:["Prüfungstermine, Reihenfolge Rahmenplan, Block-/Urlaub berücksichtigen."]},
+      { ref:"O5 – Nachweis/Gliederung", q:"Welche Pflichten zu Gliederung und Nachweis nennt §11/§13/§14 BBiG?", tip:["Gliederung schriftl./Textform; Nachweis führen; Ausbildende halten an."]},
+      { ref:"O6 – Versetzungsplan", q:"Wie unterstützt der betriebliche Plan die Versetzung/Abteilungsdurchläufe?", tip:["Zeitlich-sachliche Steuerung; Lernziele/Stationen."]},
+      { ref:"O7 – Digitale Tools", q:"Nenne zwei Vorteile digitaler Berichtshefte/Planungs-Tools.", tip:["Transparenz, Nachverfolgbarkeit/Feedback."]},
+      { ref:"O8 – Qualität", q:"Wie kann Ausbildungsqualität im Betrieb praktisch überprüft werden?", tip:["Zwischengespräche, Zielabgleich, Nachweise/Prüfungsvorbereitung."]}
+    ];
+
+    const BANK_BETEILIGTE_EIGNUNG = [
+      { ref:"B1 – Beteiligte", q:"Wer sind die zentralen Beteiligten in der Ausbildung?", tip:["Ausbildende, Ausbilder/in, Beauftragte, Azubis, IHK, ggf. Eltern."]},
+      { ref:"B2 – Eignung Ausbildungsstätte", q:"Nenne drei Voraussetzungen der Eignung der Ausbildungsstätte.", tip:["Ausstattung, Plan/Rahmenplan, ausreichende Plätze/Schutz."]},
+      { ref:"B3 – Fachkraftbegriff", q:"Wer gilt als Fachkraft im Sinne der Relation?", tip:["Ausbildende/Ausbilder, Berufsabschluss oder 2x Ausbildungszeit tätig."]},
+      { ref:"B4 – Relation", q:"Gib die Relation Fachkräfte zu Azubis schematisch wieder.", tip:["1–2:1; 3–5:2; 6–8:3; je +3 FK: +1 Azubi (Ausnahme möglich)."]},
+      { ref:"B5 – Ausbildende Rolle", q:"Welche Pflichten treffen Ausbildende nach §14 BBiG?", tip:["Vermittlung Lernziele, Schutz, Freistellung, Zeugnis etc."]},
+      { ref:"B6 – Ausbilder Rolle", q:"Kernaufgaben der Ausbilder/innen?", tip:["Planung, Durchführung, Kontrolle; Coaching/Erziehen."]},
+      { ref:"B7 – Beauftragte Rolle", q:"Was machen Ausbildungsbeauftragte?", tip:["Teilqualifikationen vermitteln; §28(3) beachten."]},
+      { ref:"B8 – Persönliche Eignung", q:"Wann fehlt persönliche Eignung als Ausbilder/in (Beispiel)?", tip:["Wiederholte JArbSchG-Verstöße etc. (§29 BBiG i.V.m. BetrVG §98)."]}
+    ];
+
+    const BANK_MITBESTIMMUNG = [
+      { ref:"M1 – BR Rechte", q:"Nenne zwei Mitwirkungs-/Mitbestimmungsrechte des Betriebsrats in der Berufsbildung.", tip:["§96 Beratungsrecht; §98 Mitbestimmung/Bestellung."]},
+      { ref:"M2 – §87 BetrVG", q:"Für welche Themen besteht nach §87 BetrVG Mitbestimmung?", tip:["Arbeitszeit, Ordnung, Vergütungssysteme, IT-Einführung etc."]},
+      { ref:"M3 – Einstellung Azubis", q:"Wie ist der BR bei Einstellungen einzubeziehen?", tip:["§99 BetrVG: unterrichten, Unterlagen, Zustimmung einholen."]},
+      { ref:"M4 – JAV Aufgabe", q:"Welche zwei Hauptaufgaben hat die JAV?", tip:["Überwachung zugunsten Jugend/Azubis; Verbesserungen anstoßen."]},
+      { ref:"M5 – JAV Wahl", q:"Wer ist wahlberechtigt / wählbar (Kurzüberblick)?", tip:["Jugendliche u18 + Azubis; wählbar <25 J.; BR-Mitglieder ausgeschlossen."]},
+      { ref:"M6 – JAV Größe", q:"Wovon hängt die Größe der JAV ab?", tip:["Zahl der Wahlberechtigten (§62 BetrVG)."]},
+      { ref:"M7 – BR Widerspruch", q:"Wann kann der BR der Bestellung eines Ausbilders widersprechen?", tip:["Fehlende persönliche/fachliche Eignung (§98 Abs.2)."]},
+      { ref:"M8 – Einigungsstelle", q:"Was passiert bei fehlender Einigung in mitbestimmungspflichtigen Fragen?", tip:["Einigungsstelle entscheidet."]}
+    ];
+
+    const BANK_PRUEFUNG = [
+      { ref:"P1 – Zwischenprüfung", q:"Wozu dient die Zwischenprüfung (§48 BBiG)?", tip:["Ermittlung Wissensstand; Voraussetzung für Zulassung (§43)."]},
+      { ref:"P2 – Ausbildungsende", q:"Wann endet das Ausbildungsverhältnis nach §21 BBiG?", tip:["Mit Ablauf der Zeit oder mit Bekanntgabe bestandener Prüfung."]},
+      { ref:"P3 – Zulassung", q:"Welche Rolle hat der Ausbildungsnachweis für die Prüfungszulassung?", tip:["Kann angefordert werden; fehlend kann ausschließen."]},
+      { ref:"P4 – Nachteilsausgleich Prüfung", q:"Beispielhafte Nachteilsausgleiche in Prüfungen?", tip:["Zeitverlängerung, Hilfsmittel, angepasste Aufgabenform."]},
+      { ref:"P5 – Prüfungsrecht Basics", q:"Welche Prinzipien sollte ein PA beachten (kurz)?", tip:["Rechtsgrundlagen, Gleichbehandlung, Verhältnismäßigkeit."]},
+      { ref:"P6 – Freistellung Prüfung", q:"Welche Freistellungen nennt §15 BBiG im Prüfungszusammenhang?", tip:["Prüfungsteilnahme; Vortag der schriftlichen Abschlussprüfung."]},
+      { ref:"P7 – Wiederholung", q:"Ist eine Wiederholungsprüfung möglich und was ist zu beachten?", tip:["Ja; Verlängerung §8(2) möglich bis nächster Termin."]},
+      { ref:"P8 – Dokumentation", q:"Welche Dokumente sollte der Betrieb zur Prüfungsvorbereitung bereithalten?", tip:["Ausbildungsplan, Nachweise, Beurteilungen, ggf. Berichtsheft."]}
+    ];
+
+    const BANK_DATENSCHUTZ_ETHIK = [
+      { ref:"D1 – DSGVO Basics", q:"Welche Grundsätze der DSGVO sind im Ausbildungsalltag besonders wichtig?", tip:["Zweckbindung, Datenminimierung, Transparenz."]},
+      { ref:"D2 – KI-Hinweis", q:"Welche Vorsichtsmaßnahme gilt bei Nutzung von KI-Tools im Betrieb?", tip:["Keine personenbezogenen/sensiblen Daten eingeben."]},
+      { ref:"D3 – Betriebsgeheimnisse", q:"Wie gehen Azubis mit Betriebsgeheimnissen um?", tip:["Verschwiegenheit; Schulung/Verpflichtung."]},
+      { ref:"D4 – Dokumentationspflichten", q:"Welche Dokumente unterstützen DSGVO-Compliance im Ausbildungsbereich?", tip:["Verarbeitungsverzeichnis, TOMs, Schulungsnachweise."]},
+      { ref:"D5 – Foto/Video", q:"Was ist vor Veröffentlichung von Fotos/Clips mit Azubis zu beachten?", tip:["Einwilligung/Betroffenenrechte."]},
+      { ref:"D6 – AGG im Recruiting", q:"Nenne zwei AGG-kritische Fehler in Stellenausschreibungen.", tip:["Diskriminierende Formulierungen (Alter/Geschlecht/Religion etc.)."]},
+      { ref:"D7 – SoMe Screening", q:"Was ist beim Social-Media-Screening von Bewerbenden zu beachten?", tip:["Datenschutz/Erforderlichkeit/Transparenz."]},
+      { ref:"D8 – Aufbewahrung Bewerbungen", q:"Wie lange dürfen abgelehnte Bewerbungen typischerweise aufbewahrt werden (Richtwert)?", tip:["i.d.R. 6 Monate (AGG-Fristen) – danach löschen."]}
+    ];
+
+    const BANK_BIBB_SYSTEM = [
+      { ref:"S1 – BIBB Aufgabe", q:"Nenne zwei Aufgaben des BIBB.", tip:["Beratung, Forschung, Empfehlungen (§90 BBiG)."]},
+      { ref:"S2 – Ausbildungsordnung Hoheit", q:"Wer erlässt Ausbildungsordnungen und worauf stützen sie sich?", tip:["Fachministerien auf Basis BBiG; BIBB wirkt mit."]},
+      { ref:"S3 – Lernorte", q:"Welche Lernorte nennt §2 BBiG?", tip:["Betrieb, Schule, ggf. weitere."]},
+      { ref:"S4 – Rahmenplan", q:"Welche Funktion hat der Ausbildungsrahmenplan?", tip:["Zeitlich-sachliche Struktur; Mindestinhalte."]},
+      { ref:"S5 – Kammern", q:"Welche Rolle haben die Kammern in der Ausbildung (kurz)?", tip:["Zuständige Stelle: Eintragung, Beratung, Prüfungen."]},
+      { ref:"S6 – Tarifbezug", q:"Wie kann ein nicht tarifgebundener Betrieb die Vergütung bestimmen?", tip:["Anlehnung an einschlägige Tarife/Empfehlungen; MiAV beachten."]},
+      { ref:"S7 – Rechtsquellen AR", q:"Ordne die arbeitsrechtlichen Rechtsquellen grob (oben→unten).", tip:["EU/GG → Gesetze → Tarif → BV → Vertrag → Direktionsrecht."]},
+      { ref:"S8 – Nebentätigkeit", q:"Welche verfassungsrechtliche Norm ist bei Nebentätigkeit tangiert?", tip:["Art. 12 GG (Berufsausübungsfreiheit)."]}
+    ];
 
     const CLUSTERS = [
       { key:"core",  title:"Kern",                      count:20, icon:"layers",    data:BANK_CORE, defaultActive:true  },
@@ -329,9 +505,10 @@
       { key:"sys",   title:"System/BIBB/Kammern",       count:8,  icon:"building",  data:BANK_BIBB_SYSTEM, defaultActive:false }
     ];
 
+    // Aktive Cluster (mind. einer)
     const activeClusters = new Set(CLUSTERS.filter(c=>c.defaultActive).map(c=>c.key));
 
-    // State pro ref
+    // State
     let answersByRef = {};
     let selectedByRef = {};
     let accepted = false;
@@ -359,7 +536,12 @@
           <i class="tick" data-lucide="check"></i>
         `;
         btn.addEventListener("click", ()=>{
-          if (activeClusters.has(c.key)) activeClusters.delete(c.key); else activeClusters.add(c.key);
+          if (activeClusters.has(c.key)) {
+            if (activeClusters.size === 1) { showToast("Mindestens ein Cluster muss aktiv bleiben."); return; }
+            activeClusters.delete(c.key);
+          } else {
+            activeClusters.add(c.key);
+          }
           btn.setAttribute("aria-pressed", activeClusters.has(c.key) ? "true" : "false");
           renderQuestions();
           updateClusterMeta();
@@ -392,7 +574,7 @@
     function renderQuestions(){
       const QUESTIONS = getActiveQuestions();
 
-      // vorherigen Zustand puffern
+      // Zustand vorher sichern
       [...form.querySelectorAll("section[data-ref]")].forEach(sec=>{
         const ref = sec.getAttribute("data-ref");
         const ta = sec.querySelector("textarea");
@@ -513,6 +695,7 @@
       });
     }
 
+    // PROMPTS (wohlwollend)
     function buildPromptAll(answers){
       return `
 Du bist Prüfer:in für Kurzantworten (Ausbildung/Arbeitsrecht). Beurteile **kriteriumsorientiert und wohlwollend**:
@@ -539,6 +722,7 @@ Frage: ${item.q}
 Antwort TN: ${answer || "(leer)"} `.trim();
     }
 
+    // Relay
     async function callAI(payload,{timeoutMs=20000,retries=2}={}){
       const url=relay; let lastErr;
       for(let a=0;a<=retries;a++){
@@ -608,7 +792,7 @@ Antwort TN: ${answer || "(leer)"} `.trim();
       }
     });
 
-    // Autosave
+    // Autosave (Form & Cluster)
     function saveState(){
       try{
         const state={ ts:Date.now(), accepted, answersByRef, selectedByRef, active:[...activeClusters] };
@@ -621,7 +805,11 @@ Antwort TN: ${answer || "(leer)"} `.trim();
       try{
         const raw=localStorage.getItem(STORAGE_KEY); if(!raw) return;
         const st=JSON.parse(raw);
-        if (Array.isArray(st.active)){ activeClusters.clear(); st.active.forEach(k=>activeClusters.add(k)); }
+        if (Array.isArray(st.active)){
+          activeClusters.clear();
+          st.active.forEach(k=>activeClusters.add(k));
+          if (activeClusters.size===0) activeClusters.add("core"); // Sicherheitsnetz
+        }
         answersByRef = st.answersByRef || {};
         selectedByRef = st.selectedByRef || {};
         if (st.accepted){ accepted=true; notice.style.display="none"; ack.checked=true; ackState.textContent="Hinweis bestätigt"; ackState.className="chip"; }
@@ -638,48 +826,77 @@ Antwort TN: ${answer || "(leer)"} `.trim();
       window.scrollTo({ top:0, behavior:"smooth" });
     });
 
-    // Modal open/close
-    function openModal(){ askBackdrop.classList.add("open"); askModal.classList.add("open"); askInput.focus(); }
-    function closeModal(){ askBackdrop.classList.remove("open"); askModal.classList.remove("open"); askInput.value=""; askChat.innerHTML=""; }
+    // === Chat mit History (persistiert) ===
+    function loadChat(){
+      try{
+        const raw = localStorage.getItem(CHAT_KEY);
+        const arr = raw ? JSON.parse(raw) : [];
+        return Array.isArray(arr) ? arr : [];
+      }catch{ return []; }
+    }
+    function saveChat(arr){
+      try{ localStorage.setItem(CHAT_KEY, JSON.stringify(arr)); }catch{}
+    }
+    function renderChat(){
+      const arr = loadChat();
+      askChat.innerHTML = "";
+      arr.forEach(msg=>{
+        const div = document.createElement("div");
+        div.className = "bubble " + (msg.role === "user" ? "me" : "");
+        if (msg.role === "assistant" && window.marked) {
+          div.innerHTML = marked.parse(msg.content || "");
+        } else {
+          div.innerHTML = (msg.role === "user" ? "<strong>Du:</strong><br>" : "") + (msg.content||"");
+        }
+        askChat.appendChild(div);
+      });
+      askChat.scrollTop = askChat.scrollHeight;
+    }
+    async function sendChatMessage(text){
+      const q = text.trim(); if(!q){ showToast("Bitte gib eine Frage ein."); return; }
+      const arr = loadChat();
+      arr.push({ role:"user", content: q });
+      saveChat(arr);
+      renderChat();
+
+      // Platzhalter
+      const placeholder = document.createElement("div");
+      placeholder.className = "bubble";
+      placeholder.innerHTML = `<em>KI schreibt …</em>`;
+      askChat.appendChild(placeholder);
+      askChat.scrollTop = askChat.scrollHeight;
+
+      if (!relay){ placeholder.innerHTML = "Kein Backend konfiguriert."; return; }
+
+      try{
+        const prompt = `Beantworte diese Frage knapp, fundiert und mit §§ (falls einschlägig). Keine personenbezogenen Daten verwenden.\n\n${q}`;
+        const resp = await fetch(relay,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({prompt})}).then(r=>r.text());
+        let txt=resp; try{const j=JSON.parse(resp); txt=j.answer||j.content||j.result||resp;}catch{}
+        // ersetze Platzhalter
+        const arr2 = loadChat();
+        arr2.push({ role:"assistant", content: txt || "_Keine Antwort erhalten._" });
+        saveChat(arr2);
+        renderChat();
+      }catch(e){
+        placeholder.innerHTML = `<span class="text-red-600">Fehler: ${String(e).replace(/[<>&]/g,"")}</span>`;
+      }
+    }
+
+    function openModal(){ askBackdrop.classList.add("open"); askModal.classList.add("open"); renderChat(); askInput.focus(); }
+    function closeModal(){ askBackdrop.classList.remove("open"); askModal.classList.remove("open"); }
     openAsk?.addEventListener("click", openModal);
     openAskMobile?.addEventListener("click", openModal);
     askClose?.addEventListener("click", closeModal);
     askBackdrop.addEventListener("click", closeModal);
     askModal.addEventListener("keydown", (e)=>{ if(e.key==="Escape") closeModal(); });
 
-    // Chat – Thread
-    async function sendChatMessage(text){
-      const q = text.trim(); if(!q){ showToast("Bitte gib eine Frage ein."); return; }
-      // render user bubble
-      const u = document.createElement("div");
-      u.className = "bubble me";
-      u.innerHTML = `<strong>Du:</strong><br>${q.replace(/</g,"&lt;")}`;
-      askChat.appendChild(u);
-      askChat.scrollTop = askChat.scrollHeight;
-
-      // render ai placeholder
-      const a = document.createElement("div");
-      a.className = "bubble";
-      a.innerHTML = `<em>KI schreibt …</em>`;
-      askChat.appendChild(a);
-      askChat.scrollTop = askChat.scrollHeight;
-
-      if (!relay){ a.innerHTML = "Kein Backend konfiguriert."; return; }
-
-      try{
-        const prompt = `Beantworte folgende Frage knapp, fundiert und mit §§ (falls einschlägig). Keine personenbezogenen Daten verwenden.\n\n${q}`;
-        const resp = await fetch(relay,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({prompt})}).then(r=>r.text());
-        let txt=resp; try{const j=JSON.parse(resp); txt=j.answer||j.content||j.result||resp;}catch{}
-        a.innerHTML = (window.marked ? marked.parse(txt || "_Keine Antwort erhalten._") : (txt || "_Keine Antwort erhalten._"));
-      }catch(e){
-        a.innerHTML = `<span class="text-red-600">Fehler: ${String(e).replace(/[<>&]/g,"")}</span>`;
-      }
-      askChat.scrollTop = askChat.scrollHeight;
-    }
-
     askSend.addEventListener("click", ()=>{ sendChatMessage(askInput.value); askInput.value=""; askInput.focus(); });
     askInput.addEventListener("keydown",(e)=>{
       if (e.key === "Enter" && !e.shiftKey){ e.preventDefault(); askSend.click(); }
+    });
+    askClear.addEventListener("click", ()=>{
+      if (!confirm("Chat-Verlauf wirklich löschen?")) return;
+      localStorage.removeItem(CHAT_KEY); renderChat();
     });
 
     // Toast
@@ -689,6 +906,8 @@ Antwort TN: ${answer || "(leer)"} `.trim();
     }
 
     // Init
+    if (window.marked) marked.setOptions({ breaks:true, gfm:true });
+    if (window.lucide) lucide.createIcons();
     loadState();
     renderClusters();
     renderQuestions();
