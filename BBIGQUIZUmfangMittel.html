@@ -10,90 +10,61 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Icons -->
   <script defer src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
-  <!-- Markdown (für KI-Feedback) -->
+  <!-- Markdown -->
   <script defer src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 
   <style>
     :root{
-      /* Nova-inspiriertes neutrales System */
-      --surface: #ffffff;
-      --surface-2: #f6f8fb;
-      --ink: #0f172a;
-      --muted: #64748b;
-      --border: #e5e7eb;
-      --brand: #0ea5e9;
-      --brand-2: #2563eb;
-      --ok: #10b981;
-      --radius: 14px;
-      --radius-sm: 10px;
-      --shadow-1: 0 8px 28px rgba(2,8,23,.06);
+      --surface:#ffffff; --surface-2:#f6f8fb; --ink:#0f172a; --muted:#64748b; --border:#e5e7eb;
+      --brand:#0ea5e9; --brand-2:#2563eb; --ok:#10b981;
+      --radius:14px; --radius-sm:10px; --shadow-1:0 8px 28px rgba(2,8,23,.06);
     }
     @media (prefers-color-scheme: dark){
       html{ color-scheme: dark; }
       body{ background: linear-gradient(to bottom, #0b1220, #0b1220 40%, #111827 100%); }
-      :root{
-        --surface: #0f172a;
-        --surface-2: #0b1327;
-        --ink: #e5e7eb;
-        --muted: #9aa6b2;
-        --border: #1f2937;
-      }
+      :root{ --surface:#0f172a; --surface-2:#0b1327; --ink:#e5e7eb; --muted:#9aa6b2; --border:#1f2937; }
     }
-
     body{ background: linear-gradient(to bottom, #fff, #f4f7fb); color: var(--ink); }
     .container{ max-width: 1000px; margin-inline: auto; padding-inline: 1rem; }
     .card{ background: var(--surface); border-radius: var(--radius); box-shadow: var(--shadow-1); }
-    .chip{ font-size: 12px; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--border); color: var(--muted); background: var(--surface-2); }
+    .chip{ font-size:12px; padding:4px 10px; border-radius:999px; border:1px solid var(--border); color:var(--muted); background:var(--surface-2); }
     .btn{ display:inline-flex; align-items:center; gap:.5rem; padding:.7rem 1rem; border-radius: var(--radius-sm); border:1px solid var(--border); background: var(--surface); color: var(--ink); touch-action: manipulation; }
     .btn:hover{ background:#f8fafc; }
     .btn-ghost{ background:transparent; }
-    .btn-primary{ border-color: transparent; background: linear-gradient(180deg, var(--brand), var(--brand-2)); color:#fff; }
-    .btn-primary:hover{ filter: brightness(0.98); }
-    .btn-lg{ padding:.95rem 1.1rem; border-radius: 12px; }
-    .btn:focus-visible{ outline: 3px solid color-mix(in oklab, var(--brand) 50%, transparent); outline-offset: 2px; }
-    .q-badge{ background: color-mix(in oklab, var(--brand) 18%, #eaf6ff 82%); color: color-mix(in oklab, var(--brand) 80%, #0b3b52 20%); border: none; }
-    .pill{ border: 1px solid var(--border); border-radius: var(--radius-sm); }
-    .progress-outer{ height:10px; border-radius:999px; background: #eaeef4; overflow:hidden; }
-    .progress-inner{ height:100%; width:0%; border-radius:999px; background: linear-gradient(90deg, var(--brand), var(--ok)); transition: width .25s ease; }
-    textarea{ -webkit-text-size-adjust:100%; }
+    .btn-primary{ border-color:transparent; background:linear-gradient(180deg, var(--brand), var(--brand-2)); color:#fff; }
+    .btn-primary:hover{ filter:brightness(0.98); }
+    .btn-lg{ padding:.95rem 1.1rem; border-radius:12px; }
+    .btn:focus-visible{ outline:3px solid color-mix(in oklab, var(--brand) 50%, transparent); outline-offset:2px; }
+    .q-badge{ background: color-mix(in oklab, var(--brand) 18%, #eaf6ff 82%); color: color-mix(in oklab, var(--brand) 80%, #0b3b52 20%); }
+    .progress-outer{ height:10px; border-radius:999px; background:#eaeef4; overflow:hidden; }
+    .progress-inner{ height:100%; width:0%; border-radius:999px; background:linear-gradient(90deg, var(--brand), var(--ok)); transition:width .25s; }
     .tip > div{ border-left:3px solid var(--brand); background:#f0f9ff; color:#0b3b52; border-radius:12px; padding:.75rem .85rem; }
-    @media (prefers-color-scheme: dark){ .tip > div{ background: rgba(14,165,233,.08); color:#cce9fb; } }
-    details[open] summary .chev{ transform: rotate(180deg); }
-    summary::-webkit-details-marker{ display:none; }
+    @media (prefers-color-scheme:dark){ .tip > div{ background:rgba(14,165,233,.08); color:#cce9fb; } }
+    details[open] summary .chev{ transform:rotate(180deg); }
     summary{ list-style:none; }
-
-    /* Blauer Disclaimer (Nova) */
-    .notice{ background: linear-gradient(135deg, #e0f2fe, #dbeafe); border-bottom: 1px solid rgba(2,8,23,.08); }
-    .notice .inner{ backdrop-filter: blur(6px); }
-
-    /* Modal */
-    .modal-backdrop{ position:fixed; inset:0; background:rgba(2,6,23,.45); display:none; }
-    .modal{ position:fixed; inset:0; display:none; align-items:center; justify-content:center; padding:16px; }
+    /* Disclaimer */
+    .notice{ background:linear-gradient(135deg, #e0f2fe, #dbeafe); border-bottom:1px solid rgba(2,8,23,.08); }
+    .notice .inner{ backdrop-filter:blur(6px); }
+    /* Modal (fixes!) */
+    .modal-backdrop{ position:fixed; inset:0; background:rgba(2,6,23,.45); display:none; z-index:98; }
+    .modal{ position:fixed; inset:0; display:none; align-items:center; justify-content:center; padding:16px; z-index:99; }
     .modal .panel{ width:100%; max-width:720px; border-radius:1rem; }
     .modal.open, .modal-backdrop.open{ display:flex; }
-
-    /* iOS/Android safe-area */
-    .safe-bottom{ padding-bottom: max(env(safe-area-inset-bottom), 12px); }
-
+    /* Safe area */
+    .safe-bottom{ padding-bottom:max(env(safe-area-inset-bottom),12px); }
     /* Print */
     @media print{
       .sticky, .sticky-actions, #notice, #openAsk, #openAskMobile { display:none!important; }
-      body{ background: #fff!important; }
+      body{ background:#fff!important; }
       .card{ box-shadow:none!important; border:1px solid #ddd; }
-      footer{ position: fixed; bottom: 10mm; left: 0; right: 0; }
+      footer{ position:fixed; bottom:10mm; left:0; right:0; }
     }
-
-    /* Footer */
-    footer.app-footer{
-      font-family: Arial, Helvetica, sans-serif;
-      font-size:10px;
-      line-height:1.4;
-    }
+    footer.app-footer{ font-family:Arial, Helvetica, sans-serif; font-size:10px; line-height:1.4; }
   </style>
 </head>
 <body class="min-h-screen antialiased">
 
-  <!-- Hinweis / Disclaimer -->
+  <!-- Disclaimer -->
   <aside id="notice" class="notice sticky top-0 z-50">
     <div class="inner container px-4 py-3 sm:py-3.5 flex items-start gap-3">
       <div class="w-10 h-10 rounded-2xl bg-sky-100 grid place-items-center shrink-0">
@@ -112,7 +83,7 @@
       </div>
       <div class="ml-auto flex items-center gap-2">
         <span id="ackState" class="chip">Hinweis offen</span>
-        <button id="ackBtn" class="btn">Weiter</button>
+        <button id="ackBtn" type="button" class="btn">Weiter</button>
       </div>
     </div>
   </aside>
@@ -127,23 +98,23 @@
         <h1 class="text-xl sm:text-2xl font-semibold tracking-tight truncate">BBiG-Quiz – Kompaktfragen</h1>
         <p class="text-sm text-slate-500">20 kurze IHK-Fragen. KI-Feedback gezielt auswählen. Autosave & Export.</p>
       </div>
-      <button id="openAsk" class="hidden sm:inline-flex btn btn-primary">
+      <button id="openAsk" type="button" class="hidden sm:inline-flex btn btn-primary">
         <i data-lucide="message-square" class="w-4 h-4"></i> Eigene Frage
       </button>
     </div>
 
-    <!-- Steuerleiste -->
+    <!-- Toolbar -->
     <div class="mt-3 grid grid-cols-1 lg:grid-cols-2 gap-2 items-center">
       <div class="text-xs text-slate-600 flex items-center gap-2">
         <i data-lucide="lightbulb" class="w-4 h-4"></i>
         <span>Musterlösungen lassen sich pro Frage oder global ein-/ausblenden.</span>
       </div>
       <div class="flex flex-wrap gap-2 justify-start lg:justify-end">
-        <button id="toggleAllBtn" class="btn" aria-pressed="false" aria-controls="form">
+        <button id="toggleAllBtn" type="button" class="btn" aria-pressed="false" aria-controls="form">
           <i data-lucide="eye" class="w-4 h-4"></i><span>Alle Lösungen einblenden</span>
         </button>
-        <button id="selectAllBtn" class="btn">Alle auswählen</button>
-        <button id="clearSelBtn" class="btn">Auswahl löschen</button>
+        <button id="selectAllBtn" type="button" class="btn">Alle auswählen</button>
+        <button id="clearSelBtn" type="button" class="btn">Auswahl löschen</button>
         <label class="btn pill cursor-pointer">
           <input id="autoSelectFilled" type="checkbox" class="w-4 h-4 accent-sky-600 mr-2">
           Nur Antworten mit Inhalt automatisch auswählen
@@ -177,7 +148,6 @@
     <form id="form" class="grid gap-4 sm:gap-5" novalidate aria-describedby="formhint"></form>
     <p id="formhint" class="sr-only">Mit Strg/⌘+Enter kannst du das KI-Gesamt-Feedback abrufen.</p>
 
-    <!-- KI-Feedback -->
     <section id="resultWrap" class="mt-5 hidden" aria-live="polite">
       <div class="card p-4">
         <div class="flex items-center gap-2 mb-2">
@@ -192,32 +162,30 @@
   <!-- Sticky Action-Bar -->
   <div class="sticky-actions sticky bottom-0 bg-white/95 border-t border-slate-200 backdrop-blur safe-bottom">
     <div class="container px-4 py-2 flex flex-wrap gap-2">
-      <button id="openAskMobile" class="sm:hidden flex-1 btn btn-ghost">
+      <button id="openAskMobile" type="button" class="sm:hidden flex-1 btn btn-ghost">
         <i data-lucide="message-square" class="w-5 h-5"></i> Eigene Frage
       </button>
-      <button id="exportPdfBtn" class="btn btn-ghost">
+      <button id="exportPdfBtn" type="button" class="btn btn-ghost">
         <i data-lucide="file-text" class="w-4 h-4"></i> Export PDF
       </button>
-      <button id="exportMdBtn" class="btn btn-ghost">
+      <button id="exportMdBtn" type="button" class="btn btn-ghost">
         <i data-lucide="download" class="w-4 h-4"></i> Export MD
       </button>
       <div class="flex-1"></div>
-      <button id="submitBtn" class="btn btn-primary btn-lg flex-1 sm:flex-none" type="button">
+      <button id="submitBtn" type="button" class="btn btn-primary btn-lg flex-1 sm:flex-none">
         <i data-lucide="send" class="w-5 h-5"></i> KI-Feedback für Auswahl
       </button>
-      <button id="resetBtn" class="btn btn-lg" type="button">
-        Zurücksetzen
-      </button>
+      <button id="resetBtn" type="button" class="btn btn-lg">Zurücksetzen</button>
     </div>
   </div>
 
   <!-- Toast -->
-  <div id="toast" role="status" aria-live="polite" style="display:none; position:fixed; left:50%; bottom:18px; transform:translateX(-50%); background:#111827; color:#fff; padding:10px 14px; border-radius:10px; font-size:14px; z-index:50;"></div>
+  <div id="toast" role="status" aria-live="polite" style="display:none; position:fixed; left:50%; bottom:18px; transform:translateX(-50%); background:#111827; color:#fff; padding:10px 14px; border-radius:10px; font-size:14px; z-index:100;"></div>
 
   <!-- Modal: Eigene Frage -->
   <div id="askBackdrop" class="modal-backdrop"></div>
   <div id="askModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="askTitle" aria-describedby="askDesc">
-    <div class="panel card p-4 sm:p-5">
+    <div class="panel card p-4 sm:p-5" role="document">
       <div class="flex items-start gap-2">
         <div class="w-10 h-10 rounded-xl bg-sky-100 grid place-items-center">
           <i data-lucide="message-square" class="w-5 h-5 text-sky-700"></i>
@@ -226,7 +194,7 @@
           <h3 id="askTitle" class="text-base font-semibold">Eigene Frage an die KI</h3>
           <p id="askDesc" class="text-sm text-slate-500">Formuliere eine Frage. (Optional: beziehe dich auf eine konkrete Frage-Nr.)</p>
         </div>
-        <button id="askClose" class="btn" aria-label="Fenster schließen">
+        <button id="askClose" type="button" class="btn" aria-label="Fenster schließen" data-close>
           <i data-lucide="x" class="w-4 h-4"></i>
         </button>
       </div>
@@ -235,9 +203,10 @@
         <textarea id="askText" rows="5" class="w-full p-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-sky-300 text-[15px]" placeholder="Deine Frage …"></textarea>
       </div>
       <div class="mt-3 flex flex-wrap gap-2 justify-end">
-        <button id="askSend" class="btn btn-primary">
+        <button id="askSend" type="button" class="btn btn-primary">
           <i data-lucide="send" class="w-5 h-5"></i> Senden
         </button>
+        <button type="button" class="btn" data-close>Schließen</button>
       </div>
       <div id="askResult" class="mt-3 hidden prose prose-slate text-sm max-w-none"></div>
     </div>
@@ -257,146 +226,97 @@
   <script>
   document.addEventListener("DOMContentLoaded", () => {
     // === Konfiguration ===
-    const relay = "/api/linda-proxy";   // Wenn leer, werden KI-Buttons ausgeblendet
+    const relay = "/api/linda-proxy";
     const BATCH_SIZE = 5;
     const MAX_ANSWER_CHARS = 1500;
     const STORAGE_KEY = "BBIGQUIZ_V2_STATE";
 
     // UI-Refs
-    const form        = document.getElementById("form");
-    const submitBtn   = document.getElementById("submitBtn");
-    const resetBtn    = document.getElementById("resetBtn");
-    const exportPdfBtn= document.getElementById("exportPdfBtn");
-    const exportMdBtn = document.getElementById("exportMdBtn");
-    const progressBar = document.getElementById("progressBar");
-    const progressTxt = document.getElementById("progressText");
-    const selText     = document.getElementById("selText");
-    const resultWrap  = document.getElementById("resultWrap");
-    const aiResult    = document.getElementById("aiResult");
-    const timerEl     = document.getElementById("timer");
-    const ack         = document.getElementById("ack");
-    const ackBtn      = document.getElementById("ackBtn");
-    const notice      = document.getElementById("notice");
-    const ackState    = document.getElementById("ackState");
-    const toastEl     = document.getElementById("toast");
-    const toggleAllBtn= document.getElementById("toggleAllBtn");
-    const selectAllBtn= document.getElementById("selectAllBtn");
-    const clearSelBtn = document.getElementById("clearSelBtn");
+    const form = document.getElementById("form");
+    const submitBtn = document.getElementById("submitBtn");
+    const resetBtn = document.getElementById("resetBtn");
+    const exportPdfBtn = document.getElementById("exportPdfBtn");
+    const exportMdBtn  = document.getElementById("exportMdBtn");
+    const progressBar  = document.getElementById("progressBar");
+    const progressTxt  = document.getElementById("progressText");
+    const selText      = document.getElementById("selText");
+    const resultWrap   = document.getElementById("resultWrap");
+    const aiResult     = document.getElementById("aiResult");
+    const timerEl      = document.getElementById("timer");
+    const ack          = document.getElementById("ack");
+    const ackBtn       = document.getElementById("ackBtn");
+    const notice       = document.getElementById("notice");
+    const ackState     = document.getElementById("ackState");
+    const toastEl      = document.getElementById("toast");
+    const toggleAllBtn = document.getElementById("toggleAllBtn");
+    const selectAllBtn = document.getElementById("selectAllBtn");
+    const clearSelBtn  = document.getElementById("clearSelBtn");
     const autoSelectFilled = document.getElementById("autoSelectFilled");
-    const openAsk     = document.getElementById("openAsk");
-    const openAskMobile = document.getElementById("openAskMobile");
+    const openAsk      = document.getElementById("openAsk");
+    const openAskMobile= document.getElementById("openAskMobile");
+
     // Modal
-    const askBackdrop = document.getElementById("askBackdrop");
-    const askModal    = document.getElementById("askModal");
-    const askClose    = document.getElementById("askClose");
-    const askSend     = document.getElementById("askSend");
-    const askText     = document.getElementById("askText");
-    const askResult   = document.getElementById("askResult");
+    const askBackdrop  = document.getElementById("askBackdrop");
+    const askModal     = document.getElementById("askModal");
+    const askClose     = document.getElementById("askClose");
+    const askSend      = document.getElementById("askSend");
+    const askText      = document.getElementById("askText");
+    const askResult    = document.getElementById("askResult");
 
     if (window.marked) marked.setOptions({ breaks:true, gfm:true });
     if (window.lucide) lucide.createIcons();
 
-    // === Timer ===
+    // Timer
     let startTs = Date.now();
-    setInterval(() => {
+    setInterval(()=>{
       const s = Math.floor((Date.now()-startTs)/1000);
       const m = String(Math.floor(s/60)).padStart(2,"0");
       const r = String(s%60).padStart(2,"0");
       timerEl.textContent = `${m}:${r}`;
-    }, 1000);
+    },1000);
 
-    // === Fragen ===
+    // Fragen
     const QUESTIONS = [
       { ref:"V1 – Mindestinhalte Vertrag", q:"Nenne vier Pflichtangaben, die zwingend in den Berufsausbildungsvertrag gehören.", tip:[
         "Typisch: Parteien, Beginn/Dauer, Ziel/Berufsbezeichnung, sachliche & zeitliche Gliederung, Vergütung, Probezeit, Urlaub, tägliche Ausbildungszeit, Kündigung, Hinweise auf Tarif/BV, Form des Ausbildungsnachweises.",
         "§ 11 BBiG; Abfassung in Textform; elektronische Übermittlung zulässig."
       ]},
-      { ref:"V2 – Ausbildungsordnung", q:"Welche drei Kernpunkte regelt eine Ausbildungsordnung?", tip:[
-        "Berufsbild, Dauer, Ausbildungsrahmenplan; Prüfungen (Zwischen-/Abschluss).","§§ 4–5 BBiG."
-      ]},
-      { ref:"V3 – Probezeit", q:"Wie lang muss/darf die Probezeit sein – und warum ist sie wichtig?", tip:[
-        "Mindestens 1, höchstens 4 Monate; beidseitig fristlose Kündigung möglich.","§ 20 BBiG; Zweck: Eignungsprüfung beider Seiten."
-      ]},
-      { ref:"V4 – Minderjährige: Unterschrift", q:"Wer unterschreibt den Vertrag bei Minderjährigen mit gemeinsamem Sorgerecht?", tip:[
-        "Beide Sorgeberechtigten + der/die Minderjährige.","§ 10 BBiG; §§ 1626, 1629 BGB; Befreiung von § 181 BGB möglich (§ 10 Abs. 3 BBiG)."
-      ]},
-      { ref:"V5 – Berufsschulzeit & Arbeitszeit", q:"Wie werden Berufsschulzeiten auf die Arbeitszeit angerechnet (über 18 vs. unter 18)?", tip:[
-        "U18: besondere Anrechnungs- und Freistellungsregeln (JArbSchG).",
-        "Wegezeiten Schule→Betrieb in der Regel anrechenbar (§ 15 Abs. 2 Nr. 1 BBiG).",
-        "≥18: ArbZG; Freistellungspflicht § 15 BBiG bleibt."
-      ]},
-      { ref:"V6 – Ruhezeit Jugendliche", q:"Welche tägliche Mindestruhezeit gilt für Jugendliche?", tip:[
-        "Mindestens 12 Stunden.","JArbSchG (z. B. § 13)."
-      ]},
-      { ref:"V7 – Vergütung", q:"Was gilt grundsätzlich zur Angemessenheit der Ausbildungsvergütung?", tip:[
-        "Mindestens gesetzliche Mindestvergütung (§ 17 Abs. 2 BBiG) bzw. tariflich/branchenüblich; Anstieg je Ausbildungsjahr."
-      ]},
-      { ref:"V8 – Überstunden", q:"Sind Überstunden in der Ausbildung zulässig – und wie werden sie behandelt?", tip:[
-        "Nur ausbildungsdienlich, begrenzt, zu vergüten/auszugleichen; Jugendarbeitsschutz beachten.","BBiG i.V.m. ArbZG/JArbSchG; Dokumentation."
-      ]},
-      { ref:"V9 – Betrieblicher Ausbildungsplan", q:"Was ist der betriebliche Ausbildungsplan und wozu dient er?", tip:[
-        "Betriebsinterne Ausgestaltung des Rahmenplans; zeitlich-sachliche Gliederung.",
-        "Qualitätssicherung & Nachweis; § 5 BBiG, Verweis in § 11 Abs. 1 S. 2 BBiG."
-      ]},
-      { ref:"V10 – Report/Berichtsheft", q:"Welche Bedeutung hat das Berichtsheft und wer kontrolliert es?", tip:[
-        "Nachweis des Ausbildungsstandes; Voraussetzung zur Prüfungszulassung.","Elektronisch zulässig; Kontrolle durch Ausbilder/in. § 13 Nr. 7, § 14 BBiG."
-      ]},
-      { ref:"V11 – Verkürzung/Anrechnung", q:"Unter welchen Voraussetzungen kann die Ausbildungsdauer verkürzt werden?", tip:[
-        "Vorbildung/Abschlüsse, gute Leistungen, Anrechnung beruflicher Vorbildung.","§ 8 BBiG; Zustimmung Betrieb/Schule/IHK."
-      ]},
-      { ref:"V12 – Verlängerung", q:"Wann kommt eine Verlängerung der Ausbildung in Betracht?", tip:[
-        "Bei Nichtbestehen der Prüfung oder besonderen Fällen (längere Ausfälle).","§ 8 Abs. 2 BBiG; einvernehmlich oder auf Antrag."
-      ]},
-      { ref:"V13 – Teilzeitberufsausbildung", q:"Wie funktioniert eine Teilzeitberufsausbildung und was bleibt unverändert?", tip:[
-        "Reduzierte tägliche/Wochenzeit; Lernziele bleiben; ggf. längere Gesamtdauer.","§ 7a BBiG."
-      ]},
-      { ref:"V14 – Datenschutz/Geheimnis", q:"Welche Pflichten haben Auszubildende zu Datenschutz und Betriebsgeheimnissen?", tip:[
-        "Geheimhaltung; DSGVO/BDSG beachten.","Unterweisungen dokumentieren."
-      ]},
-      { ref:"V15 – Kündigung in der Ausbildung", q:"Welche Kündigungsregeln gelten in und nach der Probezeit?", tip:[
-        "Probezeit: jederzeit fristlos (§ 22 Abs. 1 BBiG).",
-        "Nach Probezeit: fristlos aus wichtigem Grund oder mit Frist (Berufsaufgabe/Wechsel) – schriftlich, Gründe nennen (§ 22 BBiG)."
-      ]},
-      { ref:"V16 – Schwangerschaft/Mutterschutz", q:"Welche Schutzregelungen gelten bei Schwangerschaft in der Ausbildung?", tip:[
-        "MuSchG: Schutzfristen, Beschäftigungsverbote, Kündigungsschutz.","Anpassung der Ausbildungsorganisation."
-      ]},
-      { ref:"V17 – Behinderung/Nachteilsausgleich", q:"Wie werden Auszubildende mit Behinderung in Prüfungen unterstützt?", tip:[
-        "Nachteilsausgleich (Zeitverlängerung, Hilfsmittel) auf Antrag.","Chancengleichheit, keine Notenverbesserung."
-      ]},
-      { ref:"V18 – Auslandsaufenthalt", q:"Sind Ausbildungsabschnitte im Ausland möglich und wie werden sie angerechnet?", tip:[
-        "Ja, bis festgelegte Zeitanteile; Ausbildungsziel muss gewahrt bleiben.","§ 2 Abs. 3 BBiG."
-      ]},
-      { ref:"V19 – Versetzung/Ausbildungsstätte", q:"Darf der Betrieb Azubis versetzen?", tip:[
-        "Ja, wenn ausbildungsdienlich und zumutbar; Reisekosten klären.","§ 14 BBiG; billiges Ermessen."
-      ]},
-      { ref:"V20 – Insolvenz des Betriebs", q:"Was passiert bei Insolvenz des Ausbildungsbetriebs?", tip:[
-        "Fortführung möglich; sonst Anschlussbetrieb mit IHK-Unterstützung.","Ansprüche ggf. Insolvenzgeld."
-      ]}
+      { ref:"V2 – Ausbildungsordnung", q:"Welche drei Kernpunkte regelt eine Ausbildungsordnung?", tip:["Berufsbild, Dauer, Ausbildungsrahmenplan; Prüfungen (Zwischen-/Abschluss).","§§ 4–5 BBiG."]},
+      { ref:"V3 – Probezeit", q:"Wie lang muss/darf die Probezeit sein – und warum ist sie wichtig?", tip:["Mindestens 1, höchstens 4 Monate; beidseitig fristlose Kündigung möglich.","§ 20 BBiG; Zweck: Eignungsprüfung beider Seiten."]},
+      { ref:"V4 – Minderjährige: Unterschrift", q:"Wer unterschreibt den Vertrag bei Minderjährigen mit gemeinsamem Sorgerecht?", tip:["Beide Sorgeberechtigten + der/die Minderjährige.","§ 10 BBiG; §§ 1626, 1629 BGB; Befreiung von § 181 BGB möglich (§ 10 Abs. 3 BBiG)."]},
+      { ref:"V5 – Berufsschulzeit & Arbeitszeit", q:"Wie werden Berufsschulzeiten auf die Arbeitszeit angerechnet (über 18 vs. unter 18)?", tip:["U18: besondere Anrechnungs- und Freistellungsregeln (JArbSchG).","Wegezeiten Schule→Betrieb in der Regel anrechenbar (§ 15 Abs. 2 Nr. 1 BBiG).","≥18: ArbZG; Freistellungspflicht § 15 BBiG bleibt."]},
+      { ref:"V6 – Ruhezeit Jugendliche", q:"Welche tägliche Mindestruhezeit gilt für Jugendliche?", tip:["Mindestens 12 Stunden.","JArbSchG (z. B. § 13)."]},
+      { ref:"V7 – Vergütung", q:"Was gilt grundsätzlich zur Angemessenheit der Ausbildungsvergütung?", tip:["Mindestens gesetzliche Mindestvergütung (§ 17 Abs. 2 BBiG) bzw. tariflich/branchenüblich; Anstieg je Ausbildungsjahr."]},
+      { ref:"V8 – Überstunden", q:"Sind Überstunden in der Ausbildung zulässig – und wie werden sie behandelt?", tip:["Nur ausbildungsdienlich, begrenzt, zu vergüten/auszugleichen; Jugendarbeitsschutz beachten.","BBiG i.V.m. ArbZG/JArbSchG; Dokumentation."]},
+      { ref:"V9 – Betrieblicher Ausbildungsplan", q:"Was ist der betriebliche Ausbildungsplan und wozu dient er?", tip:["Betriebsinterne Ausgestaltung des Rahmenplans; zeitlich-sachliche Gliederung.","Qualitätssicherung & Nachweis; § 5 BBiG, Verweis in § 11 Abs. 1 S. 2 BBiG."]},
+      { ref:"V10 – Report/Berichtsheft", q:"Welche Bedeutung hat das Berichtsheft und wer kontrolliert es?", tip:["Nachweis des Ausbildungsstandes; Voraussetzung zur Prüfungszulassung.","Elektronisch zulässig; Kontrolle durch Ausbilder/in. § 13 Nr. 7, § 14 BBiG."]},
+      { ref:"V11 – Verkürzung/Anrechnung", q:"Unter welchen Voraussetzungen kann die Ausbildungsdauer verkürzt werden?", tip:["Vorbildung/Abschlüsse, gute Leistungen, Anrechnung beruflicher Vorbildung.","§ 8 BBiG; Zustimmung Betrieb/Schule/IHK."]},
+      { ref:"V12 – Verlängerung", q:"Wann kommt eine Verlängerung der Ausbildung in Betracht?", tip:["Bei Nichtbestehen der Prüfung oder besonderen Fällen (längere Ausfälle).","§ 8 Abs. 2 BBiG; einvernehmlich oder auf Antrag."]},
+      { ref:"V13 – Teilzeitberufsausbildung", q:"Wie funktioniert eine Teilzeitberufsausbildung und was bleibt unverändert?", tip:["Reduzierte tägliche/Wochenzeit; Lernziele bleiben; ggf. längere Gesamtdauer.","§ 7a BBiG."]},
+      { ref:"V14 – Datenschutz/Geheimnis", q:"Welche Pflichten haben Auszubildende zu Datenschutz und Betriebsgeheimnissen?", tip:["Geheimhaltung; DSGVO/BDSG beachten.","Unterweisungen dokumentieren."]},
+      { ref:"V15 – Kündigung in der Ausbildung", q:"Welche Kündigungsregeln gelten in und nach der Probezeit?", tip:["Probezeit: jederzeit fristlos (§ 22 Abs. 1 BBiG).","Nach Probezeit: fristlos aus wichtigem Grund oder mit Frist (Berufsaufgabe/Wechsel) – schriftlich, Gründe nennen (§ 22 BBiG)."]},
+      { ref:"V16 – Schwangerschaft/Mutterschutz", q:"Welche Schutzregelungen gelten bei Schwangerschaft in der Ausbildung?", tip:["MuSchG: Schutzfristen, Beschäftigungsverbote, Kündigungsschutz.","Anpassung der Ausbildungsorganisation."]},
+      { ref:"V17 – Behinderung/Nachteilsausgleich", q:"Wie werden Auszubildende mit Behinderung in Prüfungen unterstützt?", tip:["Nachteilsausgleich (Zeitverlängerung, Hilfsmittel) auf Antrag.","Chancengleichheit, keine Notenverbesserung."]},
+      { ref:"V18 – Auslandsaufenthalt", q:"Sind Ausbildungsabschnitte im Ausland möglich und wie werden sie angerechnet?", tip:["Ja, bis festgelegte Zeitanteile; Ausbildungsziel muss gewahrt bleiben.","§ 2 Abs. 3 BBiG."]},
+      { ref:"V19 – Versetzung/Ausbildungsstätte", q:"Darf der Betrieb Azubis versetzen?", tip:["Ja, wenn ausbildungsdienlich und zumutbar; Reisekosten klären.","§ 14 BBiG; billiges Ermessen."]},
+      { ref:"V20 – Insolvenz des Betriebs", q:"Was passiert bei Insolvenz des Ausbildungsbetriebs?", tip:["Fortführung möglich; sonst Anschlussbetrieb mit IHK-Unterstützung.","Ansprüche ggf. Insolvenzgeld."]}
     ];
 
-    // === Hinweis bestätigen ===
+    // Disclaimer
     let accepted = false;
-    ackBtn.addEventListener("click", ()=>{
+    document.getElementById("ackBtn").addEventListener("click", ()=>{
       if (!ack.checked){ showToast("Bitte die Checkbox bestätigen."); return; }
-      accepted = true;
-      notice.style.display = "none";
-      ackState.textContent = "Hinweis bestätigt";
-      ackState.className = "chip";
+      accepted = true; notice.style.display="none"; ackState.textContent="Hinweis bestätigt"; ackState.className="chip";
     });
 
-    // === Render ===
+    // Render
     function autosize(el){ el.style.height="auto"; el.style.height=(el.scrollHeight+4)+"px"; }
-
     function renderQuestions(){
-      form.innerHTML = "";
-      QUESTIONS.forEach((item, idx) => {
-        const id = `q_${idx}`;
-        const fbId = `fb_${idx}`;
-        const selId = `sel_${idx}`;
-        const card = document.createElement("section");
-        card.className = "card p-4";
-
-        card.innerHTML = `
+      form.innerHTML="";
+      QUESTIONS.forEach((item, idx)=>{
+        const id=`q_${idx}`, fbId=`fb_${idx}`, selId=`sel_${idx}`;
+        const card=document.createElement("section"); card.className="card p-4";
+        card.innerHTML=`
           <header class="flex items-center justify-between gap-3 mb-2">
             <div class="flex items-center gap-2">
               <input id="${selId}" type="checkbox" class="w-4 h-4 accent-sky-600" data-select="${idx}" aria-label="Für KI-Feedback auswählen">
@@ -404,71 +324,45 @@
             </div>
             <span class="text-slate-400 text-[11px]">Frage ${idx+1}/${QUESTIONS.length}</span>
           </header>
-
           <h3 class="text-[15px] sm:text-[16px] font-semibold mb-2">${item.q}</h3>
-
           <details class="tip mb-2" data-tip>
             <summary class="list-none cursor-pointer select-none flex items-center gap-2 text-sky-700 hover:text-sky-900 text-[13px]">
-              <i class="chev" data-lucide="chevron-down" aria-hidden="true"></i>
-              <span>🛈 Musterlösung</span>
+              <i class="chev" data-lucide="chevron-down"></i><span>🛈 Musterlösung</span>
             </summary>
             <div class="mt-2">
               ${item.tip.map(t=>`<p>${t}</p>`).join("")}
               <div class="mt-2">
-                <button type="button" data-ask="${idx}" class="btn ${!relay ? 'hidden':''}">
+                <button type="button" data-ask="${idx}" class="btn ${!relay?'hidden':''}">
                   <i data-lucide="sparkles" class="w-4 h-4"></i> KI-Check zu dieser Antwort
                 </button>
               </div>
               <div id="${fbId}" class="prose prose-slate text-sm max-w-none hidden mt-2"></div>
             </div>
           </details>
-
           <label for="${id}" class="sr-only">Antwort auf: ${item.q}</label>
-          <textarea id="${id}" name="${id}" rows="4" required
-            class="w-full p-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-sky-300 text-[15px]"
-            placeholder="Deine Antwort …"></textarea>
-
+          <textarea id="${id}" rows="4" class="w-full p-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-sky-300 text-[15px]" placeholder="Deine Antwort …"></textarea>
           <div class="mt-2 flex flex-wrap gap-2">
             <button type="button" data-fill="${id}" class="btn">Beispiel-Gliederung</button>
-          </div>
-        `;
+          </div>`;
         form.appendChild(card);
       });
 
-      // Autosize + Progress + Autosave + AutoSelect-Filled
       form.querySelectorAll("textarea").forEach(ta=>{
         autosize(ta);
-        ta.addEventListener("input", ()=>{
-          autosize(ta); updateProgress(); scheduleSave();
-          if (autoSelectFilled.checked) autoSelectUpdate();
-        });
-        ta.addEventListener("keydown", (ev)=>{
-          if ((ev.ctrlKey||ev.metaKey) && ev.key==="Enter"){ ev.preventDefault(); submitBtn.click(); }
-        });
+        ta.addEventListener("input", ()=>{ autosize(ta); updateProgress(); scheduleSave(); if (autoSelectFilled.checked) autoSelectUpdate(); });
+        ta.addEventListener("keydown", ev=>{ if ((ev.ctrlKey||ev.metaKey)&&ev.key==="Enter"){ ev.preventDefault(); submitBtn.click(); }});
       });
 
-      // Beispiel-Gliederung
       form.querySelectorAll("[data-fill]").forEach(btn=>{
         btn.addEventListener("click", e=>{
-          const tid=e.currentTarget.getAttribute("data-fill");
-          const ta=document.getElementById(tid);
-          ta.value=[
-            "### Kurzantwort",
-            "- …",
-            "- …",
-            "- …",
-            "",
-            "### Begründung/Norm (optional)",
-            "- …"
-          ].join("\n");
-          autosize(ta); updateProgress(); scheduleSave();
-          if (autoSelectFilled.checked) autoSelectUpdate();
+          const ta=document.getElementById(e.currentTarget.getAttribute("data-fill"));
+          ta.value=["### Kurzantwort","- …","- …","- …","","### Begründung/Norm (optional)","- …"].join("\n");
+          autosize(ta); updateProgress(); scheduleSave(); if (autoSelectFilled.checked) autoSelectUpdate();
         });
       });
 
-      // KI-Check (einzeln)
       form.querySelectorAll("[data-ask]").forEach(btn=>{
-        btn.addEventListener("click", async (e)=>{
+        btn.addEventListener("click", async e=>{
           if (!relay){ showToast("Kein Backend konfiguriert."); return; }
           if (!accepted){ showToast("Bitte zuerst den Hinweis bestätigen."); return; }
           const idx = Number(e.currentTarget.getAttribute("data-ask"));
@@ -476,357 +370,224 @@
         });
       });
 
-      // Auswahl-Checkboxen
-      form.querySelectorAll("[data-select]").forEach(cb=>{
-        cb.addEventListener("change", ()=>{ updateSelectionCount(); scheduleSave(); });
-      });
+      form.querySelectorAll("[data-select]").forEach(cb=> cb.addEventListener("change", ()=>{ updateSelectionCount(); scheduleSave(); }));
 
       if (window.lucide) lucide.createIcons();
-      updateSelectionCount();
-      updateProgress();
+      updateSelectionCount(); updateProgress();
     }
 
-    // === Auswahl-Logik ===
-    function selectedIndices(){
-      return [...form.querySelectorAll("[data-select]:checked")].map(cb => Number(cb.getAttribute("data-select")));
-    }
-    function setAllSelected(state){
-      form.querySelectorAll("[data-select]").forEach(cb => cb.checked = state);
-      updateSelectionCount(); scheduleSave();
-    }
-    function updateSelectionCount(){
-      const n = selectedIndices().length;
-      selText.textContent = `${n} ausgewählt`;
-    }
+    // Auswahl / Progress
+    function selectedIndices(){ return [...form.querySelectorAll("[data-select]:checked")].map(cb=>Number(cb.getAttribute("data-select"))); }
+    function setAllSelected(state){ form.querySelectorAll("[data-select]").forEach(cb=>cb.checked=state); updateSelectionCount(); scheduleSave(); }
+    function updateSelectionCount(){ selText.textContent = `${selectedIndices().length} ausgewählt`; }
     function autoSelectUpdate(){
-      const tas = [...form.querySelectorAll("textarea")];
-      tas.forEach((ta, i)=>{
-        const has = (ta.value||"").trim().length>0;
-        const cb = document.getElementById(`sel_${i}`);
-        if (cb) cb.checked = has;
+      [...form.querySelectorAll("textarea")].forEach((ta,i)=>{
+        const cb=document.getElementById(`sel_${i}`); if (cb) cb.checked = (ta.value||"").trim().length>0;
       });
       updateSelectionCount(); scheduleSave();
     }
-    autoSelectFilled.addEventListener("change", ()=>{
-      if (autoSelectFilled.checked) autoSelectUpdate();
-    });
-    selectAllBtn.addEventListener("click", ()=> setAllSelected(true));
-    clearSelBtn.addEventListener("click", ()=> setAllSelected(false));
+    document.getElementById("selectAllBtn").addEventListener("click", ()=>setAllSelected(true));
+    document.getElementById("clearSelBtn").addEventListener("click", ()=>setAllSelected(false));
 
-    // === Fortschritt ===
     function updateProgress(){
       const all=[...form.querySelectorAll("textarea")];
       const filled=all.filter(t=>t.value.trim().length>0).length;
-      progressBar.style.width = Math.round((filled/QUESTIONS.length)*100) + "%";
+      progressBar.style.width = Math.round((filled/QUESTIONS.length)*100)+"%";
       progressTxt.textContent = `${filled} / ${QUESTIONS.length} beantwortet`;
-      const pb = document.querySelector('[role="progressbar"]');
-      pb?.setAttribute("aria-valuenow", String(filled));
+      document.querySelector('[role="progressbar"]')?.setAttribute("aria-valuenow", String(filled));
     }
 
-    // === Prompt-Builder ===
+    // Prompts & API
     function collectAnswers(indices=null){
-      const useIdx = indices ?? QUESTIONS.map((_,i)=>i);
+      const useIdx=indices??QUESTIONS.map((_,i)=>i);
       return useIdx.map(i=>{
-        const v=(document.getElementById(`q_${i}`)?.value||"").trim().slice(0, MAX_ANSWER_CHARS);
+        const v=(document.getElementById(`q_${i}`)?.value||"").trim().slice(0,MAX_ANSWER_CHARS);
         return { nr:i+1, ref:QUESTIONS[i].ref, question:QUESTIONS[i].q, answer:v };
       });
     }
-
     function buildPromptAll(answers){
-      return `
-Du prüfst kurze Ausbildungsfragen. Antworte knapp, klar, mit §§/Gesetz (BBiG/JArbSchG/BUrlG/ArbZG/MuSchG/DSGVO etc.), wenn relevant.
+      return `Du prüfst kurze Ausbildungsfragen. Antworte knapp, klar, mit §§/Gesetz (BBiG/JArbSchG/BUrlG/ArbZG/MuSchG/DSGVO etc.), wenn relevant.
 Schema pro Frage:
-- Richtig/Falsch bzw. Kurzfeedback (1–2 Sätze)
-- Richtige Lösung stichpunktartig (max. 4 Bulletpoints)
-- Gesetz/§ (falls einschlägig)
+- Kurzfeedback (1–2 Sätze)
+- Richtige Lösung (max. 4 Bulletpoints)
+- Gesetz/§
 - 1 Praxistipp (ein Satz)
 
 Fragen & Antworten:
-${answers.map(a=>`Q${a.nr} (${a.ref}): ${a.question}\nAntwort TN: ${a.answer || "(leer)"}`).join("\n\n")}
-`.trim();
+${answers.map(a=>`Q${a.nr} (${a.ref}): ${a.question}\nAntwort TN: ${a.answer||"(leer)"}`).join("\n\n")}`.trim();
     }
-
     function buildPromptSingle(idx,item,answer){
-      return `
-Prüfe diese eine Antwort. Antworte kurz.
+      return `Prüfe diese eine Antwort (knapp).
 - Kurzfeedback (1–2 Sätze)
-- Richtige Lösung in Stichpunkten (max. 4)
-- Gesetz/§ (falls einschlägig)
-- 1 Praxistipp (ein Satz)
-
+- Richtige Lösung (max. 4)
+- Gesetz/§
+- 1 Praxistipp
 Frage: ${item.q}
-Antwort TN: ${answer || "(leer)"}
-`.trim();
+Antwort TN: ${answer||"(leer)"}`.trim();
     }
-
-    // === API-Call (robust) ===
-    async function callAI(payload, {timeoutMs=20000, retries=2} = {}){
-      const url = relay;
-      let lastErr;
-      for (let attempt=0; attempt<=retries; attempt++){
+    async function callAI(payload,{timeoutMs=20000,retries=2}={}){
+      const url=relay; let lastErr;
+      for(let a=0;a<=retries;a++){
         try{
           const res = await Promise.race([
-            fetch(url, { method:"POST", headers:{ "Content-Type":"application/json" }, body:JSON.stringify(payload) }),
-            new Promise((_,rej)=>setTimeout(()=>rej(new Error("Timeout")), timeoutMs))
+            fetch(url,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)}),
+            new Promise((_,rej)=>setTimeout(()=>rej(new Error("Timeout")),timeoutMs))
           ]);
-          if (!res.ok) throw new Error(`HTTP ${res.status}`);
-          const text = await res.text();
-          try { const j=JSON.parse(text); return j.answer||j.content||j.result||text; }
-          catch { return text; }
-        }catch(e){ lastErr=e; await new Promise(r=>setTimeout(r, 650*(attempt+1))); }
+          if(!res.ok) throw new Error(`HTTP ${res.status}`);
+          const t=await res.text(); try{const j=JSON.parse(t); return j.answer||j.content||j.result||t;}catch{return t;}
+        }catch(e){ lastErr=e; await new Promise(r=>setTimeout(r,650*(a+1))); }
       }
       throw lastErr||new Error("Unbekannter Fehler");
     }
-
     async function askPerAnswer(idx, btnEl){
-      const ta = document.getElementById(`q_${idx}`);
-      const fbId = `fb_${idx}`;
-      const fb = document.getElementById(fbId);
-      const item = QUESTIONS[idx];
-      const prompt = buildPromptSingle(idx, item, (ta?.value||"").trim());
-
-      btnEl.disabled = true;
-      const old = btnEl.innerHTML;
-      btnEl.innerHTML = `<svg class="animate-spin h-4 w-4" viewBox="0 0 24 24"></svg> Prüfen …`;
-      fb.classList.remove("hidden");
-      fb.innerHTML = `<div class="text-slate-500 text-sm">KI prüft diese Antwort …</div>`;
-
-      try{
-        const aiText = await callAI({ prompt });
-        fb.innerHTML = (window.marked ? marked.parse(aiText || "_Keine Antwort erhalten._") : (aiText || "_Keine Antwort erhalten._"));
-      }catch(e){
-        fb.innerHTML = `<div class="text-red-600 text-sm">KI-Check fehlgeschlagen (${String(e).replace(/[<>&]/g,"")}).</div>`;
-        showToast("KI-Check fehlgeschlagen.");
-      }finally{
-        btnEl.disabled = false;
-        btnEl.innerHTML = old;
-        if (window.lucide) lucide.createIcons();
-      }
+      const ta=document.getElementById(`q_${idx}`); const fb=document.getElementById(`fb_${idx}`); const item=QUESTIONS[idx];
+      const prompt=buildPromptSingle(idx,item,(ta?.value||"").trim());
+      btnEl.disabled=true; const old=btnEl.innerHTML;
+      btnEl.innerHTML=`<svg class="animate-spin h-4 w-4" viewBox="0 0 24 24"></svg> Prüfen …`;
+      fb.classList.remove("hidden"); fb.innerHTML=`<div class="text-slate-500 text-sm">KI prüft diese Antwort …</div>`;
+      try{ const aiText=await callAI({prompt}); fb.innerHTML=(window.marked?marked.parse(aiText||"_Keine Antwort erhalten._"):(aiText||"_Keine Antwort erhalten._")); }
+      catch(e){ fb.innerHTML=`<div class="text-red-600 text-sm">KI-Check fehlgeschlagen (${String(e).replace(/[<>&]/g,"")}).</div>`; showToast("KI-Check fehlgeschlagen."); }
+      finally{ btnEl.disabled=false; btnEl.innerHTML=old; if(window.lucide) lucide.createIcons(); }
     }
 
-    // === Gesamt-Feedback (Auswahl, batching) ===
+    // Gesamt-Feedback
     submitBtn.addEventListener("click", async ()=>{
-      if (!accepted){ showToast("Bitte zuerst den Hinweis bestätigen."); return; }
-
-      let idxs = selectedIndices();
-      if (idxs.length===0 && autoSelectFilled.checked){
-        autoSelectUpdate();
-        idxs = selectedIndices();
-      }
-      if (idxs.length===0){
-        const filledIdx = QUESTIONS.map((_,i)=>i).filter(i => (document.getElementById(`q_${i}`)?.value || "").trim().length>0);
+      if(!accepted){ showToast("Bitte zuerst den Hinweis bestätigen."); return; }
+      let idxs=selectedIndices();
+      if(idxs.length===0 && autoSelectFilled.checked){ autoSelectUpdate(); idxs=selectedIndices(); }
+      if(idxs.length===0){
+        const filledIdx=QUESTIONS.map((_,i)=>i).filter(i => (document.getElementById(`q_${i}`)?.value||"").trim().length>0);
         idxs = filledIdx.length ? filledIdx : QUESTIONS.map((_,i)=>i);
       }
-      if (!relay){ showToast("Kein Backend konfiguriert."); return; }
-
-      const batches = [];
-      for (let i=0;i<idxs.length;i+=BATCH_SIZE) batches.push(idxs.slice(i,i+BATCH_SIZE));
-
-      resultWrap.classList.remove("hidden");
-      aiResult.innerHTML = "";
-      submitBtn.disabled = true;
-      const old = submitBtn.innerHTML;
-
+      if(!relay){ showToast("Kein Backend konfiguriert."); return; }
+      const batches=[]; for(let i=0;i<idxs.length;i+=BATCH_SIZE) batches.push(idxs.slice(i,i+BATCH_SIZE));
+      resultWrap.classList.remove("hidden"); aiResult.innerHTML=""; submitBtn.disabled=true; const old=submitBtn.innerHTML;
       try{
-        for (let b=0; b<batches.length; b++){
-          const answers = collectAnswers(batches[b]);
-          const prompt  = buildPromptAll(answers);
-          submitBtn.innerHTML = `<svg class="animate-spin h-5 w-5" viewBox="0 0 24 24"></svg> Prüfe Batch ${b+1}/${batches.length} …`;
-          const part = await callAI({ prompt });
-          const html = (window.marked ? marked.parse(part || "_Keine Antwort erhalten._") : (part || "_Keine Antwort erhalten._"));
-          aiResult.insertAdjacentHTML("beforeend", html + (b < batches.length-1 ? "<hr/>" : ""));
+        for(let b=0;b<batches.length;b++){
+          const answers=collectAnswers(batches[b]); const prompt=buildPromptAll(answers);
+          submitBtn.innerHTML=`<svg class="animate-spin h-5 w-5" viewBox="0 0 24 24"></svg> Prüfe Batch ${b+1}/${batches.length} …`;
+          const part=await callAI({prompt}); const html=(window.marked?marked.parse(part||"_Keine Antwort erhalten._"):(part||"_Keine Antwort erhalten._"));
+          aiResult.insertAdjacentHTML("beforeend", html+(b<batches.length-1?"<hr/>":""));
         }
-        window.scrollTo({ top: document.body.scrollHeight, behavior:"smooth" });
+        window.scrollTo({top:document.body.scrollHeight, behavior:"smooth"});
       }catch(e){
-        aiResult.innerHTML = `<div class="text-red-600 text-sm">Gesamt-Feedback fehlgeschlagen (${String(e).replace(/[<>&]/g,"")}).</div>`;
-        showToast("Gesamt-Feedback fehlgeschlagen.");
-      }finally{
-        submitBtn.disabled = false;
-        submitBtn.innerHTML = old;
-        if (window.lucide) lucide.createIcons();
-      }
+        aiResult.innerHTML=`<div class="text-red-600 text-sm">Gesamt-Feedback fehlgeschlagen (${String(e).replace(/[<>&]/g,"")}).</div>`; showToast("Gesamt-Feedback fehlgeschlagen.");
+      }finally{ submitBtn.disabled=false; submitBtn.innerHTML=old; if(window.lucide) lucide.createIcons(); }
     });
 
-    // === Autosave (localStorage) ===
+    // Autosave
+    const STORAGE = STORAGE_KEY;
     function saveState(){
-      const answers = QUESTIONS.map((_,i)=> (document.getElementById(`q_${i}`)?.value||""));
-      const selected = [...form.querySelectorAll("[data-select]")].map(cb=>cb.checked);
-      const state = { ts: Date.now(), accepted, answers, selected, autoSelect: autoSelectFilled.checked };
-      try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }catch(e){}
+      const answers=QUESTIONS.map((_,i)=>(document.getElementById(`q_${i}`)?.value||""));
+      const selected=[...form.querySelectorAll("[data-select]")].map(cb=>cb.checked);
+      const state={ ts:Date.now(), accepted, answers, selected, autoSelect:autoSelectFilled.checked };
+      try{ localStorage.setItem(STORAGE, JSON.stringify(state)); }catch{}
     }
-    let saveTimer=null;
-    function scheduleSave(){ clearTimeout(saveTimer); saveTimer = setTimeout(saveState, 800); }
+    let saveTimer=null; function scheduleSave(){ clearTimeout(saveTimer); saveTimer=setTimeout(saveState,800); }
     function loadState(){
       try{
-        const raw = localStorage.getItem(STORAGE_KEY);
-        if (!raw) return;
-        const st = JSON.parse(raw);
-        if (Array.isArray(st.answers)){
-          st.answers.forEach((v,i)=>{
-            const ta = document.getElementById(`q_${i}`);
-            if (ta){ ta.value = v; autosize(ta); }
-          });
-        }
-        if (Array.isArray(st.selected)){
-          st.selected.forEach((val,i)=>{
-            const cb = document.getElementById(`sel_${i}`);
-            if (cb) cb.checked = !!val;
-          });
-        }
-        if (st.autoSelect){ autoSelectFilled.checked = true; }
-        if (st.accepted){
-          accepted = true; notice.style.display = "none";
-          ack.checked = true; ackState.textContent = "Hinweis bestätigt"; ackState.className = "chip";
-        }
+        const raw=localStorage.getItem(STORAGE); if(!raw) return; const st=JSON.parse(raw);
+        if(Array.isArray(st.answers)) st.answers.forEach((v,i)=>{ const ta=document.getElementById(`q_${i}`); if(ta){ ta.value=v; autosize(ta);} });
+        if(Array.isArray(st.selected)) st.selected.forEach((val,i)=>{ const cb=document.getElementById(`sel_${i}`); if(cb) cb.checked=!!val; });
+        if(st.autoSelect) document.getElementById("autoSelectFilled").checked=true;
+        if(st.accepted){ accepted=true; notice.style.display="none"; ack.checked=true; ackState.textContent="Hinweis bestätigt"; ackState.className="chip"; }
         updateSelectionCount(); updateProgress();
-      }catch(e){}
+      }catch{}
     }
 
-    // === Export: MD & PDF (ausgebaut) ===
+    // Export
     function buildExportIndices(){
-      let idxs = selectedIndices();
-      if (idxs.length===0 && autoSelectFilled.checked){
-        autoSelectUpdate();
-        idxs = selectedIndices();
-      }
-      if (idxs.length===0){
-        const withContent = QUESTIONS.map((_,i)=>i).filter(i => (document.getElementById(`q_${i}`)?.value || "").trim().length>0);
+      let idxs=selectedIndices();
+      if(idxs.length===0 && document.getElementById("autoSelectFilled").checked){ autoSelectUpdate(); idxs=selectedIndices(); }
+      if(idxs.length===0){
+        const withContent=QUESTIONS.map((_,i)=>i).filter(i => (document.getElementById(`q_${i}`)?.value||"").trim().length>0);
         idxs = withContent.length ? withContent : QUESTIONS.map((_,i)=>i);
       }
       return idxs;
     }
-    function buildExportData(){
-      return collectAnswers(buildExportIndices());
-    }
-
+    function buildExportData(){ return collectAnswers(buildExportIndices()); }
     function exportMarkdown(){
-      const data = buildExportData();
-      const dt = new Date().toISOString().replace(/[:T]/g,"-").slice(0,19);
-      const md = [
-        `# BBiG-Quiz – Antworten`,
-        ``,
-        `Export: ${new Date().toLocaleString()} — Anzahl: ${data.length}`,
-        `Hinweis: Keine personenbezogenen Daten erfassen.`,
-        `---`,
-        ``,
-        ...data.map(a=>[
-          `## ${a.ref}`,
-          `**Frage:** ${a.question}`,
-          ``,
-          `**Antwort:**`,
-          ``,
-          a.answer ? a.answer : "_(leer)_",
-          ``,
-        ].join("\n"))
+      const data=buildExportData(); const dt=new Date().toISOString().replace(/[:T]/g,"-").slice(0,19);
+      const md=[
+        `# BBiG-Quiz – Antworten`, ``, `Export: ${new Date().toLocaleString()} — Anzahl: ${data.length}`,
+        `Hinweis: Keine personenbezogenen Daten erfassen.`, `---`, ``,
+        ...data.map(a=>[`## ${a.ref}`,`**Frage:** ${a.question}`,``,`**Antwort:**`,``,a.answer||"_(leer)_",``].join("\n"))
       ].join("\n");
-      const blob = new Blob([md], {type:"text/markdown;charset=utf-8"});
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url; a.download = `BBiG-Quiz_Antworten_${dt}.md`;
-      document.body.appendChild(a); a.click();
-      setTimeout(()=>{ URL.revokeObjectURL(url); a.remove(); }, 500);
+      const blob=new Blob([md],{type:"text/markdown;charset=utf-8"}); const url=URL.createObjectURL(blob);
+      const a=document.createElement("a"); a.href=url; a.download=`BBiG-Quiz_Antworten_${dt}.md`; document.body.appendChild(a); a.click();
+      setTimeout(()=>{ URL.revokeObjectURL(url); a.remove(); },500);
     }
-
     function exportPDF(){
-      const data = buildExportData();
-      const styles = `
-        <style>
-          body{ font-family: Arial, Helvetica, sans-serif; color:#0f172a; }
-          h1{ font-size:20px; margin:0 0 6px; }
-          .meta{ color:#475569; font-size:12px; margin-bottom:12px; }
-          .q{ page-break-inside: avoid; border:1px solid #e5e7eb; border-radius:10px; padding:10px 12px; margin:10px 0; }
-          .ref{ display:inline-block; font-size:12px; padding:2px 8px; border:1px solid #e5e7eb; border-radius:999px; color:#334155; background:#f8fafc; margin-bottom:6px; }
-          .fr{ font-weight:600; margin:4px 0; }
-          pre{ white-space:pre-wrap; word-wrap:break-word; background:#f8fafc; padding:8px; border-radius:8px; border:1px solid #e5e7eb; }
-          footer{ position: fixed; bottom: 12mm; left: 0; right: 0; text-align:center; font-size:10px; color:#64748b; }
-          @page{ margin: 16mm; }
-        </style>
-      `;
-      const meta = `<div class="meta">Export: ${new Date().toLocaleString()} — Anzahl: ${data.length} — Hinweis: Keine personenbezogenen Daten erfassen.</div>`;
-      const html = `
-        <html><head><meta charset="utf-8">${styles}<title>BBiG-Quiz – Export</title></head>
-        <body>
-          <h1>BBiG-Quiz – Antworten</h1>
-          ${meta}
-          ${data.map(a=>`
-            <section class="q">
-              <div class="ref">${a.ref}</div>
-              <div class="fr">Frage</div>
-              <div>${a.question}</div>
-              <div class="fr">Antwort</div>
-              <pre>${(a.answer||"(leer)").replace(/[<>&]/g, s => ({'<':'&lt;','>':'&gt;','&':'&amp;'}[s]))}</pre>
-            </section>`).join("")}
-          <footer>Diese Ausgabe wurde automatisch erstellt. Prüfe alle Inhalte. Keine personenbezogenen Daten erfassen.</footer>
-        </body></html>`;
-      const win = window.open("", "_blank");
-      win.document.open(); win.document.write(html); win.document.close(); win.focus(); win.print();
+      const data=buildExportData();
+      const styles=`<style>
+        body{ font-family: Arial, Helvetica, sans-serif; color:#0f172a; }
+        h1{ font-size:20px; margin:0 0 6px; } .meta{ color:#475569; font-size:12px; margin-bottom:12px; }
+        .q{ page-break-inside:avoid; border:1px solid #e5e7eb; border-radius:10px; padding:10px 12px; margin:10px 0; }
+        .ref{ display:inline-block; font-size:12px; padding:2px 8px; border:1px solid #e5e7eb; border-radius:999px; color:#334155; background:#f8fafc; margin-bottom:6px; }
+        .fr{ font-weight:600; margin:4px 0; }
+        pre{ white-space:pre-wrap; word-wrap:break-word; background:#f8fafc; padding:8px; border-radius:8px; border:1px solid #e5e7eb; }
+        footer{ position: fixed; bottom: 12mm; left:0; right:0; text-align:center; font-size:10px; color:#64748b; }
+        @page{ margin: 16mm; }
+      </style>`;
+      const meta=`<div class="meta">Export: ${new Date().toLocaleString()} — Anzahl: ${data.length} — Hinweis: Keine personenbezogenen Daten erfassen.</div>`;
+      const html=`<html><head><meta charset="utf-8">${styles}<title>BBiG-Quiz – Export</title></head><body>
+        <h1>BBiG-Quiz – Antworten</h1>${meta}
+        ${data.map(a=>`<section class="q"><div class="ref">${a.ref}</div><div class="fr">Frage</div><div>${a.question}</div><div class="fr">Antwort</div><pre>${(a.answer||"(leer)").replace(/[<>&]/g,s=>({'<':'&lt;','>':'&gt;','&':'&amp;'}[s]))}</pre></section>`).join("")}
+        <footer>Diese Ausgabe wurde automatisch erstellt. Prüfe alle Inhalte. Keine personenbezogenen Daten erfassen.</footer>
+      </body></html>`;
+      const win=window.open("","_blank"); win.document.open(); win.document.write(html); win.document.close(); win.focus(); win.print();
     }
-
     exportMdBtn.addEventListener("click", exportMarkdown);
     exportPdfBtn.addEventListener("click", exportPDF);
 
-    // === Reset ===
+    // Reset
     resetBtn.addEventListener("click", ()=>{
-      if (!confirm("Alle Eingaben wirklich löschen?")) return;
+      if(!confirm("Alle Eingaben wirklich löschen?")) return;
       localStorage.removeItem(STORAGE_KEY);
-      renderQuestions();
-      resultWrap.classList.add("hidden");
-      aiResult.innerHTML = "";
-      window.scrollTo({ top:0, behavior:"smooth" });
+      renderQuestions(); resultWrap.classList.add("hidden"); aiResult.innerHTML=""; window.scrollTo({top:0, behavior:"smooth"});
     });
 
-    // === Globaler Toggle für alle <details> ===
-    let allOpen = false;
+    // Toggle all tips
+    let allOpen=false;
     function setAllDetails(open){
-      document.querySelectorAll('[data-tip]').forEach(d => d.open = open);
-      allOpen = open;
-      toggleAllBtn.setAttribute("aria-pressed", String(open));
+      document.querySelectorAll('[data-tip]').forEach(d=>d.open=open);
+      allOpen=open; toggleAllBtn.setAttribute("aria-pressed", String(open));
       toggleAllBtn.querySelector("span").textContent = open ? "Alle Lösungen ausblenden" : "Alle Lösungen einblenden";
-      const icon = toggleAllBtn.querySelector("i");
-      if (icon){ icon.setAttribute("data-lucide", open ? "eye-off" : "eye"); if (window.lucide) lucide.createIcons(); }
+      const icon = toggleAllBtn.querySelector("i"); if(icon){ icon.setAttribute("data-lucide", open ? "eye-off" : "eye"); if(window.lucide) lucide.createIcons(); }
     }
-    toggleAllBtn.addEventListener("click", ()=> setAllDetails(!allOpen));
+    toggleAllBtn.addEventListener("click", ()=>setAllDetails(!allOpen));
+    autoSelectFilled.addEventListener("change", ()=>{ if(autoSelectFilled.checked) autoSelectUpdate(); });
 
-    // === Modal: Eigene Frage ===
+    // Modal open/close (hardened)
     function openModal(){ askBackdrop.classList.add("open"); askModal.classList.add("open"); askText.focus(); }
-    function closeModal(){ askBackdrop.classList.remove("open"); askModal.classList.remove("open"); askResult.classList.add("hidden"); askText.value = ""; }
+    function closeModal(){ askBackdrop.classList.remove("open"); askModal.classList.remove("open"); askResult.classList.add("hidden"); askText.value=""; }
     openAsk?.addEventListener("click", openModal);
     openAskMobile?.addEventListener("click", openModal);
-    askClose.addEventListener("click", closeModal);
+    askClose?.addEventListener("click", closeModal);
     askBackdrop.addEventListener("click", closeModal);
-    document.addEventListener("keydown", (e)=>{ if (e.key==="Escape") closeModal(); });
+    // Click outside panel closes
+    askModal.addEventListener("click", (e)=>{ if(e.target===askModal) closeModal(); });
+    // Delegate any [data-close]
+    document.addEventListener("click", (e)=>{ const t=e.target.closest?.("[data-close]"); if(t && askModal.classList.contains("open")) closeModal(); });
+    // Escape closes
+    document.addEventListener("keydown", (e)=>{ if(e.key==="Escape" && askModal.classList.contains("open")) closeModal(); });
 
     askSend.addEventListener("click", async ()=>{
-      if (!relay){ showToast("Kein Backend konfiguriert."); return; }
-      if (!accepted){ showToast("Bitte zuerst den Hinweis bestätigen."); return; }
-      const q = askText.value.trim();
-      if (!q){ showToast("Bitte gib eine Frage ein."); return; }
-
-      askSend.disabled = true;
-      const old = askSend.innerHTML;
-      askSend.innerHTML = `<svg class="animate-spin h-5 w-5" viewBox="0 0 24 24"></svg> Senden …`;
-      askResult.classList.remove("hidden");
-      askResult.innerHTML = `<div class="text-slate-500 text-sm">KI antwortet …</div>`;
-
+      if(!relay){ showToast("Kein Backend konfiguriert."); return; }
+      if(!accepted){ showToast("Bitte zuerst den Hinweis bestätigen."); return; }
+      const q=askText.value.trim(); if(!q){ showToast("Bitte gib eine Frage ein."); return; }
+      askSend.disabled=true; const old=askSend.innerHTML; askSend.innerHTML=`<svg class="animate-spin h-5 w-5" viewBox="0 0 24 24"></svg> Senden …`;
+      askResult.classList.remove("hidden"); askResult.innerHTML=`<div class="text-slate-500 text-sm">KI antwortet …</div>`;
       try{
-        const prompt = `Beantworte diese individuelle Frage zum Berufsbildungs-/Arbeitsrecht knapp, fundiert und mit §§, falls einschlägig. Erinnere an das Verbot personenbezogener Daten.\n\n${q}`;
-        const resp = await callAI({ prompt });
-        askResult.innerHTML = (window.marked ? marked.parse(resp || "_Keine Antwort erhalten._") : (resp || "_Keine Antwort erhalten._"));
-      }catch(e){
-        askResult.innerHTML = `<div class="text-red-600 text-sm">Fehler: ${String(e).replace(/[<>&]/g,"")}</div>`;
-      }finally{
-        askSend.disabled = false;
-        askSend.innerHTML = old;
-        if (window.lucide) lucide.createIcons();
-      }
+        const prompt=`Beantworte diese individuelle Frage zum Berufsbildungs-/Arbeitsrecht knapp, fundiert und mit §§, falls einschlägig. Keine personenbezogenen Daten verwenden.\n\n${q}`;
+        const resp=await callAI({prompt}); askResult.innerHTML=(window.marked?marked.parse(resp||"_Keine Antwort erhalten._"):(resp||"_Keine Antwort erhalten._"));
+      }catch(e){ askResult.innerHTML=`<div class="text-red-600 text-sm">Fehler: ${String(e).replace(/[<>&]/g,"")}</div>`; }
+      finally{ askSend.disabled=false; askSend.innerHTML=old; if(window.lucide) lucide.createIcons(); }
     });
 
-    // === Toast ===
+    // Toast
     function showToast(msg){
-      toastEl.textContent = msg;
-      toastEl.style.display = "block";
-      clearTimeout(showToast._t);
-      showToast._t = setTimeout(()=> toastEl.style.display = "none", 2800);
+      toastEl.textContent=msg; toastEl.style.display="block"; clearTimeout(showToast._t); showToast._t=setTimeout(()=> toastEl.style.display="none", 2800);
     }
 
     // Init
