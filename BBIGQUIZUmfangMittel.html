@@ -35,6 +35,7 @@
     .btn-ghost{ background:transparent; }
     .btn-lg{ padding:.95rem 1.1rem; border-radius:12px; }
     .btn:focus-visible{ outline:3px solid color-mix(in oklab, var(--brand) 50%, transparent); outline-offset:2px; }
+
     .q-badge{ background: color-mix(in oklab, var(--brand) 18%, #eaf6ff 82%); color: color-mix(in oklab, var(--brand) 80%, #0b3b52 20%); }
     .progress-outer{ height:10px; border-radius:999px; background:#eaeef4; overflow:hidden; }
     .progress-inner{ height:100%; width:0%; border-radius:999px; background:linear-gradient(90deg, var(--brand), var(--ok)); transition:width .25s; }
@@ -42,21 +43,40 @@
     @media (prefers-color-scheme:dark){ .tip > div{ background:rgba(14,165,233,.08); color:#cce9fb; } }
     details[open] summary .chev{ transform:rotate(180deg); }
     summary{ list-style:none; }
+
     /* Disclaimer */
     .notice{ background:linear-gradient(135deg, #e0f2fe, #dbeafe); border-bottom:1px solid rgba(2,8,23,.08); }
     .notice .inner{ backdrop-filter:blur(6px); }
+
+    /* Tabs – Laschenoptik (Amazon Nova inspiriert) */
+    .tabs-wrap{ background: var(--surface); border-radius: 16px; box-shadow: var(--shadow-1); border:1px solid var(--border); }
+    .tabs-strip{ position:relative; display:flex; gap:.25rem; overflow:auto; scrollbar-width:none; padding:.35rem; }
+    .tabs-strip::-webkit-scrollbar{ display:none; }
+    .tab{
+      position:relative; white-space:nowrap; padding:.65rem 1rem; border-radius: 12px 12px 0 0;
+      border:1px solid transparent; background:transparent; font-weight:600; font-size:.95rem; color:#334155;
+    }
+    .tab .sub{ font-weight:500; color:var(--muted); font-size:.8rem; margin-left:.35rem; }
+    .tab[aria-selected="true"]{
+      background: #fff; color:#0b3b52; border-color: var(--border); border-bottom-color: transparent;
+      box-shadow: 0 -1px 0 #fff inset, 0 2px 0 #ffffff;
+    }
+    .tabs-bottom{
+      border-top:1px solid var(--border); background:#fff; padding:.5rem .8rem; border-radius:0 12px 12px 12px;
+      display:flex; align-items:center; gap:.75rem; color:#475569; font-size:.85rem;
+    }
+    .badge-on{ background: #ecfeff; color:#0369a1; border:1px solid #bae6fd; border-radius:999px; padding:2px 8px; font-size:.75rem; }
+    .badge-count{ background:#eef2ff; color:#3730a3; border:1px solid #c7d2fe; border-radius:999px; padding:2px 8px; font-size:.75rem; }
+
     /* Modal */
     .modal-backdrop{ position:fixed; inset:0; background:rgba(2,6,23,.45); display:none; z-index:98; }
     .modal{ position:fixed; inset:0; display:none; align-items:center; justify-content:center; padding:16px; z-index:99; }
     .modal .panel{ width:100%; max-width:720px; border-radius:1rem; }
     .modal.open, .modal-backdrop.open{ display:flex; }
-    /* Tabs */
-    .tabs{ display:flex; gap:.4rem; overflow:auto; scrollbar-width:none; }
-    .tabs::-webkit-scrollbar{ display:none; }
-    .tab{ white-space:nowrap; padding:.55rem .9rem; border-radius:999px; border:1px solid var(--border); background:var(--surface); font-size:.9rem; }
-    .tab[aria-selected="true"]{ background: color-mix(in oklab, var(--brand) 14%, #fff 86%); border-color: color-mix(in oklab, var(--brand) 50%, var(--border)); color:#0b3b52; }
+
     /* Safe area */
     .safe-bottom{ padding-bottom:max(env(safe-area-inset-bottom),12px); }
+
     /* Print */
     @media print{
       .sticky, .sticky-actions, #notice, #openAsk, #openAskMobile { display:none!important; }
@@ -108,24 +128,17 @@
       </button>
     </div>
 
-    <!-- Tabs / Registerkarten -->
-    <div class="mt-3 card p-3">
-      <div class="flex flex-col sm:flex-row sm:items-center gap-2">
-        <div class="tabs" role="tablist" aria-label="Frage-Cluster">
-          <!-- Tabs werden via JS gefüllt -->
-        </div>
-        <div class="sm:ml-auto text-xs text-slate-600 flex items-center gap-2">
-          <span class="chip" id="activeBanks">Aktive Banken: 1</span>
-          <span class="chip" id="totalQ">Fragen im Formular: 20</span>
-          <button id="applyBanks" type="button" class="btn">
-            <i data-lucide="refresh-cw" class="w-4 h-4"></i> Formular aktualisieren
-          </button>
-        </div>
+    <!-- Tabs / Laschen -->
+    <section class="mt-3 tabs-wrap">
+      <div id="tabsStrip" class="tabs-strip" role="tablist" aria-label="Frage-Cluster">
+        <!-- Tabs via JS -->
       </div>
-      <p class="mt-2 text-xs text-slate-500">
-        Tipp: Nur die aktivierten Registerkarten werden unten ins Formular übernommen. Du kannst jederzeit umschalten.
-      </p>
-    </div>
+      <div class="tabs-bottom">
+        <span id="banksMeta" class="badge-on">Aktive Banken: 1</span>
+        <span id="countMeta" class="badge-count">Fragen im Formular: 20</span>
+        <span class="hidden sm:inline text-slate-500">• Tipp: Klicke eine Lasche, um eine Bank ein-/auszuschalten.</span>
+      </div>
+    </section>
   </header>
 
   <!-- Progress -->
@@ -228,7 +241,7 @@
     const relay = "/api/linda-proxy";
     const BATCH_SIZE = 5;
     const MAX_ANSWER_CHARS = 1500;
-    const STORAGE_KEY = "BBIGQUIZ_V3_STATE";
+    const STORAGE_KEY = "BBIGQUIZ_V4_STATE";
 
     // UI-Refs
     const form = document.getElementById("form");
@@ -245,14 +258,7 @@
     const notice = document.getElementById("notice");
     const ackState = document.getElementById("ackState");
     const toastEl = document.getElementById("toast");
-    const openAsk = document.getElementById("openAsk");
-    const openAskMobile = document.getElementById("openAskMobile");
-
-    // Tabs
-    const tabsBar = document.querySelector(".tabs");
-    const activeBanksEl = document.getElementById("activeBanks");
-    const totalQEl = document.getElementById("totalQ");
-    const applyBanksBtn = document.getElementById("applyBanks");
+    const tabsStrip = document.getElementById("tabsStrip");
 
     // Modal
     const askBackdrop  = document.getElementById("askBackdrop");
@@ -261,6 +267,11 @@
     const askSend      = document.getElementById("askSend");
     const askText      = document.getElementById("askText");
     const askResult    = document.getElementById("askResult");
+    const openAsk      = document.getElementById("openAsk");
+    const openAskMobile= document.getElementById("openAskMobile");
+
+    const banksMetaEl = document.getElementById("banksMeta");
+    const countMetaEl = document.getElementById("countMeta");
 
     if (window.marked) marked.setOptions({ breaks:true, gfm:true });
     if (window.lucide) lucide.createIcons();
@@ -274,8 +285,7 @@
       timerEl.textContent = `${m}:${r}`;
     },1000);
 
-    // === Fragenbanken (=80 Fragen gesamt) ===
-    // Bank 1 (Core 20) – bestehend aus deinen bisherigen Kernfragen
+    // === Fragenbanken (80) ===
     const BANK_CORE = [
       { ref:"V1 – Mindestinhalte Vertrag", q:"Nenne vier Pflichtangaben, die zwingend in den Berufsausbildungsvertrag gehören.", tip:[
         "Typisch: Parteien, Beginn/Dauer, Ziel/Berufsbezeichnung, sachliche & zeitliche Gliederung, Vergütung, Probezeit, Urlaub, tägliche Ausbildungszeit, Kündigung, Hinweise auf Tarif/BV, Form des Ausbildungsnachweises.",
@@ -320,7 +330,6 @@
       { ref:"V20 – Insolvenz", q:"Was passiert bei Insolvenz des Ausbildungsbetriebs?", tip:["Fortführung/Anschlussbetrieb/IHK-Unterstützung; ggf. Insolvenzgeld."]}
     ];
 
-    // Weitere Banken (aus deinem PDF) – je 8–10 Fragen
     const BANK_BASICS = [
       { ref:"G1 – Jugendberufsagentur", q:"Was ist die Aufgabe einer Jugendberufsagentur und wer kooperiert dort?", tip:["Unter 25 unterstützen; Bündelung AA/Jobcenter/Kommunen/Schulen."]},
       { ref:"G2 – Nutzen Ausbildung", q:"Nenne drei Argumente, warum sich Ausbildung für Betriebe lohnt.", tip:["Fachkräfte, Flexibilität, Innovation/Kommunikation."]},
@@ -398,8 +407,8 @@
       { ref:"P2 – Ausbildungsende", q:"Wann endet das Ausbildungsverhältnis nach §21 BBiG?", tip:["Mit Ablauf der Zeit oder mit Bekanntgabe bestandener Prüfung."]},
       { ref:"P3 – Zulassung", q:"Welche Rolle hat der Ausbildungsnachweis für die Prüfungszulassung?", tip:["Kann angefordert werden; fehlend kann ausschließen."]},
       { ref:"P4 – Nachteilsausgleich Prüfung", q:"Beispielhafte Nachteilsausgleiche in Prüfungen?", tip:["Zeitverlängerung, Hilfsmittel, angepasste Aufgabenform."]},
-      { ref:"P5 – Prüfungsrecht Basics", q:"Welche Prinzipien sollte ein Prüfungsausschuss beachten (kurz)?", tip:["Rechtsgrundlagen, Gleichbehandlung, Verhältnismäßigkeit."]},
-      { ref:"P6 – Freistellung Prüfung", q:"Welche Freistellungen nennt §15 BBiG im Prüfungszusammenhang?", tip:["Teilnahme an Prüfungen; Vortag der schriftlichen Abschlussprüfung."]},
+      { ref:"P5 – Prüfungsrecht Basics", q:"Welche Prinzipien sollte ein PA beachten (kurz)?", tip:["Rechtsgrundlagen, Gleichbehandlung, Verhältnismäßigkeit."]},
+      { ref:"P6 – Freistellung Prüfung", q:"Welche Freistellungen nennt §15 BBiG im Prüfungszusammenhang?", tip:["Prüfungsteilnahme; Vortag der schriftlichen Abschlussprüfung."]},
       { ref:"P7 – Wiederholung", q:"Ist eine Wiederholungsprüfung möglich und was ist zu beachten?", tip:["Ja; Verlängerung §8(2) möglich bis nächster Termin."]},
       { ref:"P8 – Dokumentation", q:"Welche Dokumente sollte der Betrieb zur Prüfungsvorbereitung bereithalten?", tip:["Ausbildungsplan, Nachweise, Beurteilungen, ggf. Berichtsheft."]}
     ];
@@ -426,79 +435,95 @@
       { ref:"S8 – Nebentätigkeit", q:"Welche verfassungsrechtliche Norm ist bei Nebentätigkeit tangiert?", tip:["Art. 12 GG (Berufsausübungsfreiheit)."]}
     ];
 
-    // Alle Banken & Tab-Metadaten
     const BANKS = [
-      { key:"core",  title:"Kern (20)",       defaultActive:true,  data:BANK_CORE },
-      { key:"bas",   title:"Grundlagen & Recruiting", defaultActive:false, data:BANK_BASICS },
-      { key:"recht", title:"Recht – Einstieg/BBiG/AGG", defaultActive:false, data:BANK_RECHT_EINSTIEG },
-      { key:"az",    title:"Arbeitszeit & Urlaub", defaultActive:false, data:BANK_ARBEITSZEIT_URLAUB },
-      { key:"orga",  title:"Organisation & Planung", defaultActive:false, data:BANK_ORGA_PLANUNG },
-      { key:"beteiligte", title:"Beteiligte & Eignung", defaultActive:false, data:BANK_BETEILIGTE_EIGNUNG },
-      { key:"mitb",  title:"Mitbestimmung/BR/JAV", defaultActive:false, data:BANK_MITBESTIMMUNG },
-      { key:"pruef", title:"Prüfung", defaultActive:false, data:BANK_PRUEFUNG },
-      { key:"ds",    title:"Datenschutz/AGG & Ethik", defaultActive:false, data:BANK_DATENSCHUTZ_ETHIK },
-      { key:"sys",   title:"System/BIBB/Kammern", defaultActive:false, data:BANK_BIBB_SYSTEM }
+      { key:"core",  title:"Kern",                 count:20, data:BANK_CORE, defaultActive:true  },
+      { key:"bas",   title:"Grundlagen & Recruiting", count:10, data:BANK_BASICS, defaultActive:false },
+      { key:"recht", title:"Recht – Einstieg/BBiG/AGG", count:10, data:BANK_RECHT_EINSTIEG, defaultActive:false },
+      { key:"az",    title:"Arbeitszeit & Urlaub",  count:10, data:BANK_ARBEITSZEIT_URLAUB, defaultActive:false },
+      { key:"orga",  title:"Organisation & Planung", count:8,  data:BANK_ORGA_PLANUNG, defaultActive:false },
+      { key:"beteiligte", title:"Beteiligte & Eignung", count:8, data:BANK_BETEILIGTE_EIGNUNG, defaultActive:false },
+      { key:"mitb",  title:"Mitbestimmung/BR/JAV", count:8,  data:BANK_MITBESTIMMUNG, defaultActive:false },
+      { key:"pruef", title:"Prüfung",              count:8,  data:BANK_PRUEFUNG, defaultActive:false },
+      { key:"ds",    title:"Datenschutz & Ethik",  count:8,  data:BANK_DATENSCHUTZ_ETHIK, defaultActive:false },
+      { key:"sys",   title:"System/BIBB/Kammern",  count:8,  data:BANK_BIBB_SYSTEM, defaultActive:false }
     ];
 
-    // Aktive Banken (vom User schaltbar)
+    // Aktive Banken
     const activeBanks = new Set(BANKS.filter(b=>b.defaultActive).map(b=>b.key));
 
-    // Tabs rendern
-    function renderTabs(){
-      tabsBar.innerHTML = "";
-      BANKS.forEach((b, i)=>{
-        const btn = document.createElement("button");
-        btn.type="button";
-        btn.className="tab";
-        btn.setAttribute("role","tab");
-        btn.setAttribute("aria-selected", activeBanks.has(b.key) ? "true":"false");
-        btn.innerHTML = `
-          <span>${b.title}</span>
-          <span class="ml-2 chip">${b.data.length}</span>
-        `;
-        btn.addEventListener("click", ()=>{
-          if (activeBanks.has(b.key)) activeBanks.delete(b.key); else activeBanks.add(b.key);
-          btn.setAttribute("aria-selected", activeBanks.has(b.key) ? "true":"false");
-          updateBanksMeta();
-        });
-        tabsBar.appendChild(btn);
-      });
-      updateBanksMeta();
-    }
-    function updateBanksMeta(){
-      activeBanksEl.textContent = `Aktive Banken: ${activeBanks.size}`;
-      const count = getActiveQuestions().length;
-      totalQEl.textContent = `Fragen im Formular: ${count}`;
-    }
-    function getActiveQuestions(){
-      const arr = [];
-      BANKS.forEach(b=>{ if (activeBanks.has(b.key)) arr.push(...b.data); });
-      return arr;
-    }
+    // State (robust – per ref)
+    let answersByRef = {};   // { ref: text }
+    let selectedByRef = {};  // { ref: true/false }
 
-    // Hinweis bestätigen
+    // Disclaimer
     let accepted = false;
     ackBtn.addEventListener("click", ()=>{
       if (!ack.checked){ showToast("Bitte die Checkbox bestätigen."); return; }
-      accepted = true;
-      notice.style.display = "none";
-      ackState.textContent = "Hinweis bestätigt";
-      ackState.className = "chip";
+      accepted = true; notice.style.display = "none"; ackState.textContent = "Hinweis bestätigt"; ackState.className = "chip";
+      saveState();
     });
 
-    // Autosize
+    // Tabs rendern (Laschen)
+    function renderTabs(){
+      tabsStrip.innerHTML = "";
+      BANKS.forEach((b, idx)=>{
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "tab";
+        btn.setAttribute("role","tab");
+        btn.setAttribute("aria-selected", activeBanks.has(b.key) ? "true" : "false");
+        btn.innerHTML = `
+          <span>${b.title}</span>
+          <span class="sub">(${b.count})</span>
+        `;
+        btn.addEventListener("click", ()=>{
+          if (activeBanks.has(b.key)) activeBanks.delete(b.key); else activeBanks.add(b.key);
+          btn.setAttribute("aria-selected", activeBanks.has(b.key) ? "true" : "false");
+          renderQuestions(); // sofort übernehmen
+          updateBanksMeta();
+          saveState();
+        });
+        tabsStrip.appendChild(btn);
+      });
+      updateBanksMeta();
+    }
+
+    function getActiveQuestions(){
+      const arr=[]; BANKS.forEach(b=>{ if (activeBanks.has(b.key)) arr.push(...b.data); });
+      return arr;
+    }
+
+    function updateBanksMeta(){
+      const countBanks = activeBanks.size;
+      const total = getActiveQuestions().length;
+      banksMetaEl.textContent = `Aktive Banken: ${countBanks}`;
+      countMetaEl.textContent = `Fragen im Formular: ${total}`;
+      document.querySelector('[role="progressbar"]')?.setAttribute("aria-valuemax", String(total));
+    }
+
+    // Autosize helper
     function autosize(el){ el.style.height="auto"; el.style.height=(el.scrollHeight+4)+"px"; }
 
-    // Formular rendern (aus aktiven Banken)
+    // Render Formular
     function renderQuestions(){
       const QUESTIONS = getActiveQuestions();
+      // Vor dem Umbau aktuelle Werte speichern
+      [...form.querySelectorAll("section[data-ref]")].forEach(sec=>{
+        const ref = sec.getAttribute("data-ref");
+        const ta = sec.querySelector("textarea");
+        const cb = sec.querySelector("input[type='checkbox'][data-select]");
+        if (ta) answersByRef[ref] = ta.value;
+        if (cb) selectedByRef[ref] = cb.checked;
+      });
+
       form.innerHTML = "";
       QUESTIONS.forEach((item, idx) => {
-        const id = `q_${idx}`;
-        const fbId = `fb_${idx}`;
-        const selId = `sel_${idx}`;
+        const id  = `q_${idx}`;
+        const fbId= `fb_${idx}`;
+        const selId=`sel_${idx}`;
         const card = document.createElement("section");
         card.className = "card p-4";
+        card.setAttribute("data-ref", item.ref);
 
         card.innerHTML = `
           <header class="flex items-center justify-between gap-3 mb-2">
@@ -536,26 +561,38 @@
           </div>
         `;
         form.appendChild(card);
+
+        // Werte aus State wiederherstellen
+        const ta = card.querySelector("textarea");
+        const cb = card.querySelector(`[data-select]`);
+        if (answersByRef[item.ref]) { ta.value = answersByRef[item.ref]; }
+        if (selectedByRef[item.ref] != null) { cb.checked = !!selectedByRef[item.ref]; }
       });
 
-      // Tooltip-Toggles / Textareas
+      // Events
       form.querySelectorAll("textarea").forEach(ta=>{
         autosize(ta);
-        ta.addEventListener("input", ()=>{ autosize(ta); updateProgress(); scheduleSave(); if (autoSelectFilled.checked) autoSelectUpdate(); });
-        ta.addEventListener("keydown", (ev)=>{ if ((ev.ctrlKey||ev.metaKey) && ev.key==="Enter") { ev.preventDefault(); submitBtn.click(); } });
-      });
-
-      // Gliederung
-      form.querySelectorAll("[data-fill]").forEach(btn=>{
-        btn.addEventListener("click", (e)=>{
-          const tid = e.currentTarget.getAttribute("data-fill");
-          const ta = document.getElementById(tid);
-          ta.value = ["### Kurzantwort","- …","- …","- …","","### Begründung/Norm (optional)","- …"].join("\n");
-          autosize(ta); updateProgress(); scheduleSave(); if (autoSelectFilled.checked) autoSelectUpdate();
+        ta.addEventListener("input", ()=>{
+          autosize(ta); updateProgress();
+          const ref = ta.closest("section[data-ref]")?.getAttribute("data-ref");
+          if (ref) { answersByRef[ref] = ta.value; saveStateSchedule(); }
+        });
+        ta.addEventListener("keydown", (ev)=>{
+          if ((ev.ctrlKey||ev.metaKey) && ev.key==="Enter") { ev.preventDefault(); submitBtn.click(); }
         });
       });
 
-      // Einzel-KI-Check
+      form.querySelectorAll("[data-fill]").forEach(btn=>{
+        btn.addEventListener("click", e=>{
+          const tid = e.currentTarget.getAttribute("data-fill");
+          const ta = document.getElementById(tid);
+          ta.value = ["### Kurzantwort","- …","- …","- …","","### Begründung/Norm (optional)","- …"].join("\n");
+          autosize(ta); updateProgress();
+          const ref = ta.closest("section[data-ref]")?.getAttribute("data-ref");
+          if (ref) { answersByRef[ref] = ta.value; saveStateSchedule(); }
+        });
+      });
+
       form.querySelectorAll("[data-ask]").forEach(btn=>{
         btn.addEventListener("click", async (e)=>{
           if (!relay){ showToast("Kein Backend konfiguriert."); return; }
@@ -565,48 +602,24 @@
         });
       });
 
-      // Auswahl
       form.querySelectorAll("[data-select]").forEach(cb=>{
-        cb.addEventListener("change", ()=>{ updateSelectionCount(); scheduleSave(); });
+        cb.addEventListener("change", (e)=>{
+          const ref = e.currentTarget.closest("section[data-ref]")?.getAttribute("data-ref");
+          if (ref) selectedByRef[ref] = e.currentTarget.checked;
+          updateSelectionCount(); saveStateSchedule();
+        });
       });
 
       if (window.lucide) lucide.createIcons();
       updateSelectionCount();
       updateProgress();
-      updateAriaMax();
-      loadStateIntoCurrentForm();
     }
 
-    function updateAriaMax(){
-      const QUESTIONS = getActiveQuestions();
-      document.querySelector('[role="progressbar"]')?.setAttribute("aria-valuemax", String(QUESTIONS.length));
-    }
-
-    // Auswahl-Logik
-    const autoSelectFilled = document.createElement("input");
-    autoSelectFilled.type="checkbox"; // unsichtbar intern – nur Logik mitführen
-    function selectedIndices(){
-      return [...form.querySelectorAll("[data-select]:checked")].map(cb => Number(cb.getAttribute("data-select")));
-    }
-    function setAllSelected(state){
-      form.querySelectorAll("[data-select]").forEach(cb => cb.checked = state);
-      updateSelectionCount(); scheduleSave();
-    }
     function updateSelectionCount(){
-      const n = selectedIndices().length;
+      const n = [...form.querySelectorAll("[data-select]:checked")].length;
       selText.textContent = `${n} ausgewählt`;
     }
-    function autoSelectUpdate(){
-      const tas = [...form.querySelectorAll("textarea")];
-      tas.forEach((ta, i)=>{
-        const has = (ta.value||"").trim().length>0;
-        const cb = document.getElementById(`sel_${i}`);
-        if (cb) cb.checked = has;
-      });
-      updateSelectionCount(); scheduleSave();
-    }
 
-    // Fortschritt
     function updateProgress(){
       const all=[...form.querySelectorAll("textarea")];
       const filled=all.filter(t=>t.value.trim().length>0).length;
@@ -621,12 +634,13 @@
       const QUESTIONS = getActiveQuestions();
       const useIdx = indices ?? QUESTIONS.map((_,i)=>i);
       return useIdx.map(i=>{
-        const v=(document.getElementById(`q_${i}`)?.value||"").trim().slice(0, MAX_ANSWER_CHARS);
-        return { nr:i+1, ref:QUESTIONS[i].ref, question:QUESTIONS[i].q, answer:v };
+        const ref = QUESTIONS[i].ref;
+        const v = (answersByRef[ref] || "").trim().slice(0, MAX_ANSWER_CHARS);
+        return { nr:i+1, ref, question:QUESTIONS[i].q, answer:v };
       });
     }
 
-    // PROMPTS – freundlich, kriteriumsorientiert (nicht „zu scharf“)
+    // PROMPTS – wohlwollend
     function buildPromptAll(answers){
       return `
 Du bist Prüfer:in für Kurzantworten (Ausbildung/Arbeitsrecht). Beurteile **kriteriumsorientiert und wohlwollend**:
@@ -654,7 +668,6 @@ Frage: ${item.q}
 Antwort TN: ${answer || "(leer)"} `.trim();
     }
 
-    // Relay
     async function callAI(payload,{timeoutMs=20000,retries=2}={}){
       const url=relay; let lastErr;
       for(let a=0;a<=retries;a++){
@@ -670,14 +683,15 @@ Antwort TN: ${answer || "(leer)"} `.trim();
       throw lastErr||new Error("Unbekannter Fehler");
     }
 
-    // Einzel-KI-Check
     async function askPerAnswer(idx, btnEl){
       const QUESTIONS = getActiveQuestions();
-      const ta = document.getElementById(`q_${idx}`);
-      const fbId = `fb_${idx}`;
-      const fb = document.getElementById(fbId);
       const item = QUESTIONS[idx];
-      const prompt = buildPromptSingle(idx, item, (ta?.value||"").trim());
+      const ref = item.ref;
+      const answer = (answersByRef[ref] || "").trim();
+      const fbId = `fb_${idx}`;
+      // ensure fb exists
+      const fb = form.querySelectorAll("[id^='fb_']")[idx];
+      const prompt = buildPromptSingle(idx, item, answer);
 
       btnEl.disabled = true;
       const old = btnEl.innerHTML;
@@ -698,15 +712,15 @@ Antwort TN: ${answer || "(leer)"} `.trim();
       }
     }
 
-    // Gesamt-Feedback (Auswahl, batching)
+    // Gesamt-Feedback
     submitBtn.addEventListener("click", async ()=>{
       if (!accepted){ showToast("Bitte zuerst den Hinweis bestätigen."); return; }
 
-      let idxs = selectedIndices();
+      // Auswahl: zuerst alle mit Häkchen, sonst alle mit Inhalt, sonst alle
+      let idxs = [...form.querySelectorAll("[data-select]:checked")].map((_,i)=>i);
       if (idxs.length===0){
-        // pragmatisch: alle mit Inhalt, sonst alles
-        const withContent=[...form.querySelectorAll("textarea")].map((ta,i)=>({i,has:ta.value.trim().length>0})).filter(x=>x.has).map(x=>x.i);
-        idxs = withContent.length ? withContent : [...form.querySelectorAll("[data-select]")].map((_,i)=>i);
+        const withContent = getActiveQuestions().map((q,i)=>({i,ref:q.ref,has:(answersByRef[q.ref]||"").trim().length>0})).filter(x=>x.has).map(x=>x.i);
+        idxs = withContent.length ? withContent : getActiveQuestions().map((_,i)=>i);
       }
       if (!relay){ showToast("Kein Backend konfiguriert."); return; }
 
@@ -737,35 +751,28 @@ Antwort TN: ${answer || "(leer)"} `.trim();
       }
     });
 
-    // Autosave
+    // Autosave (per ref)
     function saveState(){
-      const answers=[...form.querySelectorAll("textarea")].map(t=>t.value||"");
-      const selected=[...form.querySelectorAll("[data-select]")].map(cb=>cb.checked);
-      const state={ ts:Date.now(), accepted, answers, selected, banks:[...activeBanks] };
+      const state = {
+        ts: Date.now(),
+        accepted,
+        activeBanks: [...activeBanks],
+        answersByRef,
+        selectedByRef
+      };
       try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }catch{}
     }
     let saveTimer=null;
-    function scheduleSave(){ clearTimeout(saveTimer); saveTimer=setTimeout(saveState, 800); }
+    function saveStateSchedule(){ clearTimeout(saveTimer); saveTimer=setTimeout(saveState, 600); }
+
     function loadState(){
       try{
-        const raw=localStorage.getItem(STORAGE_KEY); if(!raw) return; const st=JSON.parse(raw);
-        if (Array.isArray(st.banks)){
-          activeBanks.clear(); st.banks.forEach(k=>activeBanks.add(k));
-          renderTabs(); renderQuestions();
-        }
+        const raw = localStorage.getItem(STORAGE_KEY); if(!raw) return;
+        const st = JSON.parse(raw);
+        if (st.activeBanks){ activeBanks.clear(); st.activeBanks.forEach(k=>activeBanks.add(k)); }
+        answersByRef = st.answersByRef || {};
+        selectedByRef = st.selectedByRef || {};
         if (st.accepted){ accepted=true; notice.style.display="none"; ack.checked=true; ackState.textContent="Hinweis bestätigt"; ackState.className="chip"; }
-      }catch{}
-    }
-    function loadStateIntoCurrentForm(){
-      try{
-        const raw=localStorage.getItem(STORAGE_KEY); if(!raw) return; const st=JSON.parse(raw);
-        if (Array.isArray(st.answers)){
-          [...form.querySelectorAll("textarea")].forEach((ta,i)=>{ if (typeof st.answers[i]==="string"){ ta.value=st.answers[i]; autosize(ta);} });
-        }
-        if (Array.isArray(st.selected)){
-          [...form.querySelectorAll("[data-select]")].forEach((cb,i)=>{ cb.checked = !!st.selected[i]; });
-        }
-        updateSelectionCount(); updateProgress();
       }catch{}
     }
 
@@ -773,17 +780,11 @@ Antwort TN: ${answer || "(leer)"} `.trim();
     resetBtn.addEventListener("click", ()=>{
       if (!confirm("Alle Eingaben wirklich löschen?")) return;
       localStorage.removeItem(STORAGE_KEY);
-      renderQuestions();
-      resultWrap.classList.add("hidden");
-      aiResult.innerHTML = "";
+      answersByRef = {}; selectedByRef = {};
+      activeBanks.clear(); BANKS.filter(b=>b.defaultActive).forEach(b=>activeBanks.add(b.key));
+      renderTabs(); renderQuestions();
+      resultWrap.classList.add("hidden"); aiResult.innerHTML="";
       window.scrollTo({ top:0, behavior:"smooth" });
-    });
-
-    // Tabs-Apply
-    applyBanksBtn.addEventListener("click", ()=>{
-      renderTabs(); // refresh counts
-      renderQuestions();
-      scheduleSave();
     });
 
     // Modal open/close
@@ -798,7 +799,6 @@ Antwort TN: ${answer || "(leer)"} `.trim();
     document.addEventListener("keydown", (e)=>{ if(e.key==="Escape" && askModal.classList.contains("open")) closeModal(); });
 
     // Modal – KI
-    async function callAI(q){ return q; } // placeholder wenn relay leer
     askSend.addEventListener("click", async ()=>{
       if (!relay){ showToast("Kein Backend konfiguriert."); return; }
       if (!accepted){ showToast("Bitte zuerst den Hinweis bestätigen."); return; }
@@ -821,9 +821,9 @@ Antwort TN: ${answer || "(leer)"} `.trim();
     }
 
     // Init
+    loadState();
     renderTabs();
     renderQuestions();
-    loadState();
   });
   </script>
 </body>
