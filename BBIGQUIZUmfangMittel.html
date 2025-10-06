@@ -16,13 +16,13 @@
   <style>
     :root{
       --brand:#0ea5e9; --brand-2:#22c55e;
-      --card-r:1.1rem;
+      --card-r:1.05rem;
     }
     @media (prefers-color-scheme: dark){
       html{ color-scheme: dark; }
       body{ background: linear-gradient(to bottom, #0b1220, #0b1220 40%, #0f172a 100%); }
     }
-    .card{ border-radius: var(--card-r); box-shadow: 0 10px 30px rgba(2,8,23,.08); }
+    .card{ border-radius: var(--card-r); box-shadow: 0 10px 28px rgba(2,8,23,.08); }
     .q-badge{ background: rgba(14,165,233,.12); color: var(--brand); }
     .pill{ border: 1px solid rgba(2,8,23,.08); }
     .progress-outer{ height: 10px; border-radius:999px; background: rgba(2,8,23,.06); overflow: hidden; }
@@ -36,13 +36,31 @@
     details[open] summary .chev{ transform: rotate(180deg); }
     summary::-webkit-details-marker{ display:none; }
     summary{ list-style:none; }
+
+    /* Blauer Disclaimer */
+    .notice{
+      background: linear-gradient(135deg, #e0f2fe, #dbeafe);
+      border-bottom: 1px solid rgba(2,8,23,.08);
+    }
+    .notice .inner{
+      backdrop-filter: blur(6px);
+    }
+
+    /* Modal (eigene Frage) */
+    .modal-backdrop{ position:fixed; inset:0; background:rgba(2,6,23,.45); display:none; }
+    .modal{ position:fixed; inset:0; display:none; align-items:center; justify-content:center; padding:16px; }
+    .modal .panel{ width:100%; max-width:720px; border-radius:1rem; }
+    .modal.open, .modal-backdrop.open{ display:flex; }
+    @media (max-width: 640px){
+      .sticky-actions{ padding-bottom: max(env(safe-area-inset-bottom), 12px); }
+    }
     /* Motion-reduced */
     @media (prefers-reduced-motion: reduce){
       *{ animation-duration:0.01ms!important; animation-iteration-count:1!important; transition-duration:0.01ms!important; scroll-behavior:auto!important; }
     }
     /* Print */
     @media print{
-      .sticky, .sticky-actions, #notice{ display:none!important; }
+      .sticky, .sticky-actions, #notice, #askBtn, #openAsk { display:none!important; }
       body{ background: #fff!important; }
     }
   </style>
@@ -50,73 +68,82 @@
 <body class="min-h-screen bg-gradient-to-b from-white to-sky-50 text-slate-800 antialiased">
 
   <!-- Hinweis / Disclaimer -->
-  <aside id="notice" class="sticky top-0 z-50 bg-amber-50/95 backdrop-blur border-b border-amber-200">
-    <div class="max-w-3xl mx-auto px-4 py-3 flex items-start gap-3" role="alert" aria-live="polite">
-      <i data-lucide="alert-triangle" class="w-5 h-5 text-amber-700 mt-0.5"></i>
-      <div class="text-sm">
-        <p class="font-medium text-amber-900">Hinweis (Beta)</p>
-        <p class="text-amber-900/90">Die KI-Prüfung befindet sich im Test. Antworten müssen fachlich geprüft werden und ersetzen keine Rechtsberatung.</p>
+  <aside id="notice" class="notice sticky top-0 z-50">
+    <div class="inner max-w-4xl mx-auto px-4 py-3 sm:py-3.5 flex items-start gap-3">
+      <div class="w-10 h-10 rounded-2xl bg-sky-100 grid place-items-center shrink-0">
+        <i data-lucide="shield-check" class="w-6 h-6 text-sky-700"></i>
+      </div>
+      <div class="text-sm leading-snug">
+        <p class="font-semibold text-sky-900">Fachlicher Hinweis (Pilot)</p>
+        <p class="text-sky-900/90">
+          Die KI-Prüfung unterstützt beim Lernen. Ergebnisse müssen fachlich geprüft werden und ersetzen keine Rechtsberatung.
+        </p>
         <label class="mt-2 inline-flex items-center gap-2">
-          <input id="ack" type="checkbox" class="w-4 h-4 accent-amber-600" aria-describedby="ackDesc">
-          <span id="ackDesc" class="text-amber-950">Ich habe den Hinweis gelesen.</span>
+          <input id="ack" type="checkbox" class="w-4 h-4 accent-sky-600" aria-describedby="ackDesc">
+          <span id="ackDesc" class="text-sky-950">Ich habe den Hinweis gelesen.</span>
         </label>
       </div>
-      <button id="ackBtn" class="ml-auto pill px-3 py-2 rounded-lg text-sm hover:bg-amber-100">Weiter</button>
+      <div class="ml-auto flex items-center gap-2">
+        <span id="ackState" class="chip bg-slate-200 text-slate-700">Hinweis offen</span>
+        <button id="ackBtn" class="pill px-3 py-2 rounded-lg text-sm hover:bg-sky-50 border-sky-200">Weiter</button>
+      </div>
     </div>
   </aside>
 
   <!-- Header -->
-  <header class="max-w-3xl mx-auto px-4 pt-4">
+  <header class="max-w-4xl mx-auto px-4 pt-4">
     <div class="flex items-center gap-3">
       <div class="w-11 h-11 rounded-2xl bg-sky-100 grid place-items-center">
         <i data-lucide="graduation-cap" class="w-6 h-6 stroke-[1.6] text-sky-700"></i>
       </div>
-      <div class="flex-1">
-        <h1 class="text-xl font-semibold tracking-tight">BBiG-Quiz – Kompaktfragen</h1>
-        <p class="text-sm text-slate-500">Beantworte 20 kurze IHK-Fragen. Jede Antwort lässt sich einzeln oder gesammelt von der KI prüfen.</p>
+      <div class="flex-1 min-w-0">
+        <h1 class="text-xl sm:text-2xl font-semibold tracking-tight truncate">BBiG-Quiz – Kompaktfragen</h1>
+        <p class="text-sm text-slate-500">20 kurze IHK-Fragen. KI-Feedback für ausgewählte Antworten oder alle.</p>
       </div>
-      <span id="ackState" class="chip bg-slate-200 text-slate-700" aria-live="polite">Hinweis offen</span>
+      <button id="openAsk" class="hidden sm:inline-flex px-3 py-2 rounded-lg text-sm bg-sky-600 text-white hover:bg-sky-700">
+        <i data-lucide="message-square" class="w-4 h-4 mr-1.5"></i> Eigene Frage stellen
+      </button>
     </div>
 
-    <!-- Globaler Toggle -->
-    <div class="mt-3 flex items-center justify-between">
-      <p class="text-xs text-slate-600 flex items-center gap-2">
+    <!-- Steuerleiste Auswahl -->
+    <div class="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2 items-center">
+      <div class="text-xs text-slate-600 flex items-center gap-2">
         <i data-lucide="lightbulb" class="w-4 h-4"></i>
         <span>Musterlösungen lassen sich pro Frage oder global ein-/ausblenden.</span>
-      </p>
-      <button id="toggleAllBtn"
-              class="pill px-3 py-2 rounded-lg text-sm hover:bg-slate-50 flex items-center gap-2"
-              aria-pressed="false" aria-controls="form">
-        <i data-lucide="eye" class="w-4 h-4"></i>
-        <span>Alle Lösungen einblenden</span>
-      </button>
+      </div>
+      <div class="flex flex-wrap gap-2 justify-start sm:justify-end">
+        <button id="toggleAllBtn" class="pill px-3 py-2 rounded-lg text-sm hover:bg-slate-50 flex items-center gap-2" aria-pressed="false" aria-controls="form">
+          <i data-lucide="eye" class="w-4 h-4"></i><span>Alle Lösungen einblenden</span>
+        </button>
+        <button id="selectAllBtn" class="pill px-3 py-2 rounded-lg text-sm hover:bg-slate-50">Alle auswählen</button>
+        <button id="clearSelBtn" class="pill px-3 py-2 rounded-lg text-sm hover:bg-slate-50">Auswahl löschen</button>
+      </div>
     </div>
   </header>
 
   <!-- Fortschritt -->
-  <section class="max-w-3xl mx-auto px-4 mt-4" aria-labelledby="progh">
+  <section class="max-w-4xl mx-auto px-4 mt-4" aria-labelledby="progh">
     <div class="card bg-white p-4">
       <div class="flex items-center gap-3">
         <i data-lucide="target" class="w-5 h-5 text-sky-700"></i>
         <div class="flex-1">
           <div class="flex justify-between text-xs text-slate-600 mb-1">
             <span id="progressText">0 / 20 beantwortet</span>
-            <span id="timer" aria-live="polite">00:00</span>
+            <span id="selText">0 ausgewählt</span>
           </div>
           <div class="progress-outer" role="progressbar" aria-valuemin="0" aria-valuemax="20" aria-valuenow="0" aria-labelledby="progh">
             <div id="progressBar" class="progress-inner"></div>
           </div>
           <span id="progh" class="sr-only">Beantwortete Fragen</span>
         </div>
+        <time id="timer" class="text-xs text-slate-500 ml-3" aria-live="polite">00:00</time>
       </div>
     </div>
   </section>
 
   <!-- Quiz -->
-  <main class="max-w-3xl mx-auto px-4 py-4">
-    <form id="form" class="grid gap-5" novalidate aria-describedby="formhint">
-      <!-- Fragen werden per JS eingefügt -->
-    </form>
+  <main class="max-w-4xl mx-auto px-4 py-4">
+    <form id="form" class="grid gap-4 sm:gap-5" novalidate aria-describedby="formhint"></form>
     <p id="formhint" class="sr-only">Mit Strg/⌘+Enter kannst du das Gesamt-Feedback abrufen.</p>
 
     <!-- KI-Gesamtfeedback -->
@@ -124,7 +151,7 @@
       <div class="card bg-white p-4">
         <div class="flex items-center gap-2 mb-2">
           <i data-lucide="sparkle" class="w-5 h-5 text-emerald-700"></i>
-          <h2 class="text-base font-semibold">KI-Feedback (Gesamt)</h2>
+          <h2 class="text-base font-semibold">KI-Feedback</h2>
         </div>
         <article id="aiResult" class="prose prose-slate max-w-none text-sm"></article>
       </div>
@@ -133,10 +160,13 @@
 
   <!-- Sticky Action-Bar -->
   <div class="sticky-actions sticky bottom-0 bg-white/95 border-t border-slate-200 backdrop-blur">
-    <div class="max-w-3xl mx-auto px-4 py-2 flex gap-2">
+    <div class="max-w-4xl mx-auto px-4 py-2 flex flex-wrap gap-2">
+      <button id="openAskMobile" class="sm:hidden flex-1 btn-lg bg-sky-100 text-slate-800 hover:bg-sky-200">
+        <i data-lucide="message-square" class="w-5 h-5 mr-1.5"></i> Eigene Frage
+      </button>
       <button id="submitBtn" class="flex-1 btn-lg bg-sky-600 text-white font-medium hover:bg-sky-700 active:bg-sky-800 focus:outline-none focus:ring-2 focus:ring-sky-400 flex items-center justify-center gap-2 disabled:opacity-60" type="button">
         <i data-lucide="send" class="w-5 h-5"></i>
-        KI-Feedback gesamt
+        KI-Feedback für Auswahl
       </button>
       <button id="resetBtn" class="btn-lg px-4 border border-slate-200 text-slate-700 hover:bg-slate-50 rounded-lg" type="button">
         Zurücksetzen
@@ -147,10 +177,41 @@
   <!-- Toast -->
   <div id="toast" role="status" aria-live="polite" style="display:none; position:fixed; left:50%; bottom:18px; transform:translateX(-50%); background:#111827; color:#fff; padding:10px 14px; border-radius:10px; font-size:14px; z-index:50;"></div>
 
+  <!-- Modal: Eigene Frage -->
+  <div id="askBackdrop" class="modal-backdrop"></div>
+  <div id="askModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="askTitle" aria-describedby="askDesc">
+    <div class="panel card bg-white p-4 sm:p-5">
+      <div class="flex items-start gap-2">
+        <div class="w-10 h-10 rounded-xl bg-sky-100 grid place-items-center">
+          <i data-lucide="message-square" class="w-5 h-5 text-sky-700"></i>
+        </div>
+        <div class="flex-1">
+          <h3 id="askTitle" class="text-base font-semibold">Eigene Frage an die KI</h3>
+          <p id="askDesc" class="text-sm text-slate-500">Formuliere eine Frage. (Optional: beziehe dich auf eine konkrete Frage-Nr.)</p>
+        </div>
+        <button id="askClose" class="pill px-3 py-2 rounded-lg text-sm hover:bg-slate-50" aria-label="Fenster schließen">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+      <div class="mt-3">
+        <label for="askText" class="sr-only">Deine Frage</label>
+        <textarea id="askText" rows="5" class="w-full p-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-sky-300 text-[15px]" placeholder="Deine Frage …"></textarea>
+      </div>
+      <div class="mt-3 flex flex-wrap gap-2 justify-end">
+        <button id="askSend" class="btn-lg bg-sky-600 text-white hover:bg-sky-700 flex items-center gap-2">
+          <i data-lucide="send" class="w-5 h-5"></i> Senden
+        </button>
+      </div>
+      <div id="askResult" class="mt-3 hidden prose prose-slate text-sm max-w-none"></div>
+    </div>
+  </div>
+
   <script>
   document.addEventListener("DOMContentLoaded", () => {
-    // === Konfiguration (API optional: leer lassen, wenn kein Backend) ===
-    const relay = "/api/linda-proxy"; // leere Zeichenkette => KI-Buttons werden ausgeblendet
+    // === Konfiguration ===
+    const relay = "/api/linda-proxy";   // Wenn leer, werden KI-Buttons ausgeblendet
+    const BATCH_SIZE = 5;
+    const MAX_ANSWER_CHARS = 1500;
 
     // UI-Refs
     const form        = document.getElementById("form");
@@ -158,6 +219,7 @@
     const resetBtn    = document.getElementById("resetBtn");
     const progressBar = document.getElementById("progressBar");
     const progressTxt = document.getElementById("progressText");
+    const selText     = document.getElementById("selText");
     const resultWrap  = document.getElementById("resultWrap");
     const aiResult    = document.getElementById("aiResult");
     const timerEl     = document.getElementById("timer");
@@ -167,6 +229,18 @@
     const ackState    = document.getElementById("ackState");
     const toastEl     = document.getElementById("toast");
     const toggleAllBtn= document.getElementById("toggleAllBtn");
+    const selectAllBtn= document.getElementById("selectAllBtn");
+    const clearSelBtn = document.getElementById("clearSelBtn");
+    const openAsk     = document.getElementById("openAsk");
+    const openAskMobile = document.getElementById("openAskMobile");
+
+    // Modal
+    const askBackdrop = document.getElementById("askBackdrop");
+    const askModal    = document.getElementById("askModal");
+    const askClose    = document.getElementById("askClose");
+    const askSend     = document.getElementById("askSend");
+    const askText     = document.getElementById("askText");
+    const askResult   = document.getElementById("askResult");
 
     if (window.marked) marked.setOptions({ breaks:true, gfm:true });
     if (window.lucide) lucide.createIcons();
@@ -180,7 +254,7 @@
       timerEl.textContent = `${m}:${r}`;
     }, 1000);
 
-    // === 20 IHK-Kompaktfragen ===
+    // === Fragen ===
     const QUESTIONS = [
       { ref:"V1 – Mindestinhalte Vertrag", q:"Nenne vier Pflichtangaben, die zwingend in den Berufsausbildungsvertrag gehören.", tip:[
         "Typisch: Parteien, Beginn/Dauer, Ziel/Berufsbezeichnung, sachliche & zeitliche Gliederung, Vergütung, Probezeit, Urlaub, tägliche Ausbildungszeit, Kündigung, Hinweise auf Tarif/BV, Form des Ausbildungsnachweises.",
@@ -267,16 +341,20 @@
       QUESTIONS.forEach((item, idx) => {
         const id = `q_${idx}`;
         const fbId = `fb_${idx}`;
+        const selId = `sel_${idx}`;
         const card = document.createElement("section");
         card.className = "card bg-white p-4";
 
         card.innerHTML = `
-          <header class="flex items-center justify-between mb-2">
-            <span class="q-badge px-3 py-1 rounded-full text-[11px] font-medium">${item.ref}</span>
+          <header class="flex items-center justify-between gap-3 mb-2">
+            <div class="flex items-center gap-2">
+              <input id="${selId}" type="checkbox" class="w-4 h-4 accent-sky-600" data-select="${idx}" aria-label="Für KI-Feedback auswählen">
+              <span class="q-badge px-3 py-1 rounded-full text-[11px] font-medium">${item.ref}</span>
+            </div>
             <span class="text-slate-400 text-[11px]">Frage ${idx+1}/${QUESTIONS.length}</span>
           </header>
 
-          <h3 class="text-[15px] font-semibold mb-2">${item.q}</h3>
+          <h3 class="text-[15px] sm:text-[16px] font-semibold mb-2">${item.q}</h3>
 
           <details class="tip mb-2" data-tip>
             <summary class="list-none cursor-pointer select-none flex items-center gap-2 text-sky-700 hover:text-sky-900 text-[13px]">
@@ -333,7 +411,7 @@
         });
       });
 
-      // KI-Check (optional)
+      // KI-Check (einzeln)
       form.querySelectorAll("[data-ask]").forEach(btn=>{
         btn.addEventListener("click", async (e)=>{
           if (!relay){ showToast("Kein Backend konfiguriert."); return; }
@@ -343,8 +421,30 @@
         });
       });
 
+      // Auswahl-Checkboxen
+      form.querySelectorAll("[data-select]").forEach(cb=>{
+        cb.addEventListener("change", updateSelectionCount);
+      });
+
       if (window.lucide) lucide.createIcons();
+      updateSelectionCount();
+      updateProgress();
     }
+
+    // === Auswahl-Logik ===
+    function selectedIndices(){
+      return [...form.querySelectorAll("[data-select]:checked")].map(cb => Number(cb.getAttribute("data-select")));
+    }
+    function setAllSelected(state){
+      form.querySelectorAll("[data-select]").forEach(cb => cb.checked = state);
+      updateSelectionCount();
+    }
+    function updateSelectionCount(){
+      const n = selectedIndices().length;
+      selText.textContent = `${n} ausgewählt`;
+    }
+    selectAllBtn.addEventListener("click", ()=> setAllSelected(true));
+    clearSelBtn.addEventListener("click", ()=> setAllSelected(false));
 
     // === Fortschritt ===
     function updateProgress(){
@@ -357,10 +457,11 @@
     }
 
     // === Prompt-Builder ===
-    function collectAnswers(){
-      return QUESTIONS.map((q,i)=>{
-        const v=(document.getElementById(`q_${i}`)?.value||"").trim();
-        return { nr:i+1, ref:q.ref, question:q.q, answer:v };
+    function collectAnswers(indices=null){
+      const useIdx = indices ?? QUESTIONS.map((_,i)=>i);
+      return useIdx.map(i=>{
+        const v=(document.getElementById(`q_${i}`)?.value||"").trim().slice(0, MAX_ANSWER_CHARS);
+        return { nr:i+1, ref:QUESTIONS[i].ref, question:QUESTIONS[i].q, answer:v };
       });
     }
 
@@ -436,23 +537,36 @@ Antwort TN: ${answer || "(leer)"}
       }
     }
 
-    // === Gesamt-Feedback ===
+    // === Gesamt-Feedback (nur Auswahl, batching) ===
     submitBtn.addEventListener("click", async ()=>{
       if (!accepted){ showToast("Bitte zuerst den Hinweis bestätigen."); return; }
-      const answers = collectAnswers();
-      const prompt = buildPromptAll(answers);
 
-      submitBtn.disabled = true;
-      const old = submitBtn.innerHTML;
-      submitBtn.innerHTML = `<svg class="animate-spin h-5 w-5" viewBox="0 0 24 24"></svg> Wird geprüft …`;
+      let idxs = selectedIndices();
+      if (idxs.length===0){
+        // wenn nichts ausgewählt: alle mit Inhalt, sonst alle
+        const filledIdx = QUESTIONS.map((_,i)=>i).filter(i => (document.getElementById(`q_${i}`)?.value || "").trim().length>0);
+        idxs = filledIdx.length ? filledIdx : QUESTIONS.map((_,i)=>i);
+      }
+
+      if (!relay){ showToast("Kein Backend konfiguriert."); return; }
+
+      const batches = [];
+      for (let i=0;i<idxs.length;i+=BATCH_SIZE) batches.push(idxs.slice(i,i+BATCH_SIZE));
 
       resultWrap.classList.remove("hidden");
-      aiResult.innerHTML = `<div class="text-slate-500 text-sm">Bitte warten … die KI erstellt Gesamt-Feedback.</div>`;
+      aiResult.innerHTML = "";
+      submitBtn.disabled = true;
+      const old = submitBtn.innerHTML;
 
       try{
-        if (!relay){ throw new Error("Kein Backend konfiguriert"); }
-        const aiText = await callAI({ prompt });
-        aiResult.innerHTML = (window.marked ? marked.parse(aiText || "_Keine Antwort erhalten._") : (aiText || "_Keine Antwort erhalten._"));
+        for (let b=0; b<batches.length; b++){
+          const answers = collectAnswers(batches[b]);
+          const prompt  = buildPromptAll(answers);
+          submitBtn.innerHTML = `<svg class="animate-spin h-5 w-5" viewBox="0 0 24 24"></svg> Prüfe Batch ${b+1}/${batches.length} …`;
+          const part = await callAI({ prompt });
+          const html = (window.marked ? marked.parse(part || "_Keine Antwort erhalten._") : (part || "_Keine Antwort erhalten._"));
+          aiResult.insertAdjacentHTML("beforeend", html + (b < batches.length-1 ? "<hr/>" : ""));
+        }
         window.scrollTo({ top: document.body.scrollHeight, behavior:"smooth" });
       }catch(e){
         aiResult.innerHTML = `<div class="text-red-600 text-sm">Gesamt-Feedback fehlgeschlagen (${String(e).replace(/[<>&]/g,"")}).</div>`;
@@ -469,7 +583,6 @@ Antwort TN: ${answer || "(leer)"}
       if (!confirm("Alle Eingaben wirklich löschen?")) return;
       startTs = Date.now();
       renderQuestions();
-      updateProgress();
       resultWrap.classList.add("hidden");
       aiResult.innerHTML = "";
       window.scrollTo({ top:0, behavior:"smooth" });
@@ -487,6 +600,49 @@ Antwort TN: ${answer || "(leer)"}
     }
     toggleAllBtn.addEventListener("click", ()=> setAllDetails(!allOpen));
 
+    // === Modal: Eigene Frage ===
+    function openModal(){
+      askBackdrop.classList.add("open");
+      askModal.classList.add("open");
+      askText.focus();
+    }
+    function closeModal(){
+      askBackdrop.classList.remove("open");
+      askModal.classList.remove("open");
+      askResult.classList.add("hidden");
+      askText.value = "";
+    }
+    openAsk?.addEventListener("click", openModal);
+    openAskMobile?.addEventListener("click", openModal);
+    askClose.addEventListener("click", closeModal);
+    askBackdrop.addEventListener("click", closeModal);
+    document.addEventListener("keydown", (e)=>{ if (e.key==="Escape") closeModal(); });
+
+    askSend.addEventListener("click", async ()=>{
+      if (!relay){ showToast("Kein Backend konfiguriert."); return; }
+      if (!accepted){ showToast("Bitte zuerst den Hinweis bestätigen."); return; }
+      const q = askText.value.trim();
+      if (!q){ showToast("Bitte gib eine Frage ein."); return; }
+
+      askSend.disabled = true;
+      const old = askSend.innerHTML;
+      askSend.innerHTML = `<svg class="animate-spin h-5 w-5" viewBox="0 0 24 24"></svg> Senden …`;
+      askResult.classList.remove("hidden");
+      askResult.innerHTML = `<div class="text-slate-500 text-sm">KI antwortet …</div>`;
+
+      try{
+        const prompt = `Beantworte diese individuelle Frage zum Berufsbildungsrecht/Arbeitsrecht knapp, fundiert und mit §§, falls einschlägig:\n\n${q}`;
+        const resp = await callAI({ prompt });
+        askResult.innerHTML = (window.marked ? marked.parse(resp || "_Keine Antwort erhalten._") : (resp || "_Keine Antwort erhalten._"));
+      }catch(e){
+        askResult.innerHTML = `<div class="text-red-600 text-sm">Fehler: ${String(e).replace(/[<>&]/g,"")}</div>`;
+      }finally{
+        askSend.disabled = false;
+        askSend.innerHTML = old;
+        if (window.lucide) lucide.createIcons();
+      }
+    });
+
     // === Toast ===
     function showToast(msg){
       toastEl.textContent = msg;
@@ -497,7 +653,11 @@ Antwort TN: ${answer || "(leer)"}
 
     // Init
     renderQuestions();
-    updateProgress();
+
+    // Timer (zuletzt, damit UI steht)
+    setInterval(() => {
+      // already running above
+    }, 1000);
   });
   </script>
 </body>
