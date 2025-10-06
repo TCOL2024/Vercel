@@ -21,7 +21,6 @@
     .q-badge { background: rgba(14,165,233, .12); color: var(--brand); }
     .pill { border: 1px solid rgba(0,0,0,.07); }
     .progress { height: 10px; border-radius: 999px; background: linear-gradient(90deg, var(--brand), #22c55e); width: 0%; transition: width .25s ease; }
-    .prose pre, .prose code { white-space: pre-wrap; word-break: break-word; }
     textarea { -webkit-text-size-adjust: 100%; }
     .btn-lg { padding: .9rem 1.1rem; border-radius: 0.9rem; }
     .safe-bottom { padding-bottom: max(env(safe-area-inset-bottom), 12px); }
@@ -33,9 +32,9 @@
     }
     .tip p { margin: .15rem 0; }
     .icon-btn { display:inline-flex; align-items:center; gap:.35rem; }
-    figure.tip-figure { margin: .5rem 0 0 0; }
-    figure.tip-figure img { width: 100%; height: auto; border-radius: .6rem; box-shadow: 0 4px 16px rgba(0,0,0,.06); }
-    figure.tip-figure figcaption { font-size: 12px; color:#0b3b52; margin-top:.35rem; }
+    figure.tip-figure { margin:.5rem 0 0 0; }
+    figure.tip-figure img { width:100%; height:auto; border-radius:.6rem; box-shadow:0 4px 16px rgba(0,0,0,.06); }
+    figure.tip-figure figcaption { font-size:12px; color:#0b3b52; margin-top:.35rem; }
   </style>
 </head>
 <body class="min-h-screen bg-gradient-to-b from-white to-sky-50 text-slate-800 antialiased">
@@ -191,7 +190,7 @@
     function buildTipFigure(idx, altTxt){
       const fileBase = IMAGE_MAP[idx];
       if (!fileBase) return "";
-      // <picture> mit WebP-Priorität + PNG-Fallback; onerror blendet Figure aus, falls nichts vorhanden.
+      // WebP bevorzugt, PNG-Fallback; fehlt die Datei, blendet onerror die Figure aus.
       return `
         <figure class="tip-figure" data-fig-for="q_${idx}">
           <picture>
@@ -373,10 +372,7 @@
     // Hinweis bestätigen
     let accepted = false;
     ackBtn.addEventListener("click", ()=>{
-      if (!ack.checked) {
-        showToast("Bitte die Checkbox bestätigen.");
-        return;
-      }
+      if (!ack.checked) { showToast("Bitte die Checkbox bestätigen."); return; }
       accepted = true;
       notice.style.display = "none";
       ackState.textContent = "Hinweis bestätigt";
@@ -384,10 +380,7 @@
     });
 
     // Autosize
-    function autosize(el){
-      el.style.height = "auto";
-      el.style.height = (el.scrollHeight + 4) + "px";
-    }
+    function autosize(el){ el.style.height="auto"; el.style.height=(el.scrollHeight+4)+"px"; }
 
     // Render
     function renderQuestions() {
@@ -463,7 +456,7 @@
         });
       });
 
-      // Textareas autosize + progress
+      // Textareas
       form.querySelectorAll("textarea").forEach(ta=>{
         autosize(ta);
         ta.addEventListener("input", ()=>{ autosize(ta); updateProgress(); });
@@ -609,6 +602,14 @@ Antwort TN: ${answer || "(leer)"}
       window.scrollTo({top:0, behavior:"smooth"});
     });
 
+    // Fortschritt initial
+    function initProgressListeners(){
+      form.querySelectorAll("textarea").forEach(ta=>{
+        ta.addEventListener("input", updateProgress);
+      });
+      updateProgress();
+    }
+
     // Globaler Lösungen-Toggle
     let allShown = false;
     function setAllTips(show){
@@ -617,24 +618,12 @@ Antwort TN: ${answer || "(leer)"}
       const btns = form.querySelectorAll("[data-tipbtn]");
       btns.forEach(b => b.setAttribute("aria-expanded", String(show)));
       allShown = show;
-      // Button-UI
       toggleAllBtn.setAttribute("aria-pressed", String(show));
       toggleAllBtn.querySelector("span").textContent = show ? "Alle Lösungen ausblenden" : "Alle Lösungen einblenden";
       const icon = toggleAllBtn.querySelector("i");
-      if (icon && window.lucide) {
-        icon.setAttribute("data-lucide", show ? "eye-off" : "eye");
-        lucide.createIcons();
-      }
+      if (icon && window.lucide) { icon.setAttribute("data-lucide", show ? "eye-off" : "eye"); lucide.createIcons(); }
     }
     toggleAllBtn.addEventListener("click", ()=> setAllTips(!allShown));
-
-    // Fortschritt initial
-    function initProgressListeners(){
-      form.querySelectorAll("textarea").forEach(ta=>{
-        ta.addEventListener("input", updateProgress);
-      });
-      updateProgress();
-    }
 
     // Toast
     function showToast(msg){
@@ -645,6 +634,7 @@ Antwort TN: ${answer || "(leer)"}
     }
 
     // Init
+    function updateProgress(){ /* oben definiert – bleibt hier leer, da bereits gesetzt */ }
     renderQuestions();
     initProgressListeners();
   });
