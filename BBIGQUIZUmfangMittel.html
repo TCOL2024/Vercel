@@ -15,61 +15,75 @@
 
   <style>
     :root{
-      --brand:#0ea5e9; --brand-2:#22c55e;
-      --card-r:1.05rem;
+      /* Nova-ähnliche Palette */
+      --surface: #ffffff;
+      --surface-2: #f6f8fb;
+      --ink: #0f172a;
+      --muted: #64748b;
+      --border: #e5e7eb;
+      --brand: #0ea5e9;
+      --brand-2: #2563eb;
+      --ok: #10b981;
+      --warn: #f59e0b;
+      --radius: 14px;
+      --radius-sm: 10px;
+      --shadow-1: 0 8px 28px rgba(2,8,23,.06);
     }
     @media (prefers-color-scheme: dark){
       html{ color-scheme: dark; }
-      body{ background: linear-gradient(to bottom, #0b1220, #0b1220 40%, #0f172a 100%); }
+      body{ background: linear-gradient(to bottom, #0b1220, #0b1220 40%, #111827 100%); }
+      :root{
+        --surface: #0f172a;
+        --surface-2: #0b1327;
+        --ink: #e5e7eb;
+        --muted: #9aa6b2;
+        --border: #1f2937;
+      }
     }
-    .card{ border-radius: var(--card-r); box-shadow: 0 10px 28px rgba(2,8,23,.08); }
-    .q-badge{ background: rgba(14,165,233,.12); color: var(--brand); }
-    .pill{ border: 1px solid rgba(2,8,23,.08); }
-    .progress-outer{ height: 10px; border-radius:999px; background: rgba(2,8,23,.06); overflow: hidden; }
-    .progress-inner{ height:100%; width:0%; border-radius:999px; background: linear-gradient(90deg, var(--brand), var(--brand-2)); transition: width .25s ease; }
-    .btn-lg{ padding:.9rem 1.05rem; border-radius:.9rem; }
-    .chip{ font-size:12px; padding:4px 8px; border-radius:999px; }
-    .tip > div{ border-left:3px solid var(--brand); background:#f0f9ff; color:#0b3b52; border-radius:.8rem; padding:.75rem .85rem; }
-    @media (prefers-color-scheme: dark){
-      .tip > div{ background: rgba(14,165,233,.08); color:#cce9fb; }
-    }
+    body{ background: linear-gradient(to bottom, #fff, #f4f7fb); color: var(--ink); }
+    .container{ max-width: 1000px; margin-inline: auto; padding-inline: 1rem; }
+    .card{ background: var(--surface); border-radius: var(--radius); box-shadow: var(--shadow-1); }
+    .chip{ font-size: 12px; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--border); color: var(--muted); background: var(--surface-2); }
+    .btn{ display:inline-flex; align-items:center; gap:.5rem; padding:.65rem .9rem; border-radius: var(--radius-sm); border:1px solid var(--border); background: var(--surface); color: var(--ink); }
+    .btn:hover{ background:#f8fafc; }
+    .btn-ghost{ background:transparent; }
+    .btn-primary{ border-color: transparent; background: linear-gradient(180deg, var(--brand), var(--brand-2)); color:#fff; }
+    .btn-primary:hover{ filter: brightness(0.98); }
+    .btn-danger{ border-color: transparent; background: linear-gradient(180deg, #f87171, #ef4444); color:#fff; }
+    .btn-lg{ padding:.9rem 1.05rem; border-radius: 12px; }
+    .btn:focus-visible{ outline: 3px solid color-mix(in oklab, var(--brand) 50%, transparent); outline-offset: 2px; }
+    .q-badge{ background: color-mix(in oklab, var(--brand) 18%, #eaf6ff 82%); color: color-mix(in oklab, var(--brand) 80%, #0b3b52 20%); border: none; }
+    .pill{ border: 1px solid var(--border); border-radius: var(--radius-sm); }
+    .progress-outer{ height:10px; border-radius:999px; background: #eaeef4; overflow:hidden; }
+    .progress-inner{ height:100%; width:0%; border-radius:999px; background: linear-gradient(90deg, var(--brand), var(--ok)); transition: width .25s ease; }
+    textarea{ -webkit-text-size-adjust:100%; }
+    .tip > div{ border-left:3px solid var(--brand); background:#f0f9ff; color:#0b3b52; border-radius:12px; padding:.75rem .85rem; }
+    @media (prefers-color-scheme: dark){ .tip > div{ background: rgba(14,165,233,.08); color:#cce9fb; } }
     details[open] summary .chev{ transform: rotate(180deg); }
     summary::-webkit-details-marker{ display:none; }
     summary{ list-style:none; }
-
     /* Blauer Disclaimer */
-    .notice{
-      background: linear-gradient(135deg, #e0f2fe, #dbeafe);
-      border-bottom: 1px solid rgba(2,8,23,.08);
-    }
-    .notice .inner{
-      backdrop-filter: blur(6px);
-    }
-
-    /* Modal (eigene Frage) */
+    .notice{ background: linear-gradient(135deg, #e0f2fe, #dbeafe); border-bottom: 1px solid rgba(2,8,23,.08); }
+    .notice .inner{ backdrop-filter: blur(6px); }
+    /* Modal */
     .modal-backdrop{ position:fixed; inset:0; background:rgba(2,6,23,.45); display:none; }
     .modal{ position:fixed; inset:0; display:none; align-items:center; justify-content:center; padding:16px; }
     .modal .panel{ width:100%; max-width:720px; border-radius:1rem; }
     .modal.open, .modal-backdrop.open{ display:flex; }
-    @media (max-width: 640px){
-      .sticky-actions{ padding-bottom: max(env(safe-area-inset-bottom), 12px); }
-    }
-    /* Motion-reduced */
-    @media (prefers-reduced-motion: reduce){
-      *{ animation-duration:0.01ms!important; animation-iteration-count:1!important; transition-duration:0.01ms!important; scroll-behavior:auto!important; }
-    }
+    @media (max-width: 640px){ .sticky-actions{ padding-bottom: max(env(safe-area-inset-bottom), 12px); } }
     /* Print */
     @media print{
-      .sticky, .sticky-actions, #notice, #askBtn, #openAsk { display:none!important; }
+      .sticky, .sticky-actions, #notice, #openAsk, #openAskMobile { display:none!important; }
       body{ background: #fff!important; }
+      .card{ box-shadow:none!important; border:1px solid #ddd; }
     }
   </style>
 </head>
-<body class="min-h-screen bg-gradient-to-b from-white to-sky-50 text-slate-800 antialiased">
+<body class="min-h-screen antialiased">
 
   <!-- Hinweis / Disclaimer -->
   <aside id="notice" class="notice sticky top-0 z-50">
-    <div class="inner max-w-4xl mx-auto px-4 py-3 sm:py-3.5 flex items-start gap-3">
+    <div class="inner container px-4 py-3 sm:py-3.5 flex items-start gap-3">
       <div class="w-10 h-10 rounded-2xl bg-sky-100 grid place-items-center shrink-0">
         <i data-lucide="shield-check" class="w-6 h-6 text-sky-700"></i>
       </div>
@@ -84,24 +98,24 @@
         </label>
       </div>
       <div class="ml-auto flex items-center gap-2">
-        <span id="ackState" class="chip bg-slate-200 text-slate-700">Hinweis offen</span>
-        <button id="ackBtn" class="pill px-3 py-2 rounded-lg text-sm hover:bg-sky-50 border-sky-200">Weiter</button>
+        <span id="ackState" class="chip">Hinweis offen</span>
+        <button id="ackBtn" class="btn">Weiter</button>
       </div>
     </div>
   </aside>
 
   <!-- Header -->
-  <header class="max-w-4xl mx-auto px-4 pt-4">
+  <header class="container px-4 pt-4">
     <div class="flex items-center gap-3">
       <div class="w-11 h-11 rounded-2xl bg-sky-100 grid place-items-center">
         <i data-lucide="graduation-cap" class="w-6 h-6 stroke-[1.6] text-sky-700"></i>
       </div>
       <div class="flex-1 min-w-0">
         <h1 class="text-xl sm:text-2xl font-semibold tracking-tight truncate">BBiG-Quiz – Kompaktfragen</h1>
-        <p class="text-sm text-slate-500">20 kurze IHK-Fragen. KI-Feedback für ausgewählte Antworten oder alle.</p>
+        <p class="text-sm text-slate-500">20 kurze IHK-Fragen. KI-Feedback gezielt auswählen. Autosave & Export.</p>
       </div>
-      <button id="openAsk" class="hidden sm:inline-flex px-3 py-2 rounded-lg text-sm bg-sky-600 text-white hover:bg-sky-700">
-        <i data-lucide="message-square" class="w-4 h-4 mr-1.5"></i> Eigene Frage stellen
+      <button id="openAsk" class="hidden sm:inline-flex btn btn-primary">
+        <i data-lucide="message-square" class="w-4 h-4"></i> Eigene Frage
       </button>
     </div>
 
@@ -112,18 +126,18 @@
         <span>Musterlösungen lassen sich pro Frage oder global ein-/ausblenden.</span>
       </div>
       <div class="flex flex-wrap gap-2 justify-start sm:justify-end">
-        <button id="toggleAllBtn" class="pill px-3 py-2 rounded-lg text-sm hover:bg-slate-50 flex items-center gap-2" aria-pressed="false" aria-controls="form">
+        <button id="toggleAllBtn" class="btn" aria-pressed="false" aria-controls="form">
           <i data-lucide="eye" class="w-4 h-4"></i><span>Alle Lösungen einblenden</span>
         </button>
-        <button id="selectAllBtn" class="pill px-3 py-2 rounded-lg text-sm hover:bg-slate-50">Alle auswählen</button>
-        <button id="clearSelBtn" class="pill px-3 py-2 rounded-lg text-sm hover:bg-slate-50">Auswahl löschen</button>
+        <button id="selectAllBtn" class="btn">Alle auswählen</button>
+        <button id="clearSelBtn" class="btn">Auswahl löschen</button>
       </div>
     </div>
   </header>
 
   <!-- Fortschritt -->
-  <section class="max-w-4xl mx-auto px-4 mt-4" aria-labelledby="progh">
-    <div class="card bg-white p-4">
+  <section class="container px-4 mt-4" aria-labelledby="progh">
+    <div class="card p-4">
       <div class="flex items-center gap-3">
         <i data-lucide="target" class="w-5 h-5 text-sky-700"></i>
         <div class="flex-1">
@@ -142,13 +156,13 @@
   </section>
 
   <!-- Quiz -->
-  <main class="max-w-4xl mx-auto px-4 py-4">
+  <main class="container px-4 py-4">
     <form id="form" class="grid gap-4 sm:gap-5" novalidate aria-describedby="formhint"></form>
-    <p id="formhint" class="sr-only">Mit Strg/⌘+Enter kannst du das Gesamt-Feedback abrufen.</p>
+    <p id="formhint" class="sr-only">Mit Strg/⌘+Enter kannst du das KI-Gesamt-Feedback abrufen.</p>
 
-    <!-- KI-Gesamtfeedback -->
+    <!-- KI-Feedback -->
     <section id="resultWrap" class="mt-5 hidden" aria-live="polite">
-      <div class="card bg-white p-4">
+      <div class="card p-4">
         <div class="flex items-center gap-2 mb-2">
           <i data-lucide="sparkle" class="w-5 h-5 text-emerald-700"></i>
           <h2 class="text-base font-semibold">KI-Feedback</h2>
@@ -160,15 +174,21 @@
 
   <!-- Sticky Action-Bar -->
   <div class="sticky-actions sticky bottom-0 bg-white/95 border-t border-slate-200 backdrop-blur">
-    <div class="max-w-4xl mx-auto px-4 py-2 flex flex-wrap gap-2">
-      <button id="openAskMobile" class="sm:hidden flex-1 btn-lg bg-sky-100 text-slate-800 hover:bg-sky-200">
-        <i data-lucide="message-square" class="w-5 h-5 mr-1.5"></i> Eigene Frage
+    <div class="container px-4 py-2 flex flex-wrap gap-2">
+      <button id="openAskMobile" class="sm:hidden flex-1 btn btn-ghost">
+        <i data-lucide="message-square" class="w-5 h-5"></i> Eigene Frage
       </button>
-      <button id="submitBtn" class="flex-1 btn-lg bg-sky-600 text-white font-medium hover:bg-sky-700 active:bg-sky-800 focus:outline-none focus:ring-2 focus:ring-sky-400 flex items-center justify-center gap-2 disabled:opacity-60" type="button">
-        <i data-lucide="send" class="w-5 h-5"></i>
-        KI-Feedback für Auswahl
+      <button id="exportPdfBtn" class="btn btn-ghost">
+        <i data-lucide="file-text" class="w-4 h-4"></i> Export PDF
       </button>
-      <button id="resetBtn" class="btn-lg px-4 border border-slate-200 text-slate-700 hover:bg-slate-50 rounded-lg" type="button">
+      <button id="exportMdBtn" class="btn btn-ghost">
+        <i data-lucide="download" class="w-4 h-4"></i> Export MD
+      </button>
+      <div class="flex-1"></div>
+      <button id="submitBtn" class="btn btn-primary btn-lg flex-1 sm:flex-none" type="button">
+        <i data-lucide="send" class="w-5 h-5"></i> KI-Feedback für Auswahl
+      </button>
+      <button id="resetBtn" class="btn btn-lg" type="button">
         Zurücksetzen
       </button>
     </div>
@@ -180,7 +200,7 @@
   <!-- Modal: Eigene Frage -->
   <div id="askBackdrop" class="modal-backdrop"></div>
   <div id="askModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="askTitle" aria-describedby="askDesc">
-    <div class="panel card bg-white p-4 sm:p-5">
+    <div class="panel card p-4 sm:p-5">
       <div class="flex items-start gap-2">
         <div class="w-10 h-10 rounded-xl bg-sky-100 grid place-items-center">
           <i data-lucide="message-square" class="w-5 h-5 text-sky-700"></i>
@@ -189,7 +209,7 @@
           <h3 id="askTitle" class="text-base font-semibold">Eigene Frage an die KI</h3>
           <p id="askDesc" class="text-sm text-slate-500">Formuliere eine Frage. (Optional: beziehe dich auf eine konkrete Frage-Nr.)</p>
         </div>
-        <button id="askClose" class="pill px-3 py-2 rounded-lg text-sm hover:bg-slate-50" aria-label="Fenster schließen">
+        <button id="askClose" class="btn" aria-label="Fenster schließen">
           <i data-lucide="x" class="w-4 h-4"></i>
         </button>
       </div>
@@ -198,7 +218,7 @@
         <textarea id="askText" rows="5" class="w-full p-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-sky-300 text-[15px]" placeholder="Deine Frage …"></textarea>
       </div>
       <div class="mt-3 flex flex-wrap gap-2 justify-end">
-        <button id="askSend" class="btn-lg bg-sky-600 text-white hover:bg-sky-700 flex items-center gap-2">
+        <button id="askSend" class="btn btn-primary">
           <i data-lucide="send" class="w-5 h-5"></i> Senden
         </button>
       </div>
@@ -212,11 +232,14 @@
     const relay = "/api/linda-proxy";   // Wenn leer, werden KI-Buttons ausgeblendet
     const BATCH_SIZE = 5;
     const MAX_ANSWER_CHARS = 1500;
+    const STORAGE_KEY = "BBIGQUIZ_V1_STATE";
 
     // UI-Refs
     const form        = document.getElementById("form");
     const submitBtn   = document.getElementById("submitBtn");
     const resetBtn    = document.getElementById("resetBtn");
+    const exportPdfBtn= document.getElementById("exportPdfBtn");
+    const exportMdBtn = document.getElementById("exportMdBtn");
     const progressBar = document.getElementById("progressBar");
     const progressTxt = document.getElementById("progressText");
     const selText     = document.getElementById("selText");
@@ -233,7 +256,6 @@
     const clearSelBtn = document.getElementById("clearSelBtn");
     const openAsk     = document.getElementById("openAsk");
     const openAskMobile = document.getElementById("openAskMobile");
-
     // Modal
     const askBackdrop = document.getElementById("askBackdrop");
     const askModal    = document.getElementById("askModal");
@@ -330,7 +352,7 @@
       accepted = true;
       notice.style.display = "none";
       ackState.textContent = "Hinweis bestätigt";
-      ackState.className = "chip bg-emerald-100 text-emerald-700";
+      ackState.className = "chip";
     });
 
     // === Render ===
@@ -343,13 +365,13 @@
         const fbId = `fb_${idx}`;
         const selId = `sel_${idx}`;
         const card = document.createElement("section");
-        card.className = "card bg-white p-4";
+        card.className = "card p-4";
 
         card.innerHTML = `
           <header class="flex items-center justify-between gap-3 mb-2">
             <div class="flex items-center gap-2">
               <input id="${selId}" type="checkbox" class="w-4 h-4 accent-sky-600" data-select="${idx}" aria-label="Für KI-Feedback auswählen">
-              <span class="q-badge px-3 py-1 rounded-full text-[11px] font-medium">${item.ref}</span>
+              <span class="q-badge chip">${item.ref}</span>
             </div>
             <span class="text-slate-400 text-[11px]">Frage ${idx+1}/${QUESTIONS.length}</span>
           </header>
@@ -364,7 +386,7 @@
             <div class="mt-2">
               ${item.tip.map(t=>`<p>${t}</p>`).join("")}
               <div class="mt-2">
-                <button type="button" data-ask="${idx}" class="px-3 py-2 text-[13px] rounded-lg bg-sky-600 text-white hover:bg-sky-700 flex items-center gap-2 disabled:opacity-60 ${!relay ? 'hidden':''}">
+                <button type="button" data-ask="${idx}" class="btn ${!relay ? 'hidden':''}">
                   <i data-lucide="sparkles" class="w-4 h-4"></i> KI-Check zu dieser Antwort
                 </button>
               </div>
@@ -378,7 +400,7 @@
             placeholder="Deine Antwort …"></textarea>
 
           <div class="mt-2 flex flex-wrap gap-2">
-            <button type="button" data-fill="${id}" class="px-3 py-2 text-[13px] pill rounded-lg hover:bg-slate-50">Beispiel-Gliederung</button>
+            <button type="button" data-fill="${id}" class="btn">Beispiel-Gliederung</button>
           </div>
         `;
         form.appendChild(card);
@@ -387,7 +409,7 @@
       // Autosize + Progress
       form.querySelectorAll("textarea").forEach(ta=>{
         autosize(ta);
-        ta.addEventListener("input", ()=>{ autosize(ta); updateProgress(); });
+        ta.addEventListener("input", ()=>{ autosize(ta); updateProgress(); scheduleSave(); });
         ta.addEventListener("keydown", (ev)=>{
           if ((ev.ctrlKey||ev.metaKey) && ev.key==="Enter"){ ev.preventDefault(); submitBtn.click(); }
         });
@@ -407,7 +429,7 @@
             "### Begründung/Norm (optional)",
             "- …"
           ].join("\n");
-          autosize(ta); updateProgress();
+          autosize(ta); updateProgress(); scheduleSave();
         });
       });
 
@@ -423,7 +445,7 @@
 
       // Auswahl-Checkboxen
       form.querySelectorAll("[data-select]").forEach(cb=>{
-        cb.addEventListener("change", updateSelectionCount);
+        cb.addEventListener("change", ()=>{ updateSelectionCount(); scheduleSave(); });
       });
 
       if (window.lucide) lucide.createIcons();
@@ -437,7 +459,7 @@
     }
     function setAllSelected(state){
       form.querySelectorAll("[data-select]").forEach(cb => cb.checked = state);
-      updateSelectionCount();
+      updateSelectionCount(); scheduleSave();
     }
     function updateSelectionCount(){
       const n = selectedIndices().length;
@@ -457,12 +479,12 @@
     }
 
     // === Prompt-Builder ===
-    function collectAnswers(indices=null){
+    function collectAnswers(indices=null, onlyWithContent=false){
       const useIdx = indices ?? QUESTIONS.map((_,i)=>i);
       return useIdx.map(i=>{
         const v=(document.getElementById(`q_${i}`)?.value||"").trim().slice(0, MAX_ANSWER_CHARS);
         return { nr:i+1, ref:QUESTIONS[i].ref, question:QUESTIONS[i].q, answer:v };
-      });
+      }).filter(a => onlyWithContent ? a.answer.length>0 : true);
     }
 
     function buildPromptAll(answers){
@@ -543,11 +565,9 @@ Antwort TN: ${answer || "(leer)"}
 
       let idxs = selectedIndices();
       if (idxs.length===0){
-        // wenn nichts ausgewählt: alle mit Inhalt, sonst alle
         const filledIdx = QUESTIONS.map((_,i)=>i).filter(i => (document.getElementById(`q_${i}`)?.value || "").trim().length>0);
         idxs = filledIdx.length ? filledIdx : QUESTIONS.map((_,i)=>i);
       }
-
       if (!relay){ showToast("Kein Backend konfiguriert."); return; }
 
       const batches = [];
@@ -578,10 +598,142 @@ Antwort TN: ${answer || "(leer)"}
       }
     });
 
+    // === Autosave (localStorage) ===
+    function saveState(){
+      const answers = QUESTIONS.map((_,i)=> (document.getElementById(`q_${i}`)?.value||""));
+      const selected = [...form.querySelectorAll("[data-select]")].map(cb=>cb.checked);
+      const state = {
+        ts: Date.now(),
+        accepted,
+        answers,
+        selected
+      };
+      try{
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      }catch(e){ /* storage full or denied */ }
+    }
+    let saveTimer=null;
+    function scheduleSave(){
+      clearTimeout(saveTimer);
+      saveTimer = setTimeout(saveState, 800);
+    }
+    function loadState(){
+      try{
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) return;
+        const st = JSON.parse(raw);
+        if (Array.isArray(st.answers)){
+          st.answers.forEach((v,i)=>{
+            const ta = document.getElementById(`q_${i}`);
+            if (ta){ ta.value = v; autosize(ta); }
+          });
+        }
+        if (Array.isArray(st.selected)){
+          st.selected.forEach((val,i)=>{
+            const cb = document.getElementById(`sel_${i}`);
+            if (cb) cb.checked = !!val;
+          });
+        }
+        if (st.accepted){
+          accepted = true;
+          notice.style.display = "none";
+          ack.checked = true;
+          ackState.textContent = "Hinweis bestätigt";
+          ackState.className = "chip";
+        }
+        updateSelectionCount();
+        updateProgress();
+      }catch(e){ /* ignore */ }
+    }
+
+    // === Export: PDF & Markdown ===
+    function buildExportData(){
+      let idxs = selectedIndices();
+      if (idxs.length===0){
+        const withContent = QUESTIONS.map((_,i)=>i).filter(i => (document.getElementById(`q_${i}`)?.value || "").trim().length>0);
+        idxs = withContent.length ? withContent : QUESTIONS.map((_,i)=>i);
+      }
+      const answers = collectAnswers(idxs, false);
+      return answers;
+    }
+
+    function exportMarkdown(){
+      const data = buildExportData();
+      const dt = new Date().toISOString().replace(/[:T]/g,"-").slice(0,19);
+      const md = [
+        `# BBiG-Quiz – Antworten`,
+        ``,
+        `Exportzeitpunkt: ${new Date().toLocaleString()}`,
+        `Auswahl: ${data.length} Frage(n)`,
+        `---`,
+        ``,
+        ...data.map(a=>[
+          `## ${a.ref}`,
+          `**Frage:** ${a.question}`,
+          ``,
+          `**Antwort:**`,
+          ``,
+          a.answer ? a.answer : "_(leer)_",
+          ``,
+          `---`,
+          ``,
+        ].join("\n"))
+      ].join("\n");
+      const blob = new Blob([md], {type:"text/markdown;charset=utf-8"});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url; a.download = `BBiG-Quiz_Antworten_${dt}.md`;
+      document.body.appendChild(a); a.click();
+      setTimeout(()=>{ URL.revokeObjectURL(url); a.remove(); }, 500);
+    }
+
+    function exportPDF(){
+      const data = buildExportData();
+      const win = window.open("", "_blank");
+      const styles = `
+        <style>
+          body{ font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial; color:#0f172a; }
+          h1{ font-size:20px; margin:0 0 6px; }
+          .meta{ color:#475569; font-size:12px; margin-bottom:12px; }
+          .q{ page-break-inside: avoid; border:1px solid #e5e7eb; border-radius:10px; padding:10px 12px; margin:10px 0; }
+          .ref{ display:inline-block; font-size:12px; padding:2px 8px; border:1px solid #e5e7eb; border-radius:999px; color:#334155; background:#f8fafc; margin-bottom:6px; }
+          .fr{ font-weight:600; margin:4px 0; }
+          pre{ white-space:pre-wrap; word-wrap:break-word; background:#f8fafc; padding:8px; border-radius:8px; border:1px solid #e5e7eb; }
+          @page{ margin: 16mm; }
+          header{ position: running(pageHeader); }
+        </style>
+      `;
+      const meta = `<div class="meta">Export: ${new Date().toLocaleString()} – Anzahl: ${data.length}</div>`;
+      const html = `
+        <html>
+        <head><meta charset="utf-8">${styles}<title>BBiG-Quiz – Export</title></head>
+        <body>
+          <h1>BBiG-Quiz – Antworten</h1>
+          ${meta}
+          ${data.map(a=>`
+            <section class="q">
+              <div class="ref">${a.ref}</div>
+              <div class="fr">Frage</div>
+              <div>${a.question}</div>
+              <div class="fr">Antwort</div>
+              <pre>${(a.answer||"(leer)").replace(/[<>&]/g, s => ({'<':'&lt;','>':'&gt;','&':'&amp;'}[s]))}</pre>
+            </section>`).join("")}
+        </body></html>`;
+      win.document.open();
+      win.document.write(html);
+      win.document.close();
+      win.focus();
+      win.print(); // Nutzer kann „Als PDF sichern“ wählen
+    }
+
+    exportMdBtn.addEventListener("click", exportMarkdown);
+    exportPdfBtn.addEventListener("click", exportPDF);
+
     // === Reset ===
     resetBtn.addEventListener("click", ()=>{
       if (!confirm("Alle Eingaben wirklich löschen?")) return;
       startTs = Date.now();
+      localStorage.removeItem(STORAGE_KEY);
       renderQuestions();
       resultWrap.classList.add("hidden");
       aiResult.innerHTML = "";
@@ -631,7 +783,7 @@ Antwort TN: ${answer || "(leer)"}
       askResult.innerHTML = `<div class="text-slate-500 text-sm">KI antwortet …</div>`;
 
       try{
-        const prompt = `Beantworte diese individuelle Frage zum Berufsbildungsrecht/Arbeitsrecht knapp, fundiert und mit §§, falls einschlägig:\n\n${q}`;
+        const prompt = `Beantworte diese individuelle Frage zum Berufsbildungs-/Arbeitsrecht knapp, fundiert und mit §§, falls einschlägig:\n\n${q}`;
         const resp = await callAI({ prompt });
         askResult.innerHTML = (window.marked ? marked.parse(resp || "_Keine Antwort erhalten._") : (resp || "_Keine Antwort erhalten._"));
       }catch(e){
@@ -653,11 +805,7 @@ Antwort TN: ${answer || "(leer)"}
 
     // Init
     renderQuestions();
-
-    // Timer (zuletzt, damit UI steht)
-    setInterval(() => {
-      // already running above
-    }, 1000);
+    loadState();   // nach dem Rendern laden
   });
   </script>
 </body>
