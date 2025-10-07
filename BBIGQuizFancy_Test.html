@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
-  <title>BBiG-Quiz – t&c Cluster + Nova Intro</title>
+  <title>BBiG-Quiz – Cluster Edition</title>
 
   <!-- External -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -12,52 +12,45 @@
   <script defer src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 
   <style>
-    /* ===== t&c (Amazon Nova inspiriert) ===== */
+    /* ===== Neutral, modern look ===== */
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
     :root{
-      --mf-primary:#005EB8; --mf-primary-dark:#004A93; --mf-secondary:#00A0E3;
-      --accent:#FF9900; --accent-hover:#EC7211;
-      --success:#00D4AA; --warn:#FFA726; --danger:#E53935;
-
-      --surface:#FFFFFF; --surface-2:#F7F8F8; --surface-hover:#EBEEF0;
-      --ink:#0F1111; --muted:#565959; --border:#D5D9D9; --focus:#005EB8;
-
-      --radius:10px; --radius-pill:999px;
+      --primary:#2563eb; --primary-2:#0ea5e9; --accent:#22c55e; --warn:#f59e0b; --danger:#ef4444;
+      --surface:#ffffff; --surface-2:#f7f8fb; --surface-3:#eef2f7;
+      --ink:#0f172a; --muted:#64748b; --border:#e2e8f0; --focus:#2563eb;
+      --radius:14px; --radius-pill:999px;
       --shadow-xs:0 1px 2px rgba(15,17,17,.06);
-      --shadow-sm:0 1px 6px rgba(15,17,17,.08);
-      --shadow-md:0 2px 10px rgba(15,17,17,.12);
+      --shadow-sm:0 6px 18px rgba(15,17,17,.08);
     }
     html.dark{
-      --surface:#131A22; --surface-2:#1C2531; --surface-hover:#232F3E;
-      --ink:#FFFFFF; --muted:#AAB7B8; --border:#3A4553; --focus:#FF9900;
+      --surface:#0b1220; --surface-2:#0f172a; --surface-3:#111827;
+      --ink:#e5e7eb; --muted:#94a3b8; --border:#1f2937; --focus:#38bdf8;
     }
     html,body{ font-family:Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; font-size:14px; line-height:1.5; background:var(--surface-2); color:var(--ink) }
     .container{ max-width:1120px; margin-inline:auto; padding-inline:16px }
-    .card{ background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); box-shadow:var(--shadow-sm) }
-    .btn{ display:inline-flex; align-items:center; gap:8px; padding:8px 14px; border-radius:8px; border:1px solid var(--border); background:var(--surface); color:var(--ink); font-weight:600; cursor:pointer; transition:.15s }
-    .btn:hover{ background:var(--surface-hover) }
+    .card{ background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); box-shadow:var(--shadow-xs) }
+    .btn{ display:inline-flex; align-items:center; gap:8px; padding:10px 14px; border-radius:12px; border:1px solid var(--border); background:var(--surface); color:var(--ink); font-weight:600; cursor:pointer; transition:.15s }
+    .btn:hover{ background:var(--surface-3) }
     .btn:focus-visible{ outline:3px solid color-mix(in oklab, var(--focus) 35%, transparent); outline-offset:2px }
-    .btn-primary{ background:var(--accent); border-color:var(--accent); color:#111 }
-    .btn-primary:hover{ background:var(--accent-hover); border-color:var(--accent-hover) }
-    .btn-blue{ background:var(--mf-primary); border-color:var(--mf-primary); color:#fff }
-    .btn-blue:hover{ background:var(--mf-primary-dark) }
+    .btn-primary{ background:var(--primary); border-color:var(--primary); color:#fff }
+    .btn-primary:hover{ filter:brightness(1.05) }
     .btn-ghost{ background:transparent; border-color:transparent }
     .btn-sm{ padding:6px 10px; font-size:12px }
-    .btn-lg{ padding:12px 16px; font-size:14px; border-radius:12px }
+    .btn-lg{ padding:12px 16px; font-size:14px; border-radius:14px }
 
-    .badge{ display:inline-flex; align-items:center; gap:6px; padding:4px 10px; border:1px solid var(--border); border-radius:12px; background:var(--surface-2); color:var(--muted); font-size:11px; font-weight:700; letter-spacing:.2px }
-    .badge-primary{ background:#E7F1FF; color:var(--mf-primary); border-color:#B3D9FF }
+    .badge{ display:inline-flex; align-items:center; gap:6px; padding:4px 10px; border:1px solid var(--border); border-radius:999px; background:var(--surface-3); color:var(--muted); font-size:11px; font-weight:700; letter-spacing:.2px }
+    .badge-primary{ background:rgba(37,99,235,.08); color:var(--primary); border-color:rgba(37,99,235,.25) }
 
-    .progress-outer{ height:8px; border-radius:4px; background:var(--surface-2); overflow:hidden; border:1px solid var(--border) }
-    .progress-inner{ height:100%; width:0%; background:linear-gradient(90deg, var(--mf-primary), var(--mf-secondary)); transition:width .3s; box-shadow:0 0 8px rgba(0,94,184,.3) }
+    .progress-outer{ height:8px; border-radius:999px; background:var(--surface-3); overflow:hidden; border:1px solid var(--border) }
+    .progress-inner{ height:100%; width:0%; background:linear-gradient(90deg, var(--primary), var(--primary-2)); transition:width .3s; box-shadow:0 0 8px rgba(37,99,235,.25) }
 
     .app-header{ position:sticky; top:0; z-index:40; backdrop-filter:blur(8px); background:color-mix(in srgb, var(--surface) 88%, transparent); border-bottom:1px solid var(--border) }
 
     /* Tabs → Cluster */
     .tabs{ display:flex; gap:.5rem; overflow:auto; scrollbar-width:none }
     .tabs::-webkit-scrollbar{ display:none }
-    .tab{ padding:.55rem .85rem; border:1px solid var(--border); border-radius:var(--radius-pill); background:#fff; white-space:nowrap; display:flex; align-items:center; gap:.45rem; font-weight:700; }
-    .tab[aria-selected="true"]{ background:#ECF6FF; border-color:#B3D9FF; color:#0A3A66 }
+    .tab{ padding:.55rem .9rem; border:1px solid var(--border); border-radius:var(--radius-pill); background:#fff; white-space:nowrap; display:flex; align-items:center; gap:.55rem; font-weight:700; }
+    .tab[aria-selected="true"]{ background:rgba(37,99,235,.08); border-color:rgba(37,99,235,.25); color:#0b3b8a }
     .tab i{ width:18px; height:18px }
     #clusterSelect{ display:none }
     @media (max-width: 720px){ .tabs{ display:none } #clusterSelect{ display:block } }
@@ -66,170 +59,160 @@
     .q-card{ position:relative; padding:16px }
     .bookmark{ position:absolute; top:12px; right:12px; width:34px; height:34px; border-radius:50%; display:grid; place-items:center; background:var(--surface); border:1px solid var(--border); box-shadow:var(--shadow-xs) }
     .bookmark.active{ background:var(--accent); border-color:var(--accent) }
-    .tip{ margin-top:.5rem; background:#F0F8FF; border-left:3px solid var(--mf-primary); padding:.75rem .85rem; border-radius:10px }
-    html.dark .tip{ background:rgba(0,94,184,.15) }
+    .tip{ margin-top:.5rem; background:linear-gradient(180deg, rgba(37,99,235,.08), rgba(14,165,233,.08)); border-left:3px solid var(--primary); padding:.8rem .9rem; border-radius:12px }
 
     /* Modal base */
     .modal-backdrop{ position:fixed; inset:0; background:rgba(0,0,0,.5); backdrop-filter:blur(4px); display:none; z-index:98 }
     .modal{ position:fixed; inset:0; display:none; align-items:center; justify-content:center; padding:16px; z-index:99 }
     .modal.open, .modal-backdrop.open{ display:flex }
-    .panel{ width:100%; max-width:860px; max-height:90vh; overflow:auto; border-radius:12px }
+    .panel{ width:100%; max-width:860px; max-height:90vh; overflow:auto; border-radius:16px }
 
     /* Toast */
     #toast{ position:fixed; left:50%; bottom:18px; transform:translateX(-50%); background:#111827; color:#fff; padding:10px 14px; border-radius:10px; font-size:14px; z-index:100; display:none }
 
-    /* Notice (blau, klar) */
-    .notice{ background:linear-gradient(135deg, #E7F1FF, #E0F2FF); border-bottom:1px solid #B3D9FF }
-    .notice .chip{ font-size:12px; padding:4px 10px; border-radius:999px; border:1px solid #B3D9FF; background:#F2F8FF; color:#0A3A66 }
+    /* Notice (friendly blue) */
+    .notice{ background:linear-gradient(135deg, #eaf2ff, #e6fbff); border-bottom:1px solid #cfe3ff }
+    .notice .chip{ font-size:12px; padding:4px 10px; border-radius:999px; border:1px solid #cfe3ff; background:#f5faff; color:#0b3b8a }
 
     /* Footer (Arial 10) */
     footer.app-footer{ font-family:Arial, Helvetica, sans-serif; font-size:10px; line-height:1.4; color:#4b5563; background:#eef2f6; border-top:1px solid var(--border) }
 
-    /* ===== Nova Intro ===== */
+    /* ===== Fancy Intro (brandless) ===== */
     .intro{
-      position:fixed; inset:0; z-index:1000; display:flex; align-items:center; justify-content:center;
-      background: radial-gradient(1200px 600px at 20% 10%, rgba(0,160,227,.18), transparent 60%),
-                  radial-gradient(900px 500px at 80% 80%, rgba(0,94,184,.22), transparent 60%),
-                  linear-gradient(180deg, #0b1726 0%, #0f1f33 45%, #0b1726 100%);
-      color:#eef6ff;
-    }
-    .intro .glass{
-      width:min(960px, 92vw); border:1px solid rgba(255,255,255,.08);
-      background: rgba(6,12,20,.55); backdrop-filter: blur(14px);
-      border-radius:16px; box-shadow: 0 10px 40px rgba(0,0,0,.35);
+      position:fixed; inset:0; z-index:1000; display:flex; align-items:center; justify-content:center; padding:24px;
+      background: radial-gradient(1200px 600px at 10% 0%, rgba(37,99,235,.15), transparent 60%),
+                  radial-gradient(1000px 600px at 90% 90%, rgba(14,165,233,.18), transparent 60%),
+                  linear-gradient(180deg, #0b1220 0%, #0c1633 50%, #0b1220 100%);
+      color:#eaf2ff;
       overflow:hidden;
     }
-    .intro .head{
-      display:flex; align-items:center; gap:12px; padding:18px 20px; border-bottom:1px solid rgba(255,255,255,.08)
+    .blob{ position:absolute; width:46vmax; height:46vmax; border-radius:50%;
+      background: radial-gradient(circle at 30% 30%, rgba(56,189,248,.9), rgba(37,99,235,.75) 50%, transparent 70%);
+      filter: blur(40px); opacity:.25; animation: float 14s ease-in-out infinite; mix-blend:screen;
     }
-    .intro .pill{ display:inline-flex; align-items:center; gap:8px; padding:6px 10px; border-radius:999px; background:rgba(0,160,227,.15); border:1px solid rgba(0,160,227,.35); font-weight:700; font-size:12px; color:#91d7ff }
-    .intro .grid{
-      display:grid; grid-template-columns: 1.1fr .9fr; gap:16px; padding:18px; align-items:stretch
+    .blob.b2{ left:auto; right:-15vmax; top:20%; background: radial-gradient(circle at 70% 40%, rgba(167,139,250,.9), rgba(14,165,233,.75) 50%, transparent 70%); animation-duration:18s }
+    .blob.b3{ left:10%; bottom:-20vmax; background: radial-gradient(circle at 60% 60%, rgba(34,197,94,.9), rgba(14,165,233,.7) 50%, transparent 70%); animation-duration:22s }
+    @keyframes float { 0%,100%{ transform:translateY(0) } 50%{ transform:translateY(-28px) } }
+
+    .glass{
+      position:relative; width:min(980px, 96vw); border:1px solid rgba(255,255,255,.12);
+      background: rgba(255,255,255,.06); backdrop-filter: blur(14px);
+      border-radius:22px; box-shadow: 0 10px 50px rgba(0,0,0,.35);
+      overflow:hidden; color:#eaf2ff;
     }
-    @media (max-width: 900px){ .intro .grid{ grid-template-columns: 1fr } }
-    .intro .card{
-      background: rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.08); color:#e8f2ff
-    }
-    .intro h1{ font-size:26px; line-height:1.2; margin-bottom:6px }
-    .intro p.lead{ color:#bcd6ff; font-size:14px }
-    .intro .steps{ display:grid; gap:10px; margin-top:10px }
-    .intro .step{ display:flex; align-items:flex-start; gap:10px; padding:10px; border:1px dashed rgba(255,255,255,.14); border-radius:10px }
-    .intro .step .dot{ width:10px; height:10px; border-radius:999px; background:#4069ff; box-shadow:0 0 0 3px rgba(64,105,255,.25) }
-    .intro .step.done .dot{ background:#00D4AA; box-shadow:0 0 0 3px rgba(0,212,170,.25) }
-    .intro .foot{ display:flex; justify-content:space-between; align-items:center; gap:10px; padding:14px 18px; border-top:1px solid rgba(255,255,255,.08) }
-    .intro .cta{ display:inline-flex; align-items:center; gap:10px; padding:10px 14px; border-radius:10px; font-weight:800; background:#FF9900; color:#111; border:1px solid #FF9900 }
-    .intro .cta:hover{ background:#EC7211; border-color:#EC7211 }
-    .intro .skip{ color:#a7b9d6; text-decoration: underline; text-underline-offset: 4px; cursor:pointer }
+    .intro-head{ display:flex; align-items:center; gap:12px; padding:18px 20px; border-bottom:1px solid rgba(255,255,255,.12) }
+    .intro-logo{ width:42px; height:42px; border-radius:12px; display:grid; place-items:center; background:linear-gradient(135deg, #2563eb, #0ea5e9); box-shadow:0 6px 22px rgba(37,99,235,.35) }
+    .intro-title{ font-weight:800; letter-spacing:.2px }
+    .intro-grid{ display:grid; grid-template-columns:1.15fr .85fr; gap:16px; padding:18px }
+    @media (max-width: 920px){ .intro-grid{ grid-template-columns:1fr } }
+    .intro .card{ background: rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.12); color:#dfe9ff }
+    .intro h1{ font-size:28px; line-height:1.15; margin-bottom:8px }
+    .lead{ color:#bdd3ff; font-size:14px }
+    .callouts{ display:grid; gap:10px; margin-top:10px }
+    .call{ display:flex; gap:12px; padding:12px; border:1px dashed rgba(255,255,255,.18); border-radius:14px; align-items:flex-start }
+    .call .ico{ width:28px; height:28px; border-radius:10px; display:grid; place-items:center; background:rgba(255,255,255,.12) }
+    .intro-foot{ display:flex; justify-content:space-between; align-items:center; gap:10px; padding:14px 18px; border-top:1px solid rgba(255,255,255,.12) }
+    .cta{ display:inline-flex; align-items:center; gap:10px; padding:12px 16px; border-radius:14px; font-weight:800; background:#22c55e; color:#0b1220; border:1px solid #22c55e }
+    .cta:hover{ filter:brightness(1.05) }
+    .skip{ color:#c3d4ff; text-decoration: underline; text-underline-offset: 4px; cursor:pointer }
+
     .intro.fadeout{ animation: fadeOut .45s ease forwards }
     @keyframes fadeOut{ to{ opacity:0; visibility:hidden } }
 
     /* Print */
     @media print{
-      .app-header, .notice, .sticky-actions, .bookmark, .modal, .fab, .intro{ display:none !important }
+      .app-header, .notice, .sticky-actions, .bookmark, .modal, .intro{ display:none !important }
       .card{ box-shadow:none !important; border:1px solid #ddd }
     }
   </style>
 </head>
 <body>
 
-  <!-- ===== Nova Intro Overlay ===== -->
-  <section id="intro" class="intro" aria-label="Einführung" role="dialog" aria-modal="true">
+  <!-- ===== Fancy Intro (brandless, no tech) ===== -->
+  <section id="intro" class="intro" aria-label="Einstieg" role="dialog" aria-modal="true">
+    <div class="blob"></div><div class="blob b2"></div><div class="blob b3"></div>
     <div class="glass">
-      <div class="head">
-        <div class="w-9 h-9 rounded-md bg-gradient-to-br from-[#005EB8] to-[#00A0E3] grid place-items-center">
-          <i data-lucide="sparkle" class="w-5 h-5 text-white"></i>
-        </div>
+      <div class="intro-head">
+        <div class="intro-logo"><i data-lucide="sparkles" class="w-5 h-5 text-white"></i></div>
         <div>
-          <div class="pill"><i data-lucide="bolt" class="w-4 h-4"></i> t&c • Nova-Start</div>
+          <div class="intro-title">BBiG-Quiz • Lernmodus</div>
+          <div class="text-xs" style="color:#c9dafc">Schnell starten – kurze Antworten, wohlwollendes Feedback.</div>
         </div>
-        <div class="ml-auto text-sm text-[#bcd6ff] font-semibold">
-          <span id="introStatus">Bereit</span>
+        <div class="ml-auto">
+          <label class="inline-flex items-center gap-2 text-xs" style="color:#c9dafc">
+            <input id="introSkip" type="checkbox" class="w-4 h-4 accent-[#22c55e]" />
+            Beim nächsten Mal überspringen
+          </label>
         </div>
       </div>
 
-      <div class="grid">
+      <div class="intro-grid">
         <div class="card p-5">
-          <h1>Willkommen im BBiG-Quiz (Cluster Edition)</h1>
-          <p class="lead">Schneller Einstieg mit **wohlwollendem KI-Feedback**. Wähle Cluster, tippe kurz, prüfe mit §-Quicklook. Alles mobile-optimiert – im Stil von Amazon Nova.</p>
-          <div class="mt-3 grid gap-3">
-            <div class="step" id="st-storage">
-              <div class="dot"></div>
-              <div>
-                <div class="font-semibold">Lokaler Speicher</div>
-                <div class="text-sm" style="color:#bcd6ff">Antworten & Historie werden lokal gesichert (Autosave).</div>
-              </div>
+          <h1>Bereit, clever zu üben?</h1>
+          <p class="lead">Wähle ein <strong>Cluster</strong>, tippe kurz deine Lösung, und lass dir ein **freundlich-präzises** Feedback mit §§ geben. Alles mobile-optimiert.</p>
+          <div class="callouts">
+            <div class="call">
+              <div class="ico"><i data-lucide="wand-2" class="w-4 h-4"></i></div>
+              <div><div class="font-semibold">Wohlwollendes Feedback</div><div class="text-sm" style="color:#bdd3ff">Wenn die Anzahl passt, kommt „passt“ – plus sinnvolle Ergänzungen.</div></div>
             </div>
-            <div class="step" id="st-network">
-              <div class="dot"></div>
-              <div>
-                <div class="font-semibold">Verbindung zum KI-Relay</div>
-                <div class="text-sm" style="color:#bcd6ff">Prüft /api/linda-proxy (Make.com) – optional.</div>
-              </div>
+            <div class="call">
+              <div class="ico"><i data-lucide="notebook-pen" class="w-4 h-4"></i></div>
+              <div><div class="font-semibold">Autosave & Historie</div><div class="text-sm" style="color:#bdd3ff">Alles bleibt lokal gespeichert – auch nach dem Schließen.</div></div>
             </div>
-            <div class="step" id="st-access">
-              <div class="dot"></div>
-              <div>
-                <div class="font-semibold">Barrierefreiheit & Tasten</div>
-                <div class="text-sm" style="color:#bcd6ff"><kbd>⌘/Ctrl</kbd> + <kbd>Enter</kbd> sendet; Tabs für Cluster; <kbd>?</kbd> für Quicklook.</div>
-              </div>
+            <div class="call">
+              <div class="ico"><i data-lucide="book-open" class="w-4 h-4"></i></div>
+              <div><div class="font-semibold">§-Quicklook</div><div class="text-sm" style="color:#bdd3ff">BBiG & JArbSchG immer griffbereit – ohne Suchen.</div></div>
             </div>
           </div>
         </div>
 
         <div class="card p-5">
-          <div class="flex items-center justify-between mb-3">
-            <div class="font-semibold">Schnellstart</div>
-            <a href="https://www.gesetze-im-internet.de/bbig_2005/BBiG.pdf" target="_blank" rel="noopener" class="btn btn-sm"><i data-lucide="book-open" class="w-4 h-4"></i> BBiG</a>
-          </div>
-          <ol class="text-sm leading-6" style="color:#d6e6ff">
-            <li>1) Hinweis bestätigen</li>
-            <li>2) Cluster wählen (Tabs oben)</li>
-            <li>3) Antworten tippen (knapp)</li>
-            <li>4) Fragen auswählen → KI-Feedback</li>
-          </ol>
-
-          <div class="mt-4 grid gap-2">
-            <label class="inline-flex items-center gap-2">
-              <input id="introSkip" type="checkbox" class="w-4 h-4 accent-[#FF9900]" />
-              <span class="text-sm" style="color:#bcd6ff">Intro beim nächsten Mal überspringen</span>
-            </label>
-
+          <div class="grid gap-3">
+            <div class="text-sm" style="color:#cfe0ff">
+              <span class="inline-flex items-center gap-2"><i data-lucide="mouse-pointer-click" class="w-4 h-4"></i><strong>So startest du:</strong></span>
+              <ol class="list-decimal ml-5 mt-2 space-y-1">
+                <li>Hinweis bestätigen</li>
+                <li>Cluster oben auswählen</li>
+                <li>Antwort(en) tippen</li>
+                <li>Fragen auswählen → KI-Feedback</li>
+              </ol>
+            </div>
+            <div class="flex flex-wrap gap-2">
+              <a class="btn btn-sm" href="https://www.gesetze-im-internet.de/bbig_2005/BBiG.pdf" target="_blank" rel="noopener"><i data-lucide="book" class="w-4 h-4"></i> BBiG</a>
+              <a class="btn btn-sm" href="https://www.gesetze-im-internet.de/jarbschg/JArbSchG.pdf" target="_blank" rel="noopener"><i data-lucide="shield" class="w-4 h-4"></i> JArbSchG</a>
+            </div>
             <div class="flex items-center gap-2">
-              <button id="introStart" class="cta">
-                <i data-lucide="play" class="w-4 h-4"></i> Los geht’s
-              </button>
-              <button id="introTheme" class="btn btn-sm" style="background:rgba(255,255,255,.06); color:#e8f2ff; border-color:rgba(255,255,255,.12)">
-                <i data-lucide="moon" class="w-4 h-4"></i> Theme
-              </button>
-              <span class="skip" id="introSkipNow">überspringen</span>
+              <button id="introStart" class="cta"><i data-lucide="play" class="w-4 h-4"></i> Los geht’s</button>
+              <button id="introTheme" class="btn btn-ghost btn-sm" style="color:#eaf2ff"><i data-lucide="moon" class="w-4 h-4"></i> Theme</button>
+              <span id="introSkipNow" class="skip">überspringen</span>
             </div>
           </div>
         </div>
       </div>
 
-      <div class="foot">
-        <div class="text-xs" style="color:#9fb8e6">t&c learning • Beta • Keine personenbezogenen Daten eingeben.</div>
-        <div class="text-xs" style="color:#9fb8e6">Tip: Prüfe mit §-Quicklook oder öffne BBiG/JArbSchG unten in der Action-Bar.</div>
+      <div class="intro-foot text-xs" style="color:#cfe0ff">
+        <div>Kein Konto, keine personenbezogenen Daten – einfach lernen.</div>
+        <div>Tipp: „?“ öffnet den §-Quicklook jederzeit.</div>
       </div>
     </div>
   </section>
-  <!-- ===== Ende Nova Intro ===== -->
+  <!-- ===== Ende Intro ===== -->
 
   <!-- Notice -->
   <aside id="notice" class="notice">
     <div class="container px-4 py-3 flex items-start gap-3">
-      <div class="w-10 h-10 rounded-lg bg-[#E7F1FF] grid place-items-center">
-        <i data-lucide="shield-check" class="w-6 h-6 text-[#005EB8]"></i>
+      <div class="w-10 h-10 rounded-lg bg-white/70 grid place-items-center">
+        <i data-lucide="shield-check" class="w-6 h-6 text-[color:var(--primary)]"></i>
       </div>
       <div class="text-sm leading-snug">
-        <p class="font-semibold text-[#0A3A66]">Fachlicher Hinweis (Pilot)</p>
-        <p class="text-[#0A3A66]">
+        <p class="font-semibold text-slate-800">Fachlicher Hinweis (Pilot)</p>
+        <p class="text-slate-700">
           Die KI-Prüfung unterstützt beim Lernen. Ergebnisse sind zu prüfen; keine Rechtsberatung.
-          <strong>Keine personenbezogenen/sensiblen Daten eingeben oder erfassen.</strong>
+          <strong>Es dürfen keine personenbezogenen oder sensiblen Daten eingegeben werden.</strong>
         </p>
         <label class="mt-2 inline-flex items-center gap-2">
-          <input id="ack" type="checkbox" class="w-4 h-4 accent-[#005EB8]">
-          <span class="text-[#0A3A66]">Ich habe den Hinweis gelesen.</span>
+          <input id="ack" type="checkbox" class="w-4 h-4 accent-[color:var(--primary)]">
+          <span class="text-slate-700">Ich habe den Hinweis gelesen.</span>
         </label>
       </div>
       <div class="ml-auto flex items-center gap-2">
@@ -239,8 +222,8 @@
         <a class="btn btn-sm" href="https://www.gesetze-im-internet.de/jarbschg/JArbSchG.pdf" target="_blank" rel="noopener">
           <i data-lucide="shield" class="w-4 h-4"></i> JArbSchG
         </a>
-        <span id="ackState" class="chip badge">Hinweis offen</span>
-        <button id="ackBtn" type="button" class="btn btn-blue btn-sm">
+        <span id="ackState" class="badge">Hinweis offen</span>
+        <button id="ackBtn" type="button" class="btn btn-primary btn-sm">
           <i data-lucide="check" class="w-4 h-4"></i> Weiter
         </button>
       </div>
@@ -251,12 +234,12 @@
   <header class="app-header">
     <div class="container px-4 py-3 flex flex-wrap items-center gap-3 justify-between">
       <div class="flex items-center gap-3">
-        <div class="w-10 h-10 rounded-md bg-gradient-to-br from-[#005EB8] to-[#004A93] grid place-items-center shadow">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-[color:var(--primary)] to-[color:var(--primary-2)] grid place-items-center shadow">
           <i data-lucide="graduation-cap" class="w-5 h-5 text-white"></i>
         </div>
         <div>
-          <h1 class="text-lg sm:text-xl font-semibold">BBiG-Quiz – t&c Cluster</h1>
-          <p class="text-xs text-slate-500">Cluster • wohlwollendes KI-Feedback • Quicklook • Bookmarks • Autosave</p>
+          <h1 class="text-lg sm:text-xl font-semibold">BBiG-Quiz – Cluster</h1>
+          <p class="text-xs text-slate-500">Wohlwollendes KI-Feedback • Quicklook • Bookmarks • Autosave</p>
         </div>
       </div>
       <div class="flex items-center gap-2">
@@ -278,7 +261,7 @@
     <div class="container pb-3">
       <div class="card p-3">
         <div id="tabs" class="tabs" role="tablist" aria-label="Cluster"></div>
-        <select id="clusterSelect" class="mt-2 w-full rounded-lg border px-3 py-2 text-sm"></select>
+        <select id="clusterSelect" class="mt-2 w-full rounded-xl border px-3 py-2 text-sm"></select>
       </div>
     </div>
   </header>
@@ -286,7 +269,7 @@
   <!-- Progress -->
   <section class="container mt-4">
     <div class="card p-4 flex items-center gap-3">
-      <i data-lucide="target" class="w-5 h-5 text-[#005EB8]"></i>
+      <i data-lucide="target" class="w-5 h-5 text-[color:var(--primary)]"></i>
       <div class="flex-1">
         <div class="flex justify-between text-[11px] text-slate-500 font-semibold mb-2">
           <span id="progressText">0 / 0 beantwortet</span>
@@ -355,13 +338,13 @@
     <div class="panel card p-4">
       <div class="flex items-center justify-between">
         <div class="flex items-center gap-2">
-          <i data-lucide="search" class="w-5 h-5 text-[#005EB8]"></i>
+          <i data-lucide="search" class="w-5 h-5 text-[color:var(--primary)]"></i>
           <h3 id="qlTitle" class="text-base font-semibold">§-Quicklook – BBiG & JArbSchG</h3>
         </div>
         <button id="qlClose" class="btn btn-ghost btn-sm"><i data-lucide="x" class="w-4 h-4"></i></button>
       </div>
       <div class="mt-2 flex gap-2">
-        <input id="qlSearch" type="search" class="flex-1 rounded-lg border px-3 py-2" placeholder="Begriff oder § …">
+        <input id="qlSearch" type="search" class="flex-1 rounded-xl border px-3 py-2" placeholder="Begriff oder § …">
         <a class="btn btn-sm" href="https://www.gesetze-im-internet.de/bbig_2005/BBiG.pdf" target="_blank" rel="noopener">BBiG</a>
         <a class="btn btn-sm" href="https://www.gesetze-im-internet.de/jarbschg/JArbSchG.pdf" target="_blank" rel="noopener">JArbSchG</a>
       </div>
@@ -375,7 +358,7 @@
     <div class="panel card p-4">
       <div class="flex items-center justify-between">
         <div class="flex items-center gap-2">
-          <i data-lucide="history" class="w-5 h-5 text-[#005EB8]"></i>
+          <i data-lucide="history" class="w-5 h-5 text-[color:var(--primary)]"></i>
           <h3 id="histTitle" class="text-base font-semibold">Antwort-Historie</h3>
         </div>
         <button id="histClose" class="btn btn-ghost btn-sm"><i data-lucide="x" class="w-4 h-4"></i></button>
@@ -400,10 +383,10 @@
     if (window.marked) marked.setOptions({ breaks:true, gfm:true });
 
     // === Config / Keys ===
-    const relay = "/api/linda-proxy"; // dein Make-Webhook
-    const STORAGE_KEY = "MF_CLUSTER_STATE_V1";
-    const BOOKMARK_KEY = "MF_CLUSTER_BOOKMARKS_V1";
-    const INTRO_KEY   = "MF_CLUSTER_INTRO_SKIP_V1";
+    const relay = "/api/linda-proxy"; // dein Make-Webhook (nicht im UI erwähnt)
+    const STORAGE_KEY = "CLUSTER_STATE_V1";
+    const BOOKMARK_KEY = "CLUSTER_BOOKMARKS_V1";
+    const INTRO_KEY   = "CLUSTER_INTRO_SKIP_V1";
 
     // === UI Refs ===
     const intro = document.getElementById("intro");
@@ -411,10 +394,6 @@
     const introSkip = document.getElementById("introSkip");
     const introSkipNow = document.getElementById("introSkipNow");
     const introTheme = document.getElementById("introTheme");
-    const introStatus = document.getElementById("introStatus");
-    const stStorage = document.getElementById("st-storage");
-    const stNetwork = document.getElementById("st-network");
-    const stAccess  = document.getElementById("st-access");
 
     const form = document.getElementById("form");
     const progressBar = document.getElementById("progressBar");
@@ -457,7 +436,7 @@
 
     const themeToggle = document.getElementById("themeToggle");
 
-    // === Data (Cluster & Fragenbanken) – gekürzt auf Kern + Recht als Beispiel; weitere wie gehabt ergänzbar ===
+    // === Minimal Question Pools (Beispiele) ===
     const BANK_CORE = [
       { ref:"V1 – Mindestinhalte Vertrag", q:"Nenne vier Pflichtangaben, die zwingend in den Berufsausbildungsvertrag gehören.", tip:["Parteien, Beginn/Dauer, Ziel/Berufsbezeichnung, sachliche & zeitliche Gliederung, Vergütung, Probezeit, Urlaub, Kündigung, Nachweisform.","§ 11 BBiG (Textform/elektronisch)."]},
       { ref:"V2 – Ausbildungsordnung", q:"Welche drei Kernpunkte regelt eine Ausbildungsordnung?", tip:["Berufsbild, Ausbildungsrahmenplan/Dauer, Prüfungen.","§§ 4–5 BBiG."]},
@@ -465,16 +444,15 @@
       { ref:"V4 – Minderjährige: Unterschrift", q:"Wer unterschreibt den Vertrag bei Minderjährigen mit gemeinsamem Sorgerecht?", tip:["Beide Sorgeberechtigte + Minderjährige/r.","§ 10 BBiG; §§ 1626, 1629 BGB."]}
     ];
     const BANK_RECHT = [
-      { ref:"R1 – Art.12 GG", q:"Was garantiert Art. 12 GG bzgl. Beruf/Ausbildungsstätte?", tip:["Freie Wahl; gesetzlich einschränkbar."]},
-      { ref:"R2 – AGG Ziel", q:"Ziel des AGG (§1) im Kontext Ausbildung?", tip:["Benachteiligungen verhindern/beseitigen."]},
-      { ref:"R3 – §1 BBiG", q:"Vier Säulen §1 BBiG?", tip:["Vorbereitung, Ausbildung, Fortbildung, Umschulung."]},
-      { ref:"R4 – §15 BBiG", q:"Freistellung: 2 Beispiele?", tip:["Unterricht/Prüfungen; Wegezeiten Schule→Betrieb."]}
+      { ref:"R1 – §15 BBiG", q:"Zwei Beispiele für Freistellung nach §15 BBiG?", tip:["Unterricht/Prüfungen; Wegezeiten Schule→Betrieb."]},
+      { ref:"R2 – Probezeit-Grenzen", q:"Welche Grenzen setzt §20 BBiG?", tip:["Min. 1, max. 4 Monate."]},
+      { ref:"R3 – Ausbildungsnachweis", q:"Wozu dient das Berichtsheft?", tip:["Zulassungsvoraussetzung; Dokumentation; elektronisch möglich."]}
     ];
 
     const CLUSTERS = [
       { key:"core",  title:"Kern",         icon:"layers",  data:BANK_CORE },
       { key:"recht", title:"Recht",        icon:"scale",   data:BANK_RECHT }
-      // ➜ weitere Cluster aus deiner letzten Version kannst du hier wieder anhängen (bas, az, orga, …)
+      // ➜ weitere Cluster kannst du wie gehabt ergänzen
     ];
 
     // === State ===
@@ -483,7 +461,7 @@
     let bookmarks = {};
 
     // Theme load
-    const savedTheme = localStorage.getItem("mf_theme") || "light";
+    const savedTheme = localStorage.getItem("theme_pref") || "light";
     if (savedTheme==="dark") document.documentElement.classList.add("dark");
 
     // Intro: skip?
@@ -492,33 +470,20 @@
       if (skip) intro.style.display="none";
     }catch{}
 
-    // Intro: system checks (simuliert + leichtgewichtig)
-    setTimeout(()=>{
-      // storage
-      try{
-        const t="ok"+Math.random();
-        localStorage.setItem("_intro_test", t);
-        const ok = localStorage.getItem("_intro_test")===t;
-        stStorage.classList.toggle("done", ok);
-      }catch{}
-      // network (HEAD/GET ping – optional; bei CORS/404 trotzdem „ok“ anzeigen, damit UX nicht blockiert)
-      fetch("/api/linda-proxy", { method:"OPTIONS" }).then(()=> stNetwork.classList.add("done")).catch(()=> stNetwork.classList.add("done"));
-      // access
-      stAccess.classList.add("done");
-      introStatus.textContent = "Bereit • Alles klar";
-    }, 300);
-
     function hideIntro(){
       intro.classList.add("fadeout");
       setTimeout(()=>{ intro.style.display="none"; }, 460);
     }
-    introStart.addEventListener("click", (e)=>{ e.preventDefault(); if (introSkip.checked) localStorage.setItem(INTRO_KEY,"1"); hideIntro(); });
-    introSkipNow.addEventListener("click", ()=> hideIntro());
-    introTheme.addEventListener("click", ()=>{
+    introStart?.addEventListener("click", (e)=>{ e.preventDefault(); if (introSkip.checked) localStorage.setItem(INTRO_KEY,"1"); hideIntro(); });
+    introSkipNow?.addEventListener("click", ()=> hideIntro());
+    introTheme?.addEventListener("click", ()=>{
       document.documentElement.classList.toggle("dark");
-      localStorage.setItem("mf_theme", document.documentElement.classList.contains("dark") ? "dark":"light");
+      localStorage.setItem("theme_pref", document.documentElement.classList.contains("dark") ? "dark":"light");
       if (window.lucide) lucide.createIcons();
     });
+
+    // Close intro with ESC
+    document.addEventListener("keydown", (e)=>{ if(e.key==="Escape" && intro?.style.display!=="none") hideIntro(); });
 
     // === Timer ===
     let startTs = Date.now();
@@ -531,15 +496,14 @@
 
     // === Disclaimer ===
     ackBtn.addEventListener("click", ()=>{
-      if (!ack.checked){ toast("Bitte die Checkbox bestätigen."); return; }
+      if (!ack.checked){ toast("Bitte Hinweis bestätigen."); return; }
       accepted=true; notice.style.display="none"; ackState.textContent="Hinweis bestätigt";
       saveState();
     });
 
     // === Tabs / Select ===
-    const clusterSelectEl = clusterSelect;
     function renderTabs(){
-      tabs.innerHTML=""; clusterSelectEl.innerHTML="";
+      tabs.innerHTML=""; clusterSelect.innerHTML="";
       CLUSTERS.forEach(c=>{
         const b=document.createElement("button");
         b.type="button"; b.className="tab"; b.setAttribute("role","tab");
@@ -550,11 +514,11 @@
 
         const opt=document.createElement("option");
         opt.value=c.key; opt.textContent=c.title; if(c.key===activeKey) opt.selected=true;
-        clusterSelectEl.appendChild(opt);
+        clusterSelect.appendChild(opt);
       });
       if (window.lucide) lucide.createIcons();
     }
-    clusterSelectEl.addEventListener("change", (e)=>{ activeKey=e.target.value; renderTabs(); renderQuestions(); saveStateThrottled(); });
+    clusterSelect.addEventListener("change", (e)=>{ activeKey=e.target.value; renderTabs(); renderQuestions(); saveStateThrottled(); });
 
     function currentQuestions(){ return CLUSTERS.find(x=>x.key===activeKey)?.data || []; }
 
@@ -574,7 +538,7 @@
       if (!list.length){ qlList.innerHTML=`<div class="text-sm text-slate-500">Keine Treffer – versuche „§11“, „Probezeit“, „Ruhezeit“ …</div>`; return; }
       list.forEach(x=>{
         const row=document.createElement("div");
-        row.className="p-3 rounded-lg border hover:bg-[color:var(--surface-hover)]";
+        row.className="p-3 rounded-xl border hover:bg-[color:var(--surface-3)]";
         row.innerHTML=`
           <div class="flex items-center justify-between">
             <div class="font-semibold">${x.law} ${x.para}</div>
@@ -586,6 +550,14 @@
         qlList.appendChild(row);
       });
     }
+
+    // Quicklook events
+    const quickBtn = document.getElementById("quickBtn");
+    const qlBackdrop = document.getElementById("qlBackdrop");
+    const qlModal = document.getElementById("qlModal");
+    const qlClose = document.getElementById("qlClose");
+    const qlSearch = document.getElementById("qlSearch");
+    const qlList = document.getElementById("qlList");
     quickBtn.addEventListener("click", openQuicklook);
     qlBackdrop.addEventListener("click", closeQuicklook);
     qlClose.addEventListener("click", closeQuicklook);
@@ -604,7 +576,7 @@
       refs.forEach(ref=>{
         const ans=(answersByRef[ref]||"").trim();
         const div=document.createElement("div");
-        div.className="p-3 rounded-lg border";
+        div.className="p-3 rounded-xl border";
         div.innerHTML = `<div class="font-semibold mb-1">${ref}</div><div class="text-sm text-slate-600">${ans?ans.slice(0,200)+"…":"(keine Antwort)"}</div>`;
         bmList.appendChild(div);
       });
@@ -627,14 +599,14 @@
       if (!arr.length){ histList.innerHTML = `<div class="text-sm text-slate-500">Noch keine Einträge.</div>`; return; }
       arr.slice().reverse().forEach(h=>{
         const d=document.createElement("div");
-        d.className="p-3 rounded-lg border";
+        d.className = "p-3 rounded-xl border";
         d.innerHTML = `<div class="text-[11px] text-slate-500">${new Date(h.ts).toLocaleString()}</div><div class="mt-1 prose text-sm">${window.marked? marked.parse(h.html): h.html}</div>`;
         histList.appendChild(d);
       });
     }
-    function loadHistory(){ try{ return JSON.parse(localStorage.getItem("MF_CLUSTER_HISTORY_V1")||"[]"); }catch{ return []; } }
+    function loadHistory(){ try{ return JSON.parse(localStorage.getItem("CLUSTER_HISTORY_V1")||"[]"); }catch{ return []; } }
     function saveHistory(html){
-      const arr = loadHistory(); arr.push({ts:Date.now(), html}); localStorage.setItem("MF_CLUSTER_HISTORY_V1", JSON.stringify(arr));
+      const arr = loadHistory(); arr.push({ts:Date.now(), html}); localStorage.setItem("CLUSTER_HISTORY_V1", JSON.stringify(arr));
     }
 
     // === State restore ===
@@ -678,7 +650,7 @@
 
           <header class="flex items-center justify-between gap-3 mb-1">
             <div class="flex items-center gap-2">
-              <input id="${selId}" type="checkbox" class="w-4 h-4 accent-[#005EB8]" data-select="${idx}" aria-label="Für KI-Feedback auswählen">
+              <input id="${selId}" type="checkbox" class="w-4 h-4 accent-[color:var(--primary)]" data-select="${idx}" aria-label="Für KI-Feedback auswählen">
               <span class="badge badge-primary">Frage ${idx+1}</span>
               <span class="badge">${item.ref}</span>
             </div>
@@ -688,7 +660,7 @@
           <h3 class="text-[15px] font-semibold mb-2">${item.q}</h3>
 
           <details class="tip mb-2">
-            <summary class="list-none cursor-pointer select-none flex items-center gap-2 text-[#005EB8] hover:opacity-90 text-[13px]">
+            <summary class="list-none cursor-pointer select-none flex items-center gap-2 text-[color:var(--primary)] hover:opacity-90 text-[13px]">
               <i data-lucide="info" class="w-4 h-4"></i><span>🛈 Musterlösung</span>
             </summary>
             <div class="mt-2">${(item.tip||[]).map(t=>`<p class="text-sm">• ${t}</p>`).join("")}
@@ -701,7 +673,7 @@
           </details>
 
           <label for="${id}" class="sr-only">Antwort</label>
-          <textarea id="${id}" rows="4" class="w-full p-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-[#005EB8] text-[15px]" placeholder="Deine Antwort …"></textarea>
+          <textarea id="${id}" rows="4" class="w-full p-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-[color:var(--primary)] text-[15px]" placeholder="Deine Antwort …"></textarea>
 
           <div class="mt-2">
             <button type="button" data-fill="${id}" class="btn btn-sm">Beispiel-Gliederung</button>
@@ -829,8 +801,9 @@ ${list.map(a=>`Q${a.nr} (${a.ref}): ${a.question}\nAntwort TN: ${a.answer || "(l
       const item = QUESTIONS[idx];
       const ref = item.ref;
       const val = (answersByRef[ref]||"").trim();
+      const fbId = `fb_${idx}`;
+      const fb = document.getElementById(fbId);
 
-      const fb = document.getElementById(`fb_${idx}`);
       btnEl.disabled=true; const old=btnEl.innerHTML;
       btnEl.innerHTML = `<svg class="animate-spin h-4 w-4" viewBox="0 0 24 24"></svg> Prüfen …`;
       fb.classList.remove("hidden"); fb.innerHTML = `<div class="text-slate-500 text-sm">KI prüft …</div>`;
@@ -896,10 +869,10 @@ ${list.map(a=>`Q${a.nr} (${a.ref}): ${a.question}\nAntwort TN: ${a.answer || "(l
         }));
       }catch{}
     }
-    let tmr=null; function saveStateThrottled(){ clearTimeout(tmr); tmr=setTimeout(saveState, 400); }
+    let tmr=null; function saveStateThrottled(){ clearTimeout(tmr); tmr=setTimeout(saveState, 350); }
 
     // === Toast ===
-    function toast(msg){ toastEl.textContent=msg; toastEl.style.display="block"; clearTimeout(toast._t); toast._t=setTimeout(()=>toastEl.style.display="none", 2600); }
+    function toast(msg){ toastEl.textContent=msg; toastEl.style.display="block"; clearTimeout(toast._t); toast._t=setTimeout(()=>toastEl.style.display="none", 2400); }
 
     // === Init ===
     renderTabs();
@@ -908,14 +881,28 @@ ${list.map(a=>`Q${a.nr} (${a.ref}): ${a.question}\nAntwort TN: ${a.answer || "(l
     // Header theme button
     themeToggle.addEventListener("click", ()=>{
       document.documentElement.classList.toggle("dark");
-      localStorage.setItem("mf_theme", document.documentElement.classList.contains("dark") ? "dark":"light");
+      localStorage.setItem("theme_pref", document.documentElement.classList.contains("dark") ? "dark":"light");
       if (window.lucide) lucide.createIcons();
     });
 
     // Bookmarks
     try{ bookmarks = JSON.parse(localStorage.getItem(BOOKMARK_KEY)||"{}"); }catch{}
+    function persistBookmarks(){ localStorage.setItem(BOOKMARK_KEY, JSON.stringify(bookmarks)); }
+    function bindBookmarkButtons(){
+      document.querySelectorAll("[data-bm]").forEach(btn=>{
+        btn.addEventListener("click", ()=>{
+          const ref=btn.getAttribute("data-bm");
+          bookmarks[ref]=!bookmarks[ref];
+          if (!bookmarks[ref]) delete bookmarks[ref];
+          persistBookmarks();
+          btn.classList.toggle("active", !!bookmarks[ref]);
+          updateBMCount();
+          if (window.lucide) lucide.createIcons();
+        });
+      });
+    }
+    bindBookmarkButtons();
     updateBMCount();
-
   });
   </script>
 </body>
