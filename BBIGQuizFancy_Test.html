@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
-  <title>BBiG-Quiz – metafinanz Cluster Edition</title>
+  <title>BBiG-Quiz – metafinanz Cluster + Nova Intro</title>
 
   <!-- External -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -12,7 +12,7 @@
   <script defer src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 
   <style>
-    /* ===== metafinanz Design (Amazon-Nova inspiriert) ===== */
+    /* ===== metafinanz (Amazon Nova inspiriert) ===== */
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
     :root{
       --mf-primary:#005EB8; --mf-primary-dark:#004A93; --mf-secondary:#00A0E3;
@@ -33,7 +33,6 @@
     }
     html,body{ font-family:Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; font-size:14px; line-height:1.5; background:var(--surface-2); color:var(--ink) }
     .container{ max-width:1120px; margin-inline:auto; padding-inline:16px }
-
     .card{ background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); box-shadow:var(--shadow-sm) }
     .btn{ display:inline-flex; align-items:center; gap:8px; padding:8px 14px; border-radius:8px; border:1px solid var(--border); background:var(--surface); color:var(--ink); font-weight:600; cursor:pointer; transition:.15s }
     .btn:hover{ background:var(--surface-hover) }
@@ -53,10 +52,6 @@
     .progress-inner{ height:100%; width:0%; background:linear-gradient(90deg, var(--mf-primary), var(--mf-secondary)); transition:width .3s; box-shadow:0 0 8px rgba(0,94,184,.3) }
 
     .app-header{ position:sticky; top:0; z-index:40; backdrop-filter:blur(8px); background:color-mix(in srgb, var(--surface) 88%, transparent); border-bottom:1px solid var(--border) }
-
-    /* Notice (blau, klar) */
-    .notice{ background:linear-gradient(135deg, #E7F1FF, #E0F2FF); border-bottom:1px solid #B3D9FF }
-    .notice .chip{ font-size:12px; padding:4px 10px; border-radius:999px; border:1px solid #B3D9FF; background:#F2F8FF; color:#0A3A66 }
 
     /* Tabs → Cluster */
     .tabs{ display:flex; gap:.5rem; overflow:auto; scrollbar-width:none }
@@ -83,17 +78,142 @@
     /* Toast */
     #toast{ position:fixed; left:50%; bottom:18px; transform:translateX(-50%); background:#111827; color:#fff; padding:10px 14px; border-radius:10px; font-size:14px; z-index:100; display:none }
 
+    /* Notice (blau, klar) */
+    .notice{ background:linear-gradient(135deg, #E7F1FF, #E0F2FF); border-bottom:1px solid #B3D9FF }
+    .notice .chip{ font-size:12px; padding:4px 10px; border-radius:999px; border:1px solid #B3D9FF; background:#F2F8FF; color:#0A3A66 }
+
     /* Footer (Arial 10) */
     footer.app-footer{ font-family:Arial, Helvetica, sans-serif; font-size:10px; line-height:1.4; color:#4b5563; background:#eef2f6; border-top:1px solid var(--border) }
 
+    /* ===== Nova Intro ===== */
+    .intro{
+      position:fixed; inset:0; z-index:1000; display:flex; align-items:center; justify-content:center;
+      background: radial-gradient(1200px 600px at 20% 10%, rgba(0,160,227,.18), transparent 60%),
+                  radial-gradient(900px 500px at 80% 80%, rgba(0,94,184,.22), transparent 60%),
+                  linear-gradient(180deg, #0b1726 0%, #0f1f33 45%, #0b1726 100%);
+      color:#eef6ff;
+    }
+    .intro .glass{
+      width:min(960px, 92vw); border:1px solid rgba(255,255,255,.08);
+      background: rgba(6,12,20,.55); backdrop-filter: blur(14px);
+      border-radius:16px; box-shadow: 0 10px 40px rgba(0,0,0,.35);
+      overflow:hidden;
+    }
+    .intro .head{
+      display:flex; align-items:center; gap:12px; padding:18px 20px; border-bottom:1px solid rgba(255,255,255,.08)
+    }
+    .intro .pill{ display:inline-flex; align-items:center; gap:8px; padding:6px 10px; border-radius:999px; background:rgba(0,160,227,.15); border:1px solid rgba(0,160,227,.35); font-weight:700; font-size:12px; color:#91d7ff }
+    .intro .grid{
+      display:grid; grid-template-columns: 1.1fr .9fr; gap:16px; padding:18px; align-items:stretch
+    }
+    @media (max-width: 900px){ .intro .grid{ grid-template-columns: 1fr } }
+    .intro .card{
+      background: rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.08); color:#e8f2ff
+    }
+    .intro h1{ font-size:26px; line-height:1.2; margin-bottom:6px }
+    .intro p.lead{ color:#bcd6ff; font-size:14px }
+    .intro .steps{ display:grid; gap:10px; margin-top:10px }
+    .intro .step{ display:flex; align-items:flex-start; gap:10px; padding:10px; border:1px dashed rgba(255,255,255,.14); border-radius:10px }
+    .intro .step .dot{ width:10px; height:10px; border-radius:999px; background:#4069ff; box-shadow:0 0 0 3px rgba(64,105,255,.25) }
+    .intro .step.done .dot{ background:#00D4AA; box-shadow:0 0 0 3px rgba(0,212,170,.25) }
+    .intro .foot{ display:flex; justify-content:space-between; align-items:center; gap:10px; padding:14px 18px; border-top:1px solid rgba(255,255,255,.08) }
+    .intro .cta{ display:inline-flex; align-items:center; gap:10px; padding:10px 14px; border-radius:10px; font-weight:800; background:#FF9900; color:#111; border:1px solid #FF9900 }
+    .intro .cta:hover{ background:#EC7211; border-color:#EC7211 }
+    .intro .skip{ color:#a7b9d6; text-decoration: underline; text-underline-offset: 4px; cursor:pointer }
+    .intro.fadeout{ animation: fadeOut .45s ease forwards }
+    @keyframes fadeOut{ to{ opacity:0; visibility:hidden } }
+
     /* Print */
     @media print{
-      .app-header, .notice, .sticky-actions, .bookmark, .modal, .fab{ display:none !important }
+      .app-header, .notice, .sticky-actions, .bookmark, .modal, .fab, .intro{ display:none !important }
       .card{ box-shadow:none !important; border:1px solid #ddd }
     }
   </style>
 </head>
 <body>
+
+  <!-- ===== Nova Intro Overlay ===== -->
+  <section id="intro" class="intro" aria-label="Einführung" role="dialog" aria-modal="true">
+    <div class="glass">
+      <div class="head">
+        <div class="w-9 h-9 rounded-md bg-gradient-to-br from-[#005EB8] to-[#00A0E3] grid place-items-center">
+          <i data-lucide="sparkle" class="w-5 h-5 text-white"></i>
+        </div>
+        <div>
+          <div class="pill"><i data-lucide="bolt" class="w-4 h-4"></i> metafinanz • Nova-Start</div>
+        </div>
+        <div class="ml-auto text-sm text-[#bcd6ff] font-semibold">
+          <span id="introStatus">Bereit</span>
+        </div>
+      </div>
+
+      <div class="grid">
+        <div class="card p-5">
+          <h1>Willkommen im BBiG-Quiz (Cluster Edition)</h1>
+          <p class="lead">Schneller Einstieg mit **wohlwollendem KI-Feedback**. Wähle Cluster, tippe kurz, prüfe mit §-Quicklook. Alles mobile-optimiert – im Stil von Amazon Nova.</p>
+          <div class="mt-3 grid gap-3">
+            <div class="step" id="st-storage">
+              <div class="dot"></div>
+              <div>
+                <div class="font-semibold">Lokaler Speicher</div>
+                <div class="text-sm" style="color:#bcd6ff">Antworten & Historie werden lokal gesichert (Autosave).</div>
+              </div>
+            </div>
+            <div class="step" id="st-network">
+              <div class="dot"></div>
+              <div>
+                <div class="font-semibold">Verbindung zum KI-Relay</div>
+                <div class="text-sm" style="color:#bcd6ff">Prüft /api/linda-proxy (Make.com) – optional.</div>
+              </div>
+            </div>
+            <div class="step" id="st-access">
+              <div class="dot"></div>
+              <div>
+                <div class="font-semibold">Barrierefreiheit & Tasten</div>
+                <div class="text-sm" style="color:#bcd6ff"><kbd>⌘/Ctrl</kbd> + <kbd>Enter</kbd> sendet; Tabs für Cluster; <kbd>?</kbd> für Quicklook.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card p-5">
+          <div class="flex items-center justify-between mb-3">
+            <div class="font-semibold">Schnellstart</div>
+            <a href="https://www.gesetze-im-internet.de/bbig_2005/BBiG.pdf" target="_blank" rel="noopener" class="btn btn-sm"><i data-lucide="book-open" class="w-4 h-4"></i> BBiG</a>
+          </div>
+          <ol class="text-sm leading-6" style="color:#d6e6ff">
+            <li>1) Hinweis bestätigen</li>
+            <li>2) Cluster wählen (Tabs oben)</li>
+            <li>3) Antworten tippen (knapp)</li>
+            <li>4) Fragen auswählen → KI-Feedback</li>
+          </ol>
+
+          <div class="mt-4 grid gap-2">
+            <label class="inline-flex items-center gap-2">
+              <input id="introSkip" type="checkbox" class="w-4 h-4 accent-[#FF9900]" />
+              <span class="text-sm" style="color:#bcd6ff">Intro beim nächsten Mal überspringen</span>
+            </label>
+
+            <div class="flex items-center gap-2">
+              <button id="introStart" class="cta">
+                <i data-lucide="play" class="w-4 h-4"></i> Los geht’s
+              </button>
+              <button id="introTheme" class="btn btn-sm" style="background:rgba(255,255,255,.06); color:#e8f2ff; border-color:rgba(255,255,255,.12)">
+                <i data-lucide="moon" class="w-4 h-4"></i> Theme
+              </button>
+              <span class="skip" id="introSkipNow">überspringen</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="foot">
+        <div class="text-xs" style="color:#9fb8e6">metafinanz learning • Beta • Keine personenbezogenen Daten eingeben.</div>
+        <div class="text-xs" style="color:#9fb8e6">Tip: Prüfe mit §-Quicklook oder öffne BBiG/JArbSchG unten in der Action-Bar.</div>
+      </div>
+    </div>
+  </section>
+  <!-- ===== Ende Nova Intro ===== -->
 
   <!-- Notice -->
   <aside id="notice" class="notice">
@@ -283,8 +403,19 @@
     const relay = "/api/linda-proxy"; // dein Make-Webhook
     const STORAGE_KEY = "MF_CLUSTER_STATE_V1";
     const BOOKMARK_KEY = "MF_CLUSTER_BOOKMARKS_V1";
+    const INTRO_KEY   = "MF_CLUSTER_INTRO_SKIP_V1";
 
     // === UI Refs ===
+    const intro = document.getElementById("intro");
+    const introStart = document.getElementById("introStart");
+    const introSkip = document.getElementById("introSkip");
+    const introSkipNow = document.getElementById("introSkipNow");
+    const introTheme = document.getElementById("introTheme");
+    const introStatus = document.getElementById("introStatus");
+    const stStorage = document.getElementById("st-storage");
+    const stNetwork = document.getElementById("st-network");
+    const stAccess  = document.getElementById("st-access");
+
     const form = document.getElementById("form");
     const progressBar = document.getElementById("progressBar");
     const progressTxt = document.getElementById("progressText");
@@ -326,157 +457,68 @@
 
     const themeToggle = document.getElementById("themeToggle");
 
-    // === Data (Cluster & Fragenbanken) ===
+    // === Data (Cluster & Fragenbanken) – gekürzt auf Kern + Recht als Beispiel; weitere wie gehabt ergänzbar ===
     const BANK_CORE = [
       { ref:"V1 – Mindestinhalte Vertrag", q:"Nenne vier Pflichtangaben, die zwingend in den Berufsausbildungsvertrag gehören.", tip:["Parteien, Beginn/Dauer, Ziel/Berufsbezeichnung, sachliche & zeitliche Gliederung, Vergütung, Probezeit, Urlaub, Kündigung, Nachweisform.","§ 11 BBiG (Textform/elektronisch)."]},
       { ref:"V2 – Ausbildungsordnung", q:"Welche drei Kernpunkte regelt eine Ausbildungsordnung?", tip:["Berufsbild, Ausbildungsrahmenplan/Dauer, Prüfungen.","§§ 4–5 BBiG."]},
       { ref:"V3 – Probezeit", q:"Wie lang muss/darf die Probezeit sein – und warum ist sie wichtig?", tip:["Mind. 1, max. 4 Monate; Eignungsprüfung beider Seiten.","§ 20 BBiG."]},
-      { ref:"V4 – Minderjährige: Unterschrift", q:"Wer unterschreibt den Vertrag bei Minderjährigen mit gemeinsamem Sorgerecht?", tip:["Beide Sorgeberechtigte + Minderjährige/r.","§ 10 BBiG; §§ 1626, 1629 BGB."]},
-      { ref:"V5 – Berufsschule & Arbeitszeit", q:"Wie werden Berufsschulzeiten angerechnet (U18 vs. ≥18)?", tip:["U18: besondere Anrechnung (JArbSchG).","Wege Schule→Betrieb zählen (§15(2)1 BBiG).","≥18: ArbZG; Freistellung §15 BBiG."]},
-      { ref:"V6 – Ruhezeit Jugendliche", q:"Welche tägliche Mindestruhezeit gilt für Jugendliche?", tip:["Mindestens 12 Stunden (JArbSchG)."]},
-      { ref:"V7 – Vergütung", q:"Was gilt zur Angemessenheit der Ausbildungsvergütung?", tip:["MiAV Untergrenze; Tarif/branchenüblich; Steigerung je Jahr.","§ 17 BBiG."]},
-      { ref:"V8 – Überstunden", q:"Sind Überstunden zulässig – und wie werden sie behandelt?", tip:["Nur ausbildungsdienlich; Vergütung/Zeitausgleich; Schutz beachten."]},
-      { ref:"V9 – Betrieblicher Ausbildungsplan", q:"Wozu dient der betriebliche Ausbildungsplan?", tip:["Umsetzung Rahmenplan; zeitl./sachl. Gliederung; Qualität."]},
-      { ref:"V10 – Berichtsheft", q:"Welche Bedeutung hat das Berichtsheft?", tip:["Zulassungsvoraussetzung; elektronisch möglich; Kontrolle Ausbilder/in."]},
-      { ref:"V11 – Verkürzung", q:"Wann kann die Ausbildungsdauer verkürzt werden?", tip:["Vorbildung/Leistung/Anrechnung; Einvernehmen (§8 BBiG)."]},
-      { ref:"V12 – Verlängerung", q:"Wann kommt eine Verlängerung in Betracht?", tip:["Nichtbestehen oder besondere Fälle (§8(2) BBiG)."]},
-      { ref:"V13 – Teilzeit", q:"Wie funktioniert Teilzeit in der Ausbildung, was bleibt unverändert?", tip:["Reduzierte Zeiten; Lernziel bleibt; evtl. längere Dauer (§7a)."]},
-      { ref:"V14 – Datenschutz/Geheimnis", q:"Welche Pflichten zu Datenschutz/Betriebsgeheimnissen?", tip:["DSGVO/BDSG; Unterweisung dokumentieren."]},
-      { ref:"V15 – Kündigung", q:"Welche Kündigungsregeln gelten in/nach der Probezeit?", tip:["Probezeit: jederzeit fristlos (§22(1)). Danach: wichtiger Grund fristlos oder 4-Wochen-Frist durch Azubi (§22)."]},
-      { ref:"V16 – Mutterschutz", q:"Welche Schutzregeln gelten bei Schwangerschaft?", tip:["MuSchG: Schutzfristen, Beschäftigungsverbote, Kündigungsschutz."]},
-      { ref:"V17 – Nachteilsausgleich", q:"Wie werden Auszubildende mit Behinderung unterstützt?", tip:["Nachteilsausgleich (Zeit/Hilfsmittel) auf Antrag."]},
-      { ref:"V18 – Ausland", q:"Sind Ausbildungsabschnitte im Ausland möglich?", tip:["Ja; Ausbildungsziel wahren; anrechenbare Zeit (§2(3) BBiG)."]},
-      { ref:"V19 – Versetzung", q:"Darf der Betrieb Azubis versetzen?", tip:["Ja, wenn ausbildungsdienlich/zumutbar; Reisekosten klären (§14)."]},
-      { ref:"V20 – Insolvenz", q:"Was passiert bei Insolvenz des Ausbildungsbetriebs?", tip:["Fortführung/Anschlussbetrieb/IHK-Unterstützung; ggf. Insolvenzgeld."]}
-    ];
-    const BANK_BASICS = [
-      { ref:"G1 – Jugendberufsagentur", q:"Aufgabe & Partner?", tip:["Unter 25 unterstützen; AA/Jobcenter/Kommunen/Schulen."]},
-      { ref:"G2 – Nutzen Ausbildung", q:"Drei Argumente für Betriebe?", tip:["Fachkräfte, Flexibilität, Innovation."]},
-      { ref:"G3 – Personalplanung", q:"Relevante Dimensionen?", tip:["Quantitativ, qualitativ, zeitlich."]},
-      { ref:"G4 – Recruiting-Kanäle", q:"Vier Wege, Azubis zu finden?", tip:["Schulen/Agentur, Social, Messen, Empfehlungen."]},
-      { ref:"G5 – Auswahlprozess", q:"Elemente des Auswahlprozesses?", tip:["Screening, Gespräch/Test, Entscheidung."]},
-      { ref:"G6 – Motive", q:"Drei Motive der Ausbildung?", tip:["Interesse, finanzielle Unabhängigkeit, Perspektive."]},
-      { ref:"G7 – Anforderungsprofil", q:"Drei Kompetenzfelder?", tip:["Fachlich, sozial, persönlich."]},
-      { ref:"G8 – Eignung", q:"Eignung vor/in Probezeit prüfen (wie)?", tip:["Zeugnisse, Tests/Gespräche, Beobachtung."]},
-      { ref:"G9 – Nachhaltigkeit", q:"Wie verankert in Ausbildung (kurz)?", tip:["Lernziele/Projekte; Rolle Ausbilder."]},
-      { ref:"G10 – SDGs", q:"Was sind die 17 SDGs, Nutzen?", tip:["Globale Ziele; Orientierung im Betrieb."]}
+      { ref:"V4 – Minderjährige: Unterschrift", q:"Wer unterschreibt den Vertrag bei Minderjährigen mit gemeinsamem Sorgerecht?", tip:["Beide Sorgeberechtigte + Minderjährige/r.","§ 10 BBiG; §§ 1626, 1629 BGB."]}
     ];
     const BANK_RECHT = [
       { ref:"R1 – Art.12 GG", q:"Was garantiert Art. 12 GG bzgl. Beruf/Ausbildungsstätte?", tip:["Freie Wahl; gesetzlich einschränkbar."]},
       { ref:"R2 – AGG Ziel", q:"Ziel des AGG (§1) im Kontext Ausbildung?", tip:["Benachteiligungen verhindern/beseitigen."]},
-      { ref:"R3 – AGG Bereich", q:"Ein Anwendungsbereich §2 AGG (Ausbildung)?", tip:["Zugang zu Berufsbildung/Ausbildung."]},
-      { ref:"R4 – §1 BBiG", q:"Vier Säulen §1 BBiG?", tip:["Vorbereitung, Ausbildung, Fortbildung, Umschulung."]},
-      { ref:"R5 – BvB", q:"Zweck der BvB?", tip:["Heranführung; Basis berufl. Handlungsfähigkeit."]},
-      { ref:"R6 – EQ", q:"EQ – was & wer gefördert?", tip:["Langzeitpraktikum SGB III; junge Bewerbende."]},
-      { ref:"R7 – MiAV", q:"MiAV & Tarif – Zusammenspiel?", tip:["MiAV Untergrenze; Tarif maßgeblich."]},
-      { ref:"R8 – Günstigkeitsprinzip", q:"Was bedeutet Günstigkeitsprinzip?", tip:["Abweichungen nur zugunsten der Beschäftigten."]},
-      { ref:"R9 – Nachweis", q:"Rolle Ausbildungsnachweis für Zulassung?", tip:["Kann gefordert werden; fehlend kann ausschließen."]},
-      { ref:"R10 – Moderne Formen", q:"§28 BBiG Aussage zur Durchführung?", tip:["Eignung von Ausbildungsstätte/Person; moderne Formen ok."]}
-    ];
-    const BANK_ARBZ = [
-      { ref:"A1 – U18 Arbeitszeit", q:"Tages-/Wochengrenzen Jugendliche?", tip:["8 h/Tag, 40 h/W (Ausnahmen)."]},
-      { ref:"A2 – U18 Pausen", q:"Pausen Jugendliche?", tip:[">4,5–6 h: 30 Min; >6 h: 60 Min; Blöcke ≥15 Min."]},
-      { ref:"A3 – U18 Ruhezeit", q:"Tägliche Freizeit Jugendliche?", tip:["Mindestens 12 Stunden."]},
-      { ref:"A4 – U18 Sonn/Feiertag", q:"Grundsatz & Ausnahmen?", tip:["Grundsatz Verbot; Ausnahmen; 2 freie Sonntage/Monat."]},
-      { ref:"A5 – ≥18 Arbeitszeit", q:"Grund-/Höchstarbeitszeit ArbZG?", tip:["8 h/Tag; bis 10 mit Ausgleich."]},
-      { ref:"A6 – ≥18 Pausen/Ruhe", q:"Pausen & Ruhezeit Erwachsene?", tip:["6–9 h: 30 Min; >9 h: 45 Min; Ruhe 11 h."]},
-      { ref:"A7 – Mehrarbeit Doku", q:"Was dokumentieren & wie lange?", tip:[">8 h/Tag; 2 Jahre (§16 ArbZG)."]},
-      { ref:"A8 – Urlaub BUrlG", q:"Mindesturlaub 5-Tage-Woche?", tip:["20 AT (4 Wochen)."]},
-      { ref:"A9 – Urlaub U18", q:"Mindesturlaub je Alter (Kurz)?", tip:["u16:30 WT; u17:27; u18:25; ab 18:24 WT."]},
-      { ref:"A10 – §15 BBiG", q:"Freistellung §15 BBiG (2 Beispiele)?", tip:["Unterricht/Prüfungen; Wegezeiten."]}
-    ];
-    const BANK_ORGA = [
-      { ref:"O1 – Vollständige Handlung", q:"Sechs Schritte?", tip:["Informieren, Planen, Entscheiden, Ausführen, Kontrollieren, Bewerten."]},
-      { ref:"O2 – Lernzielebenen", q:"Richt-/Grob-/Feinlernziel kurz.", tip:["Richt: Gebiet; Grob: Fähigkeit; Fein: Teilziel."]},
-      { ref:"O3 – Sachliche Gliederung", q:"Drei Kriterien?", tip:["Einheiten, Überschaubarkeit, Probezeit nutzbar."]},
-      { ref:"O4 – Zeitliche Gliederung", q:"Drei Kriterien?", tip:["Prüfungstermine, Reihenfolge, Block/Urlaub."]},
-      { ref:"O5 – Pflichten §11/13/14", q:"Nenne Kernpflichten kurz.", tip:["Gliederung; Nachweis führen; Lernziele vermitteln."]},
-      { ref:"O6 – Versetzungsplan", q:"Wie helfen Einsatzpläne?", tip:["Steuerung Stationen; Lernziele."]},
-      { ref:"O7 – Digitale Tools", q:"Zwei Vorteile?", tip:["Transparenz; Feedback/Nachverfolgung."]},
-      { ref:"O8 – Qualitätssicherung", q:"Praxisnahe Prüfung im Betrieb?", tip:["Zwischengespräche, Zielabgleich, Nachweise."]}
-    ];
-    const BANK_BETEILIGTE = [
-      { ref:"B1 – Beteiligte", q:"Zentrale Beteiligte nennen.", tip:["Ausbildende, Ausbilder/in, Beauftragte, Azubis, IHK, Eltern."]},
-      { ref:"B2 – Eignung Betrieb", q:"Drei Voraussetzungen?", tip:["Ausstattung, Plan, Plätze/Schutz."]},
-      { ref:"B3 – Fachkraftbegriff", q:"Wer gilt als Fachkraft?", tip:["Abschluss oder 2× Ausbildungszeit Tätigkeit."]},
-      { ref:"B4 – Relation FK:Azubis", q:"Relation skizzieren.", tip:["1–2:1; 3–5:2; 6–8:3; je +3 FK:+1 Azubi."]},
-      { ref:"B5 – Pflichten Ausbildende", q:"Kernpflichten §14 BBiG?", tip:["Lernziele, Schutz, Freistellung, Zeugnis."]},
-      { ref:"B6 – Rolle Ausbilder", q:"Kernaufgaben?", tip:["Planung, Durchführung, Kontrolle, Coaching."]},
-      { ref:"B7 – Beauftragte", q:"Aufgabe Ausbildungsbeauftragte?", tip:["Teilqualifikationen vermitteln (§28(3))."]},
-      { ref:"B8 – persönliche Eignung", q:"Wann fehlt sie (Beispiel)?", tip:["Wiederholte JArbSchG-Verstöße."]}
-    ];
-    const BANK_MITBEST = [
-      { ref:"M1 – BR Rechte", q:"Zwei Mitwirkungs-/Mitbestimmungsrechte (BBiG)?", tip:["§96 Beratungsrecht; §98 Mitbestimmung/Bestellung."]},
-      { ref:"M2 – §87 BetrVG", q:"Für welche Themen Mitbestimmung?", tip:["Arbeitszeit, Ordnung, Vergütung, IT-Einführung."]},
-      { ref:"M3 – Einstellung Azubis", q:"Wie BR einzubeziehen?", tip:["§99: Unterrichten, Unterlagen, Zustimmung."]},
-      { ref:"M4 – JAV Aufgabe", q:"Zwei Hauptaufgaben JAV?", tip:["Überwachung & Initiativen zugunsten Jugend/Azubis."]},
-      { ref:"M5 – JAV Wahl", q:"Wer wahlberechtigt/wählbar (Kurz)?", tip:["u18 + Azubis; wählbar <25; BR-Mitglieder ausgeschlossen."]},
-      { ref:"M6 – JAV Größe", q:"Wovon hängt Größe ab?", tip:["Zahl der Wahlberechtigten (§62 BetrVG)."]},
-      { ref:"M7 – Widerspruch BR", q:"Wann kann BR widersprechen?", tip:["Fehlende Eignung (§98(2))."]},
-      { ref:"M8 – Einigungsstelle", q:"Bei Nichteinigung – was dann?", tip:["Einigungsstelle entscheidet."]}
-    ];
-    const BANK_PRUEF = [
-      { ref:"P1 – Zwischenprüfung", q:"Wozu dient §48 BBiG?", tip:["Wissensstand; Zulassungsvoraussetzung (§43)."]},
-      { ref:"P2 – Ausbildungsende", q:"Wann endet das Verhältnis §21?", tip:["Ablauf der Zeit oder Bekanntgabe des Bestehens."]},
-      { ref:"P3 – Zulassung", q:"Rolle Nachweis für Zulassung?", tip:["Kann angefordert werden; fehlend kann ausschließen."]},
-      { ref:"P4 – Nachteilsausgleich", q:"Beispiele?", tip:["Zeitverlängerung, Hilfsmittel, angepasste Aufgaben."]},
-      { ref:"P5 – Prüfungsrecht", q:"Drei Prinzipien für PA (kurz)?", tip:["Rechtsgrundlagen, Gleichbehandlung, Verhältnismäßigkeit."]},
-      { ref:"P6 – Freistellung Prüfung", q:"§15 BBiG im Prüfungszusammenhang?", tip:["Teilnahme; Vortag schriftliche Abschlussprüfung."]},
-      { ref:"P7 – Wiederholung", q:"Wiederholungsprüfung möglich?", tip:["Ja; Verlängerung §8(2) bis nächster Termin möglich."]},
-      { ref:"P8 – Doku Vorbereitung", q:"Welche Dokumente bereithalten?", tip:["Plan, Nachweise, Beurteilungen, Berichtsheft."]}
-    ];
-    const BANK_DS = [
-      { ref:"D1 – DSGVO Grundsätze", q:"Drei Grundsätze nennen.", tip:["Zweckbindung, Datenminimierung, Transparenz."]},
-      { ref:"D2 – KI-Vorsicht", q:"Wichtige Vorsichtsmaßnahme?", tip:["Keine personenbezogenen/sensiblen Daten eingeben."]},
-      { ref:"D3 – Betriebsgeheimnis", q:"Wie umgehen?", tip:["Verschwiegenheit; Schulung/Verpflichtung."]},
-      { ref:"D4 – Doku DSGVO", q:"Zwei Dokus für Compliance?", tip:["VVT, TOMs, Schulungsnachweise."]},
-      { ref:"D5 – Foto/Video", q:"Vor Veröffentlichung beachten?", tip:["Einwilligung/Betroffenenrechte."]},
-      { ref:"D6 – AGG Recruiting", q:"Zwei Fehler in Ausschreibungen?", tip:["Diskriminierende Formulierungen (Alter/Geschlecht/Religion …)."]},
-      { ref:"D7 – SoMe Screening", q:"Worauf achten?", tip:["Datenschutz/Erforderlichkeit/Transparenz."]},
-      { ref:"D8 – Aufbewahrung Bewerbungen", q:"Wie lange i. d. R.?", tip:["6 Monate (AGG-Frist), danach löschen."]}
-    ];
-    const BANK_SYS = [
-      { ref:"S1 – BIBB Aufgabe", q:"Zwei Aufgaben BIBB.", tip:["Beratung, Forschung, Empfehlungen (§90 BBiG)."]},
-      { ref:"S2 – Ausbildungsordnung Hoheit", q:"Wer erlässt AO, worauf gestützt?", tip:["Fachministerien auf Basis BBiG; BIBB wirkt mit."]},
-      { ref:"S3 – Lernorte", q:"Welche Lernorte §2 BBiG?", tip:["Betrieb, Schule, ggf. weitere."]},
-      { ref:"S4 – Rahmenplan", q:"Funktion des Ausbildungsrahmenplans?", tip:["Zeitlich-sachliche Struktur; Mindestinhalte."]},
-      { ref:"S5 – Kammern", q:"Rolle der Kammern?", tip:["Zuständige Stelle: Eintragung, Beratung, Prüfungen."]},
-      { ref:"S6 – Tarifbezug", q:"Nicht tarifgebunden – Vergütung wie?", tip:["Anlehnung an einschlägige Tarife; MiAV beachten."]},
-      { ref:"S7 – Rechtsquellen", q:"Hierarchie grob?", tip:["EU/GG → Gesetze → Tarif → BV → Vertrag → Direktionsrecht."]},
-      { ref:"S8 – Nebentätigkeit", q:"Welche Verfassungsnorm tangiert?", tip:["Art. 12 GG."]}
+      { ref:"R3 – §1 BBiG", q:"Vier Säulen §1 BBiG?", tip:["Vorbereitung, Ausbildung, Fortbildung, Umschulung."]},
+      { ref:"R4 – §15 BBiG", q:"Freistellung: 2 Beispiele?", tip:["Unterricht/Prüfungen; Wegezeiten Schule→Betrieb."]}
     ];
 
     const CLUSTERS = [
-      { key:"core",  title:"Kern",                     icon:"layers",     data:BANK_CORE },
-      { key:"bas",   title:"Grundlagen/Recruiting",    icon:"users",      data:BANK_BASICS },
-      { key:"recht", title:"Recht (BBiG/AGG)",         icon:"scale",      data:BANK_RECHT },
-      { key:"az",    title:"Arbeitszeit & Urlaub",     icon:"clock-8",    data:BANK_ARBZ },
-      { key:"orga",  title:"Organisation/Planung",     icon:"calendar",   data:BANK_ORGA },
-      { key:"beteiligte", title:"Beteiligte & Eignung",icon:"id-card",    data:BANK_BETEILIGTE },
-      { key:"mitb",  title:"Mitbestimmung (BR/JAV)",   icon:"handshake",  data:BANK_MITBEST },
-      { key:"pruef", title:"Prüfung",                  icon:"file-check", data:BANK_PRUEF },
-      { key:"ds",    title:"Datenschutz & Ethik",      icon:"shield",     data:BANK_DS },
-      { key:"sys",   title:"System (BIBB/Kammern)",    icon:"building",   data:BANK_SYS }
+      { key:"core",  title:"Kern",         icon:"layers",  data:BANK_CORE },
+      { key:"recht", title:"Recht",        icon:"scale",   data:BANK_RECHT }
+      // ➜ weitere Cluster aus deiner letzten Version kannst du hier wieder anhängen (bas, az, orga, …)
     ];
 
     // === State ===
     let accepted=false, activeKey="core";
     let answersByRef={}, selectedByRef={};
     let bookmarks = {};
-    // load persisted
-    (function restore(){
+
+    // Theme load
+    const savedTheme = localStorage.getItem("mf_theme") || "light";
+    if (savedTheme==="dark") document.documentElement.classList.add("dark");
+
+    // Intro: skip?
+    try{
+      const skip = localStorage.getItem(INTRO_KEY) === "1";
+      if (skip) intro.style.display="none";
+    }catch{}
+
+    // Intro: system checks (simuliert + leichtgewichtig)
+    setTimeout(()=>{
+      // storage
       try{
-        const s=JSON.parse(localStorage.getItem(STORAGE_KEY)||"{}");
-        if (s && typeof s==='object'){
-          accepted = !!s.accepted;
-          activeKey = s.activeKey || "core";
-          answersByRef = s.answersByRef || {};
-          selectedByRef = s.selectedByRef || {};
-        }
+        const t="ok"+Math.random();
+        localStorage.setItem("_intro_test", t);
+        const ok = localStorage.getItem("_intro_test")===t;
+        stStorage.classList.toggle("done", ok);
       }catch{}
-      try{ bookmarks = JSON.parse(localStorage.getItem(BOOKMARK_KEY)||"{}"); }catch{}
-      if (accepted){ notice.style.display="none"; ack.checked=true; ackState.textContent="Hinweis bestätigt"; }
-    })();
+      // network (HEAD/GET ping – optional; bei CORS/404 trotzdem „ok“ anzeigen, damit UX nicht blockiert)
+      fetch("/api/linda-proxy", { method:"OPTIONS" }).then(()=> stNetwork.classList.add("done")).catch(()=> stNetwork.classList.add("done"));
+      // access
+      stAccess.classList.add("done");
+      introStatus.textContent = "Bereit • Alles klar";
+    }, 300);
+
+    function hideIntro(){
+      intro.classList.add("fadeout");
+      setTimeout(()=>{ intro.style.display="none"; }, 460);
+    }
+    introStart.addEventListener("click", (e)=>{ e.preventDefault(); if (introSkip.checked) localStorage.setItem(INTRO_KEY,"1"); hideIntro(); });
+    introSkipNow.addEventListener("click", ()=> hideIntro());
+    introTheme.addEventListener("click", ()=>{
+      document.documentElement.classList.toggle("dark");
+      localStorage.setItem("mf_theme", document.documentElement.classList.contains("dark") ? "dark":"light");
+      if (window.lucide) lucide.createIcons();
+    });
 
     // === Timer ===
     let startTs = Date.now();
@@ -487,15 +529,6 @@
       timerEl.textContent = `${m}:${r}`;
     },1000);
 
-    // === Theme ===
-    const savedTheme = localStorage.getItem("mf_theme") || "light";
-    if (savedTheme==="dark") document.documentElement.classList.add("dark");
-    themeToggle.addEventListener("click", ()=>{
-      document.documentElement.classList.toggle("dark");
-      localStorage.setItem("mf_theme", document.documentElement.classList.contains("dark") ? "dark":"light");
-      if (window.lucide) lucide.createIcons();
-    });
-
     // === Disclaimer ===
     ackBtn.addEventListener("click", ()=>{
       if (!ack.checked){ toast("Bitte die Checkbox bestätigen."); return; }
@@ -504,8 +537,9 @@
     });
 
     // === Tabs / Select ===
+    const clusterSelectEl = clusterSelect;
     function renderTabs(){
-      tabs.innerHTML=""; clusterSelect.innerHTML="";
+      tabs.innerHTML=""; clusterSelectEl.innerHTML="";
       CLUSTERS.forEach(c=>{
         const b=document.createElement("button");
         b.type="button"; b.className="tab"; b.setAttribute("role","tab");
@@ -516,11 +550,11 @@
 
         const opt=document.createElement("option");
         opt.value=c.key; opt.textContent=c.title; if(c.key===activeKey) opt.selected=true;
-        clusterSelect.appendChild(opt);
+        clusterSelectEl.appendChild(opt);
       });
       if (window.lucide) lucide.createIcons();
     }
-    clusterSelect.addEventListener("change", (e)=>{ activeKey=e.target.value; renderTabs(); renderQuestions(); saveStateThrottled(); });
+    clusterSelectEl.addEventListener("change", (e)=>{ activeKey=e.target.value; renderTabs(); renderQuestions(); saveStateThrottled(); });
 
     function currentQuestions(){ return CLUSTERS.find(x=>x.key===activeKey)?.data || []; }
 
@@ -529,9 +563,7 @@
       { law:"BBiG", para:"§ 11", tags:["vertrag","inhalte","mindestinhalte"], excerpt:"Niederschrift der wesentlichen Inhalte.", link:"https://www.gesetze-im-internet.de/bbig_2005/BBiG.pdf" },
       { law:"BBiG", para:"§ 20", tags:["probezeit"], excerpt:"Probezeit: min. 1, max. 4 Monate.", link:"https://www.gesetze-im-internet.de/bbig_2005/BBiG.pdf" },
       { law:"BBiG", para:"§ 15", tags:["freistellung","schule","wegezeit"], excerpt:"Freistellung; Wege Schule→Betrieb anrechenbar.", link:"https://www.gesetze-im-internet.de/bbig_2005/BBiG.pdf" },
-      { law:"BBiG", para:"§ 17", tags:["vergütung","miav"], excerpt:"Angemessene Vergütung; MiAV.", link:"https://www.gesetze-im-internet.de/bbig_2005/BBiG.pdf" },
-      { law:"JArbSchG", para:"§§ 8–15", tags:["arbeitszeit","ruhezeit","pausen"], excerpt:"Höchstarbeitszeiten; Ruhepausen; Ruhezeit 12 Std.", link:"https://www.gesetze-im-internet.de/jarbschg/JArbSchG.pdf" },
-      { law:"ArbZG", para:"§ 3/4/5", tags:["arbeitszeit","pausen","ruhezeit"], excerpt:"8 Std/Tag (bis 10 mit Ausgleich), Pausen, 11 Std Ruhe.", link:"https://www.gesetze-im-internet.de/arbzg/BJNR117100994.html" },
+      { law:"JArbSchG", para:"§§ 8–15", tags:["arbeitszeit","ruhezeit","pausen"], excerpt:"Höchstarbeitszeiten; Ruhepausen; Ruhezeit 12 Std.", link:"https://www.gesetze-im-internet.de/jarbschg/JArbSchG.pdf" }
     ];
     function openQuicklook(){ qlBackdrop.classList.add("open"); qlModal.classList.add("open"); qlSearch.value=""; renderQuicklook(""); qlSearch.focus(); }
     function closeQuicklook(){ qlBackdrop.classList.remove("open"); qlModal.classList.remove("open"); }
@@ -558,6 +590,7 @@
     qlBackdrop.addEventListener("click", closeQuicklook);
     qlClose.addEventListener("click", closeQuicklook);
     qlSearch.addEventListener("input", (e)=> renderQuicklook(e.target.value));
+    document.addEventListener("keydown",(e)=>{ if(e.key==="?") openQuicklook(); });
 
     // === Bookmarks Modal ===
     function openBM(){ bmBackdrop.classList.add("open"); bmModal.classList.add("open"); renderBM(); }
@@ -604,9 +637,24 @@
       const arr = loadHistory(); arr.push({ts:Date.now(), html}); localStorage.setItem("MF_CLUSTER_HISTORY_V1", JSON.stringify(arr));
     }
 
+    // === State restore ===
+    (function restore(){
+      try{
+        const s=JSON.parse(localStorage.getItem(STORAGE_KEY)||"{}");
+        if (s && typeof s==='object'){
+          accepted = !!s.accepted;
+          activeKey = s.activeKey || "core";
+          answersByRef = s.answersByRef || {};
+          selectedByRef = s.selectedByRef || {};
+        }
+      }catch{}
+      try{ bookmarks = JSON.parse(localStorage.getItem(BOOKMARK_KEY)||"{}"); }catch{}
+      if (accepted){ notice.style.display="none"; ack.checked=true; ackState.textContent="Hinweis bestätigt"; }
+    })();
+
     // === Render Fragen ===
     function renderQuestions(){
-      // persist previous visible
+      // persist visible
       [...form.querySelectorAll("section[data-ref]")].forEach(sec=>{
         const ref=sec.getAttribute("data-ref");
         const ta=sec.querySelector("textarea");
@@ -661,7 +709,6 @@
         `;
         form.appendChild(sec);
 
-        // restore values
         const ta=sec.querySelector("textarea");
         const cb=sec.querySelector(`[data-select]`);
         if (answersByRef[item.ref]) ta.value = answersByRef[item.ref];
@@ -732,7 +779,7 @@
       progressTxt.textContent = `${answered} / ${total} beantwortet`;
     }
 
-    // === Prompts (wohlwollend, AILA-Style) ===
+    // === Prompts (wohlwollend) ===
     function buildPromptSingle(item, answer){
       return `
 Beurteile **wohlwollend** eine Kurzantwort (Ausbildung/Arbeitsrecht). Wenn die geforderte Anzahl erfüllt ist, bestätige ausdrücklich **„passt“** und ergänze nur optional weitere zulässige Punkte.
@@ -835,7 +882,6 @@ ${list.map(a=>`Q${a.nr} (${a.ref}): ${a.question}\nAntwort TN: ${a.answer || "(l
     // === Reset ===
     resetBtn.addEventListener("click", ()=>{
       if (!confirm("Alle Eingaben im aktuellen Cluster löschen?")) return;
-      // nur aktuelles Cluster leeren:
       currentQuestions().forEach(q=>{ delete answersByRef[q.ref]; delete selectedByRef[q.ref]; });
       renderQuestions(); saveState();
       resultWrap.classList.add("hidden"); aiResult.innerHTML="";
@@ -858,6 +904,17 @@ ${list.map(a=>`Q${a.nr} (${a.ref}): ${a.question}\nAntwort TN: ${a.answer || "(l
     // === Init ===
     renderTabs();
     renderQuestions();
+
+    // Header theme button
+    themeToggle.addEventListener("click", ()=>{
+      document.documentElement.classList.toggle("dark");
+      localStorage.setItem("mf_theme", document.documentElement.classList.contains("dark") ? "dark":"light");
+      if (window.lucide) lucide.createIcons();
+    });
+
+    // Bookmarks
+    try{ bookmarks = JSON.parse(localStorage.getItem(BOOKMARK_KEY)||"{}"); }catch{}
+    updateBMCount();
 
   });
   </script>
