@@ -4,23 +4,23 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>BBIG Quiz Lösungen - Professionelle Lernplattformen</title>
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&family=Open+Sans:wght@300;400;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
         body {
-            font-family: 'Open Sans', sans-serif;
+            font-family: 'Inter', sans-serif;
             margin: 0;
             padding: 0;
             background-color: #f8f9fa;
             color: #333;
         }
         .hero {
-            background: linear-gradient(135deg, #06286E 0%, #1970C0 100%);
+            background: linear-gradient(135deg, #0066CC 0%, #004499 100%);
             color: white;
             padding: 80px 20px;
             text-align: center;
         }
         .hero h1 {
-            font-family: 'Roboto', sans-serif;
+            font-family: 'Inter', sans-serif;
             font-size: 3rem;
             font-weight: 700;
             margin-bottom: 20px;
@@ -48,9 +48,9 @@
             transform: translateY(-5px);
         }
         .card h2 {
-            font-family: 'Roboto', sans-serif;
+            font-family: 'Inter', sans-serif;
             font-size: 2rem;
-            color: #06286E;
+            color: #0066CC;
             margin-bottom: 20px;
         }
         .card p {
@@ -59,7 +59,7 @@
             margin-bottom: 30px;
         }
         .cta-button {
-            background: #06286E;
+            background: #0066CC;
             color: white;
             padding: 15px 30px;
             border: none;
@@ -71,7 +71,7 @@
             transition: background 0.3s ease;
         }
         .cta-button:hover {
-            background: #1970C0;
+            background: #004499;
         }
         .features {
             display: flex;
@@ -82,17 +82,17 @@
         .feature {
             flex: 1 1 200px;
             padding: 20px;
-            background: #E6F4FB;
+            background: #e6f2ff;
             border-radius: 5px;
             text-align: center;
         }
         .feature h3 {
             font-size: 1.2rem;
-            color: #06286E;
+            color: #0066CC;
             margin-bottom: 10px;
         }
         footer {
-            background: #06286E;
+            background: #0066CC;
             color: white;
             text-align: center;
             padding: 40px 20px;
@@ -108,7 +108,7 @@
             position: relative;
             display: inline-block;
             cursor: pointer;
-            color: #E6F4FB;
+            color: #e6f2ff;
             font-weight: 500;
         }
         .privacy-tooltip:hover .tooltip-text {
@@ -156,7 +156,7 @@
             flex-direction: column;
         }
         .chat-header {
-            background: #06286E;
+            background: #0066CC;
             color: white;
             padding: 15px;
             border-radius: 10px 10px 0 0;
@@ -184,7 +184,7 @@
             border-radius: 5px;
         }
         .message.user {
-            background: #E6F4FB;
+            background: #e6f2ff;
             text-align: right;
         }
         .message.bot {
@@ -205,7 +205,7 @@
         .chat-input button {
             margin-left: 10px;
             padding: 10px 15px;
-            background: #06286E;
+            background: #0066CC;
             color: white;
             border: none;
             border-radius: 5px;
@@ -217,7 +217,7 @@
             right: 20px;
             width: 60px;
             height: 60px;
-            background: #06286E;
+            background: #0066CC;
             color: white;
             border-radius: 50%;
             display: flex;
@@ -345,8 +345,48 @@
     </div>
 
     <script>
-        const WEBHOOK_URL = "/api/linda-proxy";
+        // ===== BBiG-QUIZ: MAKE.COM WEBHOOK & OPENAI INTEGRATION =====
+        // Design: metafinanz.de-Style (#0066CC, Inter Font, corporate clean)
+        // Datum: 2025-10-07 15:24:05 UTC
+        // User: TCOL2024
 
+        const WEBHOOK_CONFIG = {
+          url: "/api/linda-proxy", // Vercel Proxy oder direkt: "https://hook.eu1.make.com/..."
+          method: "POST",
+          headers: { "Content-Type": "application/json" }
+        };
+
+        async function sendToLinda(promptText) {
+          try {
+            const response = await fetch(WEBHOOK_CONFIG.url, {
+              method: WEBHOOK_CONFIG.method,
+              headers: WEBHOOK_CONFIG.headers,
+              body: JSON.stringify({ prompt: promptText })
+            });
+            
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            
+            const contentType = response.headers.get("content-type");
+            const result = contentType?.includes("json") 
+              ? (await response.json()).answer 
+              : await response.text();
+            
+            return { success: true, data: result };
+            
+          } catch (error) {
+            return { success: false, error: error.message };
+          }
+        }
+
+        function createPrompt(questions, answers) {
+          return `Beurteile wohlwollend folgende BBiG-Antworten:\n\n${
+            questions.map((q, i) => 
+              `**Q${i+1} (${q.ref}):** ${q.question}\n**Antwort:** ${answers[i] || "(leer)"}`
+            ).join("\n\n")
+          }`;
+        }
+
+        // Chat Widget Integration
         const chatToggle = document.getElementById('chat-toggle');
         const chatWidget = document.getElementById('chat-widget');
         const chatClose = document.getElementById('chat-close');
@@ -374,25 +414,12 @@
             addMessage(message, 'user');
             chatInput.value = '';
 
-            fetch(WEBHOOK_URL, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ message }),
-            })
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('Netzwerkfehler: ' + response.status);
+            sendToLinda(message).then(res => {
+                if (res.success) {
+                    addMessage(res.data, 'bot');
+                } else {
+                    addMessage('Es gab einen Fehler: ' + res.error, 'bot');
                 }
-                return response.text(); // Verwende text(), da der Webhook wahrscheinlich Text zurückgibt
-            })
-            .then(text => {
-                addMessage(text || 'Entschuldigung, ich konnte das nicht verstehen.', 'bot');
-            })
-            .catch(error => {
-                console.error('Fehler:', error);
-                addMessage('Es gab einen Fehler bei der Verbindung. Bitte versuchen Sie es später erneut.', 'bot');
             });
         }
 
