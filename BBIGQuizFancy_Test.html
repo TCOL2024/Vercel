@@ -68,7 +68,7 @@
     .ac-item{display:flex;gap:8px;padding:10px 12px;border-bottom:1px dashed var(--border);cursor:pointer}
     .ac-item:last-child{border-bottom:none}
     .ac-item:hover{background:var(--surface3)}
-    .ac-badge{font-size:10px;padding:2px 6px;border:1px solid var(--border);border-radius:999px;background:var(--surface3);color:var(--muted);height:fit-content;margin-top:2px}
+    .ac-badge{font-size:10px;padding:2px 6px;border:1px solid var(--border);border-radius:999px;background:var(--surface3);color:#64748b;height:fit-content;margin-top:2px}
     .l-resize{position:absolute;right:8px;bottom:8px;width:14px;height:14px;border-right:2px solid #94a3b8;border-bottom:2px solid #94a3b8;border-radius:2px;cursor:nwse-resize;opacity:.7}
 
     footer.app-footer{font:10px/1.4 Arial, Helvetica, sans-serif;color:#475569;background:#eef2f6;border-top:1px solid var(--border);margin-top:24px}
@@ -97,12 +97,8 @@
         </label>
       </div>
       <div class="ml-auto flex items-center gap-2">
-        <a class="btn btn-sm" href="https://www.gesetze-im-internet.de/bbig_2005/BBiG.pdf" target="_blank" rel="noopener" title="BBiG (PDF)">
-          <i data-lucide="book-open" class="w-4 h-4"></i> BBiG
-        </a>
-        <a class="btn btn-sm" href="https://www.gesetze-im-internet.de/jarbschg/JArbSchG.pdf" target="_blank" rel="noopener" title="JArbSchG (PDF)">
-          <i data-lucide="shield" class="w-4 h-4"></i> JArbSchG
-        </a>
+        <a class="btn btn-sm" href="https://www.gesetze-im-internet.de/bbig_2005/BBiG.pdf" target="_blank" rel="noopener"><i data-lucide="book-open" class="w-4 h-4"></i> BBiG</a>
+        <a class="btn btn-sm" href="https://www.gesetze-im-internet.de/jarbschg/JArbSchG.pdf" target="_blank" rel="noopener"><i data-lucide="shield" class="w-4 h-4"></i> JArbSchG</a>
         <span id="ackState" class="badge">Hinweis offen</span>
         <button id="ackBtn" type="button" class="btn btn-primary btn-sm">
           <i data-lucide="check" class="w-4 h-4"></i> Weiter
@@ -209,11 +205,10 @@
       </div>
       <div class="mt-2 grid gap-2">
         <input id="qlSearch" type="search" class="flex-1 rounded-xl border px-3 py-2" placeholder="Begriff oder § …">
-        <!-- Korrekte Quicklinks -->
         <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
           <a class="btn btn-sm" href="https://www.gesetze-im-internet.de/sgb_1/" target="_blank" rel="noopener">SGB I</a>
           <a class="btn btn-sm" href="https://www.gesetze-im-internet.de/sgb_2/" target="_blank" rel="noopener">SGB II</a>
-          <a class="btn btn-sm" href="https://www.gesetze-im-internet.de/sgb_3/" target="_blank" rel="noopener">SGB III</a>
+          <a class="btn class btn-sm" href="https://www.gesetze-im-internet.de/sgb_3/" target="_blank" rel="noopener">SGB III</a>
           <a class="btn btn-sm" href="https://www.gesetze-im-internet.de/sgb_4/" target="_blank" rel="noopener">SGB IV</a>
           <a class="btn btn-sm" href="https://www.gesetze-im-internet.de/sgb_5/" target="_blank" rel="noopener">SGB V</a>
           <a class="btn btn-sm" href="https://www.gesetze-im-internet.de/sgb_6/" target="_blank" rel="noopener">SGB VI</a>
@@ -297,8 +292,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
   /* ===== Config ===== */
   const relay = "/api/linda-proxy";         // dein Proxy zu Make/OpenAI
-  const STORAGE = "BBIG_DUAL_V2";
-  const AUTO_MIN_SCORE = 0.42;              // ab Score -> Offline-Hinweis genügt
+  const STORAGE = "BBIG_DUAL_V3";
+  const AUTO_MIN_SCORE = 0.42;
   const MAX_ANSWER = 1500;
 
   /* ===== Refs ===== */
@@ -330,7 +325,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const qlSearch = document.getElementById("qlSearch");
   const qlList = document.getElementById("qlList");
 
-  // Linda (FIXED toggle)
+  // Linda (fixed toggle)
   const lindaBtn = document.getElementById("lindaBtn");
   const lindaWrap = document.getElementById("lindaWrap");
   const dragBar = document.getElementById("dragBar");
@@ -343,7 +338,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const resizeHandle = document.getElementById("resizeHandle");
   const quickChips = document.getElementById("quickChips");
 
-  /* ===== Data (Kurzfassung – erweiterbar) ===== */
+  /* ===== Daten – Muster (kurz) ===== */
   const AUS_CLUSTERS = [
     { key:"kern", title:"Kern", icon:"layers", data:[
       {ref:"V1 – Mindestinhalte Vertrag", q:"Nenne vier Pflichtangaben, die zwingend in den Berufsausbildungsvertrag gehören.", tip:["Parteien; Beginn/Dauer; Ziel/Berufsbezeichnung; sachliche & zeitliche Gliederung; Vergütung; Probezeit; Urlaub; Kündigung; Nachweisform.","§ 11 BBiG."]},
@@ -364,10 +359,6 @@ document.addEventListener("DOMContentLoaded", () => {
     ]},
     { key:"alo", title:"Arbeitslosigkeit (SGB III)", icon:"briefcase", data:[
       {ref:"A1 – Zweck & Leistungen", q:"Wozu dient die Arbeitslosenversicherung und welche Hauptleistungen nennt das SGB III?", tip:["ALG; Förderung Weiterbildung; Wiedereingliederung (§§ 136–138, § 81 SGB III)."]}
-    ]},
-    { key:"sgbvi", title:"Rente (SGB VI)", icon:"banknote", data:[
-      {ref:"V I – Aufgaben RV", q:"Nenne Ziel/Aufgaben der gesetzlichen Rentenversicherung laut SGB VI.", tip:["Alter/EM/Hinterbliebene; Reha vor Rente."]},
-      {ref:"V III – Rentenarten", q:"Nenne mindestens drei Rentenarten der gesetzlichen Rentenversicherung.", tip:["Regelalters-, Alters-, EM-, Hinterbliebenenrenten."]}
     ]}
   ];
 
@@ -399,7 +390,11 @@ document.addEventListener("DOMContentLoaded", () => {
   let domain="ausbildung"; // ausbildung | sozialrecht
   let answersByRef={}, selectedByRef={};
   let accepted=false;
-  let activeKey;
+  let activeKey=null;
+
+  /* ===== Utilities ===== */
+  function toast(m){ toastEl.textContent=m; toastEl.style.display="block"; clearTimeout(toast._t); toast._t=setTimeout(()=>toastEl.style.display="none",2200); }
+  const sanitize = (t)=> (t||'').replace(/[<>&]/g, s=>({ '<':'&lt;','>':'&gt;','&':'&amp;' }[s]));
 
   /* ===== Theme ===== */
   function setThemeIcon(){
@@ -423,26 +418,16 @@ document.addEventListener("DOMContentLoaded", () => {
     timerEl.textContent = `${m}:${r}`;
   },1000);
 
-  /* ===== Toast ===== */
-  function toast(m){ toastEl.textContent=m; toastEl.style.display="block"; clearTimeout(toast._t); toast._t=setTimeout(()=>toastEl.style.display="none",2300); }
-
   /* ===== Disclaimer ===== */
   ackBtn.addEventListener("click", ()=>{
     if(!ack.checked){ toast("Bitte zuerst den Hinweis bestätigen."); return; }
-    accepted=true; notice.style.display="none"; ackState.textContent="Hinweis bestätigt"; saveState();
+    accepted=true;
+    notice.style.display="none";
+    ackState.textContent="Hinweis bestätigt";
+    saveState();
+    // Fallback: sicherheitshalber neu rendern
+    renderTabs(); renderQuestions();
   });
-
-  /* ===== Restore ===== */
-  (function restore(){
-    try{
-      const s=JSON.parse(localStorage.getItem(STORAGE)||"{}");
-      domain=s.domain||"ausbildung";
-      answersByRef=s.answersByRef||{};
-      selectedByRef=s.selectedByRef||{};
-      if(s.accepted){ accepted=true; notice.style.display="none"; ack.checked=true; ackState.textContent="Hinweis bestätigt"; }
-    }catch{}
-    setDomButtons();
-  })();
 
   /* ===== Domain/Tabs ===== */
   function setDomButtons(){
@@ -451,23 +436,29 @@ document.addEventListener("DOMContentLoaded", () => {
   }
   function getClusters(){ return domain==="ausbildung" ? AUS_CLUSTERS : SOZ_CLUSTERS; }
 
-  domAusb.addEventListener("click", ()=>{ domain="ausbildung"; setDomButtons(); renderTabs(); renderQuestions(); saveState(); });
-  domSoz.addEventListener("click", ()=>{ domain="sozialrecht"; setDomButtons(); renderTabs(); renderQuestions(); saveState(); });
+  domAusb.addEventListener("click", ()=>{ domain="ausbildung"; setDomButtons(); ensureActiveKey(); renderTabs(true); renderQuestions(); saveState(); });
+  domSoz.addEventListener("click", ()=>{ domain="sozialrecht"; setDomButtons(); ensureActiveKey(); renderTabs(true); renderQuestions(); saveState(); });
 
-  function renderTabs(){
-    tabs.innerHTML=""; clusterSelect.innerHTML="";
+  function ensureActiveKey(){
     const pack=getClusters();
+    if(!activeKey || !pack.some(c=>c.key===activeKey)){ activeKey = pack[0]?.key || null; }
+  }
+
+  function renderTabs(reset=false){
+    const pack=getClusters();
+    if(reset) activeKey = pack[0]?.key || activeKey;
+    tabs.innerHTML=""; clusterSelect.innerHTML="";
     pack.forEach((c,idx)=>{
       const b=document.createElement("button");
-      b.type="button"; b.className="tab"; b.setAttribute("aria-selected", idx===0?"true":"false");
-      if(idx===0) activeKey=c.key;
+      b.type="button"; b.className="tab";
       b.dataset.key=c.key;
+      b.setAttribute("aria-selected", (activeKey ?? pack[0]?.key) === c.key);
       b.innerHTML=`<i data-lucide="${c.icon}"></i><span>${c.title}</span>`;
       b.addEventListener("click", ()=>{ activeKey=c.key; updateSelTab(); renderQuestions(); saveState(); });
       tabs.appendChild(b);
-
-      const opt=document.createElement("option"); opt.value=c.key; opt.textContent=c.title; if(idx===0) opt.selected=true; clusterSelect.appendChild(opt);
+      const opt=document.createElement("option"); opt.value=c.key; opt.textContent=c.title; if(((activeKey ?? pack[0]?.key)===c.key)) opt.selected=true; clusterSelect.appendChild(opt);
     });
+    if(!activeKey && pack[0]) activeKey=pack[0].key;
     if (window.lucide) lucide.createIcons();
   }
   function updateSelTab(){
@@ -483,10 +474,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
   /* ===== Render Questions ===== */
   function renderQuestions(){
-    const pack=getClusters();
-    if(!activeKey) activeKey=pack[0].key;
+    ensureActiveKey();
     form.innerHTML="";
-    currentQs().forEach((item,idx)=>{
+    const qs=currentQs();
+    qs.forEach((item,idx)=>{
       const id=`q_${idx}`, fbId=`fb_${idx}`, selId=`sel_${idx}`;
       const sec=document.createElement("section"); sec.className="card q-card"; sec.dataset.ref=item.ref;
       sec.innerHTML=`
@@ -496,14 +487,15 @@ document.addEventListener("DOMContentLoaded", () => {
             <span class="badge badge-primary">Frage ${idx+1}</span>
             <span class="badge">${item.ref}</span>
           </div>
-          <span class="text-[11px] text-slate-400">Cluster: ${pack.find(c=>c.key===activeKey)?.title||""}</span>
+          <span class="text-[11px] text-slate-400">Cluster: ${sanitize(getClusters().find(c=>c.key===activeKey)?.title||"")}</span>
         </header>
-        <h3 class="text-[15px] font-semibold mb-2">${item.q}</h3>
+        <h3 class="text-[15px] font-semibold mb-2">${sanitize(item.q)}</h3>
         <details class="tip mb-2">
           <summary class="list-none cursor-pointer select-none flex items-center gap-2 text-blue-700 text-[13px]">
             <i data-lucide="info" class="w-4 h-4"></i><span>🛈 Musterlösung</span>
           </summary>
-          <div class="mt-2">${(item.tip||[]).map(t=>`<p class="text-sm">• ${t}</p>`).join("")}
+          <div class="mt-2">
+            ${(item.tip||[]).map(t=>`<p class="text-sm">• ${sanitize(t)}</p>`).join("")}
             <div class="mt-2 flex gap-2 flex-wrap">
               <button type="button" data-quick="${idx}" class="btn btn-sm"><i data-lucide="search" class="w-4 h-4"></i> §-Quicklook</button>
               <button type="button" data-ask="${idx}" class="btn btn-sm"><i data-lucide="sparkles" class="w-4 h-4"></i> KI-Check</button>
@@ -530,8 +522,7 @@ document.addEventListener("DOMContentLoaded", () => {
       btn.addEventListener("click", (e)=>{
         const idx=Number(e.currentTarget.getAttribute("data-quick"));
         const item=currentQs()[idx];
-        const seed=(item?.ref||"")+" "+(item?.q||"");
-        openQL(seed);
+        openQL((item?.ref||"")+" "+(item?.q||""));
       });
     });
 
@@ -556,8 +547,8 @@ document.addEventListener("DOMContentLoaded", () => {
         fb.classList.remove("hidden"); fb.innerHTML='<div class="text-slate-500 text-sm">KI prüft …</div>';
         try{
           const out=await callAI({prompt: buildPromptSingle(item,val)});
-          fb.innerHTML = window.marked? marked.parse(out) : out;
-        }catch(e){ fb.innerHTML=`<div class="text-red-600 text-sm">Fehler: ${String(e).replace(/[<>&]/g,"")}</div>`; }
+          fb.innerHTML = window.marked? marked.parse(out) : sanitize(out);
+        }catch(e){ fb.innerHTML=`<div class="text-red-600 text-sm">Fehler: ${sanitize(String(e))}</div>`; }
         btn.disabled=false; btn.innerHTML=old;
         if(window.lucide) lucide.createIcons();
       });
@@ -608,8 +599,8 @@ ${list.map(a=>`Q (${a.ref}): ${a.question}\nAntwort: ${a.answer||"(leer)"}`).joi
     const wrap=document.getElementById("resultWrap"), out=document.getElementById("aiResult");
     wrap.classList.remove("hidden"); out.innerHTML='<div class="text-slate-500 text-sm">KI erstellt Feedback …</div>';
     submitBtn.disabled=true; const old=submitBtn.innerHTML; submitBtn.innerHTML='<svg class="animate-spin h-5 w-5" viewBox="0 0 24 24"></svg> Prüfen …';
-    try{ const txt=await callAI({prompt: buildPromptAll(list)}); out.innerHTML=window.marked?marked.parse(txt):txt; window.scrollTo({top:document.body.scrollHeight,behavior:"smooth"}); }
-    catch(e){ out.innerHTML=`<div class="text-red-600 text-sm">Gesamt-Feedback fehlgeschlagen (${String(e).replace(/[<>&]/g,"")}).</div>`; }
+    try{ const txt=await callAI({prompt: buildPromptAll(list)}); out.innerHTML=window.marked?marked.parse(txt):sanitize(txt); window.scrollTo({top:document.body.scrollHeight,behavior:"smooth"}); }
+    catch(e){ out.innerHTML=`<div class="text-red-600 text-sm">Gesamt-Feedback fehlgeschlagen (${sanitize(String(e))}).</div>`; }
     submitBtn.disabled=false; submitBtn.innerHTML=old; if(window.lucide) lucide.createIcons();
   });
 
@@ -626,7 +617,7 @@ ${list.map(a=>`Q (${a.ref}): ${a.question}\nAntwort: ${a.answer||"(leer)"}`).joi
   }
   function closeQL(){ qlBackdrop.classList.add("hidden"); qlModal.classList.add("hidden"); qlModal.classList.remove("flex"); }
   function renderQL(q){
-    const listSrc = ${/* keep list inline from LAW_INDEX to be used */""}LAW_INDEX;
+    const listSrc = LAW_INDEX;
     const query=(q||"").toLowerCase();
     const list = query
       ? listSrc.filter(x=> x.para.toLowerCase().includes(query) || x.law.toLowerCase().includes(query) || x.tags.some(t=>t.toLowerCase().includes(query)) )
@@ -646,15 +637,27 @@ ${list.map(a=>`Q (${a.ref}): ${a.question}\nAntwort: ${a.answer||"(leer)"}`).joi
   qlClose.addEventListener("click", closeQL);
   qlSearch.addEventListener("input", e=>renderQL(e.target.value));
 
-  /* ===== Autosave ===== */
-  function saveState(){ localStorage.setItem(STORAGE, JSON.stringify({domain,answersByRef,selectedByRef,accepted})); }
-  window.addEventListener("beforeunload", saveState);
+  /* ===== Autosave (Restore) ===== */
+  function saveState(){ localStorage.setItem(STORAGE, JSON.stringify({domain,answersByRef,selectedByRef,accepted,activeKey})); }
+  (function restore(){
+    try{
+      const s=JSON.parse(localStorage.getItem(STORAGE)||"{}");
+      domain=s.domain||"ausbildung";
+      answersByRef=s.answersByRef||{};
+      selectedByRef=s.selectedByRef||{};
+      accepted=!!s.accepted;
+      activeKey=s.activeKey||null;
+      if(accepted){ notice.style.display="none"; ack.checked=true; ackState.textContent="Hinweis bestätigt"; }
+    }catch{}
+  })();
 
-  /* ===== Init ===== */
-  renderTabs(); renderQuestions();
+  /* ===== Initial Render (wichtig!) ===== */
+  setDomButtons();
+  ensureActiveKey();
+  renderTabs(true);
+  renderQuestions();
 
-  /* ===== Linda (Smart Chat) – FIXED TOGGLE ===== */
-  function sanitize(t){ return (t||'').replace(/[<>&]/g, s=>({ '<':'&lt;','>':'&gt;','&':'&amp;' }[s])); }
+  /* ===== Linda (Smart Chat) – stabile Toggle-Logik ===== */
   function pushMsg(role, html){ const d=document.createElement('div'); d.className='l-msg '+(role==='me'?'me':'ai'); d.innerHTML=html; stream.appendChild(d); stream.scrollTop=stream.scrollHeight; }
 
   function setLinda(open){ lindaWrap.style.display = open ? "block" : "none"; }
@@ -694,7 +697,7 @@ ${list.map(a=>`Q (${a.ref}): ${a.question}\nAntwort: ${a.answer||"(leer)"}`).joi
   // Quick chips
   quickChips.querySelectorAll(".chip").forEach(c=> c.addEventListener("click", ()=> window.open(c.dataset.url, "_blank","noopener") ));
 
-  // Offline scoring
+  // Offline scoring / suggestions
   function score(query, text){
     query=query.toLowerCase(); text=text.toLowerCase();
     let s=0; const terms=query.split(/\s+/).filter(Boolean);
@@ -734,20 +737,7 @@ ${list.map(a=>`Q (${a.ref}): ${a.question}\nAntwort: ${a.answer||"(leer)"}`).joi
     closeAC();
   }
 
-  lInput.addEventListener('input', ()=>{
-    const q=lInput.value.trim();
-    if(!q){ closeAC(); return; }
-    const cand=offlineCandidates(q);
-    if(cand.length && cand[0].score>0.2) openAC(cand); else closeAC();
-  });
-  lInput.addEventListener('keydown', (e)=>{
-    if(!acOpen) return;
-    if(e.key==='ArrowDown'){ e.preventDefault(); acSel = Math.min(acSel+1, acData.length-1); renderAC(); }
-    if(e.key==='ArrowUp'){ e.preventDefault(); acSel = Math.max(acSel-1, 0); renderAC(); }
-    if(e.key==='Tab'){ e.preventDefault(); pickAC(acSel); }
-  });
-
-  async function sendLinda(){
+  const sendLinda = async ()=>{
     const q=lInput.value.trim(); if(!q) return;
     lInput.value=''; pushMsg('me', sanitize(q));
 
@@ -769,11 +759,11 @@ ${list.map(a=>`Q (${a.ref}): ${a.question}\nAntwort: ${a.answer||"(leer)"}`).joi
     }catch(e){
       pushMsg('ai', `<span class="text-red-600">API-Fehler: ${sanitize(String(e))}</span>`);
     }
-  }
+  };
   sendBtn.addEventListener('click', sendLinda);
   lInput.addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); sendLinda(); } });
 
-  /* ===== Export Quicklook helpers ===== */
+  /* ===== Open Quicklook helpers ===== */
   window.openQL = openQL;
 
 });
