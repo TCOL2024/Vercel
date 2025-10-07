@@ -235,8 +235,9 @@ document.addEventListener("DOMContentLoaded", () => {
   if(window.marked) marked.setOptions({breaks:true,gfm:true});
 
   /* ===== Config ===== */
-  const relay = "/api/linda-proxy";            // dein Proxy
-  const STORAGE = "BBIG_STATE_V5";
+  const relay = "/api/linda-proxy";            // gleicher Proxy wie KI-Check
+  const STORAGE = "BBIG_STATE_V6";
+  const CHAT_STORE = "BBIG_CHAT_V6";
   const MAX_ANSWER = 1500;
 
   /* ===== Refs ===== */
@@ -248,25 +249,20 @@ document.addEventListener("DOMContentLoaded", () => {
   const resetBtn = document.getElementById("resetBtn");
   const timerEl = document.getElementById("timer");
   const toastEl = document.getElementById("toast");
-
   const tabs = document.getElementById("tabs");
   const clusterSelect = document.getElementById("clusterSelect");
   const domAusb = document.getElementById("domAusb");
   const domSoz = document.getElementById("domSoz");
-
   const notice = document.getElementById("notice");
   const ack = document.getElementById("ack");
   const ackBtn = document.getElementById("ackBtn");
-
   const themeToggle = document.getElementById("themeToggle");
-
   const quickBtn = document.getElementById("quickBtn");
   const qlBackdrop = document.getElementById("qlBackdrop");
   const qlModal = document.getElementById("qlModal");
   const qlClose = document.getElementById("qlClose");
   const qlSearch = document.getElementById("qlSearch");
   const qlList = document.getElementById("qlList");
-
   // Linda
   const lindaBtn = document.getElementById("lindaBtn");
   const lindaPanel = document.getElementById("lindaPanel");
@@ -292,7 +288,7 @@ document.addEventListener("DOMContentLoaded", () => {
   ];
   const SOZ_CLUSTERS = [
     { key:"pflege", title:"Pflege (SGB XI)", icon:"heart-pulse", data:[
-      {ref:"P1 – Pflichtversicherung", q:"Wer ist in der sozialen Pflegeversicherung pflichtversichert und wo ist das geregelt?", tip:["GKV: automatisch; PKV: private Pflegepflichtversicherung; SGB XI."]},
+      {ref:"P1 – Pflichtversicherung", q:"Wer ist in der sozialen Pflegeversicherung pflichtversichert und wo ist das geregelt?", tip:["GKV: automatisch; PKV: Pflegepflichtversicherung; SGB XI."]},
       {ref:"P2 – Ambulant", q:"Nenne Pflegegeld und Pflegesachleistungen (2025) für PG 2–5 stichpunktartig.", tip:["PG2 347€/796€; PG3 599€/1497€; PG4 800€/1859€; PG5 990€/2299€ – Gesetz prüfen."]},
       {ref:"P3 – Stationär", q:"Welche monatlichen Leistungen gibt es bei vollstationärer Pflege (PG 2–5)?", tip:["PG2 1.061€; PG3 1.575€; PG4 2.111€; PG5 2.351€ – Gesetz prüfen."]}
     ]},
@@ -305,7 +301,6 @@ document.addEventListener("DOMContentLoaded", () => {
     {law:"BBiG", para:"§ 11 – Vertragsinhalte", tags:["vertrag","inhalte"], excerpt:"Parteien, Beginn/Dauer, Ziel/Berufsbezeichnung, sachliche/zeitliche Gliederung, Vergütung, Probezeit, Urlaub, Kündigung.", link:"https://www.gesetze-im-internet.de/bbig_2005/BBiG.pdf"},
     {law:"BBiG", para:"§ 15 – Freistellung", tags:["schule","prüfungen","wegezeit"], excerpt:"Freistellung für Berufsschule/Prüfungen; Wegezeiten Schule→Betrieb anrechnen.", link:"https://www.gesetze-im-internet.de/bbig_2005/BBiG.pdf"},
     {law:"BBiG", para:"§ 17 – Vergütung", tags:["miav","vergütung"], excerpt:"Angemessene Vergütung – Mindestausbildungsvergütung als Untergrenze.", link:"https://www.gesetze-im-internet.de/bbig_2005/BBiG.pdf"},
-    {law:"JArbSchG", para:"Arbeitszeit/Freizeit", tags:["jugendliche","ruhezeit"], excerpt:"Mindestruhezeit 12 Stunden; Schutzvorschriften.", link:"https://www.gesetze-im-internet.de/jarbschg/JArbSchG.pdf"},
     {law:"SGB III", para:"Arbeitsförderung", tags:["arbeitslosigkeit","alg"], excerpt:"ALG, Förderung Weiterbildung, Eingliederung.", link:"https://www.gesetze-im-internet.de/sgb_3/"},
     {law:"SGB VI", para:"Rentenversicherung", tags:["rente"], excerpt:"Rentenarten; Reha vor Rente.", link:"https://www.gesetze-im-internet.de/sgb_6/"},
     {law:"SGB XI", para:"Pflegeversicherung", tags:["pflege"], excerpt:"Leistungen ambulant/stationär nach Pflegegrad.", link:"https://www.gesetze-im-internet.de/sgb_11/"},
@@ -315,14 +310,15 @@ document.addEventListener("DOMContentLoaded", () => {
   ];
 
   /* ===== State ===== */
-  let domain="ausbildung"; // ausbildung | sozialrecht
+  let domain="ausbildung";
   let answersByRef={}, selectedByRef={};
   let accepted=false;
   let activeKey=null;
 
   /* ===== Helpers ===== */
   const sanitize=(t)=> (t||'').replace(/[<>&]/g,s=>({ '<':'&lt;','>':'&gt;','&':'&amp;' }[s]));
-  function toast(m){ toastEl.textContent=m; toastEl.style.display="block"; clearTimeout(toast._t); toast._t=setTimeout(()=>toastEl.style.display="none",2200); }
+  function toast(m){ const el=document.getElementById("toast"); el.textContent=m; el.style.display="block"; clearTimeout(toast._t); toast._t=setTimeout(()=>el.style.display="none",2200); }
+  async function callAI(payload,{timeoutMs=22000}={}){ const res=await Promise.race([fetch(relay,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)}),new Promise((_,rej)=>setTimeout(()=>rej(new Error("Timeout")),timeoutMs))]); if(!res.ok) throw new Error("API "+res.status); const t=await res.text(); try{const j=JSON.parse(t); return j.answer||j.content||j.result||t;}catch{return t;} }
 
   /* Theme */
   function setThemeIcon(){ themeToggle.innerHTML=document.documentElement.classList.contains("dark")?'<i data-lucide="sun" class="w-4 h-4"></i>':'<i data-lucide="moon" class="w-4 h-4"></i>'; if(window.lucide) lucide.createIcons(); }
@@ -337,7 +333,7 @@ document.addEventListener("DOMContentLoaded", () => {
   ackBtn.addEventListener("click",()=>{ if(!ack.checked){toast("Bitte zuerst den Hinweis bestätigen.");return;} accepted=true; notice.style.display="none"; saveState(); renderTabs(true); renderQuestions(); });
 
   /* Domain/Tabs */
-  function setDomButtons(){ document.getElementById("domAusb").setAttribute("aria-pressed",domain==="ausbildung"); document.getElementById("domSoz").setAttribute("aria-pressed",domain==="sozialrecht"); }
+  function setDomButtons(){ domAusb.setAttribute("aria-pressed",domain==="ausbildung"); domSoz.setAttribute("aria-pressed",domain==="sozialrecht"); }
   function getClusters(){ return domain==="ausbildung"?AUS_CLUSTERS:SOZ_CLUSTERS; }
   domAusb.addEventListener("click",()=>{domain="ausbildung";setDomButtons();ensureActiveKey();renderTabs(true);renderQuestions();saveState();});
   domSoz.addEventListener("click",()=>{domain="sozialrecht";setDomButtons();ensureActiveKey();renderTabs(true);renderQuestions();saveState();});
@@ -432,7 +428,6 @@ Antwort TN: ${answer||"(leer)"}`.trim();
     return `Beurteile **wohlwollend** mehrere Kurzantworten. Wenn die Soll-Anzahl erfüllt ist, schreibe **"passt"** und ergänze nur optional.
 ${list.map(a=>`Q (${a.ref}): ${a.question}\nAntwort: ${a.answer||"(leer)"}`).join("\n\n")}`.trim();
   }
-  async function callAI(payload,{timeoutMs=22000}={}){ const res=await Promise.race([fetch(relay,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)}),new Promise((_,rej)=>setTimeout(()=>rej(new Error("Timeout")),timeoutMs))]); if(!res.ok) throw new Error("API "+res.status); const t=await res.text(); try{const j=JSON.parse(t); return j.answer||j.content||j.result||t;}catch{return t;} }
 
   /* Submit/Reset */
   submitBtn.addEventListener("click", async ()=>{
@@ -462,27 +457,39 @@ ${list.map(a=>`Q (${a.ref}): ${a.question}\nAntwort: ${a.answer||"(leer)"}`).joi
   /* Initial render */
   setDomButtons(); ensureActiveKey(); renderTabs(true); renderQuestions();
 
-  /* ===== Linda – dialogfähiger Chat (messages-Format) ===== */
-  const SYSTEM_PROMPT = "Du bist Linda, eine freundliche, präzise Lernassistentin (deutsch). Antworte kurz, klar, wohlwollend; nenne einschlägige §§, aber keine Rechtsberatung. Wenn die Antwort des Nutzers schon passt, sage das und ergänze nur optional. Stelle maximal eine Rückfrage, wenn nötig.";
-  const CHAT_STORE = "BBIG_CHAT_V5";
-  let convo = []; try{convo=JSON.parse(localStorage.getItem(CHAT_STORE)||"[]");}catch{}
+  /* ===== Linda – dialogfähig über PROMPT (kompatibel mit deinem Proxy) ===== */
+  const SYSTEM = "Du bist Linda, eine freundliche, präzise Lernassistentin (deutsch). Antworte kurz, klar, wohlwollend; nenne einschlägige §§, aber keine Rechtsberatung. Wenn die Nutzerantwort bereits passt, schreibe 'passt' und ergänze nur optional. Stelle höchstens eine Rückfrage, wenn nötig.";
+  let convo=[]; try{convo=JSON.parse(localStorage.getItem(CHAT_STORE)||"[]");}catch{}
   function saveChat(){ localStorage.setItem(CHAT_STORE, JSON.stringify(convo)); }
   function push(role,html){ const d=document.createElement("div"); d.className="bubble "+(role==="user"?"me":"ai"); d.innerHTML=html; lStream.appendChild(d); lStream.scrollTop=lStream.scrollHeight; }
   function renderHistory(){ lStream.innerHTML=""; if(convo.length===0){ push("assistant","Hallo, ich bin <strong>Linda</strong> 🤝<br>Frag mich zu Ausbildung (BBiG/JArbSchG) oder Sozialrecht (SGB)."); } else { convo.forEach(m=>push(m.role,window.marked?marked.parse(m.content):sanitize(m.content))); } }
   renderHistory();
 
+  function buildLindaPrompt(history, userMsg){
+    const lines=[];
+    lines.push(SYSTEM);
+    lines.push("");
+    lines.push("Dialogverlauf:");
+    history.forEach(m=>{ lines.push(`${m.role==="user"?"Nutzer":"Linda"}: ${m.content}`); });
+    lines.push(`Nutzer: ${userMsg}`);
+    lines.push("");
+    lines.push("Aufgabe: Antworte knapp und konkret (max. ~6 Sätze), mit §§ wenn sinnvoll. Keine erneute Begrüßung. Wenn unklar, eine kurze Rückfrage stellen.");
+    return lines.join("\n");
+  }
+
   async function sendLinda(){
     const q=lInput.value.trim(); if(!q) return;
     lInput.value=""; push("user",sanitize(q)); convo.push({role:"user",content:q}); saveChat();
     const thinking=document.createElement("div"); thinking.className="bubble ai"; thinking.innerHTML='<span class="text-slate-500">… schreibe Antwort …</span>'; lStream.appendChild(thinking); lStream.scrollTop=lStream.scrollHeight;
-    const messages=[{role:"system",content:SYSTEM_PROMPT}, ...convo];
+
+    const prompt = buildLindaPrompt(convo.filter(m=>m.role!=="assistant"||m.content.trim()!==""), q);
     try{
-      const res=await fetch(relay,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({messages,temperature:0.2})});
-      const text=await res.text(); let out=text;
-      try{const j=JSON.parse(text); if(j?.choices?.[0]?.message?.content) out=j.choices[0].message.content; else if(j?.message?.content) out=j.message.content; else if(j.answer||j.content||j.result) out=j.answer||j.content||j.result;}catch{}
+      const out=await callAI({prompt});
       thinking.remove();
-      if(!out || out.trim().toLowerCase()===q.trim().toLowerCase()) out="Ich habe dich verstanden – worum geht es konkret (Thema/Ziel)?";
-      const display=window.marked?marked.parse(out):sanitize(out); push("assistant",display); convo.push({role:"assistant",content:out}); saveChat();
+      const safe=(out||"").trim();
+      const dedup = (safe && convo.length>1 && safe.toLowerCase()===convo[convo.length-1].content.toLowerCase()) ? "Ich habe dich verstanden – magst du dein Ziel oder den Kontext kurz präzisieren?" : safe;
+      const display=window.marked?marked.parse(dedup):sanitize(dedup);
+      push("assistant",display); convo.push({role:"assistant",content:dedup}); saveChat();
     }catch(e){ thinking.innerHTML=`<span class="text-red-600">API-Fehler: ${sanitize(String(e))}</span>`; }
   }
   sendBtn.addEventListener("click",sendLinda);
@@ -491,8 +498,8 @@ ${list.map(a=>`Q (${a.ref}): ${a.question}\nAntwort: ${a.answer||"(leer)"}`).joi
 
   // open/close + drag + resize
   function setLinda(open){ lindaPanel.style.display=open?"block":"none"; }
-  document.getElementById("lindaBtn").addEventListener("click",()=>setLinda(lindaPanel.style.display!=="block"));
-  document.getElementById("closeLinda").addEventListener("click",()=>setLinda(false));
+  lindaBtn.addEventListener("click",()=>setLinda(lindaPanel.style.display!=="block"));
+  closeLinda.addEventListener("click",()=>setLinda(false));
   window.addEventListener("keydown",e=>{ if(e.key==="Escape") setLinda(false); });
   (function enableDrag(){ let d=false,sx=0,sy=0,sl=0,st=0;
     dragBar.addEventListener("mousedown",e=>{d=true;sx=e.clientX;sy=e.clientY;const r=lindaPanel.getBoundingClientRect();sl=r.left;st=r.top;document.body.style.userSelect="none";});
@@ -505,9 +512,12 @@ ${list.map(a=>`Q (${a.ref}): ${a.question}\nAntwort: ${a.answer||"(leer)"}`).joi
     window.addEventListener("mouseup",()=>{is=false;});
   })();
 
-  /* Quicklook triggers */
+  /* Quicklook live-Suche */
+  function openQL(seed=""){ qlBackdrop.classList.remove("hidden"); qlModal.classList.remove("hidden"); qlModal.classList.add("flex"); qlSearch.value=seed; renderQL(seed); qlSearch.focus(); }
+  function closeQL(){ qlBackdrop.classList.add("hidden"); qlModal.classList.add("hidden"); qlModal.classList.remove("flex"); }
   function renderQL(q){ const query=(q||"").toLowerCase(); const list=query?LAW_INDEX.filter(x=>x.para.toLowerCase().includes(query)||x.law.toLowerCase().includes(query)||x.tags.some(t=>t.toLowerCase().includes(query))):LAW_INDEX;
     qlList.innerHTML=list.map(x=>`<div class="p-3 rounded-xl border hover:bg-slate-50 dark:hover:bg-slate-800"><div class="flex items-center justify-between"><div class="font-semibold">${x.law} ${x.para}</div><a class="btn btn-sm" href="${x.link}" target="_blank" rel="noopener">zur Quelle</a></div><div class="mt-1">${sanitize(x.excerpt)}</div></div>`).join(""); }
+  quickBtn.addEventListener("click",()=>openQL("")); qlBackdrop.addEventListener("click",closeQL); qlClose.addEventListener("click",closeQL); qlSearch.addEventListener("input",e=>renderQL(e.target.value));
 });
 </script>
 </body>
