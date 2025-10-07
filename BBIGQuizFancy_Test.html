@@ -4,840 +4,287 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
-  <title>BBiG-Quiz – Professional Edition</title>
+  <title>BBiG-Quiz – metafinanz Cluster Edition</title>
 
-  <!-- External Dependencies -->
+  <!-- External -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script defer src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
 
   <style>
+    /* ===== metafinanz Design (Amazon-Nova inspiriert) ===== */
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+    :root{
+      --mf-primary:#005EB8; --mf-primary-dark:#004A93; --mf-secondary:#00A0E3;
+      --accent:#FF9900; --accent-hover:#EC7211;
+      --success:#00D4AA; --warn:#FFA726; --danger:#E53935;
 
-    :root {
-      /* metafinanz.de Professional Color Scheme */
-      --mf-primary: #005EB8;
-      --mf-primary-dark: #004A93;
-      --mf-primary-light: #1976D2;
-      --mf-secondary: #00A0E3;
-      --mf-accent: #FF9900;
-      --mf-accent-hover: #EC7211;
-      --mf-success: #00D4AA;
-      --mf-warning: #FFA726;
-      --mf-error: #E53935;
-      
-      --surface: #FFFFFF;
-      --surface-alt: #F7F8F8;
-      --surface-hover: #EBEEF0;
-      --text: #0F1111;
-      --text-muted: #565959;
-      --text-light: #6F7373;
-      --border: #D5D9D9;
-      --border-focus: #005EB8;
-      
-      --radius: 4px;
-      --radius-lg: 8px;
-      --shadow-xs: 0 1px 2px rgba(15,17,17,.04);
-      --shadow-sm: 0 1px 3px rgba(15,17,17,.08);
-      --shadow-md: 0 2px 8px rgba(15,17,17,.12);
-      --shadow-lg: 0 4px 16px rgba(15,17,17,.16);
+      --surface:#FFFFFF; --surface-2:#F7F8F8; --surface-hover:#EBEEF0;
+      --ink:#0F1111; --muted:#565959; --border:#D5D9D9; --focus:#005EB8;
+
+      --radius:10px; --radius-pill:999px;
+      --shadow-xs:0 1px 2px rgba(15,17,17,.06);
+      --shadow-sm:0 1px 6px rgba(15,17,17,.08);
+      --shadow-md:0 2px 10px rgba(15,17,17,.12);
     }
-    
-    html.dark {
-      --surface: #131A22;
-      --surface-alt: #1C2531;
-      --surface-hover: #232F3E;
-      --text: #FFFFFF;
-      --text-muted: #AAB7B8;
-      --text-light: #CCCCCC;
-      --border: #3A4553;
-      --border-focus: #FF9900;
+    html.dark{
+      --surface:#131A22; --surface-2:#1C2531; --surface-hover:#232F3E;
+      --ink:#FFFFFF; --muted:#AAB7B8; --border:#3A4553; --focus:#FF9900;
     }
-    
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
-    
-    html, body {
-      font-size: 14px;
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      -webkit-font-smoothing: antialiased;
-      -moz-osx-font-smoothing: grayscale;
-      line-height: 1.5;
-    }
-    
-    body {
-      background: var(--surface-alt);
-      color: var(--text);
-      transition: background 0.2s ease, color 0.2s ease;
-    }
-    
-    .container {
-      max-width: 1280px;
-      margin: 0 auto;
-      padding: 0 16px;
-    }
-    
-    /* Cards */
-    .card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      transition: all 0.15s ease;
-    }
-    
-    .card:hover {
-      border-color: var(--border-focus);
-      box-shadow: var(--shadow-sm);
-    }
-    
-    .card-elevated {
-      box-shadow: var(--shadow-sm);
-    }
-    
-    /* Buttons */
-    .btn {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      padding: 8px 16px;
-      font-size: 13px;
-      font-weight: 600;
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      background: var(--surface);
-      color: var(--text);
-      cursor: pointer;
-      transition: all 0.15s ease;
-      white-space: nowrap;
-      text-decoration: none;
-    }
-    
-    .btn:hover:not(:disabled) {
-      background: var(--surface-hover);
-      border-color: var(--text-muted);
-    }
-    
-    .btn:active:not(:disabled) {
-      transform: scale(0.98);
-    }
-    
-    .btn:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-    }
-    
-    .btn-primary {
-      background: var(--mf-accent);
-      border-color: var(--mf-accent);
-      color: #111;
-      font-weight: 700;
-    }
-    
-    .btn-primary:hover:not(:disabled) {
-      background: var(--mf-accent-hover);
-      border-color: var(--mf-accent-hover);
-    }
-    
-    .btn-blue {
-      background: var(--mf-primary);
-      border-color: var(--mf-primary);
-      color: #fff;
-      font-weight: 700;
-    }
-    
-    .btn-blue:hover:not(:disabled) {
-      background: var(--mf-primary-dark);
-      border-color: var(--mf-primary-dark);
-    }
-    
-    .btn-ghost {
-      background: transparent;
-      border: none;
-    }
-    
-    .btn-ghost:hover:not(:disabled) {
-      background: var(--surface-hover);
-    }
-    
-    .btn-sm {
-      padding: 6px 12px;
-      font-size: 12px;
-    }
-    
-    .btn-lg {
-      padding: 12px 24px;
-      font-size: 14px;
-    }
-    
-    /* Badge */
-    .badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      padding: 4px 12px;
-      font-size: 11px;
-      font-weight: 700;
-      border-radius: 12px;
-      background: var(--surface-alt);
-      color: var(--text-muted);
-      border: 1px solid var(--border);
-      letter-spacing: 0.3px;
-      text-transform: uppercase;
-    }
-    
-    .badge-primary {
-      background: #E7F1FF;
-      color: var(--mf-primary);
-      border-color: #B3D9FF;
-    }
-    
-    .badge-success {
-      background: #E8F5E9;
-      color: var(--mf-success);
-      border-color: #A5D6A7;
-    }
-    
-    .badge-warning {
-      background: #FFF3E0;
-      color: var(--mf-warning);
-      border-color: #FFB74D;
-    }
-    
-    /* Progress Bar */
-    .progress-outer {
-      height: 8px;
-      border-radius: 4px;
-      background: var(--surface-alt);
-      overflow: hidden;
-      border: 1px solid var(--border);
-    }
-    
-    .progress-inner {
-      height: 100%;
-      background: linear-gradient(90deg, var(--mf-primary), var(--mf-secondary));
-      transition: width 0.3s ease;
-      box-shadow: 0 0 8px rgba(0, 94, 184, 0.3);
-    }
-    
-    /* Input Styles */
-    input[type="text"],
-    input[type="search"],
-    input[type="checkbox"],
-    textarea,
-    select {
-      font-family: inherit;
-      font-size: 13px;
-    }
-    
-    input[type="text"],
-    input[type="search"],
-    textarea,
-    select {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      color: var(--text);
-      border-radius: var(--radius);
-      transition: all 0.15s ease;
-      padding: 8px 12px;
-      width: 100%;
-    }
-    
-    input:focus,
-    textarea:focus,
-    select:focus {
-      outline: none;
-      border-color: var(--border-focus);
-      box-shadow: 0 0 0 3px rgba(0, 94, 184, 0.1);
-    }
-    
-    textarea {
-      resize: vertical;
-      min-height: 80px;
-    }
-    
-    /* Typography */
-    h1, h2, h3, h4, h5, h6 {
-      font-weight: 700;
-      color: var(--text);
-      line-height: 1.2;
-    }
-    
-    h1 { font-size: 28px; }
-    h2 { font-size: 21px; }
-    h3 { font-size: 17px; }
-    
-    /* Header */
-    .app-header {
-      background: var(--surface);
-      border-bottom: 1px solid var(--border);
-      padding: 16px 0;
-      position: sticky;
-      top: 0;
-      z-index: 100;
-      backdrop-filter: blur(8px);
-    }
-    
-    /* Notice Banner */
-    .notice {
-      background: #FFF8DC;
-      border-bottom: 1px solid #F0E68C;
-      padding: 12px 0;
-    }
-    
-    html.dark .notice {
-      background: #2C2416;
-      border-bottom: 1px solid #4A3C1E;
-    }
-    
-    /* Modal */
-    .modal-backdrop {
-      position: fixed;
-      inset: 0;
-      background: rgba(0, 0, 0, 0.5);
-      backdrop-filter: blur(4px);
-      display: none;
-      z-index: 998;
-      animation: fadeIn 0.2s ease;
-    }
-    
-    .modal {
-      position: fixed;
-      inset: 0;
-      display: none;
-      align-items: center;
-      justify-content: center;
-      padding: 16px;
-      z-index: 999;
-    }
-    
-    .modal.open,
-    .modal-backdrop.open {
-      display: flex;
-    }
-    
-    .modal-panel {
-      width: 100%;
-      max-width: 800px;
-      max-height: 90vh;
-      overflow-y: auto;
-      animation: slideUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-    }
-    
-    @keyframes fadeIn {
-      from { opacity: 0; }
-      to { opacity: 1; }
-    }
-    
-    @keyframes slideUp {
-      from { transform: translateY(20px); opacity: 0; }
-      to { transform: translateY(0); opacity: 1; }
-    }
-    
+    html,body{ font-family:Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; font-size:14px; line-height:1.5; background:var(--surface-2); color:var(--ink) }
+    .container{ max-width:1120px; margin-inline:auto; padding-inline:16px }
+
+    .card{ background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); box-shadow:var(--shadow-sm) }
+    .btn{ display:inline-flex; align-items:center; gap:8px; padding:8px 14px; border-radius:8px; border:1px solid var(--border); background:var(--surface); color:var(--ink); font-weight:600; cursor:pointer; transition:.15s }
+    .btn:hover{ background:var(--surface-hover) }
+    .btn:focus-visible{ outline:3px solid color-mix(in oklab, var(--focus) 35%, transparent); outline-offset:2px }
+    .btn-primary{ background:var(--accent); border-color:var(--accent); color:#111 }
+    .btn-primary:hover{ background:var(--accent-hover); border-color:var(--accent-hover) }
+    .btn-blue{ background:var(--mf-primary); border-color:var(--mf-primary); color:#fff }
+    .btn-blue:hover{ background:var(--mf-primary-dark) }
+    .btn-ghost{ background:transparent; border-color:transparent }
+    .btn-sm{ padding:6px 10px; font-size:12px }
+    .btn-lg{ padding:12px 16px; font-size:14px; border-radius:12px }
+
+    .badge{ display:inline-flex; align-items:center; gap:6px; padding:4px 10px; border:1px solid var(--border); border-radius:12px; background:var(--surface-2); color:var(--muted); font-size:11px; font-weight:700; letter-spacing:.2px }
+    .badge-primary{ background:#E7F1FF; color:var(--mf-primary); border-color:#B3D9FF }
+
+    .progress-outer{ height:8px; border-radius:4px; background:var(--surface-2); overflow:hidden; border:1px solid var(--border) }
+    .progress-inner{ height:100%; width:0%; background:linear-gradient(90deg, var(--mf-primary), var(--mf-secondary)); transition:width .3s; box-shadow:0 0 8px rgba(0,94,184,.3) }
+
+    .app-header{ position:sticky; top:0; z-index:40; backdrop-filter:blur(8px); background:color-mix(in srgb, var(--surface) 88%, transparent); border-bottom:1px solid var(--border) }
+
+    /* Notice (blau, klar) */
+    .notice{ background:linear-gradient(135deg, #E7F1FF, #E0F2FF); border-bottom:1px solid #B3D9FF }
+    .notice .chip{ font-size:12px; padding:4px 10px; border-radius:999px; border:1px solid #B3D9FF; background:#F2F8FF; color:#0A3A66 }
+
+    /* Tabs → Cluster */
+    .tabs{ display:flex; gap:.5rem; overflow:auto; scrollbar-width:none }
+    .tabs::-webkit-scrollbar{ display:none }
+    .tab{ padding:.55rem .85rem; border:1px solid var(--border); border-radius:var(--radius-pill); background:#fff; white-space:nowrap; display:flex; align-items:center; gap:.45rem; font-weight:700; }
+    .tab[aria-selected="true"]{ background:#ECF6FF; border-color:#B3D9FF; color:#0A3A66 }
+    .tab i{ width:18px; height:18px }
+    #clusterSelect{ display:none }
+    @media (max-width: 720px){ .tabs{ display:none } #clusterSelect{ display:block } }
+
+    /* Question card */
+    .q-card{ position:relative; padding:16px }
+    .bookmark{ position:absolute; top:12px; right:12px; width:34px; height:34px; border-radius:50%; display:grid; place-items:center; background:var(--surface); border:1px solid var(--border); box-shadow:var(--shadow-xs) }
+    .bookmark.active{ background:var(--accent); border-color:var(--accent) }
+    .tip{ margin-top:.5rem; background:#F0F8FF; border-left:3px solid var(--mf-primary); padding:.75rem .85rem; border-radius:10px }
+    html.dark .tip{ background:rgba(0,94,184,.15) }
+
+    /* Modal base */
+    .modal-backdrop{ position:fixed; inset:0; background:rgba(0,0,0,.5); backdrop-filter:blur(4px); display:none; z-index:98 }
+    .modal{ position:fixed; inset:0; display:none; align-items:center; justify-content:center; padding:16px; z-index:99 }
+    .modal.open, .modal-backdrop.open{ display:flex }
+    .panel{ width:100%; max-width:860px; max-height:90vh; overflow:auto; border-radius:12px }
+
     /* Toast */
-    .toast {
-      position: fixed;
-      bottom: 24px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: var(--surface);
-      color: var(--text);
-      padding: 12px 24px;
-      border-radius: var(--radius);
-      border: 1px solid var(--border);
-      box-shadow: var(--shadow-lg);
-      z-index: 9999;
-      font-size: 13px;
-      font-weight: 600;
-      display: none;
-      animation: slideUp 0.3s ease;
-    }
-    
-    /* Command Palette */
-    .command-palette {
-      width: 600px;
-      max-width: 90vw;
-    }
-    
-    .command-item {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      padding: 12px 16px;
-      border-radius: var(--radius);
-      cursor: pointer;
-      transition: all 0.15s ease;
-    }
-    
-    .command-item:hover {
-      background: var(--surface-hover);
-    }
-    
-    .command-item.active {
-      background: var(--mf-primary);
-      color: white;
-    }
-    
-    .command-kbd {
-      display: inline-flex;
-      align-items: center;
-      padding: 2px 6px;
-      font-size: 11px;
-      font-weight: 600;
-      background: var(--surface-alt);
-      border: 1px solid var(--border);
-      border-radius: 3px;
-      margin-left: auto;
-      font-family: monospace;
-    }
-    
-    /* Bookmark */
-    .bookmark-btn {
-      position: absolute;
-      top: 16px;
-      right: 16px;
-      width: 32px;
-      height: 32px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      border-radius: 50%;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      cursor: pointer;
-      transition: all 0.15s ease;
-      z-index: 10;
-    }
-    
-    .bookmark-btn:hover {
-      background: var(--mf-accent);
-      border-color: var(--mf-accent);
-      transform: scale(1.1);
-    }
-    
-    .bookmark-btn.active {
-      background: var(--mf-accent);
-      border-color: var(--mf-accent);
-    }
-    
-    .bookmark-btn.active svg {
-      fill: #111;
-    }
-    
-    /* Question Card */
-    .question-card {
-      position: relative;
-      padding: 24px;
-      margin-bottom: 16px;
-    }
-    
-    /* Status Dot */
-    .status-dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      display: inline-block;
-    }
-    
-    .status-online {
-      background: var(--mf-success);
-      animation: pulse 2s infinite;
-    }
-    
-    .status-offline {
-      background: var(--mf-error);
-    }
-    
-    @keyframes pulse {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.5; }
-    }
-    
-    /* Chart */
-    .chart-container {
-      position: relative;
-      height: 280px;
-      margin: 16px 0;
-    }
-    
-    /* Rubric */
-    .rubric {
-      background: var(--surface-alt);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 12px;
-      margin-top: 12px;
-    }
-    
-    .rubric-bar {
-      height: 6px;
-      background: var(--surface-alt);
-      border-radius: 3px;
-      overflow: hidden;
-      border: 1px solid var(--border);
-    }
-    
-    .rubric-fill {
-      height: 100%;
-      background: var(--mf-primary);
-      transition: width 0.4s ease;
-      box-shadow: 0 0 6px rgba(0, 94, 184, 0.4);
-    }
-    
-    /* Tip */
-    .tip {
-      background: #F0F8FF;
-      border-left: 3px solid var(--mf-primary);
-      padding: 12px;
-      border-radius: var(--radius);
-      font-size: 12px;
-      margin-top: 12px;
-    }
-    
-    html.dark .tip {
-      background: rgba(0, 94, 184, 0.1);
-    }
-    
-    /* Feedback */
-    .feedback-wrap {
-      background: #E7F1FF;
-      border: 1px solid #B3D9FF;
-      border-radius: var(--radius);
-      padding: 12px;
-      margin-top: 12px;
-    }
-    
-    html.dark .feedback-wrap {
-      background: rgba(0, 94, 184, 0.15);
-      border-color: rgba(0, 94, 184, 0.3);
-    }
-    
-    /* Scrollbar */
-    ::-webkit-scrollbar {
-      width: 8px;
-      height: 8px;
-    }
-    
-    ::-webkit-scrollbar-track {
-      background: var(--surface-alt);
-    }
-    
-    ::-webkit-scrollbar-thumb {
-      background: var(--border);
-      border-radius: 4px;
-    }
-    
-    ::-webkit-scrollbar-thumb:hover {
-      background: var(--text-muted);
-    }
-    
-    /* Prose */
-    .prose {
-      color: var(--text);
-      line-height: 1.6;
-    }
-    
-    .prose p {
-      margin-bottom: 12px;
-    }
-    
-    .prose ul,
-    .prose ol {
-      margin-left: 24px;
-      margin-bottom: 12px;
-    }
-    
-    .prose strong {
-      font-weight: 700;
-      color: var(--mf-primary);
-    }
-    
-    .prose code {
-      background: var(--surface-alt);
-      padding: 2px 6px;
-      border-radius: 3px;
-      font-size: 12px;
-      border: 1px solid var(--border);
-    }
-    
-    /* Utilities */
-    .sr-only {
-      position: absolute;
-      width: 1px;
-      height: 1px;
-      padding: 0;
-      margin: -1px;
-      overflow: hidden;
-      clip: rect(0, 0, 0, 0);
-      white-space: nowrap;
-      border-width: 0;
-    }
-    
-    .hidden {
-      display: none !important;
-    }
-    
-    /* Loading Animation */
-    @keyframes spin {
-      from { transform: rotate(0deg); }
-      to { transform: rotate(360deg); }
-    }
-    
-    .animate-spin {
-      animation: spin 1s linear infinite;
-    }
-    
+    #toast{ position:fixed; left:50%; bottom:18px; transform:translateX(-50%); background:#111827; color:#fff; padding:10px 14px; border-radius:10px; font-size:14px; z-index:100; display:none }
+
+    /* Footer (Arial 10) */
+    footer.app-footer{ font-family:Arial, Helvetica, sans-serif; font-size:10px; line-height:1.4; color:#4b5563; background:#eef2f6; border-top:1px solid var(--border) }
+
     /* Print */
-    @media print {
-      .app-header,
-      .notice,
-      .bookmark-btn,
-      button,
-      .modal {
-        display: none !important;
-      }
-      body {
-        background: white;
-      }
-      .card {
-        border: 1px solid #ddd;
-        box-shadow: none;
-      }
+    @media print{
+      .app-header, .notice, .sticky-actions, .bookmark, .modal, .fab{ display:none !important }
+      .card{ box-shadow:none !important; border:1px solid #ddd }
     }
   </style>
 </head>
 <body>
 
-  <!-- Notice Banner -->
+  <!-- Notice -->
   <aside id="notice" class="notice">
-    <div class="container">
-      <div style="display: flex; align-items: start; gap: 12px; font-size: 13px;">
-        <i data-lucide="shield-check" style="width: 20px; height: 20px; flex-shrink: 0; color: #856404;"></i>
-        <div style="flex: 1;">
-          <p style="font-weight: 700; color: #856404; margin-bottom: 4px;">Fachlicher Hinweis (Pilot)</p>
-          <p style="color: #856404;">
-            Die KI-Prüfung unterstützt beim Lernen. Ergebnisse müssen fachlich geprüft werden.
-            <strong>Es dürfen keine personenbezogenen oder sensiblen Daten eingegeben werden.</strong>
-          </p>
-          <label style="display: flex; align-items: center; gap: 8px; margin-top: 8px; cursor: pointer;">
-            <input id="ack" type="checkbox" style="width: 16px; height: 16px; cursor: pointer;" />
-            <span style="color: #856404; font-weight: 600;">Ich habe den Hinweis gelesen und akzeptiert.</span>
-          </label>
-        </div>
-        <div style="display: flex; align-items: center; gap: 8px;">
-          <span class="badge badge-warning">
-            <span class="status-dot status-online"></span>
-            <span id="apiStatusText">API: Online</span>
-          </span>
-          <button id="ackBtn" type="button" class="btn btn-primary btn-sm">
-            <i data-lucide="check" style="width: 16px; height: 16px;"></i> Weiter
-          </button>
-        </div>
+    <div class="container px-4 py-3 flex items-start gap-3">
+      <div class="w-10 h-10 rounded-lg bg-[#E7F1FF] grid place-items-center">
+        <i data-lucide="shield-check" class="w-6 h-6 text-[#005EB8]"></i>
+      </div>
+      <div class="text-sm leading-snug">
+        <p class="font-semibold text-[#0A3A66]">Fachlicher Hinweis (Pilot)</p>
+        <p class="text-[#0A3A66]">
+          Die KI-Prüfung unterstützt beim Lernen. Ergebnisse sind zu prüfen; keine Rechtsberatung.
+          <strong>Keine personenbezogenen/sensiblen Daten eingeben oder erfassen.</strong>
+        </p>
+        <label class="mt-2 inline-flex items-center gap-2">
+          <input id="ack" type="checkbox" class="w-4 h-4 accent-[#005EB8]">
+          <span class="text-[#0A3A66]">Ich habe den Hinweis gelesen.</span>
+        </label>
+      </div>
+      <div class="ml-auto flex items-center gap-2">
+        <a class="btn btn-sm" href="https://www.gesetze-im-internet.de/bbig_2005/BBiG.pdf" target="_blank" rel="noopener">
+          <i data-lucide="book-open" class="w-4 h-4"></i> BBiG
+        </a>
+        <a class="btn btn-sm" href="https://www.gesetze-im-internet.de/jarbschg/JArbSchG.pdf" target="_blank" rel="noopener">
+          <i data-lucide="shield" class="w-4 h-4"></i> JArbSchG
+        </a>
+        <span id="ackState" class="chip badge">Hinweis offen</span>
+        <button id="ackBtn" type="button" class="btn btn-blue btn-sm">
+          <i data-lucide="check" class="w-4 h-4"></i> Weiter
+        </button>
       </div>
     </div>
   </aside>
 
   <!-- Header -->
   <header class="app-header">
-    <div class="container">
-      <div style="display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;">
-        <div style="display: flex; align-items: center; gap: 12px;">
-          <div style="width: 40px; height: 40px; border-radius: 4px; background: linear-gradient(135deg, var(--mf-primary), var(--mf-primary-dark)); display: flex; align-items: center; justify-content: center; box-shadow: var(--shadow-sm);">
-            <i data-lucide="graduation-cap" style="width: 24px; height: 24px; color: white;"></i>
-          </div>
-          <div>
-            <h1 style="font-size: 20px; font-weight: 700; margin-bottom: 2px;">BBiG-Quiz Professional</h1>
-            <p style="font-size: 11px; color: var(--text-muted); font-weight: 500;">20 Kernfragen • KI-Feedback • §-Quicklook</p>
-          </div>
+    <div class="container px-4 py-3 flex flex-wrap items-center gap-3 justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-md bg-gradient-to-br from-[#005EB8] to-[#004A93] grid place-items-center shadow">
+          <i data-lucide="graduation-cap" class="w-5 h-5 text-white"></i>
         </div>
-        
-        <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-          <button id="commandBtn" type="button" class="btn btn-sm" title="Befehle (Ctrl+K)">
-            <i data-lucide="command" style="width: 16px; height: 16px;"></i>
-          </button>
-          <button id="bookmarksBtn" type="button" class="btn btn-sm" title="Markierte Fragen">
-            <i data-lucide="bookmark" style="width: 16px; height: 16px;"></i>
-            <span id="bookmarkCount" class="badge badge-primary" style="display:none; margin-left: -4px;">0</span>
-          </button>
-          <button id="historyBtn" type="button" class="btn btn-sm" title="Historie">
-            <i data-lucide="history" style="width: 16px; height: 16px;"></i>
-          </button>
-          <button id="quickBtn" type="button" class="btn btn-blue btn-sm">
-            <i data-lucide="search" style="width: 16px; height: 16px;"></i> §-Quicklook
-          </button>
-          <button id="themeToggle" type="button" class="btn btn-ghost btn-sm" title="Theme wechseln">
-            <i data-lucide="moon" style="width: 16px; height: 16px;"></i>
-          </button>
+        <div>
+          <h1 class="text-lg sm:text-xl font-semibold">BBiG-Quiz – metafinanz Cluster</h1>
+          <p class="text-xs text-slate-500">Cluster • wohlwollendes KI-Feedback • Quicklook • Bookmarks • Autosave</p>
         </div>
+      </div>
+      <div class="flex items-center gap-2">
+        <button id="quickBtn" type="button" class="btn btn-sm"><i data-lucide="search" class="w-4 h-4"></i> §-Quicklook</button>
+        <button id="bookmarksBtn" type="button" class="btn btn-sm" title="Markierte">
+          <i data-lucide="bookmark" class="w-4 h-4"></i>
+          <span id="bookmarkCount" class="badge badge-primary" style="display:none">0</span>
+        </button>
+        <button id="historyBtn" type="button" class="btn btn-sm" title="Historie">
+          <i data-lucide="history" class="w-4 h-4"></i>
+        </button>
+        <button id="themeToggle" type="button" class="btn btn-ghost btn-sm" title="Theme">
+          <i data-lucide="moon" class="w-4 h-4"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- Cluster Tabs -->
+    <div class="container pb-3">
+      <div class="card p-3">
+        <div id="tabs" class="tabs" role="tablist" aria-label="Cluster"></div>
+        <select id="clusterSelect" class="mt-2 w-full rounded-lg border px-3 py-2 text-sm"></select>
       </div>
     </div>
   </header>
 
-  <!-- Progress Section -->
-  <section class="container" style="margin-top: 16px;">
-    <div class="card card-elevated" style="padding: 16px;">
-      <div style="display: flex; align-items: center; gap: 16px;">
-        <i data-lucide="target" style="width: 20px; height: 20px; color: var(--mf-primary); flex-shrink: 0;"></i>
-        <div style="flex: 1;">
-          <div style="display: flex; justify-content: space-between; font-size: 11px; font-weight: 700; color: var(--text-muted); margin-bottom: 8px;">
-            <span id="progressText">0 / 20 beantwortet</span>
-            <span id="selText">0 ausgewählt</span>
-          </div>
-          <div class="progress-outer">
-            <div id="progressBar" class="progress-inner" style="width: 0%;"></div>
-          </div>
+  <!-- Progress -->
+  <section class="container mt-4">
+    <div class="card p-4 flex items-center gap-3">
+      <i data-lucide="target" class="w-5 h-5 text-[#005EB8]"></i>
+      <div class="flex-1">
+        <div class="flex justify-between text-[11px] text-slate-500 font-semibold mb-2">
+          <span id="progressText">0 / 0 beantwortet</span>
+          <span id="selText">0 ausgewählt</span>
         </div>
-        <time id="timer" style="font-size: 13px; font-family: monospace; font-weight: 700; color: var(--text-muted);">00:00</time>
+        <div class="progress-outer"><div id="progressBar" class="progress-inner"></div></div>
       </div>
+      <time id="timer" class="text-xs text-slate-500 font-mono">00:00</time>
     </div>
   </section>
 
-  <!-- Spider Chart -->
-  <section class="container" id="chartSection" style="margin-top: 16px; display:none;">
-    <div class="card card-elevated" style="padding: 16px;">
-      <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
-        <i data-lucide="pie-chart" style="width: 20px; height: 20px; color: var(--mf-primary);"></i>
-        <h2 style="font-weight: 700; font-size: 17px;">Rubrik-Analyse</h2>
-      </div>
-      <div class="chart-container">
-        <canvas id="rubricChart"></canvas>
-      </div>
-    </div>
-  </section>
+  <!-- Quiz -->
+  <main class="container my-4">
+    <form id="form" class="grid gap-4" novalidate></form>
 
-  <!-- Quiz Form -->
-  <main class="container" style="margin-top: 16px; margin-bottom: 80px;">
-    <form id="form" novalidate></form>
-    
-    <section id="resultWrap" class="hidden" style="margin-top: 16px;">
-      <div class="card card-elevated" style="padding: 16px;">
-        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
-          <i data-lucide="sparkles" style="width: 20px; height: 20px; color: var(--mf-primary);"></i>
-          <h2 style="font-weight: 700; font-size: 17px;">KI-Feedback (Gesamt)</h2>
+    <section id="resultWrap" class="hidden mt-4" aria-live="polite">
+      <div class="card p-4">
+        <div class="flex items-center gap-2 mb-2">
+          <i data-lucide="sparkles" class="w-5 h-5 text-emerald-600"></i>
+          <h2 class="text-base font-semibold">KI-Feedback</h2>
         </div>
-        <article id="aiResult" class="prose" style="font-size: 13px;"></article>
+        <article id="aiResult" class="prose text-sm"></article>
       </div>
     </section>
   </main>
 
-  <!-- Sticky Actions -->
-  <div style="position: fixed; bottom: 0; left: 0; right: 0; background: var(--surface); border-top: 1px solid var(--border); padding: 12px 0; z-index: 50; backdrop-filter: blur(8px);">
-    <div class="container" style="display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;">
-      <div style="display: flex; gap: 8px;">
-        <a class="btn btn-sm" href="https://www.gesetze-im-internet.de/bbig_2005/BBiG.pdf" target="_blank" rel="noopener" title="BBiG (PDF)">
-          <i data-lucide="book-open" style="width: 16px; height: 16px;"></i> BBiG
+  <!-- Sticky actions -->
+  <div class="sticky-actions bg-[color:var(--surface)] border-t border-[color:var(--border)]">
+    <div class="container px-4 py-2 flex flex-wrap items-center gap-2">
+      <div class="flex items-center gap-2">
+        <a class="btn btn-sm" href="https://www.gesetze-im-internet.de/bbig_2005/BBiG.pdf" target="_blank" rel="noopener">
+          <i data-lucide="book-open" class="w-4 h-4"></i> BBiG
         </a>
-        <a class="btn btn-sm" href="https://www.gesetze-im-internet.de/jarbschg/JArbSchG.pdf" target="_blank" rel="noopener" title="JArbSchG (PDF)">
-          <i data-lucide="shield" style="width: 16px; height: 16px;"></i> JArbSchG
+        <a class="btn btn-sm" href="https://www.gesetze-im-internet.de/jarbschg/JArbSchG.pdf" target="_blank" rel="noopener">
+          <i data-lucide="shield" class="w-4 h-4"></i> JArbSchG
         </a>
       </div>
-      <div style="display: flex; gap: 8px;">
-        <button id="submitBtn" type="button" class="btn btn-primary">
-          <i data-lucide="send" style="width: 16px; height: 16px;"></i> KI-Feedback
-        </button>
-        <button id="resetBtn" type="button" class="btn">
-          <i data-lucide="rotate-ccw" style="width: 16px; height: 16px;"></i> Zurücksetzen
-        </button>
-      </div>
+      <div class="flex-1"></div>
+      <button id="submitBtn" type="button" class="btn btn-primary btn-lg">
+        <i data-lucide="send" class="w-5 h-5"></i> KI-Feedback (Auswahl)
+      </button>
+      <button id="resetBtn" type="button" class="btn btn-lg">
+        <i data-lucide="rotate-ccw" class="w-5 h-5"></i> Zurücksetzen
+      </button>
     </div>
   </div>
 
   <!-- Toast -->
-  <div id="toast" class="toast"></div>
-
-  <!-- Command Palette Modal -->
-  <div id="commandBackdrop" class="modal-backdrop"></div>
-  <div id="commandModal" class="modal">
-    <div class="modal-panel card card-elevated command-palette" style="padding: 0;">
-      <div style="padding: 16px; border-bottom: 1px solid var(--border);">
-        <input id="commandSearch" type="search" placeholder="Befehle durchsuchen..." autofocus style="border: none; padding: 8px 0; font-size: 14px; font-weight: 500;" />
-      </div>
-      <div id="commandList" style="padding: 8px; max-height: 400px; overflow-y: auto;"></div>
-    </div>
-  </div>
+  <div id="toast"></div>
 
   <!-- Bookmarks Modal -->
-  <div id="bookmarksBackdrop" class="modal-backdrop"></div>
-  <div id="bookmarksModal" class="modal">
-    <div class="modal-panel card card-elevated" style="padding: 24px;">
-      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
-        <div style="display: flex; align-items: center; gap: 8px;">
-          <i data-lucide="bookmark" style="width: 20px; height: 20px; color: var(--mf-primary);"></i>
-          <h2 style="font-weight: 700; font-size: 17px;">Markierte Fragen</h2>
-        </div>
-        <button id="bookmarksClose" type="button" class="btn btn-ghost btn-sm">
-          <i data-lucide="x" style="width: 16px; height: 16px;"></i>
-        </button>
+  <div id="bmBackdrop" class="modal-backdrop"></div>
+  <div id="bmModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="bmTitle">
+    <div class="panel card p-4">
+      <div class="flex items-center justify-between">
+        <h3 id="bmTitle" class="text-base font-semibold">Markierte Fragen</h3>
+        <button id="bmClose" class="btn btn-ghost btn-sm"><i data-lucide="x" class="w-4 h-4"></i></button>
       </div>
-      <div id="bookmarksList" style="max-height: 500px; overflow-y: auto;"></div>
+      <div id="bmList" class="mt-3 grid gap-2 max-h-[70vh] overflow-auto"></div>
     </div>
   </div>
 
   <!-- Quicklook Modal -->
   <div id="qlBackdrop" class="modal-backdrop"></div>
-  <div id="qlModal" class="modal">
-    <div class="modal-panel card card-elevated" style="padding: 24px;">
-      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
-        <div style="display: flex; align-items: center; gap: 8px;">
-          <i data-lucide="search" style="width: 20px; height: 20px; color: var(--mf-primary);"></i>
-          <h2 style="font-weight: 700; font-size: 17px;">§-Quicklook – BBiG & JArbSchG</h2>
+  <div id="qlModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="qlTitle">
+    <div class="panel card p-4">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <i data-lucide="search" class="w-5 h-5 text-[#005EB8]"></i>
+          <h3 id="qlTitle" class="text-base font-semibold">§-Quicklook – BBiG & JArbSchG</h3>
         </div>
-        <button id="qlClose" type="button" class="btn btn-ghost btn-sm">
-          <i data-lucide="x" style="width: 16px; height: 16px;"></i>
-        </button>
+        <button id="qlClose" class="btn btn-ghost btn-sm"><i data-lucide="x" class="w-4 h-4"></i></button>
       </div>
-      <input id="qlSearch" type="search" placeholder="Begriff oder § suchen..." style="margin-bottom: 16px;" />
-      <div id="qlList" style="display: grid; gap: 12px; max-height: 500px; overflow-y: auto;"></div>
+      <div class="mt-2 flex gap-2">
+        <input id="qlSearch" type="search" class="flex-1 rounded-lg border px-3 py-2" placeholder="Begriff oder § …">
+        <a class="btn btn-sm" href="https://www.gesetze-im-internet.de/bbig_2005/BBiG.pdf" target="_blank" rel="noopener">BBiG</a>
+        <a class="btn btn-sm" href="https://www.gesetze-im-internet.de/jarbschg/JArbSchG.pdf" target="_blank" rel="noopener">JArbSchG</a>
+      </div>
+      <div id="qlList" class="mt-3 grid gap-2 max-h-[65vh] overflow-auto"></div>
     </div>
   </div>
 
   <!-- History Modal -->
-  <div id="historyBackdrop" class="modal-backdrop"></div>
-  <div id="historyModal" class="modal">
-    <div class="modal-panel card card-elevated" style="padding: 24px;">
-      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
-        <div style="display: flex; align-items: center; gap: 8px;">
-          <i data-lucide="history" style="width: 20px; height: 20px; color: var(--mf-primary);"></i>
-          <h2 style="font-weight: 700; font-size: 17px;">Antwort-Historie</h2>
+  <div id="histBackdrop" class="modal-backdrop"></div>
+  <div id="histModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="histTitle">
+    <div class="panel card p-4">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <i data-lucide="history" class="w-5 h-5 text-[#005EB8]"></i>
+          <h3 id="histTitle" class="text-base font-semibold">Antwort-Historie</h3>
         </div>
-        <button id="historyClose" type="button" class="btn btn-ghost btn-sm">
-          <i data-lucide="x" style="width: 16px; height: 16px;"></i>
-        </button>
+        <button id="histClose" class="btn btn-ghost btn-sm"><i data-lucide="x" class="w-4 h-4"></i></button>
       </div>
-      <div id="historyList" style="display: grid; gap: 12px; max-height: 500px; overflow-y: auto;"></div>
+      <div id="histList" class="mt-3 grid gap-2 max-h-[70vh] overflow-auto"></div>
     </div>
   </div>
 
   <!-- Footer -->
-  <footer style="background: var(--surface-alt); border-top: 1px solid var(--border); padding: 24px 0; margin-top: 48px;">
-    <div class="container">
-      <p style="font-size: 11px; text-align: center; color: var(--text-muted); line-height: 1.6;">
-        Diese Anwendung nutzt künstliche Intelligenz (KI). Mit der Nutzung stimmst du zu, dass deine Texte von OpenAI über Make.com verarbeitet werden.
-        Es werden keine personenbezogenen Daten erhoben. Jegliche Haftung ist ausgeschlossen. Alle Antworten sind zu prüfen.
-        KI-generierte Antworten können fehlerhaft sein.
-      </p>
+  <footer class="app-footer">
+    <div class="container px-4 py-4">
+      Diese Anwendung nutzt künstliche Intelligenz (KI). Du stimmst mit der Nutzung zu, dass Deine Texte und Antwort von OpenAI verarbeitet und geprüft werden.
+      Es werden keine personenbezogenen Daten von Dir erhoben, erfasst und verarbeitet. Dieses Tool darf nicht missbräuchlich verwendet werden. Es dürfen keine personenbezogenen Daten,
+      sensiblen Daten oder Daten erfasst werden, die Rückschlüsse auf eine Person, zum Beispiel Auszubildenden, Ausbilder oder ähnliche Personen ermöglichen. Jegliche Haftung ist ausgeschlossen.
+      Alle Antworten sind vom Anwender zu prüfen. KI-generierte Antworten können fehlerhaft sein. Keine Haftung.
     </div>
   </footer>
 
   <script>
   document.addEventListener("DOMContentLoaded", () => {
-    // Initialize Lucide Icons
     if (window.lucide) lucide.createIcons();
+    if (window.marked) marked.setOptions({ breaks:true, gfm:true });
 
-    // === Configuration ===
-    const relay = "/api/linda-proxy"; // Make.com Webhook
-    const STORAGE_KEY = "BBIGQUIZ_V3";
-    const HISTORY_KEY = "BBIGQUIZ_HISTORY";
-    const BOOKMARK_KEY = "BBIGQUIZ_BOOKMARKS";
-    const MAX_ANSWER_CHARS = 1500;
-    const RUBRIC_KEYS = ["normbezug", "vollstaendigkeit", "praxisbezug"];
+    // === Config / Keys ===
+    const relay = "/api/linda-proxy"; // dein Make-Webhook
+    const STORAGE_KEY = "MF_CLUSTER_STATE_V1";
+    const BOOKMARK_KEY = "MF_CLUSTER_BOOKMARKS_V1";
 
-    // === UI References ===
+    // === UI Refs ===
     const form = document.getElementById("form");
     const progressBar = document.getElementById("progressBar");
     const progressTxt = document.getElementById("progressText");
@@ -847,414 +294,572 @@
     const timerEl = document.getElementById("timer");
     const resultWrap = document.getElementById("resultWrap");
     const aiResult = document.getElementById("aiResult");
+    const toastEl = document.getElementById("toast");
+
+    const tabs = document.getElementById("tabs");
+    const clusterSelect = document.getElementById("clusterSelect");
+
     const ack = document.getElementById("ack");
     const ackBtn = document.getElementById("ackBtn");
     const notice = document.getElementById("notice");
-    const themeToggle = document.getElementById("themeToggle");
-    const toastEl = document.getElementById("toast");
-    const chartSection = document.getElementById("chartSection");
-    const rubricChartCanvas = document.getElementById("rubricChart");
-    
-    const commandBtn = document.getElementById("commandBtn");
-    const commandBackdrop = document.getElementById("commandBackdrop");
-    const commandModal = document.getElementById("commandModal");
-    const commandSearch = document.getElementById("commandSearch");
-    const commandList = document.getElementById("commandList");
-    
+    const ackState = document.getElementById("ackState");
+
     const bookmarksBtn = document.getElementById("bookmarksBtn");
-    const bookmarksBackdrop = document.getElementById("bookmarksBackdrop");
-    const bookmarksModal = document.getElementById("bookmarksModal");
-    const bookmarksClose = document.getElementById("bookmarksClose");
-    const bookmarksList = document.getElementById("bookmarksList");
     const bookmarkCount = document.getElementById("bookmarkCount");
-    
+    const bmBackdrop = document.getElementById("bmBackdrop");
+    const bmModal = document.getElementById("bmModal");
+    const bmClose = document.getElementById("bmClose");
+    const bmList = document.getElementById("bmList");
+
     const quickBtn = document.getElementById("quickBtn");
     const qlBackdrop = document.getElementById("qlBackdrop");
     const qlModal = document.getElementById("qlModal");
     const qlClose = document.getElementById("qlClose");
     const qlSearch = document.getElementById("qlSearch");
     const qlList = document.getElementById("qlList");
-    
+
     const historyBtn = document.getElementById("historyBtn");
-    const historyBackdrop = document.getElementById("historyBackdrop");
-    const historyModal = document.getElementById("historyModal");
-    const historyClose = document.getElementById("historyClose");
-    const historyList = document.getElementById("historyList");
+    const histBackdrop = document.getElementById("histBackdrop");
+    const histModal = document.getElementById("histModal");
+    const histClose = document.getElementById("histClose");
+    const histList = document.getElementById("histList");
 
-    let rubricChart = null;
-    if (window.marked) marked.setOptions({ breaks: true, gfm: true });
+    const themeToggle = document.getElementById("themeToggle");
 
-    // === Questions (20 Core Questions) ===
-    const QUESTIONS_ALL = [
-      { ref: "V1 – Mindestinhalte Vertrag", q: "Nenne vier Pflichtangaben, die zwingend in den Berufsausbildungsvertrag gehören.", tip: ["Parteien, Beginn/Dauer, Ziel/Berufsbezeichnung, sachliche & zeitliche Gliederung.", "§ 11 BBiG."] },
-      { ref: "V2 – Ausbildungsordnung", q: "Welche drei Kernpunkte regelt eine Ausbildungsordnung?", tip: ["Berufsbild, Dauer/Ausbildungsrahmenplan, Prüfungen.", "§§ 4–5 BBiG."] },
-      { ref: "V3 – Probezeit", q: "Wie lang muss/darf die Probezeit sein – und warum ist sie wichtig?", tip: ["Mind. 1, max. 4 Monate; Eignungsprüfung beider Seiten.", "§ 20 BBiG."] },
-      { ref: "V4 – Minderjährige: Unterschrift", q: "Wer unterschreibt den Vertrag bei Minderjährigen mit gemeinsamem Sorgerecht?", tip: ["Beide Sorgeberechtigte + Minderjährige/r.", "§ 10 BBiG; § 107 BGB."] },
-      { ref: "V5 – Berufsschulzeit & Arbeitszeit", q: "Wie werden Berufsschulzeiten auf die Arbeitszeit angerechnet (U18 vs. ≥18)?", tip: ["U18: besondere Anrechnung (JArbSchG).", "Wegezeiten Schule→Betrieb; § 15 BBiG."] },
-      { ref: "V6 – Ruhezeit Jugendliche", q: "Welche tägliche Mindestruhezeit gilt für Jugendliche?", tip: ["Mindestens 12 Stunden.", "JArbSchG."] },
-      { ref: "V7 – Vergütung", q: "Was gilt zur Angemessenheit der Ausbildungsvergütung?", tip: ["MiAV Untergrenze; tariflich/branchenüblich; Steigerung je Jahr.", "§ 17 BBiG."] },
-      { ref: "V8 – Überstunden", q: "Sind Überstunden zulässig – und wie werden sie behandelt?", tip: ["Nur ausbildungsdienlich; Vergütung/Zeitausgleich; Jugendarbeitsschutz beachten.", "ArbZG/JArbSchG."] },
-      { ref: "V9 – Betrieblicher Ausbildungsplan", q: "Wozu dient der betriebliche Ausbildungsplan?", tip: ["Umsetzung Rahmenplan, zeitl./sachl. Gliederung, Qualitätssicherung.", "§ 5 BBiG; Verweis § 11."] },
-      { ref: "V10 – Berichtsheft", q: "Welche Bedeutung hat das Berichtsheft und wer kontrolliert es?", tip: ["Zulassungsvoraussetzung; elektronisch möglich; Kontrolle Ausbilder/in.", "§ 13 Nr.7, § 14 Abs.1 Nr.4 BBiG."] },
-      { ref: "V11 – Verkürzung", q: "Wann kann die Ausbildungsdauer verkürzt werden?", tip: ["Vorbildung/Leistung/Anrechnung; Einvernehmen nötig.", "§ 8 BBiG."] },
-      { ref: "V12 – Verlängerung", q: "Wann kommt eine Verlängerung in Betracht?", tip: ["Nichtbestehen oder besondere Fälle.", "§ 8 Abs. 2 BBiG."] },
-      { ref: "V13 – Teilzeitberufsausbildung", q: "Wie funktioniert Teilzeit in der Ausbildung und was bleibt unverändert?", tip: ["Reduzierte Zeiten, Lernziel bleibt; evtl. längere Gesamtdauer.", "§ 7a BBiG."] },
-      { ref: "V14 – Datenschutz/Geheimnis", q: "Welche Pflichten haben Azubis zu Datenschutz und Betriebsgeheimnissen?", tip: ["DSGVO/BDSG beachten; Unterweisungen dokumentieren."] },
-      { ref: "V15 – Kündigung", q: "Welche Kündigungsregeln gelten in und nach der Probezeit?", tip: ["Probezeit: jederzeit fristlos (§ 22 Abs. 1).", "Danach: fristlos aus wichtigem Grund oder mit Frist von 4 Wochen (Azubi)."] },
-      { ref: "V16 – Schwangerschaft/Mutterschutz", q: "Welche Schutzregeln gelten bei Schwangerschaft in der Ausbildung?", tip: ["MuSchG: Schutzfristen, Beschäftigungsverbote, Kündigungsschutz."] },
-      { ref: "V17 – Nachteilsausgleich", q: "Wie werden Auszubildende mit Behinderung in Prüfungen unterstützt?", tip: ["Nachteilsausgleich (Zeit, Hilfsmittel) auf Antrag; Chancengleichheit."] },
-      { ref: "V18 – Ausland", q: "Sind Ausbildungsabschnitte im Ausland möglich und wie werden sie angerechnet?", tip: ["Ja; Ausbildungsziel wahren; bis zulässige Zeitanteile.", "§ 2 Abs. 3 BBiG."] },
-      { ref: "V19 – Versetzung", q: "Darf der Betrieb Azubis versetzen?", tip: ["Ja, wenn ausbildungsdienlich/zumutbar; Reisekosten klären.", "§ 14 BBiG."] },
-      { ref: "V20 – Insolvenz", q: "Was passiert bei Insolvenz des Ausbildungsbetriebs?", tip: ["Fortführung/Anschlussbetrieb/IHK-Unterstützung; ggf. Insolvenzgeld."] }
+    // === Data (Cluster & Fragenbanken) ===
+    const BANK_CORE = [
+      { ref:"V1 – Mindestinhalte Vertrag", q:"Nenne vier Pflichtangaben, die zwingend in den Berufsausbildungsvertrag gehören.", tip:["Parteien, Beginn/Dauer, Ziel/Berufsbezeichnung, sachliche & zeitliche Gliederung, Vergütung, Probezeit, Urlaub, Kündigung, Nachweisform.","§ 11 BBiG (Textform/elektronisch)."]},
+      { ref:"V2 – Ausbildungsordnung", q:"Welche drei Kernpunkte regelt eine Ausbildungsordnung?", tip:["Berufsbild, Ausbildungsrahmenplan/Dauer, Prüfungen.","§§ 4–5 BBiG."]},
+      { ref:"V3 – Probezeit", q:"Wie lang muss/darf die Probezeit sein – und warum ist sie wichtig?", tip:["Mind. 1, max. 4 Monate; Eignungsprüfung beider Seiten.","§ 20 BBiG."]},
+      { ref:"V4 – Minderjährige: Unterschrift", q:"Wer unterschreibt den Vertrag bei Minderjährigen mit gemeinsamem Sorgerecht?", tip:["Beide Sorgeberechtigte + Minderjährige/r.","§ 10 BBiG; §§ 1626, 1629 BGB."]},
+      { ref:"V5 – Berufsschule & Arbeitszeit", q:"Wie werden Berufsschulzeiten angerechnet (U18 vs. ≥18)?", tip:["U18: besondere Anrechnung (JArbSchG).","Wege Schule→Betrieb zählen (§15(2)1 BBiG).","≥18: ArbZG; Freistellung §15 BBiG."]},
+      { ref:"V6 – Ruhezeit Jugendliche", q:"Welche tägliche Mindestruhezeit gilt für Jugendliche?", tip:["Mindestens 12 Stunden (JArbSchG)."]},
+      { ref:"V7 – Vergütung", q:"Was gilt zur Angemessenheit der Ausbildungsvergütung?", tip:["MiAV Untergrenze; Tarif/branchenüblich; Steigerung je Jahr.","§ 17 BBiG."]},
+      { ref:"V8 – Überstunden", q:"Sind Überstunden zulässig – und wie werden sie behandelt?", tip:["Nur ausbildungsdienlich; Vergütung/Zeitausgleich; Schutz beachten."]},
+      { ref:"V9 – Betrieblicher Ausbildungsplan", q:"Wozu dient der betriebliche Ausbildungsplan?", tip:["Umsetzung Rahmenplan; zeitl./sachl. Gliederung; Qualität."]},
+      { ref:"V10 – Berichtsheft", q:"Welche Bedeutung hat das Berichtsheft?", tip:["Zulassungsvoraussetzung; elektronisch möglich; Kontrolle Ausbilder/in."]},
+      { ref:"V11 – Verkürzung", q:"Wann kann die Ausbildungsdauer verkürzt werden?", tip:["Vorbildung/Leistung/Anrechnung; Einvernehmen (§8 BBiG)."]},
+      { ref:"V12 – Verlängerung", q:"Wann kommt eine Verlängerung in Betracht?", tip:["Nichtbestehen oder besondere Fälle (§8(2) BBiG)."]},
+      { ref:"V13 – Teilzeit", q:"Wie funktioniert Teilzeit in der Ausbildung, was bleibt unverändert?", tip:["Reduzierte Zeiten; Lernziel bleibt; evtl. längere Dauer (§7a)."]},
+      { ref:"V14 – Datenschutz/Geheimnis", q:"Welche Pflichten zu Datenschutz/Betriebsgeheimnissen?", tip:["DSGVO/BDSG; Unterweisung dokumentieren."]},
+      { ref:"V15 – Kündigung", q:"Welche Kündigungsregeln gelten in/nach der Probezeit?", tip:["Probezeit: jederzeit fristlos (§22(1)). Danach: wichtiger Grund fristlos oder 4-Wochen-Frist durch Azubi (§22)."]},
+      { ref:"V16 – Mutterschutz", q:"Welche Schutzregeln gelten bei Schwangerschaft?", tip:["MuSchG: Schutzfristen, Beschäftigungsverbote, Kündigungsschutz."]},
+      { ref:"V17 – Nachteilsausgleich", q:"Wie werden Auszubildende mit Behinderung unterstützt?", tip:["Nachteilsausgleich (Zeit/Hilfsmittel) auf Antrag."]},
+      { ref:"V18 – Ausland", q:"Sind Ausbildungsabschnitte im Ausland möglich?", tip:["Ja; Ausbildungsziel wahren; anrechenbare Zeit (§2(3) BBiG)."]},
+      { ref:"V19 – Versetzung", q:"Darf der Betrieb Azubis versetzen?", tip:["Ja, wenn ausbildungsdienlich/zumutbar; Reisekosten klären (§14)."]},
+      { ref:"V20 – Insolvenz", q:"Was passiert bei Insolvenz des Ausbildungsbetriebs?", tip:["Fortführung/Anschlussbetrieb/IHK-Unterstützung; ggf. Insolvenzgeld."]}
+    ];
+    const BANK_BASICS = [
+      { ref:"G1 – Jugendberufsagentur", q:"Aufgabe & Partner?", tip:["Unter 25 unterstützen; AA/Jobcenter/Kommunen/Schulen."]},
+      { ref:"G2 – Nutzen Ausbildung", q:"Drei Argumente für Betriebe?", tip:["Fachkräfte, Flexibilität, Innovation."]},
+      { ref:"G3 – Personalplanung", q:"Relevante Dimensionen?", tip:["Quantitativ, qualitativ, zeitlich."]},
+      { ref:"G4 – Recruiting-Kanäle", q:"Vier Wege, Azubis zu finden?", tip:["Schulen/Agentur, Social, Messen, Empfehlungen."]},
+      { ref:"G5 – Auswahlprozess", q:"Elemente des Auswahlprozesses?", tip:["Screening, Gespräch/Test, Entscheidung."]},
+      { ref:"G6 – Motive", q:"Drei Motive der Ausbildung?", tip:["Interesse, finanzielle Unabhängigkeit, Perspektive."]},
+      { ref:"G7 – Anforderungsprofil", q:"Drei Kompetenzfelder?", tip:["Fachlich, sozial, persönlich."]},
+      { ref:"G8 – Eignung", q:"Eignung vor/in Probezeit prüfen (wie)?", tip:["Zeugnisse, Tests/Gespräche, Beobachtung."]},
+      { ref:"G9 – Nachhaltigkeit", q:"Wie verankert in Ausbildung (kurz)?", tip:["Lernziele/Projekte; Rolle Ausbilder."]},
+      { ref:"G10 – SDGs", q:"Was sind die 17 SDGs, Nutzen?", tip:["Globale Ziele; Orientierung im Betrieb."]}
+    ];
+    const BANK_RECHT = [
+      { ref:"R1 – Art.12 GG", q:"Was garantiert Art. 12 GG bzgl. Beruf/Ausbildungsstätte?", tip:["Freie Wahl; gesetzlich einschränkbar."]},
+      { ref:"R2 – AGG Ziel", q:"Ziel des AGG (§1) im Kontext Ausbildung?", tip:["Benachteiligungen verhindern/beseitigen."]},
+      { ref:"R3 – AGG Bereich", q:"Ein Anwendungsbereich §2 AGG (Ausbildung)?", tip:["Zugang zu Berufsbildung/Ausbildung."]},
+      { ref:"R4 – §1 BBiG", q:"Vier Säulen §1 BBiG?", tip:["Vorbereitung, Ausbildung, Fortbildung, Umschulung."]},
+      { ref:"R5 – BvB", q:"Zweck der BvB?", tip:["Heranführung; Basis berufl. Handlungsfähigkeit."]},
+      { ref:"R6 – EQ", q:"EQ – was & wer gefördert?", tip:["Langzeitpraktikum SGB III; junge Bewerbende."]},
+      { ref:"R7 – MiAV", q:"MiAV & Tarif – Zusammenspiel?", tip:["MiAV Untergrenze; Tarif maßgeblich."]},
+      { ref:"R8 – Günstigkeitsprinzip", q:"Was bedeutet Günstigkeitsprinzip?", tip:["Abweichungen nur zugunsten der Beschäftigten."]},
+      { ref:"R9 – Nachweis", q:"Rolle Ausbildungsnachweis für Zulassung?", tip:["Kann gefordert werden; fehlend kann ausschließen."]},
+      { ref:"R10 – Moderne Formen", q:"§28 BBiG Aussage zur Durchführung?", tip:["Eignung von Ausbildungsstätte/Person; moderne Formen ok."]}
+    ];
+    const BANK_ARBZ = [
+      { ref:"A1 – U18 Arbeitszeit", q:"Tages-/Wochengrenzen Jugendliche?", tip:["8 h/Tag, 40 h/W (Ausnahmen)."]},
+      { ref:"A2 – U18 Pausen", q:"Pausen Jugendliche?", tip:[">4,5–6 h: 30 Min; >6 h: 60 Min; Blöcke ≥15 Min."]},
+      { ref:"A3 – U18 Ruhezeit", q:"Tägliche Freizeit Jugendliche?", tip:["Mindestens 12 Stunden."]},
+      { ref:"A4 – U18 Sonn/Feiertag", q:"Grundsatz & Ausnahmen?", tip:["Grundsatz Verbot; Ausnahmen; 2 freie Sonntage/Monat."]},
+      { ref:"A5 – ≥18 Arbeitszeit", q:"Grund-/Höchstarbeitszeit ArbZG?", tip:["8 h/Tag; bis 10 mit Ausgleich."]},
+      { ref:"A6 – ≥18 Pausen/Ruhe", q:"Pausen & Ruhezeit Erwachsene?", tip:["6–9 h: 30 Min; >9 h: 45 Min; Ruhe 11 h."]},
+      { ref:"A7 – Mehrarbeit Doku", q:"Was dokumentieren & wie lange?", tip:[">8 h/Tag; 2 Jahre (§16 ArbZG)."]},
+      { ref:"A8 – Urlaub BUrlG", q:"Mindesturlaub 5-Tage-Woche?", tip:["20 AT (4 Wochen)."]},
+      { ref:"A9 – Urlaub U18", q:"Mindesturlaub je Alter (Kurz)?", tip:["u16:30 WT; u17:27; u18:25; ab 18:24 WT."]},
+      { ref:"A10 – §15 BBiG", q:"Freistellung §15 BBiG (2 Beispiele)?", tip:["Unterricht/Prüfungen; Wegezeiten."]}
+    ];
+    const BANK_ORGA = [
+      { ref:"O1 – Vollständige Handlung", q:"Sechs Schritte?", tip:["Informieren, Planen, Entscheiden, Ausführen, Kontrollieren, Bewerten."]},
+      { ref:"O2 – Lernzielebenen", q:"Richt-/Grob-/Feinlernziel kurz.", tip:["Richt: Gebiet; Grob: Fähigkeit; Fein: Teilziel."]},
+      { ref:"O3 – Sachliche Gliederung", q:"Drei Kriterien?", tip:["Einheiten, Überschaubarkeit, Probezeit nutzbar."]},
+      { ref:"O4 – Zeitliche Gliederung", q:"Drei Kriterien?", tip:["Prüfungstermine, Reihenfolge, Block/Urlaub."]},
+      { ref:"O5 – Pflichten §11/13/14", q:"Nenne Kernpflichten kurz.", tip:["Gliederung; Nachweis führen; Lernziele vermitteln."]},
+      { ref:"O6 – Versetzungsplan", q:"Wie helfen Einsatzpläne?", tip:["Steuerung Stationen; Lernziele."]},
+      { ref:"O7 – Digitale Tools", q:"Zwei Vorteile?", tip:["Transparenz; Feedback/Nachverfolgung."]},
+      { ref:"O8 – Qualitätssicherung", q:"Praxisnahe Prüfung im Betrieb?", tip:["Zwischengespräche, Zielabgleich, Nachweise."]}
+    ];
+    const BANK_BETEILIGTE = [
+      { ref:"B1 – Beteiligte", q:"Zentrale Beteiligte nennen.", tip:["Ausbildende, Ausbilder/in, Beauftragte, Azubis, IHK, Eltern."]},
+      { ref:"B2 – Eignung Betrieb", q:"Drei Voraussetzungen?", tip:["Ausstattung, Plan, Plätze/Schutz."]},
+      { ref:"B3 – Fachkraftbegriff", q:"Wer gilt als Fachkraft?", tip:["Abschluss oder 2× Ausbildungszeit Tätigkeit."]},
+      { ref:"B4 – Relation FK:Azubis", q:"Relation skizzieren.", tip:["1–2:1; 3–5:2; 6–8:3; je +3 FK:+1 Azubi."]},
+      { ref:"B5 – Pflichten Ausbildende", q:"Kernpflichten §14 BBiG?", tip:["Lernziele, Schutz, Freistellung, Zeugnis."]},
+      { ref:"B6 – Rolle Ausbilder", q:"Kernaufgaben?", tip:["Planung, Durchführung, Kontrolle, Coaching."]},
+      { ref:"B7 – Beauftragte", q:"Aufgabe Ausbildungsbeauftragte?", tip:["Teilqualifikationen vermitteln (§28(3))."]},
+      { ref:"B8 – persönliche Eignung", q:"Wann fehlt sie (Beispiel)?", tip:["Wiederholte JArbSchG-Verstöße."]}
+    ];
+    const BANK_MITBEST = [
+      { ref:"M1 – BR Rechte", q:"Zwei Mitwirkungs-/Mitbestimmungsrechte (BBiG)?", tip:["§96 Beratungsrecht; §98 Mitbestimmung/Bestellung."]},
+      { ref:"M2 – §87 BetrVG", q:"Für welche Themen Mitbestimmung?", tip:["Arbeitszeit, Ordnung, Vergütung, IT-Einführung."]},
+      { ref:"M3 – Einstellung Azubis", q:"Wie BR einzubeziehen?", tip:["§99: Unterrichten, Unterlagen, Zustimmung."]},
+      { ref:"M4 – JAV Aufgabe", q:"Zwei Hauptaufgaben JAV?", tip:["Überwachung & Initiativen zugunsten Jugend/Azubis."]},
+      { ref:"M5 – JAV Wahl", q:"Wer wahlberechtigt/wählbar (Kurz)?", tip:["u18 + Azubis; wählbar <25; BR-Mitglieder ausgeschlossen."]},
+      { ref:"M6 – JAV Größe", q:"Wovon hängt Größe ab?", tip:["Zahl der Wahlberechtigten (§62 BetrVG)."]},
+      { ref:"M7 – Widerspruch BR", q:"Wann kann BR widersprechen?", tip:["Fehlende Eignung (§98(2))."]},
+      { ref:"M8 – Einigungsstelle", q:"Bei Nichteinigung – was dann?", tip:["Einigungsstelle entscheidet."]}
+    ];
+    const BANK_PRUEF = [
+      { ref:"P1 – Zwischenprüfung", q:"Wozu dient §48 BBiG?", tip:["Wissensstand; Zulassungsvoraussetzung (§43)."]},
+      { ref:"P2 – Ausbildungsende", q:"Wann endet das Verhältnis §21?", tip:["Ablauf der Zeit oder Bekanntgabe des Bestehens."]},
+      { ref:"P3 – Zulassung", q:"Rolle Nachweis für Zulassung?", tip:["Kann angefordert werden; fehlend kann ausschließen."]},
+      { ref:"P4 – Nachteilsausgleich", q:"Beispiele?", tip:["Zeitverlängerung, Hilfsmittel, angepasste Aufgaben."]},
+      { ref:"P5 – Prüfungsrecht", q:"Drei Prinzipien für PA (kurz)?", tip:["Rechtsgrundlagen, Gleichbehandlung, Verhältnismäßigkeit."]},
+      { ref:"P6 – Freistellung Prüfung", q:"§15 BBiG im Prüfungszusammenhang?", tip:["Teilnahme; Vortag schriftliche Abschlussprüfung."]},
+      { ref:"P7 – Wiederholung", q:"Wiederholungsprüfung möglich?", tip:["Ja; Verlängerung §8(2) bis nächster Termin möglich."]},
+      { ref:"P8 – Doku Vorbereitung", q:"Welche Dokumente bereithalten?", tip:["Plan, Nachweise, Beurteilungen, Berichtsheft."]}
+    ];
+    const BANK_DS = [
+      { ref:"D1 – DSGVO Grundsätze", q:"Drei Grundsätze nennen.", tip:["Zweckbindung, Datenminimierung, Transparenz."]},
+      { ref:"D2 – KI-Vorsicht", q:"Wichtige Vorsichtsmaßnahme?", tip:["Keine personenbezogenen/sensiblen Daten eingeben."]},
+      { ref:"D3 – Betriebsgeheimnis", q:"Wie umgehen?", tip:["Verschwiegenheit; Schulung/Verpflichtung."]},
+      { ref:"D4 – Doku DSGVO", q:"Zwei Dokus für Compliance?", tip:["VVT, TOMs, Schulungsnachweise."]},
+      { ref:"D5 – Foto/Video", q:"Vor Veröffentlichung beachten?", tip:["Einwilligung/Betroffenenrechte."]},
+      { ref:"D6 – AGG Recruiting", q:"Zwei Fehler in Ausschreibungen?", tip:["Diskriminierende Formulierungen (Alter/Geschlecht/Religion …)."]},
+      { ref:"D7 – SoMe Screening", q:"Worauf achten?", tip:["Datenschutz/Erforderlichkeit/Transparenz."]},
+      { ref:"D8 – Aufbewahrung Bewerbungen", q:"Wie lange i. d. R.?", tip:["6 Monate (AGG-Frist), danach löschen."]}
+    ];
+    const BANK_SYS = [
+      { ref:"S1 – BIBB Aufgabe", q:"Zwei Aufgaben BIBB.", tip:["Beratung, Forschung, Empfehlungen (§90 BBiG)."]},
+      { ref:"S2 – Ausbildungsordnung Hoheit", q:"Wer erlässt AO, worauf gestützt?", tip:["Fachministerien auf Basis BBiG; BIBB wirkt mit."]},
+      { ref:"S3 – Lernorte", q:"Welche Lernorte §2 BBiG?", tip:["Betrieb, Schule, ggf. weitere."]},
+      { ref:"S4 – Rahmenplan", q:"Funktion des Ausbildungsrahmenplans?", tip:["Zeitlich-sachliche Struktur; Mindestinhalte."]},
+      { ref:"S5 – Kammern", q:"Rolle der Kammern?", tip:["Zuständige Stelle: Eintragung, Beratung, Prüfungen."]},
+      { ref:"S6 – Tarifbezug", q:"Nicht tarifgebunden – Vergütung wie?", tip:["Anlehnung an einschlägige Tarife; MiAV beachten."]},
+      { ref:"S7 – Rechtsquellen", q:"Hierarchie grob?", tip:["EU/GG → Gesetze → Tarif → BV → Vertrag → Direktionsrecht."]},
+      { ref:"S8 – Nebentätigkeit", q:"Welche Verfassungsnorm tangiert?", tip:["Art. 12 GG."]}
     ];
 
-    const LAW_INDEX = [
-      { law: "BBiG", para: "§ 11", tags: ["vertrag", "inhalte", "mindestinhalte"], excerpt: "§ 11 BBiG – Niederschrift der wesentlichen Inhalte (u. a. Parteien, Beginn/Dauer, Ziel, sachliche/zeitliche Gliederung).", link: "https://www.gesetze-im-internet.de/bbig_2005/BBiG.pdf" },
-      { law: "BBiG", para: "§ 20", tags: ["probezeit"], excerpt: "§ 20 BBiG – Probezeit mindestens 1, höchstens 4 Monate.", link: "https://www.gesetze-im-internet.de/bbig_2005/BBiG.pdf" },
-      { law: "BBiG", para: "§ 15", tags: ["freistellung", "schule", "wegezeit"], excerpt: "§ 15 BBiG – Freistellung für Berufsschule/Prüfungen; Wegezeiten Schule→Betrieb sind anzurechnen.", link: "https://www.gesetze-im-internet.de/bbig_2005/BBiG.pdf" },
-      { law: "BBiG", para: "§ 17", tags: ["vergütung", "miav"], excerpt: "§ 17 BBiG – Angemessene Vergütung; Mindestausbildungsvergütung als Untergrenze.", link: "https://www.gesetze-im-internet.de/bbig_2005/BBiG.pdf" },
-      { law: "JArbSchG", para: "§ 8–15", tags: ["arbeitszeit", "ruhezeit", "pausen"], excerpt: "JArbSchG – Tägliche und wöchentliche Höchstarbeitszeiten; Ruhepausen; Ruhezeit mind. 12 Std.", link: "https://www.gesetze-im-internet.de/jarbschg/JArbSchG.pdf" },
-      { law: "ArbZG", para: "§ 3, § 4, § 5", tags: ["erwachsene", "arbeitszeit", "pausen", "ruhezeit"], excerpt: "ArbZG – 8 Std/Tag (bis 10 mit Ausgleich), Pausen 30–45 Min, Ruhezeit 11 Std.", link: "https://www.gesetze-im-internet.de/arbzg/ArbZG.pdf" },
+    const CLUSTERS = [
+      { key:"core",  title:"Kern",                     icon:"layers",     data:BANK_CORE },
+      { key:"bas",   title:"Grundlagen/Recruiting",    icon:"users",      data:BANK_BASICS },
+      { key:"recht", title:"Recht (BBiG/AGG)",         icon:"scale",      data:BANK_RECHT },
+      { key:"az",    title:"Arbeitszeit & Urlaub",     icon:"clock-8",    data:BANK_ARBZ },
+      { key:"orga",  title:"Organisation/Planung",     icon:"calendar",   data:BANK_ORGA },
+      { key:"beteiligte", title:"Beteiligte & Eignung",icon:"id-card",    data:BANK_BETEILIGTE },
+      { key:"mitb",  title:"Mitbestimmung (BR/JAV)",   icon:"handshake",  data:BANK_MITBEST },
+      { key:"pruef", title:"Prüfung",                  icon:"file-check", data:BANK_PRUEF },
+      { key:"ds",    title:"Datenschutz & Ethik",      icon:"shield",     data:BANK_DS },
+      { key:"sys",   title:"System (BIBB/Kammern)",    icon:"building",   data:BANK_SYS }
     ];
 
     // === State ===
-    let accepted = false;
-    let pool = [...QUESTIONS_ALL];
-    let answers = {};
-    let selected = {};
-    let rubrics = {};
-    let bookmarks = JSON.parse(localStorage.getItem(BOOKMARK_KEY) || "{}");
-
-    // === Theme ===
-    const savedTheme = localStorage.getItem("theme");
-    if (savedTheme === "dark") {
-      document.documentElement.classList.add("dark");
-    }
-
-    themeToggle.addEventListener("click", () => {
-      document.documentElement.classList.toggle("dark");
-      const isDark = document.documentElement.classList.contains("dark");
-      localStorage.setItem("theme", isDark ? "dark" : "light");
-      if (window.lucide) lucide.createIcons();
-      if (rubricChart) updateSpiderChart();
-    });
+    let accepted=false, activeKey="core";
+    let answersByRef={}, selectedByRef={};
+    let bookmarks = {};
+    // load persisted
+    (function restore(){
+      try{
+        const s=JSON.parse(localStorage.getItem(STORAGE_KEY)||"{}");
+        if (s && typeof s==='object'){
+          accepted = !!s.accepted;
+          activeKey = s.activeKey || "core";
+          answersByRef = s.answersByRef || {};
+          selectedByRef = s.selectedByRef || {};
+        }
+      }catch{}
+      try{ bookmarks = JSON.parse(localStorage.getItem(BOOKMARK_KEY)||"{}"); }catch{}
+      if (accepted){ notice.style.display="none"; ack.checked=true; ackState.textContent="Hinweis bestätigt"; }
+    })();
 
     // === Timer ===
     let startTs = Date.now();
-    setInterval(() => {
-      const s = Math.floor((Date.now() - startTs) / 1000);
-      const m = String(Math.floor(s / 60)).padStart(2, "0");
-      const r = String(s % 60).padStart(2, "0");
+    setInterval(()=>{
+      const s = Math.floor((Date.now()-startTs)/1000);
+      const m = String(Math.floor(s/60)).padStart(2,"0");
+      const r = String(s%60).padStart(2,"0");
       timerEl.textContent = `${m}:${r}`;
-    }, 1000);
+    },1000);
 
-    // === Toast ===
-    function showToast(msg, duration = 3000) {
-      toastEl.textContent = msg;
-      toastEl.style.display = "block";
-      setTimeout(() => {
-        toastEl.style.display = "none";
-      }, duration);
-    }
-
-    // === Disclaimer ===
-    ackBtn.addEventListener("click", () => {
-      if (!ack.checked) {
-        showToast("❌ Bitte bestätige den Hinweis.");
-        return;
-      }
-      accepted = true;
-      notice.style.display = "none";
-      renderQuiz();
+    // === Theme ===
+    const savedTheme = localStorage.getItem("mf_theme") || "light";
+    if (savedTheme==="dark") document.documentElement.classList.add("dark");
+    themeToggle.addEventListener("click", ()=>{
+      document.documentElement.classList.toggle("dark");
+      localStorage.setItem("mf_theme", document.documentElement.classList.contains("dark") ? "dark":"light");
+      if (window.lucide) lucide.createIcons();
     });
 
-    // === Render Quiz ===
-    function renderQuiz() {
-      form.innerHTML = "";
-      pool.forEach((item, idx) => {
-        const isBookmarked = bookmarks[item.ref] || false;
-        
-        const card = document.createElement("div");
-        card.className = "card question-card";
-        card.innerHTML = `
-          <button type="button" class="bookmark-btn ${isBookmarked ? 'active' : ''}" data-ref="${item.ref}" title="Markieren">
-            <i data-lucide="bookmark" style="width: 16px; height: 16px;"></i>
-          </button>
-          
-          <div style="display: flex; align-items: start; gap: 12px; margin-bottom: 12px;">
-            <span class="badge badge-primary">Frage ${idx + 1}</span>
-            <h3 style="flex: 1; font-weight: 700; font-size: 14px;">${item.ref}</h3>
-            <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
-              <input type="checkbox" class="sel-check" data-ref="${item.ref}" style="width: 16px; height: 16px; cursor: pointer;" />
-              <span style="font-size: 11px; font-weight: 700; color: var(--text-muted);">Auswahl</span>
-            </label>
+    // === Disclaimer ===
+    ackBtn.addEventListener("click", ()=>{
+      if (!ack.checked){ toast("Bitte die Checkbox bestätigen."); return; }
+      accepted=true; notice.style.display="none"; ackState.textContent="Hinweis bestätigt";
+      saveState();
+    });
+
+    // === Tabs / Select ===
+    function renderTabs(){
+      tabs.innerHTML=""; clusterSelect.innerHTML="";
+      CLUSTERS.forEach(c=>{
+        const b=document.createElement("button");
+        b.type="button"; b.className="tab"; b.setAttribute("role","tab");
+        b.setAttribute("aria-selected", c.key===activeKey ? "true":"false");
+        b.innerHTML=`<i data-lucide="${c.icon}"></i><span>${c.title}</span>`;
+        b.addEventListener("click", ()=>{ activeKey=c.key; renderTabs(); renderQuestions(); saveStateThrottled(); });
+        tabs.appendChild(b);
+
+        const opt=document.createElement("option");
+        opt.value=c.key; opt.textContent=c.title; if(c.key===activeKey) opt.selected=true;
+        clusterSelect.appendChild(opt);
+      });
+      if (window.lucide) lucide.createIcons();
+    }
+    clusterSelect.addEventListener("change", (e)=>{ activeKey=e.target.value; renderTabs(); renderQuestions(); saveStateThrottled(); });
+
+    function currentQuestions(){ return CLUSTERS.find(x=>x.key===activeKey)?.data || []; }
+
+    // === Quicklook mini-index ===
+    const LAW_INDEX = [
+      { law:"BBiG", para:"§ 11", tags:["vertrag","inhalte","mindestinhalte"], excerpt:"Niederschrift der wesentlichen Inhalte.", link:"https://www.gesetze-im-internet.de/bbig_2005/BBiG.pdf" },
+      { law:"BBiG", para:"§ 20", tags:["probezeit"], excerpt:"Probezeit: min. 1, max. 4 Monate.", link:"https://www.gesetze-im-internet.de/bbig_2005/BBiG.pdf" },
+      { law:"BBiG", para:"§ 15", tags:["freistellung","schule","wegezeit"], excerpt:"Freistellung; Wege Schule→Betrieb anrechenbar.", link:"https://www.gesetze-im-internet.de/bbig_2005/BBiG.pdf" },
+      { law:"BBiG", para:"§ 17", tags:["vergütung","miav"], excerpt:"Angemessene Vergütung; MiAV.", link:"https://www.gesetze-im-internet.de/bbig_2005/BBiG.pdf" },
+      { law:"JArbSchG", para:"§§ 8–15", tags:["arbeitszeit","ruhezeit","pausen"], excerpt:"Höchstarbeitszeiten; Ruhepausen; Ruhezeit 12 Std.", link:"https://www.gesetze-im-internet.de/jarbschg/JArbSchG.pdf" },
+      { law:"ArbZG", para:"§ 3/4/5", tags:["arbeitszeit","pausen","ruhezeit"], excerpt:"8 Std/Tag (bis 10 mit Ausgleich), Pausen, 11 Std Ruhe.", link:"https://www.gesetze-im-internet.de/arbzg/BJNR117100994.html" },
+    ];
+    function openQuicklook(){ qlBackdrop.classList.add("open"); qlModal.classList.add("open"); qlSearch.value=""; renderQuicklook(""); qlSearch.focus(); }
+    function closeQuicklook(){ qlBackdrop.classList.remove("open"); qlModal.classList.remove("open"); }
+    function renderQuicklook(q){
+      const query=(q||"").toLowerCase().trim();
+      const list = query ? LAW_INDEX.filter(x=> x.para.toLowerCase().includes(query) || x.law.toLowerCase().includes(query) || x.tags.some(t=>t.includes(query)) ) : LAW_INDEX;
+      qlList.innerHTML="";
+      if (!list.length){ qlList.innerHTML=`<div class="text-sm text-slate-500">Keine Treffer – versuche „§11“, „Probezeit“, „Ruhezeit“ …</div>`; return; }
+      list.forEach(x=>{
+        const row=document.createElement("div");
+        row.className="p-3 rounded-lg border hover:bg-[color:var(--surface-hover)]";
+        row.innerHTML=`
+          <div class="flex items-center justify-between">
+            <div class="font-semibold">${x.law} ${x.para}</div>
+            <a class="btn btn-sm" href="${x.link}" target="_blank" rel="noopener">PDF öffnen</a>
           </div>
-          
-          <p style="font-size: 13px; margin-bottom: 12px; color: var(--text); line-height: 1.6;">${item.q}</p>
-          
-          <textarea 
-            style="width: 100%;"
-            rows="4"
-            placeholder="Deine Antwort (max. ${MAX_ANSWER_CHARS} Zeichen)..."
-            maxlength="${MAX_ANSWER_CHARS}"
-            data-ref="${item.ref}"
-          ></textarea>
-          
-          <div class="tip hidden" data-ref="${item.ref}">
-            <details>
-              <summary style="font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 6px;">
-                <i data-lucide="info" style="width: 14px; height: 14px;"></i>
-                Orientierungshilfe
-              </summary>
-              <div style="margin-top: 8px; font-size: 12px; line-height: 1.5;">
-                ${item.tip.map(t => `<p style="margin-bottom: 4px;">• ${t}</p>`).join("")}
-              </div>
-            </details>
-          </div>
-          
-          <div class="rubric-wrap hidden" data-ref="${item.ref}">
-            <div class="rubric">
-              <p style="font-size: 11px; font-weight: 700; margin-bottom: 8px; color: var(--text-muted);">KI-Rubriken-Score:</p>
-              ${RUBRIC_KEYS.map(k => `
-                <div style="margin-bottom: 8px;">
-                  <div style="display: flex; justify-between; font-size: 11px; font-weight: 700; margin-bottom: 4px; color: var(--text-muted);">
-                    <span>${k === 'normbezug' ? '📚 Normbezug' : k === 'vollstaendigkeit' ? '✅ Vollständigkeit' : '🎯 Praxisbezug'}</span>
-                    <span class="rubric-val" data-ref="${item.ref}" data-key="${k}">—</span>
-                  </div>
-                  <div class="rubric-bar">
-                    <div class="rubric-fill" data-ref="${item.ref}" data-key="${k}" style="width:0%;"></div>
-                  </div>
-                </div>
-              `).join("")}
-            </div>
-          </div>
-          
-          <div class="feedback-wrap hidden" data-ref="${item.ref}">
-            <p style="font-size: 11px; font-weight: 700; margin-bottom: 8px; display: flex; align-items: center; gap: 6px; color: var(--mf-primary);">
-              <i data-lucide="message-square" style="width: 14px; height: 14px;"></i>
-              KI-Feedback:
-            </p>
-            <div class="feedback-content" style="font-size: 13px; line-height: 1.6;"></div>
-          </div>
+          <div class="text-sm text-slate-600 mt-1">${x.excerpt}</div>
+          <div class="mt-1 flex flex-wrap gap-1">${x.tags.map(t=>`<span class="badge">${t}</span>`).join("")}</div>
         `;
-        form.appendChild(card);
+        qlList.appendChild(row);
+      });
+    }
+    quickBtn.addEventListener("click", openQuicklook);
+    qlBackdrop.addEventListener("click", closeQuicklook);
+    qlClose.addEventListener("click", closeQuicklook);
+    qlSearch.addEventListener("input", (e)=> renderQuicklook(e.target.value));
+
+    // === Bookmarks Modal ===
+    function openBM(){ bmBackdrop.classList.add("open"); bmModal.classList.add("open"); renderBM(); }
+    function closeBM(){ bmBackdrop.classList.remove("open"); bmModal.classList.remove("open"); }
+    bookmarksBtn.addEventListener("click", openBM);
+    bmBackdrop.addEventListener("click", closeBM);
+    bmClose?.addEventListener("click", closeBM);
+    function renderBM(){
+      const refs=Object.keys(bookmarks).filter(r=>bookmarks[r]);
+      bmList.innerHTML = refs.length? "": `<div class="text-sm text-slate-500">Keine Markierungen.</div>`;
+      refs.forEach(ref=>{
+        const ans=(answersByRef[ref]||"").trim();
+        const div=document.createElement("div");
+        div.className="p-3 rounded-lg border";
+        div.innerHTML = `<div class="font-semibold mb-1">${ref}</div><div class="text-sm text-slate-600">${ans?ans.slice(0,200)+"…":"(keine Antwort)"}</div>`;
+        bmList.appendChild(div);
+      });
+    }
+    function updateBMCount(){
+      const n = Object.values(bookmarks).filter(Boolean).length;
+      if (n>0){ bookmarkCount.textContent=String(n); bookmarkCount.style.display="inline-flex"; }
+      else bookmarkCount.style.display="none";
+    }
+
+    // === History (Snapshot pro Gesamtfeedback) ===
+    function openHist(){ histBackdrop.classList.add("open"); histModal.classList.add("open"); renderHist(); }
+    function closeHist(){ histBackdrop.classList.remove("open"); histModal.classList.remove("open"); }
+    historyBtn.addEventListener("click", openHist);
+    histBackdrop.addEventListener("click", closeHist);
+    histClose.addEventListener("click", closeHist);
+    function renderHist(){
+      const arr = loadHistory();
+      histList.innerHTML = "";
+      if (!arr.length){ histList.innerHTML = `<div class="text-sm text-slate-500">Noch keine Einträge.</div>`; return; }
+      arr.slice().reverse().forEach(h=>{
+        const d=document.createElement("div");
+        d.className="p-3 rounded-lg border";
+        d.innerHTML = `<div class="text-[11px] text-slate-500">${new Date(h.ts).toLocaleString()}</div><div class="mt-1 prose text-sm">${window.marked? marked.parse(h.html): h.html}</div>`;
+        histList.appendChild(d);
+      });
+    }
+    function loadHistory(){ try{ return JSON.parse(localStorage.getItem("MF_CLUSTER_HISTORY_V1")||"[]"); }catch{ return []; } }
+    function saveHistory(html){
+      const arr = loadHistory(); arr.push({ts:Date.now(), html}); localStorage.setItem("MF_CLUSTER_HISTORY_V1", JSON.stringify(arr));
+    }
+
+    // === Render Fragen ===
+    function renderQuestions(){
+      // persist previous visible
+      [...form.querySelectorAll("section[data-ref]")].forEach(sec=>{
+        const ref=sec.getAttribute("data-ref");
+        const ta=sec.querySelector("textarea");
+        const cb=sec.querySelector("input[type='checkbox'][data-select]");
+        if (ta) answersByRef[ref]=ta.value;
+        if (cb) selectedByRef[ref]=cb.checked;
       });
 
-      if (window.lucide) lucide.createIcons();
+      const QUESTIONS = currentQuestions();
+      form.innerHTML="";
+      QUESTIONS.forEach((item, idx)=>{
+        const id=`q_${idx}`, fbId=`fb_${idx}`, selId=`sel_${idx}`;
+        const sec=document.createElement("section");
+        sec.className="card q-card";
+        sec.setAttribute("data-ref", item.ref);
+        const isMarked = !!bookmarks[item.ref];
+        sec.innerHTML = `
+          <button type="button" class="bookmark ${isMarked?'active':''}" data-bm="${item.ref}" title="Markieren">
+            <i data-lucide="bookmark" class="w-4 h-4 ${isMarked?'text-black':''}"></i>
+          </button>
 
-      // Bookmark buttons
-      form.querySelectorAll(".bookmark-btn").forEach(btn => {
-        btn.addEventListener("click", () => {
-          const ref = btn.dataset.ref;
-          bookmarks[ref] = !bookmarks[ref];
+          <header class="flex items-center justify-between gap-3 mb-1">
+            <div class="flex items-center gap-2">
+              <input id="${selId}" type="checkbox" class="w-4 h-4 accent-[#005EB8]" data-select="${idx}" aria-label="Für KI-Feedback auswählen">
+              <span class="badge badge-primary">Frage ${idx+1}</span>
+              <span class="badge">${item.ref}</span>
+            </div>
+            <span class="text-[11px] text-slate-400">Cluster: ${CLUSTERS.find(c=>c.key===activeKey)?.title||''}</span>
+          </header>
+
+          <h3 class="text-[15px] font-semibold mb-2">${item.q}</h3>
+
+          <details class="tip mb-2">
+            <summary class="list-none cursor-pointer select-none flex items-center gap-2 text-[#005EB8] hover:opacity-90 text-[13px]">
+              <i data-lucide="info" class="w-4 h-4"></i><span>🛈 Musterlösung</span>
+            </summary>
+            <div class="mt-2">${(item.tip||[]).map(t=>`<p class="text-sm">• ${t}</p>`).join("")}
+              <div class="mt-2 flex gap-2">
+                <button type="button" data-quick="${idx}" class="btn btn-sm"><i data-lucide="search" class="w-4 h-4"></i> §-Quicklook</button>
+                <button type="button" data-ask="${idx}" class="btn btn-sm"><i data-lucide="sparkles" class="w-4 h-4"></i> KI-Check</button>
+              </div>
+              <div id="${fbId}" class="prose text-sm max-w-none hidden mt-2"></div>
+            </div>
+          </details>
+
+          <label for="${id}" class="sr-only">Antwort</label>
+          <textarea id="${id}" rows="4" class="w-full p-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-[#005EB8] text-[15px]" placeholder="Deine Antwort …"></textarea>
+
+          <div class="mt-2">
+            <button type="button" data-fill="${id}" class="btn btn-sm">Beispiel-Gliederung</button>
+          </div>
+        `;
+        form.appendChild(sec);
+
+        // restore values
+        const ta=sec.querySelector("textarea");
+        const cb=sec.querySelector(`[data-select]`);
+        if (answersByRef[item.ref]) ta.value = answersByRef[item.ref];
+        if (selectedByRef[item.ref]!=null) cb.checked = !!selectedByRef[item.ref];
+      });
+
+      // events
+      form.querySelectorAll("textarea").forEach(ta=>{
+        ta.addEventListener("input", ()=>{ answersByRef[ta.closest("section").getAttribute("data-ref")] = ta.value; updateProgress(); saveStateThrottled(); });
+        ta.addEventListener("keydown", (e)=>{ if((e.ctrlKey||e.metaKey)&&e.key==="Enter"){ e.preventDefault(); submitBtn.click(); } });
+      });
+      form.querySelectorAll("[data-fill]").forEach(btn=>{
+        btn.addEventListener("click", ()=>{
+          const ta=document.getElementById(btn.getAttribute("data-fill"));
+          ta.value = ["### Kurzantwort","- …","- …","- …","","### Begründung/Norm (optional)","- …"].join("\n");
+          answersByRef[ta.closest("section").getAttribute("data-ref")] = ta.value;
+          updateProgress(); saveStateThrottled();
+        });
+      });
+      form.querySelectorAll("[data-ask]").forEach(btn=>{
+        btn.addEventListener("click", async (e)=>{
+          if (!accepted){ toast("Bitte zuerst den Hinweis bestätigen."); return; }
+          await askPerAnswer(Number(e.currentTarget.getAttribute("data-ask")), e.currentTarget);
+        });
+      });
+      form.querySelectorAll("[data-select]").forEach(cb=>{
+        cb.addEventListener("change", (e)=>{
+          const ref=e.currentTarget.closest("section").getAttribute("data-ref");
+          selectedByRef[ref] = e.currentTarget.checked; updateSelCount(); saveStateThrottled();
+        });
+      });
+      form.querySelectorAll("[data-quick]").forEach(btn=>{
+        btn.addEventListener("click", ()=>{
+          const idx=Number(btn.getAttribute("data-quick"));
+          const item=currentQuestions()[idx];
+          openQuicklook();
+          const terms=(item.q+" "+(item.tip||[]).join(" ")).toLowerCase();
+          const keys=["§","probezeit","ruhezeit","vergütung","freistellung","ausbildungsordnung","ausbildungsplan","kündigung","ausland","berichtsheft"];
+          const hit=keys.find(k=>terms.includes(k))||"";
+          qlSearch.value=hit; renderQuicklook(hit);
+        });
+      });
+      form.querySelectorAll("[data-bm]").forEach(btn=>{
+        btn.addEventListener("click", ()=>{
+          const ref=btn.getAttribute("data-bm");
+          bookmarks[ref]=!bookmarks[ref];
           if (!bookmarks[ref]) delete bookmarks[ref];
           localStorage.setItem(BOOKMARK_KEY, JSON.stringify(bookmarks));
-          btn.classList.toggle("active", bookmarks[ref]);
-          updateBookmarkCount();
+          btn.classList.toggle("active", !!bookmarks[ref]);
+          updateBMCount();
           if (window.lucide) lucide.createIcons();
         });
       });
 
-      // Textareas
-      form.querySelectorAll("textarea[data-ref]").forEach(ta => {
-        const r = ta.dataset.ref;
-        ta.value = answers[r] || "";
-        ta.addEventListener("input", () => {
-          answers[r] = ta.value.trim();
-          saveState();
-          updateProgress();
-        });
-      });
-
-      // Checkboxes
-      form.querySelectorAll(".sel-check").forEach(cb => {
-        const r = cb.dataset.ref;
-        cb.checked = !!selected[r];
-        cb.addEventListener("change", () => {
-          selected[r] = cb.checked;
-          updateProgress();
-        });
-      });
-
-      updateProgress();
-      updateBookmarkCount();
-      restoreRubrics();
-    }
-
-    function updateProgress() {
-      const total = pool.length;
-      const answered = Object.values(answers).filter(a => a.length > 0).length;
-      const selectedCount = Object.values(selected).filter(Boolean).length;
-      
-      progressBar.style.width = `${(answered / total) * 100}%`;
-      progressTxt.textContent = `${answered} / ${total} beantwortet`;
-      selText.textContent = `${selectedCount} ausgewählt`;
-    }
-
-    function updateBookmarkCount() {
-      const count = Object.keys(bookmarks).length;
-      if (count > 0) {
-        bookmarkCount.textContent = count;
-        bookmarkCount.style.display = "inline-flex";
-      } else {
-        bookmarkCount.style.display = "none";
-      }
-    }
-
-    function saveState() {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({ answers, selected, rubrics }));
-    }
-
-    function restoreRubrics() {
-      Object.entries(rubrics).forEach(([ref, r]) => {
-        RUBRIC_KEYS.forEach(k => {
-          const val = r[k] || 0;
-          const valEl = document.querySelector(`.rubric-val[data-ref="${ref}"][data-key="${k}"]`);
-          const fillEl = document.querySelector(`.rubric-fill[data-ref="${ref}"][data-key="${k}"]`);
-          if (valEl) valEl.textContent = val.toFixed(1);
-          if (fillEl) fillEl.style.width = `${(val / 2) * 100}%`;
-        });
-        const wrap = document.querySelector(`.rubric-wrap[data-ref="${ref}"]`);
-        if (wrap) wrap.classList.remove("hidden");
-      });
-    }
-
-    // === Spider Chart ===
-    function updateSpiderChart() {
-      const entries = Object.entries(rubrics);
-      if (entries.length === 0) {
-        chartSection.style.display = "none";
-        return;
-      }
-
-      const avgRubric = entries.reduce((acc, [ref, r]) => {
-        acc.normbezug += r.normbezug || 0;
-        acc.vollstaendigkeit += r.vollstaendigkeit || 0;
-        acc.praxisbezug += r.praxisbezug || 0;
-        acc.count++;
-        return acc;
-      }, { normbezug: 0, vollstaendigkeit: 0, praxisbezug: 0, count: 0 });
-
-      const count = avgRubric.count || 1;
-      chartSection.style.display = "block";
-
-      const isDark = document.documentElement.classList.contains('dark');
-      const textColor = isDark ? '#FFFFFF' : '#0F1111';
-      const gridColor = isDark ? '#3A4553' : '#D5D9D9';
-
-      if (rubricChart) rubricChart.destroy();
-
-      rubricChart = new Chart(rubricChartCanvas, {
-        type: 'radar',
-        data: {
-          labels: ['Normbezug', 'Vollständigkeit', 'Praxisbezug'],
-          datasets: [{
-            label: 'Durchschnitt',
-            data: [
-              (avgRubric.normbezug / count).toFixed(1),
-              (avgRubric.vollstaendigkeit / count).toFixed(1),
-              (avgRubric.praxisbezug / count).toFixed(1)
-            ],
-            backgroundColor: 'rgba(0, 94, 184, 0.15)',
-            borderColor: '#005EB8',
-            borderWidth: 2,
-            pointBackgroundColor: '#005EB8',
-            pointBorderColor: '#fff',
-            pointRadius: 5,
-            pointHoverRadius: 7
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          scales: {
-            r: {
-              beginAtZero: true,
-              max: 2,
-              ticks: {
-                stepSize: 0.5,
-                color: textColor,
-                backdropColor: 'transparent',
-                font: { size: 11, weight: '600' }
-              },
-              grid: { color: gridColor, lineWidth: 1 },
-              pointLabels: {
-                color: textColor,
-                font: { size: 12, weight: '700' }
-              }
-            }
-          },
-          plugins: {
-            legend: { display: false },
-            tooltip: {
-              backgroundColor: isDark ? '#1C2531' : '#FFFFFF',
-              titleColor: textColor,
-              bodyColor: textColor,
-              borderColor: gridColor,
-              borderWidth: 1,
-              padding: 12
-            }
-          }
-        }
-      });
-    }
-
-    // === Submit ===
-    submitBtn.addEventListener("click", async () => {
-      const selectedRefs = Object.keys(selected).filter(r => selected[r]);
-      if (selectedRefs.length === 0) {
-        showToast("❌ Bitte wähle mindestens eine Frage aus.");
-        return;
-      }
-
-      submitBtn.disabled = true;
-      submitBtn.innerHTML = '<i data-lucide="loader" class="animate-spin" style="width:16px;height:16px;"></i> Analysiere...';
       if (window.lucide) lucide.createIcons();
+      updateSelCount(); updateProgress(); updateBMCount();
+    }
 
-      const payload = selectedRefs.map(ref => {
-        const q = pool.find(item => item.ref === ref);
-        return { question: q.q, answer: answers[ref] || "", ref: q.ref };
+    function updateSelCount(){
+      const n = Object.entries(selectedByRef).filter(([r,v])=>v).length;
+      selText.textContent = `${n} ausgewählt`;
+    }
+    function updateProgress(){
+      const allRefs = currentQuestions().map(q=>q.ref);
+      const answered = allRefs.filter(r => (answersByRef[r]||"").trim().length>0).length;
+      const total = allRefs.length || 1;
+      progressBar.style.width = Math.round((answered/total)*100) + "%";
+      progressTxt.textContent = `${answered} / ${total} beantwortet`;
+    }
+
+    // === Prompts (wohlwollend, AILA-Style) ===
+    function buildPromptSingle(item, answer){
+      return `
+Beurteile **wohlwollend** eine Kurzantwort (Ausbildung/Arbeitsrecht). Wenn die geforderte Anzahl erfüllt ist, bestätige ausdrücklich **„passt“** und ergänze nur optional weitere zulässige Punkte.
+
+Antwortschema je Frage – knapp:
+- **Kurzfeedback** (max. 2 Sätze; inkl. „passt“, falls erfüllt)
+- **Richtige Lösung** (max. 4 Bulletpoints; ggf. Ergänzungen)
+- **Gesetz/§** (falls einschlägig: BBiG/JArbSchG/BUrlG/ArbZG/MuSchG/AGG/DSGVO/BGB/BetrVG)
+- **1 Praxistipp** (1 Satz)
+
+Frage: ${item.q}
+Antwort TN: ${answer || "(leer)"}`.trim();
+    }
+    function buildPromptAll(list){
+      return `
+Beurteile **wohlwollend** mehrere Kurzantworten (Ausbildung/Arbeitsrecht). Wenn die Soll-Anzahl erfüllt ist, schreibe **„passt“** und ergänze nur optional.
+
+Schema je Frage (knapp):
+- Kurzfeedback (max. 2 Sätze; inkl. „passt“ bei Erfüllung)
+- Richtige Lösung (max. 4 Bulletpoints)
+- Gesetz/§ (falls einschlägig)
+- 1 Praxistipp (1 Satz)
+
+Fragen & Antworten:
+${list.map(a=>`Q${a.nr} (${a.ref}): ${a.question}\nAntwort TN: ${a.answer || "(leer)"}`).join("\n\n")}
+`.trim();
+    }
+
+    async function callAI(payload,{timeoutMs=22000,retries=1}={}){
+      let lastErr;
+      for(let a=0;a<=retries;a++){
+        try{
+          const res=await Promise.race([
+            fetch(relay,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)}),
+            new Promise((_,rej)=>setTimeout(()=>rej(new Error("Timeout")),timeoutMs))
+          ]);
+          if(!res.ok) throw new Error(`HTTP ${res.status}`);
+          const t=await res.text();
+          try { const j=JSON.parse(t); return j.answer||j.content||j.result||t; } catch { return t; }
+        }catch(e){ lastErr=e; }
+      }
+      throw lastErr||new Error("Unbekannter Fehler");
+    }
+
+    async function askPerAnswer(idx, btnEl){
+      const QUESTIONS = currentQuestions();
+      const item = QUESTIONS[idx];
+      const ref = item.ref;
+      const val = (answersByRef[ref]||"").trim();
+
+      const fb = document.getElementById(`fb_${idx}`);
+      btnEl.disabled=true; const old=btnEl.innerHTML;
+      btnEl.innerHTML = `<svg class="animate-spin h-4 w-4" viewBox="0 0 24 24"></svg> Prüfen …`;
+      fb.classList.remove("hidden"); fb.innerHTML = `<div class="text-slate-500 text-sm">KI prüft …</div>`;
+
+      try{
+        const out = await callAI({ prompt: buildPromptSingle(item,val) });
+        fb.innerHTML = (window.marked ? marked.parse(out || "_Keine Antwort erhalten._") : (out || "_Keine Antwort erhalten._"));
+      }catch(e){
+        fb.innerHTML = `<div class="text-red-600 text-sm">Fehler: ${String(e).replace(/[<>&]/g,"")}</div>`;
+        toast("KI-Check fehlgeschlagen.");
+      }finally{
+        btnEl.disabled=false; btnEl.innerHTML=old; if (window.lucide) lucide.createIcons();
+      }
+    }
+
+    // === Gesamt-Feedback ===
+    submitBtn.addEventListener("click", async ()=>{
+      if (!accepted){ toast("Bitte zuerst den Hinweis bestätigen."); return; }
+      const QUESTIONS = currentQuestions();
+      let selRefs = QUESTIONS.map(q=>q.ref).filter(r=>selectedByRef[r]);
+      if (selRefs.length===0){
+        // falls nichts gewählt: alle mit Inhalt
+        selRefs = QUESTIONS.map(q=>q.ref).filter(r => (answersByRef[r]||"").trim().length>0);
+        if (selRefs.length===0){ toast("Bitte wähle mindestens eine Frage (oder schreibe eine Antwort)."); return; }
+      }
+
+      const list = selRefs.map((ref, i)=>{
+        const q = QUESTIONS.find(x=>x.ref===ref);
+        return { nr:i+1, ref:q.ref, question:q.q, answer:(answersByRef[ref]||"").trim() };
       });
 
-      try {
-        const res = await fetch(relay, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ questions: payload })
-        });
+      resultWrap.classList.remove("hidden");
+      aiResult.innerHTML = `<div class="text-slate-500 text-sm">KI erstellt Feedback …</div>`;
+      submitBtn.disabled=true; const old=submitBtn.innerHTML;
+      submitBtn.innerHTML = `<svg class="animate-spin h-5 w-5" viewBox="0 0 24 24"></svg> Prüfen …`;
 
-        if (!res.ok) throw new Error("API-Fehler");
+      try{
+        const out = await callAI({ prompt: buildPromptAll(list) });
+        aiResult.innerHTML = (window.marked ? marked.parse(out || "_Keine Antwort erhalten._") : (out || "_Keine Antwort erhalten._"));
+        saveHistory(aiResult.innerHTML);
+        window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
+      }catch(e){
+        aiResult.innerHTML = `<div class="text-red-600 text-sm">Gesamt-Feedback fehlgeschlagen (${String(e).replace(/[<>&]/g,"")}).</div>`;
+      }finally{
+        submitBtn.disabled=false; submitBtn.innerHTML=old; if (window.lucide) lucide.createIcons();
+      }
+    });
 
-        const data = await res.json();
-        
-        // Process individual feedback
-        if (data.results) {
-          data.results.forEach(item => {
-            const { ref, feedback, rubric } = item;
-            
-            // Feedback
-            const feedbackWrap = document.querySelector(`.feedback-wrap[data-ref="${ref}"]`);
-            if (feedbackWrap) {
-              feedbackWrap.classList.remove("hidden");
-              const feedbackContent = feedbackWrap.querySelector(".feedback-content");
-              if (feedbackContent) {
-                feedbackContent.innerHTML = window.marked ? marked.parse(feedback || "Keine Rückmeldung.") : (feedback || "Keine Rückmeldung.");
-              }
-            }
+    // === Reset ===
+    resetBtn.addEventListener("click", ()=>{
+      if (!confirm("Alle Eingaben im aktuellen Cluster löschen?")) return;
+      // nur aktuelles Cluster leeren:
+      currentQuestions().forEach(q=>{ delete answersByRef[q.ref]; delete selectedByRef[q.ref]; });
+      renderQuestions(); saveState();
+      resultWrap.classList.add("hidden"); aiResult.innerHTML="";
+      window.scrollTo({top:0, behavior:"smooth"});
+    });
 
-            // Rubrics
-            if (rubric) {
-              rubrics[ref] = rubric;
-              RUBRIC_KEYS.forEach(k => {
-                const val = rubric[k] || 0;
-                const valEl = document.querySelector(`.rubric-val[data-ref="${ref}"][data-key="${k}"]`);
-                const fillEl = document.querySelector(`.rubric-fill[data-ref="${ref}"][data-key="${k}"]`);
-                if (valEl) valEl.textContent = val.toFixed(1);
-                if (fillEl) fillEl.style.width = `${(val / 2) * 100}%`;
-              });
-              const wrap = document.querySelector(`.rubric-wrap[data-ref="${ref}"]`);
-              if (wrap) wrap.classList.remove("hidden");
-            }
+    // === Save / Load ===
+    function saveState(){
+      try{
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({
+          ts:Date.now(), accepted, activeKey, answersByRef, selectedByRef
+        }));
+      }catch{}
+    }
+    let tmr=null; function saveStateThrottled(){ clearTimeout(tmr); tmr=setTimeout(saveState, 400); }
 
-            // Tip
-            const tipEl = document.querySelector(`.tip[data-ref="${ref}"]
+    // === Toast ===
+    function toast(msg){ toastEl.textContent=msg; toastEl.style.display="block"; clearTimeout(toast._t); toast._t=setTimeout(()=>toastEl.style.display="none", 2600); }
+
+    // === Init ===
+    renderTabs();
+    renderQuestions();
+
+  });
+  </script>
+</body>
+</html>
