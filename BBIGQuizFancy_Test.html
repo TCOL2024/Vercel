@@ -918,7 +918,7 @@
     }
 
     checkAPIStatus();
-    setInterval(checkAPIStatus, 60000); // Check every minute
+    setInterval(checkAPIStatus, 60000);
 
     // Timer (Sitzungsuhr)
     let startTs = Date.now();
@@ -1154,10 +1154,8 @@
         form.appendChild(card);
       });
 
-      // Re-init Lucide
       if (window.lucide) lucide.createIcons();
 
-      // Attach listeners
       form.querySelectorAll("textarea[data-ref]").forEach(ta => {
         const r = ta.dataset.ref;
         ta.value = answers[r] || "";
@@ -1183,4 +1181,8 @@
 
     function updateProgress() {
       const total = pool.length;
-      const answered = Object
+      const answered = Object.values(answers).filter(a => a.length > 0).length;
+      const selectedCount = Object.values(selected).filter(Boolean).length;
+      
+      progressBar.style.width = `${(answered / total) * 100}%`;
+      progressTxt.textContent = `${answered} /
