@@ -4,9 +4,8 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
-  <title>BBiG-Quiz – Linda (Interaktiv)</title>
+  <title>BBiG-Quiz – Ausbildung & Sozialrecht</title>
 
-  <!-- External -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script defer src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
@@ -17,7 +16,6 @@
       --primary:#2563eb; --primary2:#0ea5e9; --accent:#22c55e;
       --surface:#ffffff; --surface2:#f7f8fb; --surface3:#eef2f7;
       --ink:#0f172a; --muted:#64748b; --border:#e2e8f0;
-      --radius:14px; --pill:999px;
     }
     html.dark{
       --surface:#0b1220; --surface2:#0f172a; --surface3:#111827;
@@ -45,23 +43,13 @@
     .q-card{position:relative;padding:16px}
     .tip{margin-top:.5rem;background:linear-gradient(180deg,rgba(37,99,235,.08),rgba(14,165,233,.08));border-left:3px solid var(--primary);padding:.8rem .9rem;border-radius:12px}
     .sticky-actions{position:sticky;bottom:0;z-index:40}
-    .notice{background:linear-gradient(135deg,#eaf2ff,#e6fbff);border-bottom:1px solid #cfe3ff}
-    .app-header{position:sticky;top:0;z-index:30;background:color-mix(in srgb,var(--surface) 88%,transparent);backdrop-filter:blur(8px);border-bottom:1px solid var(--border)}
 
-    /* Intro (leicht) */
-    .intro{position:fixed;inset:0;z-index:1000;display:flex;align-items:center;justify-content:center;padding:24px;background:radial-gradient(1200px 600px at 10% 0%, rgba(37,99,235,.15), transparent 60%),radial-gradient(1000px 600px at 90% 90%, rgba(14,165,233,.18), transparent 60%),linear-gradient(180deg,#0b1220 0%,#0c1633 50%,#0b1220 100%);color:#eaf2ff}
-    html.dark .intro{background:linear-gradient(180deg,#020617,#030a1a)}
-    .glass{width:min(980px,96vw);border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.06);backdrop-filter:blur(14px);border-radius:22px;box-shadow:0 10px 50px rgba(0,0,0,.35);overflow:hidden}
-    .intro-head{display:flex;align-items:center;gap:12px;padding:18px 20px;border-bottom:1px solid rgba(255,255,255,.12)}
-    .intro-grid{display:grid;grid-template-columns:1.15fr .85fr;gap:16px;padding:18px}
-    @media (max-width:920px){.intro-grid{grid-template-columns:1fr}}
-    .intro h1{font-size:26px;line-height:1.15;margin-bottom:8px}
-    .lead{color:#bdd3ff;font-size:14px}
-    .cta{display:inline-flex;align-items:center;gap:10px;padding:12px 16px;border-radius:14px;font-weight:800;background:#22c55e;color:#0b1220;border:1px solid #22c55e}
-    .intro.fadeout{animation:fade .45s ease forwards}
-    @keyframes fade{to{opacity:0;visibility:hidden}}
+    /* Domain switch */
+    .seg{display:inline-flex;background:var(--surface);border:1px solid var(--border);border-radius:999px;padding:4px}
+    .seg button{padding:.5rem .9rem;border-radius:999px;font-weight:700}
+    .seg button[aria-pressed="true"]{background:linear-gradient(90deg,var(--primary),var(--primary2));color:#fff}
 
-    /* Linda Avatar & Chat */
+    /* Linda Avatar */
     #lindaBtn{position:fixed;bottom:16px;right:16px;width:64px;height:64px;z-index:60;border:none;background:transparent;cursor:pointer}
     #lindaChat{position:fixed;bottom:96px;right:16px;width:min(92vw,360px);height:420px;z-index:60;display:none}
     .l-wrap{background:var(--surface);color:var(--ink);border:1px solid var(--border);border-radius:16px;box-shadow:0 12px 30px rgba(0,0,0,.2);display:flex;flex-direction:column;height:100%}
@@ -72,68 +60,15 @@
     .l-msg.ai{background:#eef6ff}
     .l-input{display:flex;gap:6px;padding:10px;border-top:1px solid var(--border)}
     .l-input input{flex:1;border:1px solid var(--border);border-radius:12px;padding:10px 12px;background:var(--surface)}
-    .chip{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border:1px solid var(--border);border-radius:999px;background:var(--surface3);font-size:12px;font-weight:600;cursor:pointer}
-    .chip:hover{background:var(--surface)}
 
-    /* Footer (Arial 10) */
+    /* Footer */
     footer.app-footer{font-family:Arial,Helvetica,sans-serif;font-size:10px;line-height:1.4;color:#4b5563;background:#eef2f6;border-top:1px solid var(--border)}
   </style>
 </head>
 <body>
 
-<!-- Intro -->
-<section id="intro" class="intro" role="dialog" aria-modal="true">
-  <div class="glass">
-    <div class="intro-head">
-      <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-[color:var(--primary)] to-[color:var(--primary2)] grid place-items-center shadow">
-        <i data-lucide="graduation-cap" class="w-5 h-5 text-white"></i>
-      </div>
-      <div>
-        <div class="font-bold">BBiG-Quiz • Lernmodus</div>
-        <div class="text-xs" style="color:#c9dafc">Kurze Antworten. Wohlwollendes Feedback. Mobilfreundlich.</div>
-      </div>
-      <div class="ml-auto flex items-center gap-3">
-        <button id="introTheme" type="button" class="btn btn-ghost btn-sm" style="color:#eaf2ff"><i data-lucide="moon" class="w-4 h-4"></i> Theme</button>
-      </div>
-    </div>
-
-    <div class="intro-grid">
-      <div class="p-5">
-        <h1>Schön, dass du das BBiG-Quiz testest!</h1>
-        <p class="lead">
-          Das Quiz ist in <strong>Clustern</strong> aufgebaut. Wähle ein Gebiet, beantworte ausgewählte oder alle Fragen –
-          das <strong>Feedback</strong> bezieht sich immer auf die von dir beantworteten Fragen.
-          Das Feedback kommt von <strong>Linda</strong> (KI). <em>Bitte prüfe Antworten stets – KI kann Fehler machen.</em>
-        </p>
-
-        <div class="mt-4 text-xs leading-relaxed">
-          <label class="inline-flex items-start gap-2"><input id="introAck" type="checkbox" class="mt-0.5 w-4 h-4 accent-[#22c55e]">
-            <span>Ich akzeptiere: keine personenbezogenen/sensiblen Daten; KI kann Fehler machen; alles ist zu prüfen; keine Haftungsansprüche.</span>
-          </label>
-        </div>
-
-        <div class="flex items-center gap-2 mt-4">
-          <button id="introStart" type="button" class="cta" disabled><i data-lucide="play" class="w-4 h-4"></i> Los geht’s</button>
-          <button id="introSkipNow" type="button" class="btn btn-ghost btn-sm" disabled>Überspringen</button>
-        </div>
-      </div>
-
-      <div class="p-5">
-        <div class="text-sm" style="color:#cfe0ff">
-          <strong>Quick-Tipps:</strong>
-          <ul class="list-disc ml-5 mt-2 space-y-1">
-            <li>Mit „?“ öffnest du den <em>§-Quicklook</em>.</li>
-            <li>BBiG/JArbSchG findest du immer unten rechts.</li>
-            <li>Auf Mobilgeräten nutzt du das Cluster-Dropdown.</li>
-          </ul>
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
-
 <!-- Hinweis -->
-<aside id="notice" class="notice">
+<aside id="notice" class="bg-[#eaf2ff] border-b border-[#cfe3ff]">
   <div class="container px-4 py-3 flex items-start gap-3">
     <div class="w-10 h-10 rounded-lg bg-white/70 grid place-items-center">
       <i data-lucide="shield-check" class="w-6 h-6 text-blue-600"></i>
@@ -159,27 +94,34 @@
 </aside>
 
 <!-- Header -->
-<header class="app-header">
+<header class="border-b border-[color:var(--border)] bg-[color:var(--surface)] sticky top-0 z-30">
   <div class="container px-4 py-3 flex flex-wrap items-center gap-3 justify-between">
     <div class="flex items-center gap-3">
       <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 to-sky-500 grid place-items-center shadow">
         <i data-lucide="graduation-cap" class="w-5 h-5 text-white"></i>
       </div>
       <div>
-        <h1 class="text-lg sm:text-xl font-semibold">BBiG-Quiz – Cluster</h1>
+        <h1 class="text-lg sm:text-xl font-semibold">BBiG-Quiz – Ausbildung & Sozialrecht</h1>
         <p class="text-xs text-slate-500">Wohlwollendes KI-Feedback • §-Quicklook • Autosave</p>
       </div>
     </div>
     <div class="flex items-center gap-2">
       <button id="quickBtn" type="button" class="btn btn-sm"><i data-lucide="search" class="w-4 h-4"></i> §-Quicklook</button>
-      <button id="themeToggle" type="button" class="btn btn-ghost btn-sm" title="Theme"><i data-lucide="moon" class="w-4 h-4"></i></button>
+      <button id="themeToggle" type="button" class="btn btn-ghost btn-sm"><i data-lucide="moon" class="w-4 h-4"></i></button>
     </div>
   </div>
 
-  <!-- Cluster Tabs -->
+  <!-- Domain switch + Cluster tabs -->
   <div class="container pb-3">
     <div class="card p-3">
-      <div id="tabs" class="tabs" role="tablist" aria-label="Cluster"></div>
+      <div class="flex items-center justify-between gap-3 flex-wrap">
+        <div class="seg" role="tablist" aria-label="Welt wählen">
+          <button id="domAusb" type="button" class="px-3" aria-pressed="true">Ausbildung</button>
+          <button id="domSoz" type="button" class="px-3" aria-pressed="false">Sozialrecht</button>
+        </div>
+        <div class="text-xs text-slate-500">Tipp: Auf dem Handy wählst du die Cluster unten im Dropdown.</div>
+      </div>
+      <div id="tabs" class="tabs mt-3" role="tablist" aria-label="Cluster"></div>
       <select id="clusterSelect" class="mt-2 w-full rounded-xl border px-3 py-2 text-sm"></select>
     </div>
   </div>
@@ -238,14 +180,15 @@
     <div class="flex items-center justify-between">
       <div class="flex items-center gap-2">
         <i data-lucide="search" class="w-5 h-5 text-blue-600"></i>
-        <h3 class="text-base font-semibold">§-Quicklook – BBiG & JArbSchG</h3>
+        <h3 class="text-base font-semibold">§-Quicklook – BBiG, JArbSchG & SGB-Auszüge</h3>
       </div>
       <button id="qlClose" class="btn btn-ghost btn-sm"><i data-lucide="x" class="w-4 h-4"></i></button>
     </div>
     <div class="mt-2 flex gap-2">
       <input id="qlSearch" type="search" class="flex-1 rounded-xl border px-3 py-2" placeholder="Begriff oder § …">
-      <a class="btn btn-sm" href="https://www.gesetze-im-internet.de/bbig_2005/BBiG.pdf" target="_blank" rel="noopener">BBiG</a>
-      <a class="btn btn-sm" href="https://www.gesetze-im-internet.de/jarbschg/JArbSchG.pdf" target="_blank" rel="noopener">JArbSchG</a>
+      <a class="btn btn-sm" href="https://www.gesetze-im-internet.de/sgb_06/" target="_blank" rel="noopener">SGB VI</a>
+      <a class="btn btn-sm" href="https://www.gesetze-im-internet.de/sgb_11/" target="_blank" rel="noopener">SGB XI</a>
+      <a class="btn btn-sm" href="https://www.gesetze-im-internet.de/sgb_03/" target="_blank" rel="noopener">SGB III</a>
     </div>
     <div id="qlList" class="mt-3 grid gap-2"></div>
   </div>
@@ -301,16 +244,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
   /* Config */
   const relay="/api/linda-proxy";
-  const STORAGE="LINDA_INTERACTIVE_V1";
-  const INTRO_KEY="LINDA_INTRO_SKIP";
+  const STORAGE="BBIG_DUALDOMAIN_V1";
 
-  /* UI Refs */
-  const intro=document.getElementById("intro");
-  const introStart=document.getElementById("introStart");
-  const introSkipNow=document.getElementById("introSkipNow");
-  const introAck=document.getElementById("introAck");
-  const introTheme=document.getElementById("introTheme");
-
+  /* Refs */
   const form=document.getElementById("form");
   const progressBar=document.getElementById("progressBar");
   const progressTxt=document.getElementById("progressText");
@@ -322,6 +258,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const tabs=document.getElementById("tabs");
   const clusterSelect=document.getElementById("clusterSelect");
+
+  const domAusb=document.getElementById("domAusb");
+  const domSoz=document.getElementById("domSoz");
 
   const notice=document.getElementById("notice");
   const ack=document.getElementById("ack");
@@ -352,7 +291,6 @@ document.addEventListener("DOMContentLoaded", () => {
   applyThemeIcon();
   const toggleTheme=()=>{ document.documentElement.classList.toggle("dark"); localStorage.setItem("theme_pref", document.documentElement.classList.contains("dark")?"dark":"light"); applyThemeIcon(); };
   themeToggle.addEventListener("click", toggleTheme);
-  introTheme.addEventListener("click", toggleTheme);
 
   /* Timer */
   let startTs=Date.now();
@@ -365,69 +303,110 @@ document.addEventListener("DOMContentLoaded", () => {
   let accepted=false;
   ackBtn.addEventListener("click", ()=>{ if(!ack.checked){ toast("Bitte zuerst den Hinweis bestätigen."); return; } accepted=true; notice.style.display="none"; ackState.textContent="Hinweis bestätigt"; saveState(); });
 
-  /* Data (kurz) */
-  const CLUSTERS=[
-    {key:"core", title:"Kern", icon:"layers", data:[
+  /* DATA — Domains */
+  // Ausbildung (verkürzt – wie gehabt)
+  const AUS_CLUSTERS=[
+    {key:"kern", title:"Kern", icon:"layers", data:[
       {ref:"V1 – Mindestinhalte Vertrag", q:"Nenne vier Pflichtangaben, die zwingend in den Berufsausbildungsvertrag gehören.", tip:["Parteien; Beginn/Dauer; Ziel/Berufsbezeichnung; sachliche & zeitliche Gliederung; Vergütung; Probezeit; Urlaub; Kündigung; Nachweisform.","§ 11 BBiG."]},
       {ref:"V3 – Probezeit", q:"Wie lang muss/darf die Probezeit sein – und warum ist sie wichtig?", tip:["Mind. 1, max. 4 Monate; Eignungsprüfung beider Seiten.","§ 20 BBiG."]},
-      {ref:"V5 – Wegezeiten", q:"Zählt der Weg von der Berufsschule zurück in den Betrieb als Arbeitszeit?", tip:["Ja, Wegezeiten zwischen Schule und Ausbildungsstätte sind anzurechnen.","§ 15 Abs. 2 Nr. 1 BBiG."]}
+      {ref:"V5 – Wegezeiten", q:"Zählt der Weg von der Berufsschule zurück in den Betrieb als Arbeitszeit?", tip:["Ja – Wegezeiten zwischen Schule und Ausbildungsstätte anrechnen.","§ 15 Abs. 2 Nr. 1 BBiG."]}
     ]},
-    {key:"recht", title:"Recht", icon:"scale", data:[
-      {ref:"R1 – Freistellung", q:"Nenne zwei Beispiele für Freistellung nach § 15 BBiG.", tip:["Berufsschule, Prüfungen; Wege Schule→Betrieb."]},
-      {ref:"R2 – Vergütung", q:"Was gilt zur Mindestausbildungsvergütung (MiAV)?", tip:["Untergrenze je Jahrgang; Tarif ggf. höher.","§ 17 BBiG."]}
-    ]},
-    {key:"grundlagen", title:"Grundlagen & Recruiting", icon:"users", data:[
-      {ref:"G1 – Eignung", q:"Was umfasst die persönliche Eignung von Ausbilder*innen grob?", tip:["Keine einschlägigen Rechtsverstöße; Zuverlässigkeit; Vorbildfunktion."]},
-      {ref:"G2 – Auswahl", q:"Nenne zwei faire Kriterien für die Azubi-Auswahl (keine Diskriminierung).", tip:["Kompetenzen, Schul-/Leistungsnachweise, Motivation (AGG beachten)."]}
+    {key:"recht", title:"Recht/§§", icon:"scale", data:[
+      {ref:"R1 – Freistellung", q:"Nenne zwei Beispiele für Freistellung nach § 15 BBiG.", tip:["Berufsschule; Prüfungen; Wege Schule→Betrieb."]},
+      {ref:"R2 – Vergütung", q:"Was gilt zur Mindestausbildungsvergütung (MiAV)?", tip:["Untergrenze je Jahrgang; Tarif ggf. höher (§ 17 BBiG)."]}
     ]}
   ];
-  function currentQs(){ return CLUSTERS.find(c=>c.key===activeKey)?.data||[]; }
 
+  // Sozialrecht – aus deinen PDFs (Pflege/Arbeitslosigkeit/Sozialgericht/SGB VI)
+  const SOZ_CLUSTERS=[
+    {key:"pflege", title:"Pflege (SGB XI)", icon:"heart-pulse", data:[
+      {ref:"P1 – Pflichtversicherung", q:"Wer ist in der sozialen Pflegeversicherung pflichtversichert und wo ist das geregelt?", tip:["Gesetzlich Krankenversicherte automatisch in SPV; Privatversicherte: private Pflegepflichtversicherung; geregelt im SGB XI."]},
+      {ref:"P2 – Ambulant", q:"Nenne Pflegegeld und Pflegesachleistungen (2025) für PG 2–5 in Stichpunkten.", tip:["PG2: 347€/796€; PG3: 599€/1.497€; PG4: 800€/1.859€; PG5: 990€/2.299€ (Pflegegrad 1: kein Pflegegeld/-sachl.)."]},
+      {ref:"P3 – Stationär", q:"Welche monatlichen Leistungen gibt es bei vollstationärer Pflege (PG 2–5)?", tip:["PG2: 1.061€; PG3: 1.575€; PG4: 2.111€; PG5: 2.351€ (gesetzlich)."]},
+      {ref:"P4 – Entlastung & Hilfsmittel", q:"Was umfasst der Entlastungsbetrag und wie hoch sind Pauschalen für Verbrauchs-Pflegehilfsmittel pro Monat?", tip:["Entlastungsbetrag 131€ mtl. (ambulant, alle PG); Pflegehilfsmittel zum Verbrauch bis 42€ mtl.; techn. Hilfsmittel: 10% max. 25€ Eigenanteil."]},
+      {ref:"P5 – Wohnumfeld", q:"Welche Maßnahmen der Wohnumfeldverbesserung sind förderfähig – und bis zu welcher Höhe?", tip:["z. B. Türverbreiterung, Rampe, bodengleiche Dusche; Zuschuss bis 4.180€ je Maßnahme (Pflege-WG bis 4×)."]}
+    ]},
+    {key:"alo", title:"Arbeitslosigkeit (SGB III)", icon:"briefcase", data:[
+      {ref:"A1 – Zweck & Leistungen", q:"Wozu dient die Arbeitslosenversicherung und welche Hauptleistungen nennt das SGB III?", tip:["Sicherung des Lebensunterhalts durch Arbeitslosengeld; Förderung von Weiterbildung; Wiedereingliederung (§§ 136–138, § 81 SGB III)."]},
+      {ref:"A2 – Beitrag", q:"Wie hoch ist der Beitragssatz (2025) und wie wird er getragen? Was ist die BBG?", tip:["2,6% vom Brutto, je 1,3% AG/AN; BBG 2025: 96.600€ p. a.; Abführung mit Gesamtsozialversicherungsbeitrag (§ 28d SGB IV)."]}
+    ]},
+    {key:"sgbvi", title:"Rente (SGB VI)", icon:"banknote", data:[
+      {ref:"V I – Aufgaben RV", q:"Nenne Ziel/Aufgaben der gesetzlichen Rentenversicherung laut SGB VI.", tip:["Sicherung im Alter, bei Erwerbsminderung, für Hinterbliebene; Reha vor Rente."]},
+      {ref:"V II – Personenkreis", q:"Wer gehört typischerweise zum versicherten Personenkreis der RV?", tip:["Beschäftigte; bestimmte Selbständige; Pflegepersonen (u. a.)."]},
+      {ref:"V III – Rentenarten", q:"Nenne mindestens drei Rentenarten der gesetzlichen Rentenversicherung.", tip:["Regelaltersrente; Altersrenten (versch. Altersgrenzen); Rente wegen Erwerbsminderung; Hinterbliebenenrenten."]}
+    ]},
+    {key:"sgb", title:"Sozialgerichtsbarkeit", icon:"gavel", data:[
+      {ref:"S1 – Aufbau", q:"Skizziere den Instanzenzug der Sozialgerichtsbarkeit (unten → oben).", tip:["Sozialgericht (Kammern) → Landessozialgericht (Senate) → Bundessozialgericht (Senate). Vorher: Widerspruchsverfahren."]},
+      {ref:"S2 – BSG-Rolle", q:"Welche Aufgabe hat das Bundessozialgericht im Wesentlichen?", tip:["Revisionsgericht – entscheidet über Rechtsfragen; an Tatsachenfeststellungen gebunden; ggf. Zurückverweisung."]},
+      {ref:"S3 – Zuständigkeit", q:"Nenne drei Sachgebiete, für die die Sozialgerichte zuständig sind.", tip:["z. B. SGB V/VI/VII/XI, Grundsicherung, Sozialhilfe, Vertragsarztrecht, Künstlersozialversicherung."]}
+    ]}
+  ];
+
+  // Minimaler §-Index für Quicklook
   const LAW_INDEX=[
-    {law:"BBiG", para:"§ 11", tags:["vertrag","inhalte"], excerpt:"Niederschrift der wesentlichen Inhalte.", link:"https://www.gesetze-im-internet.de/bbig_2005/BBiG.pdf"},
-    {law:"BBiG", para:"§ 20", tags:["probezeit"], excerpt:"Probezeit: min. 1, max. 4 Monate.", link:"https://www.gesetze-im-internet.de/bbig_2005/BBiG.pdf"},
-    {law:"BBiG", para:"§ 15", tags:["freistellung","wegezeit"], excerpt:"Freistellung; Wege Schule→Betrieb anrechenbar.", link:"https://www.gesetze-im-internet.de/bbig_2005/BBiG.pdf"}
+    {law:"SGB XI", para:"Leistungen ambulant/stationär", tags:["pflege","leistung","pflegegrad"], excerpt:"Ambulant (PG2–5): 347/599/800/990 € Pflegegeld; 796/1497/1859/2299 € Sachleistung. Stationär: 1.061–2.351 € (PG2–5).", link:"https://www.gesetze-im-internet.de/sgb_11/"},
+    {law:"SGB III", para:"§§ 136–138; § 81; § 341; § 28d SGB IV", tags:["alo","beitrag","bbg"], excerpt:"Arbeitslosenversicherung: Zweck/Leistungen; Weiterbildung; Beitrag 2,6% (1,3/1,3); BBG 2025: 96.600 €.", link:"https://www.gesetze-im-internet.de/sgb_03/"},
+    {law:"SGB VI", para:"§§ 1, 33, 43", tags:["rente","arten"], excerpt:"Ziele/Aufgaben; Rentenarten inkl. EM-Rente; Hinterbliebenenleistungen.", link:"https://www.gesetze-im-internet.de/sgb_06/"},
+    {law:"BBiG", para:"§§ 11, 15, 17, 20", tags:["ausbildung","vertrag","freistellung","miav","probezeit"], excerpt:"Vertragsinhalte, Freistellung, Vergütung, Probezeit.", link:"https://www.gesetze-im-internet.de/bbig_2005/"},
+    {law:"JArbSchG", para:"Ruhezeit/Pausen", tags:["jugendliche","arbeitszeit"], excerpt:"Ruhezeit mind. 12 h; besondere Schutzregeln.", link:"https://www.gesetze-im-internet.de/jarbschg/"}
   ];
 
   /* State */
-  let activeKey="core";
+  let domain="ausbildung"; // 'ausbildung' | 'sozialrecht'
   let answersByRef={}, selectedByRef={};
 
   // Restore
   (function restore(){
     try{
       const s=JSON.parse(localStorage.getItem(STORAGE)||"{}");
-      activeKey=s.activeKey||"core"; answersByRef=s.answersByRef||{}; selectedByRef=s.selectedByRef||{}; accepted=!!s.accepted;
+      domain=s.domain||"ausbildung";
+      answersByRef=s.answersByRef||{};
+      selectedByRef=s.selectedByRef||{};
+      if(s.accepted){ accepted=true; notice.style.display="none"; ack.checked=true; ackState.textContent="Hinweis bestätigt"; }
     }catch{}
-    if(accepted){ notice.style.display="none"; ack.checked=true; ackState.textContent="Hinweis bestätigt"; }
-    setIntroBtns();
-    if(localStorage.getItem(INTRO_KEY)==="1"){ intro.style.display="none"; openLinda(true); }
+    setDomButtons();
   })();
 
-  /* Intro logic */
-  function setIntroBtns(){ const ok=introAck.checked; introStart.disabled=!ok; introSkipNow.disabled=!ok; }
-  introAck.addEventListener("change", setIntroBtns);
-  function startApp(){ intro.classList.add("fadeout"); setTimeout(()=>intro.style.display="none",450); openLinda(true); }
-  introStart.addEventListener("click", ()=>{ localStorage.setItem(INTRO_KEY,"1"); startApp(); });
-  introSkipNow.addEventListener("click", startApp);
+  /* Domain switch */
+  function setDomButtons(){
+    domAusb.setAttribute("aria-pressed", domain==="ausbildung");
+    domSoz.setAttribute("aria-pressed", domain==="sozialrecht");
+  }
+  function getClusters(){ return domain==="ausbildung" ? AUS_CLUSTERS : SOZ_CLUSTERS; }
+  domAusb.addEventListener("click", ()=>{ domain="ausbildung"; setDomButtons(); renderTabs(); renderQuestions(); saveState(); });
+  domSoz.addEventListener("click", ()=>{ domain="sozialrecht"; setDomButtons(); renderTabs(); renderQuestions(); saveState(); });
 
   /* Tabs */
   function renderTabs(){
     tabs.innerHTML=""; clusterSelect.innerHTML="";
-    CLUSTERS.forEach(c=>{
+    getClusters().forEach((c,idx)=>{
       const b=document.createElement("button");
-      b.type="button"; b.className="tab"; b.setAttribute("aria-selected", c.key===activeKey?"true":"false");
+      b.type="button"; b.className="tab"; b.setAttribute("aria-selected", idx===0?"true":"false");
+      if(idx===0) activeKey=c.key;
+      b.dataset.key=c.key;
       b.innerHTML=`<i data-lucide="${c.icon}"></i><span>${c.title}</span>`;
-      b.addEventListener("click", ()=>{ activeKey=c.key; renderTabs(); renderQuestions(); saveState(); });
+      b.addEventListener("click", ()=>{ activeKey=c.key; updateSelTab(); renderQuestions(); saveState(); });
       tabs.appendChild(b);
-      const opt=document.createElement("option"); opt.value=c.key; opt.textContent=c.title; if(c.key===activeKey) opt.selected=true; clusterSelect.appendChild(opt);
+
+      const opt=document.createElement("option"); opt.value=c.key; opt.textContent=c.title; if(idx===0) opt.selected=true; clusterSelect.appendChild(opt);
     });
     if (window.lucide) lucide.createIcons();
   }
-  clusterSelect.addEventListener("change", e=>{ activeKey=e.target.value; renderTabs(); renderQuestions(); saveState(); });
+  function updateSelTab(){
+    tabs.querySelectorAll(".tab").forEach(btn=>btn.setAttribute("aria-selected", String(btn.dataset.key===activeKey)));
+    [...clusterSelect.options].forEach(o=> o.selected = (o.value===activeKey));
+  }
+  clusterSelect.addEventListener("change", e=>{ activeKey=e.target.value; updateSelTab(); renderQuestions(); saveState(); });
 
   /* Questions */
+  let activeKey;
+  function currentQs(){
+    const c = getClusters().find(x=>x.key===activeKey) || getClusters()[0];
+    return c? c.data : [];
+  }
   function renderQuestions(){
+    const pack=getClusters();
+    if(!activeKey) activeKey=pack[0].key;
     form.innerHTML="";
     currentQs().forEach((item,idx)=>{
       const id=`q_${idx}`, fbId=`fb_${idx}`, selId=`sel_${idx}`;
@@ -439,7 +418,7 @@ document.addEventListener("DOMContentLoaded", () => {
             <span class="badge badge-primary">Frage ${idx+1}</span>
             <span class="badge">${item.ref}</span>
           </div>
-          <span class="text-[11px] text-slate-400">Cluster: ${CLUSTERS.find(c=>c.key===activeKey)?.title||""}</span>
+          <span class="text-[11px] text-slate-400">Cluster: ${pack.find(c=>c.key===activeKey)?.title||""}</span>
         </header>
         <h3 class="text-[15px] font-semibold mb-2">${item.q}</h3>
         <details class="tip mb-2">
@@ -505,9 +484,9 @@ document.addEventListener("DOMContentLoaded", () => {
     progressTxt.textContent = `${answered} / ${refs.length||0} beantwortet`;
   }
 
-  /* Prompts */
+  /* Prompts – wohlwollend */
   function buildPromptSingle(item,answer){
-    return `Beurteile **wohlwollend** eine Kurzantwort (BBiG/JArbSchG etc.). Wenn die geforderte Anzahl erfüllt ist, schreibe **"passt"** und ergänze nur optional.
+    return `Beurteile **wohlwollend** eine Kurzantwort (BBiG/JArbSchG/SGB etc.). Wenn die geforderte Anzahl erfüllt ist, schreibe **"passt"** und ergänze nur optional.
 - Kurzfeedback (max 2 Sätze, inkl. "passt" bei Erfüllung)
 - Richtige Lösung (max 4 Bulletpoints)
 - Gesetz/§ (falls einschlägig)
@@ -533,7 +512,7 @@ ${list.map(a=>`Q (${a.ref}): ${a.question}\nAntwort: ${a.answer||"(leer)"}`).joi
     if(!accepted){ toast("Bitte zuerst den Hinweis bestätigen."); return; }
     const refs=currentQs().map(q=>q.ref).filter(r=> selectedByRef[r] || (answersByRef[r]||"").trim().length>0 );
     if(!refs.length){ toast("Bitte wähle mindestens eine Frage oder schreibe eine Antwort."); return; }
-    const list=refs.map((ref,i)=>({ref,question:currentQs().find(x=>x.ref===ref).q,answer:(answersByRef[ref]||"").trim()}));
+    const list=refs.map((ref)=>({ref,question:currentQs().find(x=>x.ref===ref).q,answer:(answersByRef[ref]||"").trim()}));
     const wrap=document.getElementById("resultWrap"), out=document.getElementById("aiResult");
     wrap.classList.remove("hidden"); out.innerHTML='<div class="text-slate-500 text-sm">KI erstellt Feedback …</div>';
     submitBtn.disabled=true; const old=submitBtn.innerHTML; submitBtn.innerHTML='<svg class="animate-spin h-5 w-5" viewBox="0 0 24 24"></svg> Prüfen …';
@@ -556,7 +535,7 @@ ${list.map(a=>`Q (${a.ref}): ${a.question}\nAntwort: ${a.answer||"(leer)"}`).joi
       <div class="p-3 rounded-xl border hover:bg-[color:var(--surface3)]">
         <div class="flex items-center justify-between">
           <div class="font-semibold">${x.law} ${x.para}</div>
-          <a class="btn btn-sm" href="${x.link}" target="_blank" rel="noopener">PDF öffnen</a>
+          <a class="btn btn-sm" href="${x.link}" target="_blank" rel="noopener">zur Norm</a>
         </div>
         <div class="text-sm text-slate-600 mt-1">${x.excerpt}</div>
         <div class="mt-1 flex flex-wrap gap-1">${x.tags.map(t=>`<span class="badge">${t}</span>`).join("")}</div>
@@ -569,39 +548,20 @@ ${list.map(a=>`Q (${a.ref}): ${a.question}\nAntwort: ${a.answer||"(leer)"}`).joi
   document.addEventListener("keydown", e=>{ if(e.key==="?") openQL(); });
 
   /* Autosave */
-  function saveState(){ localStorage.setItem(STORAGE, JSON.stringify({activeKey,answersByRef,selectedByRef,accepted})); }
+  function saveState(){ localStorage.setItem(STORAGE, JSON.stringify({domain,answersByRef,selectedByRef,accepted})); }
   window.addEventListener("beforeunload", saveState);
 
-  /* Linda chat */
+  /* Linda chat (drag, send) */
   function pushLinda(role, html){ const d=document.createElement("div"); d.className=`l-msg ${role==='me'?'me':'ai'}`; d.innerHTML=html; lBody.appendChild(d); lBody.scrollTop=lBody.scrollHeight; }
-  function openLinda(greet=false){
+  function openLinda(){
     lChat.style.display="block";
-    if (greet && !lBody.dataset.greet){
-      pushLinda("ai", "Hallo, ich bin <strong>Linda</strong> 👋<br>Womit möchtest du starten?");
-      // Vorschlags-Chips
-      const wrap=document.createElement("div"); wrap.className="l-msg ai"; wrap.innerHTML=`
-        <div class="flex flex-wrap gap-2">
-          <span class="chip" data-cluster="core">Kern</span>
-          <span class="chip" data-cluster="recht">Recht</span>
-          <span class="chip" data-cluster="grundlagen">Grundlagen & Recruiting</span>
-          <span class="chip" data-action="example">Beispielantwort einfügen</span>
-        </div>`;
-      lBody.appendChild(wrap);
+    if (!lBody.dataset.greet){
+      pushLinda("ai","Hallo, ich bin <strong>Linda</strong> 👋<br>Du kannst zwischen <em>Ausbildung</em> und <em>Sozialrecht</em> wechseln. Frag mich z. B.: „Gib mir eine Beispielantwort zu Pflegegrad 3 ambulant.“");
       lBody.dataset.greet="1";
-      wrap.querySelectorAll(".chip").forEach(ch=>{
-        ch.addEventListener("click", ()=>{
-          const c=ch.dataset.cluster, act=ch.dataset.action;
-          if (c){ activeKey=c; renderTabs(); renderQuestions(); saveState(); pushLinda("ai", `Okay – ich habe auf <strong>${CLUSTERS.find(x=>x.key===c).title}</strong> umgeschaltet.`); }
-          if (act==="example"){
-            const first=currentQs()[0]; if(!first){ pushLinda("ai","Es gibt hier gerade keine Frage."); return; }
-            answersByRef[first.ref]="### Kurzantwort\n- Punkt 1\n- Punkt 2\n- Punkt 3\n\n### Begründung/Norm\n- §-Verweis …"; renderQuestions(); saveState(); pushLinda("ai","Ich habe eine Beispielstruktur in die erste Frage eingefügt. 🎯");
-          }
-        });
-      });
     }
   }
   function closeLinda(){ lChat.style.display="none"; }
-  lBtn.addEventListener("click", ()=>{ lChat.style.display=(lChat.style.display==="block")?"none":"block"; });
+  document.getElementById("lindaBtn").addEventListener("click", ()=>{ lChat.style.display=(lChat.style.display==="block")?"none":"block"; });
   lClose.addEventListener("click", closeLinda);
 
   // Drag
@@ -619,7 +579,7 @@ ${list.map(a=>`Q (${a.ref}): ${a.question}\nAntwort: ${a.answer||"(leer)"}`).joi
     const txt=lText.value.trim(); if(!txt) return;
     pushLinda("me", txt.replace(/</g,"&lt;")); lText.value="";
     try{
-      const out=await callAI({prompt:`Du bist Linda. Antworte knapp, freundlich, mit §§ wenn sinnvoll. Frage:\n${txt}`});
+      const out=await callAI({prompt:`Du bist Linda (freundlich, knapp, §-Bezug). Welt: ${domain}. Frage:\n${txt}`});
       pushLinda("ai", window.marked?marked.parse(out):out);
     }catch(e){
       pushLinda("ai", `<span class="text-red-600">Fehler: ${String(e).replace(/[<>&]/g,"")}</span>`);
@@ -628,12 +588,9 @@ ${list.map(a=>`Q (${a.ref}): ${a.question}\nAntwort: ${a.answer||"(leer)"}`).joi
   lSend.addEventListener("click", sendLinda);
   lText.addEventListener("keydown", e=>{ if(e.key==="Enter"){ e.preventDefault(); sendLinda(); } });
 
-  /* Tabs + Questions initial */
+  /* Init */
   renderTabs(); renderQuestions();
 
-  /* Quick start after intro when accepted previously */
-  function gateHideIntro(){ intro.classList.add("fadeout"); setTimeout(()=>intro.style.display="none",450); }
-  if (intro && localStorage.getItem(INTRO_KEY)==="1") gateHideIntro();
 });
 </script>
 </body>
