@@ -330,7 +330,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const qlSearch = document.getElementById("qlSearch");
   const qlList = document.getElementById("qlList");
 
-  // Linda
+  // Linda (FIXED toggle)
   const lindaBtn = document.getElementById("lindaBtn");
   const lindaWrap = document.getElementById("lindaWrap");
   const dragBar = document.getElementById("dragBar");
@@ -626,10 +626,11 @@ ${list.map(a=>`Q (${a.ref}): ${a.question}\nAntwort: ${a.answer||"(leer)"}`).joi
   }
   function closeQL(){ qlBackdrop.classList.add("hidden"); qlModal.classList.add("hidden"); qlModal.classList.remove("flex"); }
   function renderQL(q){
+    const listSrc = ${/* keep list inline from LAW_INDEX to be used */""}LAW_INDEX;
     const query=(q||"").toLowerCase();
     const list = query
-      ? LAW_INDEX.filter(x=> x.para.toLowerCase().includes(query) || x.law.toLowerCase().includes(query) || x.tags.some(t=>t.toLowerCase().includes(query)) )
-      : LAW_INDEX;
+      ? listSrc.filter(x=> x.para.toLowerCase().includes(query) || x.law.toLowerCase().includes(query) || x.tags.some(t=>t.toLowerCase().includes(query)) )
+      : listSrc;
     qlList.innerHTML = list.map(x=>`
       <div class="p-3 rounded-xl border hover:bg-[color:var(--surface3)]">
         <div class="flex items-center justify-between">
@@ -652,19 +653,27 @@ ${list.map(a=>`Q (${a.ref}): ${a.question}\nAntwort: ${a.answer||"(leer)"}`).joi
   /* ===== Init ===== */
   renderTabs(); renderQuestions();
 
-  /* ===== Linda (Smart Chat) ===== */
+  /* ===== Linda (Smart Chat) – FIXED TOGGLE ===== */
   function sanitize(t){ return (t||'').replace(/[<>&]/g, s=>({ '<':'&lt;','>':'&gt;','&':'&amp;' }[s])); }
   function pushMsg(role, html){ const d=document.createElement('div'); d.className='l-msg '+(role==='me'?'me':'ai'); d.innerHTML=html; stream.appendChild(d); stream.scrollTop=stream.scrollHeight; }
 
-  // Open/Close
-  lindaBtn.addEventListener("click", ()=>{ lindaWrap.style.display = (lindaWrap.style.display==="block"?"none":"block"); });
-  closeLinda.addEventListener("click", ()=>{ lindaWrap.style.display="none"; });
+  function setLinda(open){ lindaWrap.style.display = open ? "block" : "none"; }
+  function toggleLinda(){ setLinda(lindaWrap.style.display !== "block"); }
+
+  // Genau EIN Listener – verhindert „auf/zu“-Flackern
+  lindaBtn.addEventListener("click", toggleLinda);
+  closeLinda.addEventListener("click", ()=> setLinda(false));
+  window.addEventListener("keydown", (e)=>{ if(e.key==="Escape") setLinda(false); });
 
   // Drag
   (function enableDrag(){
     let down=false,sx=0,sy=0,sl=0,st=0;
-    dragBar.addEventListener("mousedown",(e)=>{down=true;sx=e.clientX;sy=e.clientY;const r=lindaWrap.getBoundingClientRect();sl=r.left;st=r.top;document.body.style.userSelect="none";});
-    window.addEventListener("mousemove",(e)=>{if(!down)return; const dx=e.clientX-sx, dy=e.clientY-sy; lindaWrap.style.left=(sl+dx)+"px"; lindaWrap.style.top=(st+dy)+"px"; lindaWrap.style.right="auto"; lindaWrap.style.bottom="auto";});
+    dragBar.addEventListener("mousedown",(e)=>{down=true;sx=e.clientX;sy=e.clientY;
+      const r=lindaWrap.getBoundingClientRect();sl=r.left;st=r.top;document.body.style.userSelect="none";});
+    window.addEventListener("mousemove",(e)=>{if(!down)return;
+      const dx=e.clientX-sx, dy=e.clientY-sy;
+      lindaWrap.style.left=(sl+dx)+"px"; lindaWrap.style.top=(st+dy)+"px";
+      lindaWrap.style.right="auto"; lindaWrap.style.bottom="auto";});
     window.addEventListener("mouseup",()=>{down=false;document.body.style.userSelect="";});
     const dock=()=>{ lindaWrap.style.left=""; lindaWrap.style.top=""; lindaWrap.style.right="16px"; lindaWrap.style.bottom="96px"; };
     dock(); window.addEventListener("resize", dock, {passive:true});
@@ -673,8 +682,12 @@ ${list.map(a=>`Q (${a.ref}): ${a.question}\nAntwort: ${a.answer||"(leer)"}`).joi
   // Resize
   (function enableResize(){
     let isRes=false, sx=0, sy=0, sw=0, sh=0;
-    resizeHandle.addEventListener("mousedown", (e)=>{ isRes=true; sx=e.clientX; sy=e.clientY; const r=lindaWrap.getBoundingClientRect(); sw=r.width; sh=r.height; e.preventDefault(); });
-    window.addEventListener("mousemove",(e)=>{ if(!isRes) return; const dx=e.clientX-sx, dy=e.clientY-sy; lindaWrap.style.width=Math.max(320, sw+dx)+"px"; lindaWrap.style.height=Math.max(400, sh+dy)+"px"; });
+    resizeHandle.addEventListener("mousedown", (e)=>{ isRes=true; sx=e.clientX; sy=e.clientY;
+      const r=lindaWrap.getBoundingClientRect(); sw=r.width; sh=r.height; e.preventDefault(); });
+    window.addEventListener("mousemove",(e)=>{ if(!isRes) return;
+      const dx=e.clientX-sx, dy=e.clientY-sy;
+      lindaWrap.style.width=Math.max(320, sw+dx)+"px";
+      lindaWrap.style.height=Math.max(400, sh+dy)+"px"; });
     window.addEventListener("mouseup",()=>{ isRes=false; });
   })();
 
@@ -760,14 +773,8 @@ ${list.map(a=>`Q (${a.ref}): ${a.question}\nAntwort: ${a.answer||"(leer)"}`).joi
   sendBtn.addEventListener('click', sendLinda);
   lInput.addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); sendLinda(); } });
 
-  // Open/close avatar
-  lindaBtn.addEventListener("click", ()=>{ lindaWrap.style.display = (lindaWrap.style.display==="block"?"none":"block"); });
-
-  /* ===== Export Quicklook helpers (used by per-Frage buttons) ===== */
+  /* ===== Export Quicklook helpers ===== */
   window.openQL = openQL;
-
-  // Also allow seeding Quicklook from anywhere
-  window.openQLSeed = (seed)=>{ openQL(seed); };
 
 });
 </script>
