@@ -346,6 +346,7 @@
 
     <script>
         const WEBHOOK_URL = "/api/linda-proxy";
+
         const chatToggle = document.getElementById('chat-toggle');
         const chatWidget = document.getElementById('chat-widget');
         const chatClose = document.getElementById('chat-close');
@@ -380,12 +381,18 @@
                 },
                 body: JSON.stringify({ message }),
             })
-            .then(response => response.json())
-            .then(data => {
-                addMessage(data.response || 'Entschuldigung, ich konnte das nicht verstehen.', 'bot');
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Netzwerkfehler: ' + response.status);
+                }
+                return response.text(); // Verwende text(), da der Webhook wahrscheinlich Text zurückgibt
             })
-            .catch(() => {
-                addMessage('Es gab einen Fehler. Bitte versuchen Sie es später erneut.', 'bot');
+            .then(text => {
+                addMessage(text || 'Entschuldigung, ich konnte das nicht verstehen.', 'bot');
+            })
+            .catch(error => {
+                console.error('Fehler:', error);
+                addMessage('Es gab einen Fehler bei der Verbindung. Bitte versuchen Sie es später erneut.', 'bot');
             });
         }
 
