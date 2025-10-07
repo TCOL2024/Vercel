@@ -2,20 +2,15 @@
 <html lang="de">
 <head>
 <meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
 <title>BBiG-Quiz – Ausbildung & Sozialrecht</title>
-
-<!-- Deps -->
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <script src="https://cdn.tailwindcss.com"></script>
 <script defer src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
-  :root{
-    --bg:#f6f7fb;--card:#fff;--ink:#0f172a;--muted:#64748b;--bd:#e5e7eb;
-    --p1:#2563eb;--p2:#0ea5e9;
-  }
+  :root{--bg:#f6f7fb;--card:#fff;--ink:#0f172a;--muted:#64748b;--bd:#e5e7eb;--p1:#2563eb;--p2:#0ea5e9}
   html.dark{--bg:#0b1220;--card:#0f172a;--ink:#e5e7eb;--muted:#9aa4b2;--bd:#1f2937}
   html,body{font-family:Inter,system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;background:var(--bg);color:var(--ink);font-size:14px}
   .container{max-width:1120px;margin:auto;padding:0 16px}
@@ -36,13 +31,12 @@
   .q-card{padding:16px}
   .tip{margin-top:.5rem;background:linear-gradient(180deg,rgba(37,99,235,.08),rgba(14,165,233,.08));border-left:3px solid var(--p1);padding:.8rem .9rem;border-radius:12px}
   .sticky-actions{position:sticky;bottom:0;z-index:40}
-
-  /* Linda – minimalist floating chat */
+  /* Linda */
   #lindaBtn{position:fixed;right:16px;bottom:16px;width:64px;height:64px;border:none;background:transparent;z-index:80;cursor:pointer}
   #lindaPanel{position:fixed;right:16px;bottom:96px;width:min(92vw,420px);height:560px;display:none;z-index:80}
   .l-wrap{display:flex;flex-direction:column;height:100%;background:var(--card);border:1px solid var(--bd);border-radius:16px;box-shadow:0 18px 44px rgba(0,0,0,.18);overflow:hidden}
   .l-top{display:flex;align-items:center;gap:10px;padding:10px 12px;border-bottom:1px solid var(--bd);cursor:move}
-  .l-body{display:flex;flex-direction:column;gap:0;height:100%}
+  .l-body{display:flex;flex-direction:column;height:100%}
   .l-stream{flex:1;overflow:auto;padding:12px}
   .bubble{max-width:85%;padding:10px 12px;border-radius:14px;margin:6px 0;font-size:13px}
   .ai{background:#eef6ff}
@@ -63,12 +57,12 @@
     <div class="text-sm leading-snug">
       <p class="font-semibold text-slate-800">Schön, dass du das BBiG-Quiz testest!</p>
       <p class="text-slate-700">
-        Das Quiz ist nach <strong>Clustern</strong> aufgebaut. Wähle ein Cluster, beantworte Fragen gesammelt oder selektiv –
-        das KI-Feedback bezieht sich immer auf die Antworten, die du tatsächlich eingegeben hast. Dein Feedback kommt von <strong>Linda</strong>.
+        Das Quiz ist nach <strong>Clustern</strong> aufgebaut. Wähle ein Cluster, beantworte Fragen gesammelt oder selektiv – das KI-Feedback
+        bezieht sich immer auf die Antworten, die du eingegeben hast. Dein Feedback kommt von <strong>Linda</strong>.
       </p>
       <p class="text-slate-700 mt-1">
-        <strong>Disclaimer:</strong> Keine personenbezogenen oder sensiblen Daten eingeben. KI kann Fehler machen – alles ist zu prüfen.
-        Dies ist keine Rechtsberatung; Haftungsansprüche sind ausgeschlossen.
+        <strong>Disclaimer:</strong> Keine personenbezogenen/sensiblen Daten eingeben. KI kann Fehler machen – alles prüfen.
+        Keine Rechtsberatung; Haftung ausgeschlossen.
       </p>
       <label class="mt-2 inline-flex items-center gap-2">
         <input id="ack" type="checkbox" class="w-4 h-4 accent-blue-600">
@@ -78,7 +72,6 @@
     <div class="ml-auto flex items-center gap-2">
       <a class="btn btn-sm" href="https://www.gesetze-im-internet.de/bbig_2005/BBiG.pdf" target="_blank" rel="noopener"><i data-lucide="book-open" class="w-4 h-4"></i> BBiG</a>
       <a class="btn btn-sm" href="https://www.gesetze-im-internet.de/jarbschg/JArbSchG.pdf" target="_blank" rel="noopener"><i data-lucide="shield" class="w-4 h-4"></i> JArbSchG</a>
-      <span id="ackState" class="hidden text-xs text-slate-600">Hinweis bestätigt</span>
       <button id="ackBtn" type="button" class="btn btn-primary btn-sm"><i data-lucide="check" class="w-4 h-4"></i> Weiter</button>
     </div>
   </div>
@@ -138,7 +131,6 @@
 <!-- Quiz -->
 <main class="container my-4">
   <form id="form" class="grid gap-4" novalidate></form>
-
   <section id="resultWrap" class="hidden mt-4" aria-live="polite">
     <div class="card p-4">
       <div class="flex items-center gap-2 mb-2">
@@ -184,17 +176,17 @@
         <a class="btn btn-sm" href="https://www.gesetze-im-internet.de/sgb_5/" target="_blank">SGB V</a>
         <a class="btn btn-sm" href="https://www.gesetze-im-internet.de/sgb_6/" target="_blank">SGB VI</a>
         <a class="btn btn-sm" href="https://www.gesetze-im-internet.de/sgb_11/" target="_blank">SGB XI</a>
-        <a class="btn btn-sm" href="https://www.gesetze-im-internet.de/jarbschg/BJNR009650976.html#BJNR009650976BJNG000401308" target="_blank">JArbSchG – Arbeitszeit/Jugend</a>
-        <a class="btn btn-sm" href="https://www.gesetze-im-internet.de/bgb/__106.html" target="_blank">BGB §106 Geschäftsfähigkeit</a>
+        <a class="btn btn-sm" href="https://www.gesetze-im-internet.de/jarbschg/BJNR009650976.html#BJNR009650976BJNG000401308" target="_blank">JArbSchG – Jugendliche</a>
+        <a class="btn btn-sm" href="https://www.gesetze-im-internet.de/bgb/__106.html" target="_blank">BGB §106</a>
         <a class="btn btn-sm" href="https://www.dihk.de/de/themen-und-positionen/fachkraefte/aus-und-weiterbildung/ausbildung/mustervertraege-15280" target="_blank">DIHK – Musterverträge</a>
-        <a class="btn btn-sm" href="https://www.bibb.de/dienst/berufesuche/de/index_berufesuche.php/profile/apprenticeship/kfmfb25" target="_blank">BIBB – Rahmenplan KfbM</a>
+        <a class="btn btn-sm" href="https://www.bibb.de/dienst/berufesuche/de/index_berufesuche.php/profile/apprenticeship/kfmfb25" target="_blank">BIBB – Rahmenplan</a>
       </div>
     </div>
     <div id="qlList" class="mt-3 grid gap-2 text-sm text-slate-600"></div>
   </div>
 </div>
 
-<!-- Linda: Button -->
+<!-- Linda Button (Avatar) -->
 <button id="lindaBtn" aria-label="Linda öffnen" title="Mit Linda chatten">
   <svg viewBox="0 0 100 100" width="64" height="64" xmlns="http://www.w3.org/2000/svg">
     <defs><radialGradient id="g" cx="50%" cy="40%" r="60%"><stop offset="0%" stop-color="#3b82f6"/><stop offset="100%" stop-color="#1e40af"/></radialGradient></defs>
@@ -204,7 +196,7 @@
   </svg>
 </button>
 
-<!-- Linda: Panel -->
+<!-- Linda Panel -->
 <div id="lindaPanel" role="dialog" aria-label="Chat mit Linda">
   <div class="l-wrap">
     <div id="dragBar" class="l-top">
@@ -227,11 +219,10 @@
 </div>
 
 <!-- Footer -->
-<footer style="font:10px/1.4 Arial, Helvetica, sans-serif;color:#475569;background:#eef2f6;border-top:1px solid var(--bd);margin-top:24px">
+<footer style="font:10px/1.4 Arial,Helvetica,sans-serif;color:#475569;background:#eef2f6;border-top:1px solid var(--bd);margin-top:24px">
   <div class="container px-4 py-4">
-    Diese Anwendung nutzt künstliche Intelligenz (KI). Du stimmst mit der Nutzung zu, dass Deine Texte und Antworten von OpenAI verarbeitet werden.
-    Es werden keine personenbezogenen Daten erhoben oder verarbeitet. Missbräuchliche Nutzung ist untersagt. Jegliche Haftung ist ausgeschlossen.
-    Alle Antworten sind zu prüfen. KI-generierte Inhalte können fehlerhaft sein.
+    Diese Anwendung nutzt KI. Deine Texte/Antworten werden von OpenAI verarbeitet. Es werden keine personenbezogenen Daten erhoben oder verarbeitet.
+    Missbrauch ist untersagt. Jegliche Haftung ist ausgeschlossen. Alle Antworten sind zu prüfen; KI kann irren.
   </div>
 </footer>
 
@@ -244,9 +235,8 @@ document.addEventListener("DOMContentLoaded", () => {
   if(window.marked) marked.setOptions({breaks:true,gfm:true});
 
   /* ===== Config ===== */
-  const relay = "/api/linda-proxy";      // dein Proxy zu Make/OpenAI
-  const STORAGE = "BBIG_STATE_V4";
-  const CHAT_STORE = "BBIG_CHAT_V4";
+  const relay = "/api/linda-proxy";            // dein Proxy
+  const STORAGE = "BBIG_STATE_V5";
   const MAX_ANSWER = 1500;
 
   /* ===== Refs ===== */
@@ -267,7 +257,6 @@ document.addEventListener("DOMContentLoaded", () => {
   const notice = document.getElementById("notice");
   const ack = document.getElementById("ack");
   const ackBtn = document.getElementById("ackBtn");
-  const ackState = document.getElementById("ackState");
 
   const themeToggle = document.getElementById("themeToggle");
 
@@ -289,7 +278,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const sendBtn = document.getElementById("sendBtn");
   const resizeHandle = document.getElementById("resizeHandle");
 
-  /* ===== Daten – kurze Demo-Sets ===== */
+  /* ===== Daten (Demo) ===== */
   const AUS_CLUSTERS = [
     { key:"kern", title:"Kern", icon:"layers", data:[
       {ref:"V1 – Vertragsinhalte", q:"Nenne vier Pflichtangaben, die zwingend in den Berufsausbildungsvertrag gehören.", tip:["Parteien; Beginn/Dauer; Ziel/Berufsbezeichnung; sachliche & zeitliche Gliederung; Vergütung; Probezeit; Urlaub; Kündigung; Nachweisform.","§ 11 BBiG."]},
@@ -308,7 +297,7 @@ document.addEventListener("DOMContentLoaded", () => {
       {ref:"P3 – Stationär", q:"Welche monatlichen Leistungen gibt es bei vollstationärer Pflege (PG 2–5)?", tip:["PG2 1.061€; PG3 1.575€; PG4 2.111€; PG5 2.351€ – Gesetz prüfen."]}
     ]},
     { key:"alo", title:"Arbeitslosigkeit (SGB III)", icon:"briefcase", data:[
-      {ref:"A1 – Zweck & Leistungen", q:"Wozu dient die Arbeitslosenversicherung und welche Hauptleistungen nennt das SGB III?", tip:["ALG; Förderung Weiterbildung; Wiedereingliederung (§§ 136–138, § 81 SGB III)."]}
+      {ref:"A1 – Zweck & Leistungen", q:"Wozu dient die Arbeitslosenversicherung und welche Hauptleistungen nennt das SGB III?", tip:["Arbeitslosengeld; Förderung Weiterbildung; Eingliederung (§§ 136–138, § 81 SGB III)."]}
     ]}
   ];
 
@@ -316,8 +305,8 @@ document.addEventListener("DOMContentLoaded", () => {
     {law:"BBiG", para:"§ 11 – Vertragsinhalte", tags:["vertrag","inhalte"], excerpt:"Parteien, Beginn/Dauer, Ziel/Berufsbezeichnung, sachliche/zeitliche Gliederung, Vergütung, Probezeit, Urlaub, Kündigung.", link:"https://www.gesetze-im-internet.de/bbig_2005/BBiG.pdf"},
     {law:"BBiG", para:"§ 15 – Freistellung", tags:["schule","prüfungen","wegezeit"], excerpt:"Freistellung für Berufsschule/Prüfungen; Wegezeiten Schule→Betrieb anrechnen.", link:"https://www.gesetze-im-internet.de/bbig_2005/BBiG.pdf"},
     {law:"BBiG", para:"§ 17 – Vergütung", tags:["miav","vergütung"], excerpt:"Angemessene Vergütung – Mindestausbildungsvergütung als Untergrenze.", link:"https://www.gesetze-im-internet.de/bbig_2005/BBiG.pdf"},
-    {law:"JArbSchG", para:"Arbeitszeit/Freizeit", tags:["jugendliche","ruhezeit"], excerpt:"Mindestruhezeit 12 Stunden; besondere Schutzvorschriften.", link:"https://www.gesetze-im-internet.de/jarbschg/JArbSchG.pdf"},
-    {law:"SGB III", para:"Arbeitsförderung", tags:["arbeitslosigkeit","alg"], excerpt:"ALG, Förderung beruflicher Weiterbildung, Eingliederung.", link:"https://www.gesetze-im-internet.de/sgb_3/"},
+    {law:"JArbSchG", para:"Arbeitszeit/Freizeit", tags:["jugendliche","ruhezeit"], excerpt:"Mindestruhezeit 12 Stunden; Schutzvorschriften.", link:"https://www.gesetze-im-internet.de/jarbschg/JArbSchG.pdf"},
+    {law:"SGB III", para:"Arbeitsförderung", tags:["arbeitslosigkeit","alg"], excerpt:"ALG, Förderung Weiterbildung, Eingliederung.", link:"https://www.gesetze-im-internet.de/sgb_3/"},
     {law:"SGB VI", para:"Rentenversicherung", tags:["rente"], excerpt:"Rentenarten; Reha vor Rente.", link:"https://www.gesetze-im-internet.de/sgb_6/"},
     {law:"SGB XI", para:"Pflegeversicherung", tags:["pflege"], excerpt:"Leistungen ambulant/stationär nach Pflegegrad.", link:"https://www.gesetze-im-internet.de/sgb_11/"},
     {law:"BGB", para:"§106 – Geschäftsfähigkeit", tags:["minderjährige"], excerpt:"Beschränkte Geschäftsfähigkeit Minderjähriger.", link:"https://www.gesetze-im-internet.de/bgb/__106.html"},
@@ -331,74 +320,47 @@ document.addEventListener("DOMContentLoaded", () => {
   let accepted=false;
   let activeKey=null;
 
-  /* ===== Utils ===== */
-  const sanitize = (t)=> (t||'').replace(/[<>&]/g, s=>({ '<':'&lt;','>':'&gt;','&':'&amp;' }[s]));
+  /* ===== Helpers ===== */
+  const sanitize=(t)=> (t||'').replace(/[<>&]/g,s=>({ '<':'&lt;','>':'&gt;','&':'&amp;' }[s]));
   function toast(m){ toastEl.textContent=m; toastEl.style.display="block"; clearTimeout(toast._t); toast._t=setTimeout(()=>toastEl.style.display="none",2200); }
 
-  /* ===== Theme ===== */
-  function setThemeIcon(){
-    themeToggle.innerHTML = document.documentElement.classList.contains("dark") ? '<i data-lucide="sun" class="w-4 h-4"></i>' : '<i data-lucide="moon" class="w-4 h-4"></i>';
-    if(window.lucide) lucide.createIcons();
-  }
+  /* Theme */
+  function setThemeIcon(){ themeToggle.innerHTML=document.documentElement.classList.contains("dark")?'<i data-lucide="sun" class="w-4 h-4"></i>':'<i data-lucide="moon" class="w-4 h-4"></i>'; if(window.lucide) lucide.createIcons(); }
   if(localStorage.getItem("theme_pref")==="dark") document.documentElement.classList.add("dark");
   setThemeIcon();
-  themeToggle.addEventListener("click", ()=>{
-    document.documentElement.classList.toggle("dark");
-    localStorage.setItem("theme_pref", document.documentElement.classList.contains("dark")?"dark":"light");
-    setThemeIcon();
-  });
+  themeToggle.addEventListener("click",()=>{document.documentElement.classList.toggle("dark");localStorage.setItem("theme_pref",document.documentElement.classList.contains("dark")?"dark":"light");setThemeIcon();});
 
-  /* ===== Timer ===== */
-  let startTs=Date.now();
-  setInterval(()=>{ const s=Math.floor((Date.now()-startTs)/1000);
-    timerEl.textContent=`${String(Math.floor(s/60)).padStart(2,"0")}:${String(s%60).padStart(2,"0")}`;
-  },1000);
+  /* Timer */
+  let startTs=Date.now(); setInterval(()=>{const s=Math.floor((Date.now()-startTs)/1000);timerEl.textContent=`${String(Math.floor(s/60)).padStart(2,"0")}:${String(s%60).padStart(2,"0")}`;},1000);
 
-  /* ===== Disclaimer ===== */
-  ackBtn.addEventListener("click", ()=>{
-    if(!ack.checked){ toast("Bitte zuerst den Hinweis bestätigen."); return; }
-    accepted=true; notice.style.display="none"; ackState.classList.remove("hidden");
-    saveState(); renderTabs(true); renderQuestions();
-  });
+  /* Disclaimer */
+  ackBtn.addEventListener("click",()=>{ if(!ack.checked){toast("Bitte zuerst den Hinweis bestätigen.");return;} accepted=true; notice.style.display="none"; saveState(); renderTabs(true); renderQuestions(); });
 
-  /* ===== Domain / Tabs ===== */
-  function setDomButtons(){
-    domAusb.setAttribute("aria-pressed", domain==="ausbildung");
-    domSoz.setAttribute("aria-pressed", domain==="sozialrecht");
-  }
-  function getClusters(){ return domain==="ausbildung" ? AUS_CLUSTERS : SOZ_CLUSTERS; }
-  domAusb.addEventListener("click", ()=>{ domain="ausbildung"; setDomButtons(); ensureActiveKey(); renderTabs(true); renderQuestions(); saveState(); });
-  domSoz.addEventListener("click", ()=>{ domain="sozialrecht"; setDomButtons(); ensureActiveKey(); renderTabs(true); renderQuestions(); saveState(); });
-
+  /* Domain/Tabs */
+  function setDomButtons(){ document.getElementById("domAusb").setAttribute("aria-pressed",domain==="ausbildung"); document.getElementById("domSoz").setAttribute("aria-pressed",domain==="sozialrecht"); }
+  function getClusters(){ return domain==="ausbildung"?AUS_CLUSTERS:SOZ_CLUSTERS; }
+  domAusb.addEventListener("click",()=>{domain="ausbildung";setDomButtons();ensureActiveKey();renderTabs(true);renderQuestions();saveState();});
+  domSoz.addEventListener("click",()=>{domain="sozialrecht";setDomButtons();ensureActiveKey();renderTabs(true);renderQuestions();saveState();});
   function ensureActiveKey(){ const pack=getClusters(); if(!activeKey || !pack.some(c=>c.key===activeKey)){ activeKey=pack[0]?.key||null; } }
-
   function renderTabs(reset=false){
     const pack=getClusters(); if(reset) activeKey=pack[0]?.key||activeKey;
     tabs.innerHTML=""; clusterSelect.innerHTML="";
     pack.forEach(c=>{
-      const b=document.createElement("button");
-      b.type="button"; b.className="tab"; b.dataset.key=c.key;
-      b.setAttribute("aria-selected",(activeKey??pack[0]?.key)===c.key);
+      const b=document.createElement("button"); b.type="button"; b.className="tab"; b.dataset.key=c.key; b.setAttribute("aria-selected",(activeKey??pack[0]?.key)===c.key);
       b.innerHTML=`<i data-lucide="${c.icon}"></i><span>${c.title}</span>`;
-      b.addEventListener("click",()=>{ activeKey=c.key; updateSelTab(); renderQuestions(); saveState(); });
-      tabs.appendChild(b);
-
-      const opt=document.createElement("option"); opt.value=c.key; opt.textContent=c.title; if((activeKey??pack[0]?.key)===c.key) opt.selected=true;
-      clusterSelect.appendChild(opt);
+      b.addEventListener("click",()=>{activeKey=c.key;updateSelTab();renderQuestions();saveState();}); tabs.appendChild(b);
+      const opt=document.createElement("option"); opt.value=c.key; opt.textContent=c.title; if((activeKey??pack[0]?.key)===c.key) opt.selected=true; clusterSelect.appendChild(opt);
     });
-    if(!activeKey && pack[0]) activeKey=pack[0].key;
     if(window.lucide) lucide.createIcons();
   }
   function updateSelTab(){ tabs.querySelectorAll(".tab").forEach(btn=>btn.setAttribute("aria-selected",String(btn.dataset.key===activeKey))); [...clusterSelect.options].forEach(o=>o.selected=(o.value===activeKey)); }
-  clusterSelect.addEventListener("change", e=>{ activeKey=e.target.value; updateSelTab(); renderQuestions(); saveState(); });
-
+  clusterSelect.addEventListener("change",e=>{activeKey=e.target.value;updateSelTab();renderQuestions();saveState();});
   function currentQs(){ const c=getClusters().find(x=>x.key===activeKey)||getClusters()[0]; return c?c.data:[]; }
 
-  /* ===== Render Questions ===== */
+  /* Render Questions */
   function renderQuestions(){
     ensureActiveKey(); form.innerHTML="";
-    const qs=currentQs();
-    qs.forEach((item,idx)=>{
+    currentQs().forEach((item,idx)=>{
       const id=`q_${idx}`, fbId=`fb_${idx}`, selId=`sel_${idx}`;
       const sec=document.createElement("section"); sec.className="card q-card"; sec.dataset.ref=item.ref;
       sec.innerHTML=`
@@ -424,56 +386,39 @@ document.addEventListener("DOMContentLoaded", () => {
         <div class="mt-2"><button type="button" data-fill="${id}" class="btn btn-sm">Beispiel-Gliederung</button> <button type="button" data-ask="${idx}" class="btn btn-sm"><i data-lucide="sparkles" class="w-4 h-4"></i> KI-Check</button></div>
       `;
       form.appendChild(sec);
-
       const ta=sec.querySelector("textarea");
-      ta.value = answersByRef[item.ref]||"";
-      ta.addEventListener("input", ()=>{ answersByRef[item.ref]=ta.value; updateProgress(); saveState(); });
-
+      ta.value=answersByRef[item.ref]||""; ta.addEventListener("input",()=>{answersByRef[item.ref]=ta.value;updateProgress();saveState();});
       const cb=sec.querySelector(`[data-select]`);
-      cb.checked = !!selectedByRef[item.ref];
-      cb.addEventListener("change", ()=>{ selectedByRef[item.ref]=cb.checked; updateSel(); saveState(); });
+      cb.checked=!!selectedByRef[item.ref]; cb.addEventListener("change",()=>{selectedByRef[item.ref]=cb.checked;updateSel();saveState();});
     });
 
-    // Beispiel-Gliederung
     form.querySelectorAll("[data-fill]").forEach(btn=>{
-      btn.addEventListener("click", ()=>{
-        const ta=document.getElementById(btn.getAttribute("data-fill"));
-        ta.value=["### Kurzantwort","- …","- …","- …","","### Begründung/Norm (optional)","- …"].join("\n");
-        ta.dispatchEvent(new Event("input"));
-      });
+      btn.addEventListener("click",()=>{const ta=document.getElementById(btn.getAttribute("data-fill"));
+        ta.value=["### Kurzantwort","- …","- …","- …","","### Begründung/Norm (optional)","- …"].join("\n"); ta.dispatchEvent(new Event("input"));});
     });
 
-    // Einzel-KI-Check
     form.querySelectorAll("[data-ask]").forEach(btn=>{
       btn.addEventListener("click", async (e)=>{
-        if(!accepted){ toast("Bitte zuerst den Hinweis bestätigen."); return; }
-        const idx=Number(e.currentTarget.getAttribute("data-ask"));
-        const item=currentQs()[idx];
-        const val=(answersByRef[item.ref]||"").trim();
-        const fb=e.currentTarget.closest(".q-card").querySelector(".prose");
+        if(!accepted){toast("Bitte zuerst den Hinweis bestätigen.");return;}
+        const idx=Number(e.currentTarget.getAttribute("data-ask")); const item=currentQs()[idx];
+        const val=(answersByRef[item.ref]||"").trim(); const fb=e.currentTarget.closest(".q-card").querySelector(".prose");
         btn.disabled=true; const old=btn.innerHTML; btn.innerHTML='<svg class="animate-spin h-4 w-4" viewBox="0 0 24 24"></svg> Prüfen …';
         fb.classList.remove("hidden"); fb.innerHTML='<div class="text-slate-500 text-sm">KI prüft …</div>';
-        try{
-          const out=await callAI({prompt: buildPromptSingle(item,val)});
-          fb.innerHTML = window.marked? marked.parse(out) : sanitize(out);
-        }catch(err){ fb.innerHTML=`<div class="text-red-600 text-sm">Fehler: ${sanitize(String(err))}</div>`; }
+        try{ const out=await callAI({prompt: buildPromptSingle(item,val)});
+          fb.innerHTML=window.marked?marked.parse(out):sanitize(out);}catch(err){fb.innerHTML=`<div class="text-red-600 text-sm">Fehler: ${sanitize(String(err))}</div>`;}
         btn.disabled=false; btn.innerHTML=old; if(window.lucide) lucide.createIcons();
       });
     });
 
-    updateSel(); updateProgress();
-    if(window.lucide) lucide.createIcons();
+    updateSel(); updateProgress(); if(window.lucide) lucide.createIcons();
   }
-
   function updateSel(){ const n=Object.values(selectedByRef).filter(Boolean).length; selText.textContent=`${n} ausgewählt`; }
   function updateProgress(){
-    const refs=currentQs().map(q=>q.ref);
-    const answered=refs.filter(r=> (answersByRef[r]||"").trim().length>0 ).length;
-    progressBar.style.width = refs.length? Math.round((answered/refs.length)*100)+'%': '0%';
-    progressTxt.textContent = `${answered} / ${refs.length||0} beantwortet`;
+    const refs=currentQs().map(q=>q.ref); const answered=refs.filter(r=>(answersByRef[r]||"").trim().length>0).length;
+    progressBar.style.width=refs.length?Math.round((answered/refs.length)*100)+'%':'0%'; progressTxt.textContent=`${answered} / ${refs.length||0} beantwortet`;
   }
 
-  /* ===== Prompts (wohlwollend) ===== */
+  /* Prompts */
   function buildPromptSingle(item,answer){
     return `Beurteile **wohlwollend** eine Kurzantwort (BBiG/JArbSchG/SGB etc.). Wenn die geforderte Anzahl erfüllt ist, schreibe **"passt"** und ergänze nur optional.
 - Kurzfeedback (max 2 Sätze, inkl. "passt" bei Erfüllung)
@@ -487,142 +432,82 @@ Antwort TN: ${answer||"(leer)"}`.trim();
     return `Beurteile **wohlwollend** mehrere Kurzantworten. Wenn die Soll-Anzahl erfüllt ist, schreibe **"passt"** und ergänze nur optional.
 ${list.map(a=>`Q (${a.ref}): ${a.question}\nAntwort: ${a.answer||"(leer)"}`).join("\n\n")}`.trim();
   }
+  async function callAI(payload,{timeoutMs=22000}={}){ const res=await Promise.race([fetch(relay,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)}),new Promise((_,rej)=>setTimeout(()=>rej(new Error("Timeout")),timeoutMs))]); if(!res.ok) throw new Error("API "+res.status); const t=await res.text(); try{const j=JSON.parse(t); return j.answer||j.content||j.result||t;}catch{return t;} }
 
-  async function callAI(payload,{timeoutMs=22000}={}){
-    const res=await Promise.race([
-      fetch(relay,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)}),
-      new Promise((_,rej)=>setTimeout(()=>rej(new Error("Timeout")),timeoutMs))
-    ]);
-    if(!res.ok) throw new Error("API-Fehler "+res.status);
-    const t=await res.text(); try{const j=JSON.parse(t); return j.answer||j.content||j.result||t;}catch{return t;}
-  }
-
-  /* ===== Submit / Reset ===== */
+  /* Submit/Reset */
   submitBtn.addEventListener("click", async ()=>{
-    if(!accepted){ toast("Bitte zuerst den Hinweis bestätigen."); return; }
+    if(!accepted){toast("Bitte zuerst den Hinweis bestätigen.");return;}
     const refs=currentQs().map(q=>q.ref).filter(r=> selectedByRef[r] || (answersByRef[r]||"").trim().length>0 );
-    if(!refs.length){ toast("Bitte wähle mindestens eine Frage oder schreibe eine Antwort."); return; }
-    const list=refs.map((ref)=>({ref,question:currentQs().find(x=>x.ref===ref).q,answer:(answersByRef[ref]||"").trim()}));
+    if(!refs.length){toast("Bitte wähle mindestens eine Frage oder schreibe eine Antwort.");return;}
+    const list=refs.map(ref=>({ref,question:currentQs().find(x=>x.ref===ref).q,answer:(answersByRef[ref]||"").trim()}));
     const wrap=document.getElementById("resultWrap"), out=document.getElementById("aiResult");
     wrap.classList.remove("hidden"); out.innerHTML='<div class="text-slate-500 text-sm">KI erstellt Feedback …</div>';
     submitBtn.disabled=true; const old=submitBtn.innerHTML; submitBtn.innerHTML='<svg class="animate-spin h-5 w-5" viewBox="0 0 24 24"></svg> Prüfen …';
-    try{ const txt=await callAI({prompt: buildPromptAll(list)}); out.innerHTML=window.marked?marked.parse(txt):sanitize(txt); window.scrollTo({top:document.body.scrollHeight,behavior:"smooth"}); }
-    catch(e){ out.innerHTML=`<div class="text-red-600 text-sm">Gesamt-Feedback fehlgeschlagen (${sanitize(String(e))}).</div>`; }
+    try{ const txt=await callAI({prompt: buildPromptAll(list)}); out.innerHTML=window.marked?marked.parse(txt):sanitize(txt); window.scrollTo({top:document.body.scrollHeight,behavior:"smooth"});}catch(e){out.innerHTML=`<div class="text-red-600 text-sm">Gesamt-Feedback fehlgeschlagen (${sanitize(String(e))}).</div>`;}
     submitBtn.disabled=false; submitBtn.innerHTML=old; if(window.lucide) lucide.createIcons();
   });
+  resetBtn.addEventListener("click",()=>{ if(!confirm("Alle Eingaben im aktuellen Cluster löschen?"))return; currentQs().forEach(q=>{delete answersByRef[q.ref]; delete selectedByRef[q.ref];}); renderQuestions(); saveState(); });
 
-  resetBtn.addEventListener("click", ()=>{ if(!confirm("Alle Eingaben im aktuellen Cluster löschen?")) return;
-    currentQs().forEach(q=>{ delete answersByRef[q.ref]; delete selectedByRef[q.ref]; });
-    renderQuestions(); saveState();
-  });
-
-  /* ===== Quicklook ===== */
-  function openQL(seed=""){
-    qlBackdrop.classList.remove("hidden");
-    qlModal.classList.remove("hidden"); qlModal.classList.add("flex");
-    qlSearch.value=seed; renderQL(seed); qlSearch.focus();
-  }
+  /* Quicklook */
+  function openQL(seed=""){ qlBackdrop.classList.remove("hidden"); qlModal.classList.remove("hidden"); qlModal.classList.add("flex"); qlSearch.value=seed; renderQL(seed); qlSearch.focus(); }
   function closeQL(){ qlBackdrop.classList.add("hidden"); qlModal.classList.add("hidden"); qlModal.classList.remove("flex"); }
-  function renderQL(q){
-    const query=(q||"").toLowerCase();
-    const list = query? LAW_INDEX.filter(x=> x.para.toLowerCase().includes(query) || x.law.toLowerCase().includes(query) || x.tags.some(t=>t.toLowerCase().includes(query)) ) : LAW_INDEX;
-    qlList.innerHTML = list.map(x=>`
-      <div class="p-3 rounded-xl border hover:bg-slate-50 dark:hover:bg-slate-800">
-        <div class="flex items-center justify-between">
-          <div class="font-semibold">${x.law} ${x.para}</div>
-          <a class="btn btn-sm" href="${x.link}" target="_blank" rel="noopener">zur Quelle</a>
-        </div>
-        <div class="mt-1">${sanitize(x.excerpt)}</div>
-      </div>`).join("");
-  }
-  quickBtn.addEventListener("click", ()=>openQL(""));
-  qlBackdrop.addEventListener("click", closeQL);
-  qlClose.addEventListener("click", closeQL);
-  qlSearch.addEventListener("input", e=>renderQL(e.target.value));
+  function renderQL(q){ const query=(q||"").toLowerCase(); const list=query?LAW_INDEX.filter(x=>x.para.toLowerCase().includes(query)||x.law.toLowerCase().includes(query)||x.tags.some(t=>t.toLowerCase().includes(query))):LAW_INDEX;
+    qlList.innerHTML=list.map(x=>`<div class="p-3 rounded-xl border hover:bg-slate-50 dark:hover:bg-slate-800"><div class="flex items-center justify-between"><div class="font-semibold">${x.law} ${x.para}</div><a class="btn btn-sm" href="${x.link}" target="_blank" rel="noopener">zur Quelle</a></div><div class="mt-1">${sanitize(x.excerpt)}</div></div>`).join(""); }
+  quickBtn.addEventListener("click",()=>openQL("")); qlBackdrop.addEventListener("click",closeQL); qlClose.addEventListener("click",closeQL); qlSearch.addEventListener("input",e=>renderQL(e.target.value));
 
-  /* ===== Autosave ===== */
+  /* Autosave */
   function saveState(){ localStorage.setItem(STORAGE, JSON.stringify({domain,answersByRef,selectedByRef,accepted,activeKey})); }
-  (function restore(){
-    try{
-      const s=JSON.parse(localStorage.getItem(STORAGE)||"{}");
-      domain=s.domain||"ausbildung"; answersByRef=s.answersByRef||{}; selectedByRef=s.selectedByRef||{};
-      accepted=!!s.accepted; activeKey=s.activeKey||null;
-      if(accepted){ notice.style.display="none"; ack.checked=true; ackState.classList.remove("hidden"); }
-    }catch{}
-  })();
+  (function restore(){ try{ const s=JSON.parse(localStorage.getItem(STORAGE)||"{}"); domain=s.domain||"ausbildung"; answersByRef=s.answersByRef||{}; selectedByRef=s.selectedByRef||{}; accepted=!!s.accepted; activeKey=s.activeKey||null; if(accepted){ notice.style.display="none"; } }catch{} })();
 
-  /* ===== Initial render ===== */
+  /* Initial render */
   setDomButtons(); ensureActiveKey(); renderTabs(true); renderQuestions();
 
-  /* ===== Linda – reiner Dialogchat (mehrstufig) ===== */
-  function setLinda(open){ lindaPanel.style.display = open ? "block" : "none"; }
-  function toggleLinda(){ setLinda(lindaPanel.style.display !== "block"); }
-  lindaBtn.addEventListener("click", toggleLinda);
-  closeLinda.addEventListener("click", ()=> setLinda(false));
-  window.addEventListener("keydown",(e)=>{ if(e.key==="Escape") setLinda(false); });
-
-  // Drag
-  (function enableDrag(){
-    let down=false,sx=0,sy=0,sl=0,st=0;
-    dragBar.addEventListener("mousedown",(e)=>{down=true;sx=e.clientX;sy=e.clientY;
-      const r=lindaPanel.getBoundingClientRect();sl=r.left;st=r.top;document.body.style.userSelect="none";});
-    window.addEventListener("mousemove",(e)=>{if(!down)return;
-      const dx=e.clientX-sx, dy=e.clientY-sy;
-      lindaPanel.style.left=(sl+dx)+"px"; lindaPanel.style.top=(st+dy)+"px";
-      lindaPanel.style.right="auto"; lindaPanel.style.bottom="auto";});
-    window.addEventListener("mouseup",()=>{down=false;document.body.style.userSelect="";});
-    const dock=()=>{ if(getComputedStyle(lindaPanel).left!=="auto") return; lindaPanel.style.right="16px"; lindaPanel.style.bottom="96px"; };
-    dock(); window.addEventListener("resize", dock, {passive:true});
-  })();
-
-  // Resize
-  (function enableResize(){
-    let isRes=false, sx=0, sy=0, sw=0, sh=0;
-    resizeHandle.addEventListener("mousedown", (e)=>{ isRes=true; sx=e.clientX; sy=e.clientY;
-      const r=lindaPanel.getBoundingClientRect(); sw=r.width; sh=r.height; e.preventDefault(); });
-    window.addEventListener("mousemove",(e)=>{ if(!isRes) return;
-      const dx=e.clientX-sx, dy=e.clientY-sy;
-      lindaPanel.style.width=Math.max(320, sw+dx)+"px";
-      lindaPanel.style.height=Math.max(420, sh+dy)+"px"; });
-    window.addEventListener("mouseup",()=>{ isRes=false; });
-  })();
-
-  // Chat state
-  let convo = JSON.parse(localStorage.getItem(CHAT_STORE)||"[]");
+  /* ===== Linda – dialogfähiger Chat (messages-Format) ===== */
+  const SYSTEM_PROMPT = "Du bist Linda, eine freundliche, präzise Lernassistentin (deutsch). Antworte kurz, klar, wohlwollend; nenne einschlägige §§, aber keine Rechtsberatung. Wenn die Antwort des Nutzers schon passt, sage das und ergänze nur optional. Stelle maximal eine Rückfrage, wenn nötig.";
+  const CHAT_STORE = "BBIG_CHAT_V5";
+  let convo = []; try{convo=JSON.parse(localStorage.getItem(CHAT_STORE)||"[]");}catch{}
+  function saveChat(){ localStorage.setItem(CHAT_STORE, JSON.stringify(convo)); }
   function push(role,html){ const d=document.createElement("div"); d.className="bubble "+(role==="user"?"me":"ai"); d.innerHTML=html; lStream.appendChild(d); lStream.scrollTop=lStream.scrollHeight; }
-  function renderHistory(){ lStream.innerHTML=""; convo.forEach(m=> push(m.role, sanitize(m.display || m.content))); }
+  function renderHistory(){ lStream.innerHTML=""; if(convo.length===0){ push("assistant","Hallo, ich bin <strong>Linda</strong> 🤝<br>Frag mich zu Ausbildung (BBiG/JArbSchG) oder Sozialrecht (SGB)."); } else { convo.forEach(m=>push(m.role,window.marked?marked.parse(m.content):sanitize(m.content))); } }
   renderHistory();
 
   async function sendLinda(){
     const q=lInput.value.trim(); if(!q) return;
-    lInput.value=""; const userMsg={role:"user", content:q, display:q}; convo.push(userMsg); push("user", sanitize(q));
-    localStorage.setItem(CHAT_STORE, JSON.stringify(convo));
-    const thinking = document.createElement("div"); thinking.className="bubble ai"; thinking.innerHTML='<span class="text-slate-500">… schreibe Antwort …</span>'; lStream.appendChild(thinking); lStream.scrollTop=lStream.scrollHeight;
-
-    if(!accepted){ thinking.innerHTML='Bitte bestätige vorab den Hinweis (oben).'; return; }
-
+    lInput.value=""; push("user",sanitize(q)); convo.push({role:"user",content:q}); saveChat();
+    const thinking=document.createElement("div"); thinking.className="bubble ai"; thinking.innerHTML='<span class="text-slate-500">… schreibe Antwort …</span>'; lStream.appendChild(thinking); lStream.scrollTop=lStream.scrollHeight;
+    const messages=[{role:"system",content:SYSTEM_PROMPT}, ...convo];
     try{
-      const historyForApi = convo.map(m=> ({role:m.role, content:m.content}) );
-      const prompt = `Du bist Linda, eine freundliche, präzise Assistenz (deutsch). Antworte knapp, klar, mit §§ wenn passend und biete bei Bedarf eine kurze Nachfrage an.`;
-      const res = await fetch(relay,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({system:prompt, conversation:historyForApi})});
-      const txt = await res.text();
-      let out; try{ const j=JSON.parse(txt); out = j.answer||j.content||j.result||txt; } catch{ out = txt; }
+      const res=await fetch(relay,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({messages,temperature:0.2})});
+      const text=await res.text(); let out=text;
+      try{const j=JSON.parse(text); if(j?.choices?.[0]?.message?.content) out=j.choices[0].message.content; else if(j?.message?.content) out=j.message.content; else if(j.answer||j.content||j.result) out=j.answer||j.content||j.result;}catch{}
       thinking.remove();
-      const display = window.marked? marked.parse(out) : sanitize(out);
-      push("ai", display);
-      convo.push({role:"assistant", content:out, display:out});
-      localStorage.setItem(CHAT_STORE, JSON.stringify(convo));
-    }catch(e){
-      thinking.innerHTML = `<span class="text-red-600">API-Fehler: ${sanitize(String(e))}</span>`;
-    }
+      if(!out || out.trim().toLowerCase()===q.trim().toLowerCase()) out="Ich habe dich verstanden – worum geht es konkret (Thema/Ziel)?";
+      const display=window.marked?marked.parse(out):sanitize(out); push("assistant",display); convo.push({role:"assistant",content:out}); saveChat();
+    }catch(e){ thinking.innerHTML=`<span class="text-red-600">API-Fehler: ${sanitize(String(e))}</span>`; }
   }
-  sendBtn.addEventListener("click", sendLinda);
-  lInput.addEventListener("keydown", e=>{ if(e.key==="Enter"){ e.preventDefault(); sendLinda(); } });
-  clearChat.addEventListener("click", ()=>{ if(!confirm("Chat-Verlauf löschen?")) return; convo=[]; localStorage.setItem(CHAT_STORE,"[]"); renderHistory(); });
+  sendBtn.addEventListener("click",sendLinda);
+  lInput.addEventListener("keydown",e=>{ if(e.key==="Enter"){e.preventDefault();sendLinda();} });
+  clearChat.addEventListener("click",()=>{ if(!confirm("Chat-Verlauf löschen?"))return; convo=[]; saveChat(); renderHistory(); });
 
-  /* ===== Quicklook trigger helper ===== */
-  window.openQL = (seed)=>{ qlBackdrop.classList.remove("hidden"); qlModal.classList.remove("hidden"); qlModal.classList.add("flex"); qlSearch.value=seed||""; qlSearch.dispatchEvent(new Event("input")); };
+  // open/close + drag + resize
+  function setLinda(open){ lindaPanel.style.display=open?"block":"none"; }
+  document.getElementById("lindaBtn").addEventListener("click",()=>setLinda(lindaPanel.style.display!=="block"));
+  document.getElementById("closeLinda").addEventListener("click",()=>setLinda(false));
+  window.addEventListener("keydown",e=>{ if(e.key==="Escape") setLinda(false); });
+  (function enableDrag(){ let d=false,sx=0,sy=0,sl=0,st=0;
+    dragBar.addEventListener("mousedown",e=>{d=true;sx=e.clientX;sy=e.clientY;const r=lindaPanel.getBoundingClientRect();sl=r.left;st=r.top;document.body.style.userSelect="none";});
+    window.addEventListener("mousemove",e=>{if(!d)return;const dx=e.clientX-sx,dy=e.clientY-sy;lindaPanel.style.left=(sl+dx)+"px";lindaPanel.style.top=(st+dy)+"px";lindaPanel.style.right="auto";lindaPanel.style.bottom="auto";});
+    window.addEventListener("mouseup",()=>{d=false;document.body.style.userSelect="";});
+  })();
+  (function enableResize(){ let is=false,sx=0,sy=0,sw=0,sh=0;
+    resizeHandle.addEventListener("mousedown",e=>{is=true;sx=e.clientX;sy=e.clientY;const r=lindaPanel.getBoundingClientRect();sw=r.width;sh=r.height;e.preventDefault();});
+    window.addEventListener("mousemove",e=>{if(!is)return;const dx=e.clientX-sx,dy=e.clientY-sy;lindaPanel.style.width=Math.max(320,sw+dx)+"px";lindaPanel.style.height=Math.max(420,sh+dy)+"px";});
+    window.addEventListener("mouseup",()=>{is=false;});
+  })();
 
+  /* Quicklook triggers */
+  function renderQL(q){ const query=(q||"").toLowerCase(); const list=query?LAW_INDEX.filter(x=>x.para.toLowerCase().includes(query)||x.law.toLowerCase().includes(query)||x.tags.some(t=>t.toLowerCase().includes(query))):LAW_INDEX;
+    qlList.innerHTML=list.map(x=>`<div class="p-3 rounded-xl border hover:bg-slate-50 dark:hover:bg-slate-800"><div class="flex items-center justify-between"><div class="font-semibold">${x.law} ${x.para}</div><a class="btn btn-sm" href="${x.link}" target="_blank" rel="noopener">zur Quelle</a></div><div class="mt-1">${sanitize(x.excerpt)}</div></div>`).join(""); }
 });
 </script>
 </body>
