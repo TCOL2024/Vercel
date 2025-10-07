@@ -18,155 +18,283 @@
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
 
   <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
     :root{
-      --surface:#ffffff; --surface-2:#f6f8fb; --ink:#0f172a; --muted:#64748b; --border:#e5e7eb;
-      --brand:#0ea5e9; --brand-2:#2563eb; --ok:#10b981; --warn:#f59e0b; --error:#ef4444;
-      --radius:14px; --radius-sm:10px; --shadow-1:0 8px 28px rgba(2,8,23,.06);
+      /* metafinanz-inspired Color Palette */
+      --mf-blue: #0066cc;
+      --mf-blue-dark: #004a99;
+      --mf-blue-light: #3d8bd9;
+      --mf-gray: #f5f7fa;
+      --mf-gray-dark: #e8eaed;
+      --mf-text: #1a1a1a;
+      --mf-text-muted: #6c757d;
+      
+      --surface:#ffffff; 
+      --surface-2:#f6f8fb; 
+      --ink:#1a1a1a; 
+      --muted:#6c757d; 
+      --border:#e5e7eb;
+      --brand:#0066cc; 
+      --brand-2:#004a99; 
+      --ok:#10b981; 
+      --warn:#f59e0b; 
+      --error:#ef4444;
+      --radius:12px; 
+      --radius-sm:8px; 
+      --shadow-1:0 2px 8px rgba(0,0,0,.04), 0 1px 2px rgba(0,0,0,.06);
+      --shadow-hover:0 4px 16px rgba(0,0,0,.08), 0 2px 4px rgba(0,0,0,.04);
     }
     
     html.dark {
       color-scheme: dark;
+      --surface:#0f172a; 
+      --surface-2:#0b1327; 
+      --ink:#e5e7eb; 
+      --muted:#9aa6b2; 
+      --border:#1f2937;
+      --brand:#3d8bd9;
+      --brand-2:#0066cc;
     }
     
     html.dark body {
       background: linear-gradient(to bottom, #0b1220, #0b1220 40%, #111827 100%);
     }
     
-    html.dark {
-      --surface:#0f172a; --surface-2:#0b1327; --ink:#e5e7eb; --muted:#9aa6b2; --border:#1f2937;
+    * { box-sizing: border-box; }
+    
+    html, body { 
+      font-size: 16px; 
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
     }
     
-    html, body { font-size: 16px; }
-    @media (max-width: 640px){ html, body { font-size: 17px; } }
+    @media (max-width: 640px){ 
+      html, body { font-size: 17px; } 
+    }
 
     body{ 
-      background: linear-gradient(to bottom, #fff, #f4f7fb); 
+      background: linear-gradient(to bottom, #ffffff, #f5f7fa); 
       color: var(--ink);
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
       transition: background 0.3s ease, color 0.3s ease;
+      min-height: 100vh;
     }
     
-    .container{ max-width: 1200px; margin-inline: auto; padding-inline: 1rem; }
+    .container{ 
+      max-width: 1200px; 
+      margin-inline: auto; 
+      padding-inline: 1rem; 
+    }
+    
     .card{ 
       background: var(--surface); 
       border-radius: var(--radius); 
       box-shadow: var(--shadow-1);
-      transition: all 0.3s ease;
+      border: 1px solid var(--border);
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
     }
+    
     .card:hover {
-      box-shadow: 0 12px 40px rgba(2,8,23,.1);
-      transform: translateY(-2px);
+      box-shadow: var(--shadow-hover);
+      transform: translateY(-1px);
     }
     
     .chip{ 
-      font-size:12px; padding:4px 10px; border-radius:999px; 
-      border:1px solid var(--border); color:var(--muted); 
+      font-size:12px; 
+      padding:4px 12px; 
+      border-radius:999px; 
+      border:1px solid var(--border); 
+      color:var(--muted); 
       background:var(--surface-2); 
-      transition: all 0.2s ease;
-    }
-    
-    .btn{ 
-      display:inline-flex; align-items:center; gap:.5rem; 
-      padding:.6rem .9rem; border-radius: var(--radius-sm); 
-      border:1px solid var(--border); background: var(--surface); 
-      color: var(--ink); cursor:pointer;
       transition: all 0.2s ease;
       font-weight: 500;
     }
-    .btn:hover{ background:#f8fafc; transform: translateY(-1px); }
-    html.dark .btn:hover{ background:#1e293b; }
+    
+    .btn{ 
+      display:inline-flex; 
+      align-items:center; 
+      gap:.5rem; 
+      padding:.65rem 1rem; 
+      border-radius: var(--radius-sm); 
+      border:1px solid var(--border); 
+      background: var(--surface); 
+      color: var(--ink); 
+      cursor:pointer;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      font-weight: 500;
+      font-size: 14px;
+      text-decoration: none;
+    }
+    
+    .btn:hover:not(:disabled){ 
+      background:var(--surface-2); 
+      transform: translateY(-1px); 
+      box-shadow: 0 4px 8px rgba(0,0,0,.08);
+    }
+    
+    .btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
     
     .btn-primary{ 
       border-color:transparent; 
-      background:linear-gradient(180deg, var(--brand), var(--brand-2)); 
+      background: var(--brand);
       color:#fff; 
-      box-shadow: 0 4px 12px rgba(14, 165, 233, 0.3);
+      box-shadow: 0 2px 8px rgba(0, 102, 204, 0.25);
     }
-    .btn-primary:hover{ filter:brightness(1.05); box-shadow: 0 6px 16px rgba(14, 165, 233, 0.4); }
+    
+    .btn-primary:hover:not(:disabled){ 
+      background: var(--brand-2);
+      box-shadow: 0 4px 12px rgba(0, 102, 204, 0.35); 
+      transform: translateY(-1px);
+    }
     
     .btn-ghost{ background:transparent; border:none; }
-    .btn-sm{ padding:.45rem .6rem; border-radius:10px; }
-    .btn-lg{ padding:.9rem 1.05rem; border-radius:12px; }
-    .btn:focus-visible{ outline:3px solid color-mix(in oklab, var(--brand) 50%, transparent); outline-offset:2px; }
+    .btn-sm{ padding:.5rem .7rem; font-size: 13px; }
+    .btn-lg{ padding:.85rem 1.2rem; font-size: 15px; }
+    
+    .btn:focus-visible{ 
+      outline:3px solid rgba(0, 102, 204, 0.3); 
+      outline-offset:2px; 
+    }
     
     .progress-outer{ 
-      height:10px; border-radius:999px; 
-      background:#eaeef4; overflow:hidden; 
+      height:8px; 
+      border-radius:999px; 
+      background:var(--mf-gray); 
+      overflow:hidden; 
     }
-    html.dark .progress-outer { background:#1e293b; }
+    
+    html.dark .progress-outer { 
+      background:#1e293b; 
+    }
     
     .progress-inner{ 
-      height:100%; width:0%; border-radius:999px; 
-      background:linear-gradient(90deg, var(--brand), var(--ok)); 
-      transition:width .25s; 
+      height:100%; 
+      width:0%; 
+      border-radius:999px; 
+      background: linear-gradient(90deg, var(--brand), var(--ok)); 
+      transition:width .3s ease; 
     }
     
     .q-badge{ 
-      background: color-mix(in oklab, var(--brand) 18%, #eaf6ff 82%); 
-      color: color-mix(in oklab, var(--brand) 80%, #0b3b52 20%); 
+      background: #e6f2ff;
+      color: var(--brand); 
+      border-color: #b3d9ff;
     }
+    
     html.dark .q-badge {
-      background: rgba(14,165,233,.15);
+      background: rgba(61,139,217,.15);
       color: #7dd3fc;
     }
     
     .rubric{ 
-      border:1px dashed var(--border); border-radius:12px; 
-      padding:.5rem .6rem; background:var(--surface-2); 
+      border:1px dashed var(--border); 
+      border-radius:var(--radius-sm); 
+      padding:.6rem .75rem; 
+      background:var(--surface-2); 
     }
-    .rubric .bar{ height:8px; background:#e5e7eb; border-radius:999px; overflow:hidden; }
-    html.dark .rubric .bar { background:#1e293b; }
+    
+    .rubric .bar{ 
+      height:6px; 
+      background:var(--mf-gray-dark); 
+      border-radius:999px; 
+      overflow:hidden; 
+    }
+    
+    html.dark .rubric .bar { 
+      background:#1e293b; 
+    }
     
     .rubric .fill{ 
-      height:100%; width:0%; 
-      background:linear-gradient(90deg, #93c5fd, #2563eb); 
-      transition: width .3s; 
+      height:100%; 
+      width:0%; 
+      background: var(--brand);
+      transition: width .4s cubic-bezier(0.4, 0, 0.2, 1); 
     }
     
     .tip > div{ 
       border-left:3px solid var(--brand); 
-      background:#f0f9ff; color:#0b3b52; 
-      border-radius:12px; padding:.75rem .85rem; 
+      background:#f0f7ff; 
+      color:#1a3a52; 
+      border-radius:var(--radius-sm); 
+      padding:.75rem 1rem; 
     }
-    html.dark .tip > div{ background:rgba(14,165,233,.08); color:#cce9fb; }
     
-    details[open] summary .chev{ transform:rotate(180deg); }
-    summary{ list-style:none; cursor:pointer; }
+    html.dark .tip > div{ 
+      background:rgba(61,139,217,.08); 
+      color:#cce9fb; 
+    }
+    
+    details[open] summary .chev{ 
+      transform:rotate(180deg); 
+    }
+    
+    summary{ 
+      list-style:none; 
+      cursor:pointer; 
+      user-select: none;
+    }
+
+    h1, h2, h3 {
+      font-weight: 600;
+      letter-spacing: -0.02em;
+    }
 
     /* Notice */
     .notice{ 
-      background:linear-gradient(135deg, #e0f2fe, #dbeafe); 
-      border-bottom:1px solid rgba(2,8,23,.08); 
+      background: linear-gradient(135deg, #e6f2ff, #f0f7ff); 
+      border-bottom:1px solid rgba(0,0,0,.06); 
     }
+    
     html.dark .notice {
-      background:linear-gradient(135deg, rgba(14,165,233,.1), rgba(37,99,235,.1));
+      background: linear-gradient(135deg, rgba(61,139,217,.12), rgba(0,102,204,.08));
       border-bottom:1px solid rgba(255,255,255,.05);
     }
-    .notice .inner{ backdrop-filter:blur(6px); }
+    
+    .notice .inner{ 
+      backdrop-filter:blur(8px); 
+    }
 
     /* Modal */
     .modal-backdrop{ 
-      position:fixed; inset:0; 
-      background:rgba(2,6,23,.45); 
+      position:fixed; 
+      inset:0; 
+      background:rgba(0,0,0,.4); 
       backdrop-filter:blur(4px);
-      display:none; z-index:98; 
+      display:none; 
+      z-index:98; 
       animation: fadeIn 0.2s ease;
     }
+    
     html.dark .modal-backdrop {
       background:rgba(0,0,0,.7);
     }
     
     .modal{ 
-      position:fixed; inset:0; display:none; 
-      align-items:center; justify-content:center; 
-      padding:16px; z-index:99; 
+      position:fixed; 
+      inset:0; 
+      display:none; 
+      align-items:center; 
+      justify-content:center; 
+      padding:16px; 
+      z-index:99; 
     }
+    
     .modal .panel{ 
-      width:100%; max-width:900px; 
-      border-radius:1rem;
-      animation: slideUp 0.3s ease;
+      width:100%; 
+      max-width:900px; 
+      border-radius:var(--radius);
+      animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      max-height: 90vh;
+      overflow-y: auto;
     }
-    .modal.open, .modal-backdrop.open{ display:flex; }
+    
+    .modal.open, .modal-backdrop.open{ 
+      display:flex; 
+    }
 
     @keyframes fadeIn {
       from { opacity: 0; }
@@ -183,6 +311,7 @@
       background: #fff7ed; 
       border:1px solid #fed7aa; 
     }
+    
     html.dark .exam-on {
       background: rgba(251,146,60,.1);
       border:1px solid rgba(251,146,60,.3);
@@ -193,8 +322,9 @@
       background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
       background-size: 200% 100%;
       animation: shimmer 1.5s infinite;
-      border-radius: 8px;
+      border-radius: var(--radius-sm);
     }
+    
     html.dark .skeleton {
       background: linear-gradient(90deg, #1e293b 25%, #334155 50%, #1e293b 75%);
       background-size: 200% 100%;
@@ -212,40 +342,48 @@
       border-radius: 50%;
       animation: pulse 2s infinite;
     }
-    .status-online { background: #10b981; }
-    .status-offline { background: #ef4444; animation: none; }
+    
+    .status-online { 
+      background: #10b981; 
+      box-shadow: 0 0 8px rgba(16, 185, 129, 0.4);
+    }
+    
+    .status-offline { 
+      background: #ef4444; 
+      animation: none; 
+    }
     
     @keyframes pulse {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.5; }
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.7; transform: scale(0.95); }
     }
 
     /* Password Screen */
     #passwordScreen {
       position: fixed;
       inset: 0;
-      background: linear-gradient(135deg, #0ea5e9 0%, #2563eb 100%);
+      background: linear-gradient(135deg, var(--brand) 0%, var(--brand-2) 100%);
       display: flex;
       align-items: center;
       justify-content: center;
       z-index: 9999;
     }
-    html.dark #passwordScreen {
-      background: linear-gradient(135deg, #0c4a6e 0%, #1e3a8a 100%);
-    }
 
     /* Print */
     @media print{
-      .sticky, .sticky-actions, #notice, #quickBtn, #examToggleWrap, #themeToggle, #historyBtn { display:none!important; }
+      .sticky, .sticky-actions, #notice, #quickBtn, #examToggleWrap, #themeToggle, #historyBtn { 
+        display:none!important; 
+      }
       body{ background:#fff!important; }
       .card{ box-shadow:none!important; border:1px solid #ddd; }
     }
     
     footer.app-footer{ 
-      font-family:Arial, Helvetica, sans-serif; 
-      font-size:10px; line-height:1.4; 
+      font-size:11px; 
+      line-height:1.5; 
       background: var(--surface-2);
       transition: background 0.3s ease;
+      color: var(--muted);
     }
 
     /* Chart Container */
@@ -253,6 +391,53 @@
       position: relative;
       height: 300px;
       margin: 1rem 0;
+    }
+
+    /* Input Styles */
+    input[type="text"],
+    input[type="password"],
+    input[type="search"],
+    textarea,
+    select {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--ink);
+      transition: all 0.2s ease;
+    }
+
+    input:focus,
+    textarea:focus,
+    select:focus {
+      outline: none;
+      border-color: var(--brand);
+      box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.1);
+    }
+
+    /* Prose styles for markdown */
+    .prose {
+      color: var(--ink);
+    }
+
+    .prose h1, .prose h2, .prose h3 {
+      color: var(--ink);
+      margin-top: 1.5em;
+      margin-bottom: 0.5em;
+    }
+
+    .prose p {
+      margin-bottom: 1em;
+    }
+
+    .prose ul, .prose ol {
+      margin-left: 1.5em;
+      margin-bottom: 1em;
+    }
+
+    .prose code {
+      background: var(--surface-2);
+      padding: 0.2em 0.4em;
+      border-radius: 4px;
+      font-size: 0.9em;
     }
   </style>
 </head>
@@ -262,27 +447,29 @@
   <div id="passwordScreen">
     <div class="card p-8 max-w-md w-full mx-4">
       <div class="text-center mb-6">
-        <div class="w-16 h-16 rounded-2xl bg-sky-100 grid place-items-center mx-auto mb-4">
-          <i data-lucide="lock" class="w-8 h-8 text-sky-700"></i>
+        <div class="w-16 h-16 rounded-2xl bg-white/20 backdrop-blur grid place-items-center mx-auto mb-4">
+          <i data-lucide="lock" class="w-8 h-8 text-white"></i>
         </div>
-        <h2 class="text-2xl font-semibold mb-2">BBiG-Quiz – Geschützter Zugang</h2>
-        <p class="text-sm text-slate-600">Bitte gib das Zugangskennwort ein</p>
+        <h2 class="text-2xl font-semibold mb-2 text-white">BBiG-Quiz – Geschützter Zugang</h2>
+        <p class="text-sm text-white/80">Bitte gib das Zugangskennwort ein</p>
       </div>
       <form id="passwordForm" class="space-y-4">
         <div>
-          <label for="passwordInput" class="block text-sm font-medium mb-2">Kennwort</label>
+          <label for="passwordInput" class="block text-sm font-medium mb-2 text-white/90">Kennwort</label>
           <input 
             id="passwordInput" 
             type="password" 
-            class="w-full px-4 py-3 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-sky-500" 
+            class="w-full px-4 py-3 rounded-lg border-0 focus:outline-none focus:ring-2 focus:ring-white" 
             placeholder="Kennwort eingeben"
             autocomplete="off"
           />
         </div>
-        <button type="submit" class="btn btn-primary btn-lg w-full justify-center">
+        <button type="submit" class="btn btn-lg w-full justify-center bg-white text-[var(--brand)] hover:bg-white/90">
           <i data-lucide="unlock" class="w-5 h-5"></i> Zugang freischalten
         </button>
-        <p id="passwordError" class="text-sm text-red-600 text-center hidden">Falsches Kennwort. Bitte erneut versuchen.</p>
+        <p id="passwordError" class="text-sm text-white bg-red-500/20 px-3 py-2 rounded-lg text-center hidden">
+          ❌ Falsches Kennwort. Bitte erneut versuchen.
+        </p>
       </form>
     </div>
   </div>
@@ -293,22 +480,22 @@
   <!-- Disclaimer -->
   <aside id="notice" class="notice sticky top-0 z-50">
     <div class="inner container px-4 py-3 flex items-start gap-3">
-      <div class="w-10 h-10 rounded-2xl bg-sky-100 grid place-items-center shrink-0">
-        <i data-lucide="shield-check" class="w-6 h-6 text-sky-700"></i>
+      <div class="w-10 h-10 rounded-xl bg-white/80 backdrop-blur grid place-items-center shrink-0">
+        <i data-lucide="shield-check" class="w-6 h-6 text-[var(--brand)]"></i>
       </div>
       <div class="text-sm leading-snug flex-1">
-        <p class="font-semibold text-sky-900">Fachlicher Hinweis (Pilot)</p>
-        <p class="text-sky-900/90">
+        <p class="font-semibold" style="color: var(--brand);">Fachlicher Hinweis (Pilot)</p>
+        <p class="text-slate-700">
           Die KI-Prüfung unterstützt beim Lernen. Ergebnisse müssen fachlich geprüft werden und ersetzen keine Rechtsberatung.
           <strong>Es dürfen keine personenbezogenen oder sensiblen Daten eingegeben oder erfasst werden.</strong>
         </p>
         <label class="mt-2 inline-flex items-center gap-2">
-          <input id="ack" type="checkbox" class="w-4 h-4 accent-sky-600" aria-describedby="ackDesc">
-          <span id="ackDesc" class="text-sky-950">Ich habe den Hinweis gelesen.</span>
+          <input id="ack" type="checkbox" class="w-4 h-4" style="accent-color: var(--brand);" aria-describedby="ackDesc">
+          <span id="ackDesc" class="text-slate-800">Ich habe den Hinweis gelesen.</span>
         </label>
       </div>
       <div class="ml-auto flex items-center gap-2 flex-wrap">
-        <div class="flex items-center gap-2 px-3 py-1 rounded-lg bg-white/50 backdrop-blur">
+        <div class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/50 backdrop-blur border border-white/60">
           <span class="status-dot status-online" id="apiStatusDot"></span>
           <span class="text-xs font-medium" id="apiStatusText">API: Prüfen...</span>
         </div>
@@ -319,20 +506,20 @@
           <i data-lucide="shield" class="w-4 h-4"></i> JArbSchG
         </a>
         <span id="ackState" class="chip">Hinweis offen</span>
-        <button id="ackBtn" type="button" class="btn">Weiter</button>
+        <button id="ackBtn" type="button" class="btn btn-sm btn-primary">Weiter</button>
       </div>
     </div>
   </aside>
 
   <!-- Header -->
-  <header class="container px-4 pt-4">
-    <div class="flex flex-wrap items-center gap-3">
-      <div class="w-11 h-11 rounded-2xl bg-gradient-to-br from-sky-400 to-blue-600 grid place-items-center shadow-lg">
-        <i data-lucide="graduation-cap" class="w-6 h-6 stroke-[1.6] text-white"></i>
+  <header class="container px-4 pt-6 pb-4">
+    <div class="flex flex-wrap items-center gap-4">
+      <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-[var(--brand)] to-[var(--brand-2)] grid place-items-center shadow-lg">
+        <i data-lucide="graduation-cap" class="w-7 h-7 stroke-[1.8] text-white"></i>
       </div>
       <div class="flex-1 min-w-0">
-        <h1 class="text-xl sm:text-2xl font-semibold tracking-tight truncate">BBiG-Quiz – Enterprise Edition</h1>
-        <p class="text-sm text-slate-500">20 Kernfragen. KI-Feedback mit Rubriken. §-Quicklook zu BBiG/JArbSchG.</p>
+        <h1 class="text-2xl sm:text-3xl font-semibold tracking-tight">BBiG-Quiz – Enterprise Edition</h1>
+        <p class="text-sm text-slate-500 mt-1">20 Kernfragen • KI-Feedback mit Rubriken • §-Quicklook zu BBiG/JArbSchG</p>
       </div>
 
       <div class="flex items-center gap-2">
@@ -345,16 +532,16 @@
         </button>
       </div>
 
-      <div id="examToggleWrap" class="flex items-center gap-2 p-2 rounded-xl border border-amber-200 exam-on">
+      <div id="examToggleWrap" class="flex items-center gap-2 p-2.5 rounded-lg border border-amber-200 exam-on">
         <i data-lucide="timer" class="w-4 h-4 text-amber-600"></i>
-        <label class="text-sm font-medium">Prüfungsmodus</label>
-        <input id="examToggle" type="checkbox" class="w-5 h-5 accent-amber-600" />
-        <select id="examSize" class="ml-1 text-sm rounded-lg border px-2 py-1 bg-white">
+        <label class="text-sm font-medium text-amber-900">Prüfungsmodus</label>
+        <input id="examToggle" type="checkbox" class="w-5 h-5" style="accent-color: #f59e0b;" />
+        <select id="examSize" class="ml-1 text-sm rounded-lg border px-2 py-1.5 bg-white">
           <option value="10">10 Fragen</option>
           <option value="20" selected>20 Fragen</option>
           <option value="40">40 (wenn vorhanden)</option>
         </select>
-        <span id="examTimer" class="text-xs text-amber-700 ml-1 font-mono">—</span>
+        <span id="examTimer" class="text-xs text-amber-700 ml-1 font-mono font-medium">—</span>
       </div>
 
       <button id="quickBtn" type="button" class="btn btn-primary">
@@ -365,11 +552,13 @@
 
   <!-- Progress -->
   <section class="container px-4 mt-4" aria-labelledby="progh">
-    <div class="card p-4">
-      <div class="flex items-center gap-3">
-        <i data-lucide="target" class="w-5 h-5 text-sky-700"></i>
+    <div class="card p-5">
+      <div class="flex items-center gap-4">
+        <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-emerald-400 to-emerald-600 grid place-items-center">
+          <i data-lucide="target" class="w-5 h-5 text-white"></i>
+        </div>
         <div class="flex-1">
-          <div class="flex justify-between text-xs text-slate-600 mb-1">
+          <div class="flex justify-between text-xs font-medium text-slate-600 mb-2">
             <span id="progressText">0 / 20 beantwortet</span>
             <span id="selText">0 ausgewählt</span>
           </div>
@@ -378,17 +567,19 @@
           </div>
           <span id="progh" class="sr-only">Beantwortete Fragen</span>
         </div>
-        <time id="timer" class="text-xs text-slate-500 ml-3 font-mono" aria-live="polite">00:00</time>
+        <time id="timer" class="text-sm text-slate-500 ml-3 font-mono font-medium" aria-live="polite">00:00</time>
       </div>
     </div>
   </section>
 
   <!-- Spider Chart -->
   <section class="container px-4 mt-4" id="chartSection" style="display:none;">
-    <div class="card p-4">
-      <div class="flex items-center gap-2 mb-3">
-        <i data-lucide="pie-chart" class="w-5 h-5 text-emerald-700"></i>
-        <h2 class="text-base font-semibold">Rubrik-Analyse</h2>
+    <div class="card p-5">
+      <div class="flex items-center gap-2 mb-4">
+        <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-purple-400 to-purple-600 grid place-items-center">
+          <i data-lucide="pie-chart" class="w-5 h-5 text-white"></i>
+        </div>
+        <h2 class="text-lg font-semibold">Rubrik-Analyse</h2>
       </div>
       <div class="chart-container">
         <canvas id="rubricChart"></canvas>
@@ -397,15 +588,17 @@
   </section>
 
   <!-- Quiz -->
-  <main class="container px-4 py-4">
-    <form id="form" class="grid gap-4 sm:gap-5" novalidate aria-describedby="formhint"></form>
+  <main class="container px-4 py-5">
+    <form id="form" class="grid gap-5" novalidate aria-describedby="formhint"></form>
     <p id="formhint" class="sr-only">Mit Strg/⌘+Enter kannst du das KI-Gesamt-Feedback abrufen.</p>
 
-    <section id="resultWrap" class="mt-5 hidden" aria-live="polite">
-      <div class="card p-4">
-        <div class="flex items-center gap-2 mb-2">
-          <i data-lucide="sparkles" class="w-5 h-5 text-emerald-700"></i>
-          <h2 class="text-base font-semibold">KI-Feedback (Gesamt)</h2>
+    <section id="resultWrap" class="mt-6 hidden" aria-live="polite">
+      <div class="card p-5">
+        <div class="flex items-center gap-3 mb-4">
+          <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-amber-400 to-amber-600 grid place-items-center">
+            <i data-lucide="sparkles" class="w-5 h-5 text-white"></i>
+          </div>
+          <h2 class="text-lg font-semibold">KI-Feedback (Gesamt)</h2>
         </div>
         <article id="aiResult" class="prose prose-slate max-w-none text-sm"></article>
       </div>
@@ -413,8 +606,8 @@
   </main>
 
   <!-- Sticky actions -->
-  <div class="sticky-actions sticky bottom-0 z-40 bg-white/95 border-t border-slate-200 backdrop-blur">
-    <div class="container px-4 py-2 flex flex-wrap items-center gap-2">
+  <div class="sticky-actions sticky bottom-0 z-40 bg-white/95 border-t border-slate-200 backdrop-blur-lg">
+    <div class="container px-4 py-3 flex flex-wrap items-center gap-2">
       <div class="flex items-center gap-2">
         <a class="btn btn-sm" href="https://www.gesetze-im-internet.de/bbig_2005/BBiG.pdf" target="_blank" rel="noopener" aria-label="BBiG (PDF)">
           <i data-lucide="book-open" class="w-4 h-4"></i>
@@ -427,68 +620,76 @@
       <button id="submitBtn" type="button" class="btn btn-primary btn-lg">
         <i data-lucide="send" class="w-5 h-5"></i> KI-Feedback (Auswahl)
       </button>
-      <button id="resetBtn" type="button" class="btn btn-lg">Zurücksetzen</button>
+      <button id="resetBtn" type="button" class="btn btn-lg">
+        <i data-lucide="rotate-ccw" class="w-5 h-5"></i> Zurücksetzen
+      </button>
     </div>
   </div>
 
   <!-- Toast -->
-  <div id="toast" role="status" aria-live="polite" style="display:none; position:fixed; left:50%; bottom:18px; transform:translateX(-50%); background:#111827; color:#fff; padding:10px 14px; border-radius:10px; font-size:14px; z-index:100; box-shadow:0 8px 24px rgba(0,0,0,.3);"></div>
+  <div id="toast" role="status" aria-live="polite" style="display:none; position:fixed; left:50%; bottom:24px; transform:translateX(-50%); background:#111827; color:#fff; padding:12px 18px; border-radius:var(--radius-sm); font-size:14px; z-index:100; box-shadow:0 8px 24px rgba(0,0,0,.25); font-weight: 500;"></div>
 
   <!-- Quicklook Modal -->
   <div id="qlBackdrop" class="modal-backdrop"></div>
   <div id="qlModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="qlTitle">
-    <div class="panel card p-4 sm:p-5" role="document">
-      <div class="flex items-start gap-2">
-        <div class="w-10 h-10 rounded-xl bg-sky-100 grid place-items-center">
-          <i data-lucide="search" class="w-5 h-5 text-sky-700"></i>
+    <div class="panel card p-6" role="document">
+      <div class="flex items-start gap-3 mb-4">
+        <div class="w-11 h-11 rounded-lg bg-gradient-to-br from-sky-400 to-sky-600 grid place-items-center">
+          <i data-lucide="search" class="w-6 h-6 text-white"></i>
         </div>
         <div class="flex-1">
-          <h3 id="qlTitle" class="text-base font-semibold">§-Quicklook – BBiG & JArbSchG</h3>
-          <p class="text-sm text-slate-500">Suche nach Paragraph/Begriff (z. B. „§11", „Probezeit", „Ruhezeit"). Auszug + Sprung ins PDF.</p>
+          <h3 id="qlTitle" class="text-lg font-semibold">§-Quicklook – BBiG & JArbSchG</h3>
+          <p class="text-sm text-slate-500 mt-1">Suche nach Paragraph/Begriff (z. B. „§11", „Probezeit", „Ruhezeit"). Auszug + Sprung ins PDF.</p>
         </div>
-        <button id="qlClose" type="button" class="btn btn-sm" aria-label="Fenster schließen">
-          <i data-lucide="x" class="w-4 h-4"></i>
+        <button id="qlClose" type="button" class="btn btn-sm btn-ghost" aria-label="Fenster schließen">
+          <i data-lucide="x" class="w-5 h-5"></i>
         </button>
       </div>
-      <div class="mt-3 flex flex-col sm:flex-row gap-2">
-        <input id="qlSearch" type="search" class="flex-1 rounded-xl border px-3 py-2" placeholder="Begriff oder § …">
+      <div class="flex flex-col sm:flex-row gap-2 mb-4">
+        <input id="qlSearch" type="search" class="flex-1 rounded-lg border px-4 py-2.5 text-sm" placeholder="Begriff oder § suchen...">
         <div class="flex gap-2">
-          <a class="btn btn-sm" href="https://www.gesetze-im-internet.de/bbig_2005/BBiG.pdf" target="_blank" rel="noopener"><i data-lucide="book-open" class="w-4 h-4"></i> BBiG</a>
-          <a class="btn btn-sm" href="https://www.gesetze-im-internet.de/jarbschg/JArbSchG.pdf" target="_blank" rel="noopener"><i data-lucide="shield" class="w-4 h-4"></i> JArbSchG</a>
+          <a class="btn btn-sm" href="https://www.gesetze-im-internet.de/bbig_2005/BBiG.pdf" target="_blank" rel="noopener">
+            <i data-lucide="book-open" class="w-4 h-4"></i> BBiG
+          </a>
+          <a class="btn btn-sm" href="https://www.gesetze-im-internet.de/jarbschg/JArbSchG.pdf" target="_blank" rel="noopener">
+            <i data-lucide="shield" class="w-4 h-4"></i> JArbSchG
+          </a>
         </div>
       </div>
-      <div id="qlList" class="mt-3 grid gap-2 max-h-[60vh] overflow-auto"></div>
+      <div id="qlList" class="grid gap-3 max-h-[60vh] overflow-auto"></div>
     </div>
   </div>
 
   <!-- History Modal -->
   <div id="historyBackdrop" class="modal-backdrop"></div>
   <div id="historyModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="historyTitle">
-    <div class="panel card p-4 sm:p-5" role="document">
-      <div class="flex items-start gap-2">
-        <div class="w-10 h-10 rounded-xl bg-emerald-100 grid place-items-center">
-          <i data-lucide="history" class="w-5 h-5 text-emerald-700"></i>
+    <div class="panel card p-6" role="document">
+      <div class="flex items-start gap-3 mb-4">
+        <div class="w-11 h-11 rounded-lg bg-gradient-to-br from-emerald-400 to-emerald-600 grid place-items-center">
+          <i data-lucide="history" class="w-6 h-6 text-white"></i>
         </div>
         <div class="flex-1">
-          <h3 id="historyTitle" class="text-base font-semibold">Antwort-Historie</h3>
-          <p class="text-sm text-slate-500">Deine letzten 10 Versuche</p>
+          <h3 id="historyTitle" class="text-lg font-semibold">Antwort-Historie</h3>
+          <p class="text-sm text-slate-500 mt-1">Deine letzten 10 Versuche</p>
         </div>
-        <button id="historyClose" type="button" class="btn btn-sm" aria-label="Fenster schließen">
-          <i data-lucide="x" class="w-4 h-4"></i>
+        <button id="historyClose" type="button" class="btn btn-sm btn-ghost" aria-label="Fenster schließen">
+          <i data-lucide="x" class="w-5 h-5"></i>
         </button>
       </div>
-      <div id="historyList" class="mt-3 space-y-2 max-h-[60vh] overflow-auto"></div>
+      <div id="historyList" class="space-y-3 max-h-[60vh] overflow-auto"></div>
     </div>
   </div>
 
   <!-- Footer -->
-  <footer class="app-footer text-slate-700 mt-8">
-    <div class="container px-4 py-4">
-      Diese Anwendung nutzt künstliche Intelligenz (KI). Du stimmst mit der Nutzung zu, dass Deine Texte und Antwort von OpenAI verarbeitet und geprüft werden.
-      Es werden keine personenbezogenen Daten von Dir erhoben, erfasst und verarbeitet. Dieses Tool darf nicht missbräuchlich verwendet werden.
-      Es dürfen keine personenbezogenen Daten, sensiblen Daten oder Daten erfasst werden, die Rückschlüsse auf eine Person, zum Beispiel Auszubildenden,
-      Ausbilder oder ähnliche Personen ermöglichen. Jegliche Haftung ist ausgeschlossen. Alle Antworten sind vom Anwender zu prüfen.
-      KI-generierte Antworten können fehlerhaft sein. Keine Haftung.
+  <footer class="app-footer mt-12 py-6 border-t border-slate-200">
+    <div class="container px-4">
+      <p class="text-center">
+        Diese Anwendung nutzt künstliche Intelligenz (KI). Du stimmst mit der Nutzung zu, dass Deine Texte und Antwort von OpenAI verarbeitet und geprüft werden.
+        Es werden keine personenbezogenen Daten von Dir erhoben, erfasst und verarbeitet. Dieses Tool darf nicht missbräuchlich verwendet werden.
+        Es dürfen keine personenbezogenen Daten, sensiblen Daten oder Daten erfasst werden, die Rückschlüsse auf eine Person, zum Beispiel Auszubildenden,
+        Ausbilder oder ähnliche Personen ermöglichen. Jegliche Haftung ist ausgeschlossen. Alle Antworten sind vom Anwender zu prüfen.
+        KI-generierte Antworten können fehlerhaft sein. Keine Haftung.
+      </p>
     </div>
   </footer>
 
@@ -496,6 +697,9 @@
 
   <script>
   document.addEventListener("DOMContentLoaded", () => {
+    // Initialize Lucide icons first
+    if (window.lucide) lucide.createIcons();
+
     // === Password Protection ===
     const PASSWORD = "IHK2025";
     const passwordScreen = document.getElementById("passwordScreen");
@@ -510,27 +714,48 @@
       passwordScreen.style.display = "none";
       mainApp.style.display = "block";
       initApp();
+    } else {
+      // Focus password input
+      setTimeout(() => passwordInput.focus(), 100);
     }
 
     passwordForm.addEventListener("submit", (e) => {
       e.preventDefault();
-      if (passwordInput.value === PASSWORD) {
+      const enteredPassword = passwordInput.value.trim();
+      
+      if (enteredPassword === PASSWORD) {
         sessionStorage.setItem("bbig_authenticated", "true");
         passwordScreen.style.display = "none";
         mainApp.style.display = "block";
+        passwordError.classList.add("hidden");
         initApp();
       } else {
         passwordError.classList.remove("hidden");
         passwordInput.value = "";
         passwordInput.focus();
+        // Shake animation
+        passwordForm.style.animation = "shake 0.5s";
+        setTimeout(() => passwordForm.style.animation = "", 500);
       }
     });
 
+    // Shake animation
+    const style = document.createElement('style');
+    style.textContent = `
+      @keyframes shake {
+        0%, 100% { transform: translateX(0); }
+        10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+        20%, 40%, 60%, 80% { transform: translateX(5px); }
+      }
+    `;
+    document.head.appendChild(style);
+
     function initApp() {
+      // Re-initialize Lucide icons for main app
       if (window.lucide) lucide.createIcons();
       
     // === Konfiguration ===
-    const relay = "/api/linda-proxy";
+    const relay = "/api/linda-proxy"; // Make.com Webhook URL
     const STORAGE_KEY = "BBIGQUIZ_EXAM_V2";
     const HISTORY_KEY = "BBIGQUIZ_HISTORY";
     const MAX_ANSWER_CHARS = 1500;
@@ -580,7 +805,6 @@
     let rubricChart = null;
 
     if (window.marked) marked.setOptions({ breaks:true, gfm:true });
-    if (window.lucide) lucide.createIcons();
 
     // === Theme Toggle ===
     const savedTheme = localStorage.getItem("theme");
@@ -593,6 +817,11 @@
       const isDark = document.documentElement.classList.contains("dark");
       localStorage.setItem("theme", isDark ? "dark" : "light");
       if (window.lucide) lucide.createIcons();
+      
+      // Update chart colors if exists
+      if (rubricChart) {
+        updateSpiderChart();
+      }
     });
 
     // === API Status Check ===
@@ -602,7 +831,7 @@
         const timeoutId = setTimeout(() => controller.abort(), 5000);
         
         const response = await fetch(relay, {
-          method: 'OPTIONS',
+          method: 'HEAD',
           signal: controller.signal
         });
         
@@ -693,6 +922,10 @@
 
       chartSection.style.display = "block";
 
+      const isDark = document.documentElement.classList.contains('dark');
+      const textColor = isDark ? '#e5e7eb' : '#1a1a1a';
+      const gridColor = isDark ? '#1f2937' : '#e5e7eb';
+
       const data = {
         labels: ['Normbezug', 'Vollständigkeit', 'Praxisbezug'],
         datasets: [{
@@ -702,13 +935,15 @@
             (avgRubric.vollstaendigkeit / count).toFixed(1),
             (avgRubric.praxisbezug / count).toFixed(1)
           ],
-          backgroundColor: 'rgba(14, 165, 233, 0.2)',
-          borderColor: 'rgba(14, 165, 233, 1)',
+          backgroundColor: 'rgba(0, 102, 204, 0.15)',
+          borderColor: '#0066cc',
           borderWidth: 2,
-          pointBackgroundColor: 'rgba(14, 165, 233, 1)',
+          pointBackgroundColor: '#0066cc',
           pointBorderColor: '#fff',
           pointHoverBackgroundColor: '#fff',
-          pointHoverBorderColor: 'rgba(14, 165, 233, 1)'
+          pointHoverBorderColor: '#0066cc',
+          pointRadius: 4,
+          pointHoverRadius: 6
         }]
       };
 
@@ -727,13 +962,38 @@
               beginAtZero: true,
               max: 2,
               ticks: {
-                stepSize: 0.5
+                stepSize: 0.5,
+                color: textColor,
+                backdropColor: 'transparent',
+                font: {
+                  size: 11
+                }
+              },
+              grid: {
+                color: gridColor
+              },
+              pointLabels: {
+                color: textColor,
+                font: {
+                  size: 12,
+                  weight: '500'
+                }
               }
             }
           },
           plugins: {
             legend: {
               display: false
+            },
+            tooltip: {
+              backgroundColor: isDark ? '#1e293b' : '#ffffff',
+              titleColor: textColor,
+              bodyColor: textColor,
+              borderColor: gridColor,
+              borderWidth: 1,
+              padding: 12,
+              boxPadding: 6,
+              usePointStyle: true
             }
           }
         }
@@ -753,11 +1013,13 @@
           answers: {...answers},
           rubrics: {...rubrics},
           totalScore,
-          questionsCount: Object.keys(answers).length
+          questionsCount: Object.keys(answers).filter(k => answers[k].trim()).length
         });
         
         localStorage.setItem(HISTORY_KEY, JSON.stringify(history.slice(0, 10)));
-      } catch(e) {}
+      } catch(e) {
+        console.error('Error saving history:', e);
+      }
     }
 
     function loadHistory() {
@@ -766,7 +1028,7 @@
         historyList.innerHTML = "";
         
         if (history.length === 0) {
-          historyList.innerHTML = '<div class="text-sm text-slate-500 text-center py-8">Keine Historie vorhanden</div>';
+          historyList.innerHTML = '<div class="text-sm text-slate-500 text-center py-12">Keine Historie vorhanden</div>';
           return;
         }
 
@@ -780,17 +1042,20 @@
             minute: '2-digit'
           });
 
+          const maxScore = entry.questionsCount * 6;
+          const percentage = maxScore > 0 ? Math.round((entry.totalScore / maxScore) * 100) : 0;
+
           const card = document.createElement('div');
-          card.className = 'card p-3 hover:shadow-lg transition-all cursor-pointer';
+          card.className = 'card p-4 hover:shadow-lg transition-all cursor-pointer';
           card.innerHTML = `
-            <div class="flex items-center justify-between">
+            <div class="flex items-center justify-between gap-4">
               <div class="flex-1">
-                <div class="font-semibold text-sm">${dateStr}</div>
+                <div class="font-semibold text-sm mb-1">${dateStr}</div>
                 <div class="text-xs text-slate-500">${entry.questionsCount} Fragen bearbeitet</div>
               </div>
               <div class="text-right">
-                <div class="text-lg font-bold text-sky-600">${entry.totalScore}/${entry.questionsCount * 6}</div>
-                <div class="text-xs text-slate-500">Punkte</div>
+                <div class="text-2xl font-bold" style="color: var(--brand);">${entry.totalScore}/${maxScore}</div>
+                <div class="text-xs text-slate-500">${percentage}% erreicht</div>
               </div>
             </div>
           `;
@@ -802,13 +1067,16 @@
               renderForm();
               updateSpiderChart();
               closeHistory();
-              showToast('Versuch geladen');
+              showToast('✓ Versuch geladen');
             }
           });
           
           historyList.appendChild(card);
         });
-      } catch(e) {}
+      } catch(e) {
+        console.error('Error loading history:', e);
+        historyList.innerHTML = '<div class="text-sm text-red-500 text-center py-8">Fehler beim Laden der Historie</div>';
+      }
     }
 
     historyBtn.addEventListener('click', () => {
@@ -827,14 +1095,30 @@
 
     // Disclaimer
     ackBtn.addEventListener("click", ()=>{
-      if (!ack.checked){ showToast("Bitte die Checkbox bestätigen."); return; }
-      accepted = true; notice.style.display = "none"; ackState.textContent = "Hinweis bestätigt"; ackState.className = "chip";
+      if (!ack.checked){ 
+        showToast("❌ Bitte die Checkbox bestätigen."); 
+        return; 
+      }
+      accepted = true; 
+      notice.style.display = "none"; 
+      ackState.textContent = "✓ Bestätigt"; 
+      ackState.className = "chip";
+      ackState.style.background = "#dcfce7";
+      ackState.style.color = "#166534";
+      ackState.style.borderColor = "#bbf7d0";
       saveState();
     });
 
     // Exam: toggle + Size
     examToggle.addEventListener("change", ()=>{ setExamMode(examToggle.checked); });
-    examSize.addEventListener("change", ()=>{ applyExamSizing(); });
+    examSize.addEventListener("change", ()=>{ 
+      if (examMode) {
+        applyExamSizing();
+        renderForm();
+        const mins = Math.ceil(pool.length * 1.5);
+        startCountdown(mins * 60);
+      }
+    });
 
     function setExamMode(on){
       examMode = !!on;
@@ -845,6 +1129,7 @@
       if (examMode){
         const mins = Math.ceil(pool.length * 1.5);
         startCountdown(mins * 60);
+        showToast(`⏱️ Prüfungsmodus: ${mins} Minuten Zeit`);
       } else {
         stopCountdown();
       }
@@ -860,7 +1145,7 @@
         updateCountdownLabel();
         if (examCountdown === 0){ 
           clearInterval(examTick); 
-          showToast("Zeit abgelaufen – bitte abgeben."); 
+          showToast("⏰ Zeit abgelaufen – bitte abgeben!"); 
         }
       }, 1000);
     }
@@ -875,6 +1160,13 @@
       const m = String(Math.floor(examCountdown/60)).padStart(2,"0");
       const s = String(examCountdown%60).padStart(2,"0");
       examTimer.textContent = `${m}:${s}`;
+      
+      // Warning when < 5 minutes
+      if (examCountdown < 300 && examCountdown > 0) {
+        examTimer.style.color = "#dc2626";
+      } else {
+        examTimer.style.color = "";
+      }
     }
     
     function applyExamSizing(){
@@ -884,10 +1176,14 @@
     }
 
     // Autosize
-    function autosize(el){ el.style.height="auto"; el.style.height=(el.scrollHeight+4)+"px"; }
+    function autosize(el){ 
+      el.style.height="auto"; 
+      el.style.height=(el.scrollHeight+4)+"px"; 
+    }
 
     // Form render
     function renderForm(){
+      // Save current values
       [...form.querySelectorAll("section[data-ref]")].forEach(sec=>{
         const ref = sec.getAttribute("data-ref");
         const ta = sec.querySelector("textarea");
@@ -896,166 +1192,4 @@
         if (cb) selected[ref] = cb.checked;
       });
 
-      form.innerHTML = "";
-      pool.forEach((item, idx)=>{
-        const id = `q_${idx}`, fbId = `fb_${idx}`, selId = `sel_${idx}`;
-        const sec = document.createElement("section");
-        sec.className = "card p-4";
-        sec.setAttribute("data-ref", item.ref);
-
-        const tipHtml = `
-          <details class="tip mb-2" ${examMode ? "open hidden" : ""}>
-            <summary class="list-none cursor-pointer select-none flex items-center gap-2 text-sky-700 hover:text-sky-900 text-[13px]">
-              <i class="chev transition-transform" data-lucide="chevron-down"></i><span>🛈 Musterlösung</span>
-            </summary>
-            <div class="mt-2">${(item.tip||[]).map(t=>`<p>${t}</p>`).join("")}</div>
-          </details>`;
-
-        const r = rubrics[item.ref] || {normbezug:0, vollstaendigkeit:0, praxisbezug:0};
-        const sum = r.normbezug + r.vollstaendigkeit + r.praxisbezug;
-        const rubricHtml = `
-          <details class="mb-2">
-            <summary class="list-none cursor-pointer select-none flex items-center gap-2 text-slate-700 hover:text-slate-900 text-[13px]">
-              <i class="transition-transform" data-lucide="bar-chart-3" class="w-4 h-4"></i><span>Rubrik anzeigen (Punkte: <strong>${sum}/6</strong>)</span>
-            </summary>
-            <div class="rubric mt-2 space-y-3">
-              ${renderRubricRow("Normbezug", "normbezug", r.normbezug)}
-              ${renderRubricRow("Vollständigkeit", "vollstaendigkeit", r.vollstaendigkeit)}
-              ${renderRubricRow("Praxisbezug", "praxisbezug", r.praxisbezug)}
-            </div>
-          </details>`;
-          
-        function renderRubricRow(label, key, val){
-          const pct = Math.round((val/2)*100);
-          return `
-            <div>
-              <div class="flex justify-between text-xs mb-1"><span>${label}</span><span>${val}/2</span></div>
-              <div class="bar"><div class="fill" style="width:${pct}%"></div></div>
-            </div>`;
-        }
-
-        sec.innerHTML = `
-          <header class="flex items-center justify-between gap-3 mb-2">
-            <div class="flex items-center gap-2">
-              <input id="${selId}" type="checkbox" class="w-4 h-4 accent-sky-600" data-select="${idx}" aria-label="Für KI-Feedback auswählen">
-              <span class="q-badge chip">${item.ref}</span>
-            </div>
-            <div class="flex items-center gap-2">
-              <button type="button" class="btn btn-sm" data-quicklook="${idx}" title="§-Quicklook zu dieser Frage">
-                <i data-lucide="search" class="w-4 h-4"></i> § Quicklook
-              </button>
-              <span class="text-slate-400 text-[11px]">Frage ${idx+1}/${pool.length}</span>
-            </div>
-          </header>
-
-          <h3 class="text-[15px] sm:text-[16px] font-semibold mb-2">${item.q}</h3>
-          ${tipHtml}
-
-          <label for="${id}" class="sr-only">Antwort</label>
-          <textarea id="${id}" rows="4" class="w-full p-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-sky-300 text-[15px] transition-all" placeholder="Deine Antwort …"></textarea>
-
-          <div class="mt-2 flex flex-wrap gap-2">
-            <button type="button" data-fill="${id}" class="btn btn-sm">Beispiel-Gliederung</button>
-            <button type="button" data-ask="${idx}" class="btn btn-sm ${examMode ? 'opacity-50 pointer-events-none' : ''}">
-              <i data-lucide="sparkles" class="w-4 h-4"></i> KI-Check (Rubrik)
-            </button>
-          </div>
-
-          ${rubricHtml}
-
-          <div id="${fbId}" class="prose prose-slate text-sm max-w-none hidden mt-2"></div>
-        `;
-        form.appendChild(sec);
-
-        const ta = sec.querySelector("textarea");
-        const cb = sec.querySelector(`[data-select]`);
-        const saved = answers[item.ref] || "";
-        ta.value = saved; autosize(ta);
-        if (selected[item.ref] != null) cb.checked = !!selected[item.ref];
-
-      });
-
-      // events
-      form.querySelectorAll("textarea").forEach(ta=>{
-        ta.addEventListener("input", ()=>{
-          autosize(ta); updateProgress();
-          const ref = ta.closest("section[data-ref]")?.getAttribute("data-ref");
-          answers[ref] = ta.value;
-          saveStateSchedule();
-        });
-        ta.addEventListener("keydown", (ev)=>{
-          if ((ev.ctrlKey||ev.metaKey) && ev.key === "Enter"){ ev.preventDefault(); submitBtn.click(); }
-        });
-      });
       
-      form.querySelectorAll("[data-fill]").forEach(btn=>{
-        btn.addEventListener("click", e=>{
-          const tid = e.currentTarget.getAttribute("data-fill");
-          const ta = document.getElementById(tid);
-          ta.value = ["### Kurzantwort","- …","- …","- …","","### Begründung/Norm (optional)","- …"].join("\n");
-          autosize(ta); updateProgress();
-          const ref = ta.closest("section[data-ref]")?.getAttribute("data-ref");
-          answers[ref] = ta.value; saveStateSchedule();
-        });
-      });
-      
-      form.querySelectorAll("[data-ask]").forEach(btn=>{
-        btn.addEventListener("click", async (e)=>{
-          if (!relay){ showToast("Kein Backend konfiguriert."); return; }
-          if (!accepted){ showToast("Bitte zuerst den Hinweis bestätigen."); return; }
-          const idx = Number(e.currentTarget.getAttribute("data-ask"));
-          await askPerAnswer(idx, e.currentTarget);
-        });
-      });
-      
-      form.querySelectorAll("[data-select]").forEach(cb=>{
-        cb.addEventListener("change",(e)=>{
-          const ref=e.currentTarget.closest("section[data-ref]")?.getAttribute("data-ref");
-          selected[ref] = e.currentTarget.checked; updateSelCount(); saveStateSchedule();
-        });
-      });
-      
-      form.querySelectorAll("[data-quicklook]").forEach(btn=>{
-        btn.addEventListener("click", (e)=>{
-          const idx = Number(e.currentTarget.getAttribute("data-quicklook"));
-          openQuicklookFor(pool[idx]);
-        });
-      });
-
-      if (window.lucide) lucide.createIcons();
-      updateSelCount(); updateProgress();
-    }
-
-    function updateSelCount(){
-      const n=[...form.querySelectorAll("[data-select]:checked")].length;
-      selText.textContent=`${n} ausgewählt`;
-    }
-    
-    function updateProgress(){
-      const t=[...form.querySelectorAll("textarea")];
-      const f=t.filter(x=>x.value.trim().length>0).length;
-      const total=t.length||1;
-      progressBar.style.width=Math.round((f/total)*100)+"%";
-      progressTxt.textContent=`${f} / ${total} beantwortet`;
-      document.querySelector('[role="progressbar"]')?.setAttribute("aria-valuemax", String(total));
-      document.querySelector('[role="progressbar"]')?.setAttribute("aria-valuenow", String(f));
-    }
-
-    // === Skeleton Loader ===
-    function showSkeleton(container) {
-      container.innerHTML = `
-        <div class="space-y-3">
-          <div class="h-4 skeleton"></div>
-          <div class="h-4 skeleton" style="width:80%"></div>
-          <div class="h-4 skeleton" style="width:60%"></div>
-        </div>
-      `;
-    }
-
-    // === KI-Prompting ===
-    function buildPromptSingle(item, answer){
-      return `
-Bewerte **wohlwollend** eine Kurzantwort (Ausbildung/Arbeitsrecht). Wenn die Soll-Anzahl erreicht ist: „passt", danach optional ergänzen.
-
-Gib zuerst **JSON** ausschließlich mit folgendem Schema (keine Einleitung, kein Codeblock!):
-{"rubrik":{"normbezug":0..2,"vollstaendigkeit":0..2,"praxisbezug":0..2},"kommentar":"kurzes Feedback (1-2 Sätze)","loesung":["max. 4 Stichp
