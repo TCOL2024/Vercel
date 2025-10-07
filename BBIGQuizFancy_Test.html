@@ -6,51 +6,46 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <title>BBiG-Quiz – Professional Edition</title>
 
-  <!-- Tailwind -->
+  <!-- External Dependencies -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Icons -->
   <script defer src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
-  <!-- Markdown -->
   <script defer src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-  <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-  <!-- Confetti -->
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
 
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
     :root {
-      /* Amazon Nova + metafinanz Professional Palette */
-      --primary: #0F1111;
-      --primary-blue: #005EB8;
-      --accent: #FF9900;
-      --accent-hover: #EC7211;
-      --secondary: #146EB4;
-      --success: #067D62;
-      --warning: #F08804;
-      --error: #B12704;
+      /* metafinanz.de Professional Color Scheme */
+      --mf-primary: #005EB8;
+      --mf-primary-dark: #004A93;
+      --mf-primary-light: #1976D2;
+      --mf-secondary: #00A0E3;
+      --mf-accent: #FF9900;
+      --mf-accent-hover: #EC7211;
+      --mf-success: #00D4AA;
+      --mf-warning: #FFA726;
+      --mf-error: #E53935;
       
       --surface: #FFFFFF;
       --surface-alt: #F7F8F8;
-      --surface-hover: #F0F2F2;
+      --surface-hover: #EBEEF0;
       --text: #0F1111;
       --text-muted: #565959;
       --text-light: #6F7373;
       --border: #D5D9D9;
-      --border-focus: #007185;
+      --border-focus: #005EB8;
       
       --radius: 4px;
       --radius-lg: 8px;
-      --shadow-sm: 0 1px 2px rgba(15,17,17,.08);
+      --shadow-xs: 0 1px 2px rgba(15,17,17,.04);
+      --shadow-sm: 0 1px 3px rgba(15,17,17,.08);
       --shadow-md: 0 2px 8px rgba(15,17,17,.12);
-      --shadow-hover: 0 4px 12px rgba(15,17,17,.16);
-      
-      --spacing-unit: 4px;
+      --shadow-lg: 0 4px 16px rgba(15,17,17,.16);
     }
     
     html.dark {
-      --primary: #FFFFFF;
       --surface: #131A22;
       --surface-alt: #1C2531;
       --surface-hover: #232F3E;
@@ -87,7 +82,7 @@
       padding: 0 16px;
     }
     
-    /* Cards - Flat Amazon Style */
+    /* Cards */
     .card {
       background: var(--surface);
       border: 1px solid var(--border);
@@ -104,7 +99,7 @@
       box-shadow: var(--shadow-sm);
     }
     
-    /* Buttons - Amazon Style */
+    /* Buttons */
     .btn {
       display: inline-flex;
       align-items: center;
@@ -138,26 +133,27 @@
     }
     
     .btn-primary {
-      background: var(--accent);
-      border-color: var(--accent);
+      background: var(--mf-accent);
+      border-color: var(--mf-accent);
       color: #111;
-      font-weight: 600;
+      font-weight: 700;
     }
     
     .btn-primary:hover:not(:disabled) {
-      background: var(--accent-hover);
-      border-color: var(--accent-hover);
+      background: var(--mf-accent-hover);
+      border-color: var(--mf-accent-hover);
     }
     
     .btn-blue {
-      background: var(--primary-blue);
-      border-color: var(--primary-blue);
+      background: var(--mf-primary);
+      border-color: var(--mf-primary);
       color: #fff;
+      font-weight: 700;
     }
     
     .btn-blue:hover:not(:disabled) {
-      background: #004A93;
-      border-color: #004A93;
+      background: var(--mf-primary-dark);
+      border-color: var(--mf-primary-dark);
     }
     
     .btn-ghost {
@@ -186,7 +182,7 @@
       gap: 6px;
       padding: 4px 12px;
       font-size: 11px;
-      font-weight: 600;
+      font-weight: 700;
       border-radius: 12px;
       background: var(--surface-alt);
       color: var(--text-muted);
@@ -197,20 +193,20 @@
     
     .badge-primary {
       background: #E7F1FF;
-      color: var(--primary-blue);
+      color: var(--mf-primary);
       border-color: #B3D9FF;
     }
     
     .badge-success {
-      background: #D5F5E3;
-      color: var(--success);
-      border-color: #A9DFBF;
+      background: #E8F5E9;
+      color: var(--mf-success);
+      border-color: #A5D6A7;
     }
     
     .badge-warning {
-      background: #FCF3CF;
-      color: var(--warning);
-      border-color: #F9E79F;
+      background: #FFF3E0;
+      color: var(--mf-warning);
+      border-color: #FFB74D;
     }
     
     /* Progress Bar */
@@ -224,8 +220,9 @@
     
     .progress-inner {
       height: 100%;
-      background: linear-gradient(90deg, var(--primary-blue), var(--secondary));
+      background: linear-gradient(90deg, var(--mf-primary), var(--mf-secondary));
       transition: width 0.3s ease;
+      box-shadow: 0 0 8px rgba(0, 94, 184, 0.3);
     }
     
     /* Input Styles */
@@ -248,6 +245,7 @@
       border-radius: var(--radius);
       transition: all 0.15s ease;
       padding: 8px 12px;
+      width: 100%;
     }
     
     input:focus,
@@ -255,7 +253,7 @@
     select:focus {
       outline: none;
       border-color: var(--border-focus);
-      box-shadow: 0 0 0 3px rgba(0, 113, 133, 0.1);
+      box-shadow: 0 0 0 3px rgba(0, 94, 184, 0.1);
     }
     
     textarea {
@@ -352,10 +350,10 @@
       padding: 12px 24px;
       border-radius: var(--radius);
       border: 1px solid var(--border);
-      box-shadow: var(--shadow-md);
+      box-shadow: var(--shadow-lg);
       z-index: 9999;
       font-size: 13px;
-      font-weight: 500;
+      font-weight: 600;
       display: none;
       animation: slideUp 0.3s ease;
     }
@@ -381,7 +379,7 @@
     }
     
     .command-item.active {
-      background: var(--primary-blue);
+      background: var(--mf-primary);
       color: white;
     }
     
@@ -413,17 +411,18 @@
       border: 1px solid var(--border);
       cursor: pointer;
       transition: all 0.15s ease;
+      z-index: 10;
     }
     
     .bookmark-btn:hover {
-      background: var(--accent);
-      border-color: var(--accent);
+      background: var(--mf-accent);
+      border-color: var(--mf-accent);
       transform: scale(1.1);
     }
     
     .bookmark-btn.active {
-      background: var(--accent);
-      border-color: var(--accent);
+      background: var(--mf-accent);
+      border-color: var(--mf-accent);
     }
     
     .bookmark-btn.active svg {
@@ -443,16 +442,15 @@
       height: 8px;
       border-radius: 50%;
       display: inline-block;
-      margin-right: 6px;
     }
     
     .status-online {
-      background: var(--success);
+      background: var(--mf-success);
       animation: pulse 2s infinite;
     }
     
     .status-offline {
-      background: var(--error);
+      background: var(--mf-error);
     }
     
     @keyframes pulse {
@@ -473,6 +471,7 @@
       border: 1px solid var(--border);
       border-radius: var(--radius);
       padding: 12px;
+      margin-top: 12px;
     }
     
     .rubric-bar {
@@ -485,17 +484,19 @@
     
     .rubric-fill {
       height: 100%;
-      background: var(--primary-blue);
+      background: var(--mf-primary);
       transition: width 0.4s ease;
+      box-shadow: 0 0 6px rgba(0, 94, 184, 0.4);
     }
     
     /* Tip */
     .tip {
       background: #F0F8FF;
-      border-left: 3px solid var(--primary-blue);
+      border-left: 3px solid var(--mf-primary);
       padding: 12px;
       border-radius: var(--radius);
       font-size: 12px;
+      margin-top: 12px;
     }
     
     html.dark .tip {
@@ -508,6 +509,7 @@
       border: 1px solid #B3D9FF;
       border-radius: var(--radius);
       padding: 12px;
+      margin-top: 12px;
     }
     
     html.dark .feedback-wrap {
@@ -551,8 +553,8 @@
     }
     
     .prose strong {
-      font-weight: 600;
-      color: var(--primary-blue);
+      font-weight: 700;
+      color: var(--mf-primary);
     }
     
     .prose code {
@@ -574,6 +576,20 @@
       clip: rect(0, 0, 0, 0);
       white-space: nowrap;
       border-width: 0;
+    }
+    
+    .hidden {
+      display: none !important;
+    }
+    
+    /* Loading Animation */
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+    
+    .animate-spin {
+      animation: spin 1s linear infinite;
     }
     
     /* Print */
@@ -600,26 +616,26 @@
   <!-- Notice Banner -->
   <aside id="notice" class="notice">
     <div class="container">
-      <div class="flex items-start gap-3 text-sm">
-        <i data-lucide="shield-check" class="w-5 h-5 shrink-0 text-amber-700"></i>
-        <div class="flex-1">
-          <p class="font-semibold text-amber-900">Fachlicher Hinweis (Pilot)</p>
-          <p class="text-amber-800 mt-1">
+      <div style="display: flex; align-items: start; gap: 12px; font-size: 13px;">
+        <i data-lucide="shield-check" style="width: 20px; height: 20px; flex-shrink: 0; color: #856404;"></i>
+        <div style="flex: 1;">
+          <p style="font-weight: 700; color: #856404; margin-bottom: 4px;">Fachlicher Hinweis (Pilot)</p>
+          <p style="color: #856404;">
             Die KI-Prüfung unterstützt beim Lernen. Ergebnisse müssen fachlich geprüft werden.
             <strong>Es dürfen keine personenbezogenen oder sensiblen Daten eingegeben werden.</strong>
           </p>
-          <label class="flex items-center gap-2 mt-2">
-            <input id="ack" type="checkbox" class="w-4 h-4" />
-            <span class="text-amber-900 font-medium">Ich habe den Hinweis gelesen.</span>
+          <label style="display: flex; align-items: center; gap: 8px; margin-top: 8px; cursor: pointer;">
+            <input id="ack" type="checkbox" style="width: 16px; height: 16px; cursor: pointer;" />
+            <span style="color: #856404; font-weight: 600;">Ich habe den Hinweis gelesen und akzeptiert.</span>
           </label>
         </div>
-        <div class="flex items-center gap-2">
+        <div style="display: flex; align-items: center; gap: 8px;">
           <span class="badge badge-warning">
             <span class="status-dot status-online"></span>
             <span id="apiStatusText">API: Online</span>
           </span>
           <button id="ackBtn" type="button" class="btn btn-primary btn-sm">
-            <i data-lucide="check" class="w-4 h-4"></i> Weiter
+            <i data-lucide="check" style="width: 16px; height: 16px;"></i> Weiter
           </button>
         </div>
       </div>
@@ -629,33 +645,33 @@
   <!-- Header -->
   <header class="app-header">
     <div class="container">
-      <div class="flex items-center justify-between gap-4">
-        <div class="flex items-center gap-3">
-          <div class="w-10 h-10 rounded bg-gradient-to-br from-blue-600 to-blue-700 flex items-center justify-center">
-            <i data-lucide="graduation-cap" class="w-6 h-6 text-white"></i>
+      <div style="display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;">
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <div style="width: 40px; height: 40px; border-radius: 4px; background: linear-gradient(135deg, var(--mf-primary), var(--mf-primary-dark)); display: flex; align-items: center; justify-content: center; box-shadow: var(--shadow-sm);">
+            <i data-lucide="graduation-cap" style="width: 24px; height: 24px; color: white;"></i>
           </div>
           <div>
-            <h1 class="text-xl font-bold">BBiG-Quiz Professional</h1>
-            <p class="text-xs text-gray-600">20 Kernfragen • KI-Feedback • §-Quicklook</p>
+            <h1 style="font-size: 20px; font-weight: 700; margin-bottom: 2px;">BBiG-Quiz Professional</h1>
+            <p style="font-size: 11px; color: var(--text-muted); font-weight: 500;">20 Kernfragen • KI-Feedback • §-Quicklook</p>
           </div>
         </div>
         
-        <div class="flex items-center gap-2">
+        <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
           <button id="commandBtn" type="button" class="btn btn-sm" title="Befehle (Ctrl+K)">
-            <i data-lucide="command" class="w-4 h-4"></i>
+            <i data-lucide="command" style="width: 16px; height: 16px;"></i>
           </button>
           <button id="bookmarksBtn" type="button" class="btn btn-sm" title="Markierte Fragen">
-            <i data-lucide="bookmark" class="w-4 h-4"></i>
-            <span id="bookmarkCount" class="badge badge-primary" style="display:none;">0</span>
+            <i data-lucide="bookmark" style="width: 16px; height: 16px;"></i>
+            <span id="bookmarkCount" class="badge badge-primary" style="display:none; margin-left: -4px;">0</span>
           </button>
           <button id="historyBtn" type="button" class="btn btn-sm" title="Historie">
-            <i data-lucide="history" class="w-4 h-4"></i>
+            <i data-lucide="history" style="width: 16px; height: 16px;"></i>
           </button>
           <button id="quickBtn" type="button" class="btn btn-blue btn-sm">
-            <i data-lucide="search" class="w-4 h-4"></i> §-Quicklook
+            <i data-lucide="search" style="width: 16px; height: 16px;"></i> §-Quicklook
           </button>
-          <button id="themeToggle" type="button" class="btn btn-ghost btn-sm" title="Theme">
-            <i data-lucide="moon" class="w-4 h-4"></i>
+          <button id="themeToggle" type="button" class="btn btn-ghost btn-sm" title="Theme wechseln">
+            <i data-lucide="moon" style="width: 16px; height: 16px;"></i>
           </button>
         </div>
       </div>
@@ -664,11 +680,11 @@
 
   <!-- Progress Section -->
   <section class="container" style="margin-top: 16px;">
-    <div class="card card-elevated p-4">
-      <div class="flex items-center gap-4">
-        <i data-lucide="target" class="w-5 h-5 text-blue-600"></i>
-        <div class="flex-1">
-          <div class="flex justify-between text-xs font-semibold text-gray-600 mb-2">
+    <div class="card card-elevated" style="padding: 16px;">
+      <div style="display: flex; align-items: center; gap: 16px;">
+        <i data-lucide="target" style="width: 20px; height: 20px; color: var(--mf-primary); flex-shrink: 0;"></i>
+        <div style="flex: 1;">
+          <div style="display: flex; justify-content: space-between; font-size: 11px; font-weight: 700; color: var(--text-muted); margin-bottom: 8px;">
             <span id="progressText">0 / 20 beantwortet</span>
             <span id="selText">0 ausgewählt</span>
           </div>
@@ -676,17 +692,17 @@
             <div id="progressBar" class="progress-inner" style="width: 0%;"></div>
           </div>
         </div>
-        <time id="timer" class="text-sm font-mono font-semibold text-gray-600">00:00</time>
+        <time id="timer" style="font-size: 13px; font-family: monospace; font-weight: 700; color: var(--text-muted);">00:00</time>
       </div>
     </div>
   </section>
 
   <!-- Spider Chart -->
   <section class="container" id="chartSection" style="margin-top: 16px; display:none;">
-    <div class="card card-elevated p-4">
-      <div class="flex items-center gap-2 mb-3">
-        <i data-lucide="pie-chart" class="w-5 h-5 text-blue-600"></i>
-        <h2 class="font-bold">Rubrik-Analyse</h2>
+    <div class="card card-elevated" style="padding: 16px;">
+      <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+        <i data-lucide="pie-chart" style="width: 20px; height: 20px; color: var(--mf-primary);"></i>
+        <h2 style="font-weight: 700; font-size: 17px;">Rubrik-Analyse</h2>
       </div>
       <div class="chart-container">
         <canvas id="rubricChart"></canvas>
@@ -698,34 +714,34 @@
   <main class="container" style="margin-top: 16px; margin-bottom: 80px;">
     <form id="form" novalidate></form>
     
-    <section id="resultWrap" class="mt-4 hidden">
-      <div class="card card-elevated p-4">
-        <div class="flex items-center gap-2 mb-3">
-          <i data-lucide="sparkles" class="w-5 h-5 text-blue-600"></i>
-          <h2 class="font-bold">KI-Feedback (Gesamt)</h2>
+    <section id="resultWrap" class="hidden" style="margin-top: 16px;">
+      <div class="card card-elevated" style="padding: 16px;">
+        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+          <i data-lucide="sparkles" style="width: 20px; height: 20px; color: var(--mf-primary);"></i>
+          <h2 style="font-weight: 700; font-size: 17px;">KI-Feedback (Gesamt)</h2>
         </div>
-        <article id="aiResult" class="prose text-sm"></article>
+        <article id="aiResult" class="prose" style="font-size: 13px;"></article>
       </div>
     </section>
   </main>
 
   <!-- Sticky Actions -->
   <div style="position: fixed; bottom: 0; left: 0; right: 0; background: var(--surface); border-top: 1px solid var(--border); padding: 12px 0; z-index: 50; backdrop-filter: blur(8px);">
-    <div class="container flex items-center justify-between gap-3">
-      <div class="flex gap-2">
-        <a class="btn btn-sm" href="https://www.gesetze-im-internet.de/bbig_2005/BBiG.pdf" target="_blank" rel="noopener">
-          <i data-lucide="book-open" class="w-4 h-4"></i> BBiG
+    <div class="container" style="display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;">
+      <div style="display: flex; gap: 8px;">
+        <a class="btn btn-sm" href="https://www.gesetze-im-internet.de/bbig_2005/BBiG.pdf" target="_blank" rel="noopener" title="BBiG (PDF)">
+          <i data-lucide="book-open" style="width: 16px; height: 16px;"></i> BBiG
         </a>
-        <a class="btn btn-sm" href="https://www.gesetze-im-internet.de/jarbschg/JArbSchG.pdf" target="_blank" rel="noopener">
-          <i data-lucide="shield" class="w-4 h-4"></i> JArbSchG
+        <a class="btn btn-sm" href="https://www.gesetze-im-internet.de/jarbschg/JArbSchG.pdf" target="_blank" rel="noopener" title="JArbSchG (PDF)">
+          <i data-lucide="shield" style="width: 16px; height: 16px;"></i> JArbSchG
         </a>
       </div>
-      <div class="flex gap-2">
+      <div style="display: flex; gap: 8px;">
         <button id="submitBtn" type="button" class="btn btn-primary">
-          <i data-lucide="send" class="w-4 h-4"></i> KI-Feedback
+          <i data-lucide="send" style="width: 16px; height: 16px;"></i> KI-Feedback
         </button>
         <button id="resetBtn" type="button" class="btn">
-          <i data-lucide="rotate-ccw" class="w-4 h-4"></i> Zurücksetzen
+          <i data-lucide="rotate-ccw" style="width: 16px; height: 16px;"></i> Zurücksetzen
         </button>
       </div>
     </div>
@@ -737,89 +753,91 @@
   <!-- Command Palette Modal -->
   <div id="commandBackdrop" class="modal-backdrop"></div>
   <div id="commandModal" class="modal">
-    <div class="modal-panel card card-elevated p-0 command-palette">
-      <div class="p-4 border-b border-gray-200">
-        <input id="commandSearch" type="search" class="w-full" placeholder="Befehle durchsuchen..." autofocus />
+    <div class="modal-panel card card-elevated command-palette" style="padding: 0;">
+      <div style="padding: 16px; border-bottom: 1px solid var(--border);">
+        <input id="commandSearch" type="search" placeholder="Befehle durchsuchen..." autofocus style="border: none; padding: 8px 0; font-size: 14px; font-weight: 500;" />
       </div>
-      <div id="commandList" class="p-2 max-h-96 overflow-auto"></div>
+      <div id="commandList" style="padding: 8px; max-height: 400px; overflow-y: auto;"></div>
     </div>
   </div>
 
   <!-- Bookmarks Modal -->
   <div id="bookmarksBackdrop" class="modal-backdrop"></div>
   <div id="bookmarksModal" class="modal">
-    <div class="modal-panel card card-elevated p-6">
-      <div class="flex items-center justify-between mb-4">
-        <div class="flex items-center gap-2">
-          <i data-lucide="bookmark" class="w-5 h-5 text-blue-600"></i>
-          <h2 class="font-bold">Markierte Fragen</h2>
+    <div class="modal-panel card card-elevated" style="padding: 24px;">
+      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <i data-lucide="bookmark" style="width: 20px; height: 20px; color: var(--mf-primary);"></i>
+          <h2 style="font-weight: 700; font-size: 17px;">Markierte Fragen</h2>
         </div>
         <button id="bookmarksClose" type="button" class="btn btn-ghost btn-sm">
-          <i data-lucide="x" class="w-4 h-4"></i>
+          <i data-lucide="x" style="width: 16px; height: 16px;"></i>
         </button>
       </div>
-      <div id="bookmarksList"></div>
+      <div id="bookmarksList" style="max-height: 500px; overflow-y: auto;"></div>
     </div>
   </div>
 
   <!-- Quicklook Modal -->
   <div id="qlBackdrop" class="modal-backdrop"></div>
   <div id="qlModal" class="modal">
-    <div class="modal-panel card card-elevated p-6">
-      <div class="flex items-center justify-between mb-4">
-        <div class="flex items-center gap-2">
-          <i data-lucide="search" class="w-5 h-5 text-blue-600"></i>
-          <h2 class="font-bold">§-Quicklook – BBiG & JArbSchG</h2>
+    <div class="modal-panel card card-elevated" style="padding: 24px;">
+      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <i data-lucide="search" style="width: 20px; height: 20px; color: var(--mf-primary);"></i>
+          <h2 style="font-weight: 700; font-size: 17px;">§-Quicklook – BBiG & JArbSchG</h2>
         </div>
         <button id="qlClose" type="button" class="btn btn-ghost btn-sm">
-          <i data-lucide="x" class="w-4 h-4"></i>
+          <i data-lucide="x" style="width: 16px; height: 16px;"></i>
         </button>
       </div>
-      <input id="qlSearch" type="search" class="w-full mb-4" placeholder="Begriff oder § suchen..." />
-      <div id="qlList" class="space-y-3 max-h-96 overflow-auto"></div>
+      <input id="qlSearch" type="search" placeholder="Begriff oder § suchen..." style="margin-bottom: 16px;" />
+      <div id="qlList" style="display: grid; gap: 12px; max-height: 500px; overflow-y: auto;"></div>
     </div>
   </div>
 
   <!-- History Modal -->
   <div id="historyBackdrop" class="modal-backdrop"></div>
   <div id="historyModal" class="modal">
-    <div class="modal-panel card card-elevated p-6">
-      <div class="flex items-center justify-between mb-4">
-        <div class="flex items-center gap-2">
-          <i data-lucide="history" class="w-5 h-5 text-blue-600"></i>
-          <h2 class="font-bold">Antwort-Historie</h2>
+    <div class="modal-panel card card-elevated" style="padding: 24px;">
+      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <i data-lucide="history" style="width: 20px; height: 20px; color: var(--mf-primary);"></i>
+          <h2 style="font-weight: 700; font-size: 17px;">Antwort-Historie</h2>
         </div>
         <button id="historyClose" type="button" class="btn btn-ghost btn-sm">
-          <i data-lucide="x" class="w-4 h-4"></i>
+          <i data-lucide="x" style="width: 16px; height: 16px;"></i>
         </button>
       </div>
-      <div id="historyList" class="space-y-3 max-h-96 overflow-auto"></div>
+      <div id="historyList" style="display: grid; gap: 12px; max-height: 500px; overflow-y: auto;"></div>
     </div>
   </div>
 
   <!-- Footer -->
   <footer style="background: var(--surface-alt); border-top: 1px solid var(--border); padding: 24px 0; margin-top: 48px;">
     <div class="container">
-      <p class="text-xs text-center text-gray-600 leading-relaxed">
-        Diese Anwendung nutzt künstliche Intelligenz (KI). Mit der Nutzung stimmst du zu, dass deine Texte von OpenAI verarbeitet werden.
+      <p style="font-size: 11px; text-align: center; color: var(--text-muted); line-height: 1.6;">
+        Diese Anwendung nutzt künstliche Intelligenz (KI). Mit der Nutzung stimmst du zu, dass deine Texte von OpenAI über Make.com verarbeitet werden.
         Es werden keine personenbezogenen Daten erhoben. Jegliche Haftung ist ausgeschlossen. Alle Antworten sind zu prüfen.
+        KI-generierte Antworten können fehlerhaft sein.
       </p>
     </div>
   </footer>
 
   <script>
   document.addEventListener("DOMContentLoaded", () => {
+    // Initialize Lucide Icons
     if (window.lucide) lucide.createIcons();
 
-    // === Config ===
-    const relay = "/api/linda-proxy";
+    // === Configuration ===
+    const relay = "/api/linda-proxy"; // Make.com Webhook
     const STORAGE_KEY = "BBIGQUIZ_V3";
     const HISTORY_KEY = "BBIGQUIZ_HISTORY";
     const BOOKMARK_KEY = "BBIGQUIZ_BOOKMARKS";
     const MAX_ANSWER_CHARS = 1500;
-    const RUBRIC_KEYS = ["normbezug","vollstaendigkeit","praxisbezug"];
+    const RUBRIC_KEYS = ["normbezug", "vollstaendigkeit", "praxisbezug"];
 
-    // === UI Refs ===
+    // === UI References ===
     const form = document.getElementById("form");
     const progressBar = document.getElementById("progressBar");
     const progressTxt = document.getElementById("progressText");
@@ -866,37 +884,37 @@
     let rubricChart = null;
     if (window.marked) marked.setOptions({ breaks: true, gfm: true });
 
-    // === Questions ===
+    // === Questions (20 Core Questions) ===
     const QUESTIONS_ALL = [
-      { ref:"V1 – Mindestinhalte Vertrag", q:"Nenne vier Pflichtangaben, die zwingend in den Berufsausbildungsvertrag gehören.", tip:["Parteien, Beginn/Dauer, Ziel/Berufsbezeichnung, sachliche & zeitliche Gliederung.","§ 11 BBiG."]},
-      { ref:"V2 – Ausbildungsordnung", q:"Welche drei Kernpunkte regelt eine Ausbildungsordnung?", tip:["Berufsbild, Dauer/Ausbildungsrahmenplan, Prüfungen.","§§ 4–5 BBiG."]},
-      { ref:"V3 – Probezeit", q:"Wie lang muss/darf die Probezeit sein – und warum ist sie wichtig?", tip:["Mind. 1, max. 4 Monate; Eignungsprüfung beider Seiten.","§ 20 BBiG."]},
-      { ref:"V4 – Minderjährige: Unterschrift", q:"Wer unterschreibt den Vertrag bei Minderjährigen mit gemeinsamem Sorgerecht?", tip:["Beide Sorgeberechtigte + Minderjährige/r.","§ 10 BBiG; § 107 BGB."]},
-      { ref:"V5 – Berufsschulzeit & Arbeitszeit", q:"Wie werden Berufsschulzeiten auf die Arbeitszeit angerechnet (U18 vs. ≥18)?", tip:["U18: besondere Anrechnung (JArbSchG).","Wegezeiten Schule→Betrieb; § 15 BBiG."]},
-      { ref:"V6 – Ruhezeit Jugendliche", q:"Welche tägliche Mindestruhezeit gilt für Jugendliche?", tip:["Mindestens 12 Stunden.","JArbSchG."]},
-      { ref:"V7 – Vergütung", q:"Was gilt zur Angemessenheit der Ausbildungsvergütung?", tip:["MiAV Untergrenze; tariflich/branchenüblich; Steigerung je Jahr.","§ 17 BBiG."]},
-      { ref:"V8 – Überstunden", q:"Sind Überstunden zulässig – und wie werden sie behandelt?", tip:["Nur ausbildungsdienlich; Vergütung/Zeitausgleich; Jugendarbeitsschutz beachten.","ArbZG/JArbSchG."]},
-      { ref:"V9 – Betrieblicher Ausbildungsplan", q:"Wozu dient der betriebliche Ausbildungsplan?", tip:["Umsetzung Rahmenplan, zeitl./sachl. Gliederung, Qualitätssicherung.","§ 5 BBiG; Verweis § 11."]},
-      { ref:"V10 – Berichtsheft", q:"Welche Bedeutung hat das Berichtsheft und wer kontrolliert es?", tip:["Zulassungsvoraussetzung; elektronisch möglich; Kontrolle Ausbilder/in.","§ 13 Nr.7, § 14 Abs.1 Nr.4 BBiG."]},
-      { ref:"V11 – Verkürzung", q:"Wann kann die Ausbildungsdauer verkürzt werden?", tip:["Vorbildung/Leistung/Anrechnung; Einvernehmen nötig.","§ 8 BBiG."]},
-      { ref:"V12 – Verlängerung", q:"Wann kommt eine Verlängerung in Betracht?", tip:["Nichtbestehen oder besondere Fälle.","§ 8 Abs. 2 BBiG."]},
-      { ref:"V13 – Teilzeitberufsausbildung", q:"Wie funktioniert Teilzeit in der Ausbildung und was bleibt unverändert?", tip:["Reduzierte Zeiten, Lernziel bleibt; evtl. längere Gesamtdauer.","§ 7a BBiG."]},
-      { ref:"V14 – Datenschutz/Geheimnis", q:"Welche Pflichten haben Azubis zu Datenschutz und Betriebsgeheimnissen?", tip:["DSGVO/BDSG beachten; Unterweisungen dokumentieren."]},
-      { ref:"V15 – Kündigung", q:"Welche Kündigungsregeln gelten in und nach der Probezeit?", tip:["Probezeit: jederzeit fristlos (§ 22 Abs. 1).","Danach: fristlos aus wichtigem Grund oder mit Frist von 4 Wochen (Azubi)."]},
-      { ref:"V16 – Schwangerschaft/Mutterschutz", q:"Welche Schutzregeln gelten bei Schwangerschaft in der Ausbildung?", tip:["MuSchG: Schutzfristen, Beschäftigungsverbote, Kündigungsschutz."]},
-      { ref:"V17 – Nachteilsausgleich", q:"Wie werden Auszubildende mit Behinderung in Prüfungen unterstützt?", tip:["Nachteilsausgleich (Zeit, Hilfsmittel) auf Antrag; Chancengleichheit."]},
-      { ref:"V18 – Ausland", q:"Sind Ausbildungsabschnitte im Ausland möglich und wie werden sie angerechnet?", tip:["Ja; Ausbildungsziel wahren; bis zulässige Zeitanteile.","§ 2 Abs. 3 BBiG."]},
-      { ref:"V19 – Versetzung", q:"Darf der Betrieb Azubis versetzen?", tip:["Ja, wenn ausbildungsdienlich/zumutbar; Reisekosten klären.","§ 14 BBiG."]},
-      { ref:"V20 – Insolvenz", q:"Was passiert bei Insolvenz des Ausbildungsbetriebs?", tip:["Fortführung/Anschlussbetrieb/IHK-Unterstützung; ggf. Insolvenzgeld."]}
+      { ref: "V1 – Mindestinhalte Vertrag", q: "Nenne vier Pflichtangaben, die zwingend in den Berufsausbildungsvertrag gehören.", tip: ["Parteien, Beginn/Dauer, Ziel/Berufsbezeichnung, sachliche & zeitliche Gliederung.", "§ 11 BBiG."] },
+      { ref: "V2 – Ausbildungsordnung", q: "Welche drei Kernpunkte regelt eine Ausbildungsordnung?", tip: ["Berufsbild, Dauer/Ausbildungsrahmenplan, Prüfungen.", "§§ 4–5 BBiG."] },
+      { ref: "V3 – Probezeit", q: "Wie lang muss/darf die Probezeit sein – und warum ist sie wichtig?", tip: ["Mind. 1, max. 4 Monate; Eignungsprüfung beider Seiten.", "§ 20 BBiG."] },
+      { ref: "V4 – Minderjährige: Unterschrift", q: "Wer unterschreibt den Vertrag bei Minderjährigen mit gemeinsamem Sorgerecht?", tip: ["Beide Sorgeberechtigte + Minderjährige/r.", "§ 10 BBiG; § 107 BGB."] },
+      { ref: "V5 – Berufsschulzeit & Arbeitszeit", q: "Wie werden Berufsschulzeiten auf die Arbeitszeit angerechnet (U18 vs. ≥18)?", tip: ["U18: besondere Anrechnung (JArbSchG).", "Wegezeiten Schule→Betrieb; § 15 BBiG."] },
+      { ref: "V6 – Ruhezeit Jugendliche", q: "Welche tägliche Mindestruhezeit gilt für Jugendliche?", tip: ["Mindestens 12 Stunden.", "JArbSchG."] },
+      { ref: "V7 – Vergütung", q: "Was gilt zur Angemessenheit der Ausbildungsvergütung?", tip: ["MiAV Untergrenze; tariflich/branchenüblich; Steigerung je Jahr.", "§ 17 BBiG."] },
+      { ref: "V8 – Überstunden", q: "Sind Überstunden zulässig – und wie werden sie behandelt?", tip: ["Nur ausbildungsdienlich; Vergütung/Zeitausgleich; Jugendarbeitsschutz beachten.", "ArbZG/JArbSchG."] },
+      { ref: "V9 – Betrieblicher Ausbildungsplan", q: "Wozu dient der betriebliche Ausbildungsplan?", tip: ["Umsetzung Rahmenplan, zeitl./sachl. Gliederung, Qualitätssicherung.", "§ 5 BBiG; Verweis § 11."] },
+      { ref: "V10 – Berichtsheft", q: "Welche Bedeutung hat das Berichtsheft und wer kontrolliert es?", tip: ["Zulassungsvoraussetzung; elektronisch möglich; Kontrolle Ausbilder/in.", "§ 13 Nr.7, § 14 Abs.1 Nr.4 BBiG."] },
+      { ref: "V11 – Verkürzung", q: "Wann kann die Ausbildungsdauer verkürzt werden?", tip: ["Vorbildung/Leistung/Anrechnung; Einvernehmen nötig.", "§ 8 BBiG."] },
+      { ref: "V12 – Verlängerung", q: "Wann kommt eine Verlängerung in Betracht?", tip: ["Nichtbestehen oder besondere Fälle.", "§ 8 Abs. 2 BBiG."] },
+      { ref: "V13 – Teilzeitberufsausbildung", q: "Wie funktioniert Teilzeit in der Ausbildung und was bleibt unverändert?", tip: ["Reduzierte Zeiten, Lernziel bleibt; evtl. längere Gesamtdauer.", "§ 7a BBiG."] },
+      { ref: "V14 – Datenschutz/Geheimnis", q: "Welche Pflichten haben Azubis zu Datenschutz und Betriebsgeheimnissen?", tip: ["DSGVO/BDSG beachten; Unterweisungen dokumentieren."] },
+      { ref: "V15 – Kündigung", q: "Welche Kündigungsregeln gelten in und nach der Probezeit?", tip: ["Probezeit: jederzeit fristlos (§ 22 Abs. 1).", "Danach: fristlos aus wichtigem Grund oder mit Frist von 4 Wochen (Azubi)."] },
+      { ref: "V16 – Schwangerschaft/Mutterschutz", q: "Welche Schutzregeln gelten bei Schwangerschaft in der Ausbildung?", tip: ["MuSchG: Schutzfristen, Beschäftigungsverbote, Kündigungsschutz."] },
+      { ref: "V17 – Nachteilsausgleich", q: "Wie werden Auszubildende mit Behinderung in Prüfungen unterstützt?", tip: ["Nachteilsausgleich (Zeit, Hilfsmittel) auf Antrag; Chancengleichheit."] },
+      { ref: "V18 – Ausland", q: "Sind Ausbildungsabschnitte im Ausland möglich und wie werden sie angerechnet?", tip: ["Ja; Ausbildungsziel wahren; bis zulässige Zeitanteile.", "§ 2 Abs. 3 BBiG."] },
+      { ref: "V19 – Versetzung", q: "Darf der Betrieb Azubis versetzen?", tip: ["Ja, wenn ausbildungsdienlich/zumutbar; Reisekosten klären.", "§ 14 BBiG."] },
+      { ref: "V20 – Insolvenz", q: "Was passiert bei Insolvenz des Ausbildungsbetriebs?", tip: ["Fortführung/Anschlussbetrieb/IHK-Unterstützung; ggf. Insolvenzgeld."] }
     ];
 
     const LAW_INDEX = [
-      { law:"BBiG", para:"§ 11", tags:["vertrag","inhalte","mindestinhalte"], excerpt:"§ 11 BBiG – Niederschrift der wesentlichen Inhalte (u. a. Parteien, Beginn/Dauer, Ziel, sachliche/zeitliche Gliederung).", link:"https://www.gesetze-im-internet.de/bbig_2005/BBiG.pdf" },
-      { law:"BBiG", para:"§ 20", tags:["probezeit"], excerpt:"§ 20 BBiG – Probezeit mindestens 1, höchstens 4 Monate.", link:"https://www.gesetze-im-internet.de/bbig_2005/BBiG.pdf" },
-      { law:"BBiG", para:"§ 15", tags:["freistellung","schule","wegezeit"], excerpt:"§ 15 BBiG – Freistellung für Berufsschule/Prüfungen; Wegezeiten Schule→Betrieb sind anzurechnen.", link:"https://www.gesetze-im-internet.de/bbig_2005/BBiG.pdf" },
-      { law:"BBiG", para:"§ 17", tags:["vergütung","miav"], excerpt:"§ 17 BBiG – Angemessene Vergütung; Mindestausbildungsvergütung als Untergrenze.", link:"https://www.gesetze-im-internet.de/bbig_2005/BBiG.pdf" },
-      { law:"JArbSchG", para:"§ 8–15", tags:["arbeitszeit","ruhezeit","pausen"], excerpt:"JArbSchG – Tägliche und wöchentliche Höchstarbeitszeiten; Ruhepausen; Ruhezeit mind. 12 Std.", link:"https://www.gesetze-im-internet.de/jarbschg/JArbSchG.pdf" },
-      { law:"ArbZG", para:"§ 3, § 4, § 5", tags:["erwachsene","arbeitszeit","pausen","ruhezeit"], excerpt:"ArbZG – 8 Std/Tag (bis 10 mit Ausgleich), Pausen 30–45 Min, Ruhezeit 11 Std.", link:"https://www.gesetze-im-internet.de/arbzg/ArbZG.pdf" },
+      { law: "BBiG", para: "§ 11", tags: ["vertrag", "inhalte", "mindestinhalte"], excerpt: "§ 11 BBiG – Niederschrift der wesentlichen Inhalte (u. a. Parteien, Beginn/Dauer, Ziel, sachliche/zeitliche Gliederung).", link: "https://www.gesetze-im-internet.de/bbig_2005/BBiG.pdf" },
+      { law: "BBiG", para: "§ 20", tags: ["probezeit"], excerpt: "§ 20 BBiG – Probezeit mindestens 1, höchstens 4 Monate.", link: "https://www.gesetze-im-internet.de/bbig_2005/BBiG.pdf" },
+      { law: "BBiG", para: "§ 15", tags: ["freistellung", "schule", "wegezeit"], excerpt: "§ 15 BBiG – Freistellung für Berufsschule/Prüfungen; Wegezeiten Schule→Betrieb sind anzurechnen.", link: "https://www.gesetze-im-internet.de/bbig_2005/BBiG.pdf" },
+      { law: "BBiG", para: "§ 17", tags: ["vergütung", "miav"], excerpt: "§ 17 BBiG – Angemessene Vergütung; Mindestausbildungsvergütung als Untergrenze.", link: "https://www.gesetze-im-internet.de/bbig_2005/BBiG.pdf" },
+      { law: "JArbSchG", para: "§ 8–15", tags: ["arbeitszeit", "ruhezeit", "pausen"], excerpt: "JArbSchG – Tägliche und wöchentliche Höchstarbeitszeiten; Ruhepausen; Ruhezeit mind. 12 Std.", link: "https://www.gesetze-im-internet.de/jarbschg/JArbSchG.pdf" },
+      { law: "ArbZG", para: "§ 3, § 4, § 5", tags: ["erwachsene", "arbeitszeit", "pausen", "ruhezeit"], excerpt: "ArbZG – 8 Std/Tag (bis 10 mit Ausgleich), Pausen 30–45 Min, Ruhezeit 11 Std.", link: "https://www.gesetze-im-internet.de/arbzg/ArbZG.pdf" },
     ];
 
     // === State ===
@@ -942,7 +960,7 @@
     // === Disclaimer ===
     ackBtn.addEventListener("click", () => {
       if (!ack.checked) {
-        showToast("Bitte bestätige den Hinweis.");
+        showToast("❌ Bitte bestätige den Hinweis.");
         return;
       }
       accepted = true;
@@ -960,46 +978,46 @@
         card.className = "card question-card";
         card.innerHTML = `
           <button type="button" class="bookmark-btn ${isBookmarked ? 'active' : ''}" data-ref="${item.ref}" title="Markieren">
-            <i data-lucide="bookmark" class="w-4 h-4"></i>
+            <i data-lucide="bookmark" style="width: 16px; height: 16px;"></i>
           </button>
           
-          <div class="flex items-start gap-3 mb-3">
+          <div style="display: flex; align-items: start; gap: 12px; margin-bottom: 12px;">
             <span class="badge badge-primary">Frage ${idx + 1}</span>
-            <h3 class="flex-1 font-bold">${item.ref}</h3>
-            <label class="flex items-center gap-2">
-              <input type="checkbox" class="sel-check" data-ref="${item.ref}" />
-              <span class="text-xs font-semibold text-gray-600">Auswahl</span>
+            <h3 style="flex: 1; font-weight: 700; font-size: 14px;">${item.ref}</h3>
+            <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+              <input type="checkbox" class="sel-check" data-ref="${item.ref}" style="width: 16px; height: 16px; cursor: pointer;" />
+              <span style="font-size: 11px; font-weight: 700; color: var(--text-muted);">Auswahl</span>
             </label>
           </div>
           
-          <p class="text-sm mb-3 text-gray-700">${item.q}</p>
+          <p style="font-size: 13px; margin-bottom: 12px; color: var(--text); line-height: 1.6;">${item.q}</p>
           
           <textarea 
-            class="w-full text-sm"
+            style="width: 100%;"
             rows="4"
             placeholder="Deine Antwort (max. ${MAX_ANSWER_CHARS} Zeichen)..."
             maxlength="${MAX_ANSWER_CHARS}"
             data-ref="${item.ref}"
           ></textarea>
           
-          <div class="tip mt-3 hidden" data-ref="${item.ref}">
+          <div class="tip hidden" data-ref="${item.ref}">
             <details>
-              <summary class="font-semibold cursor-pointer flex items-center gap-2">
-                <i data-lucide="info" class="w-4 h-4"></i>
+              <summary style="font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 6px;">
+                <i data-lucide="info" style="width: 14px; height: 14px;"></i>
                 Orientierungshilfe
               </summary>
-              <div class="mt-2 space-y-1">
-                ${item.tip.map(t => `<p>• ${t}</p>`).join("")}
+              <div style="margin-top: 8px; font-size: 12px; line-height: 1.5;">
+                ${item.tip.map(t => `<p style="margin-bottom: 4px;">• ${t}</p>`).join("")}
               </div>
             </details>
           </div>
           
-          <div class="rubric-wrap mt-3 hidden" data-ref="${item.ref}">
+          <div class="rubric-wrap hidden" data-ref="${item.ref}">
             <div class="rubric">
-              <p class="text-xs font-bold mb-2">KI-Rubriken-Score:</p>
+              <p style="font-size: 11px; font-weight: 700; margin-bottom: 8px; color: var(--text-muted);">KI-Rubriken-Score:</p>
               ${RUBRIC_KEYS.map(k => `
-                <div class="mb-2 last:mb-0">
-                  <div class="flex justify-between text-xs font-semibold mb-1">
+                <div style="margin-bottom: 8px;">
+                  <div style="display: flex; justify-between; font-size: 11px; font-weight: 700; margin-bottom: 4px; color: var(--text-muted);">
                     <span>${k === 'normbezug' ? '📚 Normbezug' : k === 'vollstaendigkeit' ? '✅ Vollständigkeit' : '🎯 Praxisbezug'}</span>
                     <span class="rubric-val" data-ref="${item.ref}" data-key="${k}">—</span>
                   </div>
@@ -1011,12 +1029,12 @@
             </div>
           </div>
           
-          <div class="feedback-wrap mt-3 hidden" data-ref="${item.ref}">
-            <p class="text-xs font-bold mb-2 flex items-center gap-2">
-              <i data-lucide="message-square" class="w-4 h-4"></i>
+          <div class="feedback-wrap hidden" data-ref="${item.ref}">
+            <p style="font-size: 11px; font-weight: 700; margin-bottom: 8px; display: flex; align-items: center; gap: 6px; color: var(--mf-primary);">
+              <i data-lucide="message-square" style="width: 14px; height: 14px;"></i>
               KI-Feedback:
             </p>
-            <div class="feedback-content text-sm"></div>
+            <div class="feedback-content" style="font-size: 13px; line-height: 1.6;"></div>
           </div>
         `;
         form.appendChild(card);
@@ -1121,6 +1139,8 @@
       chartSection.style.display = "block";
 
       const isDark = document.documentElement.classList.contains('dark');
+      const textColor = isDark ? '#FFFFFF' : '#0F1111';
+      const gridColor = isDark ? '#3A4553' : '#D5D9D9';
 
       if (rubricChart) rubricChart.destroy();
 
@@ -1140,7 +1160,8 @@
             borderWidth: 2,
             pointBackgroundColor: '#005EB8',
             pointBorderColor: '#fff',
-            pointRadius: 4
+            pointRadius: 5,
+            pointHoverRadius: 7
           }]
         },
         options: {
@@ -1150,13 +1171,29 @@
             r: {
               beginAtZero: true,
               max: 2,
-              ticks: { stepSize: 0.5, color: isDark ? '#AAB7B8' : '#565959' },
-              grid: { color: isDark ? '#3A4553' : '#D5D9D9' },
-              pointLabels: { color: isDark ? '#FFFFFF' : '#0F1111', font: { size: 12, weight: '600' } }
+              ticks: {
+                stepSize: 0.5,
+                color: textColor,
+                backdropColor: 'transparent',
+                font: { size: 11, weight: '600' }
+              },
+              grid: { color: gridColor, lineWidth: 1 },
+              pointLabels: {
+                color: textColor,
+                font: { size: 12, weight: '700' }
+              }
             }
           },
           plugins: {
-            legend: { display: false }
+            legend: { display: false },
+            tooltip: {
+              backgroundColor: isDark ? '#1C2531' : '#FFFFFF',
+              titleColor: textColor,
+              bodyColor: textColor,
+              borderColor: gridColor,
+              borderWidth: 1,
+              padding: 12
+            }
           }
         }
       });
@@ -1166,12 +1203,12 @@
     submitBtn.addEventListener("click", async () => {
       const selectedRefs = Object.keys(selected).filter(r => selected[r]);
       if (selectedRefs.length === 0) {
-        showToast("Bitte wähle mindestens eine Frage aus.");
+        showToast("❌ Bitte wähle mindestens eine Frage aus.");
         return;
       }
 
       submitBtn.disabled = true;
-      submitBtn.innerHTML = '<i data-lucide="loader" class="w-4 h-4 animate-spin"></i> Analysiere...';
+      submitBtn.innerHTML = '<i data-lucide="loader" class="animate-spin" style="width:16px;height:16px;"></i> Analysiere...';
       if (window.lucide) lucide.createIcons();
 
       const payload = selectedRefs.map(ref => {
@@ -1220,137 +1257,4 @@
             }
 
             // Tip
-            const tipEl = document.querySelector(`.tip[data-ref="${ref}"]`);
-            if (tipEl) tipEl.classList.remove("hidden");
-          });
-        }
-
-        // Overall feedback
-        if (data.overall) {
-          resultWrap.classList.remove("hidden");
-          aiResult.innerHTML = window.marked ? marked.parse(data.overall) : data.overall;
-        }
-
-        updateSpiderChart();
-        saveState();
-        
-        // Save to history
-        const history = JSON.parse(localStorage.getItem(HISTORY_KEY) || "[]");
-        history.unshift({
-          date: new Date().toISOString(),
-          questions: payload.length,
-          data: data
-        });
-        localStorage.setItem(HISTORY_KEY, JSON.stringify(history.slice(0, 10)));
-
-        showToast("✅ KI-Feedback erhalten!");
-        if (window.confetti) confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
-
-      } catch (err) {
-        console.error(err);
-        showToast("❌ Fehler beim Abrufen des Feedbacks.");
-      } finally {
-        submitBtn.disabled = false;
-        submitBtn.innerHTML = '<i data-lucide="send" class="w-4 h-4"></i> KI-Feedback';
-        if (window.lucide) lucide.createIcons();
-      }
-    });
-
-    // === Reset ===
-    resetBtn.addEventListener("click", () => {
-      if (!confirm("Wirklich zurücksetzen? Alle Antworten gehen verloren.")) return;
-      answers = {};
-      selected = {};
-      rubrics = {};
-      localStorage.removeItem(STORAGE_KEY);
-      renderQuiz();
-      resultWrap.classList.add("hidden");
-      showToast("Zurückgesetzt!");
-    });
-
-    // === Command Palette ===
-    const commands = [
-      { name: "KI-Feedback abrufen", icon: "send", kbd: "Ctrl+Enter", action: () => submitBtn.click() },
-      { name: "Zurücksetzen", icon: "rotate-ccw", kbd: "Ctrl+R", action: () => resetBtn.click() },
-      { name: "§-Quicklook öffnen", icon: "search", kbd: "Ctrl+Q", action: () => openQuicklook() },
-      { name: "Markierte Fragen", icon: "bookmark", kbd: "Ctrl+B", action: () => openBookmarks() },
-      { name: "Historie anzeigen", icon: "history", kbd: "Ctrl+H", action: () => openHistory() },
-      { name: "Theme wechseln", icon: "moon", kbd: "Ctrl+T", action: () => themeToggle.click() }
-    ];
-
-    commandBtn.addEventListener("click", () => openCommandPalette());
-    commandBackdrop.addEventListener("click", () => closeCommandPalette());
-
-    function openCommandPalette() {
-      commandModal.classList.add("open");
-      commandBackdrop.classList.add("open");
-      commandSearch.value = "";
-      renderCommands();
-      commandSearch.focus();
-    }
-
-    function closeCommandPalette() {
-      commandModal.classList.remove("open");
-      commandBackdrop.classList.remove("open");
-    }
-
-    function renderCommands(filter = "") {
-      const filtered = commands.filter(c => c.name.toLowerCase().includes(filter.toLowerCase()));
-      commandList.innerHTML = filtered.map((c, idx) => `
-        <div class="command-item ${idx === 0 ? 'active' : ''}" data-idx="${idx}">
-          <i data-lucide="${c.icon}" class="w-4 h-4"></i>
-          <span class="flex-1">${c.name}</span>
-          <kbd class="command-kbd">${c.kbd}</kbd>
-        </div>
-      `).join("");
-      
-      if (window.lucide) lucide.createIcons();
-      
-      commandList.querySelectorAll(".command-item").forEach(item => {
-        item.addEventListener("click", () => {
-          const idx = parseInt(item.dataset.idx);
-          commands[filtered[idx].name === filtered[idx].name ? commands.findIndex(c => c.name === filtered[idx].name) : 0].action();
-          closeCommandPalette();
-        });
-      });
-    }
-
-    commandSearch.addEventListener("input", (e) => {
-      renderCommands(e.target.value);
-    });
-
-    // Keyboard shortcuts
-    document.addEventListener("keydown", (e) => {
-      if (e.ctrlKey || e.metaKey) {
-        if (e.key === "k") {
-          e.preventDefault();
-          openCommandPalette();
-        } else if (e.key === "Enter") {
-          e.preventDefault();
-          submitBtn.click();
-        } else if (e.key === "q") {
-          e.preventDefault();
-          openQuicklook();
-        } else if (e.key === "b") {
-          e.preventDefault();
-          openBookmarks();
-        } else if (e.key === "h") {
-          e.preventDefault();
-          openHistory();
-        } else if (e.key === "t") {
-          e.preventDefault();
-          themeToggle.click();
-        }
-      }
-      
-      if (e.key === "Escape") {
-        closeCommandPalette();
-        closeBookmarks();
-        closeQuicklook();
-        closeHistory();
-      }
-    });
-
-    // === Bookmarks ===
-    bookmarksBtn.addEventListener("click", () => openBookmarks());
-    bookmarksClose.addEventListener("click", () =>
+            const tipEl = document.querySelector(`.tip[data-ref="${ref}"]
