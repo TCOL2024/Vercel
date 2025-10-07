@@ -6,6 +6,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <title>BBiG-Quiz – Ausbildung & Sozialrecht</title>
 
+  <!-- Deps -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script defer src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
@@ -15,25 +16,27 @@
     :root{
       --primary:#2563eb; --primary2:#0ea5e9; --accent:#22c55e;
       --surface:#ffffff; --surface2:#f7f8fb; --surface3:#eef2f7;
-      --ink:#0f172a; --muted:#64748b; --border:#e2e8f0;
+      --ink:#0f172a; --muted:#667085; --border:#e5e7eb;
     }
     html.dark{
       --surface:#0b1220; --surface2:#0f172a; --surface3:#111827;
-      --ink:#e5e7eb; --muted:#94a3b8; --border:#1f2937;
+      --ink:#e5e7eb; --muted:#9aa4b2; --border:#1f2937;
     }
     html,body{font-family:Inter,system-ui,-apple-system,'Segoe UI',Roboto,Arial,sans-serif;background:var(--surface2);color:var(--ink);font-size:14px;line-height:1.5}
     .container{max-width:1120px;margin-inline:auto;padding-inline:16px}
-    .card{background:var(--surface);border:1px solid var(--border);border-radius:14px}
-    .btn{display:inline-flex;align-items:center;gap:8px;padding:10px 14px;border-radius:12px;border:1px solid var(--border);background:var(--surface);font-weight:600}
+    .card{background:var(--surface);border:1px solid var(--border);border-radius:14px;box-shadow:0 4px 16px rgba(0,0,0,.04)}
+    .btn{display:inline-flex;align-items:center;gap:8px;padding:10px 14px;border:1px solid var(--border);border-radius:12px;background:var(--surface);font-weight:600}
     .btn:hover{background:var(--surface3)}
-    .btn-primary{background:var(--primary);border-color:var(--primary);color:#fff}
-    .btn-primary:hover{filter:brightness(1.05)}
-    .btn-sm{padding:6px 10px;font-size:12px}
+    .btn-primary{background:linear-gradient(90deg,var(--primary),var(--primary2));border-color:transparent;color:#fff}
     .btn-ghost{border-color:transparent;background:transparent}
+    .btn-sm{padding:6px 10px;font-size:12px}
     .badge{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border:1px solid var(--border);border-radius:999px;background:var(--surface3);color:var(--muted);font-size:11px;font-weight:700}
     .badge-primary{background:rgba(37,99,235,.08);border-color:rgba(37,99,235,.25);color:#0b3b8a}
     .progress-outer{height:8px;border-radius:999px;background:var(--surface3);overflow:hidden;border:1px solid var(--border)}
     .progress-inner{height:100%;width:0%;background:linear-gradient(90deg,var(--primary),var(--primary2));transition:width .3s}
+    .seg{display:inline-flex;background:var(--surface);border:1px solid var(--border);border-radius:999px;padding:4px}
+    .seg button{padding:.5rem .9rem;border-radius:999px;font-weight:700}
+    .seg button[aria-pressed="true"]{background:linear-gradient(90deg,var(--primary),var(--primary2));color:#fff}
     .tabs{display:flex;gap:.5rem;overflow:auto;scrollbar-width:none}
     .tabs::-webkit-scrollbar{display:none}
     .tab{padding:.55rem .9rem;border:1px solid var(--border);border-radius:999px;background:#fff;display:flex;align-items:center;gap:.55rem;font-weight:700;white-space:nowrap}
@@ -43,362 +46,393 @@
     .q-card{position:relative;padding:16px}
     .tip{margin-top:.5rem;background:linear-gradient(180deg,rgba(37,99,235,.08),rgba(14,165,233,.08));border-left:3px solid var(--primary);padding:.8rem .9rem;border-radius:12px}
     .sticky-actions{position:sticky;bottom:0;z-index:40}
-    .seg{display:inline-flex;background:var(--surface);border:1px solid var(--border);border-radius:999px;padding:4px}
-    .seg button{padding:.5rem .9rem;border-radius:999px;font-weight:700}
-    .seg button[aria-pressed="true"]{background:linear-gradient(90deg,var(--primary),var(--primary2));color:#fff}
 
-    /* Linda Avatar */
-    #lindaBtn{position:fixed;bottom:16px;right:16px;width:64px;height:64px;z-index:60;border:none;background:transparent;cursor:pointer}
-    #lindaChat{position:fixed;bottom:96px;right:16px;width:min(92vw,380px);height:520px;z-index:60;display:none}
-    .l-wrap{background:var(--surface);color:var(--ink);border:1px solid var(--border);border-radius:16px;box-shadow:0 12px 30px rgba(0,0,0,.2);display:flex;flex-direction:column;height:100%}
-    .l-drag{cursor:move;padding:10px 12px;display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--border);user-select:none}
-    .l-body{flex:1;overflow:auto;padding:10px 12px}
-    .l-msg{font-size:13px;padding:8px 10px;border-radius:12px;margin:6px 0;max-width:85%}
-    .l-msg.me{background:#e5f0ff;margin-left:auto}
+    /* Linda – Floating Avatar */
+    #lindaBtn{position:fixed;bottom:16px;right:16px;width:64px;height:64px;background:transparent;border:none;z-index:60;cursor:pointer}
+    #lindaWrap{position:fixed;bottom:96px;right:16px;width:min(92vw,420px);height:560px;display:none;z-index:60}
+    .l-shell{display:flex;flex-direction:column;height:100%;background:var(--surface);border:1px solid var(--border);border-radius:16px;box-shadow:0 16px 40px rgba(0,0,0,.18);overflow:hidden}
+    .l-top{display:flex;align-items:center;gap:10px;padding:10px 12px;border-bottom:1px solid var(--border);cursor:move;user-select:none}
+    .l-body{flex:1;display:grid;grid-template-rows:auto 1fr auto;min-height:0}
+    .l-greet{padding:10px 12px;border-bottom:1px dashed var(--border);background:var(--surface3)}
+    .chips{display:flex;gap:6px;overflow:auto;padding-bottom:4px}
+    .chip{white-space:nowrap;border:1px solid var(--border);background:var(--surface);border-radius:999px;padding:6px 10px;font-size:12px}
+    .chip:hover{background:var(--surface3)}
+    .l-stream{overflow:auto;padding:12px}
+    .l-msg{max-width:85%;padding:10px 12px;border-radius:14px;margin:6px 0;font-size:13px}
     .l-msg.ai{background:#eef6ff}
-    .l-input{display:flex;gap:6px;padding:10px;border-top:1px solid var(--border)}
-    .l-input input{flex:1;border:1px solid var(--border);border-radius:12px;padding:10px 12px;background:var(--surface)}
+    .l-msg.me{background:#e9f0ff;margin-left:auto}
+    .l-input{display:grid;grid-template-columns:1fr auto;gap:8px;padding:10px;border-top:1px solid var(--border);background:var(--surface)}
+    .l-input input{border:1px solid var(--border);border-radius:12px;padding:12px;background:var(--surface);outline:none}
+    .ac-wrap{position:relative}
+    .ac-panel{position:absolute;left:0;right:0;bottom:100%;margin-bottom:6px;max-height:260px;overflow:auto;background:var(--surface);border:1px solid var(--border);border-radius:12px;box-shadow:0 16px 30px rgba(0,0,0,.12);display:none;z-index:61}
+    .ac-item{display:flex;gap:8px;padding:10px 12px;border-bottom:1px dashed var(--border);cursor:pointer}
+    .ac-item:last-child{border-bottom:none}
+    .ac-item:hover{background:var(--surface3)}
+    .ac-badge{font-size:10px;padding:2px 6px;border:1px solid var(--border);border-radius:999px;background:var(--surface3);color:var(--muted);height:fit-content;margin-top:2px}
+    .l-resize{position:absolute;right:8px;bottom:8px;width:14px;height:14px;border-right:2px solid #94a3b8;border-bottom:2px solid #94a3b8;border-radius:2px;cursor:nwse-resize;opacity:.7}
 
-    /* Linda side panel inside chat */
-    .l-side{border-top:1px dashed var(--border);padding-top:8px;margin-top:6px}
-    .l-quick-section{margin-top:8px}
-    .l-quick-title{font-size:11px;color:var(--muted);font-weight:800;text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px}
-    .l-quick-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
-    .l-quick a{display:flex;align-items:center;gap:6px;padding:8px;border:1px solid var(--border);border-radius:10px;font-size:12px}
-    .l-quick a:hover{background:var(--surface3)}
-
-    footer.app-footer{font-family:Arial,Helvetica,sans-serif;font-size:10px;line-height:1.4;color:#4b5563;background:#eef2f6;border-top:1px solid var(--border)}
+    footer.app-footer{font:10px/1.4 Arial, Helvetica, sans-serif;color:#475569;background:#eef2f6;border-top:1px solid var(--border);margin-top:24px}
   </style>
 </head>
 <body>
-
-<!-- Hinweis -->
-<aside id="notice" class="bg-[#eaf2ff] border-b border-[#cfe3ff]">
-  <div class="container px-4 py-3 flex items-start gap-3">
-    <div class="w-10 h-10 rounded-lg bg-white/70 grid place-items-center">
-      <i data-lucide="shield-check" class="w-6 h-6 text-blue-600"></i>
-    </div>
-    <div class="text-sm leading-snug">
-      <p class="font-semibold text-slate-800">Fachlicher Hinweis (Pilot)</p>
-      <p class="text-slate-700">
-        Die KI-Prüfung unterstützt beim Lernen. Ergebnisse sind zu prüfen; keine Rechtsberatung.
-        <strong>Es dürfen keine personenbezogenen oder sensiblen Daten eingegeben werden.</strong>
-      </p>
-      <label class="mt-2 inline-flex items-center gap-2">
-        <input id="ack" type="checkbox" class="w-4 h-4 accent-blue-600">
-        <span class="text-slate-700">Ich habe den Hinweis gelesen.</span>
-      </label>
-    </div>
-    <div class="ml-auto flex items-center gap-2">
-      <a class="btn btn-sm" href="https://www.gesetze-im-internet.de/bbig_2005/BBiG.pdf" target="_blank" rel="noopener"><i data-lucide="book-open" class="w-4 h-4"></i> BBiG</a>
-      <a class="btn btn-sm" href="https://www.gesetze-im-internet.de/jarbschg/JArbSchG.pdf" target="_blank" rel="noopener"><i data-lucide="shield" class="w-4 h-4"></i> JArbSchG</a>
-      <span id="ackState" class="badge">Hinweis offen</span>
-      <button id="ackBtn" type="button" class="btn btn-primary btn-sm"><i data-lucide="check" class="w-4 h-4"></i> Weiter</button>
-    </div>
-  </div>
-</aside>
-
-<!-- Header -->
-<header class="border-b border-[color:var(--border)] bg-[color:var(--surface)] sticky top-0 z-30">
-  <div class="container px-4 py-3 flex flex-wrap items-center gap-3 justify-between">
-    <div class="flex items-center gap-3">
-      <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 to-sky-500 grid place-items-center shadow">
-        <i data-lucide="graduation-cap" class="w-5 h-5 text-white"></i>
+  <!-- Hinweis -->
+  <aside id="notice" class="bg-[#eaf2ff] border-b border-[#cfe3ff]">
+    <div class="container px-4 py-3 flex items-start gap-3">
+      <div class="w-10 h-10 rounded-lg bg-white/70 grid place-items-center">
+        <i data-lucide="shield-check" class="w-6 h-6 text-blue-600"></i>
       </div>
-      <div>
-        <h1 class="text-lg sm:text-xl font-semibold">BBiG-Quiz – Ausbildung & Sozialrecht</h1>
-        <p class="text-xs text-slate-500">Wohlwollendes KI-Feedback • §-Quicklook • Autosave</p>
+      <div class="text-sm leading-snug">
+        <p class="font-semibold text-slate-800">Willkommen zum BBiG-Quiz (Pilot)</p>
+        <p class="text-slate-700">
+          Schön, dass du testest! Das Quiz ist nach <strong>Clustern</strong> aufgebaut: Wähle ein Cluster, beantworte Fragen gesammelt oder selektiv.
+          Das Feedback bezieht sich immer auf die Antworten, die du <em>tatsächlich</em> eingegeben hast. Du erhältst es von <strong>Linda</strong>, der KI-Assistentin.
+        </p>
+        <p class="text-slate-700 mt-1">
+          <strong>Wichtig (Disclaimer):</strong> Keine personenbezogenen oder sensiblen Daten eingeben.
+          KI kann Fehler machen; alle Inhalte sind zu prüfen. Keine Rechtsberatung, keine Haftung.
+        </p>
+        <label class="mt-2 inline-flex items-center gap-2">
+          <input id="ack" type="checkbox" class="w-4 h-4 accent-blue-600">
+          <span>Ich habe den Hinweis gelesen und akzeptiert.</span>
+        </label>
+      </div>
+      <div class="ml-auto flex items-center gap-2">
+        <a class="btn btn-sm" href="https://www.gesetze-im-internet.de/bbig_2005/BBiG.pdf" target="_blank" rel="noopener" title="BBiG (PDF)">
+          <i data-lucide="book-open" class="w-4 h-4"></i> BBiG
+        </a>
+        <a class="btn btn-sm" href="https://www.gesetze-im-internet.de/jarbschg/JArbSchG.pdf" target="_blank" rel="noopener" title="JArbSchG (PDF)">
+          <i data-lucide="shield" class="w-4 h-4"></i> JArbSchG
+        </a>
+        <span id="ackState" class="badge">Hinweis offen</span>
+        <button id="ackBtn" type="button" class="btn btn-primary btn-sm">
+          <i data-lucide="check" class="w-4 h-4"></i> Weiter
+        </button>
       </div>
     </div>
-    <div class="flex items-center gap-2">
-      <button id="quickBtn" type="button" class="btn btn-sm"><i data-lucide="search" class="w-4 h-4"></i> §-Quicklook</button>
-      <button id="themeToggle" type="button" class="btn btn-ghost btn-sm"><i data-lucide="moon" class="w-4 h-4"></i></button>
-    </div>
-  </div>
+  </aside>
 
-  <!-- Domain switch + Cluster tabs -->
-  <div class="container pb-3">
-    <div class="card p-3">
-      <div class="flex items-center justify-between gap-3 flex-wrap">
-        <div class="seg" role="tablist" aria-label="Welt wählen">
-          <button id="domAusb" type="button" class="px-3" aria-pressed="true">Ausbildung</button>
-          <button id="domSoz" type="button" class="px-3" aria-pressed="false">Sozialrecht</button>
+  <!-- Header -->
+  <header class="border-b border-[color:var(--border)] bg-[color:var(--surface)] sticky top-0 z-30">
+    <div class="container px-4 py-3 flex flex-wrap items-center gap-3 justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 to-sky-500 grid place-items-center shadow">
+          <i data-lucide="graduation-cap" class="w-5 h-5 text-white"></i>
         </div>
-        <div class="text-xs text-slate-500">Tipp: Auf dem Handy wählst du die Cluster unten im Dropdown.</div>
+        <div>
+          <h1 class="text-lg sm:text-xl font-semibold">BBiG-Quiz – Ausbildung & Sozialrecht</h1>
+          <p class="text-xs text-slate-500">Wohlwollendes KI-Feedback • §-Quicklook • Autosave</p>
+        </div>
       </div>
-      <div id="tabs" class="tabs mt-3" role="tablist" aria-label="Cluster"></div>
-      <select id="clusterSelect" class="mt-2 w-full rounded-xl border px-3 py-2 text-sm"></select>
+      <div class="flex items-center gap-2">
+        <button id="quickBtn" type="button" class="btn btn-sm">
+          <i data-lucide="search" class="w-4 h-4"></i> §-Quicklook
+        </button>
+        <button id="themeToggle" type="button" class="btn btn-ghost btn-sm" title="Theme wechseln">
+          <i data-lucide="moon" class="w-4 h-4"></i>
+        </button>
+      </div>
     </div>
-  </div>
-</header>
 
-<!-- Progress -->
-<section class="container mt-4">
-  <div class="card p-4 flex items-center gap-3">
-    <i data-lucide="target" class="w-5 h-5 text-blue-600"></i>
-    <div class="flex-1">
-      <div class="flex justify-between text-[11px] text-slate-500 font-semibold mb-2">
-        <span id="progressText">0 / 0 beantwortet</span>
-        <span id="selText">0 ausgewählt</span>
+    <!-- Domain + Cluster-Tabs -->
+    <div class="container pb-3">
+      <div class="card p-3">
+        <div class="flex items-center justify-between gap-3 flex-wrap">
+          <div class="seg" role="tablist" aria-label="Bereich wählen">
+            <button id="domAusb" type="button" class="px-3" aria-pressed="true">Ausbildung</button>
+            <button id="domSoz" type="button" class="px-3" aria-pressed="false">Sozialrecht</button>
+          </div>
+          <div class="text-xs text-slate-500">Tipp: Auf dem Handy wählst du die Cluster unten im Dropdown.</div>
+        </div>
+        <div id="tabs" class="tabs mt-3" role="tablist" aria-label="Cluster"></div>
+        <select id="clusterSelect" class="mt-2 w-full rounded-xl border px-3 py-2 text-sm"></select>
       </div>
-      <div class="progress-outer"><div id="progressBar" class="progress-inner"></div></div>
     </div>
-    <time id="timer" class="text-xs text-slate-500 font-mono">00:00</time>
-  </div>
-</section>
+  </header>
 
-<!-- Quiz -->
-<main class="container my-4">
-  <form id="form" class="grid gap-4" novalidate></form>
-
-  <section id="resultWrap" class="hidden mt-4" aria-live="polite">
-    <div class="card p-4">
-      <div class="flex items-center gap-2 mb-2">
-        <i data-lucide="sparkles" class="w-5 h-5 text-emerald-600"></i>
-        <h2 class="text-base font-semibold">KI-Feedback</h2>
+  <!-- Progress -->
+  <section class="container mt-4">
+    <div class="card p-4 flex items-center gap-3">
+      <i data-lucide="target" class="w-5 h-5 text-blue-600"></i>
+      <div class="flex-1">
+        <div class="flex justify-between text-[11px] text-slate-500 font-semibold mb-2">
+          <span id="progressText">0 / 0 beantwortet</span>
+          <span id="selText">0 ausgewählt</span>
+        </div>
+        <div class="progress-outer"><div id="progressBar" class="progress-inner"></div></div>
       </div>
-      <article id="aiResult" class="prose text-sm"></article>
+      <time id="timer" class="text-xs text-slate-500 font-mono">00:00</time>
     </div>
   </section>
-</main>
 
-<!-- Sticky actions -->
-<div class="sticky-actions bg-[color:var(--surface)] border-t border-[color:var(--border)]">
-  <div class="container px-4 py-2 flex flex-wrap items-center gap-2">
-    <div class="flex items-center gap-2">
-      <a class="btn btn-sm" href="https://www.gesetze-im-internet.de/bbig_2005/BBiG.pdf" target="_blank" rel="noopener"><i data-lucide="book-open" class="w-4 h-4"></i> BBiG</a>
-      <a class="btn btn-sm" href="https://www.gesetze-im-internet.de/jarbschg/JArbSchG.pdf" target="_blank" rel="noopener"><i data-lucide="shield" class="w-4 h-4"></i> JArbSchG</a>
-    </div>
-    <div class="flex-1"></div>
-    <button id="submitBtn" type="button" class="btn btn-primary"><i data-lucide="send" class="w-5 h-5"></i> KI-Feedback (Auswahl)</button>
-    <button id="resetBtn" type="button" class="btn"><i data-lucide="rotate-ccw" class="w-5 h-5"></i> Zurücksetzen</button>
-  </div>
-</div>
+  <!-- Quiz -->
+  <main class="container my-4">
+    <form id="form" class="grid gap-4" novalidate></form>
 
-<!-- Toast -->
-<div id="toast" style="position:fixed;left:50%;bottom:18px;transform:translateX(-50%);background:#111827;color:#fff;padding:10px 14px;border-radius:10px;font-size:14px;z-index:100;display:none"></div>
+    <section id="resultWrap" class="hidden mt-4" aria-live="polite">
+      <div class="card p-4">
+        <div class="flex items-center gap-2 mb-2">
+          <i data-lucide="sparkles" class="w-5 h-5 text-emerald-600"></i>
+          <h2 class="text-base font-semibold">KI-Feedback</h2>
+        </div>
+        <article id="aiResult" class="prose text-sm"></article>
+      </div>
+    </section>
+  </main>
 
-<!-- Quicklook Modal -->
-<div id="qlBackdrop" class="fixed inset-0 bg-black/50 backdrop-blur-sm hidden z-40"></div>
-<div id="qlModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4">
-  <div class="card p-4 w-full max-w-xl max-h-[90vh] overflow-auto">
-    <div class="flex items-center justify-between">
+  <!-- Sticky Actions -->
+  <div class="sticky-actions bg-[color:var(--surface)] border-t border-[color:var(--border)]">
+    <div class="container px-4 py-2 flex flex-wrap items-center gap-2">
       <div class="flex items-center gap-2">
-        <i data-lucide="search" class="w-5 h-5 text-blue-600"></i>
-        <h3 class="text-base font-semibold">§-Quicklook – Gesetze & Leitfäden</h3>
+        <a class="btn btn-sm" href="https://www.gesetze-im-internet.de/bbig_2005/BBiG.pdf" target="_blank" rel="noopener"><i data-lucide="book-open" class="w-4 h-4"></i> BBiG</a>
+        <a class="btn btn-sm" href="https://www.gesetze-im-internet.de/jarbschg/JArbSchG.pdf" target="_blank" rel="noopener"><i data-lucide="shield" class="w-4 h-4"></i> JArbSchG</a>
       </div>
-      <button id="qlClose" class="btn btn-ghost btn-sm"><i data-lucide="x" class="w-4 h-4"></i></button>
+      <div class="flex-1"></div>
+      <button id="submitBtn" type="button" class="btn btn-primary">
+        <i data-lucide="send" class="w-5 h-5"></i> KI-Feedback (Auswahl)
+      </button>
+      <button id="resetBtn" type="button" class="btn">
+        <i data-lucide="rotate-ccw" class="w-5 h-5"></i> Zurücksetzen
+      </button>
     </div>
-    <div class="mt-2 grid gap-2">
-      <div class="flex gap-2">
+  </div>
+
+  <!-- Quicklook Modal -->
+  <div id="qlBackdrop" class="fixed inset-0 bg-black/50 backdrop-blur-sm hidden z-40"></div>
+  <div id="qlModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4">
+    <div class="card p-4 w-full max-w-xl max-h-[90vh] overflow-auto">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <i data-lucide="search" class="w-5 h-5 text-blue-600"></i>
+          <h3 class="text-base font-semibold">§-Quicklook – Gesetze & Leitfäden</h3>
+        </div>
+        <button id="qlClose" class="btn btn-ghost btn-sm"><i data-lucide="x" class="w-4 h-4"></i></button>
+      </div>
+      <div class="mt-2 grid gap-2">
         <input id="qlSearch" type="search" class="flex-1 rounded-xl border px-3 py-2" placeholder="Begriff oder § …">
-      </div>
-      <!-- CORRECT QUICKLINKS -->
-      <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
-        <a class="btn btn-sm" href="https://www.gesetze-im-internet.de/sgb_1/" target="_blank" rel="noopener">SGB I</a>
-        <a class="btn btn-sm" href="https://www.gesetze-im-internet.de/sgb_2/" target="_blank" rel="noopener">SGB II</a>
-        <a class="btn btn-sm" href="https://www.gesetze-im-internet.de/sgb_3/" target="_blank" rel="noopener">SGB III</a>
-        <a class="btn btn-sm" href="https://www.gesetze-im-internet.de/sgb_4/" target="_blank" rel="noopener">SGB IV</a>
-        <a class="btn btn-sm" href="https://www.gesetze-im-internet.de/sgb_5/" target="_blank" rel="noopener">SGB V</a>
-        <a class="btn btn-sm" href="https://www.gesetze-im-internet.de/sgb_6/" target="_blank" rel="noopener">SGB VI</a>
-        <a class="btn btn-sm" href="https://www.gesetze-im-internet.de/sgb_11/" target="_blank" rel="noopener">SGB XI</a>
-        <a class="btn btn-sm" href="https://www.gesetze-im-internet.de/jarbschg/BJNR009650976.html#BJNR009650976BJNG000401308" target="_blank" rel="noopener">JArbSchG – Arbeitszeit/Jugend</a>
-        <a class="btn btn-sm" href="https://www.gesetze-im-internet.de/bgb/__106.html" target="_blank" rel="noopener">BGB §106 Geschäftsfähigkeit</a>
-        <a class="btn btn-sm" href="https://www.dihk.de/de/themen-und-positionen/fachkraefte/aus-und-weiterbildung/ausbildung/mustervertraege-15280" target="_blank" rel="noopener">DIHK – Musterverträge</a>
-        <a class="btn btn-sm" href="https://www.bibb.de/dienst/berufesuche/de/index_berufesuche.php/profile/apprenticeship/kfmfb25" target="_blank" rel="noopener">BIBB – Rahmenplan KfbM</a>
-      </div>
-    </div>
-    <div id="qlList" class="mt-3 grid gap-2"></div>
-  </div>
-</div>
-
-<!-- Linda Avatar Button -->
-<button id="lindaBtn" type="button" aria-label="Linda öffnen" title="Linda öffnen">
-  <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-    <defs>
-      <radialGradient id="grad" cx="50%" cy="40%" r="60%">
-        <stop offset="0%" stop-color="#3b82f6"/>
-        <stop offset="100%" stop-color="#1e40af"/>
-      </radialGradient>
-    </defs>
-    <circle cx="50" cy="50" r="40" fill="url(#grad)">
-      <animate attributeName="r" values="39;41;39" dur="6s" repeatCount="indefinite"/>
-    </circle>
-    <circle cx="35" cy="45" r="4" fill="white"/>
-    <circle cx="65" cy="45" r="4" fill="white"/>
-    <path d="M35 63 Q50 73 65 63" stroke="white" stroke-width="3" stroke-linecap="round" fill="none"/>
-  </svg>
-</button>
-
-<!-- Linda Chat -->
-<div id="lindaChat" role="dialog" aria-label="Linda Chat">
-  <div class="l-wrap">
-    <div id="lDrag" class="l-drag">
-      <i data-lucide="grip-horizontal" class="w-4 h-4"></i>
-      <strong>Linda</strong><span class="text-xs text-slate-500 ml-2">Deine Lernassistentin</span>
-      <button id="lClose" class="btn btn-ghost btn-sm ml-auto"><i data-lucide="x" class="w-4 h-4"></i></button>
-    </div>
-    <div class="l-body" id="lBody">
-      <!-- Greeting -->
-    </div>
-
-    <!-- Mini Search + Quicklinks + Offline FAQ -->
-    <div class="px-3 l-side">
-      <div class="l-quick-section">
-        <div class="l-quick-title">Schnellsuche (offline)</div>
-        <div class="flex gap-2">
-          <input id="lQuickSearch" type="search" class="flex-1 rounded-xl border px-3 py-2 text-sm" placeholder="z. B. Pflegegrad 3, Probezeit, § 15 BBiG …">
-          <button id="lQuickGo" class="btn btn-sm" title="Suchen"><i data-lucide="search" class="w-4 h-4"></i></button>
+        <!-- Korrekte Quicklinks -->
+        <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
+          <a class="btn btn-sm" href="https://www.gesetze-im-internet.de/sgb_1/" target="_blank" rel="noopener">SGB I</a>
+          <a class="btn btn-sm" href="https://www.gesetze-im-internet.de/sgb_2/" target="_blank" rel="noopener">SGB II</a>
+          <a class="btn btn-sm" href="https://www.gesetze-im-internet.de/sgb_3/" target="_blank" rel="noopener">SGB III</a>
+          <a class="btn btn-sm" href="https://www.gesetze-im-internet.de/sgb_4/" target="_blank" rel="noopener">SGB IV</a>
+          <a class="btn btn-sm" href="https://www.gesetze-im-internet.de/sgb_5/" target="_blank" rel="noopener">SGB V</a>
+          <a class="btn btn-sm" href="https://www.gesetze-im-internet.de/sgb_6/" target="_blank" rel="noopener">SGB VI</a>
+          <a class="btn btn-sm" href="https://www.gesetze-im-internet.de/sgb_11/" target="_blank" rel="noopener">SGB XI</a>
+          <a class="btn btn-sm" href="https://www.gesetze-im-internet.de/jarbschg/BJNR009650976.html#BJNR009650976BJNG000401308" target="_blank" rel="noopener">JArbSchG – Arbeitszeit/Jugend</a>
+          <a class="btn btn-sm" href="https://www.gesetze-im-internet.de/bgb/__106.html" target="_blank" rel="noopener">BGB §106 Geschäftsfähigkeit</a>
+          <a class="btn btn-sm" href="https://www.dihk.de/de/themen-und-positionen/fachkraefte/aus-und-weiterbildung/ausbildung/mustervertraege-15280" target="_blank" rel="noopener">DIHK – Musterverträge</a>
+          <a class="btn btn-sm" href="https://www.bibb.de/dienst/berufesuche/de/index_berufesuche.php/profile/apprenticeship/kfmfb25" target="_blank" rel="noopener">BIBB – Rahmenplan KfbM</a>
         </div>
       </div>
-      <div class="l-quick-section">
-        <div class="l-quick-title">Direkt zu</div>
-        <div class="l-quick l-quick-grid">
-          <a href="https://www.gesetze-im-internet.de/sgb_1/" target="_blank" rel="noopener"><i data-lucide="book-open" class="w-4 h-4"></i> SGB I</a>
-          <a href="https://www.gesetze-im-internet.de/sgb_2/" target="_blank" rel="noopener"><i data-lucide="book-open" class="w-4 h-4"></i> SGB II</a>
-          <a href="https://www.gesetze-im-internet.de/sgb_3/" target="_blank" rel="noopener"><i data-lucide="book-open" class="w-4 h-4"></i> SGB III</a>
-          <a href="https://www.gesetze-im-internet.de/sgb_4/" target="_blank" rel="noopener"><i data-lucide="book-open" class="w-4 h-4"></i> SGB IV</a>
-          <a href="https://www.gesetze-im-internet.de/sgb_5/" target="_blank" rel="noopener"><i data-lucide="book-open" class="w-4 h-4"></i> SGB V</a>
-          <a href="https://www.gesetze-im-internet.de/sgb_6/" target="_blank" rel="noopener"><i data-lucide="book-open" class="w-4 h-4"></i> SGB VI</a>
-          <a href="https://www.gesetze-im-internet.de/sgb_11/" target="_blank" rel="noopener"><i data-lucide="book-open" class="w-4 h-4"></i> SGB XI</a>
-          <a href="https://www.gesetze-im-internet.de/jarbschg/BJNR009650976.html#BJNR009650976BJNG000401308" target="_blank" rel="noopener"><i data-lucide="shield" class="w-4 h-4"></i> JArbSchG</a>
-          <a href="https://www.gesetze-im-internet.de/bgb/__106.html" target="_blank" rel="noopener"><i data-lucide="scale" class="w-4 h-4"></i> BGB §106</a>
-          <a href="https://www.dihk.de/de/themen-und-positionen/fachkraefte/aus-und-weiterbildung/ausbildung/mustervertraege-15280" target="_blank" rel="noopener"><i data-lucide="file-text" class="w-4 h-4"></i> DIHK Muster</a>
-          <a href="https://www.bibb.de/dienst/berufesuche/de/index_berufesuche.php/profile/apprenticeship/kfmfb25" target="_blank" rel="noopener"><i data-lucide="clipboard-list" class="w-4 h-4"></i> BIBB Rahmen</a>
+      <div id="qlList" class="mt-3 grid gap-2"></div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div id="toast" style="position:fixed;left:50%;bottom:18px;transform:translateX(-50%);background:#111827;color:#fff;padding:10px 14px;border-radius:10px;font-size:14px;z-index:100;display:none"></div>
+
+  <!-- Linda – Floating Action Button -->
+  <button id="lindaBtn" title="Linda öffnen" aria-label="Linda öffnen">
+    <svg viewBox="0 0 100 100" width="64" height="64" xmlns="http://www.w3.org/2000/svg">
+      <defs><radialGradient id="g" cx="50%" cy="40%" r="60%"><stop offset="0%" stop-color="#3b82f6"/><stop offset="100%" stop-color="#1e40af"/></radialGradient></defs>
+      <circle cx="50" cy="50" r="40" fill="url(#g)"><animate attributeName="r" values="39;41;39" dur="6s" repeatCount="indefinite"/></circle>
+      <circle cx="35" cy="45" r="4" fill="white"/><circle cx="65" cy="45" r="4" fill="white"/>
+      <path d="M35 63 Q50 73 65 63" stroke="white" stroke-width="3" stroke-linecap="round" fill="none"/>
+    </svg>
+  </button>
+
+  <!-- Linda – Smart Chat -->
+  <div id="lindaWrap" role="dialog" aria-label="Chat mit Linda">
+    <div class="l-shell">
+      <div id="dragBar" class="l-top">
+        <i data-lucide="grip-vertical" class="w-4 h-4"></i>
+        <strong>Linda</strong><span class="text-xs text-slate-500"> – deine Lernassistentin</span>
+        <div class="ml-auto flex items-center gap-3">
+          <label class="flex items-center gap-1 text-[11px] text-slate-500">
+            <input id="autoDetect" type="checkbox" class="w-4 h-4 accent-blue-600" checked> Auto-Erkennung
+          </label>
+          <button id="closeLinda" class="btn btn-sm"><i data-lucide="x" class="w-4 h-4"></i></button>
         </div>
       </div>
-      <div class="l-quick-section">
-        <div class="l-quick-title">Offline-FAQ</div>
-        <div id="lFaqList" class="grid gap-2"></div>
+      <div class="l-body">
+        <div class="l-greet text-sm">
+          <p class="font-semibold">Hallo, ich bin Linda 👋</p>
+          <p>Tippe los: Beim Schreiben zeige ich <strong>Offline-Hinweise</strong> (FAQ/§-Quicklook). Wenn nichts passt oder du sendest, antworte ich automatisch über die <strong>KI-API</strong> – steuerbar über „Auto-Erkennung“.</p>
+          <div class="mt-2 chips" id="quickChips">
+            <button class="chip" data-url="https://www.gesetze-im-internet.de/sgb_11/">SGB XI</button>
+            <button class="chip" data-url="https://www.gesetze-im-internet.de/sgb_6/">SGB VI</button>
+            <button class="chip" data-url="https://www.gesetze-im-internet.de/sgb_3/">SGB III</button>
+            <button class="chip" data-url="https://www.gesetze-im-internet.de/bbig_2005/BBiG.pdf">BBiG</button>
+            <button class="chip" data-url="https://www.gesetze-im-internet.de/jarbschg/JArbSchG.pdf">JArbSchG</button>
+            <button class="chip" data-url="https://www.dihk.de/de/themen-und-positionen/fachkraefte/aus-und-weiterbildung/ausbildung/mustervertraege-15280">DIHK Muster</button>
+            <button class="chip" data-url="https://www.bibb.de/dienst/berufesuche/de/index_berufesuche.php/profile/apprenticeship/kfmfb25">BIBB Rahmen</button>
+          </div>
+        </div>
+        <div id="stream" class="l-stream"></div>
+        <div class="l-input">
+          <div class="ac-wrap">
+            <input id="lInput" type="text" placeholder="Frag Linda … (Enter sendet)"/>
+            <div id="acPanel" class="ac-panel"></div>
+          </div>
+          <button id="sendBtn" class="btn btn-primary"><i data-lucide="send" class="w-4 h-4"></i></button>
+        </div>
       </div>
-    </div>
-
-    <div class="l-input">
-      <input id="lText" type="text" placeholder="Frag Linda … (Enter sendet)">
-      <button id="lSend" class="btn btn-primary btn-sm"><i data-lucide="send" class="w-4 h-4"></i></button>
+      <div class="l-resize" id="resizeHandle" aria-hidden="true"></div>
     </div>
   </div>
-</div>
 
-<!-- Footer -->
-<footer class="app-footer">
-  <div class="container px-4 py-4">
-    Diese Anwendung nutzt künstliche Intelligenz (KI). Du stimmst mit der Nutzung zu, dass Deine Texte und Antworten von OpenAI verarbeitet und geprüft werden.
-    Es werden keine personenbezogenen Daten erhoben, erfasst oder verarbeitet. Keine sensiblen Daten eingeben – auch keine Informationen, die Rückschlüsse auf Personen zulassen.
-    Missbräuchliche Nutzung ist untersagt. Jegliche Haftung ist ausgeschlossen. Alle Antworten sind zu prüfen. KI-generierte Inhalte können fehlerhaft sein. Keine Haftung.
-  </div>
-</footer>
+  <!-- Footer -->
+  <footer class="app-footer">
+    <div class="container px-4 py-4">
+      Diese Anwendung nutzt künstliche Intelligenz (KI). Du stimmst mit der Nutzung zu, dass Deine Texte und Antworten von OpenAI verarbeitet und geprüft werden.
+      Es werden keine personenbezogenen Daten erhoben, erfasst oder verarbeitet. Keine sensiblen Daten eingeben – auch keine Informationen, die Rückschlüsse auf Personen zulassen.
+      Missbräuchliche Nutzung ist untersagt. Jegliche Haftung ist ausgeschlossen. Alle Antworten sind zu prüfen. KI-generierte Inhalte können fehlerhaft sein. Keine Haftung.
+    </div>
+  </footer>
 
 <script>
 document.addEventListener("DOMContentLoaded", () => {
   if (window.lucide) lucide.createIcons();
-  if (window.marked) marked.setOptions({breaks:true,gfm:true});
+  if (window.marked) marked.setOptions({ breaks:true, gfm:true });
 
-  const relay="/api/linda-proxy";
-  const STORAGE="BBIG_DUALDOMAIN_V1";
+  /* ===== Config ===== */
+  const relay = "/api/linda-proxy";         // dein Proxy zu Make/OpenAI
+  const STORAGE = "BBIG_DUAL_V2";
+  const AUTO_MIN_SCORE = 0.42;              // ab Score -> Offline-Hinweis genügt
+  const MAX_ANSWER = 1500;
 
-  /* ======= Refs ======= */
-  const form=document.getElementById("form");
-  const progressBar=document.getElementById("progressBar");
-  const progressTxt=document.getElementById("progressText");
-  const selText=document.getElementById("selText");
-  const submitBtn=document.getElementById("submitBtn");
-  const resetBtn=document.getElementById("resetBtn");
-  const timerEl=document.getElementById("timer");
-  const toastEl=document.getElementById("toast");
+  /* ===== Refs ===== */
+  const form = document.getElementById("form");
+  const progressBar = document.getElementById("progressBar");
+  const progressTxt = document.getElementById("progressText");
+  const selText = document.getElementById("selText");
+  const submitBtn = document.getElementById("submitBtn");
+  const resetBtn = document.getElementById("resetBtn");
+  const timerEl = document.getElementById("timer");
+  const toastEl = document.getElementById("toast");
 
-  const tabs=document.getElementById("tabs");
-  const clusterSelect=document.getElementById("clusterSelect");
+  const tabs = document.getElementById("tabs");
+  const clusterSelect = document.getElementById("clusterSelect");
+  const domAusb = document.getElementById("domAusb");
+  const domSoz = document.getElementById("domSoz");
 
-  const domAusb=document.getElementById("domAusb");
-  const domSoz=document.getElementById("domSoz");
+  const notice = document.getElementById("notice");
+  const ack = document.getElementById("ack");
+  const ackBtn = document.getElementById("ackBtn");
+  const ackState = document.getElementById("ackState");
 
-  const notice=document.getElementById("notice");
-  const ack=document.getElementById("ack");
-  const ackBtn=document.getElementById("ackBtn");
-  const ackState=document.getElementById("ackState");
+  const themeToggle = document.getElementById("themeToggle");
 
-  const quickBtn=document.getElementById("quickBtn");
-  const qlBackdrop=document.getElementById("qlBackdrop");
-  const qlModal=document.getElementById("qlModal");
-  const qlClose=document.getElementById("qlClose");
-  const qlSearch=document.getElementById("qlSearch");
-  const qlList=document.getElementById("qlList");
+  const quickBtn = document.getElementById("quickBtn");
+  const qlBackdrop = document.getElementById("qlBackdrop");
+  const qlModal = document.getElementById("qlModal");
+  const qlClose = document.getElementById("qlClose");
+  const qlSearch = document.getElementById("qlSearch");
+  const qlList = document.getElementById("qlList");
 
-  const themeToggle=document.getElementById("themeToggle");
+  // Linda
+  const lindaBtn = document.getElementById("lindaBtn");
+  const lindaWrap = document.getElementById("lindaWrap");
+  const dragBar = document.getElementById("dragBar");
+  const closeLinda = document.getElementById("closeLinda");
+  const autoDetect = document.getElementById("autoDetect");
+  const stream = document.getElementById("stream");
+  const lInput = document.getElementById("lInput");
+  const sendBtn = document.getElementById("sendBtn");
+  const acPanel = document.getElementById("acPanel");
+  const resizeHandle = document.getElementById("resizeHandle");
+  const quickChips = document.getElementById("quickChips");
 
-  const lBtn=document.getElementById("lindaBtn");
-  const lChat=document.getElementById("lindaChat");
-  const lDrag=document.getElementById("lDrag");
-  const lClose=document.getElementById("lClose");
-  const lBody=document.getElementById("lBody");
-  const lText=document.getElementById("lText");
-  const lSend=document.getElementById("lSend");
-  const lQuickSearch=document.getElementById("lQuickSearch");
-  const lQuickGo=document.getElementById("lQuickGo");
-  const lFaqList=document.getElementById("lFaqList");
-
-  /* ======= Theme ======= */
-  function applyThemeIcon(){ themeToggle.innerHTML = document.documentElement.classList.contains("dark") ? '<i data-lucide="sun" class="w-4 h-4"></i>' : '<i data-lucide="moon" class="w-4 h-4"></i>'; if (window.lucide) lucide.createIcons(); }
-  if (localStorage.getItem("theme_pref")==="dark") document.documentElement.classList.add("dark");
-  applyThemeIcon();
-  themeToggle.addEventListener("click", ()=>{ document.documentElement.classList.toggle("dark"); localStorage.setItem("theme_pref", document.documentElement.classList.contains("dark")?"dark":"light"); applyThemeIcon(); });
-
-  /* ======= Timer ======= */
-  let startTs=Date.now();
-  setInterval(()=>{ const s=Math.floor((Date.now()-startTs)/1000); const m=String(Math.floor(s/60)).padStart(2,"0"); const r=String(s%60).padStart(2,"0"); timerEl.textContent=`${m}:${r}`; },1000);
-
-  /* ======= Toast ======= */
-  function toast(m){ toastEl.textContent=m; toastEl.style.display="block"; clearTimeout(toast._t); toast._t=setTimeout(()=>toastEl.style.display="none",2300); }
-
-  /* ======= Disclaimer ======= */
-  let accepted=false;
-  ackBtn.addEventListener("click", ()=>{ if(!ack.checked){ toast("Bitte zuerst den Hinweis bestätigen."); return; } accepted=true; notice.style.display="none"; ackState.textContent="Hinweis bestätigt"; saveState(); });
-
-  /* ======= Data ======= */
-  const AUS_CLUSTERS=[
-    {key:"kern", title:"Kern", icon:"layers", data:[
+  /* ===== Data (Kurzfassung – erweiterbar) ===== */
+  const AUS_CLUSTERS = [
+    { key:"kern", title:"Kern", icon:"layers", data:[
       {ref:"V1 – Mindestinhalte Vertrag", q:"Nenne vier Pflichtangaben, die zwingend in den Berufsausbildungsvertrag gehören.", tip:["Parteien; Beginn/Dauer; Ziel/Berufsbezeichnung; sachliche & zeitliche Gliederung; Vergütung; Probezeit; Urlaub; Kündigung; Nachweisform.","§ 11 BBiG."]},
       {ref:"V3 – Probezeit", q:"Wie lang muss/darf die Probezeit sein – und warum ist sie wichtig?", tip:["Mind. 1, max. 4 Monate; Eignungsprüfung beider Seiten.","§ 20 BBiG."]},
       {ref:"V5 – Wegezeiten", q:"Zählt der Weg von der Berufsschule zurück in den Betrieb als Arbeitszeit?", tip:["Ja – Wegezeiten zwischen Schule und Ausbildungsstätte anrechnen.","§ 15 Abs. 2 Nr. 1 BBiG."]}
     ]},
-    {key:"recht", title:"Recht/§§", icon:"scale", data:[
+    { key:"recht", title:"Recht/§§", icon:"scale", data:[
       {ref:"R1 – Freistellung", q:"Nenne zwei Beispiele für Freistellung nach § 15 BBiG.", tip:["Berufsschule; Prüfungen; Wege Schule→Betrieb."]},
       {ref:"R2 – Vergütung", q:"Was gilt zur Mindestausbildungsvergütung (MiAV)?", tip:["Untergrenze je Jahrgang; Tarif ggf. höher (§ 17 BBiG)."]}
     ]}
   ];
 
-  const SOZ_CLUSTERS=[
-    {key:"pflege", title:"Pflege (SGB XI)", icon:"heart-pulse", data:[
-      {ref:"P1 – Pflichtversicherung", q:"Wer ist in der sozialen Pflegeversicherung pflichtversichert und wo ist das geregelt?", tip:["GKV-Versicherte automatisch; PKV: private Pflegepflichtversicherung; SGB XI."]},
-      {ref:"P2 – Ambulant", q:"Nenne Pflegegeld und Pflegesachleistungen (2025) für PG 2–5 in Stichpunkten.", tip:["PG2 347€/796€; PG3 599€/1497€; PG4 800€/1859€; PG5 990€/2299€ (gesetzlich)."]},
-      {ref:"P3 – Stationär", q:"Welche monatlichen Leistungen gibt es bei vollstationärer Pflege (PG 2–5)?", tip:["PG2 1.061€; PG3 1.575€; PG4 2.111€; PG5 2.351€ (gesetzlich)."]}
+  const SOZ_CLUSTERS = [
+    { key:"pflege", title:"Pflege (SGB XI)", icon:"heart-pulse", data:[
+      {ref:"P1 – Pflichtversicherung", q:"Wer ist in der sozialen Pflegeversicherung pflichtversichert und wo ist das geregelt?", tip:["GKV: automatisch; PKV: private Pflegepflichtversicherung; SGB XI."]},
+      {ref:"P2 – Ambulant", q:"Nenne Pflegegeld und Pflegesachleistungen (2025) für PG 2–5 stichpunktartig.", tip:["PG2 347€/796€; PG3 599€/1497€; PG4 800€/1859€; PG5 990€/2299€ – Gesetz prüfen."]},
+      {ref:"P3 – Stationär", q:"Welche monatlichen Leistungen gibt es bei vollstationärer Pflege (PG 2–5)?", tip:["PG2 1.061€; PG3 1.575€; PG4 2.111€; PG5 2.351€ – Gesetz prüfen."]}
     ]},
-    {key:"alo", title:"Arbeitslosigkeit (SGB III)", icon:"briefcase", data:[
-      {ref:"A1 – Zweck & Leistungen", q:"Wozu dient die Arbeitslosenversicherung und welche Hauptleistungen nennt das SGB III?", tip:["Lebensunterhalt ALG; Förderung Weiterbildung; Wiedereingliederung (§§ 136–138, § 81 SGB III)."]}
+    { key:"alo", title:"Arbeitslosigkeit (SGB III)", icon:"briefcase", data:[
+      {ref:"A1 – Zweck & Leistungen", q:"Wozu dient die Arbeitslosenversicherung und welche Hauptleistungen nennt das SGB III?", tip:["ALG; Förderung Weiterbildung; Wiedereingliederung (§§ 136–138, § 81 SGB III)."]}
     ]},
-    {key:"sgbvi", title:"Rente (SGB VI)", icon:"banknote", data:[
+    { key:"sgbvi", title:"Rente (SGB VI)", icon:"banknote", data:[
       {ref:"V I – Aufgaben RV", q:"Nenne Ziel/Aufgaben der gesetzlichen Rentenversicherung laut SGB VI.", tip:["Alter/EM/Hinterbliebene; Reha vor Rente."]},
       {ref:"V III – Rentenarten", q:"Nenne mindestens drei Rentenarten der gesetzlichen Rentenversicherung.", tip:["Regelalters-, Alters-, EM-, Hinterbliebenenrenten."]}
     ]}
   ];
 
-  const LAW_INDEX=[
-    {law:"SGB XI", para:"Leistungen ambulant/stationär", tags:["pflege","leistung","pflegegrad"], excerpt:"Ambulant (PG2–5): 347/599/800/990 € Pflegegeld; 796/1497/1859/2299 € Sachleistung. Stationär: 1.061–2.351 € (PG2–5).", link:"https://www.gesetze-im-internet.de/sgb_11/"},
-    {law:"SGB III", para:"§§ 136–138; § 81", tags:["alo","weiterbildung","alg"], excerpt:"Zweck/Leistungen; Förderung der beruflichen Weiterbildung.", link:"https://www.gesetze-im-internet.de/sgb_3/"},
-    {law:"SGB VI", para:"§§ 1, 33, 43", tags:["rente","arten"], excerpt:"Ziele/Aufgaben; Rentenarten inkl. EM-Rente; Hinterbliebene.", link:"https://www.gesetze-im-internet.de/sgb_6/"},
-    {law:"BBiG", para:"§§ 11, 15, 17, 20", tags:["ausbildung","vertrag","freistellung","miav","probezeit"], excerpt:"Vertragsinhalte, Freistellung, Vergütung, Probezeit.", link:"https://www.gesetze-im-internet.de/bbig_2005/"},
-    {law:"JArbSchG", para:"Ruhezeit/Pausen", tags:["jugendliche","arbeitszeit"], excerpt:"Ruhezeit mind. 12 h; besondere Schutzregeln.", link:"https://www.gesetze-im-internet.de/jarbschg/BJNR009650976.html#BJNR009650976BJNG000401308"},
-    {law:"BGB", para:"§ 106 Geschäftsfähigkeit", tags:["bgb","geschäftsfähigkeit","minderjährige"], excerpt:"Beschränkte Geschäftsfähigkeit Minderjähriger ab 7 Jahren.", link:"https://www.gesetze-im-internet.de/bgb/__106.html"},
-    {law:"DIHK", para:"Musterverträge", tags:["ausbildungsvertrag","muster"], excerpt:"Aktuelle Musterverträge und Hinweise des DIHK.", link:"https://www.dihk.de/de/themen-und-positionen/fachkraefte/aus-und-weiterbildung/ausbildung/mustervertraege-15280"},
-    {law:"BIBB", para:"Kaufmann/-frau für Büromanagement", tags:["rahmenplan","ausbildungsrahmen"], excerpt:"Offizieller Ausbildungsrahmenplan/Profil beim BIBB.", link:"https://www.bibb.de/dienst/berufesuche/de/index_berufesuche.php/profile/apprenticeship/kfmfb25"}
+  const LAW_INDEX = [
+    {law:"BBiG", para:"§ 11 – Vertragsinhalte", tags:["vertrag","inhalte","mindestinhalte"], excerpt:"Parteien, Beginn/Dauer, Ziel/Berufsbezeichnung, sachliche/zeitliche Gliederung, Vergütung, Probezeit, Urlaub, Kündigung.", link:"https://www.gesetze-im-internet.de/bbig_2005/BBiG.pdf"},
+    {law:"BBiG", para:"§ 15 – Freistellung", tags:["schule","prüfungen","wegezeit"], excerpt:"Freistellung für Berufsschule/Prüfungen; Wegezeiten Schule→Betrieb anrechnen.", link:"https://www.gesetze-im-internet.de/bbig_2005/BBiG.pdf"},
+    {law:"BBiG", para:"§ 17 – Vergütung", tags:["miav","vergütung"], excerpt:"Angemessene Vergütung – Mindestausbildungsvergütung als Untergrenze.", link:"https://www.gesetze-im-internet.de/bbig_2005/BBiG.pdf"},
+    {law:"BBiG", para:"§ 20 – Probezeit", tags:["probezeit"], excerpt:"Mindestens 1, höchstens 4 Monate.", link:"https://www.gesetze-im-internet.de/bbig_2005/BBiG.pdf"},
+    {law:"JArbSchG", para:"Arbeitszeit/Freizeit", tags:["jugendliche","ruhezeit"], excerpt:"Mindestruhezeit 12 Stunden; besondere Schutzvorschriften.", link:"https://www.gesetze-im-internet.de/jarbschg/JArbSchG.pdf"},
+    {law:"SGB III", para:"Arbeitsförderung", tags:["arbeitslosigkeit","alg","weiterbildung"], excerpt:"ALG, Förderung beruflicher Weiterbildung, Eingliederung.", link:"https://www.gesetze-im-internet.de/sgb_3/"},
+    {law:"SGB VI", para:"Rentenversicherung", tags:["rente","em-rente"], excerpt:"Rentenarten; Reha vor Rente.", link:"https://www.gesetze-im-internet.de/sgb_6/"},
+    {law:"SGB XI", para:"Pflegeversicherung", tags:["pflege","pflegegrad","pflegegeld"], excerpt:"Leistungen ambulant/stationär nach Pflegegrad.", link:"https://www.gesetze-im-internet.de/sgb_11/"},
+    {law:"BGB", para:"§106 – Geschäftsfähigkeit", tags:["minderjährige","bgb"], excerpt:"Beschränkte Geschäftsfähigkeit Minderjähriger.", link:"https://www.gesetze-im-internet.de/bgb/__106.html"},
+    {law:"DIHK", para:"Musterverträge", tags:["muster","ausbildungsvertrag"], excerpt:"Offizielle Vorlagen der IHK-Organisation.", link:"https://www.dihk.de/de/themen-und-positionen/fachkraefte/aus-und-weiterbildung/ausbildung/mustervertraege-15280"},
+    {law:"BIBB", para:"KfB Rahmenplan", tags:["rahmenplan","ausbildungsordnung"], excerpt:"Kfm./Kffr. Büromanagement – Inhalte/Profil.", link:"https://www.bibb.de/dienst/berufesuche/de/index_berufesuche.php/profile/apprenticeship/kfmfb25"}
   ];
 
-  /* ======= State ======= */
+  const FAQ = [
+    {q:"Wie lange dauert die Probezeit in der Ausbildung?", a:"Mind. 1, max. 4 Monate (§ 20 BBiG)."},
+    {q:"Wer unterschreibt bei Minderjährigen den Ausbildungsvertrag?", a:"Beide Sorgeberechtigte + der/die Minderjährige (§ 10 BBiG, §§ 1626, 1629 BGB)."},
+    {q:"Zählen Wegezeiten Schule→Betrieb als Arbeitszeit?", a:"Ja, zwischen Schule und Ausbildungsstätte anzurechnen (§ 15 Abs. 2 Nr. 1 BBiG)."},
+    {q:"Mindestruhezeit für Jugendliche?", a:"Mindestens 12 Stunden (JArbSchG)."},
+    {q:"Was ist die Mindestausbildungsvergütung?", a:"Untergrenze je Ausbildungsjahr; Tarif ggf. höher (§ 17 BBiG)."},
+    {q:"Pflegegrad 3 – Leistungen ambulant?", a:"(SGB XI) Pflegegeld ~599 €, Sachleistung ~1.497 € – Quelle prüfen."},
+    {q:"Welche Rentenarten gibt es?", a:"Regelalters-, Alters-, EM-, Hinterbliebenenrenten (SGB VI)."},
+  ];
+
+  /* ===== State ===== */
   let domain="ausbildung"; // ausbildung | sozialrecht
   let answersByRef={}, selectedByRef={};
+  let accepted=false;
   let activeKey;
 
+  /* ===== Theme ===== */
+  function setThemeIcon(){
+    themeToggle.innerHTML = document.documentElement.classList.contains("dark") ? '<i data-lucide="sun" class="w-4 h-4"></i>' : '<i data-lucide="moon" class="w-4 h-4"></i>';
+    if (window.lucide) lucide.createIcons();
+  }
+  if (localStorage.getItem("theme_pref")==="dark") document.documentElement.classList.add("dark");
+  setThemeIcon();
+  themeToggle.addEventListener("click", ()=>{
+    document.documentElement.classList.toggle("dark");
+    localStorage.setItem("theme_pref", document.documentElement.classList.contains("dark")?"dark":"light");
+    setThemeIcon();
+  });
+
+  /* ===== Timer ===== */
+  let startTs = Date.now();
+  setInterval(()=>{
+    const s=Math.floor((Date.now()-startTs)/1000);
+    const m=String(Math.floor(s/60)).padStart(2,"0");
+    const r=String(s%60).padStart(2,"0");
+    timerEl.textContent = `${m}:${r}`;
+  },1000);
+
+  /* ===== Toast ===== */
+  function toast(m){ toastEl.textContent=m; toastEl.style.display="block"; clearTimeout(toast._t); toast._t=setTimeout(()=>toastEl.style.display="none",2300); }
+
+  /* ===== Disclaimer ===== */
+  ackBtn.addEventListener("click", ()=>{
+    if(!ack.checked){ toast("Bitte zuerst den Hinweis bestätigen."); return; }
+    accepted=true; notice.style.display="none"; ackState.textContent="Hinweis bestätigt"; saveState();
+  });
+
+  /* ===== Restore ===== */
   (function restore(){
     try{
       const s=JSON.parse(localStorage.getItem(STORAGE)||"{}");
@@ -410,7 +444,7 @@ document.addEventListener("DOMContentLoaded", () => {
     setDomButtons();
   })();
 
-  /* ======= Domain & Tabs ======= */
+  /* ===== Domain/Tabs ===== */
   function setDomButtons(){
     domAusb.setAttribute("aria-pressed", domain==="ausbildung");
     domSoz.setAttribute("aria-pressed", domain==="sozialrecht");
@@ -447,7 +481,7 @@ document.addEventListener("DOMContentLoaded", () => {
     return c? c.data : [];
   }
 
-  /* ======= Render Questions ======= */
+  /* ===== Render Questions ===== */
   function renderQuestions(){
     const pack=getClusters();
     if(!activeKey) activeKey=pack[0].key;
@@ -477,7 +511,7 @@ document.addEventListener("DOMContentLoaded", () => {
             <div id="${fbId}" class="prose text-sm max-w-none hidden mt-2"></div>
           </div>
         </details>
-        <textarea id="${id}" rows="4" class="w-full p-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-blue-500 text-[15px]" placeholder="Deine Antwort …"></textarea>
+        <textarea id="${id}" rows="4" maxlength="${MAX_ANSWER}" class="w-full p-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-blue-500 text-[15px]" placeholder="Deine Antwort …"></textarea>
         <div class="mt-2"><button type="button" data-fill="${id}" class="btn btn-sm">Beispiel-Gliederung</button></div>
       `;
       form.appendChild(sec);
@@ -491,7 +525,7 @@ document.addEventListener("DOMContentLoaded", () => {
       cb.addEventListener("change", ()=>{ selectedByRef[item.ref]=cb.checked; updateSel(); saveState(); });
     });
 
-    // Per-Frage Quicklook (mit Seed)
+    // Per-Frage Quicklook
     form.querySelectorAll("[data-quick]").forEach(btn=>{
       btn.addEventListener("click", (e)=>{
         const idx=Number(e.currentTarget.getAttribute("data-quick"));
@@ -541,7 +575,7 @@ document.addEventListener("DOMContentLoaded", () => {
     progressTxt.textContent = `${answered} / ${refs.length||0} beantwortet`;
   }
 
-  /* ======= Prompts (wohlwollend) ======= */
+  /* ===== Prompts (wohlwollend) ===== */
   function buildPromptSingle(item,answer){
     return `Beurteile **wohlwollend** eine Kurzantwort (BBiG/JArbSchG/SGB etc.). Wenn die geforderte Anzahl erfüllt ist, schreibe **"passt"** und ergänze nur optional.
 - Kurzfeedback (max 2 Sätze, inkl. "passt" bei Erfüllung)
@@ -565,7 +599,7 @@ ${list.map(a=>`Q (${a.ref}): ${a.question}\nAntwort: ${a.answer||"(leer)"}`).joi
     const t=await res.text(); try{const j=JSON.parse(t); return j.answer||j.content||j.result||t;}catch{return t;}
   }
 
-  /* ======= Submit/Reset ======= */
+  /* ===== Submit/Reset ===== */
   submitBtn.addEventListener("click", async ()=>{
     if(!accepted){ toast("Bitte zuerst den Hinweis bestätigen."); return; }
     const refs=currentQs().map(q=>q.ref).filter(r=> selectedByRef[r] || (answersByRef[r]||"").trim().length>0 );
@@ -584,14 +618,11 @@ ${list.map(a=>`Q (${a.ref}): ${a.question}\nAntwort: ${a.answer||"(leer)"}`).joi
     renderQuestions(); saveState();
   });
 
-  /* ======= Quicklook ======= */
+  /* ===== Quicklook ===== */
   function openQL(seed=""){
     qlBackdrop.classList.remove("hidden");
-    qlModal.classList.remove("hidden");
-    qlModal.classList.add("flex");
-    qlSearch.value=seed;
-    renderQL(seed);
-    qlSearch.focus();
+    qlModal.classList.remove("hidden"); qlModal.classList.add("flex");
+    qlSearch.value=seed; renderQL(seed); qlSearch.focus();
   }
   function closeQL(){ qlBackdrop.classList.add("hidden"); qlModal.classList.add("hidden"); qlModal.classList.remove("flex"); }
   function renderQL(q){
@@ -613,120 +644,131 @@ ${list.map(a=>`Q (${a.ref}): ${a.question}\nAntwort: ${a.answer||"(leer)"}`).joi
   qlBackdrop.addEventListener("click", closeQL);
   qlClose.addEventListener("click", closeQL);
   qlSearch.addEventListener("input", e=>renderQL(e.target.value));
-  document.addEventListener("keydown", e=>{ if(e.key==="?") openQL(""); });
 
-  /* ======= Autosave ======= */
+  /* ===== Autosave ===== */
   function saveState(){ localStorage.setItem(STORAGE, JSON.stringify({domain,answersByRef,selectedByRef,accepted})); }
   window.addEventListener("beforeunload", saveState);
 
-  /* ======= Linda ======= */
-  function pushLinda(role, html){ const d=document.createElement("div"); d.className=`l-msg ${role==='me'?'me':'ai'}`; d.innerHTML=html; lBody.appendChild(d); lBody.scrollTop=lBody.scrollHeight; }
-  function openLinda(){ lChat.style.display="block"; if (!lBody.dataset.greet){ pushLinda("ai","Hallo, ich bin <strong>Linda</strong> 👋 – nutze die Schnellsuche, die Quicklinks oder frag mich direkt."); lBody.dataset.greet="1"; } }
-  function closeLinda(){ lChat.style.display="none"; }
-  document.getElementById("lindaBtn").addEventListener("click", ()=>{ lChat.style.display=(lChat.style.display==="block")?"none":"block"; });
-  lClose.addEventListener("click", closeLinda);
+  /* ===== Init ===== */
+  renderTabs(); renderQuestions();
 
-  // Drag chat
+  /* ===== Linda (Smart Chat) ===== */
+  function sanitize(t){ return (t||'').replace(/[<>&]/g, s=>({ '<':'&lt;','>':'&gt;','&':'&amp;' }[s])); }
+  function pushMsg(role, html){ const d=document.createElement('div'); d.className='l-msg '+(role==='me'?'me':'ai'); d.innerHTML=html; stream.appendChild(d); stream.scrollTop=stream.scrollHeight; }
+
+  // Open/Close
+  lindaBtn.addEventListener("click", ()=>{ lindaWrap.style.display = (lindaWrap.style.display==="block"?"none":"block"); });
+  closeLinda.addEventListener("click", ()=>{ lindaWrap.style.display="none"; });
+
+  // Drag
   (function enableDrag(){
     let down=false,sx=0,sy=0,sl=0,st=0;
-    lDrag.addEventListener("mousedown",(e)=>{down=true;sx=e.clientX;sy=e.clientY;const r=lChat.getBoundingClientRect();sl=r.left;st=r.top;document.body.style.userSelect="none";});
-    window.addEventListener("mousemove",(e)=>{if(!down)return; const dx=e.clientX-sx, dy=e.clientY-sy; lChat.style.left=(sl+dx)+"px"; lChat.style.top=(st+dy)+"px"; lChat.style.right="auto"; lChat.style.bottom="auto";});
+    dragBar.addEventListener("mousedown",(e)=>{down=true;sx=e.clientX;sy=e.clientY;const r=lindaWrap.getBoundingClientRect();sl=r.left;st=r.top;document.body.style.userSelect="none";});
+    window.addEventListener("mousemove",(e)=>{if(!down)return; const dx=e.clientX-sx, dy=e.clientY-sy; lindaWrap.style.left=(sl+dx)+"px"; lindaWrap.style.top=(st+dy)+"px"; lindaWrap.style.right="auto"; lindaWrap.style.bottom="auto";});
     window.addEventListener("mouseup",()=>{down=false;document.body.style.userSelect="";});
-    const dock=()=>{ lChat.style.left=""; lChat.style.top=""; lChat.style.right="16px"; lChat.style.bottom="96px"; };
+    const dock=()=>{ lindaWrap.style.left=""; lindaWrap.style.top=""; lindaWrap.style.right="16px"; lindaWrap.style.bottom="96px"; };
     dock(); window.addEventListener("resize", dock, {passive:true});
   })();
 
-  async function sendLinda(){
-    const txt=lText.value.trim(); if(!txt) return;
-    pushLinda("me", txt.replace(/</g,"&lt;")); lText.value="";
-    try{
-      const out=await fetch(relay,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({prompt:`Du bist Linda (freundlich, knapp, §-Bezug). Welt: ${domain}. Frage:\n${txt}`})}).then(r=>r.text());
-      let t; try{const j=JSON.parse(out); t=j.answer||j.content||j.result||out;}catch{t=out;}
-      pushLinda("ai", window.marked?marked.parse(t):t);
-    }catch(e){
-      pushLinda("ai", `<span class="text-red-600">Fehler: ${String(e).replace(/[<>&]/g,"")}</span>`);
-    }
-  }
-  lSend.addEventListener("click", sendLinda);
-  lText.addEventListener("keydown", e=>{ if(e.key==="Enter"){ e.preventDefault(); sendLinda(); } });
+  // Resize
+  (function enableResize(){
+    let isRes=false, sx=0, sy=0, sw=0, sh=0;
+    resizeHandle.addEventListener("mousedown", (e)=>{ isRes=true; sx=e.clientX; sy=e.clientY; const r=lindaWrap.getBoundingClientRect(); sw=r.width; sh=r.height; e.preventDefault(); });
+    window.addEventListener("mousemove",(e)=>{ if(!isRes) return; const dx=e.clientX-sx, dy=e.clientY-sy; lindaWrap.style.width=Math.max(320, sw+dx)+"px"; lindaWrap.style.height=Math.max(400, sh+dy)+"px"; });
+    window.addEventListener("mouseup",()=>{ isRes=false; });
+  })();
 
-  /* ======= Avatar: Mini-Search (offline) ======= */
-  // Nutzt LAW_INDEX + FAQ unten
-  function runMiniSearch(q){
-    const query=(q||"").trim().toLowerCase();
-    if(!query){ renderFaq(LINDA_FAQ.slice(0,4)); return; }
-    const faqMatches = LINDA_FAQ.filter(f => (f.q+ " " + f.a).toLowerCase().includes(query)).slice(0,6);
-    const lawMatches = LAW_INDEX.filter(x=> x.para.toLowerCase().includes(query) || x.law.toLowerCase().includes(query) || x.tags.some(t=>t.toLowerCase().includes(query)) ).slice(0,6);
-    // Render interne „Treffer“ oben im Chat:
-    if(faqMatches.length || lawMatches.length){
-      let html = "";
-      if (faqMatches.length){
-        html += "<div class='text-[11px] font-bold text-slate-500 mt-2'>FAQ-Treffer</div>";
-        html += faqMatches.map(f=>`<div class="l-msg ai">${f.q}<div class="text-xs text-slate-500 mt-1">${f.a}</div></div>`).join("");
-      }
-      if (lawMatches.length){
-        html += "<div class='text-[11px] font-bold text-slate-500 mt-2'>Gesetz-Treffer</div>";
-        html += lawMatches.map(x=>`<div class="l-msg ai"><strong>${x.law} ${x.para}</strong><div class="text-xs text-slate-500 mt-1">${x.excerpt}</div><div class="mt-1"><a class="btn btn-sm" href="${x.link}" target="_blank" rel="noopener">zur Quelle</a></div></div>`).join("");
-      }
-      pushLinda("ai", html);
-    } else {
-      pushLinda("ai","Kein Offline-Treffer – stelle deine Frage direkt an mich 👇");
-    }
-  }
-  lQuickGo.addEventListener("click", ()=> runMiniSearch(lQuickSearch.value));
-  lQuickSearch.addEventListener("keydown", e=>{ if(e.key==="Enter"){ e.preventDefault(); runMiniSearch(lQuickSearch.value); } });
+  // Quick chips
+  quickChips.querySelectorAll(".chip").forEach(c=> c.addEventListener("click", ()=> window.open(c.dataset.url, "_blank","noopener") ));
 
-  /* ======= Offline FAQ ======= */
-  const LINDA_FAQ = [
-    {q:"Wie lange ist die Probezeit in der Ausbildung?", a:"Mindestens 1, höchstens 4 Monate (§ 20 BBiG)."},
-    {q:"Zählen Wegezeiten Schule→Betrieb als Arbeitszeit?", a:"Ja, sie sind anzurechnen (§ 15 Abs. 2 Nr. 1 BBiG)."},
-    {q:"Mindestruhezeit bei Jugendlichen?", a:"Mindestens 12 Stunden (JArbSchG)."},
-    {q:"Was ist die Mindestausbildungsvergütung?", a:"Untergrenze je Ausbildungsjahr; tarifliche Sätze können höher sein (§ 17 BBiG)."},
-    {q:"Wer ist in der sozialen Pflegeversicherung pflichtversichert?", a:"Alle GKV-Versicherten automatisch; PKV-Versicherte in der privaten Pflegepflichtversicherung (SGB XI)."},
-    {q:"Was leistet die Arbeitslosenversicherung?", a:"ALG zur Sicherung des Lebensunterhalts, Förderung der Weiterbildung, Eingliederung (SGB III)."},
-    {q:"Drei Rentenarten nennen", a:"Regelaltersrente, Erwerbsminderungsrente, Hinterbliebenenrenten (SGB VI)."},
-    {q:"Wo finde ich Muster-Ausbildungsverträge?", a:"Beim DIHK: Musterverträge und Hinweise."}
-  ];
-  function renderFaq(list){
-    lFaqList.innerHTML = list.map(f=>`
-      <div class="p-2 border rounded-lg">
-        <div class="text-[13px] font-semibold">${f.q}</div>
-        <div class="text-xs text-slate-600 mt-1">${f.a}</div>
-      </div>`).join("");
+  // Offline scoring
+  function score(query, text){
+    query=query.toLowerCase(); text=text.toLowerCase();
+    let s=0; const terms=query.split(/\s+/).filter(Boolean);
+    for(const w of terms){ if(text.includes(w)) s += (w.length>2?1.0:0.4); }
+    if(/§|\d{3}/.test(query)) s+=0.4;
+    return Math.min(s/Math.max(terms.length,1), 1);
   }
-  renderFaq(LINDA_FAQ.slice(0,6));
+  function offlineCandidates(q){
+    const list=[];
+    FAQ.forEach(f=> list.push({type:'faq', title:f.q, desc:f.a, link:null, score:score(q, f.q+' '+f.a)}));
+    LAW_INDEX.forEach(l=> list.push({type:'law', title:`${l.law} ${l.para}`, desc:l.excerpt, link:l.link, score:score(q, l.law+' '+l.para+' '+l.tags.join(' ')+' '+l.excerpt)}));
+    return list.sort((a,b)=> b.score-a.score).slice(0,8);
+  }
 
-  /* ======= Quicklook seed from per-question ======= */
-  function openQL(seed=""){ 
-    qlBackdrop.classList.remove("hidden");
-    qlModal.classList.remove("hidden"); qlModal.classList.add("flex");
-    qlSearch.value=seed; renderQL(seed); qlSearch.focus();
-  }
-  function closeQL(){ qlBackdrop.classList.add("hidden"); qlModal.classList.add("hidden"); qlModal.classList.remove("flex"); }
-  function renderQL(q){
-    const query=(q||"").toLowerCase();
-    const list = query ? LAW_INDEX.filter(x=> x.para.toLowerCase().includes(query) || x.law.toLowerCase().includes(query) || x.tags.some(t=>t.toLowerCase().includes(query)) ) : LAW_INDEX;
-    qlList.innerHTML = list.map(x=>`
-      <div class="p-3 rounded-xl border hover:bg-[color:var(--surface3)]">
-        <div class="flex items-center justify-between">
-          <div class="font-semibold">${x.law} ${x.para}</div>
-          <a class="btn btn-sm" href="${x.link}" target="_blank" rel="noopener">zur Quelle</a>
+  // Autocomplete panel
+  let acOpen=false, acSel=0, acData=[];
+  function openAC(items){ acPanel.style.display='block'; acOpen=true; acSel=0; acData=items; renderAC(); }
+  function closeAC(){ acPanel.style.display='none'; acOpen=false; }
+  function renderAC(){
+    if(!acOpen){ acPanel.innerHTML=''; return; }
+    acPanel.innerHTML = acData.map((it,idx)=>`
+      <div class="ac-item ${idx===acSel?'bg-[color:var(--surface3)]':''}" data-idx="${idx}">
+        <span class="ac-badge">${it.type.toUpperCase()}</span>
+        <div>
+          <div class="text-sm font-semibold">${sanitize(it.title)}</div>
+          <div class="text-xs text-slate-600">${sanitize(it.desc||'')}</div>
         </div>
-        <div class="text-sm text-slate-600 mt-1">${x.excerpt}</div>
-        <div class="mt-1 flex flex-wrap gap-1">${x.tags.map(t=>`<span class="badge">${t}</span>`).join("")}</div>
-      </div>`).join("");
+      </div>`).join('');
+    [...acPanel.querySelectorAll('.ac-item')].forEach(div=>{
+      div.addEventListener('mouseenter', ()=>{ acSel = Number(div.dataset.idx); renderAC(); });
+      div.addEventListener('click', ()=> pickAC(Number(div.dataset.idx)));
+    });
   }
-  quickBtn.addEventListener("click", ()=>openQL(""));
-  qlBackdrop.addEventListener("click", closeQL);
-  qlClose.addEventListener("click", closeQL);
-  qlSearch.addEventListener("input", e=>renderQL(e.target.value));
-  document.addEventListener("keydown", e=>{ if(e.key==="?") openQL(""); });
+  function pickAC(i){
+    const it=acData[i]; if(!it) return;
+    pushMsg('ai', `<strong>${sanitize(it.title)}</strong><div class="text-xs text-slate-600 mt-1">${sanitize(it.desc||'')}</div>${it.link?`<div class="mt-1"><a class="btn btn-sm" href="${it.link}" target="_blank" rel="noopener">zur Quelle</a></div>`:''}`);
+    closeAC();
+  }
 
-  /* ======= Init ======= */
-  renderTabs(); renderQuestions();
+  lInput.addEventListener('input', ()=>{
+    const q=lInput.value.trim();
+    if(!q){ closeAC(); return; }
+    const cand=offlineCandidates(q);
+    if(cand.length && cand[0].score>0.2) openAC(cand); else closeAC();
+  });
+  lInput.addEventListener('keydown', (e)=>{
+    if(!acOpen) return;
+    if(e.key==='ArrowDown'){ e.preventDefault(); acSel = Math.min(acSel+1, acData.length-1); renderAC(); }
+    if(e.key==='ArrowUp'){ e.preventDefault(); acSel = Math.max(acSel-1, 0); renderAC(); }
+    if(e.key==='Tab'){ e.preventDefault(); pickAC(acSel); }
+  });
 
-  /* ======= Utils ======= */
-  function saveState(){ localStorage.setItem(STORAGE, JSON.stringify({domain,answersByRef,selectedByRef,accepted})); }
+  async function sendLinda(){
+    const q=lInput.value.trim(); if(!q) return;
+    lInput.value=''; pushMsg('me', sanitize(q));
+
+    const cand=offlineCandidates(q);
+    const top=cand[0]; const auto=autoDetect.checked;
+    const confident = top && top.score>=AUTO_MIN_SCORE;
+
+    if(auto && confident){
+      pickAC(0);
+      pushMsg('ai', `<span class="text-[11px] text-slate-500">Hinweis aus Offline-Wissen (Score ${(top.score*100).toFixed(0)}%).</span>`);
+      return;
+    }
+
+    if(!accepted){ pushMsg('ai','Bitte bestätige vorher den Hinweis (oben).'); return; }
+    pushMsg('ai','<span class="text-slate-500">… frage die KI-API …</span>');
+    try{
+      const out=await callAI({prompt:`Du bist Linda (deutsch, knapp, freundlich, §-Bezug, wohlwollend). Frage:\n${q}`});
+      pushMsg('ai', window.marked? marked.parse(out) : sanitize(out));
+    }catch(e){
+      pushMsg('ai', `<span class="text-red-600">API-Fehler: ${sanitize(String(e))}</span>`);
+    }
+  }
+  sendBtn.addEventListener('click', sendLinda);
+  lInput.addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); sendLinda(); } });
+
+  // Open/close avatar
+  lindaBtn.addEventListener("click", ()=>{ lindaWrap.style.display = (lindaWrap.style.display==="block"?"none":"block"); });
+
+  /* ===== Export Quicklook helpers (used by per-Frage buttons) ===== */
+  window.openQL = openQL;
+
+  // Also allow seeding Quicklook from anywhere
+  window.openQLSeed = (seed)=>{ openQL(seed); };
+
 });
 </script>
 </body>
