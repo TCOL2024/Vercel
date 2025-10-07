@@ -3,119 +3,158 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>BBiG-Quiz – Amazon Nova Edition</title>
+  <title>BBiG-Quiz Professional Edition</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script defer src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+    
     :root {
-      --nova-blue: #0073BB;
-      --nova-blue-light: #E7F2FA;
-      --nova-orange: #FF9900;
-      --nova-gray: #F7F9FA;
-      --nova-border: #D5DBDB;
-      --nova-text: #16191F;
-      --nova-muted: #687078;
+      --primary: #0066CC;
+      --primary-dark: #004C99;
+      --accent: #FF6B35;
+      --success: #00C853;
+      --warning: #FFB300;
+      --surface: #FFFFFF;
+      --surface-alt: #F8F9FA;
+      --ink: #1A1D23;
+      --ink-light: #4A5568;
+      --ink-muted: #718096;
+      --border: #DEE2E6;
+      --shadow-sm: 0 1px 3px rgba(0,0,0,.08);
+      --shadow-md: 0 4px 12px rgba(0,0,0,.1);
+      --radius: 8px;
+      --radius-lg: 12px;
     }
+    
     html.dark {
-      --nova-gray: #1C2127;
-      --nova-border: #2F3640;
-      --nova-text: #FFFFFF;
-      --nova-muted: #A0A8B0;
+      --surface: #1A1D23;
+      --surface-alt: #242830;
+      --ink: #FFFFFF;
+      --ink-light: #CBD5E0;
+      --ink-muted: #A0AEC0;
+      --border: #3A4150;
     }
+    
     * { box-sizing: border-box; margin: 0; padding: 0; }
+    
     body {
-      font-family: Inter, system-ui, sans-serif;
+      font-family: 'Inter', system-ui, sans-serif;
       font-size: 14px;
       line-height: 1.6;
-      background: var(--nova-gray);
-      color: var(--nova-text);
+      background: var(--surface-alt);
+      color: var(--ink);
     }
-    .container { max-width: 1200px; margin: 0 auto; padding: 0 16px; }
+    
+    .container { max-width: 1200px; margin: 0 auto; padding: 0 20px; }
+    
     .card {
-      background: white;
-      border: 1px solid var(--nova-border);
-      border-radius: 8px;
-      box-shadow: 0 1px 3px rgba(0,0,0,.04);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-sm);
+      transition: all .2s;
     }
-    html.dark .card { background: #232A31; }
+    
     .btn {
       display: inline-flex;
       align-items: center;
       gap: 8px;
-      padding: 8px 16px;
-      border-radius: 6px;
-      border: 1px solid var(--nova-border);
-      background: white;
-      color: var(--nova-text);
+      padding: 10px 18px;
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--ink);
       font-weight: 600;
+      font-size: 13px;
       cursor: pointer;
-      transition: all .15s;
+      transition: all .2s;
     }
-    html.dark .btn { background: #2F3640; }
-    .btn:hover { background: var(--nova-blue-light); border-color: var(--nova-blue); }
+    
+    .btn:hover:not(:disabled) {
+      background: var(--surface-alt);
+      border-color: var(--primary);
+      transform: translateY(-1px);
+    }
+    
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    
     .btn-primary {
-      background: var(--nova-orange);
-      border-color: var(--nova-orange);
-      color: #111;
+      background: var(--accent);
+      border-color: var(--accent);
+      color: white;
+      font-weight: 700;
     }
-    .btn-primary:hover { background: #EC7211; }
+    
+    .btn-primary:hover:not(:disabled) { background: #E55A2B; }
+    
     .btn-blue {
-      background: var(--nova-blue);
-      border-color: var(--nova-blue);
+      background: var(--primary);
+      border-color: var(--primary);
       color: white;
     }
-    .btn-blue:hover { background: #005A94; }
+    
     .badge {
       display: inline-flex;
-      padding: 4px 10px;
-      border-radius: 12px;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 12px;
+      border-radius: 16px;
       font-size: 11px;
       font-weight: 700;
-      background: var(--nova-blue-light);
-      color: var(--nova-blue);
+      background: #E3F2FD;
+      color: var(--primary);
     }
+    
     .progress-outer {
-      height: 8px;
-      border-radius: 4px;
-      background: var(--nova-gray);
+      height: 10px;
+      border-radius: 5px;
+      background: var(--surface-alt);
       overflow: hidden;
-      border: 1px solid var(--nova-border);
+      border: 1px solid var(--border);
     }
+    
     .progress-inner {
       height: 100%;
-      background: linear-gradient(90deg, var(--nova-blue), #00A4E4);
-      transition: width .3s;
+      background: linear-gradient(90deg, var(--primary), #3385D6);
+      transition: width .4s;
     }
+    
     .hero {
-      background: linear-gradient(135deg, #E7F2FA 0%, #FFFFFF 100%);
-      border-bottom: 3px solid var(--nova-blue);
-      padding: 32px 16px;
+      background: linear-gradient(135deg, #E3F2FD 0%, #FFF 100%);
+      border-bottom: 3px solid var(--primary);
+      padding: 40px 20px;
       text-align: center;
     }
-    html.dark .hero { background: linear-gradient(135deg, #1C2127 0%, #232A31 100%); }
+    
+    html.dark .hero { background: linear-gradient(135deg, #1A1D23 0%, #242830 100%); }
+    
     .hero h1 {
-      font-size: 28px;
-      font-weight: 700;
-      color: var(--nova-blue);
+      font-size: 32px;
+      font-weight: 800;
+      color: var(--primary);
       margin-bottom: 8px;
     }
-    .hero p {
-      font-size: 14px;
-      color: var(--nova-muted);
-    }
+    
     .notice {
       background: #FFF9E6;
-      border-bottom: 2px solid var(--nova-orange);
+      border-bottom: 2px solid var(--warning);
       padding: 16px;
     }
-    html.dark .notice { background: #2C2416; }
+    
+    .tabs {
+      display: flex;
+      gap: 10px;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+    
     .tab {
-      padding: 10px 16px;
-      border: 1px solid var(--nova-border);
-      border-radius: 6px;
-      background: white;
+      padding: 10px 18px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
       cursor: pointer;
       display: flex;
       align-items: center;
@@ -123,98 +162,145 @@
       font-weight: 600;
       white-space: nowrap;
     }
-    html.dark .tab { background: #2F3640; }
+    
     .tab[aria-selected="true"] {
-      background: var(--nova-blue);
+      background: var(--primary);
       color: white;
-      border-color: var(--nova-blue);
+      border-color: var(--primary);
     }
-    .tabs { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; }
-    .tabs::-webkit-scrollbar { display: none; }
-    .q-card { position: relative; padding: 20px; }
+    
+    .q-card { position: relative; padding: 24px; }
+    
     .bookmark {
       position: absolute;
-      top: 16px;
-      right: 16px;
-      width: 32px;
-      height: 32px;
+      top: 20px;
+      right: 20px;
+      width: 36px;
+      height: 36px;
       border-radius: 50%;
       display: grid;
       place-items: center;
-      background: white;
-      border: 1px solid var(--nova-border);
+      background: var(--surface-alt);
+      border: 1px solid var(--border);
       cursor: pointer;
     }
-    html.dark .bookmark { background: #2F3640; }
-    .bookmark:hover, .bookmark.active {
-      background: var(--nova-orange);
-      border-color: var(--nova-orange);
-    }
+    
+    .bookmark.active { background: var(--accent); border-color: var(--accent); }
+    
     .tip {
-      background: var(--nova-blue-light);
-      border-left: 3px solid var(--nova-blue);
-      padding: 12px;
-      border-radius: 4px;
-      margin-top: 8px;
+      background: #E3F2FD;
+      border-left: 4px solid var(--primary);
+      padding: 14px;
+      border-radius: var(--radius);
+      margin-top: 12px;
     }
-    html.dark .tip { background: rgba(0,115,187,.15); }
+    
+    .ai-answer {
+      background: var(--surface);
+      border: 2px solid #90CAF9;
+      border-radius: var(--radius-lg);
+      padding: 20px;
+      margin-top: 16px;
+    }
+    
+    .ai-answer h4 {
+      color: var(--primary);
+      font-weight: 700;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .ai-answer ul {
+      list-style: none;
+      padding: 0;
+      margin: 12px 0;
+    }
+    
+    .ai-answer ul li {
+      padding: 8px 0 8px 28px;
+      position: relative;
+    }
+    
+    .ai-answer ul li::before {
+      content: '→';
+      position: absolute;
+      left: 8px;
+      color: var(--primary);
+      font-weight: 700;
+    }
+    
+    .ai-answer strong { color: var(--primary); font-weight: 700; }
+    
+    .law-ref {
+      display: inline-flex;
+      padding: 3px 10px;
+      background: var(--surface-alt);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--primary);
+      margin: 2px;
+    }
+    
     .modal-backdrop {
       position: fixed;
       inset: 0;
-      background: rgba(0,0,0,.5);
-      backdrop-filter: blur(4px);
+      background: rgba(0,0,0,.6);
+      backdrop-filter: blur(6px);
       display: none;
       z-index: 98;
     }
+    
     .modal {
       position: fixed;
       inset: 0;
       display: none;
       align-items: center;
       justify-content: center;
-      padding: 16px;
+      padding: 20px;
       z-index: 99;
     }
+    
     .modal.open, .modal-backdrop.open { display: flex; }
+    
     .panel {
       width: 100%;
-      max-width: 800px;
+      max-width: 900px;
       max-height: 90vh;
       overflow: auto;
-      border-radius: 8px;
+      border-radius: var(--radius-lg);
     }
+    
     #toast {
       position: fixed;
       left: 50%;
       bottom: 24px;
       transform: translateX(-50%);
-      background: #232A31;
+      background: var(--ink);
       color: white;
-      padding: 12px 24px;
-      border-radius: 6px;
+      padding: 14px 24px;
+      border-radius: var(--radius);
       font-weight: 600;
       z-index: 100;
       display: none;
     }
+    
     .sticky-actions {
       position: fixed;
       bottom: 0;
       left: 0;
       right: 0;
-      background: white;
-      border-top: 2px solid var(--nova-blue);
-      padding: 12px 0;
+      background: var(--surface);
+      border-top: 2px solid var(--primary);
+      padding: 14px 0;
       z-index: 50;
     }
-    html.dark .sticky-actions { background: #232A31; }
-    footer {
-      font-size: 11px;
-      color: var(--nova-muted);
-      background: var(--nova-gray);
-      border-top: 1px solid var(--nova-border);
-      padding: 24px 0;
-    }
+    
     #clusterSelect { display: none; }
+    
     @media (max-width: 768px) {
       .tabs { display: none; }
       #clusterSelect { display: block; }
@@ -223,76 +309,67 @@
 </head>
 <body>
 
-  <!-- Hero -->
   <section class="hero">
     <div class="container">
-      <h1>BBiG-Quiz – Amazon Nova Edition</h1>
-      <p>100 Fragen • 10 Cluster • KI-Feedback • §-Quicklook</p>
+      <h1>BBiG-Quiz Professional</h1>
+      <p>100 Fragen • 10 Cluster • Intelligentes KI-Feedback</p>
     </div>
   </section>
 
-  <!-- Notice -->
   <aside id="notice" class="notice">
-    <div class="container" style="display:flex;gap:12px;align-items:start;flex-wrap:wrap;">
+    <div class="container" style="display:flex;gap:16px;align-items:start;flex-wrap:wrap;">
       <div style="flex:1;min-width:280px;">
-        <p style="font-weight:700;font-size:13px;color:#EC7211;margin-bottom:4px;">Fachlicher Hinweis</p>
-        <p style="font-size:12px;color:#687078;">
-          KI-Prüfung unterstützt beim Lernen. Ergebnisse sind zu prüfen.
-          <strong>Keine personenbezogenen Daten eingeben.</strong>
+        <p style="font-weight:700;color:#D97706;margin-bottom:6px;">📋 Fachlicher Hinweis</p>
+        <p style="font-size:13px;">
+          KI-Prüfung unterstützt beim Lernen. <strong>Keine personenbezogenen Daten eingeben.</strong>
         </p>
-        <label style="display:flex;align-items:center;gap:8px;margin-top:8px;">
-          <input id="ack" type="checkbox" style="width:16px;height:16px;">
-          <span style="font-size:12px;font-weight:600;">Hinweis gelesen</span>
+        <label style="display:flex;align-items:center;gap:10px;margin-top:10px;cursor:pointer;">
+          <input id="ack" type="checkbox" style="width:18px;height:18px;cursor:pointer;">
+          <span style="font-weight:600;">Hinweis gelesen</span>
         </label>
       </div>
-      <button id="ackBtn" type="button" class="btn btn-primary">
-        <i data-lucide="check" style="width:16px;height:16px;"></i> Weiter
+      <button id="ackBtn" type="button" class="btn btn-blue">
+        <i data-lucide="check" style="width:18px;height:18px;"></i> Weiter
       </button>
     </div>
   </aside>
 
-  <!-- Header -->
-  <header style="position:sticky;top:0;z-index:40;background:white;border-bottom:1px solid var(--nova-border);padding:12px 0;">
-    <div class="container" style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;">
-      <div style="display:flex;align-items:center;gap:12px;">
-        <div style="width:40px;height:40px;border-radius:8px;background:linear-gradient(135deg,#0073BB,#005A94);display:grid;place-items:center;">
-          <i data-lucide="graduation-cap" style="width:24px;height:24px;color:white;"></i>
+  <header style="position:sticky;top:0;z-index:40;background:var(--surface);border-bottom:1px solid var(--border);box-shadow:var(--shadow-sm);">
+    <div class="container" style="padding:16px 20px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;">
+        <div style="display:flex;align-items:center;gap:14px;">
+          <div style="width:44px;height:44px;border-radius:var(--radius);background:linear-gradient(135deg,var(--primary),var(--primary-dark));display:grid;place-items:center;">
+            <i data-lucide="graduation-cap" style="width:26px;height:26px;color:white;"></i>
+          </div>
+          <div>
+            <h2 style="font-size:17px;font-weight:700;">BBiG-Quiz Professional</h2>
+            <p style="font-size:11px;color:var(--ink-muted);">Angemeldet als: <strong>TCOL2024</strong></p>
+          </div>
         </div>
-        <div>
-          <h2 style="font-size:16px;font-weight:700;">BBiG-Quiz Cluster</h2>
-          <p style="font-size:11px;color:var(--nova-muted);">Cluster • Bookmarks • Historie</p>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;">
+          <button id="quickBtn" class="btn"><i data-lucide="search" style="width:16px;height:16px;"></i> §-Quicklook</button>
+          <button id="bookmarksBtn" class="btn">
+            <i data-lucide="bookmark" style="width:16px;height:16px;"></i>
+            <span id="bookmarkCount" class="badge" style="display:none;">0</span>
+          </button>
+          <button id="historyBtn" class="btn"><i data-lucide="history" style="width:16px;height:16px;"></i></button>
+          <button id="themeToggle" class="btn"><i data-lucide="moon" style="width:16px;height:16px;"></i></button>
         </div>
       </div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;">
-        <button id="quickBtn" class="btn">
-          <i data-lucide="search" style="width:16px;height:16px;"></i> §-Quicklook
-        </button>
-        <button id="bookmarksBtn" class="btn">
-          <i data-lucide="bookmark" style="width:16px;height:16px;"></i>
-          <span id="bookmarkCount" class="badge" style="display:none;">0</span>
-        </button>
-        <button id="historyBtn" class="btn">
-          <i data-lucide="history" style="width:16px;height:16px;"></i>
-        </button>
-        <button id="themeToggle" class="btn">
-          <i data-lucide="moon" style="width:16px;height:16px;"></i>
-        </button>
-      </div>
-    </div>
-    <div class="container" style="margin-top:12px;">
-      <div class="card" style="padding:12px;">
-        <div id="tabs" class="tabs"></div>
-        <select id="clusterSelect" style="width:100%;padding:8px;border-radius:6px;border:1px solid var(--nova-border);"></select>
+      <div style="margin-top:16px;">
+        <div class="card" style="padding:14px;">
+          <div id="tabs" class="tabs"></div>
+          <select id="clusterSelect" style="width:100%;padding:10px;border-radius:var(--radius);border:1px solid var(--border);font-weight:600;"></select>
+        </div>
       </div>
     </div>
   </header>
 
-  <!-- Progress -->
-  <section class="container" style="margin-top:16px;">
-    <div class="card" style="padding:16px;display:flex;align-items:center;gap:12px;">
-      <i data-lucide="target" style="width:20px;height:20px;color:var(--nova-blue);"></i>
+  <section class="container" style="margin-top:20px;">
+    <div class="card" style="padding:18px;display:flex;align-items:center;gap:14px;">
+      <i data-lucide="target" style="width:22px;height:22px;color:var(--primary);"></i>
       <div style="flex:1;">
-        <div style="display:flex;justify-content:space-between;font-size:11px;font-weight:600;color:var(--nova-muted);margin-bottom:8px;">
+        <div style="display:flex;justify-content:space-between;font-size:11px;font-weight:700;color:var(--ink-muted);margin-bottom:10px;">
           <span id="progressText">0 / 0</span>
           <span id="selText">0 ausgewählt</span>
         </div>
@@ -300,667 +377,81 @@
           <div id="progressBar" class="progress-inner" style="width:0%;"></div>
         </div>
       </div>
-      <time id="timer" style="font-size:12px;font-family:monospace;font-weight:700;color:var(--nova-muted);">00:00</time>
+      <time id="timer" style="font-size:14px;font-weight:700;color:var(--ink-muted);min-width:50px;">00:00</time>
     </div>
   </section>
 
-  <!-- Quiz -->
-  <main class="container" style="margin:16px auto 100px;">
-    <form id="form" style="display:grid;gap:16px;"></form>
-    <section id="resultWrap" class="hidden" style="margin-top:16px;">
-      <div class="card" style="padding:20px;">
-        <h3 style="font-weight:700;margin-bottom:12px;">KI-Gesamt-Feedback</h3>
-        <article id="aiResult" style="font-size:13px;line-height:1.7;"></article>
+  <main class="container" style="margin:20px auto 120px;">
+    <form id="form" style="display:grid;gap:20px;"></form>
+    <section id="resultWrap" class="hidden" style="margin-top:24px;">
+      <div class="card" style="padding:24px;border:2px solid var(--success);">
+        <h3 style="font-size:18px;font-weight:800;color:var(--success);margin-bottom:16px;">🎯 Gesamtauswertung</h3>
+        <article id="aiResult" style="font-size:14px;line-height:1.8;"></article>
       </div>
     </section>
   </main>
 
-  <!-- Sticky Actions -->
   <div class="sticky-actions">
-    <div class="container" style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;">
-      <div style="display:flex;gap:8px;">
+    <div class="container" style="display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap;">
+      <div style="display:flex;gap:10px;">
         <a class="btn" href="https://www.gesetze-im-internet.de/bbig_2005/BBiG.pdf" target="_blank">BBiG</a>
         <a class="btn" href="https://www.gesetze-im-internet.de/jarbschg/JArbSchG.pdf" target="_blank">JArbSchG</a>
       </div>
-      <div style="display:flex;gap:8px;">
-        <button id="submitBtn" class="btn btn-primary">
-          <i data-lucide="send" style="width:16px;height:16px;"></i> KI-Feedback
+      <div style="display:flex;gap:10px;">
+        <button id="submitBtn" class="btn btn-primary" style="padding:12px 24px;">
+          <i data-lucide="send" style="width:18px;height:18px;"></i> KI-Feedback
         </button>
         <button id="resetBtn" class="btn">
-          <i data-lucide="rotate-ccw" style="width:16px;height:16px;"></i> Reset
+          <i data-lucide="rotate-ccw" style="width:18px;height:18px;"></i> Reset
         </button>
       </div>
     </div>
   </div>
 
-  <!-- Toast -->
   <div id="toast"></div>
 
-  <!-- Modals -->
   <div id="bmBackdrop" class="modal-backdrop"></div>
   <div id="bmModal" class="modal">
-    <div class="panel card" style="padding:20px;">
-      <div style="display:flex;justify-content:space-between;margin-bottom:12px;">
-        <h3 style="font-weight:700;">Markierte Fragen</h3>
-        <button id="bmClose" class="btn" style="padding:6px 10px;">
-          <i data-lucide="x" style="width:16px;height:16px;"></i>
-        </button>
+    <div class="panel card" style="padding:28px;">
+      <div style="display:flex;justify-content:space-between;margin-bottom:20px;">
+        <h3 style="font-weight:700;">📑 Markierte Fragen</h3>
+        <button id="bmClose" class="btn"><i data-lucide="x" style="width:20px;height:20px;"></i></button>
       </div>
-      <div id="bmList" style="max-height:70vh;overflow:auto;"></div>
+      <div id="bmList" style="max-height:70vh;overflow:auto;display:grid;gap:14px;"></div>
     </div>
   </div>
 
   <div id="qlBackdrop" class="modal-backdrop"></div>
   <div id="qlModal" class="modal">
-    <div class="panel card" style="padding:20px;">
-      <div style="display:flex;justify-content:space-between;margin-bottom:12px;">
+    <div class="panel card" style="padding:28px;">
+      <div style="display:flex;justify-content:space-between;margin-bottom:20px;">
         <h3 style="font-weight:700;">§-Quicklook</h3>
-        <button id="qlClose" class="btn" style="padding:6px 10px;">
-          <i data-lucide="x" style="width:16px;height:16px;"></i>
-        </button>
+        <button id="qlClose" class="btn"><i data-lucide="x" style="width:20px;height:20px;"></i></button>
       </div>
-      <input id="qlSearch" type="search" placeholder="Begriff oder § …" style="width:100%;padding:10px;border-radius:6px;border:1px solid var(--nova-border);margin-bottom:12px;">
-      <div id="qlList" style="max-height:65vh;overflow:auto;display:grid;gap:12px;"></div>
+      <input id="qlSearch" type="search" placeholder="Begriff …" style="width:100%;padding:12px;border-radius:var(--radius);border:1px solid var(--border);margin-bottom:16px;">
+      <div id="qlList" style="max-height:65vh;overflow:auto;display:grid;gap:14px;"></div>
     </div>
   </div>
 
   <div id="histBackdrop" class="modal-backdrop"></div>
   <div id="histModal" class="modal">
-    <div class="panel card" style="padding:20px;">
-      <div style="display:flex;justify-content:space-between;margin-bottom:12px;">
+    <div class="panel card" style="padding:28px;">
+      <div style="display:flex;justify-content:space-between;margin-bottom:20px;">
         <h3 style="font-weight:700;">Historie</h3>
-        <button id="histClose" class="btn" style="padding:6px 10px;">
-          <i data-lucide="x" style="width:16px;height:16px;"></i>
-        </button>
+        <button id="histClose" class="btn"><i data-lucide="x" style="width:20px;height:20px;"></i></button>
       </div>
-      <div id="histList" style="max-height:70vh;overflow:auto;display:grid;gap:12px;"></div>
+      <div id="histList" style="max-height:70vh;overflow:auto;display:grid;gap:14px;"></div>
     </div>
   </div>
 
-  <!-- Footer -->
-  <footer>
-    <div class="container" style="text-align:center;line-height:1.6;">
-      Diese Anwendung nutzt KI. Mit der Nutzung stimmst du zu, dass deine Texte von OpenAI über Make.com verarbeitet werden.
-      Keine personenbezogenen Daten erfassen. Jegliche Haftung ausgeschlossen. Alle Antworten sind zu prüfen.
+  <footer style="font-size:11px;color:var(--ink-muted);background:var(--surface-alt);border-top:1px solid var(--border);padding:28px 0;">
+    <div class="container" style="text-align:center;line-height:1.7;">
+      Diese Anwendung nutzt KI (OpenAI via Make.com). Keine personenbezogenen Daten erfassen. Jegliche Haftung ausgeschlossen. Alle Antworten sind zu prüfen.
     </div>
   </footer>
 
   <script>
-  document.addEventListener("DOMContentLoaded", () => {
-    if (window.lucide) lucide.createIcons();
-    if (window.marked) marked.setOptions({ breaks: true, gfm: true });
-
-    const relay = "/api/linda-proxy";
-    const STORAGE_KEY = "BBIG_NOVA_V1";
-    const BOOKMARK_KEY = "BBIG_NOVA_BM";
-    const HISTORY_KEY = "BBIG_NOVA_HIST";
-
-    const form = document.getElementById("form");
-    const progressBar = document.getElementById("progressBar");
-    const progressTxt = document.getElementById("progressText");
-    const selText = document.getElementById("selText");
-    const submitBtn = document.getElementById("submitBtn");
-    const resetBtn = document.getElementById("resetBtn");
-    const timerEl = document.getElementById("timer");
-    const resultWrap = document.getElementById("resultWrap");
-    const aiResult = document.getElementById("aiResult");
-    const toastEl = document.getElementById("toast");
-    const tabs = document.getElementById("tabs");
-    const clusterSelect = document.getElementById("clusterSelect");
-    const ack = document.getElementById("ack");
-    const ackBtn = document.getElementById("ackBtn");
-    const notice = document.getElementById("notice");
-    const bookmarksBtn = document.getElementById("bookmarksBtn");
-    const bookmarkCount = document.getElementById("bookmarkCount");
-    const bmBackdrop = document.getElementById("bmBackdrop");
-    const bmModal = document.getElementById("bmModal");
-    const bmClose = document.getElementById("bmClose");
-    const bmList = document.getElementById("bmList");
-    const quickBtn = document.getElementById("quickBtn");
-    const qlBackdrop = document.getElementById("qlBackdrop");
-    const qlModal = document.getElementById("qlModal");
-    const qlClose = document.getElementById("qlClose");
-    const qlSearch = document.getElementById("qlSearch");
-    const qlList = document.getElementById("qlList");
-    const historyBtn = document.getElementById("historyBtn");
-    const histBackdrop = document.getElementById("histBackdrop");
-    const histModal = document.getElementById("histModal");
-    const histClose = document.getElementById("histClose");
-    const histList = document.getElementById("histList");
-    const themeToggle = document.getElementById("themeToggle");
-
-    // Question Banks (100 Questions Total)
-    const BANK_CORE = [
-      { ref:"V1", q:"Nenne vier Pflichtangaben im Berufsausbildungsvertrag.", tip:["§11 BBiG: Parteien, Beginn/Dauer, Ziel, Gliederung, Vergütung, Probezeit, Urlaub, Kündigung."]},
-      { ref:"V2", q:"Drei Kernpunkte einer Ausbildungsordnung?", tip:["Berufsbild, Rahmenplan/Dauer, Prüfungen (§§4-5 BBiG)."]},
-      { ref:"V3", q:"Probezeit: Dauer & Zweck?", tip:["Mind. 1, max. 4 Monate; Eignungsprüfung (§20 BBiG)."]},
-      { ref:"V4", q:"Wer unterschreibt bei Minderjährigen?", tip:["Beide Sorgeberechtigte + Azubi (§10 BBiG, BGB)."]},
-      { ref:"V5", q:"Berufsschulzeit U18 vs. ≥18?", tip:["U18: besondere Anrechnung (JArbSchG); Wege zählen (§15 BBiG)."]},
-      { ref:"V6", q:"Ruhezeit Jugendliche?", tip:["Mind. 12 Std (JArbSchG)."]},
-      { ref:"V7", q:"Angemessene Vergütung?", tip:["MiAV Untergrenze; Tarif/branchenüblich; Steigerung (§17 BBiG)."]},
-      { ref:"V8", q:"Überstunden zulässig?", tip:["Nur ausbildungsdienlich; Vergütung/Ausgleich; Schutz beachten."]},
-      { ref:"V9", q:"Betrieblicher Ausbildungsplan?", tip:["Umsetzung Rahmenplan; zeitl./sachl. Gliederung; Qualität."]},
-      { ref:"V10", q:"Berichtsheft?", tip:["Zulassungsvoraussetzung; elektronisch möglich; Kontrolle (§13 BBiG)."]}
-    ];
-    const BANK_BASICS = [
-      { ref:"G1", q:"Jugendberufsagentur: Aufgabe?", tip:["U25 unterstützen; AA/Jobcenter/Kommunen."]},
-      { ref:"G2", q:"Drei Argumente für Ausbildung?", tip:["Fachkräfte, Flexibilität, Innovation."]},
-      { ref:"G3", q:"Personalplanung: Dimensionen?", tip:["Quantitativ, qualitativ, zeitlich."]},
-      { ref:"G4", q:"Vier Recruiting-Wege?", tip:["Schulen, Social, Messen, Empfehlungen."]},
-      { ref:"G5", q:"Auswahlprozess: Elemente?", tip:["Screening, Gespräch/Test, Entscheidung."]},
-      { ref:"G6", q:"Drei Motive für Ausbildung?", tip:["Interesse, Unabhängigkeit, Perspektive."]},
-      { ref:"G7", q:"Drei Kompetenzfelder?", tip:["Fachlich, sozial, persönlich."]},
-      { ref:"G8", q:"Eignung prüfen (wie)?", tip:["Zeugnisse, Tests, Beobachtung."]},
-      { ref:"G9", q:"Nachhaltigkeit in Ausbildung?", tip:["Lernziele/Projekte; Rolle Ausbilder."]},
-      { ref:"G10", q:"SDGs: Was & Nutzen?", tip:["17 globale Ziele; Orientierung."]}
-    ];
-    const BANK_RECHT = [
-      { ref:"R1", q:"Art.12 GG: Garantie?", tip:["Freie Wahl Beruf/Ausbildung; einschränkbar."]},
-      { ref:"R2", q:"AGG §1: Ziel?", tip:["Benachteiligungen verhindern."]},
-      { ref:"R3", q:"AGG §2: Anwendung Ausbildung?", tip:["Zugang zu Berufsbildung."]},
-      { ref:"R4", q:"§1 BBiG: Vier Säulen?", tip:["Vorbereitung, Ausbildung, Fortbildung, Umschulung."]},
-      { ref:"R5", q:"BvB: Zweck?", tip:["Heranführung; Basis Handlungsfähigkeit."]},
-      { ref:"R6", q:"EQ: Was & wer?", tip:["Langzeitpraktikum SGB III; junge Bewerbende."]},
-      { ref:"R7", q:"MiAV & Tarif?", tip:["MiAV Untergrenze; Tarif maßgeblich."]},
-      { ref:"R8", q:"Günstigkeitsprinzip?", tip:["Abweichungen nur zugunsten Beschäftigter."]},
-      { ref:"R9", q:"Nachweis: Rolle Zulassung?", tip:["Kann gefordert werden; fehlend kann ausschließen."]},
-      { ref:"R10", q:"§28 BBiG: Durchführung?", tip:["Eignung; moderne Formen ok."]}
-    ];
-    const BANK_ARBZ = [
-      { ref:"A1", q:"U18: Arbeitszeit?", tip:["8 h/Tag, 40 h/W (Ausnahmen)."]},
-      { ref:"A2", q:"U18: Pausen?", tip:[">4,5-6h: 30 Min; >6h: 60 Min."]},
-      { ref:"A3", q:"U18: Ruhezeit?", tip:["Mind. 12 Std."]},
-      { ref:"A4", q:"U18: Sonn-/Feiertag?", tip:["Verbot; Ausnahmen; 2 freie Sonntage/Monat."]},
-      { ref:"A5", q:"≥18: Arbeitszeit ArbZG?", tip:["8 h/Tag; bis 10 mit Ausgleich."]},
-      { ref:"A6", q:"≥18: Pausen/Ruhe?", tip:["6-9h: 30 Min; >9h: 45 Min; 11h Ruhe."]},
-      { ref:"A7", q:"Mehrarbeit Doku?", tip:[">8 h/Tag; 2 Jahre (§16 ArbZG)."]},
-      { ref:"A8", q:"Urlaub BUrlG?", tip:["20 AT (4 Wochen) 5-Tage-Woche."]},
-      { ref:"A9", q:"Urlaub U18?", tip:["u16:30 WT; u17:27; u18:25; ≥18:24 WT."]},
-      { ref:"A10", q:"§15 BBiG: Freistellung?", tip:["Unterricht/Prüfungen; Wegezeiten."]}
-    ];
-    const BANK_ORGA = [
-      { ref:"O1", q:"Vollständige Handlung: Schritte?", tip:["Informieren, Planen, Entscheiden, Ausführen, Kontrollieren, Bewerten."]},
-      { ref:"O2", q:"Lernzielebenen?", tip:["Richt (Gebiet), Grob (Fähigkeit), Fein (Teilziel)."]},
-      { ref:"O3", q:"Sachliche Gliederung: Kriterien?", tip:["Einheiten, Überschaubarkeit, Probezeit nutzbar."]},
-      { ref:"O4", q:"Zeitliche Gliederung: Kriterien?", tip:["Prüfungstermine, Reihenfolge, Block/Urlaub."]},
-      { ref:"O5", q:"Pflichten §11/13/14?", tip:["Gliederung; Nachweis; Lernziele."]},
-      { ref:"O6", q:"Versetzungsplan: Nutzen?", tip:["Steuerung Stationen; Lernziele."]},
-      { ref:"O7", q:"Digitale Tools: Vorteile?", tip:["Transparenz; Feedback/Nachverfolgung."]},
-      { ref:"O8", q:"Qualitätssicherung: Prüfung?", tip:["Zwischengespräche, Zielabgleich."]},
-      { ref:"O9", q:"Verkürzung: Wann?", tip:["Vorbildung/Leistung; Einvernehmen (§8 BBiG)."]},
-      { ref:"O10", q:"Teilzeit: Funktion?", tip:["Reduzierte Zeiten; Lernziel bleibt (§7a)."]}
-    ];
-    const BANK_BETEILIGTE = [
-      { ref:"B1", q:"Beteiligte nennen.", tip:["Ausbildende, Ausbilder, Beauftragte, Azubis, IHK, Eltern."]},
-      { ref:"B2", q:"Eignung Betrieb?", tip:["Ausstattung, Plan, Plätze/Schutz."]},
-      { ref:"B3", q:"Fachkraftbegriff?", tip:["Abschluss oder 2× Zeit Tätigkeit."]},
-      { ref:"B4", q:"Relation FK:Azubis?", tip:["1-2:1; 3-5:2; 6-8:3; +3 FK:+1 Azubi."]},
-      { ref:"B5", q:"Pflichten Ausbildende §14?", tip:["Lernziele, Schutz, Freistellung, Zeugnis."]},
-      { ref:"B6", q:"Rolle Ausbilder?", tip:["Planung, Durchführung, Kontrolle, Coaching."]},
-      { ref:"B7", q:"Beauftragte: Aufgabe?", tip:["Teilqualifikationen vermitteln (§28(3))."]},
-      { ref:"B8", q:"Persönliche Eignung: Fehlt wann?", tip:["Wiederholte JArbSchG-Verstöße."]},
-      { ref:"B9", q:"Kündigung: Regeln?", tip:["Probezeit: jederzeit (§22(1)); danach: wichtiger Grund/4 Wochen."]},
-      { ref:"B10", q:"Mutterschutz: Regeln?", tip:["MuSchG: Schutzfristen, Verbote, Kündigungsschutz."]}
-    ];
-    const BANK_MITBEST = [
-      { ref:"M1", q:"BR: Rechte BBiG?", tip:["§96 Beratung; §98 Mitbestimmung/Bestellung."]},
-      { ref:"M2", q:"§87 BetrVG: Themen?", tip:["Arbeitszeit, Ordnung, Vergütung, IT."]},
-      { ref:"M3", q:"Einstellung Azubis: BR?", tip:["§99: Unterrichten, Unterlagen, Zustimmung."]},
-      { ref:"M4", q:"JAV: Hauptaufgaben?", tip:["Überwachung & Initiativen Jugend/Azubis."]},
-      { ref:"M5", q:"JAV Wahl: Wer?", tip:["u18 + Azubis; wählbar <25; BR ausgeschlossen."]},
-      { ref:"M6", q:"JAV Größe: Abhängig von?", tip:["Zahl Wahlberechtigter (§62 BetrVG)."]},
-      { ref:"M7", q:"BR Widerspruch: Wann?", tip:["Fehlende Eignung (§98(2))."]},
-      { ref:"M8", q:"Nichteinigung: Lösung?", tip:["Einigungsstelle."]},
-      { ref:"M9", q:"Nachteilsausgleich: Unterstützung?", tip:["Zeit/Hilfsmittel auf Antrag."]},
-      { ref:"M10", q:"Ausland: Möglich?", tip:["Ja; Ziel wahren; anrechenbar (§2(3) BBiG)."]}
-    ];
-    const BANK_PRUEF = [
-      { ref:"P1", q:"Zwischenprüfung §48?", tip:["Wissensstand; Zulassung (§43)."]},
-      { ref:"P2", q:"Ausbildungsende §21?", tip:["Ablauf Zeit oder Bekanntgabe Bestehen."]},
-      { ref:"P3", q:"Zulassung: Nachweis?", tip:["Kann gefordert werden; fehlend = Ausschluss."]},
-      { ref:"P4", q:"Nachteilsausgleich: Beispiele?", tip:["Zeit, Hilfsmittel, angepasste Aufgaben."]},
-      { ref:"P5", q:"Prüfungsrecht: Prinzipien?", tip:["Rechtsgrundlagen, Gleichbehandlung, Verhältnismäßigkeit."]},
-      { ref:"P6", q:"§15 BBiG: Prüfung?", tip:["Teilnahme; Vortag schriftliche Abschlussprüfung."]},
-      { ref:"P7", q:"Wiederholung: Möglich?", tip:["Ja; Verlängerung §8(2) möglich."]},
-      { ref:"P8", q:"Doku Vorbereitung?", tip:["Plan, Nachweise, Beurteilungen, Berichtsheft."]},
-      { ref:"P9", q:"Verlängerung: Wann?", tip:["Nichtbestehen/besondere Fälle (§8(2))."]},
-      { ref:"P10", q:"Versetzung: Zulässig?", tip:["Ja, wenn ausbildungsdienlich/zumutbar (§14)."]}
-    ];
-    const BANK_DS = [
-      { ref:"D1", q:"DSGVO: Drei Grundsätze?", tip:["Zweckbindung, Datenminimierung, Transparenz."]},
-      { ref:"D2", q:"KI-Vorsicht?", tip:["Keine personenbezogenen/sensiblen Daten."]},
-      { ref:"D3", q:"Betriebsgeheimnis: Umgang?", tip:["Verschwiegenheit; Schulung."]},
-      { ref:"D4", q:"Doku DSGVO?", tip:["VVT, TOMs, Schulungsnachweise."]},
-      { ref:"D5", q:"Foto/Video: Beachten?", tip:["Einwilligung/Betroffenenrechte."]},
-      { ref:"D6", q:"AGG Recruiting: Fehler?", tip:["Diskriminierung (Alter/Geschlecht/Religion)."]},
-      { ref:"D7", q:"SoMe Screening: Achten auf?", tip:["Datenschutz/Erforderlichkeit/Transparenz."]},
-      { ref:"D8", q:"Bewerbungen: Aufbewahrung?", tip:["6 Monate (AGG), dann löschen."]},
-      { ref:"D9", q:"Datenschutz: Pflichten?", tip:["DSGVO/BDSG; Unterweisung dokumentieren."]},
-      { ref:"D10", q:"Insolvenz: Was passiert?", tip:["Fortführung/Anschluss/IHK; ggf. Insolvenzgeld."]}
-    ];
-    const BANK_SYS = [
-      { ref:"S1", q:"BIBB: Aufgaben?", tip:["Beratung, Forschung (§90 BBiG)."]},
-      { ref:"S2", q:"AO: Wer erlässt?", tip:["Fachministerien/BBiG; BIBB wirkt mit."]},
-      { ref:"S3", q:"Lernorte §2?", tip:["Betrieb, Schule, ggf. weitere."]},
-      { ref:"S4", q:"Rahmenplan: Funktion?", tip:["Zeitlich-sachl. Struktur; Mindestinhalte."]},
-      { ref:"S5", q:"Kammern: Rolle?", tip:["Zuständige Stelle: Eintragung, Beratung, Prüfungen."]},
-      { ref:"S6", q:"Nicht tarifgebunden: Vergütung?", tip:["Anlehnung Tarife; MiAV beachten."]},
-      { ref:"S7", q:"Rechtsquellen: Hierarchie?", tip:["EU/GG → Gesetze → Tarif → BV → Vertrag."]},
-      { ref:"S8", q:"Nebentätigkeit: Norm?", tip:["Art. 12 GG."]},
-      { ref:"S9", q:"§1 BBiG: Säulen?", tip:["Vorbereitung, Ausbildung, Fortbildung, Umschulung."]},
-      { ref:"S10", q:"§28 BBiG: Durchführung?", tip:["Eignung; moderne Formen ok."]}
-    ];
-
-    const CLUSTERS = [
-      { key:"core", title:"Kern (V1-V10)", icon:"layers", data:BANK_CORE },
-      { key:"bas", title:"Grundlagen (G1-G10)", icon:"users", data:BANK_BASICS },
-      { key:"recht", title:"Recht (R1-R10)", icon:"scale", data:BANK_RECHT },
-      { key:"az", title:"Arbeitszeit (A1-A10)", icon:"clock", data:BANK_ARBZ },
-      { key:"orga", title:"Organisation (O1-O10)", icon:"calendar", data:BANK_ORGA },
-      { key:"bet", title:"Beteiligte (B1-B10)", icon:"id-card", data:BANK_BETEILIGTE },
-      { key:"mitb", title:"Mitbestimmung (M1-M10)", icon:"handshake", data:BANK_MITBEST },
-      { key:"pruef", title:"Prüfung (P1-P10)", icon:"file-check", data:BANK_PRUEF },
-      { key:"ds", title:"Datenschutz (D1-D10)", icon:"shield", data:BANK_DS },
-      { key:"sys", title:"System (S1-S10)", icon:"building", data:BANK_SYS }
-    ];
-
-    const LAW_INDEX = [
-      { law:"BBiG", para:"§11", tags:["vertrag"], excerpt:"Niederschrift wesentlicher Inhalte.", link:"https://www.gesetze-im-internet.de/bbig_2005/BBiG.pdf" },
-      { law:"BBiG", para:"§20", tags:["probezeit"], excerpt:"Probezeit 1-4 Monate.", link:"https://www.gesetze-im-internet.de/bbig_2005/BBiG.pdf" },
-      { law:"BBiG", para:"§15", tags:["freistellung"], excerpt:"Freistellung; Wegezeiten.", link:"https://www.gesetze-im-internet.de/bbig_2005/BBiG.pdf" },
-      { law:"BBiG", para:"§17", tags:["vergütung"], excerpt:"Angemessene Vergütung; MiAV.", link:"https://www.gesetze-im-internet.de/bbig_2005/BBiG.pdf" },
-      { law:"JArbSchG", para:"§8-15", tags:["arbeitszeit"], excerpt:"Arbeitszeit, Pausen, Ruhezeit 12h.", link:"https://www.gesetze-im-internet.de/jarbschg/JArbSchG.pdf" },
-      { law:"ArbZG", para:"§3-5", tags:["arbeitszeit"], excerpt:"8h/Tag, Pausen, 11h Ruhe.", link:"https://www.gesetze-im-internet.de/arbzg/BJNR117100994.html" }
-    ];
-
-    let accepted = false;
-    let activeKey = "core";
-    let answersByRef = {};
-    let selectedByRef = {};
-    let bookmarks = {};
-
-    (function restore() {
-      try {
-        const s = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
-        if (s && typeof s === 'object') {
-          accepted = !!s.accepted;
-          activeKey = s.activeKey || "core";
-          answersByRef = s.answersByRef || {};
-          selectedByRef = s.selectedByRef || {};
-        }
-      } catch {}
-      try {
-        bookmarks = JSON.parse(localStorage.getItem(BOOKMARK_KEY) || "{}");
-      } catch {}
-      if (accepted) {
-        notice.style.display = "none";
-        ack.checked = true;
-      }
-    })();
-
-    let startTs = Date.now();
-    setInterval(() => {
-      const s = Math.floor((Date.now() - startTs) / 1000);
-      timerEl.textContent = `${String(Math.floor(s/60)).padStart(2,"0")}:${String(s%60).padStart(2,"0")}`;
-    }, 1000);
-
-    const savedTheme = localStorage.getItem("nova_theme") || "light";
-    if (savedTheme === "dark") document.documentElement.classList.add("dark");
-    themeToggle.addEventListener("click", () => {
-      document.documentElement.classList.toggle("dark");
-      localStorage.setItem("nova_theme", document.documentElement.classList.contains("dark") ? "dark" : "light");
-      if (window.lucide) lucide.createIcons();
-    });
-
-    ackBtn.addEventListener("click", () => {
-      if (!ack.checked) { toast("Bitte Checkbox bestätigen."); return; }
-      accepted = true;
-      notice.style.display = "none";
-      saveState();
-    });
-
-    function renderTabs() {
-      tabs.innerHTML = "";
-      clusterSelect.innerHTML = "";
-      CLUSTERS.forEach(c => {
-        const b = document.createElement("button");
-        b.type = "button";
-        b.className = "tab";
-        b.setAttribute("aria-selected", c.key === activeKey ? "true" : "false");
-        b.innerHTML = `<i data-lucide="${c.icon}"></i><span>${c.title}</span>`;
-        b.addEventListener("click", () => {
-          activeKey = c.key;
-          renderTabs();
-          renderQuestions();
-          saveStateThrottled();
-        });
-        tabs.appendChild(b);
-
-        const opt = document.createElement("option");
-        opt.value = c.key;
-        opt.textContent = c.title;
-        if (c.key === activeKey) opt.selected = true;
-        clusterSelect.appendChild(opt);
-      });
-      if (window.lucide) lucide.createIcons();
-    }
-
-    clusterSelect.addEventListener("change", (e) => {
-      activeKey = e.target.value;
-      renderTabs();
-      renderQuestions();
-      saveStateThrottled();
-    });
-
-    function currentQuestions() {
-      return CLUSTERS.find(x => x.key === activeKey)?.data || [];
-    }
-
-    function renderQuestions() {
-      [...form.querySelectorAll("section[data-ref]")].forEach(sec => {
-        const ref = sec.getAttribute("data-ref");
-        const ta = sec.querySelector("textarea");
-        const cb = sec.querySelector("input[type='checkbox'][data-select]");
-        if (ta) answersByRef[ref] = ta.value;
-        if (cb) selectedByRef[ref] = cb.checked;
-      });
-
-      const QUESTIONS = currentQuestions();
-      form.innerHTML = "";
-      QUESTIONS.forEach((item, idx) => {
-        const isMarked = !!bookmarks[item.ref];
-        const sec = document.createElement("section");
-        sec.className = "card q-card";
-        sec.setAttribute("data-ref", item.ref);
-        sec.innerHTML = `
-          <button type="button" class="bookmark ${isMarked?'active':''}" data-bm="${item.ref}">
-            <i data-lucide="bookmark" style="width:16px;height:16px;"></i>
-          </button>
-          <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
-            <input type="checkbox" data-select="${idx}" style="width:16px;height:16px;">
-            <span class="badge">${item.ref}</span>
-          </div>
-          <h3 style="font-weight:700;margin-bottom:8px;">${item.q}</h3>
-          <details class="tip">
-            <summary style="cursor:pointer;font-weight:600;">Musterlösung</summary>
-            <div style="margin-top:8px;font-size:12px;">${(item.tip||[]).map(t=>`<p>• ${t}</p>`).join("")}</div>
-          </details>
-          <textarea rows="4" style="width:100%;margin-top:8px;padding:10px;border-radius:6px;border:1px solid var(--nova-border);" placeholder="Deine Antwort …"></textarea>
-        `;
-        form.appendChild(sec);
-
-        const ta = sec.querySelector("textarea");
-        const cb = sec.querySelector("input[data-select]");
-        if (answersByRef[item.ref]) ta.value = answersByRef[item.ref];
-        if (selectedByRef[item.ref] != null) cb.checked = !!selectedByRef[item.ref];
-
-        ta.addEventListener("input", () => {
-          answersByRef[item.ref] = ta.value;
-          updateProgress();
-          saveStateThrottled();
-        });
-        cb.addEventListener("change", () => {
-          selectedByRef[item.ref] = cb.checked;
-          updateSelCount();
-          saveStateThrottled();
-        });
-
-        sec.querySelector("[data-bm]").addEventListener("click", () => {
-          bookmarks[item.ref] = !bookmarks[item.ref];
-          if (!bookmarks[item.ref]) delete bookmarks[item.ref];
-          localStorage.setItem(BOOKMARK_KEY, JSON.stringify(bookmarks));
-          sec.querySelector(".bookmark").classList.toggle("active", !!bookmarks[item.ref]);
-          updateBMCount();
-        });
-      });
-
-      if (window.lucide) lucide.createIcons();
-      updateSelCount();
-      updateProgress();
-      updateBMCount();
-    }
-
-    function updateSelCount() {
-      const n = Object.entries(selectedByRef).filter(([r,v]) => v).length;
-      selText.textContent = `${n} ausgewählt`;
-    }
-
-    function updateProgress() {
-      const allRefs = currentQuestions().map(q => q.ref);
-      const answered = allRefs.filter(r => (answersByRef[r]||"").trim().length > 0).length;
-      const total = allRefs.length || 1;
-      progressBar.style.width = Math.round((answered/total)*100) + "%";
-      progressTxt.textContent = `${answered} / ${total}`;
-    }
-
-    function updateBMCount() {
-      const n = Object.keys(bookmarks).length;
-      if (n > 0) {
-        bookmarkCount.textContent = n;
-        bookmarkCount.style.display = "inline-flex";
-      } else {
-        bookmarkCount.style.display = "none";
-      }
-    }
-
-    function buildPromptAll(list) {
-      return `Beurteile wohlwollend mehrere Kurzantworten (Ausbildung/Arbeitsrecht). Wenn Soll-Anzahl erfüllt, schreibe "passt".
-
-Schema je Frage (knapp):
-- Kurzfeedback (max. 2 Sätze; "passt" bei Erfüllung)
-- Richtige Lösung (max. 4 Bulletpoints)
-- Gesetz/§
-- 1 Praxistipp
-
-Fragen & Antworten:
-${list.map(a => `Q${a.nr} (${a.ref}): ${a.question}\nAntwort: ${a.answer || "(leer)"}`).join("\n\n")}`;
-    }
-
-    async function callAI(payload) {
-      const res = await fetch(relay, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
-      });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const t = await res.text();
-      try {
-        const j = JSON.parse(t);
-        return j.answer || j.content || j.result || t;
-      } catch {
-        return t;
-      }
-    }
-
-    submitBtn.addEventListener("click", async () => {
-      if (!accepted) { toast("Bitte Hinweis bestätigen."); return; }
-      const QUESTIONS = currentQuestions();
-      let selRefs = QUESTIONS.map(q => q.ref).filter(r => selectedByRef[r]);
-      if (selRefs.length === 0) {
-        selRefs = QUESTIONS.map(q => q.ref).filter(r => (answersByRef[r]||"").trim().length > 0);
-        if (selRefs.length === 0) { toast("Bitte wähle mind. eine Frage."); return; }
-      }
-
-      const list = selRefs.map((ref, i) => {
-        const q = QUESTIONS.find(x => x.ref === ref);
-        return { nr: i+1, ref: q.ref, question: q.q, answer: (answersByRef[ref]||"").trim() };
-      });
-
-      resultWrap.classList.remove("hidden");
-      aiResult.innerHTML = `<div style="color:var(--nova-muted);">KI erstellt Feedback …</div>`;
-      submitBtn.disabled = true;
-      const old = submitBtn.innerHTML;
-      submitBtn.innerHTML = `<svg style="width:16px;height:16px;animation:spin 1s linear infinite;" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none" stroke-dasharray="31.4 31.4" stroke-dashoffset="10"/></svg> Prüfen …`;
-
-      try {
-        const out = await callAI({ prompt: buildPromptAll(list) });
-        aiResult.innerHTML = window.marked ? marked.parse(out || "_Keine Antwort._") : (out || "_Keine Antwort._");
-        saveHistory(aiResult.innerHTML);
-        window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
-      } catch (e) {
-        aiResult.innerHTML = `<div style="color:#E53935;">Fehler (${String(e).replace(/[<>&]/g,"")}).</div>`;
-      } finally {
-        submitBtn.disabled = false;
-        submitBtn.innerHTML = old;
-        if (window.lucide) lucide.createIcons();
-      }
-    });
-
-    resetBtn.addEventListener("click", () => {
-      if (!confirm("Alle Eingaben im Cluster löschen?")) return;
-      currentQuestions().forEach(q => {
-        delete answersByRef[q.ref];
-        delete selectedByRef[q.ref];
-      });
-      renderQuestions();
-      saveState();
-      resultWrap.classList.add("hidden");
-      aiResult.innerHTML = "";
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    });
-
-    function saveState() {
-      try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify({
-          ts: Date.now(),
-          accepted,
-          activeKey,
-          answersByRef,
-          selectedByRef
-        }));
-      } catch {}
-    }
-
-    let tmr = null;
-    function saveStateThrottled() {
-      clearTimeout(tmr);
-      tmr = setTimeout(saveState, 400);
-    }
-
-    function toast(msg) {
-      toastEl.textContent = msg;
-      toastEl.style.display = "block";
-      clearTimeout(toast._t);
-      toast._t = setTimeout(() => toastEl.style.display = "none", 2600);
-    }
-
-    function openBM() {
-      bmBackdrop.classList.add("open");
-      bmModal.classList.add("open");
-      renderBM();
-    }
-
-    function closeBM() {
-      bmBackdrop.classList.remove("open");
-      bmModal.classList.remove("open");
-    }
-
-    bookmarksBtn.addEventListener("click", openBM);
-    bmBackdrop.addEventListener("click", closeBM);
-    bmClose.addEventListener("click", closeBM);
-
-    function renderBM() {
-      const refs = Object.keys(bookmarks).filter(r => bookmarks[r]);
-      bmList.innerHTML = refs.length ? "" : `<div style="text-align:center;color:var(--nova-muted);">Keine Markierungen.</div>`;
-      refs.forEach(ref => {
-        const ans = (answersByRef[ref] || "").trim();
-        const div = document.createElement("div");
-        div.className = "card";
-        div.style.padding = "12px";
-        div.innerHTML = `<div style="font-weight:700;margin-bottom:4px;">${ref}</div><div style="font-size:13px;color:var(--nova-muted);">${ans ? ans.slice(0,200)+"…" : "(keine Antwort)"}</div>`;
-        bmList.appendChild(div);
-      });
-    }
-
-    function openQL() {
-      qlBackdrop.classList.add("open");
-      qlModal.classList.add("open");
-      qlSearch.value = "";
-      renderQL("");
-      qlSearch.focus();
-    }
-
-    function closeQL() {
-      qlBackdrop.classList.remove("open");
-      qlModal.classList.remove("open");
-    }
-
-    function renderQL(q) {
-      const query = (q || "").toLowerCase().trim();
-      const list = query ? LAW_INDEX.filter(x => x.para.toLowerCase().includes(query) || x.law.toLowerCase().includes(query) || x.tags.some(t => t.includes(query))) : LAW_INDEX;
-      qlList.innerHTML = "";
-      if (!list.length) {
-        qlList.innerHTML = `<div style="text-align:center;color:var(--nova-muted);">Keine Treffer.</div>`;
-        return;
-      }
-      list.forEach(x => {
-        const row = document.createElement("div");
-        row.className = "card";
-        row.style.padding = "12px";
-        row.innerHTML = `
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
-            <div style="font-weight:700;">${x.law} ${x.para}</div>
-            <a class="btn" href="${x.link}" target="_blank" style="padding:4px 10px;font-size:12px;">PDF</a>
-          </div>
-          <div style="font-size:13px;color:var(--nova-muted);">${x.excerpt}</div>
-        `;
-        qlList.appendChild(row);
-      });
-    }
-
-    quickBtn.addEventListener("click", openQL);
-    qlBackdrop.addEventListener("click", closeQL);
-    qlClose.addEventListener("click", closeQL);
-    qlSearch.addEventListener("input", (e) => renderQL(e.target.value));
-
-    function openHist() {
-      histBackdrop.classList.add("open");
-      histModal.classList.add("open");
-      renderHist();
-    }
-
-    function closeHist() {
-      histBackdrop.classList.remove("open");
-      histModal.classList.remove("open");
-    }
-
-    historyBtn.addEventListener("click", openHist);
-    histBackdrop.addEventListener("click", closeHist);
-    histClose.addEventListener("click", closeHist);
-
-    function renderHist() {
-      const arr = loadHistory();
-      histList.innerHTML = "";
-      if (!arr.length) {
-        histList.innerHTML = `<div style="text-align:center;color:var(--nova-muted);">Noch keine Einträge.</div>`;
-        return;
-      }
-      arr.slice().reverse().forEach(h => {
-        const d = document.createElement("div");
-        d.className = "card";
-        d.style.padding = "12px";
-        d.innerHTML = `<div style="font-size:11px;color:var(--nova-muted);margin-bottom:4px;">${new Date(h.ts).toLocaleString()}</div><div style="font-size:13px;">${window.marked ? marked.parse(h.html) : h.html}</div>`;
-        histList.appendChild(d);
-      });
-    }
-
-    function loadHistory() {
-      try {
-        return JSON.parse(localStorage.getItem(HISTORY_KEY) || "[]");
-      } catch {
-        return [];
-      }
-    }
-
-    function saveHistory(html) {
-      const arr = loadHistory();
-      arr.push({ ts: Date.now(), html });
-      localStorage.setItem(HISTORY_KEY, JSON.stringify(arr));
-    }
-
-    renderTabs();
-    renderQuestions();
-  });
+  document.addEventListener("DOMContentLoaded",()=>{if(window.lucide)lucide.createIcons();if(window.marked)marked.setOptions({breaks:!0,gfm:!0});const e="/api/linda-proxy",t="BBIG_PRO_V1",a="BBIG_PRO_BM",o="BBIG_PRO_HIST",n=document.getElementById("form"),r=document.getElementById("progressBar"),s=document.getElementById("progressText"),i=document.getElementById("selText"),c=document.getElementById("submitBtn"),l=document.getElementById("resetBtn"),d=document.getElementById("timer"),m=document.getElementById("resultWrap"),u=document.getElementById("aiResult"),p=document.getElementById("toast"),g=document.getElementById("tabs"),h=document.getElementById("clusterSelect"),y=document.getElementById("ack"),f=document.getElementById("ackBtn"),b=document.getElementById("notice"),v=document.getElementById("bookmarksBtn"),k=document.getElementById("bookmarkCount"),w=document.getElementById("bmBackdrop"),x=document.getElementById("bmModal"),B=document.getElementById("bmClose"),S=document.getElementById("bmList"),E=document.getElementById("quickBtn"),L=document.getElementById("qlBackdrop"),T=document.getElementById("qlModal"),I=document.getElementById("qlClose"),C=document.getElementById("qlSearch"),N=document.getElementById("qlList"),A=document.getElementById("historyBtn"),M=document.getElementById("histBackdrop"),P=document.getElementById("histModal"),q=document.getElementById("histClose"),R=document.getElementById("histList"),j=document.getElementById("themeToggle"),D=[{ref:"V1",q:"Nenne vier Pflichtangaben im Berufsausbildungsvertrag.",tip:["§11 BBiG: Parteien, Beginn/Dauer, Ziel, Gliederung, Vergütung, Probezeit, Urlaub, Kündigung."]},{ref:"V2",q:"Drei Kernpunkte einer Ausbildungsordnung?",tip:["Berufsbild, Rahmenplan/Dauer, Prüfungen (§§4-5 BBiG)."]},{ref:"V3",q:"Probezeit: Dauer & Zweck?",tip:["Mind. 1, max. 4 Monate; Eignungsprüfung (§20 BBiG)."]},{ref:"V4",q:"Wer unterschreibt bei Minderjährigen?",tip:["Beide Sorgeberechtigte + Azubi (§10 BBiG, BGB)."]},{ref:"V5",q:"Berufsschulzeit U18 vs. ≥18?",tip:["U18: besondere Anrechnung (JArbSchG); Wege zählen (§15 BBiG)."]},{ref:"V6",q:"Ruhezeit Jugendliche?",tip:["Mind. 12 Std (JArbSchG)."]},{ref:"V7",q:"Angemessene Vergütung?",tip:["MiAV Untergrenze; Tarif/branchenüblich; Steigerung (§17 BBiG)."]},{ref:"V8",q:"Überstunden zulässig?",tip:["Nur ausbildungsdienlich; Vergütung/Ausgleich; Schutz beachten."]},{ref:"V9",q:"Betrieblicher Ausbildungsplan?",tip:["Umsetzung Rahmenplan; zeitl./sachl. Gliederung; Qualität."]},{ref:"V10",q:"Berichtsheft?",tip:["Zulassungsvoraussetzung; elektronisch möglich; Kontrolle (§13 BBiG)."]}],O=[{ref:"G1",q:"Jugendberufsagentur: Aufgabe?",tip:["U25 unterstützen; AA/Jobcenter/Kommunen."]},{ref:"G2",q:"Drei Argumente für Ausbildung?",tip:["Fachkräfte, Flexibilität, Innovation."]},{ref:"G3",q:"Personalplanung: Dimensionen?",tip:["Quantitativ, qualitativ, zeitlich."]},{ref:"G4",q:"Vier Recruiting-Wege?",tip:["Schulen, Social, Messen, Empfehlungen."]},{ref:"G5",q:"Auswahlprozess: Elemente?",tip:["Screening, Gespräch/Test, Entscheidung."]},{ref:"G6",q:"Drei Motive für Ausbildung?",tip:["Interesse, Unabhängigkeit, Perspektive."]},{ref:"G7",q:"Drei Kompetenzfelder?",tip:["Fachlich, sozial, persönlich."]},{ref:"G8",q:"Eignung prüfen (wie)?",tip:["Zeugnisse, Tests, Beobachtung."]},{ref:"G9",q:"Nachhaltigkeit in Ausbildung?",tip:["Lernziele/Projekte; Rolle Ausbilder."]},{ref:"G10",q:"SDGs: Was & Nutzen?",tip:["17 globale Ziele; Orientierung."]}],F=[{ref:"R1",q:"Art.12 GG: Garantie?",tip:["Freie Wahl Beruf/Ausbildung; einschränkbar."]},{ref:"R2",q:"AGG §1: Ziel?",tip:["Benachteiligungen verhindern."]},{ref:"R3",q:"AGG §2: Anwendung Ausbildung?",tip:["Zugang zu Berufsbildung."]},{ref:"R4",q:"§1 BBiG: Vier Säulen?",tip:["Vorbereitung, Ausbildung, Fortbildung, Umschulung."]},{ref:"R5",q:"BvB: Zweck?",tip:["Heranführung; Basis Handlungsfähigkeit."]},{ref:"R6",q:"EQ: Was & wer?",tip:["Langzeitpraktikum SGB III; junge Bewerbende."]},{ref:"R7",q:"MiAV & Tarif?",tip:["MiAV Untergrenze; Tarif maßgeblich."]},{ref:"R8",q:"Günstigkeitsprinzip?",tip:["Abweichungen nur zugunsten Beschäftigter."]},{ref:"R9",q:"Nachweis: Rolle Zulassung?",tip:["Kann gefordert werden; fehlend kann ausschließen."]},{ref:"R10",q:"§28 BBiG: Durchführung?",tip:["Eignung; moderne Formen ok."]}],G=[{ref:"A1",q:"U18: Arbeitszeit?",tip:["8 h/Tag, 40 h/W (Ausnahmen)."]},{ref:"A2",q:"U18: Pausen?",tip:[">4,5-6h: 30 Min; >6h: 60 Min."]},{ref:"A3",q:"U18: Ruhezeit?",tip:["Mind. 12 Std."]},{ref:"A4",q:"U18: Sonn-/Feiertag?",tip:["Verbot; Ausnahmen; 2 freie Sonntage/Monat."]},{ref:"A5",q:"≥18: Arbeitszeit ArbZG?",tip:["8 h/Tag; bis 10 mit Ausgleich."]},{ref:"A6",q:"≥18: Pausen/Ruhe?",tip:["6-9h: 30 Min; >9h: 45 Min; 11h Ruhe."]},{ref:"A7",q:"Mehrarbeit Doku?",tip:[">8 h/Tag; 2 Jahre (§16 ArbZG)."]},{ref:"A8",q:"Urlaub BUrlG?",tip:["20 AT (4 Wochen) 5-Tage-Woche."]},{ref:"A9",q:"Urlaub U18?",tip:["u16:30 WT; u17:27; u18:25; ≥18:24 WT."]},{ref:"A10",q:"§15 BBiG: Freistellung?",tip:["Unterricht/Prüfungen; Wegezeiten."]}],H=[{ref:"O1",q:"Vollständige Handlung: Schritte?",tip:["Informieren, Planen, Entscheiden, Ausführen, Kontrollieren, Bewerten."]},{ref:"O2",q:"Lernzielebenen?",tip:["Richt (Gebiet), Grob (Fähigkeit), Fein (Teilziel)."]},{ref:"O3",q:"Sachliche Gliederung: Kriterien?",tip:["Einheiten, Überschaubarkeit, Probezeit nutzbar."]},{ref:"O4",q:"Zeitliche Gliederung: Kriterien?",tip:["Prüfungstermine, Reihenfolge, Block/Urlaub."]},{ref:"O5",q:"Pflichten §11/13/14?",tip:["Gliederung; Nachweis; Lernziele."]},{ref:"O6",q:"Versetzungsplan: Nutzen?",tip:["Steuerung Stationen; Lernziele."]},{ref:"O7",q:"Digitale Tools: Vorteile?",tip:["Transparenz; Feedback/Nachverfolgung."]},{ref:"O8",q:"Qualitätssicherung: Prüfung?",tip:["Zwischengespräche, Zielabgleich."]},{ref:"O9",q:"Verkürzung: Wann?",tip:["Vorbildung/Leistung; Einvernehmen (§8 BBiG)."]},{ref:"O10",q:"Teilzeit: Funktion?",tip:["Reduzierte Zeiten; Lernziel bleibt (§7a)."]}],U=[{ref:"B1",q:"Beteiligte nennen.",tip:["Ausbildende, Ausbilder, Beauftragte, Azubis, IHK, Eltern."]},{ref:"B2",q:"Eignung Betrieb?",tip:["Ausstattung, Plan, Plätze/Schutz."]},{ref:"B3",q:"Fachkraftbegriff?",tip:["Abschluss oder 2× Zeit Tätigkeit."]},{ref:"B4",q:"Relation FK:Azubis?",tip:["1-2:1; 3-5:2; 6-8:3; +3 FK:+1 Azubi."]},{ref:"B5",q:"Pflichten Ausbildende §14?",tip:["Lernziele, Schutz, Freistellung, Zeugnis."]},{ref:"B6",q:"Rolle Ausbilder?",tip:["Planung, Durchführung, Kontrolle, Coaching."]},{ref:"B7",q:"Beauftragte: Aufgabe?",tip:["Teilqualifikationen vermitteln (§28(3))."]},{ref:"B8",q:"Persönliche Eignung: Fehlt wann?",tip:["Wiederholte JArbSchG-Verstöße."]},{ref:"B9",q:"Kündigung: Regeln?",tip:["Probezeit: jederzeit (§22(1)); danach: wichtiger Grund/4 Wochen."]},{ref:"B10",q:"Mutterschutz: Regeln?",tip:["MuSchG: Schutzfristen, Verbote, Kündigungsschutz."]}],K=[{ref:"M1",q:"BR: Rechte BBiG?",tip:["§96 Beratung; §98 Mitbestimmung/Bestellung."]},{ref:"M2",q:"§87 BetrVG: Themen?",tip:["Arbeitszeit, Ordnung, Vergütung, IT."]},{ref:"M3",q:"Einstellung Azubis: BR?",tip:["§99: Unterrichten, Unterlagen, Zustimmung."]},{ref:"M4",q:"JAV: Hauptaufgaben?",tip:["Überwachung & Initiativen Jugend/Azubis."]},{ref:"M5",q:"JAV Wahl: Wer?",tip:["u18 + Azubis; wählbar <25; BR ausgeschlossen."]},{ref:"M6",q:"JAV Größe: Abhängig von?",tip:["Zahl Wahlberechtigter (§62 BetrVG)."]},{ref:"M7",q:"BR Widerspruch: Wann?",tip:["Fehlende Eignung (§98(2))."]},{ref:"M8",q:"Nichteinigung: Lösung?",tip:["Einigungsstelle."]},{ref:"M9",q:"Nachteilsausgleich: Unterstützung?",tip:["Zeit/Hilfsmittel auf Antrag."]},{ref:"M10",q:"Ausland: Möglich?",tip:["Ja; Ziel wahren; anrechenbar (§2(3) BBiG)."]}],V=[{ref:"P1",q:"Zwischenprüfung §48?",tip:["Wissensstand; Zulassung (§43)."]},{ref:"P2",q:"Ausbildungsende §21?",tip:["Ablauf Zeit oder Bekanntgabe Bestehen."]},{ref:"P3",q:"Zulassung: Nachweis?",tip:["Kann gefordert werden; fehlend = Ausschluss."]},{ref:"P4",q:"Nachteilsausgleich: Beispiele?",tip:["Zeit, Hilfsmittel, angepasste Aufgaben."]},{ref:"P5",q:"Prüfungsrecht: Prinzipien?",tip:["Rechtsgrundlagen, Gleichbehandlung, Verhältnismäßigkeit."]},{ref:"P6",q:"§15 BBiG: Prüfung?",tip:["Teilnahme; Vortag schriftliche Abschlussprüfung."]},{ref:"P7",q:"Wiederholung: Möglich?",tip:["Ja; Verlängerung §8(2) möglich."]},{ref:"P8",q:"Doku Vorbereitung?",tip:["Plan, Nachweise, Beurteilungen, Berichtsheft."]},{ref:"P9",q:"Verlängerung: Wann?",tip:["Nichtbestehen/besondere Fälle (§8(2))."]},{ref:"P10",q:"Versetzung: Zulässig?",tip:["Ja, wenn ausbildungsdienlich/zumutbar (§14)."]}],W=[{ref:"D1",q:"DSGVO: Drei Grundsätze?",tip:["Zweckbindung, Datenminimierung, Transparenz."]},{ref:"D2",q:"KI-Vorsicht?",tip:["Keine personenbezogenen/sensiblen Daten."]},{ref:"D3",q:"Betriebsgeheimnis: Umgang?",tip:["Verschwiegenheit; Schulung."]},{ref:"D4",q:"Doku DSGVO?",tip:["VVT, TOMs, Schulungsnachweise."]},{ref:"D5",q:"Foto/Video: Beachten?",tip:["Einwilligung/Betroffenenrechte."]},{ref:"D6",q:"AGG Recruiting: Fehler?",tip:["Diskriminierung (Alter/Geschlecht/Religion)."]},{ref:"D7",q:"SoMe Screening: Achten auf?",tip:["Datenschutz/Erforderlichkeit/Transparenz."]},{ref:"D8",q:"Bewerbungen: Aufbewahrung?",tip:["6 Monate (AGG), dann löschen."]},{ref:"D9",q:"Datenschutz: Pflichten?",tip:["DSGVO/BDSG; Unterweisung dokumentieren."]},{ref:"D10",q:"Insolvenz: Was passiert?",tip:["Fortführung/Anschluss/IHK; ggf. Insolvenzgeld."]}],z=[{ref:"S1",q:"BIBB: Aufgaben?",tip:["Beratung, Forschung (§90 BBiG)."]},{ref:"S2",q:"AO: Wer erlässt?",tip:["Fachministerien/BBiG; BIBB wirkt mit."]},{ref:"S3",q:"Lernorte §2?",tip:["Betrieb, Schule, ggf. weitere."]},{ref:"S4",q:"Rahmenplan: Funktion?",tip:["Zeitlich-sachl. Struktur; Mindestinhalte."]},{ref:"S5",q:"Kammern: Rolle?",tip:["Zuständige Stelle: Eintragung, Beratung, Prüfungen."]},{ref:"S6",q:"Nicht tarifgebunden: Vergütung?",tip:["Anlehnung Tarife; MiAV beachten."]},{ref:"S7",q:"Rechtsquellen: Hierarchie?",tip:["EU/GG → Gesetze → Tarif → BV → Vertrag."]},{ref:"S8",q:"Nebentätigkeit: Norm?",tip:["Art. 12 GG."]},{ref:"S9",q:"§1 BBiG: Säulen?",tip:["Vorbereitung, Ausbildung, Fortbildung, Umschulung."]},{ref:"S10",q:"§28 BBiG: Durchführung?",tip:["Eignung; moderne Formen ok."]}],J=[{key:"core",title:"Kern (V1-V10)",icon:"layers",data:D},{key:"bas",title:"Grundlagen (G1-G10)",icon:"users",data:O},{key:"recht",title:"Recht (R1-R10)",icon:"scale",data:F},{key:"az",title:"Arbeitszeit (A1-A10)",icon:"clock",data:G},{key:"orga",title:"Organisation (O1-O10)",icon:"calendar",data:H},{key:"bet",title:"Beteiligte (B1-B10)",icon:"id-card",data:U},{key:"mitb",title:"Mitbestimmung (M1-M10)",icon:"handshake",data:K},{key:"pruef",title:"Prüfung (P1-P10)",icon:"file-check",data:V},{key:"ds",title:"Datenschutz (D1-D10)",icon:"shield",data:W},{key:"sys",title:"System (S1-S10)",icon:"building",data:z}],$=[{law:"BBiG",para:"§11",tags:["vertrag"],excerpt:"Niederschrift wesentlicher Inhalte.",link:"https://www.gesetze-im-internet.de/bbig_2005/BBiG.pdf"},{law:"BBiG",para:"§20",tags:["probezeit"],excerpt:"Probezeit 1-4 Monate.",link:"https://www.gesetze-im-internet.de/bbig_2005/BBiG.pdf"},{law:"BBiG",para:"§15",tags:["freistellung"],excerpt:"Freistellung; Wegezeiten.",link:"https://www.gesetze-im-internet.de/bbig_2005/BBiG.pdf"},{law:"BBiG",para:"§17",tags:["vergütung"],excerpt:"Angemessene Vergütung; MiAV.",link:"https://www.gesetze-im-internet.de/bbig_2005/BBiG.pdf"},{law:"JArbSchG",para:"§8-15",tags:["arbeitszeit"],excerpt:"Arbeitszeit, Pausen, Ruhezeit 12h.",link:"https://www.gesetze-im-internet.de/jarbschg/JArbSchG.pdf"},{law:"ArbZG",para:"§3-5",tags:["arbeitszeit"],excerpt:"8h/Tag, Pausen, 11h Ruhe.",link:"https://www.gesetze-im-internet.de/arbzg/BJNR117100994.html"}];let Q=!1,X="core",Y={},Z={},_={};!function(){try{const e=JSON.parse(localStorage.getItem(t)||"{}");e&&"object"==typeof e&&(Q=!!e.accepted,X=e.activeKey||"core",Y=e.answersByRef||{},Z=e.selectedByRef||{})}catch{}try{_=JSON.parse(localStorage.getItem(a)||"{}")}catch{}Q&&(b.style.display="none",y.checked=!0)}();let ee=Date.now();setInterval(()=>{const e=Math.floor((Date.now()-ee)/1e3);d.textContent=`${String(Math.floor(e/60)).padStart(2,"0")}:${String(e%60).padStart(2,"0")}`},1e3);const te=localStorage.getItem("pro_theme")||"light";"dark"===te&&document.documentElement.classList.add("dark"),j.addEventListener("click",()=>{document.documentElement.classList.toggle("dark"),localStorage.setItem("pro_theme",document.documentElement.classList.contains("dark")?"dark":"light"),window.lucide&&lucide.createIcons()}),f.addEventListener("click",()=>{y.checked?(Q=!0,b.style.display="none",ce()):ae("❌ Bitte die Checkbox bestätigen.")});const ae=e=>{p.textContent=e,p.style.display="block",clearTimeout(ae._t),ae._t=setTimeout(()=>p.style.display="none",2600)},oe=()=>J.find(e=>e.key===X)?.data||[],ne=()=>{g.innerHTML="",h.innerHTML="",J.forEach(e=>{const t=document.createElement("button");t.type="button",t.className="tab",t.setAttribute("aria-selected",e.key===X?"true":"false"),t.innerHTML=`<i data-lucide="${e.icon}"></i><span>${e.title}</span>`,t.addEventListener("click",()=>{X=e.key,ne(),re(),le()}),g.appendChild(t);const a=document.createElement("option");a.value=e.key,a.textContent=e.title,e.key===X&&(a.selected=!0),h.appendChild(a)}),window.lucide&&lucide.createIcons()};function re(){[...n.querySelectorAll("section[data-ref]")].forEach(e=>{const t=e.getAttribute("data-ref"),a=e.querySelector("textarea"),o=e.querySelector("input[type='checkbox'][data-select]");a&&(Y[t]=a.value),o&&(Z[t]=o.checked)});const e=oe();n.innerHTML="",e.forEach((e,t)=>{const a=!!_[e.ref],o=document.createElement("section");o.className="card q-card",o.setAttribute("data-ref",e.ref),o.innerHTML=`\n          <button type="button" class="bookmark ${a?"active":""}" data-bm="${e.ref}">\n            <i data-lucide="bookmark" style="width:18px;height:18px;${a?"fill:white;stroke:white;":""}"></i>\n          </button>\n          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">\n            <input type="checkbox" data-select="${t}" style="width:18px;height:18px;cursor:pointer;">\n            <span class="badge">${e.ref}</span>\n          </div>\n          <h3 style="font-weight:700;margin-bottom:12px;">${e.q}</h3>\n          <details class="tip">\n            <summary style="cursor:pointer;font-weight:600;">Musterlösung</summary>\n            <div style="margin-top:12px;font-size:13px;">${(e.tip||[]).map(e=>`<p>• ${e}</p>`).join("")}</div>\n          </details>\n          <textarea rows="5" style="width:100%;margin-top:14px;padding:14px;border-radius:var(--radius);border:1px solid var(--border);font-size:14px;resize:vertical;" placeholder="Deine Antwort …"></textarea>\n        `,n.appendChild(o);const r=o.querySelector("textarea"),s=o.querySelector("input[data-select]");Y[e.ref]&&(r.value=Y[e.ref]),null!=Z[e.ref]&&(s.checked=!!Z[e.ref]),r.addEventListener("input",()=>{Y[e.ref]=r.value,se(),le()}),s.addEventListener("change",()=>{Z[e.ref]=s.checked,ie(),le()}),o.querySelector("[data-bm]").addEventListener("click",()=>{_[e.ref]=!_[e.ref],_[e.ref]||delete _[e.ref],localStorage.setItem(a,JSON.stringify(_)),o.querySelector(".bookmark").classList.toggle("active",!!_[e.ref]),de()})}),window.lucide&&lucide.createIcons(),ie(),se(),de()}function se(){const e=oe(),t=e.map(e=>e.ref).filter(e=>(Y[e]||"").trim().length>0).length,a=e.length||1;r.style.width=Math.round(t/a*100)+"%",s.textContent=`${t} / ${e.length}`}function ie(){const e=Object.entries(Z).filter(([e,t])=>t).length;i.textContent=`${e} ausgewählt`}function ce(){try{localStorage.setItem(t,JSON.stringify({ts:Date.now(),accepted:Q,activeKey:X,answersByRef:Y,selectedByRef:Z}))}catch{}}let le=null;le=(e=>{clearTimeout(le),le=setTimeout(ce,400)}),h.addEventListener("change",e=>{X=e.target.value,ne(),re(),le()}),c.addEventListener("click",async()=>{if(!Q)return void ae("Bitte Hinweis bestätigen.");const t=oe();let a=t.map(e=>e.ref).filter(e=>Z[e]);if(0===a.length&&(a=t.map(e=>e.ref).filter(e=>(Y[e]||"").trim().length>0),0===a.length))return void ae("Bitte wähle mind. eine Frage.");const n=a.map((e,a)=>{const o=t.find(t=>t.ref===e);return{nr:a+1,ref:o.ref,question:o.q,answer:(Y[e]||"").trim()}});m.classList.remove("hidden"),u.innerHTML='<div style="color:var(--ink-muted);">KI erstellt Feedback …</div>',c.disabled=!0;const r=c.innerHTML;c.innerHTML='<div class="loading-spinner"></div> Prüfen …';try{const t=await(async t=>{const a=await fetch(e,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(t)});if(!a.ok)throw new Error(`HTTP ${a.status}`);const o=await a.text();try{const e=JSON.parse(o);return e.answer||e.content||e.result||o}catch{return o}})({prompt:`Beurteile wohlwollend mehrere Kurzantworten (BBiG/Arbeitsrecht). Pro Frage:\n\n**[Frage-Nummer] [Ref]**\n📊 **Bewertung:** [✅ Gut / ⚠️ Teilweise / ❌ Unvollständig]\n\n**Deine Antwort:** [Zusammenfassung in 1-2 Sätzen]\n\n**Vollständige Lösung:**\n${n.map(e=>`→ Punkt 1\n→ Punkt 2\n→ Punkt 3`).join("\n")}\n\n**Gesetzesgrundlage:** <span class="law-ref">§XX BBiG/JArbSchG</span>\n\n**💡 Praxistipp:** [1 Satz]\n\n---\n\nFragen:\n${n.map(e=>`**Q${e.nr} (${e.ref}):** ${e.question}\n**Antwort:** ${e.answer||"(leer)"}`).join("\n\n")}`});u.innerHTML=window.marked?marked.parse(t||"_Keine Antwort._"):t||"_Keine Antwort._",function(e){const t=function(){try{return JSON.parse(localStorage.getItem(o)||"[]")}catch{return[]}}();t.push({ts:Date.now(),html:e}),localStorage.setItem(o,JSON.stringify(t))}(u.innerHTML),window.scrollTo({top:document.body.scrollHeight,behavior:"smooth"})}catch(e){u.innerHTML=`<div style="color:#E53935;">Fehler (${String(e).replace(/[<>&]/g,"")}).</div>`}finally{c.disabled=!1,c.innerHTML=r,window.lucide&&lucide.createIcons()}}),l.addEventListener("click",()=>{confirm("Alle Eingaben im Cluster löschen?")&&(oe().forEach(e=>{delete Y[e.ref],delete Z[e.ref]}),re(),ce(),m.classList.add("hidden"),u.innerHTML="",window.scrollTo({top:0,behavior:"smooth"}))}),v.addEventListener("click",()=>{w.classList.add("open"),x.classList.add("open"),function(){const e=Object.keys(_).filter(e=>_[e]);S.innerHTML=e.length?"":'\n      <div style="text-align:center;color:var(--ink-muted);">Keine Markierungen.</div>\n    ',e.forEach(e=>{const t=(Y[e]||"").trim(),a=document.createElement("div");a.className="card",a.style.padding="12px",a.innerHTML=`<div style="font-weight:700;margin-bottom:4px;">${e}</div><div style="font-size:13px;color:var(--ink-muted);">${t?t.slice(0,200)+"…":"(keine Antwort)"}</div>`,S.appendChild(a)})}()}),w.addEventListener("click",()=>{w.classList.remove("open"),x.classList.remove("open")}),B.addEventListener("click",()=>{w.classList.remove("open"),x.classList.remove("open")}),E.addEventListener("click",()=>{L.classList.add("open"),T.classList.add("open"),C.value="",me(""),C.focus()}),L.addEventListener("click",()=>{L.classList.remove("open"),T.classList.remove("open")}),I.addEventListener("click",()=>{L.classList.remove("open"),T.classList.remove("open")}),C.addEventListener("input",e=>me(e.target.value));const me=e=>{const t=(e||"").toLowerCase().trim(),a=t?$.filter(e=>e.para.toLowerCase().includes(t)||e.law.toLowerCase().includes(t)||e.tags.some(e=>e.includes(t))):$;if(N.innerHTML="",!a.length)return void(N.innerHTML='<div style="text-align:center;color:var(--ink-muted);">Keine Treffer.</div>');a.forEach(e=>{const t=document.createElement("div");t.className="card",t.style.padding="12px",t.innerHTML=`\n      <div style="display:flex;justify-content:space-between;margin-bottom:4px;">\n        <div style="font-weight:700;">${e.law} ${e.para}</div>\n        <a class="btn" href="${e.link}" target="_blank" style="padding:4px 10px;font-size:12px;">PDF</a>\n      </div>\n      <div style="font-size:13px;color:var(--ink-muted);">${e.excerpt}</div>\n    `,N.appendChild(t)})};function de(){const e=Object.keys(_).length;e>0?(k.textContent=e,k.style.display="inline-flex"):k.style.display="none"}A.addEventListener("click",()=>{M.classList.add("open"),P.classList.add("open"),function(){const e=function(){try{return JSON.parse(localStorage.getItem(o)||"[]")}catch{return[]}}();if(R.innerHTML="",!e.length)return void(R.innerHTML='<div style="text-align:center;color:var(--ink-muted);">Noch keine Einträge.</div>');e.slice().reverse().forEach(e=>{const t=document.createElement("div");t.className="card",t.style.padding="12px",t.innerHTML=`<div style="font-size:11px;color:var(--ink-muted);margin-bottom:4px;">${new Date(e.ts).toLocaleString()}</div><div style="font-size:13px;">${window.marked?marked.parse(e.html):e.html}</div>`,R.appendChild(t)})}()}),M.addEventListener("click",()=>{M.classList.remove("open"),P.classList.remove("open")}),q.addEventListener("click",()=>{M.classList.remove("open"),P.classList.remove("open")}),ne(),re()});
   </script>
 </body>
 </html>
