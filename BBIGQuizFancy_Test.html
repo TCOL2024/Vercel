@@ -18,282 +18,382 @@
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
 
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 
     :root{
-      /* metafinanz-inspired Color Palette */
-      --mf-blue: #0066cc;
-      --mf-blue-dark: #004a99;
-      --mf-blue-light: #3d8bd9;
-      --mf-gray: #f5f7fa;
-      --mf-gray-dark: #e8eaed;
-      --mf-text: #1a1a1a;
-      --mf-text-muted: #6c757d;
+      /* metafinanz Professional Color Palette */
+      --mf-primary: #005eb8;
+      --mf-primary-dark: #004a93;
+      --mf-primary-light: #1976d2;
+      --mf-secondary: #00a0e3;
+      --mf-accent: #00d4aa;
+      --mf-gray-50: #fafbfc;
+      --mf-gray-100: #f5f7fa;
+      --mf-gray-200: #e8ecf1;
+      --mf-gray-300: #d1d9e3;
+      --mf-gray-400: #98a6b8;
+      --mf-gray-500: #6b7a8f;
+      --mf-gray-600: #4d5d70;
+      --mf-gray-700: #354152;
+      --mf-gray-800: #1f2937;
+      --mf-gray-900: #0f172a;
       
-      --surface:#ffffff; 
-      --surface-2:#f6f8fb; 
-      --ink:#1a1a1a; 
-      --muted:#6c757d; 
-      --border:#e5e7eb;
-      --brand:#0066cc; 
-      --brand-2:#004a99; 
-      --ok:#10b981; 
-      --warn:#f59e0b; 
-      --error:#ef4444;
-      --radius:12px; 
-      --radius-sm:8px; 
-      --shadow-1:0 2px 8px rgba(0,0,0,.04), 0 1px 2px rgba(0,0,0,.06);
-      --shadow-hover:0 4px 16px rgba(0,0,0,.08), 0 2px 4px rgba(0,0,0,.04);
+      --surface: #ffffff; 
+      --surface-2: #fafbfc; 
+      --surface-3: #f5f7fa;
+      --ink: #1f2937; 
+      --ink-light: #4d5d70;
+      --muted: #6b7a8f; 
+      --border: #e8ecf1;
+      --brand: #005eb8; 
+      --brand-2: #004a93; 
+      --brand-light: #1976d2;
+      --success: #00d4aa; 
+      --warning: #ff9800; 
+      --error: #e53935;
+      
+      --radius: 16px; 
+      --radius-lg: 20px;
+      --radius-sm: 12px; 
+      --radius-xs: 8px;
+      
+      --shadow-sm: 0 1px 2px rgba(0,0,0,.04);
+      --shadow-md: 0 4px 12px rgba(0,0,0,.06), 0 1px 3px rgba(0,0,0,.04);
+      --shadow-lg: 0 8px 24px rgba(0,0,0,.08), 0 2px 6px rgba(0,0,0,.04);
+      --shadow-xl: 0 16px 48px rgba(0,0,0,.1), 0 4px 12px rgba(0,0,0,.06);
+      --shadow-hover: 0 12px 32px rgba(0,94,184,.12), 0 4px 8px rgba(0,0,0,.06);
     }
     
     html.dark {
       color-scheme: dark;
-      --surface:#0f172a; 
-      --surface-2:#0b1327; 
-      --ink:#e5e7eb; 
-      --muted:#9aa6b2; 
-      --border:#1f2937;
-      --brand:#3d8bd9;
-      --brand-2:#0066cc;
+      --surface: #0f172a; 
+      --surface-2: #1e293b; 
+      --surface-3: #334155;
+      --ink: #f1f5f9; 
+      --ink-light: #cbd5e1;
+      --muted: #94a3b8; 
+      --border: #334155;
+      --brand: #1976d2;
+      --brand-2: #005eb8;
+      --brand-light: #42a5f5;
     }
     
     html.dark body {
-      background: linear-gradient(to bottom, #0b1220, #0b1220 40%, #111827 100%);
+      background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
     }
     
-    * { box-sizing: border-box; }
+    * { 
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
     
     html, body { 
       font-size: 16px; 
       font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
       -webkit-font-smoothing: antialiased;
       -moz-osx-font-smoothing: grayscale;
+      font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
     }
     
     @media (max-width: 640px){ 
-      html, body { font-size: 17px; } 
+      html, body { font-size: 15px; } 
     }
 
     body{ 
-      background: linear-gradient(to bottom, #ffffff, #f5f7fa); 
+      background: linear-gradient(135deg, #fafbfc 0%, #f5f7fa 50%, #ffffff 100%); 
       color: var(--ink);
-      transition: background 0.3s ease, color 0.3s ease;
+      transition: background 0.4s cubic-bezier(0.4, 0, 0.2, 1), color 0.3s ease;
       min-height: 100vh;
     }
     
     .container{ 
-      max-width: 1200px; 
+      max-width: 1400px; 
       margin-inline: auto; 
-      padding-inline: 1rem; 
+      padding-inline: clamp(1rem, 4vw, 2rem);
     }
     
     .card{ 
       background: var(--surface); 
       border-radius: var(--radius); 
-      box-shadow: var(--shadow-1);
+      box-shadow: var(--shadow-md);
       border: 1px solid var(--border);
-      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      overflow: hidden;
     }
     
     .card:hover {
       box-shadow: var(--shadow-hover);
-      transform: translateY(-1px);
+      transform: translateY(-2px);
+      border-color: var(--brand);
+    }
+    
+    .card-elevated {
+      box-shadow: var(--shadow-lg);
     }
     
     .chip{ 
-      font-size:12px; 
-      padding:4px 12px; 
-      border-radius:999px; 
-      border:1px solid var(--border); 
-      color:var(--muted); 
-      background:var(--surface-2); 
+      font-size: 12px; 
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      padding: 6px 14px; 
+      border-radius: 999px; 
+      border: 1px solid var(--border); 
+      color: var(--muted); 
+      background: var(--surface-2); 
       transition: all 0.2s ease;
-      font-weight: 500;
+      text-transform: uppercase;
+    }
+    
+    .chip:hover {
+      background: var(--surface-3);
+      border-color: var(--brand);
+      color: var(--brand);
     }
     
     .btn{ 
-      display:inline-flex; 
-      align-items:center; 
-      gap:.5rem; 
-      padding:.65rem 1rem; 
+      display: inline-flex; 
+      align-items: center; 
+      justify-content: center;
+      gap: .5rem; 
+      padding: .75rem 1.25rem; 
       border-radius: var(--radius-sm); 
-      border:1px solid var(--border); 
+      border: 1px solid var(--border); 
       background: var(--surface); 
       color: var(--ink); 
-      cursor:pointer;
-      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      font-weight: 600;
       font-size: 14px;
       text-decoration: none;
+      letter-spacing: 0.01em;
+      white-space: nowrap;
     }
     
     .btn:hover:not(:disabled){ 
-      background:var(--surface-2); 
+      background: var(--surface-2); 
       transform: translateY(-1px); 
-      box-shadow: 0 4px 8px rgba(0,0,0,.08);
+      box-shadow: var(--shadow-md);
+      border-color: var(--brand);
+    }
+    
+    .btn:active:not(:disabled) {
+      transform: translateY(0);
     }
     
     .btn:disabled {
-      opacity: 0.6;
+      opacity: 0.5;
       cursor: not-allowed;
     }
     
     .btn-primary{ 
-      border-color:transparent; 
-      background: var(--brand);
-      color:#fff; 
-      box-shadow: 0 2px 8px rgba(0, 102, 204, 0.25);
+      border-color: transparent; 
+      background: linear-gradient(135deg, var(--brand) 0%, var(--brand-2) 100%);
+      color: #fff; 
+      box-shadow: 0 4px 12px rgba(0, 94, 184, 0.3);
     }
     
     .btn-primary:hover:not(:disabled){ 
-      background: var(--brand-2);
-      box-shadow: 0 4px 12px rgba(0, 102, 204, 0.35); 
-      transform: translateY(-1px);
+      background: linear-gradient(135deg, var(--brand-2) 0%, var(--brand) 100%);
+      box-shadow: 0 6px 20px rgba(0, 94, 184, 0.4); 
+      transform: translateY(-2px);
     }
     
-    .btn-ghost{ background:transparent; border:none; }
-    .btn-sm{ padding:.5rem .7rem; font-size: 13px; }
-    .btn-lg{ padding:.85rem 1.2rem; font-size: 15px; }
+    .btn-secondary {
+      background: var(--mf-secondary);
+      border-color: transparent;
+      color: #fff;
+    }
+    
+    .btn-secondary:hover:not(:disabled) {
+      background: var(--brand-light);
+      box-shadow: var(--shadow-md);
+    }
+    
+    .btn-ghost{ 
+      background: transparent; 
+      border: none; 
+    }
+    
+    .btn-ghost:hover:not(:disabled) {
+      background: var(--surface-2);
+    }
+    
+    .btn-sm{ 
+      padding: .5rem .9rem; 
+      font-size: 13px; 
+    }
+    
+    .btn-lg{ 
+      padding: 1rem 1.5rem; 
+      font-size: 15px;
+      font-weight: 700;
+    }
     
     .btn:focus-visible{ 
-      outline:3px solid rgba(0, 102, 204, 0.3); 
-      outline-offset:2px; 
+      outline: 3px solid rgba(0, 94, 184, 0.3); 
+      outline-offset: 2px; 
     }
     
     .progress-outer{ 
-      height:8px; 
-      border-radius:999px; 
-      background:var(--mf-gray); 
-      overflow:hidden; 
+      height: 10px; 
+      border-radius: 999px; 
+      background: var(--mf-gray-200); 
+      overflow: hidden;
+      box-shadow: inset 0 1px 3px rgba(0,0,0,.08);
     }
     
     html.dark .progress-outer { 
-      background:#1e293b; 
+      background: #1e293b; 
     }
     
     .progress-inner{ 
-      height:100%; 
-      width:0%; 
-      border-radius:999px; 
-      background: linear-gradient(90deg, var(--brand), var(--ok)); 
-      transition:width .3s ease; 
+      height: 100%; 
+      width: 0%; 
+      border-radius: 999px; 
+      background: linear-gradient(90deg, var(--brand), var(--mf-secondary), var(--success)); 
+      transition: width .4s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 0 12px rgba(0, 94, 184, 0.4);
     }
     
     .q-badge{ 
-      background: #e6f2ff;
+      background: linear-gradient(135deg, #e3f2fd, #f0f7ff);
       color: var(--brand); 
-      border-color: #b3d9ff;
+      border: 1px solid #bbdefb;
+      font-weight: 600;
     }
     
     html.dark .q-badge {
-      background: rgba(61,139,217,.15);
-      color: #7dd3fc;
+      background: linear-gradient(135deg, rgba(25,118,210,.15), rgba(0,160,227,.1));
+      color: #64b5f6;
+      border-color: rgba(25,118,210,.3);
     }
     
     .rubric{ 
-      border:1px dashed var(--border); 
-      border-radius:var(--radius-sm); 
-      padding:.6rem .75rem; 
-      background:var(--surface-2); 
+      border: 2px dashed var(--border); 
+      border-radius: var(--radius-sm); 
+      padding: .8rem 1rem; 
+      background: var(--surface-2); 
+      transition: all 0.3s ease;
+    }
+    
+    .rubric:hover {
+      border-color: var(--brand);
+      background: var(--surface-3);
     }
     
     .rubric .bar{ 
-      height:6px; 
-      background:var(--mf-gray-dark); 
-      border-radius:999px; 
-      overflow:hidden; 
+      height: 8px; 
+      background: var(--mf-gray-300); 
+      border-radius: 999px; 
+      overflow: hidden;
+      box-shadow: inset 0 1px 2px rgba(0,0,0,.06);
     }
     
     html.dark .rubric .bar { 
-      background:#1e293b; 
+      background: #1e293b; 
     }
     
     .rubric .fill{ 
-      height:100%; 
-      width:0%; 
-      background: var(--brand);
-      transition: width .4s cubic-bezier(0.4, 0, 0.2, 1); 
+      height: 100%; 
+      width: 0%; 
+      background: linear-gradient(90deg, var(--brand), var(--mf-secondary));
+      transition: width .5s cubic-bezier(0.4, 0, 0.2, 1); 
+      box-shadow: 0 0 8px rgba(0, 94, 184, 0.5);
     }
     
     .tip > div{ 
-      border-left:3px solid var(--brand); 
-      background:#f0f7ff; 
-      color:#1a3a52; 
-      border-radius:var(--radius-sm); 
-      padding:.75rem 1rem; 
+      border-left: 4px solid var(--brand); 
+      background: linear-gradient(135deg, #f0f7ff, #e3f2fd); 
+      color: var(--ink); 
+      border-radius: var(--radius-sm); 
+      padding: 1rem 1.25rem; 
+      box-shadow: var(--shadow-sm);
     }
     
     html.dark .tip > div{ 
-      background:rgba(61,139,217,.08); 
-      color:#cce9fb; 
+      background: linear-gradient(135deg, rgba(25,118,210,.08), rgba(0,160,227,.05)); 
+      color: var(--ink); 
     }
     
     details[open] summary .chev{ 
-      transform:rotate(180deg); 
+      transform: rotate(180deg); 
     }
     
     summary{ 
-      list-style:none; 
-      cursor:pointer; 
+      list-style: none; 
+      cursor: pointer; 
       user-select: none;
+      font-weight: 600;
     }
 
-    h1, h2, h3 {
-      font-weight: 600;
-      letter-spacing: -0.02em;
+    h1, h2, h3, h4, h5, h6 {
+      font-weight: 700;
+      letter-spacing: -0.025em;
+      color: var(--ink);
+    }
+    
+    h1 {
+      font-size: clamp(1.75rem, 4vw, 2.5rem);
+    }
+    
+    h2 {
+      font-size: clamp(1.5rem, 3vw, 2rem);
     }
 
     /* Notice */
     .notice{ 
-      background: linear-gradient(135deg, #e6f2ff, #f0f7ff); 
-      border-bottom:1px solid rgba(0,0,0,.06); 
+      background: linear-gradient(135deg, #e3f2fd 0%, #f0f7ff 50%, #e3f2fd 100%); 
+      border-bottom: 2px solid rgba(0, 94, 184, 0.15);
+      backdrop-filter: blur(12px);
     }
     
     html.dark .notice {
-      background: linear-gradient(135deg, rgba(61,139,217,.12), rgba(0,102,204,.08));
-      border-bottom:1px solid rgba(255,255,255,.05);
+      background: linear-gradient(135deg, rgba(25,118,210,.12) 0%, rgba(0,160,227,.08) 50%, rgba(25,118,210,.12) 100%);
+      border-bottom: 2px solid rgba(255,255,255,.08);
     }
     
     .notice .inner{ 
-      backdrop-filter:blur(8px); 
+      backdrop-filter: blur(12px); 
     }
 
     /* Modal */
     .modal-backdrop{ 
-      position:fixed; 
-      inset:0; 
-      background:rgba(0,0,0,.4); 
-      backdrop-filter:blur(4px);
-      display:none; 
-      z-index:98; 
-      animation: fadeIn 0.2s ease;
+      position: fixed; 
+      inset: 0; 
+      background: rgba(15, 23, 42, 0.6); 
+      backdrop-filter: blur(8px);
+      display: none; 
+      z-index: 98; 
+      animation: fadeIn 0.3s ease;
     }
     
     html.dark .modal-backdrop {
-      background:rgba(0,0,0,.7);
+      background: rgba(0, 0, 0, 0.8);
     }
     
     .modal{ 
-      position:fixed; 
-      inset:0; 
-      display:none; 
-      align-items:center; 
-      justify-content:center; 
-      padding:16px; 
-      z-index:99; 
+      position: fixed; 
+      inset: 0; 
+      display: none; 
+      align-items: center; 
+      justify-content: center; 
+      padding: 16px; 
+      z-index: 99; 
     }
     
     .modal .panel{ 
-      width:100%; 
-      max-width:900px; 
-      border-radius:var(--radius);
-      animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      width: 100%; 
+      max-width: 1000px; 
+      border-radius: var(--radius-lg);
+      animation: slideUp 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
       max-height: 90vh;
       overflow-y: auto;
+      box-shadow: var(--shadow-xl);
     }
     
     .modal.open, .modal-backdrop.open{ 
-      display:flex; 
+      display: flex; 
     }
 
     @keyframes fadeIn {
@@ -302,19 +402,19 @@
     }
     
     @keyframes slideUp {
-      from { transform: translateY(20px); opacity: 0; }
-      to { transform: translateY(0); opacity: 1; }
+      from { transform: translateY(40px) scale(0.96); opacity: 0; }
+      to { transform: translateY(0) scale(1); opacity: 1; }
     }
 
     /* Exam banner */
     .exam-on { 
-      background: #fff7ed; 
-      border:1px solid #fed7aa; 
+      background: linear-gradient(135deg, #fff8e1, #ffe0b2); 
+      border: 2px solid #ffb74d; 
     }
     
     html.dark .exam-on {
-      background: rgba(251,146,60,.1);
-      border:1px solid rgba(251,146,60,.3);
+      background: linear-gradient(135deg, rgba(255,152,0,.15), rgba(255,183,77,.1));
+      border: 2px solid rgba(255,152,0,.4);
     }
 
     /* Skeleton Loader */
@@ -337,50 +437,39 @@
 
     /* API Status */
     .status-dot {
-      width: 8px;
-      height: 8px;
+      width: 10px;
+      height: 10px;
       border-radius: 50%;
       animation: pulse 2s infinite;
     }
     
     .status-online { 
-      background: #10b981; 
-      box-shadow: 0 0 8px rgba(16, 185, 129, 0.4);
+      background: var(--success); 
+      box-shadow: 0 0 12px rgba(0, 212, 170, 0.6);
     }
     
     .status-offline { 
-      background: #ef4444; 
+      background: var(--error); 
       animation: none; 
     }
     
     @keyframes pulse {
       0%, 100% { opacity: 1; transform: scale(1); }
-      50% { opacity: 0.7; transform: scale(0.95); }
-    }
-
-    /* Password Screen */
-    #passwordScreen {
-      position: fixed;
-      inset: 0;
-      background: linear-gradient(135deg, var(--brand) 0%, var(--brand-2) 100%);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 9999;
+      50% { opacity: 0.7; transform: scale(0.9); }
     }
 
     /* Print */
     @media print{
       .sticky, .sticky-actions, #notice, #quickBtn, #examToggleWrap, #themeToggle, #historyBtn { 
-        display:none!important; 
+        display: none !important; 
       }
-      body{ background:#fff!important; }
-      .card{ box-shadow:none!important; border:1px solid #ddd; }
+      body { background: #fff !important; }
+      .card { box-shadow: none !important; border: 1px solid #ddd; }
     }
     
     footer.app-footer{ 
-      font-size:11px; 
-      line-height:1.5; 
+      font-size: 11px; 
+      line-height: 1.6; 
       background: var(--surface-2);
       transition: background 0.3s ease;
       color: var(--muted);
@@ -389,8 +478,8 @@
     /* Chart Container */
     .chart-container {
       position: relative;
-      height: 300px;
-      margin: 1rem 0;
+      height: 320px;
+      margin: 1.5rem 0;
     }
 
     /* Input Styles */
@@ -400,9 +489,11 @@
     textarea,
     select {
       background: var(--surface);
-      border: 1px solid var(--border);
+      border: 2px solid var(--border);
       color: var(--ink);
-      transition: all 0.2s ease;
+      transition: all 0.25s ease;
+      border-radius: var(--radius-xs);
+      font-family: inherit;
     }
 
     input:focus,
@@ -410,94 +501,129 @@
     select:focus {
       outline: none;
       border-color: var(--brand);
-      box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.1);
+      box-shadow: 0 0 0 4px rgba(0, 94, 184, 0.1);
     }
 
     /* Prose styles for markdown */
     .prose {
       color: var(--ink);
+      line-height: 1.7;
     }
 
     .prose h1, .prose h2, .prose h3 {
       color: var(--ink);
-      margin-top: 1.5em;
-      margin-bottom: 0.5em;
+      margin-top: 1.8em;
+      margin-bottom: 0.6em;
+      font-weight: 700;
     }
 
     .prose p {
-      margin-bottom: 1em;
+      margin-bottom: 1.2em;
     }
 
     .prose ul, .prose ol {
-      margin-left: 1.5em;
-      margin-bottom: 1em;
+      margin-left: 1.8em;
+      margin-bottom: 1.2em;
     }
 
     .prose code {
       background: var(--surface-2);
-      padding: 0.2em 0.4em;
-      border-radius: 4px;
+      padding: 0.25em 0.5em;
+      border-radius: 6px;
       font-size: 0.9em;
+      border: 1px solid var(--border);
+    }
+    
+    .prose strong {
+      color: var(--brand);
+      font-weight: 700;
+    }
+    
+    /* Professional Header Gradient */
+    .header-gradient {
+      background: linear-gradient(135deg, var(--surface) 0%, var(--surface-2) 100%);
+      border-bottom: 2px solid var(--border);
+    }
+    
+    /* Icon containers */
+    .icon-box {
+      display: grid;
+      place-items: center;
+      border-radius: var(--radius-sm);
+      background: linear-gradient(135deg, var(--brand), var(--brand-2));
+      box-shadow: 0 4px 12px rgba(0, 94, 184, 0.25);
+      transition: all 0.3s ease;
+    }
+    
+    .icon-box:hover {
+      transform: translateY(-2px) scale(1.05);
+      box-shadow: 0 8px 24px rgba(0, 94, 184, 0.35);
+    }
+    
+    /* Toast */
+    .toast {
+      position: fixed;
+      left: 50%;
+      bottom: 32px;
+      transform: translateX(-50%);
+      background: var(--surface);
+      color: var(--ink);
+      padding: 16px 24px;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-xl);
+      border: 2px solid var(--brand);
+      z-index: 9999;
+      animation: slideUp 0.3s ease;
+      font-weight: 600;
+    }
+    
+    html.dark .toast {
+      background: var(--surface-2);
+    }
+    
+    /* Scrollbar */
+    ::-webkit-scrollbar {
+      width: 10px;
+      height: 10px;
+    }
+    
+    ::-webkit-scrollbar-track {
+      background: var(--surface-2);
+    }
+    
+    ::-webkit-scrollbar-thumb {
+      background: var(--brand);
+      border-radius: 5px;
+    }
+    
+    ::-webkit-scrollbar-thumb:hover {
+      background: var(--brand-2);
     }
   </style>
 </head>
 <body class="min-h-screen antialiased">
 
-  <!-- Password Screen -->
-  <div id="passwordScreen">
-    <div class="card p-8 max-w-md w-full mx-4">
-      <div class="text-center mb-6">
-        <div class="w-16 h-16 rounded-2xl bg-white/20 backdrop-blur grid place-items-center mx-auto mb-4">
-          <i data-lucide="lock" class="w-8 h-8 text-white"></i>
-        </div>
-        <h2 class="text-2xl font-semibold mb-2 text-white">BBiG-Quiz – Geschützter Zugang</h2>
-        <p class="text-sm text-white/80">Bitte gib das Zugangskennwort ein</p>
-      </div>
-      <form id="passwordForm" class="space-y-4">
-        <div>
-          <label for="passwordInput" class="block text-sm font-medium mb-2 text-white/90">Kennwort</label>
-          <input 
-            id="passwordInput" 
-            type="password" 
-            class="w-full px-4 py-3 rounded-lg border-0 focus:outline-none focus:ring-2 focus:ring-white" 
-            placeholder="Kennwort eingeben"
-            autocomplete="off"
-          />
-        </div>
-        <button type="submit" class="btn btn-lg w-full justify-center bg-white text-[var(--brand)] hover:bg-white/90">
-          <i data-lucide="unlock" class="w-5 h-5"></i> Zugang freischalten
-        </button>
-        <p id="passwordError" class="text-sm text-white bg-red-500/20 px-3 py-2 rounded-lg text-center hidden">
-          ❌ Falsches Kennwort. Bitte erneut versuchen.
-        </p>
-      </form>
-    </div>
-  </div>
-
-  <!-- Main App (hidden until password correct) -->
-  <div id="mainApp" style="display:none;">
-
   <!-- Disclaimer -->
   <aside id="notice" class="notice sticky top-0 z-50">
-    <div class="inner container px-4 py-3 flex items-start gap-3">
-      <div class="w-10 h-10 rounded-xl bg-white/80 backdrop-blur grid place-items-center shrink-0">
-        <i data-lucide="shield-check" class="w-6 h-6 text-[var(--brand)]"></i>
+    <div class="inner container px-4 py-4 flex items-start gap-4">
+      <div class="icon-box w-12 h-12 shrink-0">
+        <i data-lucide="shield-check" class="w-6 h-6 text-white"></i>
       </div>
-      <div class="text-sm leading-snug flex-1">
-        <p class="font-semibold" style="color: var(--brand);">Fachlicher Hinweis (Pilot)</p>
-        <p class="text-slate-700">
+      <div class="text-sm leading-relaxed flex-1">
+        <p class="font-bold text-lg mb-1" style="color: var(--brand);">Fachlicher Hinweis (Pilot)</p>
+        <p class="text-slate-700" style="font-weight: 500;">
           Die KI-Prüfung unterstützt beim Lernen. Ergebnisse müssen fachlich geprüft werden und ersetzen keine Rechtsberatung.
           <strong>Es dürfen keine personenbezogenen oder sensiblen Daten eingegeben oder erfasst werden.</strong>
         </p>
-        <label class="mt-2 inline-flex items-center gap-2">
-          <input id="ack" type="checkbox" class="w-4 h-4" style="accent-color: var(--brand);" aria-describedby="ackDesc">
-          <span id="ackDesc" class="text-slate-800">Ich habe den Hinweis gelesen.</span>
+        <label class="mt-3 inline-flex items-center gap-2.5 cursor-pointer">
+          <input id="ack" type="checkbox" class="w-4 h-4 cursor-pointer" style="accent-color: var(--brand);" aria-describedby="ackDesc">
+          <span id="ackDesc" class="text-slate-800 font-semibold">Ich habe den Hinweis gelesen und akzeptiere die Nutzungsbedingungen.</span>
         </label>
       </div>
       <div class="ml-auto flex items-center gap-2 flex-wrap">
-        <div class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/50 backdrop-blur border border-white/60">
+        <div class="flex items-center gap-2.5 px-4 py-2 rounded-xl bg-white/60 backdrop-blur border-2 border-white/80">
           <span class="status-dot status-online" id="apiStatusDot"></span>
-          <span class="text-xs font-medium" id="apiStatusText">API: Prüfen...</span>
+          <span class="text-xs font-bold" id="apiStatusText">API: Prüfen...</span>
         </div>
         <a class="btn btn-sm" href="https://www.gesetze-im-internet.de/bbig_2005/BBiG.pdf" target="_blank" rel="noopener">
           <i data-lucide="book-open" class="w-4 h-4"></i> BBiG
@@ -506,20 +632,22 @@
           <i data-lucide="shield" class="w-4 h-4"></i> JArbSchG
         </a>
         <span id="ackState" class="chip">Hinweis offen</span>
-        <button id="ackBtn" type="button" class="btn btn-sm btn-primary">Weiter</button>
+        <button id="ackBtn" type="button" class="btn btn-sm btn-primary">
+          <i data-lucide="check-circle" class="w-4 h-4"></i> Weiter
+        </button>
       </div>
     </div>
   </aside>
 
   <!-- Header -->
-  <header class="container px-4 pt-6 pb-4">
-    <div class="flex flex-wrap items-center gap-4">
-      <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-[var(--brand)] to-[var(--brand-2)] grid place-items-center shadow-lg">
-        <i data-lucide="graduation-cap" class="w-7 h-7 stroke-[1.8] text-white"></i>
+  <header class="header-gradient container px-4 py-8">
+    <div class="flex flex-wrap items-center gap-6">
+      <div class="icon-box w-16 h-16">
+        <i data-lucide="graduation-cap" class="w-9 h-9 stroke-[2] text-white"></i>
       </div>
       <div class="flex-1 min-w-0">
-        <h1 class="text-2xl sm:text-3xl font-semibold tracking-tight">BBiG-Quiz – Enterprise Edition</h1>
-        <p class="text-sm text-slate-500 mt-1">20 Kernfragen • KI-Feedback mit Rubriken • §-Quicklook zu BBiG/JArbSchG</p>
+        <h1 class="text-3xl sm:text-4xl font-bold tracking-tight mb-2">BBiG-Quiz – Enterprise Edition</h1>
+        <p class="text-sm text-slate-600 font-medium">20 Kernfragen • KI-Feedback mit Rubriken • §-Quicklook zu BBiG/JArbSchG</p>
       </div>
 
       <div class="flex items-center gap-2">
@@ -532,33 +660,33 @@
         </button>
       </div>
 
-      <div id="examToggleWrap" class="flex items-center gap-2 p-2.5 rounded-lg border border-amber-200 exam-on">
-        <i data-lucide="timer" class="w-4 h-4 text-amber-600"></i>
-        <label class="text-sm font-medium text-amber-900">Prüfungsmodus</label>
-        <input id="examToggle" type="checkbox" class="w-5 h-5" style="accent-color: #f59e0b;" />
-        <select id="examSize" class="ml-1 text-sm rounded-lg border px-2 py-1.5 bg-white">
+      <div id="examToggleWrap" class="flex items-center gap-3 p-3 rounded-xl border-2 exam-on">
+        <i data-lucide="timer" class="w-5 h-5 text-amber-600"></i>
+        <label class="text-sm font-bold text-amber-900">Prüfungsmodus</label>
+        <input id="examToggle" type="checkbox" class="w-5 h-5" style="accent-color: #ff9800;" />
+        <select id="examSize" class="ml-1 text-sm rounded-lg border-2 px-3 py-2 bg-white font-semibold">
           <option value="10">10 Fragen</option>
           <option value="20" selected>20 Fragen</option>
           <option value="40">40 (wenn vorhanden)</option>
         </select>
-        <span id="examTimer" class="text-xs text-amber-700 ml-1 font-mono font-medium">—</span>
+        <span id="examTimer" class="text-xs text-amber-700 ml-2 font-mono font-bold">—</span>
       </div>
 
-      <button id="quickBtn" type="button" class="btn btn-primary">
-        <i data-lucide="search" class="w-4 h-4"></i> §-Quicklook
+      <button id="quickBtn" type="button" class="btn btn-primary btn-lg">
+        <i data-lucide="search" class="w-5 h-5"></i> §-Quicklook
       </button>
     </div>
   </header>
 
   <!-- Progress -->
-  <section class="container px-4 mt-4" aria-labelledby="progh">
-    <div class="card p-5">
-      <div class="flex items-center gap-4">
-        <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-emerald-400 to-emerald-600 grid place-items-center">
-          <i data-lucide="target" class="w-5 h-5 text-white"></i>
+  <section class="container px-4 mt-6" aria-labelledby="progh">
+    <div class="card card-elevated p-6">
+      <div class="flex items-center gap-5">
+        <div class="icon-box w-12 h-12">
+          <i data-lucide="target" class="w-6 h-6 text-white"></i>
         </div>
         <div class="flex-1">
-          <div class="flex justify-between text-xs font-medium text-slate-600 mb-2">
+          <div class="flex justify-between text-xs font-bold text-slate-600 mb-3">
             <span id="progressText">0 / 20 beantwortet</span>
             <span id="selText">0 ausgewählt</span>
           </div>
@@ -567,19 +695,19 @@
           </div>
           <span id="progh" class="sr-only">Beantwortete Fragen</span>
         </div>
-        <time id="timer" class="text-sm text-slate-500 ml-3 font-mono font-medium" aria-live="polite">00:00</time>
+        <time id="timer" class="text-base text-slate-600 ml-4 font-mono font-bold" aria-live="polite">00:00</time>
       </div>
     </div>
   </section>
 
   <!-- Spider Chart -->
-  <section class="container px-4 mt-4" id="chartSection" style="display:none;">
-    <div class="card p-5">
-      <div class="flex items-center gap-2 mb-4">
-        <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-purple-400 to-purple-600 grid place-items-center">
-          <i data-lucide="pie-chart" class="w-5 h-5 text-white"></i>
+  <section class="container px-4 mt-6" id="chartSection" style="display:none;">
+    <div class="card card-elevated p-6">
+      <div class="flex items-center gap-3 mb-5">
+        <div class="icon-box w-12 h-12">
+          <i data-lucide="pie-chart" class="w-6 h-6 text-white"></i>
         </div>
-        <h2 class="text-lg font-semibold">Rubrik-Analyse</h2>
+        <h2 class="text-xl font-bold">Rubrik-Analyse</h2>
       </div>
       <div class="chart-container">
         <canvas id="rubricChart"></canvas>
@@ -588,17 +716,17 @@
   </section>
 
   <!-- Quiz -->
-  <main class="container px-4 py-5">
-    <form id="form" class="grid gap-5" novalidate aria-describedby="formhint"></form>
+  <main class="container px-4 py-6">
+    <form id="form" class="grid gap-6" novalidate aria-describedby="formhint"></form>
     <p id="formhint" class="sr-only">Mit Strg/⌘+Enter kannst du das KI-Gesamt-Feedback abrufen.</p>
 
-    <section id="resultWrap" class="mt-6 hidden" aria-live="polite">
-      <div class="card p-5">
-        <div class="flex items-center gap-3 mb-4">
-          <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-amber-400 to-amber-600 grid place-items-center">
-            <i data-lucide="sparkles" class="w-5 h-5 text-white"></i>
+    <section id="resultWrap" class="mt-8 hidden" aria-live="polite">
+      <div class="card card-elevated p-6">
+        <div class="flex items-center gap-4 mb-5">
+          <div class="icon-box w-12 h-12">
+            <i data-lucide="sparkles" class="w-6 h-6 text-white"></i>
           </div>
-          <h2 class="text-lg font-semibold">KI-Feedback (Gesamt)</h2>
+          <h2 class="text-xl font-bold">KI-Feedback (Gesamt)</h2>
         </div>
         <article id="aiResult" class="prose prose-slate max-w-none text-sm"></article>
       </div>
@@ -606,8 +734,8 @@
   </main>
 
   <!-- Sticky actions -->
-  <div class="sticky-actions sticky bottom-0 z-40 bg-white/95 border-t border-slate-200 backdrop-blur-lg">
-    <div class="container px-4 py-3 flex flex-wrap items-center gap-2">
+  <div class="sticky-actions sticky bottom-0 z-40 bg-white/98 border-t-2 border-slate-200 backdrop-blur-xl shadow-xl">
+    <div class="container px-4 py-4 flex flex-wrap items-center gap-3">
       <div class="flex items-center gap-2">
         <a class="btn btn-sm" href="https://www.gesetze-im-internet.de/bbig_2005/BBiG.pdf" target="_blank" rel="noopener" aria-label="BBiG (PDF)">
           <i data-lucide="book-open" class="w-4 h-4"></i>
@@ -627,26 +755,26 @@
   </div>
 
   <!-- Toast -->
-  <div id="toast" role="status" aria-live="polite" style="display:none; position:fixed; left:50%; bottom:24px; transform:translateX(-50%); background:#111827; color:#fff; padding:12px 18px; border-radius:var(--radius-sm); font-size:14px; z-index:100; box-shadow:0 8px 24px rgba(0,0,0,.25); font-weight: 500;"></div>
+  <div id="toast" class="toast" role="status" aria-live="polite" style="display:none;"></div>
 
   <!-- Quicklook Modal -->
   <div id="qlBackdrop" class="modal-backdrop"></div>
   <div id="qlModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="qlTitle">
-    <div class="panel card p-6" role="document">
-      <div class="flex items-start gap-3 mb-4">
-        <div class="w-11 h-11 rounded-lg bg-gradient-to-br from-sky-400 to-sky-600 grid place-items-center">
-          <i data-lucide="search" class="w-6 h-6 text-white"></i>
+    <div class="panel card p-8" role="document">
+      <div class="flex items-start gap-4 mb-6">
+        <div class="icon-box w-14 h-14">
+          <i data-lucide="search" class="w-7 h-7 text-white"></i>
         </div>
         <div class="flex-1">
-          <h3 id="qlTitle" class="text-lg font-semibold">§-Quicklook – BBiG & JArbSchG</h3>
-          <p class="text-sm text-slate-500 mt-1">Suche nach Paragraph/Begriff (z. B. „§11", „Probezeit", „Ruhezeit"). Auszug + Sprung ins PDF.</p>
+          <h3 id="qlTitle" class="text-2xl font-bold mb-2">§-Quicklook – BBiG & JArbSchG</h3>
+          <p class="text-sm text-slate-600 font-medium">Suche nach Paragraph/Begriff (z. B. „§11", „Probezeit", „Ruhezeit"). Auszug + Sprung ins PDF.</p>
         </div>
         <button id="qlClose" type="button" class="btn btn-sm btn-ghost" aria-label="Fenster schließen">
           <i data-lucide="x" class="w-5 h-5"></i>
         </button>
       </div>
-      <div class="flex flex-col sm:flex-row gap-2 mb-4">
-        <input id="qlSearch" type="search" class="flex-1 rounded-lg border px-4 py-2.5 text-sm" placeholder="Begriff oder § suchen...">
+      <div class="flex flex-col sm:flex-row gap-3 mb-5">
+        <input id="qlSearch" type="search" class="flex-1 rounded-xl border-2 px-4 py-3 text-sm font-medium" placeholder="Begriff oder § suchen...">
         <div class="flex gap-2">
           <a class="btn btn-sm" href="https://www.gesetze-im-internet.de/bbig_2005/BBiG.pdf" target="_blank" rel="noopener">
             <i data-lucide="book-open" class="w-4 h-4"></i> BBiG
@@ -656,104 +784,48 @@
           </a>
         </div>
       </div>
-      <div id="qlList" class="grid gap-3 max-h-[60vh] overflow-auto"></div>
+      <div id="qlList" class="grid gap-4 max-h-[60vh] overflow-auto"></div>
     </div>
   </div>
 
   <!-- History Modal -->
   <div id="historyBackdrop" class="modal-backdrop"></div>
   <div id="historyModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="historyTitle">
-    <div class="panel card p-6" role="document">
-      <div class="flex items-start gap-3 mb-4">
-        <div class="w-11 h-11 rounded-lg bg-gradient-to-br from-emerald-400 to-emerald-600 grid place-items-center">
-          <i data-lucide="history" class="w-6 h-6 text-white"></i>
+    <div class="panel card p-8" role="document">
+      <div class="flex items-start gap-4 mb-6">
+        <div class="icon-box w-14 h-14">
+          <i data-lucide="history" class="w-7 h-7 text-white"></i>
         </div>
         <div class="flex-1">
-          <h3 id="historyTitle" class="text-lg font-semibold">Antwort-Historie</h3>
-          <p class="text-sm text-slate-500 mt-1">Deine letzten 10 Versuche</p>
+          <h3 id="historyTitle" class="text-2xl font-bold mb-2">Antwort-Historie</h3>
+          <p class="text-sm text-slate-600 font-medium">Deine letzten 10 Versuche</p>
         </div>
         <button id="historyClose" type="button" class="btn btn-sm btn-ghost" aria-label="Fenster schließen">
           <i data-lucide="x" class="w-5 h-5"></i>
         </button>
       </div>
-      <div id="historyList" class="space-y-3 max-h-[60vh] overflow-auto"></div>
+      <div id="historyList" class="space-y-4 max-h-[60vh] overflow-auto"></div>
     </div>
   </div>
 
   <!-- Footer -->
-  <footer class="app-footer mt-12 py-6 border-t border-slate-200">
+  <footer class="app-footer mt-16 py-8 border-t-2 border-slate-200">
     <div class="container px-4">
-      <p class="text-center">
-        Diese Anwendung nutzt künstliche Intelligenz (KI). Du stimmst mit der Nutzung zu, dass Deine Texte und Antwort von OpenAI verarbeitet und geprüft werden.
+      <p class="text-center leading-relaxed">
+        Diese Anwendung nutzt künstliche Intelligenz (KI). Du stimmst mit der Nutzung zu, dass Deine Texte und Antworten von OpenAI verarbeitet und geprüft werden.
         Es werden keine personenbezogenen Daten von Dir erhoben, erfasst und verarbeitet. Dieses Tool darf nicht missbräuchlich verwendet werden.
-        Es dürfen keine personenbezogenen Daten, sensiblen Daten oder Daten erfasst werden, die Rückschlüsse auf eine Person, zum Beispiel Auszubildenden,
+        Es dürfen keine personenbezogenen Daten, sensiblen Daten oder Daten erfasst werden, die Rückschlüsse auf eine Person, zum Beispiel Auszubildende,
         Ausbilder oder ähnliche Personen ermöglichen. Jegliche Haftung ist ausgeschlossen. Alle Antworten sind vom Anwender zu prüfen.
         KI-generierte Antworten können fehlerhaft sein. Keine Haftung.
       </p>
     </div>
   </footer>
 
-  </div><!-- End mainApp -->
-
   <script>
   document.addEventListener("DOMContentLoaded", () => {
-    // Initialize Lucide icons first
+    // Initialize Lucide icons
     if (window.lucide) lucide.createIcons();
 
-    // === Password Protection ===
-    const PASSWORD = "IHK2025";
-    const passwordScreen = document.getElementById("passwordScreen");
-    const passwordForm = document.getElementById("passwordForm");
-    const passwordInput = document.getElementById("passwordInput");
-    const passwordError = document.getElementById("passwordError");
-    const mainApp = document.getElementById("mainApp");
-
-    // Check if already authenticated
-    const isAuthenticated = sessionStorage.getItem("bbig_authenticated");
-    if (isAuthenticated === "true") {
-      passwordScreen.style.display = "none";
-      mainApp.style.display = "block";
-      initApp();
-    } else {
-      // Focus password input
-      setTimeout(() => passwordInput.focus(), 100);
-    }
-
-    passwordForm.addEventListener("submit", (e) => {
-      e.preventDefault();
-      const enteredPassword = passwordInput.value.trim();
-      
-      if (enteredPassword === PASSWORD) {
-        sessionStorage.setItem("bbig_authenticated", "true");
-        passwordScreen.style.display = "none";
-        mainApp.style.display = "block";
-        passwordError.classList.add("hidden");
-        initApp();
-      } else {
-        passwordError.classList.remove("hidden");
-        passwordInput.value = "";
-        passwordInput.focus();
-        // Shake animation
-        passwordForm.style.animation = "shake 0.5s";
-        setTimeout(() => passwordForm.style.animation = "", 500);
-      }
-    });
-
-    // Shake animation
-    const style = document.createElement('style');
-    style.textContent = `
-      @keyframes shake {
-        0%, 100% { transform: translateX(0); }
-        10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
-        20%, 40%, 60%, 80% { transform: translateX(5px); }
-      }
-    `;
-    document.head.appendChild(style);
-
-    function initApp() {
-      // Re-initialize Lucide icons for main app
-      if (window.lucide) lucide.createIcons();
-      
     // === Konfiguration ===
     const relay = "/api/linda-proxy"; // Make.com Webhook URL
     const STORAGE_KEY = "BBIGQUIZ_EXAM_V2";
@@ -857,23 +929,32 @@
       timerEl.textContent = `${m}:${r}`;
     }, 1000);
 
+    // === Toast Helper ===
+    function showToast(msg, duration = 3000) {
+      toastEl.textContent = msg;
+      toastEl.style.display = "block";
+      setTimeout(() => {
+        toastEl.style.display = "none";
+      }, duration);
+    }
+
     // === Fragen (20 Kernfragen) ===
     const QUESTIONS_ALL = [
-      { ref:"V1 – Mindestinhalte Vertrag", q:"Nenne vier Pflichtangaben, die zwingend in den Berufsausbildungsvertrag gehören.", tip:["Parteien, Beginn/Dauer, Ziel/Berufsbezeichnung, sachliche & zeitliche Gliederung, Vergütung, Probezeit, Urlaub, tägliche Ausbildungszeit, Kündigung, Hinweise auf Tarif/BV, Form des Ausbildungsnachweises.","§ 11 BBiG; Textform/elektronisch zulässig."]},
+      { ref:"V1 – Mindestinhalte Vertrag", q:"Nenne vier Pflichtangaben, die zwingend in den Berufsausbildungsvertrag gehören.", tip:["Parteien, Beginn/Dauer, Ziel/Berufsbezeichnung, sachliche & zeitliche Gliederung.","§ 11 BBiG."]},
       { ref:"V2 – Ausbildungsordnung", q:"Welche drei Kernpunkte regelt eine Ausbildungsordnung?", tip:["Berufsbild, Dauer/Ausbildungsrahmenplan, Prüfungen.","§§ 4–5 BBiG."]},
       { ref:"V3 – Probezeit", q:"Wie lang muss/darf die Probezeit sein – und warum ist sie wichtig?", tip:["Mind. 1, max. 4 Monate; Eignungsprüfung beider Seiten.","§ 20 BBiG."]},
-      { ref:"V4 – Minderjährige: Unterschrift", q:"Wer unterschreibt den Vertrag bei Minderjährigen mit gemeinsamem Sorgerecht?", tip:["Beide Sorgeberechtigte + Minderjährige/r.","§ 10 BBiG; §§ 1626, 1629 BGB."]},
-      { ref:"V5 – Berufsschulzeit & Arbeitszeit", q:"Wie werden Berufsschulzeiten auf die Arbeitszeit angerechnet (U18 vs. ≥18)?", tip:["U18: besondere Anrechnung (JArbSchG).","Wegezeiten Schule→Betrieb anrechenbar (§ 15 Abs. 2 Nr. 1 BBiG).","≥18: ArbZG; Freistellung nach § 15 BBiG."]},
+      { ref:"V4 – Minderjährige: Unterschrift", q:"Wer unterschreibt den Vertrag bei Minderjährigen mit gemeinsamem Sorgerecht?", tip:["Beide Sorgeberechtigte + Minderjährige/r.","§ 10 BBiG; § 107 BGB."]},
+      { ref:"V5 – Berufsschulzeit & Arbeitszeit", q:"Wie werden Berufsschulzeiten auf die Arbeitszeit angerechnet (U18 vs. ≥18)?", tip:["U18: besondere Anrechnung (JArbSchG).","Wegezeiten Schule→Betrieb; § 15 BBiG."]},
       { ref:"V6 – Ruhezeit Jugendliche", q:"Welche tägliche Mindestruhezeit gilt für Jugendliche?", tip:["Mindestens 12 Stunden.","JArbSchG."]},
       { ref:"V7 – Vergütung", q:"Was gilt zur Angemessenheit der Ausbildungsvergütung?", tip:["MiAV Untergrenze; tariflich/branchenüblich; Steigerung je Jahr.","§ 17 BBiG."]},
-      { ref:"V8 – Überstunden", q:"Sind Überstunden zulässig – und wie werden sie behandelt?", tip:["Nur ausbildungsdienlich; Vergütung/Zeitausgleich; Jugendarbeitsschutz beachten.","ArbZG/JArbSchG; BBiG."]},
-      { ref:"V9 – Betrieblicher Ausbildungsplan", q:"Wozu dient der betriebliche Ausbildungsplan?", tip:["Umsetzung Rahmenplan, zeitl./sachl. Gliederung, Qualitätssicherung.","§ 5 BBiG; Verweis § 11 Abs. 1 S. 2."]},
-      { ref:"V10 – Berichtsheft", q:"Welche Bedeutung hat das Berichtsheft und wer kontrolliert es?", tip:["Zulassungsvoraussetzung; elektronisch möglich; Kontrolle Ausbilder/in.","§ 13 Nr.7, § 14 BBiG."]},
+      { ref:"V8 – Überstunden", q:"Sind Überstunden zulässig – und wie werden sie behandelt?", tip:["Nur ausbildungsdienlich; Vergütung/Zeitausgleich; Jugendarbeitsschutz beachten.","ArbZG/JArbSchG."]},
+      { ref:"V9 – Betrieblicher Ausbildungsplan", q:"Wozu dient der betriebliche Ausbildungsplan?", tip:["Umsetzung Rahmenplan, zeitl./sachl. Gliederung, Qualitätssicherung.","§ 5 BBiG; Verweis § 11."]},
+      { ref:"V10 – Berichtsheft", q:"Welche Bedeutung hat das Berichtsheft und wer kontrolliert es?", tip:["Zulassungsvoraussetzung; elektronisch möglich; Kontrolle Ausbilder/in.","§ 13 Nr.7, § 14 Abs.1 Nr.4 BBiG."]},
       { ref:"V11 – Verkürzung", q:"Wann kann die Ausbildungsdauer verkürzt werden?", tip:["Vorbildung/Leistung/Anrechnung; Einvernehmen nötig.","§ 8 BBiG."]},
       { ref:"V12 – Verlängerung", q:"Wann kommt eine Verlängerung in Betracht?", tip:["Nichtbestehen oder besondere Fälle.","§ 8 Abs. 2 BBiG."]},
       { ref:"V13 – Teilzeitberufsausbildung", q:"Wie funktioniert Teilzeit in der Ausbildung und was bleibt unverändert?", tip:["Reduzierte Zeiten, Lernziel bleibt; evtl. längere Gesamtdauer.","§ 7a BBiG."]},
       { ref:"V14 – Datenschutz/Geheimnis", q:"Welche Pflichten haben Azubis zu Datenschutz und Betriebsgeheimnissen?", tip:["DSGVO/BDSG beachten; Unterweisungen dokumentieren."]},
-      { ref:"V15 – Kündigung", q:"Welche Kündigungsregeln gelten in und nach der Probezeit?", tip:["Probezeit: jederzeit fristlos (§ 22 Abs. 1).","Danach: fristlos aus wichtigem Grund oder mit Frist (Berufsaufgabe/Wechsel) – schriftlich, Gründe nennen (§ 22)."]},
+      { ref:"V15 – Kündigung", q:"Welche Kündigungsregeln gelten in und nach der Probezeit?", tip:["Probezeit: jederzeit fristlos (§ 22 Abs. 1).","Danach: fristlos aus wichtigem Grund oder mit Frist von 4 Wochen (Azubi)."]},
       { ref:"V16 – Schwangerschaft/Mutterschutz", q:"Welche Schutzregeln gelten bei Schwangerschaft in der Ausbildung?", tip:["MuSchG: Schutzfristen, Beschäftigungsverbote, Kündigungsschutz."]},
       { ref:"V17 – Nachteilsausgleich", q:"Wie werden Auszubildende mit Behinderung in Prüfungen unterstützt?", tip:["Nachteilsausgleich (Zeit, Hilfsmittel) auf Antrag; Chancengleichheit."]},
       { ref:"V18 – Ausland", q:"Sind Ausbildungsabschnitte im Ausland möglich und wie werden sie angerechnet?", tip:["Ja; Ausbildungsziel wahren; bis zulässige Zeitanteile.","§ 2 Abs. 3 BBiG."]},
@@ -883,12 +964,12 @@
 
     // === §-Quicklook Mini-Index ===
     const LAW_INDEX = [
-      { law:"BBiG", para:"§ 11", tags:["vertrag","inhalte","mindestinhalte"], excerpt:"§ 11 BBiG – Niederschrift der wesentlichen Inhalte (u. a. Parteien, Beginn/Dauer, Ziel, sachliche/zeitliche Gliederung, Vergütung, Probezeit, Urlaub, Kündigung).", link:"https://www.gesetze-im-internet.de/bbig_2005/BBiG.pdf" },
+      { law:"BBiG", para:"§ 11", tags:["vertrag","inhalte","mindestinhalte"], excerpt:"§ 11 BBiG – Niederschrift der wesentlichen Inhalte (u. a. Parteien, Beginn/Dauer, Ziel, sachliche/zeitliche Gliederung).", link:"https://www.gesetze-im-internet.de/bbig_2005/BBiG.pdf" },
       { law:"BBiG", para:"§ 20", tags:["probezeit"], excerpt:"§ 20 BBiG – Probezeit mindestens 1, höchstens 4 Monate.", link:"https://www.gesetze-im-internet.de/bbig_2005/BBiG.pdf" },
       { law:"BBiG", para:"§ 15", tags:["freistellung","schule","wegezeit"], excerpt:"§ 15 BBiG – Freistellung für Berufsschule/Prüfungen; Wegezeiten Schule→Betrieb sind anzurechnen.", link:"https://www.gesetze-im-internet.de/bbig_2005/BBiG.pdf" },
       { law:"BBiG", para:"§ 17", tags:["vergütung","miav"], excerpt:"§ 17 BBiG – Angemessene Vergütung; Mindestausbildungsvergütung als Untergrenze.", link:"https://www.gesetze-im-internet.de/bbig_2005/BBiG.pdf" },
       { law:"JArbSchG", para:"§ 8–15", tags:["arbeitszeit","ruhezeit","pausen"], excerpt:"JArbSchG – Tägliche und wöchentliche Höchstarbeitszeiten; Ruhepausen; Ruhezeit mind. 12 Std.", link:"https://www.gesetze-im-internet.de/jarbschg/JArbSchG.pdf" },
-      { law:"ArbZG", para:"§ 3, § 4, § 5", tags:["erwachsene","arbeitszeit","pausen","ruhezeit"], excerpt:"ArbZG – 8 Std/Tag (bis 10 mit Ausgleich), Pausen 30–45 Min, Ruhezeit 11 Std.", link:"https://www.gesetze-im-internet.de/arbzg/BJNR117100994.html" },
+      { law:"ArbZG", para:"§ 3, § 4, § 5", tags:["erwachsene","arbeitszeit","pausen","ruhezeit"], excerpt:"ArbZG – 8 Std/Tag (bis 10 mit Ausgleich), Pausen 30–45 Min, Ruhezeit 11 Std.", link:"https://www.gesetze-im-internet.de/arbzg/ArbZG.pdf" },
     ];
 
     // === State ===
@@ -923,8 +1004,8 @@
       chartSection.style.display = "block";
 
       const isDark = document.documentElement.classList.contains('dark');
-      const textColor = isDark ? '#e5e7eb' : '#1a1a1a';
-      const gridColor = isDark ? '#1f2937' : '#e5e7eb';
+      const textColor = isDark ? '#f1f5f9' : '#1f2937';
+      const gridColor = isDark ? '#334155' : '#e8ecf1';
 
       const data = {
         labels: ['Normbezug', 'Vollständigkeit', 'Praxisbezug'],
@@ -935,15 +1016,16 @@
             (avgRubric.vollstaendigkeit / count).toFixed(1),
             (avgRubric.praxisbezug / count).toFixed(1)
           ],
-          backgroundColor: 'rgba(0, 102, 204, 0.15)',
-          borderColor: '#0066cc',
-          borderWidth: 2,
-          pointBackgroundColor: '#0066cc',
+          backgroundColor: isDark ? 'rgba(25, 118, 210, 0.2)' : 'rgba(0, 94, 184, 0.15)',
+          borderColor: isDark ? '#1976d2' : '#005eb8',
+          borderWidth: 3,
+          pointBackgroundColor: isDark ? '#1976d2' : '#005eb8',
           pointBorderColor: '#fff',
           pointHoverBackgroundColor: '#fff',
-          pointHoverBorderColor: '#0066cc',
-          pointRadius: 4,
-          pointHoverRadius: 6
+          pointHoverBorderColor: isDark ? '#1976d2' : '#005eb8',
+          pointRadius: 5,
+          pointHoverRadius: 7,
+          pointBorderWidth: 2
         }]
       };
 
@@ -966,17 +1048,19 @@
                 color: textColor,
                 backdropColor: 'transparent',
                 font: {
-                  size: 11
+                  size: 12,
+                  weight: '600'
                 }
               },
               grid: {
-                color: gridColor
+                color: gridColor,
+                lineWidth: 2
               },
               pointLabels: {
                 color: textColor,
                 font: {
-                  size: 12,
-                  weight: '500'
+                  size: 13,
+                  weight: '700'
                 }
               }
             }
@@ -990,206 +1074,113 @@
               titleColor: textColor,
               bodyColor: textColor,
               borderColor: gridColor,
-              borderWidth: 1,
-              padding: 12,
-              boxPadding: 6,
-              usePointStyle: true
+              borderWidth: 2,
+              padding: 14,
+              boxPadding: 8,
+              usePointStyle: true,
+              titleFont: {
+                size: 14,
+                weight: '700'
+              },
+              bodyFont: {
+                size: 13,
+                weight: '600'
+              }
             }
           }
         }
       });
     }
 
-    // === History ===
-    function saveToHistory() {
-      try {
-        const history = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
-        const totalScore = Object.values(rubrics).reduce((sum, r) => 
-          sum + (r.normbezug || 0) + (r.vollstaendigkeit || 0) + (r.praxisbezug || 0), 0
-        );
-        
-        history.unshift({
-          ts: Date.now(),
-          answers: {...answers},
-          rubrics: {...rubrics},
-          totalScore,
-          questionsCount: Object.keys(answers).filter(k => answers[k].trim()).length
-        });
-        
-        localStorage.setItem(HISTORY_KEY, JSON.stringify(history.slice(0, 10)));
-      } catch(e) {
-        console.error('Error saving history:', e);
-      }
-    }
-
-    function loadHistory() {
-      try {
-        const history = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
-        historyList.innerHTML = "";
-        
-        if (history.length === 0) {
-          historyList.innerHTML = '<div class="text-sm text-slate-500 text-center py-12">Keine Historie vorhanden</div>';
-          return;
-        }
-
-        history.forEach((entry, idx) => {
-          const date = new Date(entry.ts);
-          const dateStr = date.toLocaleDateString('de-DE', {
-            day: '2-digit',
-            month: '2-digit',
-            year: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
-          });
-
-          const maxScore = entry.questionsCount * 6;
-          const percentage = maxScore > 0 ? Math.round((entry.totalScore / maxScore) * 100) : 0;
-
-          const card = document.createElement('div');
-          card.className = 'card p-4 hover:shadow-lg transition-all cursor-pointer';
-          card.innerHTML = `
-            <div class="flex items-center justify-between gap-4">
-              <div class="flex-1">
-                <div class="font-semibold text-sm mb-1">${dateStr}</div>
-                <div class="text-xs text-slate-500">${entry.questionsCount} Fragen bearbeitet</div>
+    // === Render Quiz ===
+    function renderQuiz() {
+      form.innerHTML = "";
+      pool.forEach((item, idx) => {
+        const card = document.createElement("div");
+        card.className = "card p-6 transition-all";
+        card.innerHTML = `
+          <div class="flex items-start gap-4 mb-4">
+            <div class="chip q-badge shrink-0">Frage ${idx+1}</div>
+            <h3 class="flex-1 text-base font-bold text-slate-800">${item.ref}</h3>
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input type="checkbox" class="sel-check w-5 h-5 cursor-pointer" style="accent-color: var(--brand);" data-ref="${item.ref}">
+              <span class="text-xs font-bold text-slate-600">Auswahl</span>
+            </label>
+          </div>
+          <p class="text-sm text-slate-700 mb-4 font-medium leading-relaxed">${item.q}</p>
+          <textarea 
+            class="w-full border-2 border-slate-200 rounded-xl p-4 text-sm resize-none focus:border-blue-600 focus:ring-4 focus:ring-blue-100 transition-all font-medium" 
+            rows="4" 
+            placeholder="Deine Antwort (max. ${MAX_ANSWER_CHARS} Zeichen)..."
+            maxlength="${MAX_ANSWER_CHARS}"
+            data-ref="${item.ref}"
+          ></textarea>
+          <div class="tip mt-4 hidden" data-ref="${item.ref}">
+            <details class="text-xs">
+              <summary class="flex items-center gap-2 cursor-pointer text-blue-700 font-bold">
+                <i data-lucide="info" class="w-4 h-4"></i>
+                <span>Orientierungshilfe anzeigen</span>
+                <i data-lucide="chevron-down" class="chev w-4 h-4 ml-auto transition-transform"></i>
+              </summary>
+              <div class="mt-3">
+                ${item.tip.map(t => `<p class="mb-2 last:mb-0">• ${t}</p>`).join("")}
               </div>
-              <div class="text-right">
-                <div class="text-2xl font-bold" style="color: var(--brand);">${entry.totalScore}/${maxScore}</div>
-                <div class="text-xs text-slate-500">${percentage}% erreicht</div>
-              </div>
+            </details>
+          </div>
+          <div class="rubric-wrap mt-4 hidden" data-ref="${item.ref}">
+            <div class="rubric">
+              <p class="text-xs font-bold text-slate-600 mb-2">KI-Rubriken-Score:</p>
+              ${RUBRIC_KEYS.map(k => `
+                <div class="mb-2 last:mb-0">
+                  <div class="flex justify-between text-xs font-bold text-slate-600 mb-1">
+                    <span>${k === 'normbezug' ? '📚 Normbezug' : k === 'vollstaendigkeit' ? '✅ Vollständigkeit' : '🎯 Praxisbezug'}</span>
+                    <span class="rubric-val" data-ref="${item.ref}" data-key="${k}">—</span>
+                  </div>
+                  <div class="bar">
+                    <div class="fill rubric-fill" data-ref="${item.ref}" data-key="${k}"></div>
+                  </div>
+                </div>
+              `).join("")}
             </div>
-          `;
-          
-          card.addEventListener('click', () => {
-            if (confirm('Möchtest du diesen Versuch laden? Aktuelle Antworten werden überschrieben.')) {
-              answers = {...entry.answers};
-              rubrics = {...entry.rubrics};
-              renderForm();
-              updateSpiderChart();
-              closeHistory();
-              showToast('✓ Versuch geladen');
-            }
-          });
-          
-          historyList.appendChild(card);
-        });
-      } catch(e) {
-        console.error('Error loading history:', e);
-        historyList.innerHTML = '<div class="text-sm text-red-500 text-center py-8">Fehler beim Laden der Historie</div>';
-      }
-    }
-
-    historyBtn.addEventListener('click', () => {
-      loadHistory();
-      historyBackdrop.classList.add('open');
-      historyModal.classList.add('open');
-    });
-
-    function closeHistory() {
-      historyBackdrop.classList.remove('open');
-      historyModal.classList.remove('open');
-    }
-
-    historyBackdrop.addEventListener('click', closeHistory);
-    historyClose.addEventListener('click', closeHistory);
-
-    // Disclaimer
-    ackBtn.addEventListener("click", ()=>{
-      if (!ack.checked){ 
-        showToast("❌ Bitte die Checkbox bestätigen."); 
-        return; 
-      }
-      accepted = true; 
-      notice.style.display = "none"; 
-      ackState.textContent = "✓ Bestätigt"; 
-      ackState.className = "chip";
-      ackState.style.background = "#dcfce7";
-      ackState.style.color = "#166534";
-      ackState.style.borderColor = "#bbf7d0";
-      saveState();
-    });
-
-    // Exam: toggle + Size
-    examToggle.addEventListener("change", ()=>{ setExamMode(examToggle.checked); });
-    examSize.addEventListener("change", ()=>{ 
-      if (examMode) {
-        applyExamSizing();
-        renderForm();
-        const mins = Math.ceil(pool.length * 1.5);
-        startCountdown(mins * 60);
-      }
-    });
-
-    function setExamMode(on){
-      examMode = !!on;
-      document.getElementById("examToggleWrap").classList.toggle("exam-on", examMode);
-      applyExamSizing();
-      renderForm();
-      updateProgress();
-      if (examMode){
-        const mins = Math.ceil(pool.length * 1.5);
-        startCountdown(mins * 60);
-        showToast(`⏱️ Prüfungsmodus: ${mins} Minuten Zeit`);
-      } else {
-        stopCountdown();
-      }
-      saveState();
-    }
-    
-    function startCountdown(seconds){
-      examCountdown = seconds;
-      updateCountdownLabel();
-      clearInterval(examTick);
-      examTick = setInterval(()=>{
-        examCountdown = Math.max(0, examCountdown - 1);
-        updateCountdownLabel();
-        if (examCountdown === 0){ 
-          clearInterval(examTick); 
-          showToast("⏰ Zeit abgelaufen – bitte abgeben!"); 
-        }
-      }, 1000);
-    }
-    
-    function stopCountdown(){ 
-      clearInterval(examTick); 
-      examTick = null; 
-      examTimer.textContent = "—"; 
-    }
-    
-    function updateCountdownLabel(){
-      const m = String(Math.floor(examCountdown/60)).padStart(2,"0");
-      const s = String(examCountdown%60).padStart(2,"0");
-      examTimer.textContent = `${m}:${s}`;
-      
-      // Warning when < 5 minutes
-      if (examCountdown < 300 && examCountdown > 0) {
-        examTimer.style.color = "#dc2626";
-      } else {
-        examTimer.style.color = "";
-      }
-    }
-    
-    function applyExamSizing(){
-      const size = Number(examSize.value) || 20;
-      const shuffled = [...QUESTIONS_ALL].sort(()=>Math.random()-0.5);
-      pool = shuffled.slice(0, Math.min(size, QUESTIONS_ALL.length));
-    }
-
-    // Autosize
-    function autosize(el){ 
-      el.style.height="auto"; 
-      el.style.height=(el.scrollHeight+4)+"px"; 
-    }
-
-    // Form render
-    function renderForm(){
-      // Save current values
-      [...form.querySelectorAll("section[data-ref]")].forEach(sec=>{
-        const ref = sec.getAttribute("data-ref");
-        const ta = sec.querySelector("textarea");
-        const cb = sec.querySelector("input[type='checkbox'][data-select]");
-        if (ta) answers[ref]  = ta.value;
-        if (cb) selected[ref] = cb.checked;
+          </div>
+          <div class="feedback-wrap mt-4 hidden bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-xl p-4" data-ref="${item.ref}">
+            <p class="text-xs font-bold text-blue-800 mb-2 flex items-center gap-2">
+              <i data-lucide="message-square" class="w-4 h-4"></i>
+              KI-Feedback:
+            </p>
+            <div class="feedback-content text-sm text-slate-700 font-medium"></div>
+          </div>
+        `;
+        form.appendChild(card);
       });
 
-      
+      // Re-init Lucide
+      if (window.lucide) lucide.createIcons();
+
+      // Attach listeners
+      form.querySelectorAll("textarea[data-ref]").forEach(ta => {
+        const r = ta.dataset.ref;
+        ta.value = answers[r] || "";
+        ta.addEventListener("input", () => {
+          answers[r] = ta.value.trim();
+          saveState();
+          updateProgress();
+        });
+      });
+
+      form.querySelectorAll(".sel-check").forEach(cb => {
+        const r = cb.dataset.ref;
+        cb.checked = !!selected[r];
+        cb.addEventListener("change", () => {
+          selected[r] = cb.checked;
+          updateProgress();
+        });
+      });
+
+      updateProgress();
+      restoreRubrics();
+    }
+
+    function updateProgress() {
+      const total = pool.length;
+      const answered = Object
