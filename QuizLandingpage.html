@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BBIG Quiz Lösungen - Professionelle Lernplattformen</title>
+    <title>KI Quiz-Lösungen</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='45' fill='%230066CC'/><text x='50' y='65' font-family='Arial' font-size='60' fill='white' text-anchor='middle'>?</text></svg>">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
         body {
@@ -231,7 +232,7 @@
 </head>
 <body>
     <section class="hero">
-        <h1>Entdecken Sie BBIG Quiz Lösungen</h1>
+        <h1>Entdecken Sie KI Quiz-Lösungen</h1>
         <p>Professionelle Lernplattformen für personalisiertes Quizzen und KI-gestützte Bildung. Erfahren Sie mehr über unsere innovativen Tools zur Wissensüberprüfung und Lernunterstützung – jetzt mit Linda, Ihrer KI-Assistentin.</p>
     </section>
 
@@ -253,7 +254,7 @@
                 </div>
             </div>
             <p>Erleben Sie eine Quizmöglichkeit mit vollständiger Personalisierung – perfekt für Unternehmen und Bildungseinrichtungen, die individuelle Lernwege unterstützen. Steigern Sie Ihre Produktivität und Wissensretention!</p>
-            <a href="https://vercel-kappa-seven-33.vercel.app/bbig-quiz-enterprise.html" class="cta-button">Jetzt erkunden</a>
+            <a href="https://vercel-kappa-seven-33.vercel.app/bbig-quiz-enterprise.html" class="cta-button" target="_blank">Jetzt erkunden</a>
         </div>
 
         <div class="card">
@@ -273,7 +274,7 @@
                 </div>
             </div>
             <p>Diese Quizmöglichkeit bietet flexible Absprünge und Unterstützung durch Avatare. Ideal für vielfältige Themenbereiche, ohne Personalisierung – fokussiert auf schnelle, interaktive Lernhilfen. Verbessern Sie Ihr Wissen spielend leicht!</p>
-            <a href="https://vercel-kappa-seven-33.vercel.app/BBIGQuizFancy_Test.html" class="cta-button">Jetzt testen</a>
+            <a href="https://vercel-kappa-seven-33.vercel.app/BBIGQuizFancy_Test.html" class="cta-button" target="_blank">Jetzt testen</a>
         </div>
 
         <div class="card">
@@ -293,7 +294,7 @@
                 </div>
             </div>
             <p>Linda ist Ihre künstliche Intelligenz für Versicherungsfragen, spezialisiert auf Personenversicherungen und Sozialrecht. Holen Sie sich professionelle Einsichten und lösen Sie komplexe Themen effizient!</p>
-            <a href="https://ntc-bot1.netlify.app/linda.html" class="cta-button">Linda kennenlernen</a>
+            <a href="https://ntc-bot1.netlify.app/linda.html" class="cta-button" target="_blank">Linda kennenlernen</a>
         </div>
 
         <div class="card">
@@ -313,7 +314,7 @@
                 </div>
             </div>
             <p>Linda Personalmanagement bietet KI-gestützte Hilfe im Bereich Erstausbildung und Prüfungsrecht. Optimieren Sie Ihre Personalprozesse und treffen Sie informierte Entscheidungen!</p>
-            <a href="https://ntc-bot1.netlify.app" class="cta-button">Linda konsultieren</a>
+            <a href="https://ntc-bot1.netlify.app" class="cta-button" target="_blank">Linda konsultieren</a>
         </div>
     </div>
 
@@ -321,7 +322,7 @@
         <div class="disclaimer">
             <p>Bitte beachten Sie, dass unsere KI-gestützten Lösungen sich derzeit in der Entwicklung befinden. Wir empfehlen, alle KI-generierten Antworten kritisch zu prüfen und nicht ausschließlich darauf zu verlassen. Für verlässliche Entscheidungen konsultieren Sie bitte Fachpersonal.</p>
         </div>
-        <p>&copy; 2025 BBIG Quiz Lösungen. Alle Rechte vorbehalten. Powered by KI und professionellem Design.</p>
+        <p>&copy; 2025 KI Quiz-Lösungen. Alle Rechte vorbehalten. Powered by KI und professionellem Design.</p>
         <span class="privacy-tooltip">
             Datenschutz
             <span class="tooltip-text">Ihre Daten werden nicht gespeichert. Sie werden lediglich in den Systemen von OpenAI und Make.com verarbeitet. Bitte geben Sie keine personenbezogenen Daten ein.</span>
@@ -355,6 +356,8 @@
           method: "POST",
           headers: { "Content-Type": "application/json" }
         };
+
+        let conversation = []; // Speichere die Konversation für Dialoge
 
         async function sendToLinda(promptText) {
           try {
@@ -400,6 +403,8 @@
 
         chatClose.addEventListener('click', () => {
             chatWidget.style.display = 'none';
+            // Optional: Konversation zurücksetzen bei Schließen
+            // conversation = [];
         });
 
         chatSend.addEventListener('click', sendMessage);
@@ -412,11 +417,14 @@
             if (!message) return;
 
             addMessage(message, 'user');
+            conversation.push({ role: 'user', content: message });
             chatInput.value = '';
 
-            sendToLinda(message).then(res => {
+            const promptText = conversation.map(m => `${m.role}: ${m.content}`).join('\n');
+            sendToLinda(promptText).then(res => {
                 if (res.success) {
                     addMessage(res.data, 'bot');
+                    conversation.push({ role: 'assistant', content: res.data });
                 } else {
                     addMessage('Es gab einen Fehler: ' + res.error, 'bot');
                 }
