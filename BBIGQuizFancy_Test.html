@@ -43,13 +43,9 @@
     .q-card{position:relative;padding:16px}
     .tip{margin-top:.5rem;background:linear-gradient(180deg,rgba(37,99,235,.08),rgba(14,165,233,.08));border-left:3px solid var(--primary);padding:.8rem .9rem;border-radius:12px}
     .sticky-actions{position:sticky;bottom:0;z-index:40}
-
-    /* Domain switch */
     .seg{display:inline-flex;background:var(--surface);border:1px solid var(--border);border-radius:999px;padding:4px}
     .seg button{padding:.5rem .9rem;border-radius:999px;font-weight:700}
     .seg button[aria-pressed="true"]{background:linear-gradient(90deg,var(--primary),var(--primary2));color:#fff}
-
-    /* Linda Avatar */
     #lindaBtn{position:fixed;bottom:16px;right:16px;width:64px;height:64px;z-index:60;border:none;background:transparent;cursor:pointer}
     #lindaChat{position:fixed;bottom:96px;right:16px;width:min(92vw,360px);height:420px;z-index:60;display:none}
     .l-wrap{background:var(--surface);color:var(--ink);border:1px solid var(--border);border-radius:16px;box-shadow:0 12px 30px rgba(0,0,0,.2);display:flex;flex-direction:column;height:100%}
@@ -60,14 +56,11 @@
     .l-msg.ai{background:#eef6ff}
     .l-input{display:flex;gap:6px;padding:10px;border-top:1px solid var(--border)}
     .l-input input{flex:1;border:1px solid var(--border);border-radius:12px;padding:10px 12px;background:var(--surface)}
-
-    /* Footer */
     footer.app-footer{font-family:Arial,Helvetica,sans-serif;font-size:10px;line-height:1.4;color:#4b5563;background:#eef2f6;border-top:1px solid var(--border)}
   </style>
 </head>
 <body>
 
-<!-- Hinweis -->
 <aside id="notice" class="bg-[#eaf2ff] border-b border-[#cfe3ff]">
   <div class="container px-4 py-3 flex items-start gap-3">
     <div class="w-10 h-10 rounded-lg bg-white/70 grid place-items-center">
@@ -93,7 +86,6 @@
   </div>
 </aside>
 
-<!-- Header -->
 <header class="border-b border-[color:var(--border)] bg-[color:var(--surface)] sticky top-0 z-30">
   <div class="container px-4 py-3 flex flex-wrap items-center gap-3 justify-between">
     <div class="flex items-center gap-3">
@@ -111,7 +103,6 @@
     </div>
   </div>
 
-  <!-- Domain switch + Cluster tabs -->
   <div class="container pb-3">
     <div class="card p-3">
       <div class="flex items-center justify-between gap-3 flex-wrap">
@@ -127,7 +118,6 @@
   </div>
 </header>
 
-<!-- Progress -->
 <section class="container mt-4">
   <div class="card p-4 flex items-center gap-3">
     <i data-lucide="target" class="w-5 h-5 text-blue-600"></i>
@@ -142,7 +132,6 @@
   </div>
 </section>
 
-<!-- Quiz -->
 <main class="container my-4">
   <form id="form" class="grid gap-4" novalidate></form>
 
@@ -157,7 +146,6 @@
   </section>
 </main>
 
-<!-- Sticky actions -->
 <div class="sticky-actions bg-[color:var(--surface)] border-t border-[color:var(--border)]">
   <div class="container px-4 py-2 flex flex-wrap items-center gap-2">
     <div class="flex items-center gap-2">
@@ -176,7 +164,7 @@
 <!-- Quicklook Modal -->
 <div id="qlBackdrop" class="fixed inset-0 bg-black/50 backdrop-blur-sm hidden z-40"></div>
 <div id="qlModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4">
-  <div class="card p-4 w-full max-w-xl max-h-[90vh] overflow-auto">
+  <div class="card p-4 w-full max-w-xl max-height-[90vh] overflow-auto">
     <div class="flex items-center justify-between">
       <div class="flex items-center gap-2">
         <i data-lucide="search" class="w-5 h-5 text-blue-600"></i>
@@ -228,7 +216,6 @@
   </div>
 </div>
 
-<!-- Footer -->
 <footer class="app-footer">
   <div class="container px-4 py-4">
     Diese Anwendung nutzt künstliche Intelligenz (KI). Du stimmst mit der Nutzung zu, dass Deine Texte und Antworten von OpenAI verarbeitet und geprüft werden.
@@ -242,11 +229,9 @@ document.addEventListener("DOMContentLoaded", () => {
   if (window.lucide) lucide.createIcons();
   if (window.marked) marked.setOptions({breaks:true,gfm:true});
 
-  /* Config */
   const relay="/api/linda-proxy";
   const STORAGE="BBIG_DUALDOMAIN_V1";
 
-  /* Refs */
   const form=document.getElementById("form");
   const progressBar=document.getElementById("progressBar");
   const progressTxt=document.getElementById("progressText");
@@ -276,7 +261,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const themeToggle=document.getElementById("themeToggle");
 
-  /* Linda */
   const lBtn=document.getElementById("lindaBtn");
   const lChat=document.getElementById("lindaChat");
   const lDrag=document.getElementById("lDrag");
@@ -285,26 +269,20 @@ document.addEventListener("DOMContentLoaded", () => {
   const lText=document.getElementById("lText");
   const lSend=document.getElementById("lSend");
 
-  /* Theme */
   function applyThemeIcon(){ themeToggle.innerHTML = document.documentElement.classList.contains("dark") ? '<i data-lucide="sun" class="w-4 h-4"></i>' : '<i data-lucide="moon" class="w-4 h-4"></i>'; if (window.lucide) lucide.createIcons(); }
   if (localStorage.getItem("theme_pref")==="dark") document.documentElement.classList.add("dark");
   applyThemeIcon();
-  const toggleTheme=()=>{ document.documentElement.classList.toggle("dark"); localStorage.setItem("theme_pref", document.documentElement.classList.contains("dark")?"dark":"light"); applyThemeIcon(); };
-  themeToggle.addEventListener("click", toggleTheme);
+  themeToggle.addEventListener("click", ()=>{ document.documentElement.classList.toggle("dark"); localStorage.setItem("theme_pref", document.documentElement.classList.contains("dark")?"dark":"light"); applyThemeIcon(); });
 
-  /* Timer */
   let startTs=Date.now();
   setInterval(()=>{ const s=Math.floor((Date.now()-startTs)/1000); const m=String(Math.floor(s/60)).padStart(2,"0"); const r=String(s%60).padStart(2,"0"); timerEl.textContent=`${m}:${r}`; },1000);
 
-  /* Toast */
   function toast(m){ toastEl.textContent=m; toastEl.style.display="block"; clearTimeout(toast._t); toast._t=setTimeout(()=>toastEl.style.display="none",2300); }
 
-  /* Disclaimer */
   let accepted=false;
   ackBtn.addEventListener("click", ()=>{ if(!ack.checked){ toast("Bitte zuerst den Hinweis bestätigen."); return; } accepted=true; notice.style.display="none"; ackState.textContent="Hinweis bestätigt"; saveState(); });
 
-  /* DATA — Domains */
-  // Ausbildung (verkürzt – wie gehabt)
+  /* DATA */
   const AUS_CLUSTERS=[
     {key:"kern", title:"Kern", icon:"layers", data:[
       {ref:"V1 – Mindestinhalte Vertrag", q:"Nenne vier Pflichtangaben, die zwingend in den Berufsausbildungsvertrag gehören.", tip:["Parteien; Beginn/Dauer; Ziel/Berufsbezeichnung; sachliche & zeitliche Gliederung; Vergütung; Probezeit; Urlaub; Kündigung; Nachweisform.","§ 11 BBiG."]},
@@ -317,45 +295,33 @@ document.addEventListener("DOMContentLoaded", () => {
     ]}
   ];
 
-  // Sozialrecht – aus deinen PDFs (Pflege/Arbeitslosigkeit/Sozialgericht/SGB VI)
   const SOZ_CLUSTERS=[
     {key:"pflege", title:"Pflege (SGB XI)", icon:"heart-pulse", data:[
-      {ref:"P1 – Pflichtversicherung", q:"Wer ist in der sozialen Pflegeversicherung pflichtversichert und wo ist das geregelt?", tip:["Gesetzlich Krankenversicherte automatisch in SPV; Privatversicherte: private Pflegepflichtversicherung; geregelt im SGB XI."]},
-      {ref:"P2 – Ambulant", q:"Nenne Pflegegeld und Pflegesachleistungen (2025) für PG 2–5 in Stichpunkten.", tip:["PG2: 347€/796€; PG3: 599€/1.497€; PG4: 800€/1.859€; PG5: 990€/2.299€ (Pflegegrad 1: kein Pflegegeld/-sachl.)."]},
-      {ref:"P3 – Stationär", q:"Welche monatlichen Leistungen gibt es bei vollstationärer Pflege (PG 2–5)?", tip:["PG2: 1.061€; PG3: 1.575€; PG4: 2.111€; PG5: 2.351€ (gesetzlich)."]},
-      {ref:"P4 – Entlastung & Hilfsmittel", q:"Was umfasst der Entlastungsbetrag und wie hoch sind Pauschalen für Verbrauchs-Pflegehilfsmittel pro Monat?", tip:["Entlastungsbetrag 131€ mtl. (ambulant, alle PG); Pflegehilfsmittel zum Verbrauch bis 42€ mtl.; techn. Hilfsmittel: 10% max. 25€ Eigenanteil."]},
-      {ref:"P5 – Wohnumfeld", q:"Welche Maßnahmen der Wohnumfeldverbesserung sind förderfähig – und bis zu welcher Höhe?", tip:["z. B. Türverbreiterung, Rampe, bodengleiche Dusche; Zuschuss bis 4.180€ je Maßnahme (Pflege-WG bis 4×)."]}
+      {ref:"P1 – Pflichtversicherung", q:"Wer ist in der sozialen Pflegeversicherung pflichtversichert und wo ist das geregelt?", tip:["GKV-Versicherte automatisch; PKV: private Pflegepflichtversicherung; SGB XI."]},
+      {ref:"P2 – Ambulant", q:"Nenne Pflegegeld und Pflegesachleistungen (2025) für PG 2–5 in Stichpunkten.", tip:["PG2 347€/796€; PG3 599€/1497€; PG4 800€/1859€; PG5 990€/2299€ (gesetzlich)."]},
+      {ref:"P3 – Stationär", q:"Welche monatlichen Leistungen gibt es bei vollstationärer Pflege (PG 2–5)?", tip:["PG2 1.061€; PG3 1.575€; PG4 2.111€; PG5 2.351€ (gesetzlich)."]}
     ]},
     {key:"alo", title:"Arbeitslosigkeit (SGB III)", icon:"briefcase", data:[
-      {ref:"A1 – Zweck & Leistungen", q:"Wozu dient die Arbeitslosenversicherung und welche Hauptleistungen nennt das SGB III?", tip:["Sicherung des Lebensunterhalts durch Arbeitslosengeld; Förderung von Weiterbildung; Wiedereingliederung (§§ 136–138, § 81 SGB III)."]},
-      {ref:"A2 – Beitrag", q:"Wie hoch ist der Beitragssatz (2025) und wie wird er getragen? Was ist die BBG?", tip:["2,6% vom Brutto, je 1,3% AG/AN; BBG 2025: 96.600€ p. a.; Abführung mit Gesamtsozialversicherungsbeitrag (§ 28d SGB IV)."]}
+      {ref:"A1 – Zweck & Leistungen", q:"Wozu dient die Arbeitslosenversicherung und welche Hauptleistungen nennt das SGB III?", tip:["Lebensunterhalt ALG; Förderung Weiterbildung; Wiedereingliederung (§§ 136–138, § 81 SGB III)."]}
     ]},
     {key:"sgbvi", title:"Rente (SGB VI)", icon:"banknote", data:[
-      {ref:"V I – Aufgaben RV", q:"Nenne Ziel/Aufgaben der gesetzlichen Rentenversicherung laut SGB VI.", tip:["Sicherung im Alter, bei Erwerbsminderung, für Hinterbliebene; Reha vor Rente."]},
-      {ref:"V II – Personenkreis", q:"Wer gehört typischerweise zum versicherten Personenkreis der RV?", tip:["Beschäftigte; bestimmte Selbständige; Pflegepersonen (u. a.)."]},
-      {ref:"V III – Rentenarten", q:"Nenne mindestens drei Rentenarten der gesetzlichen Rentenversicherung.", tip:["Regelaltersrente; Altersrenten (versch. Altersgrenzen); Rente wegen Erwerbsminderung; Hinterbliebenenrenten."]}
-    ]},
-    {key:"sgb", title:"Sozialgerichtsbarkeit", icon:"gavel", data:[
-      {ref:"S1 – Aufbau", q:"Skizziere den Instanzenzug der Sozialgerichtsbarkeit (unten → oben).", tip:["Sozialgericht (Kammern) → Landessozialgericht (Senate) → Bundessozialgericht (Senate). Vorher: Widerspruchsverfahren."]},
-      {ref:"S2 – BSG-Rolle", q:"Welche Aufgabe hat das Bundessozialgericht im Wesentlichen?", tip:["Revisionsgericht – entscheidet über Rechtsfragen; an Tatsachenfeststellungen gebunden; ggf. Zurückverweisung."]},
-      {ref:"S3 – Zuständigkeit", q:"Nenne drei Sachgebiete, für die die Sozialgerichte zuständig sind.", tip:["z. B. SGB V/VI/VII/XI, Grundsicherung, Sozialhilfe, Vertragsarztrecht, Künstlersozialversicherung."]}
+      {ref:"V I – Aufgaben RV", q:"Nenne Ziel/Aufgaben der gesetzlichen Rentenversicherung laut SGB VI.", tip:["Alter/EM/Hinterbliebene; Reha vor Rente."]},
+      {ref:"V III – Rentenarten", q:"Nenne mindestens drei Rentenarten der gesetzlichen Rentenversicherung.", tip:["Regelalters-, Alters-, EM-, Hinterbliebenenrenten."]}
     ]}
   ];
 
-  // Minimaler §-Index für Quicklook
   const LAW_INDEX=[
     {law:"SGB XI", para:"Leistungen ambulant/stationär", tags:["pflege","leistung","pflegegrad"], excerpt:"Ambulant (PG2–5): 347/599/800/990 € Pflegegeld; 796/1497/1859/2299 € Sachleistung. Stationär: 1.061–2.351 € (PG2–5).", link:"https://www.gesetze-im-internet.de/sgb_11/"},
-    {law:"SGB III", para:"§§ 136–138; § 81; § 341; § 28d SGB IV", tags:["alo","beitrag","bbg"], excerpt:"Arbeitslosenversicherung: Zweck/Leistungen; Weiterbildung; Beitrag 2,6% (1,3/1,3); BBG 2025: 96.600 €.", link:"https://www.gesetze-im-internet.de/sgb_03/"},
-    {law:"SGB VI", para:"§§ 1, 33, 43", tags:["rente","arten"], excerpt:"Ziele/Aufgaben; Rentenarten inkl. EM-Rente; Hinterbliebenenleistungen.", link:"https://www.gesetze-im-internet.de/sgb_06/"},
+    {law:"SGB III", para:"§§ 136–138; § 81", tags:["alo","weiterbildung","alg"], excerpt:"Zweck/Leistungen; Förderung der beruflichen Weiterbildung.", link:"https://www.gesetze-im-internet.de/sgb_03/"},
+    {law:"SGB VI", para:"§§ 1, 33, 43", tags:["rente","arten"], excerpt:"Ziele/Aufgaben; Rentenarten inkl. EM-Rente; Hinterbliebene.", link:"https://www.gesetze-im-internet.de/sgb_06/"},
     {law:"BBiG", para:"§§ 11, 15, 17, 20", tags:["ausbildung","vertrag","freistellung","miav","probezeit"], excerpt:"Vertragsinhalte, Freistellung, Vergütung, Probezeit.", link:"https://www.gesetze-im-internet.de/bbig_2005/"},
     {law:"JArbSchG", para:"Ruhezeit/Pausen", tags:["jugendliche","arbeitszeit"], excerpt:"Ruhezeit mind. 12 h; besondere Schutzregeln.", link:"https://www.gesetze-im-internet.de/jarbschg/"}
   ];
 
-  /* State */
-  let domain="ausbildung"; // 'ausbildung' | 'sozialrecht'
+  let domain="ausbildung"; // ausbildung | sozialrecht
   let answersByRef={}, selectedByRef={};
+  let activeKey;
 
-  // Restore
   (function restore(){
     try{
       const s=JSON.parse(localStorage.getItem(STORAGE)||"{}");
@@ -367,19 +333,19 @@ document.addEventListener("DOMContentLoaded", () => {
     setDomButtons();
   })();
 
-  /* Domain switch */
   function setDomButtons(){
     domAusb.setAttribute("aria-pressed", domain==="ausbildung");
     domSoz.setAttribute("aria-pressed", domain==="sozialrecht");
   }
   function getClusters(){ return domain==="ausbildung" ? AUS_CLUSTERS : SOZ_CLUSTERS; }
+
   domAusb.addEventListener("click", ()=>{ domain="ausbildung"; setDomButtons(); renderTabs(); renderQuestions(); saveState(); });
   domSoz.addEventListener("click", ()=>{ domain="sozialrecht"; setDomButtons(); renderTabs(); renderQuestions(); saveState(); });
 
-  /* Tabs */
   function renderTabs(){
     tabs.innerHTML=""; clusterSelect.innerHTML="";
-    getClusters().forEach((c,idx)=>{
+    const pack=getClusters();
+    pack.forEach((c,idx)=>{
       const b=document.createElement("button");
       b.type="button"; b.className="tab"; b.setAttribute("aria-selected", idx===0?"true":"false");
       if(idx===0) activeKey=c.key;
@@ -398,12 +364,11 @@ document.addEventListener("DOMContentLoaded", () => {
   }
   clusterSelect.addEventListener("change", e=>{ activeKey=e.target.value; updateSelTab(); renderQuestions(); saveState(); });
 
-  /* Questions */
-  let activeKey;
   function currentQs(){
     const c = getClusters().find(x=>x.key===activeKey) || getClusters()[0];
     return c? c.data : [];
   }
+
   function renderQuestions(){
     const pack=getClusters();
     if(!activeKey) activeKey=pack[0].key;
@@ -447,6 +412,16 @@ document.addEventListener("DOMContentLoaded", () => {
       cb.addEventListener("change", ()=>{ selectedByRef[item.ref]=cb.checked; updateSel(); saveState(); });
     });
 
+    // NEW: per-Frage-Quicklook -> öffnet Modal mit Vorausfüllung
+    form.querySelectorAll("[data-quick]").forEach(btn=>{
+      btn.addEventListener("click", (e)=>{
+        const idx=Number(e.currentTarget.getAttribute("data-quick"));
+        const item=currentQs()[idx];
+        const seed=(item?.ref||"")+" "+(item?.q||"");
+        openQL(seed);
+      });
+    });
+
     form.querySelectorAll("[data-fill]").forEach(btn=>{
       btn.addEventListener("click", ()=>{
         const ta=document.getElementById(btn.getAttribute("data-fill"));
@@ -484,7 +459,6 @@ document.addEventListener("DOMContentLoaded", () => {
     progressTxt.textContent = `${answered} / ${refs.length||0} beantwortet`;
   }
 
-  /* Prompts – wohlwollend */
   function buildPromptSingle(item,answer){
     return `Beurteile **wohlwollend** eine Kurzantwort (BBiG/JArbSchG/SGB etc.). Wenn die geforderte Anzahl erfüllt ist, schreibe **"passt"** und ergänze nur optional.
 - Kurzfeedback (max 2 Sätze, inkl. "passt" bei Erfüllung)
@@ -526,11 +500,21 @@ ${list.map(a=>`Q (${a.ref}): ${a.question}\nAntwort: ${a.answer||"(leer)"}`).joi
     renderQuestions(); saveState();
   });
 
-  /* Quicklook */
-  function openQL(){ qlBackdrop.classList.remove("hidden"); qlModal.classList.remove("hidden"); qlModal.classList.add("flex"); qlSearch.value=""; renderQL(""); }
+  /* Quicklook (global + mit Seed) */
+  function openQL(seed=""){
+    qlBackdrop.classList.remove("hidden");
+    qlModal.classList.remove("hidden");
+    qlModal.classList.add("flex");
+    qlSearch.value=seed;
+    renderQL(seed);
+    qlSearch.focus();
+  }
   function closeQL(){ qlBackdrop.classList.add("hidden"); qlModal.classList.add("hidden"); qlModal.classList.remove("flex"); }
   function renderQL(q){
-    const query=(q||"").toLowerCase(); const list=query? LAW_INDEX.filter(x=>x.para.toLowerCase().includes(query)||x.law.toLowerCase().includes(query)||x.tags.some(t=>t.includes(query))) : LAW_INDEX;
+    const query=(q||"").toLowerCase();
+    const list = query
+      ? LAW_INDEX.filter(x=> x.para.toLowerCase().includes(query) || x.law.toLowerCase().includes(query) || x.tags.some(t=>t.toLowerCase().includes(query)) )
+      : LAW_INDEX;
     qlList.innerHTML = list.map(x=>`
       <div class="p-3 rounded-xl border hover:bg-[color:var(--surface3)]">
         <div class="flex items-center justify-between">
@@ -541,46 +525,36 @@ ${list.map(a=>`Q (${a.ref}): ${a.question}\nAntwort: ${a.answer||"(leer)"}`).joi
         <div class="mt-1 flex flex-wrap gap-1">${x.tags.map(t=>`<span class="badge">${t}</span>`).join("")}</div>
       </div>`).join("");
   }
-  quickBtn.addEventListener("click", openQL);
+  quickBtn.addEventListener("click", ()=>openQL(""));
   qlBackdrop.addEventListener("click", closeQL);
   qlClose.addEventListener("click", closeQL);
   qlSearch.addEventListener("input", e=>renderQL(e.target.value));
-  document.addEventListener("keydown", e=>{ if(e.key==="?") openQL(); });
+  document.addEventListener("keydown", e=>{ if(e.key==="?") openQL(""); });
 
-  /* Autosave */
   function saveState(){ localStorage.setItem(STORAGE, JSON.stringify({domain,answersByRef,selectedByRef,accepted})); }
   window.addEventListener("beforeunload", saveState);
 
-  /* Linda chat (drag, send) */
+  /* Linda (optional) */
   function pushLinda(role, html){ const d=document.createElement("div"); d.className=`l-msg ${role==='me'?'me':'ai'}`; d.innerHTML=html; lBody.appendChild(d); lBody.scrollTop=lBody.scrollHeight; }
-  function openLinda(){
-    lChat.style.display="block";
-    if (!lBody.dataset.greet){
-      pushLinda("ai","Hallo, ich bin <strong>Linda</strong> 👋<br>Du kannst zwischen <em>Ausbildung</em> und <em>Sozialrecht</em> wechseln. Frag mich z. B.: „Gib mir eine Beispielantwort zu Pflegegrad 3 ambulant.“");
-      lBody.dataset.greet="1";
-    }
-  }
+  function openLinda(){ lChat.style.display="block"; if (!lBody.dataset.greet){ pushLinda("ai","Hallo, ich bin <strong>Linda</strong> 👋 – frag mich zu BBiG oder Sozialrecht."); lBody.dataset.greet="1"; } }
   function closeLinda(){ lChat.style.display="none"; }
   document.getElementById("lindaBtn").addEventListener("click", ()=>{ lChat.style.display=(lChat.style.display==="block")?"none":"block"; });
   lClose.addEventListener("click", closeLinda);
-
-  // Drag
   (function enableDrag(){
     let down=false,sx=0,sy=0,sl=0,st=0;
     lDrag.addEventListener("mousedown",(e)=>{down=true;sx=e.clientX;sy=e.clientY;const r=lChat.getBoundingClientRect();sl=r.left;st=r.top;document.body.style.userSelect="none";});
     window.addEventListener("mousemove",(e)=>{if(!down)return; const dx=e.clientX-sx, dy=e.clientY-sy; lChat.style.left=(sl+dx)+"px"; lChat.style.top=(st+dy)+"px"; lChat.style.right="auto"; lChat.style.bottom="auto";});
     window.addEventListener("mouseup",()=>{down=false;document.body.style.userSelect="";});
-    // default dock
     const dock=()=>{ lChat.style.left=""; lChat.style.top=""; lChat.style.right="16px"; lChat.style.bottom="96px"; };
     dock(); window.addEventListener("resize", dock, {passive:true});
   })();
-
   async function sendLinda(){
     const txt=lText.value.trim(); if(!txt) return;
     pushLinda("me", txt.replace(/</g,"&lt;")); lText.value="";
     try{
-      const out=await callAI({prompt:`Du bist Linda (freundlich, knapp, §-Bezug). Welt: ${domain}. Frage:\n${txt}`});
-      pushLinda("ai", window.marked?marked.parse(out):out);
+      const out=await fetch(relay,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({prompt:`Du bist Linda (freundlich, knapp, §-Bezug). Welt: ${domain}. Frage:\n${txt}`})}).then(r=>r.text());
+      let t; try{const j=JSON.parse(out); t=j.answer||j.content||j.result||out;}catch{t=out;}
+      pushLinda("ai", window.marked?marked.parse(t):t);
     }catch(e){
       pushLinda("ai", `<span class="text-red-600">Fehler: ${String(e).replace(/[<>&]/g,"")}</span>`);
     }
@@ -590,7 +564,6 @@ ${list.map(a=>`Q (${a.ref}): ${a.question}\nAntwort: ${a.answer||"(leer)"}`).joi
 
   /* Init */
   renderTabs(); renderQuestions();
-
 });
 </script>
 </body>
