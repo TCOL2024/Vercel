@@ -3,11 +3,11 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Allianz-inspirierter Stil (Demo)</title>
+<title>Dozenten-Upload-Portal (Demo) – Fragen, Checklisten & Datenschutz</title>
 <style>
   :root {
-    --blue-main: #0b5bb5;     /* Allianz-Blau (angelehnt, nicht 1:1) */
-    --blue-light: #0e7ad3;    /* heller Verlaufston */
+    --blue-main: #0b5bb5;     /* inspiriertes Hauptblau */
+    --blue-light: #0e7ad3;    /* Akzent/Verlauf */
     --blue-bg: #f6f8fb;       /* sehr helles Blau für Flächen */
     --border: #d8e0eb;
     --text: #0f1720;
@@ -17,32 +17,29 @@
     --font: system-ui, "Segoe UI", Arial, sans-serif;
   }
 
+  /* Grundlayout */
   body {
     margin: 0;
     font-family: var(--font);
     color: var(--text);
     background: var(--blue-bg);
   }
-
   header {
     background: linear-gradient(135deg, var(--blue-main), var(--blue-light));
     color: #fff;
     padding: 20px 40px;
     box-shadow: var(--shadow);
   }
-
   header h1 {
     margin: 0;
     font-size: 22px;
     font-weight: 600;
   }
-
   .nav-line {
     height: 4px;
     background: var(--blue-main);
     box-shadow: inset 0 -1px 0 var(--blue-light);
   }
-
   main {
     max-width: 1000px;
     margin: 40px auto;
@@ -52,18 +49,74 @@
     box-shadow: var(--shadow);
     padding: 40px;
   }
-
+  section + section { margin-top: 36px; }
   h2 {
     border-left: 4px solid var(--blue-main);
     padding-left: 10px;
     margin-top: 0;
+    font-size: 20px;
+  }
+  .line { border-top: 1px solid var(--border); margin: 24px 0; }
+
+  /* Formelemente */
+  label { display:block; font-weight:600; margin-bottom:6px; }
+  .hint { font-size:12px; color:var(--muted); margin-top:6px; }
+  input[type="text"], input[type="email"], input[type="url"], select, textarea {
+    width:100%;
+    padding:12px 12px;
+    border:1px solid var(--border);
+    border-radius:10px;
+    font-size:14px;
+    background:#fff;
+    outline:none;
+  }
+  textarea { min-height:120px; resize:vertical; }
+  input:focus, select:focus, textarea:focus { border-color:var(--blue-main); box-shadow:0 0 0 3px rgba(11,91,181,.15); }
+
+  /* Grid */
+  .grid { display:grid; grid-template-columns:repeat(12,1fr); gap:16px; }
+  .col-12 { grid-column:span 12; }
+  .col-6 { grid-column:span 6; }
+  .col-4 { grid-column:span 4; }
+  .col-8 { grid-column:span 8; }
+  @media (max-width: 900px) { .col-6, .col-4, .col-8 { grid-column:span 12; } }
+
+  /* Karten */
+  .card {
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    background:#fff;
+    box-shadow: var(--shadow);
+    padding:22px;
+  }
+  .card h3 {
+    margin:0 0 12px 0;
+    font-size:16px;
+    border-left: 3px solid var(--blue-light);
+    padding-left:10px;
   }
 
-  .line {
-    border-top: 1px solid var(--border);
-    margin: 30px 0;
-  }
+  /* Checklisten */
+  .checklist { display:grid; gap:10px; margin-top:8px; }
+  .checklist label { display:flex; gap:10px; font-weight:500; cursor:pointer; }
+  .checklist input[type="checkbox"] { transform:translateY(2px); }
 
+  /* Details (aufklappbar) */
+  details {
+    border:1px solid var(--border);
+    border-radius:10px;
+    padding:12px 14px;
+    background:#fbfdff;
+  }
+  details summary {
+    cursor:pointer;
+    font-weight:600;
+    color: var(--blue-main);
+  }
+  details[open] { background:#f3f8ff; }
+
+  /* Buttons */
+  .actions { display:flex; gap:12px; justify-content:flex-end; margin-top:24px; }
   button {
     background: linear-gradient(135deg, var(--blue-main), var(--blue-light));
     color: #fff;
@@ -75,16 +128,23 @@
     cursor: pointer;
     box-shadow: var(--shadow);
   }
-
-  button:hover {
-    background: var(--blue-light);
+  button:hover { background: var(--blue-light); }
+  .btn-secondary {
+    background:#fff; color:var(--blue-main);
+    border:1px solid var(--blue-main);
   }
+  button:disabled { opacity:.6; cursor:not-allowed; }
 
   footer {
-    text-align: center;
-    color: var(--muted);
-    padding: 30px;
-    font-size: 13px;
+    max-width:1000px; margin:20px auto 40px;
+    text-align: center; color: var(--muted); font-size: 13px;
+  }
+
+  /* Mini-Info-Badges */
+  .badge {
+    display:inline-block; font-size:12px; color:var(--muted);
+    border:1px solid var(--border); padding:4px 8px; border-radius:999px;
+    background:#f7faff;
   }
 </style>
 </head>
@@ -93,12 +153,47 @@
     <h1>Dozenten-Upload-Portal (Demo)</h1>
   </header>
   <div class="nav-line"></div>
+
   <main>
-    <h2>Beispielbereich</h2>
-    <p>Hier kann später das Upload- oder Formularmodul eingebunden werden.</p>
-    <div class="line"></div>
-    <button>Weiter</button>
-  </main>
-  <footer>© 2025 Jens Demoportal</footer>
-</body>
-</html>
+    <!-- FRAGEN -->
+    <section id="fragen">
+      <h2>Fragen zum Inhalt</h2>
+      <div class="grid">
+        <div class="col-6">
+          <label for="titel">Arbeitstitel *</label>
+          <input id="titel" name="titel" type="text" placeholder="z. B. Sozialrecht – Mutterschutz kompakt" required />
+          <div class="hint">Klarer, kurzer Titel</div>
+        </div>
+        <div class="col-6">
+          <label for="zielgruppe">Zielgruppe *</label>
+          <input id="zielgruppe" name="zielgruppe" type="text" placeholder="z. B. Ausbilder, AEVO, Bilanzbuchhalter" required />
+          <div class="hint">Wer soll es nutzen?</div>
+        </div>
+
+        <div class="col-12">
+          <label for="kurzbeschreibung">Kurzbeschreibung (max. 3 Sätze) *</label>
+          <textarea id="kurzbeschreibung" name="kurzbeschreibung" placeholder="Worum geht es, welches Problem löst der Inhalt?"></textarea>
+        </div>
+
+        <div class="col-12">
+          <label for="lernergebnisse">Lernergebnisse (Bulletpoints, je 1 Zeile) *</label>
+          <textarea id="lernergebnisse" name="lernergebnisse" placeholder="- Kann Mutterschutzfristen benennen
+- Unterscheidet U1/U2-System
+- Kennt Anspruchsvoraussetzungen …"></textarea>
+        </div>
+
+        <div class="col-12">
+          <label for="inhalt">Inhalt / Stichworte *</label>
+          <textarea id="inhalt" name="inhalt" placeholder="Stichworte oder kurzer Fließtext, der dem Bot hilft zu verstehen …"></textarea>
+        </div>
+
+        <div class="col-6">
+          <label for="metatags">Schlagworte (Kommagetrennt)</label>
+          <input id="metatags" name="metatags" type="text" placeholder="z. B. Mutterschutz, U2, Sozialrecht, AEVO" />
+        </div>
+        <div class="col-6">
+          <label for="quelle">Quellen/Referenzen (optional)</label>
+          <input id="quelle" name="quelle" type="text" placeholder="z. B. § 3 MuSchG; BSG, Urteil …; Link" />
+        </div>
+      </div>
+      <
