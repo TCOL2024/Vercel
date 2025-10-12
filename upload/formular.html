@@ -30,7 +30,7 @@
   .label{font-weight:600;margin-bottom:8px}
   .line{width:100%;background:transparent;border:0;border-bottom:2px solid var(--border);padding:12px 4px;font-size:18px;color:inherit;outline:none}
   .line:focus{border-bottom-color:var(--accent)}
-  /* "Moderne" Auswahl als Kachel-Chips über native <select> */
+  /* „moderne“ Auswahl-Chips */
   .select-shell{position:relative}
   .select-shell select{appearance:none}
   .chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
@@ -52,6 +52,7 @@
   .err{background:rgba(239,68,68,.12);color:#b91c1c}
   #file{display:none}
   iframe[name="silentTarget"]{display:none}
+  textarea{width:100%;min-height:110px;resize:vertical;border:1px solid var(--border);border-radius:12px;padding:12px;background:transparent;color:inherit}
 </style>
 </head>
 <body>
@@ -92,7 +93,9 @@
     <!-- klassischer POST ins versteckte Iframe -->
     <iframe name="silentTarget"></iframe>
 
-    <form id="form" action="ACTION_WEBHOOK_URL" method="POST" enctype="multipart/form-data" target="silentTarget" novalidate>
+    <form id="form"
+          action="https://hook.us2.make.com/qlecolu10q72phwu7i8ksnvcypx67qe4"
+          method="POST" enctype="multipart/form-data" target="silentTarget" novalidate>
       <div class="row cols-2">
         <div class="field">
           <div class="label">Vorname *</div>
@@ -121,7 +124,6 @@
             <option>Bachelor Prof. Versicherung und Finanzanlagen</option>
             <option>Sonstige</option>
           </select>
-          <!-- „moderne“ Chips, die den Select spiegeln -->
           <div class="chips" data-link="kurs">
             <button class="chip" type="button" data-val="PFK">PFK</button>
             <button class="chip" type="button" data-val="Wirtschaftsfachwirte">Wirtschaftsfachwirte</button>
@@ -156,6 +158,12 @@
         </div>
       </div>
 
+      <!-- Beschreibung -->
+      <div class="field">
+        <div class="label">Beschreibung / Hinweise (optional)</div>
+        <textarea name="beschreibung" id="beschreibung" placeholder="Kurzbeschreibung, Kursbezug, Version, Besonderheiten …"></textarea>
+      </div>
+
       <!-- Datei-Upload -->
       <div class="field">
         <div class="label">Datei(en) *</div>
@@ -166,12 +174,6 @@
                  accept=".pdf,.docx,.pptx,.xlsx,.jpg,.jpeg,.png,.html,.htm" required>
         </div>
         <div id="files" class="files" hidden></div>
-      </div>
-
-      <!-- optional: Zielname, wenn nur 1 Datei -->
-      <div class="field">
-        <div class="label">Ziel-Dateiname (optional)</div>
-        <input class="line" type="text" name="target_name" id="target_name" placeholder="z. B. Handout_Kommunikation.html">
       </div>
 
       <!-- Hidden für Make/SharePoint -->
@@ -214,7 +216,7 @@
     document.getElementById('vorname').focus();
   });
 
-  // --- Fancy chips for selects
+  // --- Chips für Selects
   function wireChips(shell){
     const selectId = shell.dataset.link;
     const select = document.getElementById(selectId);
@@ -224,12 +226,11 @@
       chips.forEach(c => c.setAttribute('aria-checked', c.dataset.val===val ? 'true' : 'false'));
     }
     chips.forEach(c => c.addEventListener('click', ()=> set(c.dataset.val)));
-    // init if already selected
     if(select.value) set(select.value);
   }
   document.querySelectorAll('.chips').forEach(wireChips);
 
-  // --- Upload UI (klassischer Form-POST beibehalten)
+  // --- Upload UI (klassischer POST beibehalten)
   const drop = document.getElementById('drop');
   const fileInput = document.getElementById('file');
   const filesBox = document.getElementById('files');
@@ -263,8 +264,6 @@
       [...fileInput.files].forEach((f,idx)=>{ if(idx!==i) dt.items.add(f); });
       fileInput.files=dt.files; renderList();
     }));
-    const tn=document.getElementById('target_name');
-    if(list.length===1 && !tn.value) tn.value=list[0].name;
   }
 
   function validate(){
@@ -275,7 +274,6 @@
     return true;
   }
 
-  // klassischer POST ins iframe
   form.addEventListener('submit', (e)=>{
     if(!validate()){ e.preventDefault(); return; }
     okMsg.style.display='block'; setTimeout(()=> okMsg.style.display='none', 3000);
