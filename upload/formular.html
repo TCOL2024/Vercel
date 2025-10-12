@@ -1,430 +1,223 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Dozenten-Upload-Portal (Demo) – Fragen, Checklisten & Datenschutz</title>
-<style>
-  :root {
-    --blue-main: #0b5bb5;     /* inspiriertes Hauptblau */
-    --blue-light: #0e7ad3;    /* Akzent/Verlauf */
-    --blue-bg: #f6f8fb;       /* sehr helles Blau für Flächen */
-    --border: #d8e0eb;
-    --text: #0f1720;
-    --muted: #5b6673;
-    --shadow: 0 2px 6px rgba(0,0,0,.08);
-    --radius: 12px;
-    --font: system-ui, "Segoe UI", Arial, sans-serif;
-  }
+  <meta charset="utf-8" />
+  <title>Dokumenten-Upload · OneDrive via Make</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="color-scheme" content="light dark">
+  <style>
+    :root{
+      --bg:#0b1220; --panel:#0f172a; --ink:#e5e7eb; --muted:#94a3b8; --border:#1f2a44;
+      --accent:#7c3aed; --accent-2:#2563eb; --ok:#10b981; --err:#ef4444; --hint:#334155
+    }
+    @media (prefers-color-scheme: light){
+      :root{ --bg:#f6f7fb; --panel:#ffffff; --ink:#0f1720; --muted:#5b6673; --border:#e6e8f0; --hint:#eef2f7 }
+    }
+    *{box-sizing:border-box}
+    body{margin:0;background:linear-gradient(135deg,var(--hint),transparent 40%) fixed, var(--bg);
+         font:16px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,Inter,Arial,sans-serif; color:var(--ink)}
+    .wrap{max-width:880px;margin:40px auto;padding:20px}
+    .card{background:var(--panel);border:1px solid var(--border);border-radius:18px;padding:24px;
+          box-shadow:0 6px 32px rgba(0,0,0,.12)}
+    h1{margin:0 0 8px;font-size:24px}
+    p.lead{margin:0 0 18px;color:var(--muted)}
+    .grid{display:grid;gap:16px;grid-template-columns:1fr}
+    @media(min-width:720px){ .grid{grid-template-columns:1fr 1fr} }
 
-  /* Grundlayout */
-  body {
-    margin: 0;
-    font-family: var(--font);
-    color: var(--text);
-    background: var(--blue-bg);
-  }
-  header {
-    background: linear-gradient(135deg, var(--blue-main), var(--blue-light));
-    color: #fff;
-    padding: 20px 40px;
-    box-shadow: var(--shadow);
-  }
-  header h1 { margin: 0; font-size: 22px; font-weight: 600; }
-  .nav-line {
-    height: 4px;
-    background: var(--blue-main);
-    box-shadow: inset 0 -1px 0 var(--blue-light);
-  }
-  main {
-    max-width: 1000px;
-    margin: 40px auto;
-    background: #fff;
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    box-shadow: var(--shadow);
-    padding: 40px;
-  }
-  section + section { margin-top: 36px; }
-  h2 {
-    border-left: 4px solid var(--blue-main);
-    padding-left: 10px;
-    margin-top: 0;
-    font-size: 20px;
-  }
-  .line { border-top: 1px solid var(--border); margin: 24px 0; }
+    .drop{border:2px dashed var(--border);border-radius:14px;padding:26px;text-align:center;background:var(--hint)}
+    .drop.drag{border-color:var(--accent); background-color:rgba(124,58,237,.08)}
+    .drop strong{display:block;margin-bottom:8px}
+    .drop small{color:var(--muted)}
 
-  /* Formelemente */
-  label { display:block; font-weight:600; margin-bottom:6px; }
-  .hint { font-size:12px; color:var(--muted); margin-top:6px; }
-  input[type="text"], input[type="email"], input[type="url"], select, textarea {
-    width:100%;
-    padding:12px 12px;
-    border:1px solid var(--border);
-    border-radius:10px;
-    font-size:14px;
-    background:#fff;
-    outline:none;
-  }
-  textarea { min-height:120px; resize:vertical; }
-  input:focus, select:focus, textarea:focus { border-color:var(--blue-main); box-shadow:0 0 0 3px rgba(11,91,181,.15); }
+    label{display:block;font-weight:600;margin:6px 0 8px}
+    input[type="text"],input[type="password"]{
+      width:100%;padding:12px;border:1px solid var(--border);border-radius:10px;background:transparent;color:var(--ink)
+    }
+    input::placeholder{color:#9aa6b2}
+    .files{margin-top:10px;border:1px dashed var(--border);border-radius:12px;padding:10px;max-height:220px;overflow:auto;background:rgba(0,0,0,.03)}
+    .file{display:flex;justify-content:space-between;gap:12px;padding:8px 10px;border-radius:10px}
+    .file + .file{margin-top:6px}
+    .file .meta{font-size:14px}
+    .file .meta small{color:var(--muted)}
+    .file .act{display:flex;align-items:center;gap:10px}
+    .file .rm{background:transparent;border:1px solid var(--border);color:var(--muted);padding:6px 10px;border-radius:8px;cursor:pointer}
 
-  /* Grid */
-  .grid { display:grid; grid-template-columns:repeat(12,1fr); gap:16px; }
-  .col-12 { grid-column:span 12; }
-  .col-6  { grid-column:span 6; }
-  .col-4  { grid-column:span 4; }
-  .col-8  { grid-column:span 8; }
-  @media (max-width: 900px) { .col-6, .col-4, .col-8 { grid-column:span 12; } }
+    .bar{margin-top:16px;height:10px;border-radius:999px;background:rgba(0,0,0,.08);overflow:hidden;display:none}
+    .bar > span{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--accent),var(--accent-2))}
+    .hint{margin-top:8px;color:var(--muted);font-size:14px}
 
-  /* Karten */
-  .card {
-    border:1px solid var(--border);
-    border-radius:var(--radius);
-    background:#fff;
-    box-shadow: var(--shadow);
-    padding:22px;
-  }
-  .card h3 {
-    margin:0 0 12px 0;
-    font-size:16px;
-    border-left: 3px solid var(--blue-light);
-    padding-left:10px;
-  }
+    .actions{display:flex;gap:12px;margin-top:16px;flex-wrap:wrap}
+    .btn{appearance:none;border:0;border-radius:12px;padding:12px 16px;cursor:pointer;font-weight:700}
+    .primary{background:linear-gradient(135deg,var(--accent),var(--accent-2));color:#fff}
+    .ghost{background:transparent;border:1px solid var(--border);color:var(--ink)}
 
-  /* Checklisten */
-  .checklist { display:grid; gap:10px; margin-top:8px; }
-  .checklist label { display:flex; gap:10px; font-weight:500; cursor:pointer; }
-  .checklist input[type="checkbox"] { transform:translateY(2px); }
+    .note{margin-top:14px;padding:10px;border-radius:10px;background:rgba(16,185,129,.12);color:#047857;display:none}
+    .err{margin-top:14px;padding:10px;border-radius:10px;background:rgba(239,68,68,.12);color:#b91c1c;display:none}
 
-  /* Details (aufklappbar) */
-  details {
-    border:1px solid var(--border);
-    border-radius:10px;
-    padding:12px 14px;
-    background:#fbfdff;
-  }
-  details summary { cursor:pointer; font-weight:600; color: var(--blue-main); }
-  details[open] { background:#f3f8ff; }
-
-  /* Buttons */
-  .actions { display:flex; gap:12px; justify-content:flex-end; margin-top:24px; }
-  button {
-    background: linear-gradient(135deg, var(--blue-main), var(--blue-light));
-    color: #fff;
-    border: none;
-    padding: 12px 20px;
-    border-radius: var(--radius);
-    font-size: 15px;
-    font-weight: 600;
-    cursor: pointer;
-    box-shadow: var(--shadow);
-  }
-  button:hover { background: var(--blue-light); }
-  .btn-secondary {
-    background:#fff; color:var(--blue-main);
-    border:1px solid var(--blue-main);
-  }
-  button:disabled { opacity:.6; cursor:not-allowed; }
-
-  footer {
-    max-width:1000px; margin:20px auto 40px;
-    text-align: center; color: var(--muted); font-size: 13px;
-  }
-
-  /* Mini-Info-Badges */
-  .badge {
-    display:inline-block; font-size:12px; color:var(--muted);
-    border:1px solid var(--border); padding:4px 8px; border-radius:999px;
-    background:#f7faff;
-  }
-</style>
+    .kbd{font-family:ui-monospace,Consolas,monospace;font-size:12px;padding:2px 6px;border-radius:6px;background:rgba(0,0,0,.08)}
+    footer{margin-top:16px;color:var(--muted);font-size:13px;text-align:right}
+    /* Hide the raw file input – click on the drop zone instead */
+    #file{display:none}
+  </style>
 </head>
 <body>
-  <header>
-    <h1>Dozenten-Upload-Portal (Demo)</h1>
-  </header>
-  <div class="nav-line"></div>
+  <div class="wrap">
+    <div class="card">
+      <h1>📤 Dokumenten-Upload nach OneDrive</h1>
+      <p class="lead">Eleganter Drag&Drop-Upload. Läuft über deinen Make-Webhook (multipart/form-data, kein CORS-Stress).</p>
 
-  <main>
-    <!-- FRAGEN -->
-    <section id="fragen">
-      <h2>Fragen zum Inhalt</h2>
-      <div class="grid">
-        <div class="col-6">
-          <label for="titel">Arbeitstitel *</label>
-          <input id="titel" name="titel" type="text" placeholder="z. B. Sozialrecht – Mutterschutz kompakt" required />
-          <div class="hint">Klarer, kurzer Titel</div>
-        </div>
-        <div class="col-6">
-          <label for="zielgruppe">Zielgruppe *</label>
-          <input id="zielgruppe" name="zielgruppe" type="text" placeholder="z. B. Ausbilder, AEVO, Bilanzbuchhalter" required />
-          <div class="hint">Wer soll es nutzen?</div>
-        </div>
+      <!-- Hidden iframe als Ziel für den klassischen Form-POST -->
+      <iframe name="silentTarget" style="display:none" id="silentTarget"></iframe>
 
-        <div class="col-12">
-          <label for="kurzbeschreibung">Kurzbeschreibung (max. 3 Sätze) *</label>
-          <textarea id="kurzbeschreibung" name="kurzbeschreibung" placeholder="Worum geht es, welches Problem löst der Inhalt?"></textarea>
-        </div>
-
-        <div class="col-12">
-          <label for="lernergebnisse">Lernergebnisse (Bulletpoints, je 1 Zeile) *</label>
-          <textarea id="lernergebnisse" name="lernergebnisse" placeholder="- Kann Mutterschutzfristen benennen
-- Unterscheidet U1/U2-System
-- Kennt Anspruchsvoraussetzungen …"></textarea>
-        </div>
-
-        <div class="col-12">
-          <label for="inhalt">Inhalt / Stichworte *</label>
-          <textarea id="inhalt" name="inhalt" placeholder="Stichworte oder kurzer Fließtext, der dem Bot hilft zu verstehen …"></textarea>
-        </div>
-
-        <div class="col-6">
-          <label for="metatags">Schlagworte (Kommagetrennt)</label>
-          <input id="metatags" name="metatags" type="text" placeholder="z. B. Mutterschutz, U2, Sozialrecht, AEVO" />
-        </div>
-        <div class="col-6">
-          <label for="quelle">Quellen/Referenzen (optional)</label>
-          <input id="quelle" name="quelle" type="text" placeholder="z. B. § 3 MuSchG; BSG, Urteil …; Link" />
-        </div>
-      </div>
-      <div class="line"></div>
-
-      <div class="grid">
-        <div class="col-12 card">
-          <h3>Didaktischer Einsatz</h3>
-          <div class="grid">
-            <div class="col-6">
-              <label for="einsatzform">Einsatzform</label>
-              <select id="einsatzform" name="einsatzform">
-                <option value="">– bitte wählen –</option>
-                <option>Quiz (MC/SC)</option>
-                <option>FAQ</option>
-                <option>Fallbeispiel</option>
-                <option>Kurzskript</option>
-                <option>Checkliste</option>
-              </select>
+      <!-- Formular: klassischer POST ins iframe -->
+      <form id="uplForm" action="ACTION_WEBHOOK_URL" method="POST" enctype="multipart/form-data" target="silentTarget">
+        <div class="grid">
+          <section>
+            <label>Datei(en)</label>
+            <div id="drop" class="drop" tabindex="0" role="button" aria-label="Datei hier ablegen oder klicken">
+              <strong>Ziehen & ablegen oder klicken</strong>
+              <small>Erlaubte Typen: HTML, PDF, PNG, JPG, DOCX • Max. 15 MB je Datei</small>
+              <input id="file" name="file" type="file" multiple>
             </div>
-            <div class="col-6">
-              <label for="umfang">Umfang</label>
-              <select id="umfang" name="umfang">
-                <option value="">– bitte wählen –</option>
-                <option>kurz (≤ 1 Seite)</option>
-                <option>mittel (2–4 Seiten)</option>
-                <option>ausführlich (≥ 5 Seiten)</option>
-              </select>
-            </div>
-            <div class="col-12">
-              <label for="hinweise">Besondere Hinweise (Stil, Ton, Grenzen)</label>
-              <textarea id="hinweise" name="hinweise" placeholder="z. B. neutral, juristisch sauber, ohne Tendenzen …"></textarea>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
+            <div id="files" class="files" hidden></div>
+          </section>
 
-    <!-- CHECKLISTEN -->
-    <section id="checklisten">
-      <h2>Checklisten</h2>
-
-      <div class="grid">
-        <div class="col-12 card">
-          <h3>Inhalts- & Qualitätscheck</h3>
-          <div class="checklist">
-            <label><input type="checkbox" id="cl-aktuell"> Inhalt ist aktuell (Rechtsstand, Datum geprüft)</label>
-            <label><input type="checkbox" id="cl-quellen"> Quellen/Paragraphen sind, falls nötig, angegeben</label>
-            <label><input type="checkbox" id="cl-struktur"> Struktur ist klar (Überschriften, Bulletpoints)</label>
-            <label><input type="checkbox" id="cl-neutral"> Neutrale, sachliche Formulierungen</label>
-            <label><input type="checkbox" id="cl-barriere"> Verständliche Sprache (barrierearm, keine Fachjargon-Überlast)</label>
-          </div>
+          <section>
+            <label>Ziel-Dateiname (optional, bei Einzeldokument)</label>
+            <input id="target_name" name="target_name" type="text" placeholder="z. B. handout.html">
+            <label style="margin-top:14px">Secret (optional, empfohlen)</label>
+            <input id="token" name="token" type="password" autocomplete="off" placeholder="z. B. UPL-SECRET-123">
+            <p class="hint">Tipp: Im Webhook einen Filter <span class="kbd">token == …</span> setzen.</p>
+          </section>
         </div>
 
-        <div class="col-12 card">
-          <h3>Recht & Nutzung</h3>
-          <div class="checklist">
-            <label><input type="checkbox" id="cl-urheber"> Ich besitze die Rechte oder die Nutzung ist gestattet</label>
-            <label><input type="checkbox" id="cl-pii"> Keine personenbezogenen Daten enthalten</label>
-            <label><input type="checkbox" id="cl-lizenzen"> Lizenzen von Bildern/Grafiken sind geklärt</label>
-            <label><input type="checkbox" id="cl-ki"> KI-Einsatz (falls genutzt) ist gekennzeichnet</label>
-          </div>
+        <div class="bar" id="bar"><span id="barIn"></span></div>
+
+        <div class="actions">
+          <button type="button" class="btn ghost" id="pickBtn">Datei auswählen</button>
+          <button class="btn primary" id="sendBtn">Hochladen</button>
+          <button type="reset" class="btn ghost">Zurücksetzen</button>
         </div>
-      </div>
-    </section>
 
-    <!-- DATENSCHUTZ -->
-    <section id="datenschutz">
-      <h2>Datenschutzhinweise</h2>
+        <div id="ok" class="note">✅ Upload gestartet – Ergebnis kommt gleich zurück.</div>
+        <div id="err" class="err">❌ Bitte wähle mindestens eine gültige Datei.</div>
+      </form>
 
-      <div class="card">
-        <p class="badge">Kurzüberblick</p>
-        <ul>
-          <li><strong>Zweck:</strong> Einreichung von Lehrinhalten zur Verarbeitung in Bots/Assistenzsystemen.</li>
-          <li><strong>Rechtsgrundlage:</strong> Art. 6 Abs. 1 lit. b DSGVO (Erfüllung eines Vertrags) und/oder lit. f (berechtigte Interessen, effiziente Lehrorganisation).</li>
-          <li><strong>Datenarten:</strong> Kontakt- und Inhaltsdaten (Titel, Beschreibung, Dateien, Metadaten).</li>
-          <li><strong>Speicherung:</strong> lokal (Browser) zur Entwurfsarbeit; serverseitig nach Übermittlung (z. B. SharePoint/Make-Workflow).</li>
-          <li><strong>Empfänger:</strong> Interne Systeme; optional Auftragsverarbeiter (z. B. Automationsplattformen).</li>
-          <li><strong>Ihre Rechte:</strong> Auskunft, Berichtigung, Löschung, Einschränkung, Widerspruch, Datenübertragbarkeit (Art. 15–21 DSGVO).</li>
-        </ul>
-
-        <details>
-          <summary>Vollständige Hinweise anzeigen</summary>
-          <div class="line"></div>
-          <p><strong>Verantwortlicher:</strong> Betreiber dieses Portals (Kontakt siehe Impressum/Kontaktseite).</p>
-          <p><strong>Empfänger & Übermittlungen:</strong> Sofern zur Zweckerfüllung erforderlich, werden Daten an beauftragte Dienstleister (Auftragsverarbeiter) übermittelt. Eine Drittlandübermittlung erfolgt nur bei Vorliegen geeigneter Garantien (Art. 44 ff. DSGVO).</p>
-          <p><strong>Speicherdauer:</strong> Bis Zweckerfüllung bzw. gesetzlicher Aufbewahrung; Entwürfe lokal bis zur manuellen Löschung.</p>
-          <p><strong>Pflichtangaben:</strong> Gekennzeichnete Felder sind erforderlich, um die Einreichung zu bearbeiten.</p>
-          <p><strong>Widerruf/Einwilligung:</strong> Soweit eine Einwilligung die Grundlage ist, kann diese jederzeit mit Wirkung für die Zukunft widerrufen werden.</p>
-          <p><strong>Beschwerderecht:</strong> Sie haben das Recht, sich bei einer Aufsichtsbehörde zu beschweren (Art. 77 DSGVO).</p>
-          <p class="hint">Dieser Text ist ein Muster und ersetzt keine Rechtsberatung.</p>
-        </details>
-
-        <div class="line"></div>
-        <label style="display:flex; gap:10px; align-items:flex-start;">
-          <input type="checkbox" id="consent" />
-          <span>Ich habe die Datenschutzhinweise gelesen und bin mit der Verarbeitung der oben genannten Daten zum genannten Zweck einverstanden.</span>
-        </label>
-      </div>
-    </section>
-
-    <!-- Aktionen -->
-    <div class="actions">
-      <button type="button" class="btn-secondary" id="btn-save">Speichern (lokal)</button>
-      <button type="button" class="btn-secondary" id="btn-clear">Zurücksetzen</button>
-      <button type="button" id="btn-send" disabled>Prüfen & Senden</button>
+      <footer>
+        <span class="kbd">Form POST</span> · Falls mehrere Dateien gewählt: Make nutzt <span class="kbd">file[1], file[2], …</span>
+      </footer>
     </div>
-  </main>
+  </div>
 
-  <footer>© 2025 Dozenten-Upload-Portal (Demo) • rein privat • Blau-/Linien-Stil</footer>
+  <script>
+    // ============ Konfiguration ============
+    const MAX_MB = 15;
+    const ALLOWED = [
+      "text/html","application/pdf","image/png","image/jpeg",
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    ];
+    // =======================================
 
-<script>
-  // ------- Helper: Feldliste für LocalStorage -------
-  const FIELDS = [
-    "titel","zielgruppe","kurzbeschreibung","lernergebnisse","inhalt","metatags",
-    "quelle","einsatzform","umfang","hinweise",
-    "cl-aktuell","cl-quellen","cl-struktur","cl-neutral","cl-barriere",
-    "cl-urheber","cl-pii","cl-lizenzen","cl-ki","consent"
-  ];
-  const KEY = "dozenten_portal_demo_v1";
+    const drop = document.getElementById('drop');
+    const fileInput = document.getElementById('file');
+    const filesBox = document.getElementById('files');
+    const sendBtn = document.getElementById('sendBtn');
+    const pickBtn = document.getElementById('pickBtn');
+    const ok = document.getElementById('ok');
+    const err = document.getElementById('err');
+    const bar = document.getElementById('bar');
+    const barIn = document.getElementById('barIn');
+    const form = document.getElementById('uplForm');
+    const iframe = document.getElementById('silentTarget');
 
-  function byId(id){ return document.getElementById(id); }
+    function fmt(n){ return (n/1024/1024).toFixed(2) + " MB"; }
 
-  // ------- State laden -------
-  function loadState(){
-    try{
-      const raw = localStorage.getItem(KEY);
-      if(!raw) return;
-      const data = JSON.parse(raw);
-      FIELDS.forEach(id=>{
-        const el = byId(id);
-        if(!el) return;
-        if(el.type === "checkbox"){
-          el.checked = !!data[id];
-        } else {
-          el.value = data[id] ?? "";
-        }
+    // Drag & Drop UX
+    function prevent(e){ e.preventDefault(); e.stopPropagation(); }
+    ['dragenter','dragover'].forEach(ev => drop.addEventListener(ev, e => {
+      prevent(e); drop.classList.add('drag');
+    }));
+    ['dragleave','drop'].forEach(ev => drop.addEventListener(ev, e => {
+      prevent(e); drop.classList.remove('drag');
+    }));
+    drop.addEventListener('click', () => fileInput.click());
+    drop.addEventListener('drop', e => {
+      const list = e.dataTransfer.files;
+      if(list && list.length){ fileInput.files = list; renderList(); }
+    });
+    fileInput.addEventListener('change', renderList);
+    pickBtn.addEventListener('click', () => fileInput.click());
+
+    function renderList(){
+      err.style.display = 'none';
+      filesBox.innerHTML = '';
+      const list = fileInput.files;
+      if(!list || !list.length){ filesBox.hidden = true; return; }
+      [...list].forEach((f, i) => {
+        const el = document.createElement('div');
+        el.className = 'file';
+        el.innerHTML = `
+          <div class="meta">📄 <strong>${f.name}</strong><br><small>${f.type || 'unbekannt'} • ${fmt(f.size)}</small></div>
+          <div class="act"><button type="button" class="rm" data-i="${i}">Entfernen</button></div>`;
+        filesBox.appendChild(el);
       });
-      updateSendButton();
-    }catch(e){ console.warn("Load failed", e); }
-  }
-
-  // ------- State speichern -------
-  function saveState(){
-    const data = {};
-    FIELDS.forEach(id=>{
-      const el = byId(id);
-      if(!el) return;
-      data[id] = (el.type === "checkbox") ? el.checked : el.value;
-    });
-    localStorage.setItem(KEY, JSON.stringify(data));
-    toast("Entwurf lokal gespeichert.");
-  }
-
-  // ------- State löschen -------
-  function clearState(){
-    localStorage.removeItem(KEY);
-    FIELDS.forEach(id=>{
-      const el = byId(id);
-      if(!el) return;
-      if(el.type === "checkbox"){
-        el.checked = false;
-      } else {
-        el.value = "";
-      }
-    });
-    updateSendButton();
-    toast("Entwurf zurückgesetzt.");
-  }
-
-  // ------- Validierung & Buttons -------
-  function isFilled(id){ const v = byId(id).value.trim(); return v.length>0; }
-  function updateSendButton(){
-    const requiredOk =
-      isFilled("titel") &&
-      isFilled("zielgruppe") &&
-      isFilled("kurzbeschreibung") &&
-      isFilled("lernergebnisse") &&
-      isFilled("inhalt");
-    const consentOk = byId("consent").checked;
-    byId("btn-send").disabled = !(requiredOk && consentOk);
-  }
-
-  ["titel","zielgruppe","kurzbeschreibung","lernergebnisse","inhalt","consent"].forEach(id=>{
-    const el = byId(id);
-    el.addEventListener(el.type === "checkbox" ? "change" : "input", updateSendButton);
-  });
-
-  // ------- Pseudo-Senden (hier nur JSON anzeigen) -------
-  function collectData(){
-    const data = {};
-    FIELDS.forEach(id=>{
-      const el = byId(id);
-      if(!el) return;
-      data[id] = (el.type === "checkbox") ? el.checked : el.value.trim();
-    });
-    data["_timestamp"] = new Date().toISOString();
-    return data;
-  }
-
-  function pseudoSend(){
-    // TODO: Hier später Webhook/SharePoint integrieren:
-    // fetch('<WEBHOOK_URL>', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(collectData()) })
-    const data = collectData();
-    console.log("SEND:", data);
-    saveState(); // sicherheitshalber
-    toast("Formulardaten geprüft. Webhook/SharePoint-Anbindung kann hier ergänzt werden.");
-    alert("Vorschau der zu sendenden Daten:\n\n" + JSON.stringify(data, null, 2));
-  }
-
-  // ------- Toast -------
-  let toastTimer = null;
-  function toast(msg){
-    let t = document.querySelector(".toast");
-    if(!t){
-      t = document.createElement("div");
-      t.className = "toast";
-      t.style.position="fixed";
-      t.style.right="16px";
-      t.style.bottom="16px";
-      t.style.background="#111";
-      t.style.color="#fff";
-      t.style.padding="12px 14px";
-      t.style.borderRadius="12px";
-      t.style.boxShadow="0 2px 10px rgba(0,0,0,.2)";
-      t.style.maxWidth="360px";
-      t.style.zIndex="9999";
-      document.body.appendChild(t);
+      filesBox.hidden = false;
+      filesBox.querySelectorAll('.rm').forEach(btn => btn.addEventListener('click', (e)=>{
+        const i = +e.currentTarget.dataset.i;
+        const dt = new DataTransfer();
+        [...fileInput.files].forEach((f, idx) => { if(idx !== i) dt.items.add(f); });
+        fileInput.files = dt.files;
+        renderList();
+      }));
+      // Wenn genau 1 Datei und kein custom Name gesetzt → vorschlagen
+      const tn = document.getElementById('target_name');
+      if(list.length === 1 && !tn.value) tn.value = list[0].name;
     }
-    t.textContent = msg;
-    t.style.opacity="1";
-    clearTimeout(toastTimer);
-    toastTimer = setTimeout(()=>{ t.style.opacity="0"; }, 2200);
-  }
 
-  // ------- Bindings & Init -------
-  byId("btn-save").addEventListener("click", saveState);
-  byId("btn-clear").addEventListener("click", clearState);
-  byId("btn-send").addEventListener("click", pseudoSend);
-  loadState();
-</script>
+    // Validierung
+    function validate(){
+      const list = fileInput.files;
+      if(!list || !list.length) return { ok:false, msg:"Keine Datei ausgewählt." };
+      for(const f of list){
+        if(f.size > MAX_MB * 1024 * 1024) return { ok:false, msg:`${f.name}: größer als ${MAX_MB} MB.` };
+        if(ALLOWED.length && !ALLOWED.includes(f.type)){
+          // HTML mit leerem type zulassen
+          const isHtmlByName = /\.html?$/i.test(f.name);
+          if(!(isHtmlByName && (!f.type || f.type === 'text/html'))) {
+            return { ok:false, msg:`${f.name}: Dateityp nicht erlaubt (${f.type||'unbekannt'}).` };
+          }
+        }
+      }
+      return { ok:true };
+    }
+
+    // Upload-Ablauf (klassischer Form-POST ins hidden iframe)
+    form.addEventListener('submit', (e)=>{
+      const v = validate();
+      if(!v.ok){
+        e.preventDefault();
+        err.textContent = '❌ ' + v.msg;
+        err.style.display = 'block';
+        return;
+      }
+      // Simple "Fake"-Progress (da klassischer Form POST, kein echter Stream-Progress)
+      bar.style.display = 'block'; barIn.style.width = '15%';
+      ok.style.display = 'block'; err.style.display = 'none';
+      let p = 15;
+      const t = setInterval(()=>{ p = Math.min(p+7, 90); barIn.style.width = p + '%'; }, 180);
+
+      // Wenn das iframe lädt (Response von Make), werten wir das als fertig
+      const onDone = ()=>{
+        clearInterval(t);
+        barIn.style.width = '100%';
+        setTimeout(()=>{ bar.style.display='none'; barIn.style.width='0%'; }, 600);
+        setTimeout(()=>{ ok.style.display='none'; }, 2500);
+        iframe.removeEventListener('load', onDone);
+        // Optional: Formular zurücksetzen
+        // form.reset(); filesBox.hidden = true; filesBox.innerHTML='';
+      };
+      iframe.addEventListener('load', onDone);
+    });
+  </script>
 </body>
 </html>
