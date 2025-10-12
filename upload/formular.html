@@ -2,159 +2,198 @@
 <html lang="de">
 <head>
 <meta charset="utf-8">
-<title>Unterlagen – Bestätigung & Erfassung</title>
+<title>Upload • Einwilligung → Angaben → Datei</title>
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="color-scheme" content="light dark">
 <style>
   :root{
-    --bg:#f4f7f9; --panel:#fff; --ink:#0e1b2a; --muted:#5d6b7a; --border:#dfe6ee;
-    --accent:#1f6ae2; --accent-2:#184db5;
+    --bg:#f5f7fb; --panel:#fff; --ink:#0f1720; --muted:#667085; --border:#e6e8f0;
+    --accent:#2563eb; --accent2:#7c3aed; --ok:#10b981; --err:#ef4444;
+    --chip-bg:#f1f5ff; --chip-br:#c7d2fe
   }
-  @media (prefers-color-scheme: dark){
-    :root{ --bg:#0c1420; --panel:#0f1b2a; --ink:#e6eef7; --muted:#97a7b8; --border:#243246; }
+  @media (prefers-color-scheme:dark){
+    :root{--bg:#0b1220;--panel:#0f172a;--ink:#e5e7eb;--muted:#98a2b3;--border:#22314a;--chip-bg:#111a2d;--chip-br:#233454}
   }
   *{box-sizing:border-box}
-  body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,Inter,Arial,sans-serif}
-  .wrap{max-width:960px;margin:0 auto;padding:28px}
-  .hero{background:var(--panel);border:1px solid var(--border);border-radius:18px;padding:36px 28px;box-shadow:0 6px 28px rgba(0,0,0,.06)}
-  .h-lead{color:var(--muted);margin:6px 0 0}
-  h1{font-size:28px;margin:0 0 6px}
-  h2{font-size:22px;margin:32px 0 10px}
-  p{margin:0 0 14px}
+  body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,-apple-system,"Segoe UI",Inter,Roboto,Arial,sans-serif}
+  .wrap{max-width:980px;margin:0 auto;padding:28px}
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:18px;padding:28px;box-shadow:0 8px 32px rgba(2,6,23,.06)}
+  h1{margin:0 0 6px;font-size:28px}
+  h2{margin:0 0 6px;font-size:22px}
+  .lede{color:var(--muted);margin:0 0 18px}
   .note{background:#eef4ff22;border:1px solid var(--border);padding:16px;border-radius:14px}
   .confirm{display:flex;gap:10px;align-items:flex-start;margin-top:12px}
   .confirm input{margin-top:3px}
-  .actions{margin-top:18px;display:flex;gap:12px;flex-wrap:wrap}
+  .row{display:grid;gap:18px}
+  @media(min-width:760px){ .row.cols-2{grid-template-columns:1fr 1fr} }
+  .field{margin:18px 0 4px}
+  .label{font-weight:600;margin-bottom:8px}
+  .line{width:100%;background:transparent;border:0;border-bottom:2px solid var(--border);padding:12px 4px;font-size:18px;color:inherit;outline:none}
+  .line:focus{border-bottom-color:var(--accent)}
+  /* "Moderne" Auswahl als Kachel-Chips über native <select> */
+  .select-shell{position:relative}
+  .select-shell select{appearance:none}
+  .chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+  .chip{padding:8px 12px;border:1px solid var(--chip-br);background:var(--chip-bg);border-radius:999px;cursor:pointer;font-weight:600}
+  .chip[aria-checked="true"]{border-color:var(--accent);box-shadow:0 0 0 2px color-mix(in srgb, var(--accent) 25%, transparent)}
+  /* Upload */
+  .drop{border:2px dashed var(--border);border-radius:14px;padding:24px;text-align:center;background:rgba(37,99,235,.06);cursor:pointer}
+  .drop.drag{border-color:var(--accent)}
+  .files{margin-top:10px;border:1px dashed var(--border);border-radius:12px;padding:10px;max-height:220px;overflow:auto}
+  .file{display:flex;justify-content:space-between;gap:12px;padding:8px;border-radius:10px}
+  .rm{background:transparent;border:1px solid var(--border);color:var(--muted);padding:6px 10px;border-radius:8px;cursor:pointer}
+  .actions{display:flex;gap:12px;margin-top:18px;flex-wrap:wrap}
   .btn{appearance:none;border:0;border-radius:12px;padding:12px 16px;font-weight:700;cursor:pointer}
-  .primary{background:linear-gradient(135deg,var(--accent),var(--accent-2));color:#fff}
+  .primary{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff}
   .ghost{background:transparent;border:1px solid var(--border);color:inherit}
   .disabled{opacity:.6;cursor:not-allowed}
-  /* Step 2 – „Allianz“-artige Inputs */
-  .card{margin-top:22px;background:var(--panel);border:1px solid var(--border);border-radius:18px;padding:28px}
-  .field{margin:22px 0}
-  .label{font-weight:600;margin-bottom:8px}
-  .line{
-    width:100%; background:transparent; border:0; border-bottom:2px solid var(--border);
-    padding:12px 4px; font-size:18px; color:inherit; outline:none;
-  }
-  .line:focus{border-bottom-color:var(--accent)}
-  select.line{padding-left:0}
-  .row{display:grid;grid-template-columns:1fr;gap:18px}
-  @media(min-width:760px){ .row{grid-template-columns:1fr 1fr} }
-  .err{display:none;margin-top:12px;padding:10px;border-radius:10px;background:rgba(239,68,68,.12);color:#b91c1c}
-  .ok{display:none;margin-top:12px;padding:10px;border-radius:10px;background:rgba(16,185,129,.12);color:#047857}
-  .subtle{color:var(--muted);font-size:14px}
-  /* hide file input if später ergänzt – strukturell vorbereitet */
+  .ok,.err{display:none;margin-top:12px;padding:10px;border-radius:10px}
+  .ok{background:rgba(16,185,129,.12);color:#047857}
+  .err{background:rgba(239,68,68,.12);color:#b91c1c}
+  #file{display:none}
   iframe[name="silentTarget"]{display:none}
 </style>
 </head>
 <body>
-  <div class="wrap">
-    <!-- Schritt 1: Belehrung -->
-    <section class="hero" id="step1">
-      <header>
-        <div class="subtle" style="letter-spacing:.06em;text-transform:uppercase">Hinweis</div>
-        <h1>Bitte bestätigen Sie vorab die rechtlichen Hinweise</h1>
-        <p class="h-lead">Erst nach Ihrer Bestätigung werden die Eingabefelder angezeigt.</p>
-      </header>
+<div class="wrap">
 
-      <div class="note">
-        <p><strong>Belehrung / Bestätigung</strong></p>
-        <p>Ich bestätige, dass die von mir hochgeladenen bzw. übermittelten Inhalte und Dateien
-           <strong>keine Urheber-, Leistungsschutz-, Marken- oder Persönlichkeitsrechte Dritter verletzen</strong>,
-           dass ich zur Nutzung, Weitergabe und Verarbeitung berechtigt bin und dass in den Unterlagen
-           keine schutzbedürftigen Daten enthalten sind, die ich nicht weitergeben darf.</p>
-        <p>Ich versichere ferner, dass ich die einschlägigen gesetzlichen Vorgaben (u. a. Urheberrecht,
-           Datenschutz/DSGVO) beachte und die Inhalte frei von Malware sind.</p>
+  <!-- STEP 1: BELEHRUNG -->
+  <section id="step1" class="card">
+    <h1>Bitte rechtliche Hinweise bestätigen</h1>
+    <p class="lede">Erst nach der Bestätigung werden die Felder & der Upload angezeigt.</p>
+
+    <div class="note">
+      <p><strong>Belehrung / Bestätigung</strong></p>
+      <p>Ich bestätige, dass die von mir hochgeladenen bzw. übermittelten Inhalte und Dateien
+      <strong>keine Urheber-, Leistungsschutz-, Marken- oder Persönlichkeitsrechte Dritter verletzen</strong>,
+      dass ich zur Nutzung, Weitergabe und Verarbeitung berechtigt bin und dass keine
+      schutzbedürftigen Daten übermittelt werden, die ich nicht weitergeben darf. Ich beachte die
+      gesetzlichen Vorgaben (u. a. Urheberrecht, DSGVO) und stelle sicher, dass die Inhalte frei von
+      Malware sind.</p>
+    </div>
+
+    <label class="confirm">
+      <input id="consent" type="checkbox">
+      <span>Ich habe die Belehrung gelesen und <strong>stimme zu</strong>.</span>
+    </label>
+
+    <div class="actions">
+      <button id="next" class="btn primary disabled" disabled>Weiter</button>
+      <button type="button" id="cancel" class="btn ghost">Abbrechen</button>
+    </div>
+    <div id="warn" class="err">Bitte zuerst zustimmen.</div>
+  </section>
+
+  <!-- STEP 2: ANGABEN + UPLOAD -->
+  <section id="step2" class="card" style="display:none">
+    <h2>Angaben & Datei hochladen</h2>
+    <p class="lede">Pflichtfelder ausfüllen und Datei(en) auswählen. Upload geht direkt an Make & wird nach OneDrive gespeichert.</p>
+
+    <!-- klassischer POST ins versteckte Iframe -->
+    <iframe name="silentTarget"></iframe>
+
+    <form id="form" action="ACTION_WEBHOOK_URL" method="POST" enctype="multipart/form-data" target="silentTarget" novalidate>
+      <div class="row cols-2">
+        <div class="field">
+          <div class="label">Vorname *</div>
+          <input class="line" type="text" name="vorname" id="vorname" required autocomplete="given-name" maxlength="100">
+        </div>
+        <div class="field">
+          <div class="label">Nachname *</div>
+          <input class="line" type="text" name="nachname" id="nachname" required autocomplete="family-name" maxlength="100">
+        </div>
       </div>
 
-      <label class="confirm">
-        <input id="consent" type="checkbox" />
-        <span>Ich habe die Belehrung gelesen und <strong>stimme zu</strong>.</span>
-      </label>
+      <div class="field">
+        <div class="label">E-Mail-Adresse *</div>
+        <input class="line" type="email" name="email" id="email" required inputmode="email" placeholder="name@beispiel.de" maxlength="200">
+      </div>
+
+      <div class="row cols-2">
+        <div class="field select-shell">
+          <div class="label">Kurs *</div>
+          <select class="line" name="kurs" id="kurs" required>
+            <option value="" disabled selected>Bitte auswählen …</option>
+            <option>PFK</option>
+            <option>Wirtschaftsfachwirte</option>
+            <option>Bilanzbuchhalter</option>
+            <option>Ausbildereignung</option>
+            <option>Bachelor Prof. Versicherung und Finanzanlagen</option>
+            <option>Sonstige</option>
+          </select>
+          <!-- „moderne“ Chips, die den Select spiegeln -->
+          <div class="chips" data-link="kurs">
+            <button class="chip" type="button" data-val="PFK">PFK</button>
+            <button class="chip" type="button" data-val="Wirtschaftsfachwirte">Wirtschaftsfachwirte</button>
+            <button class="chip" type="button" data-val="Bilanzbuchhalter">Bilanzbuchhalter</button>
+            <button class="chip" type="button" data-val="Ausbildereignung">Ausbildereignung</button>
+            <button class="chip" type="button" data-val="Bachelor Prof. Versicherung und Finanzanlagen">Bachelor Prof. Versicherung und Finanzanlagen</button>
+            <button class="chip" type="button" data-val="Sonstige">Sonstige</button>
+          </div>
+        </div>
+
+        <div class="field select-shell">
+          <div class="label">Fachrichtung *</div>
+          <select class="line" name="fachrichtung" id="fachrichtung" required>
+            <option value="" disabled selected>Bitte auswählen …</option>
+            <option>Personal</option>
+            <option>Ausbildung</option>
+            <option>Volkswirtschaft</option>
+            <option>Betriebswirtschaft</option>
+            <option>Recht</option>
+            <option>Kommunikation</option>
+            <option>Sonstige</option>
+          </select>
+          <div class="chips" data-link="fachrichtung">
+            <button class="chip" type="button" data-val="Personal">Personal</button>
+            <button class="chip" type="button" data-val="Ausbildung">Ausbildung</button>
+            <button class="chip" type="button" data-val="Volkswirtschaft">Volkswirtschaft</button>
+            <button class="chip" type="button" data-val="Betriebswirtschaft">Betriebswirtschaft</button>
+            <button class="chip" type="button" data-val="Recht">Recht</button>
+            <button class="chip" type="button" data-val="Kommunikation">Kommunikation</button>
+            <button class="chip" type="button" data-val="Sonstige">Sonstige</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Datei-Upload -->
+      <div class="field">
+        <div class="label">Datei(en) *</div>
+        <div id="drop" class="drop" role="button" tabindex="0" aria-label="Dateien hier ablegen oder klicken">
+          <strong>Dateien hierher ziehen oder klicken</strong><br>
+          <span class="lede" style="font-size:14px">Erlaubt: PDF, DOCX, PPTX, XLSX, JPG/PNG, HTML • max. 25 MB pro Datei</span>
+          <input id="file" name="file" type="file" multiple
+                 accept=".pdf,.docx,.pptx,.xlsx,.jpg,.jpeg,.png,.html,.htm" required>
+        </div>
+        <div id="files" class="files" hidden></div>
+      </div>
+
+      <!-- optional: Zielname, wenn nur 1 Datei -->
+      <div class="field">
+        <div class="label">Ziel-Dateiname (optional)</div>
+        <input class="line" type="text" name="target_name" id="target_name" placeholder="z. B. Handout_Kommunikation.html">
+      </div>
+
+      <!-- Hidden für Make/SharePoint -->
+      <input type="hidden" name="consent" value="yes">
+      <input type="hidden" name="intent" value="create_list_entry_and_upload">
+      <input type="hidden" name="source" value="Upload-Form v3">
+      <input type="hidden" name="timestamp" id="ts">
 
       <div class="actions">
-        <button id="next" class="btn primary disabled" disabled>Weiter zur Datenerfassung</button>
-        <button id="cancel" class="btn ghost" type="button">Abbrechen</button>
+        <button type="button" class="btn ghost" id="pickBtn">Datei auswählen</button>
+        <button class="btn primary" id="submitBtn">Senden</button>
+        <button type="reset" class="btn ghost">Zurücksetzen</button>
       </div>
-      <div id="warn" class="err" role="alert">Bitte die Belehrung zuerst bestätigen.</div>
-    </section>
 
-    <!-- Schritt 2: Erfassung -->
-    <section id="step2" class="card" style="display:none">
-      <header style="margin-bottom:8px">
-        <div class="subtle" style="letter-spacing:.06em;text-transform:uppercase">Angaben</div>
-        <h2>Erfassung der Teilnehmerdaten</h2>
-        <p class="subtle">Die Felder orientieren sich am Stil des zweiten Screenshots.</p>
-      </header>
-
-      <!-- unsichtbares Ziel für klassischen POST (robust, kein CORS) -->
-      <iframe name="silentTarget"></iframe>
-
-      <form id="form" action="DEIN_WEBHOOK_HIER" method="POST" enctype="multipart/form-data" target="silentTarget" novalidate>
-        <div class="row">
-          <div class="field">
-            <div class="label">Vorname *</div>
-            <input class="line" type="text" name="vorname" id="vorname" required autocomplete="given-name" maxlength="100">
-          </div>
-          <div class="field">
-            <div class="label">Nachname *</div>
-            <input class="line" type="text" name="nachname" id="nachname" required autocomplete="family-name" maxlength="100">
-          </div>
-        </div>
-
-        <div class="field">
-          <div class="label">E-Mail-Adresse *</div>
-          <input class="line" type="email" name="email" id="email" required placeholder="name@beispiel.de" inputmode="email" maxlength="200">
-        </div>
-
-        <div class="row">
-          <div class="field">
-            <div class="label">Kurs *</div>
-            <select class="line" name="kurs" id="kurs" required>
-              <option value="" disabled selected>Bitte auswählen …</option>
-              <option>PFK</option>
-              <option>Wirtschaftsfachwirte</option>
-              <option>Bilanzbuchhalter</option>
-              <option>Ausbildereignung</option>
-              <option>Bachelor Prof. Versicherung und Finanzanlagen</option>
-              <option>Sonstige</option>
-            </select>
-          </div>
-          <div class="field">
-            <div class="label">Fachrichtung *</div>
-            <select class="line" name="fachrichtung" id="fachrichtung" required>
-              <option value="" disabled selected>Bitte auswählen …</option>
-              <option>Personal</option>
-              <option>Ausbildung</option>
-              <option>Volkswirtschaft</option>
-              <option>Betriebswirtschaft</option>
-              <option>Recht</option>
-              <option>Kommunikation</option>
-              <option>Sonstige</option>
-            </select>
-          </div>
-        </div>
-
-        <!-- Hidden Felder für Make/SharePoint Routing -->
-        <input type="hidden" name="consent" value="yes">
-        <input type="hidden" name="intent" value="create_list_entry">
-        <input type="hidden" name="source" value="Upload-Form v2 (consent-first)">
-        <input type="hidden" name="timestamp" id="ts">
-
-        <div class="actions">
-          <button class="btn primary" id="submitBtn">Eintrag erstellen</button>
-          <button class="btn ghost" type="reset">Zurücksetzen</button>
-        </div>
-
-        <div id="ok" class="ok">✅ Gesendet – Eintrag wird angelegt.</div>
-        <div id="err2" class="err">❌ Bitte alle Pflichtfelder prüfen.</div>
-      </form>
-    </section>
-  </div>
+      <div id="ok" class="ok">✅ Gesendet – Eintrag & Upload werden erstellt.</div>
+      <div id="err2" class="err">❌ Bitte Pflichtfelder & Dateien prüfen.</div>
+    </form>
+  </section>
+</div>
 
 <script>
-  // Schritt 1: Freischalten von Schritt 2
+  // --- Step 1 logic
   const consent = document.getElementById('consent');
   const nextBtn = document.getElementById('next');
   const warn = document.getElementById('warn');
@@ -167,28 +206,79 @@
     nextBtn.classList.toggle('disabled', !ok);
     warn.style.display = 'none';
   });
-
-  document.getElementById('cancel').addEventListener('click', () => {
-    window.history.length > 1 ? history.back() : window.close();
-  });
-
-  nextBtn.addEventListener('click', () => {
-    if (!consent.checked) { warn.style.display = 'block'; return; }
-    step1.style.display = 'none';
-    step2.style.display = 'block';
+  document.getElementById('cancel').addEventListener('click', ()=>{ window.history.length>1?history.back():window.close(); });
+  nextBtn.addEventListener('click', ()=>{
+    if(!consent.checked){ warn.style.display='block'; return; }
+    step1.style.display='none'; step2.style.display='block';
     document.getElementById('ts').value = new Date().toISOString();
     document.getElementById('vorname').focus();
   });
 
-  // Schritt 2: einfache Validierung vor POST
-  const form = document.getElementById('form');
+  // --- Fancy chips for selects
+  function wireChips(shell){
+    const selectId = shell.dataset.link;
+    const select = document.getElementById(selectId);
+    const chips = shell.querySelectorAll('.chip');
+    function set(val){
+      select.value = val;
+      chips.forEach(c => c.setAttribute('aria-checked', c.dataset.val===val ? 'true' : 'false'));
+    }
+    chips.forEach(c => c.addEventListener('click', ()=> set(c.dataset.val)));
+    // init if already selected
+    if(select.value) set(select.value);
+  }
+  document.querySelectorAll('.chips').forEach(wireChips);
+
+  // --- Upload UI (klassischer Form-POST beibehalten)
+  const drop = document.getElementById('drop');
+  const fileInput = document.getElementById('file');
+  const filesBox = document.getElementById('files');
+  const pickBtn = document.getElementById('pickBtn');
   const okMsg = document.getElementById('ok');
-  const err2 = document.getElementById('err2');
-  form.addEventListener('submit', (e) => {
-    err2.style.display = 'none';
-    if (!form.checkValidity()) { e.preventDefault(); err2.style.display = 'block'; return; }
-    okMsg.style.display = 'block';
-    setTimeout(()=> okMsg.style.display='none', 3000);
+  const errMsg = document.getElementById('err2');
+  const form = document.getElementById('form');
+
+  const MAX_MB = 25;
+  function fmt(n){ return (n/1024/1024).toFixed(2)+' MB'; }
+  function prevent(e){ e.preventDefault(); e.stopPropagation(); }
+  ['dragenter','dragover'].forEach(ev => drop.addEventListener(ev, e=>{prevent(e); drop.classList.add('drag');}));
+  ['dragleave','drop'].forEach(ev => drop.addEventListener(ev, e=>{prevent(e); drop.classList.remove('drag');}));
+  drop.addEventListener('click', ()=> fileInput.click());
+  pickBtn.addEventListener('click', ()=> fileInput.click());
+  drop.addEventListener('drop', e=>{ const f=e.dataTransfer.files; if(f?.length){ fileInput.files=f; renderList(); }});
+  fileInput.addEventListener('change', renderList);
+
+  function renderList(){
+    filesBox.innerHTML=''; const list=fileInput.files;
+    if(!list || !list.length){ filesBox.hidden=true; return; }
+    [...list].forEach((f,i)=>{
+      const row=document.createElement('div'); row.className='file';
+      row.innerHTML=`<div>📄 <strong>${f.name}</strong><br><span class="lede" style="font-size:13px">${f.type||'unbekannt'} • ${fmt(f.size)}</span></div>
+                     <button class="rm" type="button" data-i="${i}">Entfernen</button>`;
+      filesBox.appendChild(row);
+    });
+    filesBox.hidden=false;
+    filesBox.querySelectorAll('.rm').forEach(b=>b.addEventListener('click',(e)=>{
+      const i=+e.currentTarget.dataset.i; const dt=new DataTransfer();
+      [...fileInput.files].forEach((f,idx)=>{ if(idx!==i) dt.items.add(f); });
+      fileInput.files=dt.files; renderList();
+    }));
+    const tn=document.getElementById('target_name');
+    if(list.length===1 && !tn.value) tn.value=list[0].name;
+  }
+
+  function validate(){
+    errMsg.style.display='none';
+    if(!form.checkValidity()){ errMsg.textContent="❌ Bitte alle Pflichtfelder ausfüllen."; errMsg.style.display='block'; return false; }
+    const list=fileInput.files; if(!list?.length){ errMsg.textContent="❌ Bitte mindestens eine Datei auswählen."; errMsg.style.display='block'; return false; }
+    for(const f of list){ if(f.size>MAX_MB*1024*1024){ errMsg.textContent=`❌ ${f.name} ist größer als ${MAX_MB} MB.`; errMsg.style.display='block'; return false; } }
+    return true;
+  }
+
+  // klassischer POST ins iframe
+  form.addEventListener('submit', (e)=>{
+    if(!validate()){ e.preventDefault(); return; }
+    okMsg.style.display='block'; setTimeout(()=> okMsg.style.display='none', 3000);
   });
 </script>
 </body>
