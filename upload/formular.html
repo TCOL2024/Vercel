@@ -1,211 +1,172 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Dokumenten-Upload • KI-Projekte</title>
-  <style>
-    body {
-      font-family: "Segoe UI", system-ui, sans-serif;
-      background-color: #f5f7fa;
-      color: #1a202c;
-      margin: 0;
-      padding: 0;
-    }
+<meta charset="utf-8">
+<title>Unterlagen-Upload (Einzeldatei)</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+  :root{--bg:#f6f7fb;--panel:#fff;--ink:#0f1720;--muted:#667085;--border:#e6e8f0;--accent:#2563eb}
+  *{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,-apple-system,"Segoe UI",Inter,Roboto,Arial,sans-serif}
+  .wrap{max-width:880px;margin:0 auto;padding:28px}
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:24px;box-shadow:0 8px 30px rgba(2,6,23,.06)}
+  h1{margin:0 0 6px;font-size:26px} .lede{color:var(--muted);margin:0 0 18px}
+  .row{display:grid;gap:16px} @media(min-width:760px){.row.cols-2{grid-template-columns:1fr 1fr}}
+  .field{margin:16px 0 2px} .label{font-weight:600;margin-bottom:6px}
+  .line{width:100%;border:1px solid var(--border);border-radius:10px;padding:12px;background:transparent;font-size:16px}
+  .line:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(37,99,235,.15)}
+  textarea{min-height:110px;resize:vertical}
+  .drop{border:2px dashed var(--border);border-radius:12px;padding:22px;text-align:center;background:#f8fafc;cursor:pointer}
+  .drop:hover{border-color:var(--accent);background:#eef6ff}
+  #file{display:none}
+  .actions{display:flex;gap:12px;flex-wrap:wrap;margin-top:16px}
+  .btn{appearance:none;border:1px solid var(--border);border-radius:10px;padding:12px 16px;font-weight:700;cursor:pointer;background:#fff}
+  .primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+  .note,.err{display:none;margin-top:12px;padding:10px;border-radius:10px}
+  .note{background:#ecfdf5;color:#065f46} .err{background:#fef2f2;color:#991b1b}
+  iframe[name="silentTarget"]{display:none}
 
-    .container {
-      max-width: 720px;
-      margin: 40px auto;
-      background: white;
-      padding: 40px 50px;
-      border-radius: 16px;
-      box-shadow: 0 8px 24px rgba(0,0,0,0.1);
-    }
-
-    h1 {
-      font-size: 26px;
-      margin-bottom: 12px;
-      color: #002d72;
-      font-weight: 600;
-    }
-
-    p.subline {
-      color: #4a5568;
-      margin-bottom: 30px;
-    }
-
-    label {
-      font-weight: 600;
-      display: block;
-      margin-top: 20px;
-      margin-bottom: 6px;
-      font-size: 15px;
-    }
-
-    input[type="text"],
-    input[type="email"],
-    select,
-    textarea {
-      width: 100%;
-      padding: 12px 14px;
-      border-radius: 8px;
-      border: 1px solid #cbd5e0;
-      font-size: 15px;
-      transition: all 0.2s;
-    }
-
-    input:focus,
-    select:focus,
-    textarea:focus {
-      outline: none;
-      border-color: #0056a4;
-      box-shadow: 0 0 0 3px rgba(0, 86, 164, 0.2);
-    }
-
-    textarea {
-      min-height: 100px;
-      resize: vertical;
-    }
-
-    .consent {
-      background: #f0f4f8;
-      border-left: 4px solid #0056a4;
-      padding: 15px 20px;
-      border-radius: 6px;
-      margin-bottom: 10px;
-    }
-
-    .checkbox-group {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      margin-top: 10px;
-    }
-
-    input[type="checkbox"] {
-      transform: scale(1.3);
-      accent-color: #0056a4;
-    }
-
-    .file-upload {
-      border: 2px dashed #cbd5e0;
-      border-radius: 10px;
-      padding: 30px;
-      text-align: center;
-      background: #f8fafc;
-      cursor: pointer;
-      margin-top: 10px;
-      transition: background 0.2s, border-color 0.2s;
-    }
-
-    .file-upload:hover {
-      background: #eef6ff;
-      border-color: #0056a4;
-    }
-
-    .btn {
-      background-color: #0056a4;
-      color: white;
-      border: none;
-      padding: 14px 22px;
-      font-size: 16px;
-      border-radius: 8px;
-      cursor: pointer;
-      margin-top: 25px;
-      width: 100%;
-      transition: background-color 0.2s;
-    }
-
-    .btn:hover {
-      background-color: #003d73;
-    }
-
-    .success {
-      margin-top: 20px;
-      padding: 12px;
-      background: #c6f6d5;
-      color: #22543d;
-      border-radius: 8px;
-      display: none;
-    }
-  </style>
+  /* Overlay */
+  .overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;z-index:50}
+  .ov-card{max-width:650px;background:#fff;color:#0f1720;border-radius:16px;padding:24px;border:1px solid #e5e7eb}
+  .ov-card h2{margin:0 0 8px} .ov-card p{margin:8px 0}
+  .ov-cta{display:flex;gap:10px;justify-content:flex-end;margin-top:12px}
+</style>
 </head>
 <body>
+<div class="wrap">
+  <div class="card">
+    <h1>📤 Unterlagen-Upload</h1>
+    <p class="lede">Pro Vorgang genau <strong>eine</strong> Datei hochladen. Wenn du mehrere Dateien hast, lade sie nacheinander hoch – deine Eingaben bleiben erhalten.</p>
 
-  <div class="container">
-    <h1>Dokumenten-Upload</h1>
-    <p class="subline">Für Teilnehmer:innen der KI-Projekte & Weiterbildungen</p>
+    <!-- verstecktes Ziel für klassischen POST (kein Reload, Felder bleiben) -->
+    <iframe name="silentTarget"></iframe>
 
-    <!-- Upload-Formular -->
-    <form id="uploadForm" action="https://hook.us2.make.com/qlecolu10q72phwu7i8ksnvcypx67qe4" method="POST" enctype="multipart/form-data">
-      
-      <div class="consent">
-        <p>Ich bestätige, dass die von mir hochgeladenen Dateien keine Urheber- oder Copyrightrechte Dritter verletzen. 
-        Das Material stammt aus eigener Erstellung oder ist für den Unterrichtsgebrauch freigegeben.</p>
-        <div class="checkbox-group">
-          <input type="checkbox" id="consent" name="consent" required>
-          <label for="consent">Ich stimme zu</label>
+    <form id="form" action="https://hook.us2.make.com/qlecolu10q72phwu7i8ksnvcypx67qe4" method="POST" enctype="multipart/form-data" target="silentTarget" novalidate>
+      <!-- Pflichtfelder -->
+      <div class="row cols-2">
+        <div class="field"><div class="label">Vorname *</div><input class="line" type="text" name="vorname" id="vorname" required></div>
+        <div class="field"><div class="label">Nachname *</div><input class="line" type="text" name="nachname" id="nachname" required></div>
+      </div>
+      <div class="field"><div class="label">E-Mail-Adresse *</div><input class="line" type="email" name="email" id="email" required placeholder="name@beispiel.de"></div>
+
+      <div class="row cols-2">
+        <div class="field">
+          <div class="label">Kurs *</div>
+          <select class="line" name="kurs" id="kurs" required>
+            <option value="" disabled selected>Bitte auswählen …</option>
+            <option>PFK</option><option>Wirtschaftsfachwirte</option><option>Bilanzbuchhalter</option>
+            <option>Ausbildereignung</option><option>Bachelor Prof. Versicherung und Finanzanlagen</option><option>Sonstige</option>
+          </select>
+        </div>
+        <div class="field">
+          <div class="label">Fachrichtung *</div>
+          <select class="line" name="fachrichtung" id="fachrichtung" required>
+            <option value="" disabled selected>Bitte auswählen …</option>
+            <option>Personal</option><option>Ausbildung</option><option>Volkswirtschaft</option>
+            <option>Betriebswirtschaft</option><option>Recht</option><option>Kommunikation</option><option>Sonstige</option>
+          </select>
         </div>
       </div>
 
-      <label for="vorname">Vorname</label>
-      <input type="text" id="vorname" name="vorname" required>
-
-      <label for="nachname">Nachname</label>
-      <input type="text" id="nachname" name="nachname" required>
-
-      <label for="email">E-Mail-Adresse</label>
-      <input type="email" id="email" name="email" required>
-
-      <label for="kurs">Kurs</label>
-      <select id="kurs" name="kurs" required>
-        <option value="">Bitte auswählen</option>
-        <option>PFK</option>
-        <option>Wirtschaftsfachwirte</option>
-        <option>Bilanzbuchhalter</option>
-        <option>Ausbildereignung</option>
-        <option>Bachelor Prof. Versicherung und Finanzanlagen</option>
-        <option>Sonstige</option>
-      </select>
-
-      <label for="fachrichtung">Fachrichtung</label>
-      <select id="fachrichtung" name="fachrichtung" required>
-        <option value="">Bitte auswählen</option>
-        <option>Personal</option>
-        <option>Ausbildung</option>
-        <option>Volkswirtschaft</option>
-        <option>Betriebswirtschaft</option>
-        <option>Recht</option>
-        <option>Kommunikation</option>
-        <option>Sonstige</option>
-      </select>
-
-      <label for="beschreibung">Beschreibung</label>
-      <textarea id="beschreibung" name="beschreibung" placeholder="Kurzbeschreibung des Inhalts oder Verwendungszwecks"></textarea>
-
-      <label>Dateien hochladen</label>
-      <div class="file-upload" onclick="document.getElementById('file').click()">
-        <p>📎 Dateien hier auswählen oder ablegen</p>
-        <input id="file" name="file[]" type="file" multiple
-               accept=".pdf,.docx,.pptx,.xlsx,.jpg,.jpeg,.png,.html,.htm" required
-               style="display:none;">
+      <div class="field"><div class="label">Beschreibung / Hinweise (optional)</div>
+        <textarea class="line" name="beschreibung" id="beschreibung" placeholder="Kurzbeschreibung, Kontext, Version …"></textarea>
       </div>
 
-      <button type="submit" class="btn">🚀 Dateien hochladen</button>
+      <!-- Rechtshinweis -->
+      <div class="field">
+        <label class="label" style="font-weight:700">Bestätigung *</label>
+        <label style="display:flex;gap:10px;align-items:flex-start">
+          <input type="checkbox" name="consent" id="consent" value="yes" required>
+          <span>Ich bestätige, dass die von mir hochgeladenen Dateien keine Urheber-, Marken- oder Persönlichkeitsrechte Dritter verletzen, ich zur Nutzung berechtigt bin und die gesetzlichen Vorgaben (u. a. Urheberrecht, DSGVO) beachte.</span>
+        </label>
+      </div>
 
-      <div id="successMessage" class="success">✅ Upload erfolgreich! Vielen Dank für deinen Beitrag.</div>
+      <!-- Einzeldatei -->
+      <div class="field">
+        <div class="label">Datei (max. 25 MB) *</div>
+        <div id="drop" class="drop" role="button" tabindex="0" aria-label="Datei auswählen">
+          <strong>Hier klicken, um eine Datei zu wählen</strong><br>
+          <small style="color:#667085">Erlaubt: PDF, DOCX, PPTX, XLSX, JPG/PNG, HTML</small>
+          <input id="file" name="file" type="file" accept=".pdf,.docx,.pptx,.xlsx,.jpg,.jpeg,.png,.html,.htm" required>
+        </div>
+        <div id="picked" class="lede" style="display:none;margin-top:8px"></div>
+      </div>
+
+      <!-- Routing/Meta -->
+      <input type="hidden" name="intent" value="create_list_entry_and_upload_single">
+      <input type="hidden" name="source" value="Upload-Form Single v1">
+      <input type="hidden" name="timestamp" id="ts">
+
+      <div class="actions">
+        <button type="button" class="btn" id="clearFile">Neue Datei auswählen</button>
+        <button class="btn primary" id="sendBtn">Senden</button>
+      </div>
+
+      <div id="ok" class="note">✅ Upload gestartet. Du kannst danach direkt die nächste Datei wählen – die Felder bleiben erhalten.</div>
+      <div id="err" class="err">❌ Bitte Pflichtfelder prüfen und eine Datei wählen (max. 25 MB).</div>
     </form>
   </div>
+</div>
 
-  <script>
-    const form = document.getElementById('uploadForm');
-    const success = document.getElementById('successMessage');
+<!-- Overlay: Hinweis „eine Datei pro Vorgang“ -->
+<div id="overlay" class="overlay" role="dialog" aria-modal="true">
+  <div class="ov-card">
+    <h2>Hinweis zum Upload</h2>
+    <p>Pro Vorgang kann <strong>genau eine Datei</strong> hochgeladen werden.</p>
+    <p>Wenn du mehrere Dateien hast, lade sie bitte <strong>nacheinander</strong> hoch. Deine Angaben (Name, Kurs, Fachrichtung etc.) bleiben auf der Seite erhalten – du musst sie nicht erneut eingeben.</p>
+    <div class="ov-cta">
+      <button id="ovClose" class="btn primary">Verstanden</button>
+    </div>
+  </div>
+</div>
 
-    form.addEventListener('submit', () => {
-      setTimeout(() => {
-        success.style.display = 'block';
-      }, 1200);
-    });
-  </script>
+<script>
+  // Overlay
+  const ov = document.getElementById('overlay');
+  document.getElementById('ovClose').addEventListener('click', ()=>{ ov.style.display='none'; document.getElementById('vorname').focus(); });
+
+  // Timestamp
+  document.getElementById('ts').value = new Date().toISOString();
+
+  // Datei-Auswahl UI (Einzeldatei)
+  const drop = document.getElementById('drop');
+  const fileInput = document.getElementById('file');
+  const picked = document.getElementById('picked');
+  const clearBtn = document.getElementById('clearFile');
+
+  function showPicked(){
+    if(fileInput.files && fileInput.files[0]){
+      const f = fileInput.files[0];
+      picked.style.display='block';
+      picked.textContent = `Ausgewählt: ${f.name} (${(f.size/1024/1024).toFixed(2)} MB)`;
+    } else {
+      picked.style.display='none';
+      picked.textContent = '';
+    }
+  }
+  drop.addEventListener('click', ()=> fileInput.click());
+  fileInput.addEventListener('change', showPicked);
+  clearBtn.addEventListener('click', ()=>{
+    fileInput.value = ''; showPicked();
+  });
+
+  // Validierung + klassischer POST ins iframe (Felder bleiben)
+  const form = document.getElementById('form');
+  const ok = document.getElementById('ok');
+  const err = document.getElementById('err');
+  const MAX_MB = 25;
+
+  form.addEventListener('submit', (e)=>{
+    err.style.display='none';
+    // Pflichtfelder prüfen
+    if(!form.checkValidity()){ e.preventDefault(); err.style.display='block'; return; }
+    const f = fileInput.files[0];
+    if(!f){ e.preventDefault(); err.textContent='❌ Bitte eine Datei wählen.'; err.style.display='block'; return; }
+    if(f.size > MAX_MB*1024*1024){ e.preventDefault(); err.textContent=`❌ Datei größer als ${MAX_MB} MB.`; err.style.display='block'; return; }
+    ok.style.display='block';
+    // Felder NICHT zurücksetzen -> der/die Nutzer:in kann direkt neue Datei wählen
+    setTimeout(()=> ok.style.display='none', 3000);
+  });
+</script>
 </body>
 </html>
