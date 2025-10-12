@@ -1,223 +1,195 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-  <meta charset="utf-8" />
-  <title>Dokumenten-Upload · OneDrive via Make</title>
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <meta name="color-scheme" content="light dark">
-  <style>
-    :root{
-      --bg:#0b1220; --panel:#0f172a; --ink:#e5e7eb; --muted:#94a3b8; --border:#1f2a44;
-      --accent:#7c3aed; --accent-2:#2563eb; --ok:#10b981; --err:#ef4444; --hint:#334155
-    }
-    @media (prefers-color-scheme: light){
-      :root{ --bg:#f6f7fb; --panel:#ffffff; --ink:#0f1720; --muted:#5b6673; --border:#e6e8f0; --hint:#eef2f7 }
-    }
-    *{box-sizing:border-box}
-    body{margin:0;background:linear-gradient(135deg,var(--hint),transparent 40%) fixed, var(--bg);
-         font:16px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,Inter,Arial,sans-serif; color:var(--ink)}
-    .wrap{max-width:880px;margin:40px auto;padding:20px}
-    .card{background:var(--panel);border:1px solid var(--border);border-radius:18px;padding:24px;
-          box-shadow:0 6px 32px rgba(0,0,0,.12)}
-    h1{margin:0 0 8px;font-size:24px}
-    p.lead{margin:0 0 18px;color:var(--muted)}
-    .grid{display:grid;gap:16px;grid-template-columns:1fr}
-    @media(min-width:720px){ .grid{grid-template-columns:1fr 1fr} }
-
-    .drop{border:2px dashed var(--border);border-radius:14px;padding:26px;text-align:center;background:var(--hint)}
-    .drop.drag{border-color:var(--accent); background-color:rgba(124,58,237,.08)}
-    .drop strong{display:block;margin-bottom:8px}
-    .drop small{color:var(--muted)}
-
-    label{display:block;font-weight:600;margin:6px 0 8px}
-    input[type="text"],input[type="password"]{
-      width:100%;padding:12px;border:1px solid var(--border);border-radius:10px;background:transparent;color:var(--ink)
-    }
-    input::placeholder{color:#9aa6b2}
-    .files{margin-top:10px;border:1px dashed var(--border);border-radius:12px;padding:10px;max-height:220px;overflow:auto;background:rgba(0,0,0,.03)}
-    .file{display:flex;justify-content:space-between;gap:12px;padding:8px 10px;border-radius:10px}
-    .file + .file{margin-top:6px}
-    .file .meta{font-size:14px}
-    .file .meta small{color:var(--muted)}
-    .file .act{display:flex;align-items:center;gap:10px}
-    .file .rm{background:transparent;border:1px solid var(--border);color:var(--muted);padding:6px 10px;border-radius:8px;cursor:pointer}
-
-    .bar{margin-top:16px;height:10px;border-radius:999px;background:rgba(0,0,0,.08);overflow:hidden;display:none}
-    .bar > span{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--accent),var(--accent-2))}
-    .hint{margin-top:8px;color:var(--muted);font-size:14px}
-
-    .actions{display:flex;gap:12px;margin-top:16px;flex-wrap:wrap}
-    .btn{appearance:none;border:0;border-radius:12px;padding:12px 16px;cursor:pointer;font-weight:700}
-    .primary{background:linear-gradient(135deg,var(--accent),var(--accent-2));color:#fff}
-    .ghost{background:transparent;border:1px solid var(--border);color:var(--ink)}
-
-    .note{margin-top:14px;padding:10px;border-radius:10px;background:rgba(16,185,129,.12);color:#047857;display:none}
-    .err{margin-top:14px;padding:10px;border-radius:10px;background:rgba(239,68,68,.12);color:#b91c1c;display:none}
-
-    .kbd{font-family:ui-monospace,Consolas,monospace;font-size:12px;padding:2px 6px;border-radius:6px;background:rgba(0,0,0,.08)}
-    footer{margin-top:16px;color:var(--muted);font-size:13px;text-align:right}
-    /* Hide the raw file input – click on the drop zone instead */
-    #file{display:none}
-  </style>
+<meta charset="utf-8">
+<title>Unterlagen – Bestätigung & Erfassung</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<style>
+  :root{
+    --bg:#f4f7f9; --panel:#fff; --ink:#0e1b2a; --muted:#5d6b7a; --border:#dfe6ee;
+    --accent:#1f6ae2; --accent-2:#184db5;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{ --bg:#0c1420; --panel:#0f1b2a; --ink:#e6eef7; --muted:#97a7b8; --border:#243246; }
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,Inter,Arial,sans-serif}
+  .wrap{max-width:960px;margin:0 auto;padding:28px}
+  .hero{background:var(--panel);border:1px solid var(--border);border-radius:18px;padding:36px 28px;box-shadow:0 6px 28px rgba(0,0,0,.06)}
+  .h-lead{color:var(--muted);margin:6px 0 0}
+  h1{font-size:28px;margin:0 0 6px}
+  h2{font-size:22px;margin:32px 0 10px}
+  p{margin:0 0 14px}
+  .note{background:#eef4ff22;border:1px solid var(--border);padding:16px;border-radius:14px}
+  .confirm{display:flex;gap:10px;align-items:flex-start;margin-top:12px}
+  .confirm input{margin-top:3px}
+  .actions{margin-top:18px;display:flex;gap:12px;flex-wrap:wrap}
+  .btn{appearance:none;border:0;border-radius:12px;padding:12px 16px;font-weight:700;cursor:pointer}
+  .primary{background:linear-gradient(135deg,var(--accent),var(--accent-2));color:#fff}
+  .ghost{background:transparent;border:1px solid var(--border);color:inherit}
+  .disabled{opacity:.6;cursor:not-allowed}
+  /* Step 2 – „Allianz“-artige Inputs */
+  .card{margin-top:22px;background:var(--panel);border:1px solid var(--border);border-radius:18px;padding:28px}
+  .field{margin:22px 0}
+  .label{font-weight:600;margin-bottom:8px}
+  .line{
+    width:100%; background:transparent; border:0; border-bottom:2px solid var(--border);
+    padding:12px 4px; font-size:18px; color:inherit; outline:none;
+  }
+  .line:focus{border-bottom-color:var(--accent)}
+  select.line{padding-left:0}
+  .row{display:grid;grid-template-columns:1fr;gap:18px}
+  @media(min-width:760px){ .row{grid-template-columns:1fr 1fr} }
+  .err{display:none;margin-top:12px;padding:10px;border-radius:10px;background:rgba(239,68,68,.12);color:#b91c1c}
+  .ok{display:none;margin-top:12px;padding:10px;border-radius:10px;background:rgba(16,185,129,.12);color:#047857}
+  .subtle{color:var(--muted);font-size:14px}
+  /* hide file input if später ergänzt – strukturell vorbereitet */
+  iframe[name="silentTarget"]{display:none}
+</style>
 </head>
 <body>
   <div class="wrap">
-    <div class="card">
-      <h1>📤 Dokumenten-Upload nach OneDrive</h1>
-      <p class="lead">Eleganter Drag&Drop-Upload. Läuft über deinen Make-Webhook (multipart/form-data, kein CORS-Stress).</p>
+    <!-- Schritt 1: Belehrung -->
+    <section class="hero" id="step1">
+      <header>
+        <div class="subtle" style="letter-spacing:.06em;text-transform:uppercase">Hinweis</div>
+        <h1>Bitte bestätigen Sie vorab die rechtlichen Hinweise</h1>
+        <p class="h-lead">Erst nach Ihrer Bestätigung werden die Eingabefelder angezeigt.</p>
+      </header>
 
-      <!-- Hidden iframe als Ziel für den klassischen Form-POST -->
-      <iframe name="silentTarget" style="display:none" id="silentTarget"></iframe>
+      <div class="note">
+        <p><strong>Belehrung / Bestätigung</strong></p>
+        <p>Ich bestätige, dass die von mir hochgeladenen bzw. übermittelten Inhalte und Dateien
+           <strong>keine Urheber-, Leistungsschutz-, Marken- oder Persönlichkeitsrechte Dritter verletzen</strong>,
+           dass ich zur Nutzung, Weitergabe und Verarbeitung berechtigt bin und dass in den Unterlagen
+           keine schutzbedürftigen Daten enthalten sind, die ich nicht weitergeben darf.</p>
+        <p>Ich versichere ferner, dass ich die einschlägigen gesetzlichen Vorgaben (u. a. Urheberrecht,
+           Datenschutz/DSGVO) beachte und die Inhalte frei von Malware sind.</p>
+      </div>
 
-      <!-- Formular: klassischer POST ins iframe -->
-      <form id="uplForm" action="ACTION_WEBHOOK_URL" method="POST" enctype="multipart/form-data" target="silentTarget">
-        <div class="grid">
-          <section>
-            <label>Datei(en)</label>
-            <div id="drop" class="drop" tabindex="0" role="button" aria-label="Datei hier ablegen oder klicken">
-              <strong>Ziehen & ablegen oder klicken</strong>
-              <small>Erlaubte Typen: HTML, PDF, PNG, JPG, DOCX • Max. 15 MB je Datei</small>
-              <input id="file" name="file" type="file" multiple>
-            </div>
-            <div id="files" class="files" hidden></div>
-          </section>
+      <label class="confirm">
+        <input id="consent" type="checkbox" />
+        <span>Ich habe die Belehrung gelesen und <strong>stimme zu</strong>.</span>
+      </label>
 
-          <section>
-            <label>Ziel-Dateiname (optional, bei Einzeldokument)</label>
-            <input id="target_name" name="target_name" type="text" placeholder="z. B. handout.html">
-            <label style="margin-top:14px">Secret (optional, empfohlen)</label>
-            <input id="token" name="token" type="password" autocomplete="off" placeholder="z. B. UPL-SECRET-123">
-            <p class="hint">Tipp: Im Webhook einen Filter <span class="kbd">token == …</span> setzen.</p>
-          </section>
+      <div class="actions">
+        <button id="next" class="btn primary disabled" disabled>Weiter zur Datenerfassung</button>
+        <button id="cancel" class="btn ghost" type="button">Abbrechen</button>
+      </div>
+      <div id="warn" class="err" role="alert">Bitte die Belehrung zuerst bestätigen.</div>
+    </section>
+
+    <!-- Schritt 2: Erfassung -->
+    <section id="step2" class="card" style="display:none">
+      <header style="margin-bottom:8px">
+        <div class="subtle" style="letter-spacing:.06em;text-transform:uppercase">Angaben</div>
+        <h2>Erfassung der Teilnehmerdaten</h2>
+        <p class="subtle">Die Felder orientieren sich am Stil des zweiten Screenshots.</p>
+      </header>
+
+      <!-- unsichtbares Ziel für klassischen POST (robust, kein CORS) -->
+      <iframe name="silentTarget"></iframe>
+
+      <form id="form" action="DEIN_WEBHOOK_HIER" method="POST" enctype="multipart/form-data" target="silentTarget" novalidate>
+        <div class="row">
+          <div class="field">
+            <div class="label">Vorname *</div>
+            <input class="line" type="text" name="vorname" id="vorname" required autocomplete="given-name" maxlength="100">
+          </div>
+          <div class="field">
+            <div class="label">Nachname *</div>
+            <input class="line" type="text" name="nachname" id="nachname" required autocomplete="family-name" maxlength="100">
+          </div>
         </div>
 
-        <div class="bar" id="bar"><span id="barIn"></span></div>
+        <div class="field">
+          <div class="label">E-Mail-Adresse *</div>
+          <input class="line" type="email" name="email" id="email" required placeholder="name@beispiel.de" inputmode="email" maxlength="200">
+        </div>
+
+        <div class="row">
+          <div class="field">
+            <div class="label">Kurs *</div>
+            <select class="line" name="kurs" id="kurs" required>
+              <option value="" disabled selected>Bitte auswählen …</option>
+              <option>PFK</option>
+              <option>Wirtschaftsfachwirte</option>
+              <option>Bilanzbuchhalter</option>
+              <option>Ausbildereignung</option>
+              <option>Bachelor Prof. Versicherung und Finanzanlagen</option>
+              <option>Sonstige</option>
+            </select>
+          </div>
+          <div class="field">
+            <div class="label">Fachrichtung *</div>
+            <select class="line" name="fachrichtung" id="fachrichtung" required>
+              <option value="" disabled selected>Bitte auswählen …</option>
+              <option>Personal</option>
+              <option>Ausbildung</option>
+              <option>Volkswirtschaft</option>
+              <option>Betriebswirtschaft</option>
+              <option>Recht</option>
+              <option>Kommunikation</option>
+              <option>Sonstige</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Hidden Felder für Make/SharePoint Routing -->
+        <input type="hidden" name="consent" value="yes">
+        <input type="hidden" name="intent" value="create_list_entry">
+        <input type="hidden" name="source" value="Upload-Form v2 (consent-first)">
+        <input type="hidden" name="timestamp" id="ts">
 
         <div class="actions">
-          <button type="button" class="btn ghost" id="pickBtn">Datei auswählen</button>
-          <button class="btn primary" id="sendBtn">Hochladen</button>
-          <button type="reset" class="btn ghost">Zurücksetzen</button>
+          <button class="btn primary" id="submitBtn">Eintrag erstellen</button>
+          <button class="btn ghost" type="reset">Zurücksetzen</button>
         </div>
 
-        <div id="ok" class="note">✅ Upload gestartet – Ergebnis kommt gleich zurück.</div>
-        <div id="err" class="err">❌ Bitte wähle mindestens eine gültige Datei.</div>
+        <div id="ok" class="ok">✅ Gesendet – Eintrag wird angelegt.</div>
+        <div id="err2" class="err">❌ Bitte alle Pflichtfelder prüfen.</div>
       </form>
-
-      <footer>
-        <span class="kbd">Form POST</span> · Falls mehrere Dateien gewählt: Make nutzt <span class="kbd">file[1], file[2], …</span>
-      </footer>
-    </div>
+    </section>
   </div>
 
-  <script>
-    // ============ Konfiguration ============
-    const MAX_MB = 15;
-    const ALLOWED = [
-      "text/html","application/pdf","image/png","image/jpeg",
-      "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-    ];
-    // =======================================
+<script>
+  // Schritt 1: Freischalten von Schritt 2
+  const consent = document.getElementById('consent');
+  const nextBtn = document.getElementById('next');
+  const warn = document.getElementById('warn');
+  const step1 = document.getElementById('step1');
+  const step2 = document.getElementById('step2');
 
-    const drop = document.getElementById('drop');
-    const fileInput = document.getElementById('file');
-    const filesBox = document.getElementById('files');
-    const sendBtn = document.getElementById('sendBtn');
-    const pickBtn = document.getElementById('pickBtn');
-    const ok = document.getElementById('ok');
-    const err = document.getElementById('err');
-    const bar = document.getElementById('bar');
-    const barIn = document.getElementById('barIn');
-    const form = document.getElementById('uplForm');
-    const iframe = document.getElementById('silentTarget');
+  consent.addEventListener('change', () => {
+    const ok = consent.checked;
+    nextBtn.disabled = !ok;
+    nextBtn.classList.toggle('disabled', !ok);
+    warn.style.display = 'none';
+  });
 
-    function fmt(n){ return (n/1024/1024).toFixed(2) + " MB"; }
+  document.getElementById('cancel').addEventListener('click', () => {
+    window.history.length > 1 ? history.back() : window.close();
+  });
 
-    // Drag & Drop UX
-    function prevent(e){ e.preventDefault(); e.stopPropagation(); }
-    ['dragenter','dragover'].forEach(ev => drop.addEventListener(ev, e => {
-      prevent(e); drop.classList.add('drag');
-    }));
-    ['dragleave','drop'].forEach(ev => drop.addEventListener(ev, e => {
-      prevent(e); drop.classList.remove('drag');
-    }));
-    drop.addEventListener('click', () => fileInput.click());
-    drop.addEventListener('drop', e => {
-      const list = e.dataTransfer.files;
-      if(list && list.length){ fileInput.files = list; renderList(); }
-    });
-    fileInput.addEventListener('change', renderList);
-    pickBtn.addEventListener('click', () => fileInput.click());
+  nextBtn.addEventListener('click', () => {
+    if (!consent.checked) { warn.style.display = 'block'; return; }
+    step1.style.display = 'none';
+    step2.style.display = 'block';
+    document.getElementById('ts').value = new Date().toISOString();
+    document.getElementById('vorname').focus();
+  });
 
-    function renderList(){
-      err.style.display = 'none';
-      filesBox.innerHTML = '';
-      const list = fileInput.files;
-      if(!list || !list.length){ filesBox.hidden = true; return; }
-      [...list].forEach((f, i) => {
-        const el = document.createElement('div');
-        el.className = 'file';
-        el.innerHTML = `
-          <div class="meta">📄 <strong>${f.name}</strong><br><small>${f.type || 'unbekannt'} • ${fmt(f.size)}</small></div>
-          <div class="act"><button type="button" class="rm" data-i="${i}">Entfernen</button></div>`;
-        filesBox.appendChild(el);
-      });
-      filesBox.hidden = false;
-      filesBox.querySelectorAll('.rm').forEach(btn => btn.addEventListener('click', (e)=>{
-        const i = +e.currentTarget.dataset.i;
-        const dt = new DataTransfer();
-        [...fileInput.files].forEach((f, idx) => { if(idx !== i) dt.items.add(f); });
-        fileInput.files = dt.files;
-        renderList();
-      }));
-      // Wenn genau 1 Datei und kein custom Name gesetzt → vorschlagen
-      const tn = document.getElementById('target_name');
-      if(list.length === 1 && !tn.value) tn.value = list[0].name;
-    }
-
-    // Validierung
-    function validate(){
-      const list = fileInput.files;
-      if(!list || !list.length) return { ok:false, msg:"Keine Datei ausgewählt." };
-      for(const f of list){
-        if(f.size > MAX_MB * 1024 * 1024) return { ok:false, msg:`${f.name}: größer als ${MAX_MB} MB.` };
-        if(ALLOWED.length && !ALLOWED.includes(f.type)){
-          // HTML mit leerem type zulassen
-          const isHtmlByName = /\.html?$/i.test(f.name);
-          if(!(isHtmlByName && (!f.type || f.type === 'text/html'))) {
-            return { ok:false, msg:`${f.name}: Dateityp nicht erlaubt (${f.type||'unbekannt'}).` };
-          }
-        }
-      }
-      return { ok:true };
-    }
-
-    // Upload-Ablauf (klassischer Form-POST ins hidden iframe)
-    form.addEventListener('submit', (e)=>{
-      const v = validate();
-      if(!v.ok){
-        e.preventDefault();
-        err.textContent = '❌ ' + v.msg;
-        err.style.display = 'block';
-        return;
-      }
-      // Simple "Fake"-Progress (da klassischer Form POST, kein echter Stream-Progress)
-      bar.style.display = 'block'; barIn.style.width = '15%';
-      ok.style.display = 'block'; err.style.display = 'none';
-      let p = 15;
-      const t = setInterval(()=>{ p = Math.min(p+7, 90); barIn.style.width = p + '%'; }, 180);
-
-      // Wenn das iframe lädt (Response von Make), werten wir das als fertig
-      const onDone = ()=>{
-        clearInterval(t);
-        barIn.style.width = '100%';
-        setTimeout(()=>{ bar.style.display='none'; barIn.style.width='0%'; }, 600);
-        setTimeout(()=>{ ok.style.display='none'; }, 2500);
-        iframe.removeEventListener('load', onDone);
-        // Optional: Formular zurücksetzen
-        // form.reset(); filesBox.hidden = true; filesBox.innerHTML='';
-      };
-      iframe.addEventListener('load', onDone);
-    });
-  </script>
+  // Schritt 2: einfache Validierung vor POST
+  const form = document.getElementById('form');
+  const okMsg = document.getElementById('ok');
+  const err2 = document.getElementById('err2');
+  form.addEventListener('submit', (e) => {
+    err2.style.display = 'none';
+    if (!form.checkValidity()) { e.preventDefault(); err2.style.display = 'block'; return; }
+    okMsg.style.display = 'block';
+    setTimeout(()=> okMsg.style.display='none', 3000);
+  });
+</script>
 </body>
 </html>
