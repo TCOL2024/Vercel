@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Gemini Mini-Chat</title>
+<meta name="color-scheme" content="light dark" />
+<style>
+  :root{
+    --bg:#0b1020; --panel:#121a2b; --accent:#4da3ff; --muted:#7a8aa1; --text:#eaf2ff; --bubble:#1b2740;
+  }
+  *{box-sizing:border-box} body{margin:0;background:linear-gradient(180deg,#0b1020,#0b1426);color:var(--text);font:16px/1.45 system-ui,Segoe UI,Roboto,Inter,sans-serif}
+  .wrap{max-width:840px;margin:0 auto;padding:20px}
+  .card{background:rgba(18,26,43,.8);backdrop-filter:blur(6px);border:1px solid #1d2a46;border-radius:16px;box-shadow:0 10px 30px rgba(0,0,0,.25)}
+  header{padding:16px 18px;border-bottom:1px solid #1d2a46;display:flex;align-items:center;gap:12px}
+  header .dot{width:10px;height:10px;border-radius:50%;background:var(--accent);box-shadow:0 0 12px var(--accent)}
+  header h1{font-size:16px;margin:0} header small{color:var(--muted)}
+  #chat{height:52vh;min-height:320px;max-height:60vh;overflow:auto;padding:16px 16px 8px 16px;scroll-behavior:smooth}
+  .row{display:flex;gap:10px;margin:10px 0}
+  .row.user{justify-content:flex-end}
+  .bubble{max-width:74%;padding:10px 12px;border-radius:14px;background:var(--bubble);border:1px solid #263554;white-space:pre-wrap}
+  .row.user .bubble{background:#113055;border-color:#1e4c86}
+  .row.assistant .bubble{background:#0f213f;border-color:#263a62}
+  .meta{font-size:12px;color:var(--muted);margin-top:4px}
+  .toolbar{display:flex;gap:8px;flex-wrap:wrap;padding:12px 16px;border-top:1px solid #1d2a46}
+  input, select, button{border-radius:12px;border:1px solid #243250;background:#0e1a31;color:var(--text);padding:10px 12px}
+  input::placeholder{color:#7787a3}
+  input[type="password"]{letter-spacing:.1em}
+  .grow{flex:1}
+  button{background:linear-gradient(180deg,#1b5bb3,#164a91);cursor:pointer}
+  button:disabled{opacity:.6;cursor:not-allowed}
+  .hint{padding:10px 16px;color:#a7b7d1;border-top:1px dashed #213255;font-size:13px}
+  .spinner{width:14px;height:14px;border:2px solid #8fbfff;border-top-color:transparent;border-radius:50%;display:inline-block;animation:spin .9s linear infinite;vertical-align:-2px}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .small{font-size:12px;color:#9ab0cb}
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <header>
+        <div class="dot"></div>
+        <h1>Gemini Mini-Chat</h1>
+        <small id="status" title="Verbindungsstatus">bereit</small>
+      </header>
+
+      <div id="chat" aria-live="polite"></div>
+
+      <div class="toolbar">
+        <input id="apiKey" class="grow" type="password" placeholder="API-Key einfügen (nur zu Demo-Zwecken im Browser!)" />
+        <select id="model">
+          <option value="gemini-1.5-flash">gemini-1.5-flash (schnell)</option>
+          <option value="gemini-1.5-pro">gemini-1.5-pro (präziser)</option>
+          <option value="gemini-2.0-flash-exp">gemini-2.0-flash-exp (experimentell)</option>
+        </select>
+        <button id="clearBtn" title="Chat leeren">Neu</button>
+      </div>
+
+      <div class="toolbar">
+        <input id="prompt" class="grow" placeholder="Frage eingeben und Enter drücken …" />
+        <button id="sendBtn">Senden</button>
+      </div>
+
+      <div class="hint">
+        Hinweis: Für Produktion bitte <strong>keinen</strong> API-Key im Frontend ausliefern. Nutze einen kleinen Proxy (z. B. Cloud Functio
