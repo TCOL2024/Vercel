@@ -45,7 +45,7 @@
     @media (prefers-color-scheme: dark){ :root{ color-scheme: dark; } }
 
     *{ box-sizing:border-box; }
-    html,body{ height:100%; }
+    html,body{ height:100%; overflow-x:hidden; }
     body{
       margin:0;
       font:16px/1.5 system-ui, -apple-system, Segoe UI, Roboto, Inter, "Helvetica Neue", Arial, sans-serif;
@@ -89,6 +89,7 @@
       overflow:auto;
       padding:20px;
       scroll-behavior:smooth;
+      -webkit-overflow-scrolling:touch; /* iOS smooth scroll */
     }
     .row{ display:flex; gap:12px; margin:12px 0; max-width:88%; }
     .row.bot{ justify-content:flex-start; }
@@ -155,7 +156,8 @@
       .print-overlay{ display:block !important; position:absolute; top:0; left:0; right:0; bottom:0; background:#fff; z-index:1000; padding:40px; text-align:center; font-size:18px; color:#666; }
       .print-overlay::before{ content:"Sicherheitshinweis: Dieses Dokument enthält sensible Informationen. Bitte behandeln Sie es vertraulich und löschen Sie es nach Gebrauch."; display:block; margin-bottom:20px; font-weight:bold; }
     }
-    .print-overlay{ display:none; }
+    .print-overlay{ display:none; position:fixed; inset:0; background:#fff; z-index:1000; padding:40px; text-align:center; font-size:18px; color:#666; box-shadow:inset 0 0 0 1000px rgba(255,255,255,0.9); }
+    .print-overlay::before{ content:"Sicherheitshinweis: Dieses Dokument enthält sensible Informationen. Bitte behandeln Sie es vertraulich und löschen Sie es nach Gebrauch."; display:block; margin-bottom:20px; font-weight:bold; }
 
     /* Small screens */
     @media (max-width:640px){ .app{ border-radius:0; } main#chat{ padding:16px } .row{ max-width:94% } }
@@ -176,6 +178,10 @@
     .btn-primary{ background:var(--primary-600); color:#fff; border:0; padding:12px 16px; border-radius:12px; font-weight:700; cursor:pointer; }
     .btn-primary:disabled{ opacity:.5; cursor:not-allowed; }
     .btn-link{ background:transparent; border:0; color:var(--primary-600); cursor:pointer; font-weight:600; }
+
+    /* Smooth details expand/collapse */
+    #moreInfo{ overflow:hidden; transition:max-height 0.3s ease, opacity 0.3s ease; max-height:0; opacity:0; }
+    #moreInfo.show{ max-height:1000px; opacity:1; }
 
     /* WhatsApp Button */
     .whatsapp-btn{ background:#25d366; color:#fff; border-radius:50%; width:48px; height:48px; display:flex; align-items:center; justify-content:center; cursor:pointer; box-shadow:0 4px 12px rgba(37,211,102,0.3); }
@@ -316,7 +322,7 @@
       'Wer kann mobile Ausbildung machen?',
       'Welche Vorteile bietet mobile Ausbildung?',
       'Wie beginne ich mit mobiler Ausbildung?',
-      'Mobile Ausbildung beantragen, jetzt hier.'
+      'Mobile Ausbildung beantragen'
     ];
 
     // ------------------ Storage Helpers (safer than innerHTML) ------------------
@@ -354,13 +360,20 @@
     // ------------------ Input Guard against Personal Data ------------------
     function hasPersonalData(text){
       const patterns = [
-        /\b\d{4,}\b/g, // Numbers like phone, IDs
+        /\b\d{4,}\b/g, // Numbers like phone, IDs (avoid too broad)
         /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b/g, // Emails
         /\b\d{3,4}[-\s]?\d{3,4}[-\s]?\d{3,4}\b/g, // Phone numbers
-        /\b[A-Z][a-z]+\s[A-Z][a-z]+\b/g, // Names (simple)
-        /\b\d{2}\.\d{2}\.\d{4}\b/g, // Dates
-        /\b\d{5,}\b/g // Longer numbers
+        /\b[A-Z][a-z]+\s[A-Z][a-z]+\b/g, // Names (simple, may have false positives but common names)
+        /\b\d{1,2}\.\d{1,2}\.\d{4}\b/g, // Dates
+        /\bDE\d{20}\b/g, // IBAN starting with DE
+        /\b\d{5}\s+[A-Za-zÄÖÜäöüß\s]+\d*\b/g, // Addresses like "12345 Stadt" or "Straße 123"
+        /\b\d{2}\.\d{2}\.\d{4}\b/g // Birth dates (same as dates)
       ];
+      // Exclude common phrases that might match
+      const exclusions = ['Mobile Ausbildung', 'Wie beginne ich', 'Wer kann'];
+      for(const excl of exclusions){
+        if(text.includes(excl)) return false;
+      }
       return patterns.some(p => p.test(text));
     }
 
@@ -453,7 +466,7 @@
 
       // Skip guard for default prompts
       if(!defaultPrompts.includes(text) && hasPersonalData(text)){
-        notify('Bitte keine personenbezogenen Daten eingeben (z.B. Namen, E-Mails, Telefonnummern). Verwende abstrakte Angaben.', true);
+        notify('Bitte keine personenbezogenen Daten eingeben (z.B. Namen, E-Mails, Telefonnummern, IBAN, Adressen). Verwende abstrakte Angaben.', true);
         elInput.focus();
         return;
       }
@@ -509,10 +522,16 @@
     btnMoreInfo?.addEventListener('click', ()=>{
       const panel = document.getElementById('moreInfo');
       if(!panel) return;
-      const isOpen = panel.style.display !== 'none';
-      panel.style.display = isOpen ? 'none' : 'block';
-      btnMoreInfo.setAttribute('aria-expanded', String(!isOpen));
-      btnMoreInfo.textContent = isOpen ? 'Details' : 'Details ausblenden';
+      const isOpen = panel.classList.contains('show');
+      if(isOpen){
+        panel.classList.remove('show');
+        btnMoreInfo.setAttribute('aria-expanded', 'false');
+        btnMoreInfo.textContent = 'Details';
+      }else{
+        panel.classList.add('show');
+        btnMoreInfo.setAttribute('aria-expanded', 'true');
+        btnMoreInfo.textContent = 'Details ausblenden';
+      }
     });
 
     btnResetConsent?.addEventListener('click', ()=>{
@@ -526,13 +545,24 @@
       openGate();
     });
 
+    // ESC to close modal if checkboxes checked
+    document.addEventListener('keydown', (e)=>{
+      if(e.key === 'Escape' && dlg.classList.contains('show') && chkData.checked && chkNoBinding.checked){
+        closeGate();
+      }
+    });
+
     // ------------------ Event Bindings ------------------
     elSend.addEventListener('click', send);
     elInput.addEventListener('keydown', (e)=>{
       if(e.key === 'Enter' && !e.shiftKey){ e.preventDefault(); send(); }
     });
 
-    btnPrint.addEventListener('click', ()=>window.print());
+    btnPrint.addEventListener('click', ()=>{
+      const overlay = document.getElementById('printOverlay');
+      overlay.style.display = 'block';
+      setTimeout(()=>{ window.print(); overlay.style.display = 'none'; }, 100);
+    });
     btnClear.addEventListener('click', ()=>{
       if(confirm('Möchtest du wirklich den gesamten Chat-Verlauf löschen?')){
         items = []; store.save(items); elChat.innerHTML='';
@@ -572,12 +602,12 @@
         setTheme(prefersDark);
       }else{ setTheme(stored === 'true'); }
 
-      const hasData = localStorage.getItem(KEY_DATA) === 'true';
-      const hasNoBind = localStorage.getItem(KEY_NOBIND) === 'true';
+      // Always open gate for consent
+      openGate();
 
       // Render chat
       if(items.length){ renderAll(); }
-      if(hasData && hasNoBind){ bootstrapIntro(); } else { openGate(); }
+      if(localStorage.getItem(KEY_DATA) === 'true' && localStorage.getItem(KEY_NOBIND) === 'true'){ bootstrapIntro(); }
 
       renderSuggestions();
       elInput.focus();
