@@ -183,17 +183,17 @@
         <h1>Mobile Ausbildung · Chatbot</h1>
       </div>
       <div class="actions">
-        <button class="btn btn--ghost" id="btnLegal" title="Hinweise anzeigen / zurücksetzen">
+        <button type="button" class="btn btn--ghost" id="btnLegal" title="Hinweise anzeigen / zurücksetzen">
           <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><circle cx="12" cy="16" r="1"/></svg>
         </button>
-        <button class="btn btn--ghost" id="btnToggleTheme" title="Dunkelmodus umschalten" aria-pressed="false">
+        <button type="button" class="btn btn--ghost" id="btnToggleTheme" title="Dunkelmodus umschalten" aria-pressed="false">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 1 0 9 9 6 6 0 0 1-9-9z"/></svg>
           <span class="sr-only">Theme</span>
         </button>
-        <button class="btn btn--ghost" id="btnPrint" title="Drucken">
+        <button type="button" class="btn btn--ghost" id="btnPrint" title="Drucken">
           <svg viewBox="0 0 24 24" aria-hidden="true"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
         </button>
-        <button class="btn btn--ghost" id="btnClear" title="Chat löschen">
+        <button type="button" class="btn btn--ghost" id="btnClear" title="Chat löschen">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
         </button>
       </div>
@@ -209,7 +209,7 @@
         <div class="field">
           <input class="input" id="input" type="text" inputmode="text" autocomplete="off" aria-label="Deine Nachricht" placeholder="Schreibe hier deine Nachricht…" />
         </div>
-        <button class="send" id="btnSend" aria-label="Nachricht senden">
+        <button type="button" class="send" id="btnSend" aria-label="Nachricht senden">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
           Senden
         </button>
@@ -259,9 +259,9 @@
           </section>
         </div>
         <div class="modal-actions">
-          <button class="btn-link" id="btnResetConsent" type="button" title="Hinweise zurücksetzen">Zurücksetzen</button>
-          <button class="btn-link" id="btnMoreInfo" type="button" aria-expanded="false" aria-controls="moreInfo">Details</button>
-          <button class="btn-primary" id="btnProceed" type="button" disabled>Verstanden & fortfahren</button>
+          <button type="button" class="btn-link" id="btnResetConsent" type="button" title="Hinweise zurücksetzen">Zurücksetzen</button>
+          <button type="button" class="btn-link" id="btnMoreInfo" type="button" aria-expanded="false" aria-controls="moreInfo">Details</button>
+          <button type="button" class="btn-primary" id="btnProceed" type="button" disabled>Verstanden & fortfahren</button>
         </div>
       </div>
     </div>
@@ -452,13 +452,19 @@
       btnProceed.disabled = !(chkData.checked && chkNoBinding.checked);
     }
     function openGate(){ dlg.classList.add('show'); btnProceed.disabled = true; elInput.disabled = true; elSend.disabled = true; }
-    function closeGate(){ dlg.classList.remove('show'); elInput.disabled = false; elSend.disabled = false; }
+    function closeGate(){ dlg.classList.remove('show'); elInput.disabled = false; elSend.disabled = false; renderSuggestions(); elInput.focus(); }
 
     chkData?.addEventListener('change', validateGate);
     chkNoBinding?.addEventListener('change', validateGate);
 
     btnProceed?.addEventListener('click', ()=>{
       localStorage.setItem(KEY_DATA, 'true');
+      localStorage.setItem(KEY_NOBIND, 'true');
+      closeGate();
+      if(items.length === 0){ bootstrapIntro(); }
+      notify('Hinweise bestätigt.');
+      elInput.focus();
+    });
       localStorage.setItem(KEY_NOBIND, 'true');
       closeGate();
       notify('Hinweise bestätigt.');
@@ -524,6 +530,36 @@
     }
 
     (function init(){
+      // Theme from storage or system
+      const stored = localStorage.getItem('ui.theme.dark');
+      if(stored === null){
+        const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+        setTheme(prefersDark);
+      }else{ setTheme(stored === 'true'); }
+
+      const hasData = localStorage.getItem(KEY_DATA) === 'true';
+      const hasNoBind = localStorage.getItem(KEY_NOBIND) === 'true';
+
+      // Render chat
+      if(items.length){ renderAll(); }
+      if(hasData && hasNoBind){ bootstrapIntro(); } else { openGate(); }
+
+      renderSuggestions();
+      elInput.focus();
+
+      // ------------------ Smoke Tests ------------------
+      try{
+        const tests = [];
+        const ok = (name, cond) => tests.push({name, pass: !!cond});
+        ok('All header buttons are type=button', Array.from(document.querySelectorAll('header .actions button')).every(b=>b.type==='button'));
+        ok('Consent buttons are type=button', Array.from(document.querySelectorAll('#consentGate button')).every(b=>b.type==='button'));
+        ok('Input enabled when consent accepted', hasData && hasNoBind ? !elInput.disabled : true);
+        ok('Intro pushed when empty & consent ok', (hasData && hasNoBind) ? items.length >= 2 : true);
+        console.group('%cSmoke Tests','color:#0a0;font-weight:700');
+        tests.forEach(t=> console[t.pass? 'log':'error'](`${t.pass?'✔':'✖'} ${t.name}`));
+        console.groupEnd();
+      }catch(e){ console.warn('Smoke tests failed to run:', e); }
+    })();(){
       // Theme from storage or system
       const stored = localStorage.getItem('ui.theme.dark');
       if(stored === null){
