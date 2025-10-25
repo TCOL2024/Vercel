@@ -8,7 +8,7 @@
 <style>
   :root{
     --bg:#0b1020; --panel:#121a2b; --accent:#4da3ff; --muted:#8aa0bd; --text:#eaf2ff; --bubble:#1b2740;
-    --ok:#23c55e; --warn:#f59e0b; --err:#ef4444;
+    --ok:#22c55e; --warn:#f59e0b; --err:#ef4444;
   }
   *{box-sizing:border-box}
   body{margin:0;background:linear-gradient(180deg,#0b1020,#0b1426);color:var(--text);
@@ -32,14 +32,10 @@
   button{background:linear-gradient(180deg,#1b5bb3,#164a91);cursor:pointer}
   button.secondary{background:#0e1a31}
   button:disabled{opacity:.6;cursor:not-allowed}
-  .hint{padding:10px 16px;color:#a7b7d1;border-top:1px dashed #213255;font-size:13px}
   .spinner{width:14px;height:14px;border:2px solid #8fbfff;border-top-color:transparent;border-radius:50%;
            display:inline-block;animation:spin .9s linear infinite;vertical-align:-2px}
   @keyframes spin{to{transform:rotate(360deg)}}
   .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);border:0}
-  .notice{padding:8px 12px;margin:8px 16px;border-left:3px solid var(--warn);color:#d9e1ee;background:#0d1a2f;border-radius:8px}
-  .ok{border-left-color:var(--ok)}
-  .err{border-left-color:var(--err)}
 </style>
 </head>
 <body>
@@ -59,16 +55,12 @@
         <button id="sendBtn" aria-label="Senden">Senden</button>
         <button id="clearBtn" class="secondary" aria-label="Chat leeren">Neu</button>
       </div>
-
-      <div id="note" class="hint">
-        Nutzt deinen <strong>Make-Proxy</strong> (Webhook → HTTP → Webhook-Response) für <em>gemini-2.5-flash</em>.
-      </div>
     </div>
   </div>
 
 <script>
-  // ⬇️ Trage hier DEINE Webhook-Adresse aus Make ein:
-  const MAKE_URL = "https://hook.integromat.com/DEIN_WEBHOOK_ID";
+  // Feste Webhook-URL (Make → Webhooks → Custom webhook):
+  const MAKE_URL = "https://hook.us2.make.com/v6u4pmb2qnx5nfqxzh5hlvvjaf9p7jvx";
 
   // ---------- UI Helpers ----------
   const $ = (s)=>document.querySelector(s);
@@ -100,7 +92,7 @@
     const res = await fetch(MAKE_URL, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      // Temperatur/MaxTokens sind optional; Make setzt Defaults (0.6 / 1024) falls nicht vorhanden
+      // Temperatur/MaxTokens optional – falls im Make-Flow Defaults gesetzt sind, könnten diese Felder auch weggelassen werden.
       body: JSON.stringify({ prompt, temperature: 0.6, maxTokens: 1024 })
     });
     if(!res.ok){
@@ -108,7 +100,7 @@
       throw new Error(`Proxy-Fehler ${res.status}: ${text || res.statusText}`);
     }
     const data = await res.json().catch(()=> ({}));
-    // Erwartet: { text: "..." } – siehe dein Webhook-Response-Mapping in Make
+    // Erwartet: { text: "..." } – stelle sicher, dass dein Webhook-Response in Make das so zurückgibt.
     return typeof data.text === "string" ? data.text : "";
   }
 
