@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Mobile Ausbildung · Chatbot</title>
+  <meta name="color-scheme" content="light dark" />
+  <meta name="theme-color" content="#004a99" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#121212" media="(prefers-color-scheme: dark)">
+  <style>
+    /* ------------------ Design Tokens ------------------ */
+    :root{
+      --primary:#004a99;
+      --primary-600:#0060c2;
+      --primary-700:#003d80;
+      --accent:#0078d7;
+      --text:#1c2430;
+      --text-2:#606b7a;
+      --bg:#f4f6fb;
+      --panel:#ffffff;
+      --chat-bg:#f9fafc;
+      --bubble-user:#004a99;
+      --bubble-bot:#eceff3;
+      --border:#e5e7eb;
+      --shadow:0 8px 24px rgba(0,0,0,.08);
+      --radius:14px;
+    }
+    :root.dark{
+      --primary:#2c6ca8;
+      --primary-600:#3a88c9;
+      --primary-700:#1c5080;
+      --accent:#5aa7ea;
+      --text:#e7edf5;
+      --text-2:#b1bed0;
+      --bg:#0f1217;
+      --panel:#121821;
+      --chat-bg:#171d26;
+      --bubble-user:#2c6ca8;
+      --bubble-bot:#232b36;
+      --border:#263243;
+      --shadow:0 10px 28px rgba(0,0,0,.35);
+    }
+
+    /* Respect system preference out of the box */
+    @media (prefers-color-scheme: dark){ :root{ color-scheme: dark; } }
+
+    *{ box-sizing:border-box; }
+    html,body{ height:100%; }
+    body{
+      margin:0;
+      font:16px/1.45 system-ui, -apple-system, Segoe UI, Roboto, Inter, "Helvetica Neue", Arial, sans-serif;
+      background:var(--bg);
+      color:var(--text);
+    }
+
+    /* ------------------ App Layout ------------------ */
+    .app{
+      max-width:840px;
+      height:100dvh; /* mobile-safe */
+      margin:0 auto;
+      display:grid;
+      grid-template-rows:auto 1fr auto; /* header · main · input */
+      background:var(--panel);
+      border-radius:20px;
+      box-shadow:var(--shadow);
+      overflow:hidden;
+    }
+
+    header.appbar{
+      display:flex; align-items:center; gap:12px; justify-content:space-between;
+      padding:14px 16px;
+      background:var(--primary);
+      color:#fff;
+    }
+    .brand{ display:flex; align-items:center; gap:10px; }
+    .brand h1{ font-size:18px; margin:0; font-weight:600; letter-spacing:.2px; }
+    .actions{ display:flex; gap:8px; }
+    .btn{ appearance:none; border:0; padding:9px 12px; border-radius:10px; cursor:pointer; display:inline-flex; align-items:center; gap:8px; font-weight:600; }
+    .btn--ghost{ background:rgba(255,255,255,.16); color:#fff; }
+    .btn--ghost:hover{ background:rgba(255,255,255,.24); }
+    .btn svg{ width:18px; height:18px; }
+
+    /* ------------------ Chat Area ------------------ */
+    main#chat{
+      background:var(--chat-bg);
+      overflow:auto;
+      padding:16px;
+      scroll-behavior:smooth;
+    }
+    .row{ display:flex; gap:10px; margin:10px 0; max-width:86%; }
+    .row.bot{ justify-content:flex-start; }
+    .row.user{ margin-left:auto; justify-content:flex-end; }
+    .avatar{
+      flex:0 0 36px; height:36px; width:36px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:700;
+      background:#c9d7ef; color:#0e254b;
+    }
+    :root.dark .avatar{ background:#2b3b56; color:#d9e6ff; }
+    .bubble{
+      background:var(--bubble-bot);
+      color:var(--text);
+      padding:12px 14px; border-radius:var(--radius);
+      line-height:1.5; word-break:break-word; white-space:pre-wrap;
+      box-shadow:0 1px 0 rgba(0,0,0,.03);
+      animation:slideIn .25s ease;
+    }
+    .row.bot .bubble{ border-bottom-left-radius:6px; }
+    .row.user .bubble{ background:var(--bubble-user); color:#fff; border-bottom-right-radius:6px; }
+    .meta{ font-size:12px; color:var(--text-2); margin-top:4px; }
+    .row.user .meta{ text-align:right; color:rgba(255,255,255,.85); }
+
+    @keyframes slideIn{ from{ opacity:0; transform:translateY(6px) } to{ opacity:1; transform:translateY(0) } }
+
+    /* ------------------ Input Area ------------------ */
+    .composer{
+      background:var(--panel);
+      border-top:1px solid var(--border);
+      padding:12px; display:grid; gap:8px;
+    }
+    .composer-row{ display:flex; gap:10px; }
+    .field{
+      flex:1; display:flex; align-items:center; gap:8px; background:#fff; border:1px solid var(--border); border-radius:12px; padding:8px 10px;
+    }
+    :root.dark .field{ background:#1b222d; }
+    .input{ flex:1; border:0; outline:none; background:transparent; color:inherit; font:inherit; padding:6px 2px; }
+    .send{
+      background:var(--primary-600); color:#fff; border-radius:12px; padding:10px 14px; border:0; font-weight:700; cursor:pointer; display:inline-flex; align-items:center; gap:8px;
+    }
+    .send:hover{ background:var(--primary-700); }
+    .send:disabled{ opacity:.55; cursor:not-allowed; }
+
+    .suggest{
+      display:flex; flex-wrap:wrap; gap:8px; padding:4px 2px 0; }
+    .chip{
+      background:#e6f0ff; color:#0d3b82; border:0; padding:8px 10px; border-radius:999px; cursor:pointer; font-weight:600;
+    }
+    :root.dark .chip{ background:#243551; color:#cfe0ff; }
+
+    /* Notifications & Typing */
+    .notice{ position:fixed; inset:auto 16px 16px auto; background:#d4edda; color:#155724; border-radius:10px; padding:10px 12px; box-shadow:var(--shadow); display:none; z-index:50; }
+    .notice.error{ background:#f8d7da; color:#721c24; }
+
+    .typing{ display:none; align-items:center; gap:6px; padding:6px 0 2px 6px; }
+    .dot{ width:8px; height:8px; border-radius:50%; background:var(--text-2); animation:bounce 1.2s infinite; }
+    .dot:nth-child(2){ animation-delay:.15s; }
+    .dot:nth-child(3){ animation-delay:.3s; }
+    @keyframes bounce{ 0%,60%,100%{ transform:translateY(0)} 30%{ transform:translateY(-5px)} }
+
+    /* Printing */
+    @media print{
+      body{ background:#fff; }
+      .app{ height:auto; box-shadow:none; border-radius:0; }
+      header.appbar, .composer, .notice{ display:none !important; }
+      main#chat{ padding:0 0 12px; background:#fff; }
+      .bubble{ background:#fff; border:1px solid #ddd; color:#000; }
+    }
+
+    /* Small screens */
+    @media (max-width:640px){ .app{ border-radius:0; } main#chat{ padding:12px } .row{ max-width:92% } }
+  </style>
+</head>
+<body>
+  <div class="app" role="application">
+    <header class="appbar" aria-label="App-Leiste">
+      <div class="brand" aria-live="polite">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2v20"/><path d="M2 12h20"/></svg>
+        <h1>Mobile Ausbildung · Chatbot</h1>
+      </div>
+      <div class="actions">
+        <button class="btn btn--ghost" id="btnToggleTheme" title="Dunkelmodus umschalten" aria-pressed="false">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 1 0 9 9 6 6 0 0 1-9-9z"/></svg>
+          <span class="sr-only">Theme</span>
+        </button>
+        <button class="btn btn--ghost" id="btnPrint" title="Drucken">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+        </button>
+        <button class="btn btn--ghost" id="btnClear" title="Chat löschen">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <main id="chat" role="log" aria-live="polite" aria-relevant="additions" aria-label="Chatverlauf">
+      <!-- Nachrichten werden hier gerendert -->
+    </main>
+
+    <div class="composer" aria-label="Nachrichtenbereich">
+      <div class="typing" id="typing"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
+      <div class="composer-row">
+        <div class="field">
+          <input class="input" id="input" type="text" inputmode="text" autocomplete="off" aria-label="Deine Nachricht" placeholder="Schreibe hier deine Nachricht…" />
+        </div>
+        <button class="send" id="btnSend" aria-label="Nachricht senden">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+          Senden
+        </button>
+      </div>
+      <div class="suggest" id="suggest"></div>
+    </div>
+
+    <div class="notice" id="notice" role="status">Hinweis</div>
+  </div>
+
+  <script>
+    // ------------------ Elements ------------------
+    const elChat = document.getElementById('chat');
+    const elInput = document.getElementById('input');
+    const elSend  = document.getElementById('btnSend');
+    const elSuggest = document.getElementById('suggest');
+    const elTyping = document.getElementById('typing');
+    const elNotice = document.getElementById('notice');
+    const btnPrint = document.getElementById('btnPrint');
+    const btnClear = document.getElementById('btnClear');
+    const btnTheme = document.getElementById('btnToggleTheme');
+
+    // ------------------ Config ------------------
+    const WEBHOOK = 'https://hook.us2.make.com/qa8g1cw25ec5lbydckaga3y4vqj9lx1n';
+    const MAX_RETRIES = 3;
+    const RETRY_MS = 2000;
+    const TIMEOUT_MS = 20000;
+
+    const defaultPrompts = [
+      'Was ist mobile Ausbildung?',
+      'Wer kann mobile Ausbildung machen?',
+      'Welche Vorteile bietet mobile Ausbildung?',
+      'Wie beginne ich mit mobiler Ausbildung?'
+    ];
+
+    // ------------------ Storage Helpers (safer than innerHTML) ------------------
+    const store = {
+      key: 'chat.v1.items',
+      load(){
+        try{ return JSON.parse(localStorage.getItem(this.key)) || []; }catch{ return []; }
+      },
+      save(items){ localStorage.setItem(this.key, JSON.stringify(items)); }
+    };
+
+    let items = store.load(); // [{sender:'bot'|'user', text:'...', t:epoch}]
+    let lastBotAnswer = '';
+    let isBusy = false;
+
+    // ------------------ Utilities ------------------
+    const nowHHMM = d => `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+
+    function sanitize(str){
+      return String(str).replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+    }
+    function format(str){
+      const safe = sanitize(str);
+      // **bold**
+      let html = safe.replace(/\*\*(.*?)\*\*/g, '<strong>$1<\/strong>');
+      // linkify bare URLs
+      html = html.replace(/(https?:\/\/[^\s<]+[^<.,!?)\s])/g, '<a href="$1" target="_blank" rel="noopener noreferrer">$1<\/a>');
+      return html.replace(/\n/g,'<br>');
+    }
+
+    function scrollToBottom(){ elChat.scrollTop = elChat.scrollHeight; }
+
+    // ------------------ Rendering ------------------
+    function renderAll(){
+      elChat.innerHTML = '';
+      for(const it of items){
+        renderItem(it);
+      }
+      scrollToBottom();
+    }
+
+    function renderItem(it){
+      const row = document.createElement('div');
+      row.className = `row ${it.sender}`;
+
+      const avatar = document.createElement('div');
+      avatar.className = 'avatar';
+      avatar.textContent = it.sender === 'bot' ? 'B' : 'Du';
+
+      const wrap = document.createElement('div');
+      const bubble = document.createElement('div');
+      bubble.className = 'bubble';
+      bubble.innerHTML = format(it.text);
+
+      const meta = document.createElement('div');
+      meta.className = 'meta';
+      meta.textContent = nowHHMM(new Date(it.t));
+
+      wrap.appendChild(bubble);
+      wrap.appendChild(meta);
+
+      if(it.sender === 'bot'){ row.appendChild(avatar); row.appendChild(wrap); }
+      else{ row.appendChild(wrap); row.appendChild(avatar); }
+
+      elChat.appendChild(row);
+    }
+
+    function push(sender, text){
+      const it = { sender, text: String(text || ''), t: Date.now() };
+      items.push(it); store.save(items); renderItem(it); scrollToBottom();
+    }
+
+    // ------------------ Suggestions ------------------
+    function renderSuggestions(list){
+      elSuggest.innerHTML='';
+      (list || defaultPrompts).forEach(p =>{
+        const b = document.createElement('button');
+        b.className='chip'; b.textContent=p; b.type='button'; b.setAttribute('aria-label',`Vorschlag: ${p}`);
+        b.addEventListener('click',()=>{ elInput.value=p; send(); });
+        elSuggest.appendChild(b);
+      });
+    }
+
+    // ------------------ Notice ------------------
+    function notify(msg, isError=false){
+      elNotice.textContent = msg;
+      elNotice.className = 'notice' + (isError ? ' error' : '');
+      elNotice.style.display = 'block';
+      setTimeout(()=>{ elNotice.style.display='none'; }, 2600);
+    }
+
+    // ------------------ Network ------------------
+    async function postWithRetry(payload){
+      let attempt = 0; let lastErr;
+      while(attempt < MAX_RETRIES){
+        try{
+          const ctrl = new AbortController();
+          const timer = setTimeout(()=>ctrl.abort(), TIMEOUT_MS);
+          const res = await fetch(WEBHOOK, {
+            method:'POST', headers:{ 'Content-Type':'application/json' },
+            body: JSON.stringify(payload), signal: ctrl.signal
+          });
+          clearTimeout(timer);
+          if(!res.ok) throw new Error(`HTTP ${res.status}`);
+          const raw = await res.text();
+          try{
+            const data = JSON.parse(raw);
+            return data;
+          }catch{ return { answer: raw }; }
+        }catch(err){ lastErr = err; attempt++; if(attempt < MAX_RETRIES){ await new Promise(r=>setTimeout(r, RETRY_MS)); } }
+      }
+      throw lastErr;
+    }
+
+    // ------------------ Send Flow ------------------
+    async function send(){
+      const text = elInput.value.trim();
+      if(!text || isBusy) return;
+      isBusy = true; elSend.disabled = true; elTyping.style.display='flex';
+
+      push('user', text);
+      elInput.value = '';
+
+      try{
+        const payload = { message: text, last_answer: lastBotAnswer.replace(/<[^>]+>/g,'') };
+        const data = await postWithRetry(payload);
+        const reply = String(data.answer || '').trim();
+        lastBotAnswer = reply;
+        push('bot', reply || '…');
+        if(Array.isArray(data.suggestions) && data.suggestions.length){ renderSuggestions(data.suggestions); }
+      }catch(err){
+        push('bot', 'Es gab einen Verbindungsfehler. Bitte versuche es später erneut.');
+        notify('Fehler bei der Kommunikation mit dem Server.', true);
+      }finally{
+        isBusy = false; elSend.disabled = false; elTyping.style.display='none';
+        elInput.focus();
+      }
+    }
+
+    // ------------------ Theme ------------------
+    function setTheme(isDark){
+      document.documentElement.classList.toggle('dark', !!isDark);
+      localStorage.setItem('ui.theme.dark', String(!!isDark));
+      btnTheme.setAttribute('aria-pressed', String(!!isDark));
+    }
+
+    // ------------------ Event Bindings ------------------
+    elSend.addEventListener('click', send);
+    elInput.addEventListener('keydown', (e)=>{
+      if(e.key === 'Enter' && !e.shiftKey){ e.preventDefault(); send(); }
+    });
+
+    btnPrint.addEventListener('click', ()=>window.print());
+    btnClear.addEventListener('click', ()=>{
+      if(confirm('Möchtest du wirklich den gesamten Chat-Verlauf löschen?')){
+        items = []; store.save(items); elChat.innerHTML='';
+        bootstrapIntro(); notify('Chat-Verlauf wurde gelöscht.');
+      }
+    });
+
+    btnTheme.addEventListener('click', ()=>{
+      const isDark = !(document.documentElement.classList.contains('dark'));
+      setTheme(isDark);
+    });
+
+    // Suggestions reset when input empty
+    elInput.addEventListener('input', ()=>{
+      if(elInput.value.trim()==='') renderSuggestions();
+    });
+
+    // ------------------ Bootstrap ------------------
+    function bootstrapIntro(){
+      if(items.length === 0){
+        push('bot','Liebe Auszubildende, schön, dass ihr euch für mobile Ausbildung interessiert. Diese KI gibt euch erste **Informationen** und prüft unverbindlich, ob mobile Ausbildung für euch geeignet ist.');
+        push('bot','Wollen wir loslegen?');
+      }
+    }
+
+    (function init(){
+      // Theme from storage or system
+      const stored = localStorage.getItem('ui.theme.dark');
+      if(stored === null){
+        const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+        setTheme(prefersDark);
+      }else{ setTheme(stored === 'true'); }
+
+      // Render chat
+      if(items.length){ renderAll(); }
+      bootstrapIntro();
+      renderSuggestions();
+      elInput.focus();
+    })();
+  </script>
+</body>
+</html>
