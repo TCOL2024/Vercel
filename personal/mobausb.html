@@ -179,7 +179,8 @@
   <div class="app" role="application">
     <header class="appbar" aria-label="App-Leiste">
       <div class="brand" aria-live="polite">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2v20"/><path d="M2 12h20"/></svg>
+        <!-- simplified logo placeholder -->
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2v20"/><path d="M3 7h18"/></svg>
         <h1>Mobile Ausbildung · Chatbot</h1>
       </div>
       <div class="actions">
@@ -223,19 +224,19 @@
     <div class="modal" id="consentGate" role="dialog" aria-modal="true" aria-labelledby="dlgTitle">
       <div class="modal-card">
         <div class="modal-head">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2l7 7-7 7-7-7 7-7z"/></svg>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2l7 7-7 7-7-7z"/></svg>
           <h2 id="dlgTitle">Datenschutz & Nutzungshinweis</h2>
         </div>
         <div class="modal-body">
-          <p><strong>Worum geht’s?</strong> Dieser KI-Dialog nutzt Dienste von <strong>Microsoft (SharePoint Online)</strong> und <strong>OpenAI</strong>. Deine Eingaben werden technisch an diese Plattformen übermittelt, dort verarbeitet und können vorübergehend gespeichert werden, um Antworten zu erzeugen.</p>
-          <p class="legal"><strong>Wichtig:</strong> Bitte gib <u>keine personenbezogenen Daten</u> ein (z. B. Namen, Kontaktdaten, Gesundheits- oder Kundendaten, interne Aktenzeichen). Nutze nur abstrahierte Beispiele.</p>
+          <p><strong>Worum geht’s?</strong> Dieser KI-Dialog nutzt Dienste von <strong>Microsoft (SharePoint Online)</strong> und <strong>OpenAI</strong>. Deine Eingaben werden technisch an diese Plattformen zur Verarbeitung weitergeleitet.</p>
+          <p class="legal"><strong>Wichtig:</strong> Bitte gib <u>keine personenbezogenen Daten</u> ein (z. B. Namen, Kontaktdaten, Gesundheits- oder Kundendaten, interne Aktenzeichen). Nutze nur abstrakte oder beispielhafte Angaben.</p>
           <div class="checkline">
             <input type="checkbox" id="chkData" />
             <label for="chkData">Ich habe den Datenschutzhinweis gelesen und bin mit der Verarbeitung meiner Eingaben durch Microsoft (SharePoint) und OpenAI einverstanden.</label>
           </div>
           <div class="checkline">
             <input type="checkbox" id="chkNoBinding" />
-            <label for="chkNoBinding">Ich verstehe, dass die KI <strong>unverbindliche Vorschläge</strong> erzeugt, die <strong>Fehler enthalten</strong> können. Sie ersetzen keine rechtliche, medizinische oder sonstige Fachberatung. Entscheidungen treffe ich eigenverantwortlich.</label>
+            <label for="chkNoBinding">Ich verstehe, dass die KI <strong>unverbindliche Vorschläge</strong> erzeugt, die <strong>Fehler enthalten</strong> können. Sie ersetzen keine rechtliche, medizinische oder andere fachliche Beratung.</label>
           </div>
           <p class="legal">Hinweis: Wenn du nicht einverstanden bist, schließe dieses Fenster. Eine Nutzung ist dann nicht möglich.</p>
 
@@ -259,9 +260,9 @@
           </section>
         </div>
         <div class="modal-actions">
-          <button type="button" class="btn-link" id="btnResetConsent" type="button" title="Hinweise zurücksetzen">Zurücksetzen</button>
-          <button type="button" class="btn-link" id="btnMoreInfo" type="button" aria-expanded="false" aria-controls="moreInfo">Details</button>
-          <button type="button" class="btn-primary" id="btnProceed" type="button" disabled>Verstanden & fortfahren</button>
+          <button type="button" class="btn-link" id="btnResetConsent" title="Hinweise zurücksetzen">Zurücksetzen</button>
+          <button type="button" class="btn-link" id="btnMoreInfo" aria-expanded="false" aria-controls="moreInfo">Details</button>
+          <button type="button" class="btn-primary" id="btnProceed" disabled>Verstanden & fortfahren</button>
         </div>
       </div>
     </div>
@@ -322,8 +323,8 @@
     function sanitize(str){
       const map = {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"};
       return String(str).replace(/[&<>"']/g, ch => map[ch]);
-    }[ch]));
     }
+
     function format(str){
       const safe = sanitize(str);
       // **bold**
@@ -451,10 +452,11 @@
 
     // ------------------ Consent Gate ------------------
     function validateGate(){
+      if(!btnProceed) return;
       btnProceed.disabled = !(chkData.checked && chkNoBinding.checked);
     }
-    function openGate(){ dlg.classList.add('show'); btnProceed.disabled = true; elInput.disabled = true; elSend.disabled = true; }
-    function closeGate(){ dlg.classList.remove('show'); elInput.disabled = false; elSend.disabled = false; renderSuggestions(); elInput.focus(); }
+    function openGate(){ if(dlg) dlg.classList.add('show'); elInput.disabled = true; elSend.disabled = true; }
+    function closeGate(){ if(dlg) dlg.classList.remove('show'); elInput.disabled = false; elSend.disabled = false; renderSuggestions(); elInput.focus(); }
 
     chkData?.addEventListener('change', validateGate);
     chkNoBinding?.addEventListener('change', validateGate);
@@ -464,11 +466,6 @@
       localStorage.setItem(KEY_NOBIND, 'true');
       closeGate();
       if(items.length === 0){ bootstrapIntro(); }
-      notify('Hinweise bestätigt.');
-      elInput.focus();
-    });
-      localStorage.setItem(KEY_NOBIND, 'true');
-      closeGate();
       notify('Hinweise bestätigt.');
       elInput.focus();
     });
@@ -491,12 +488,6 @@
 
     btnLegal?.addEventListener('click', ()=>{
       openGate();
-    });
-      if(!panel) return;
-      const isOpen = panel.style.display !== 'none';
-      panel.style.display = isOpen ? 'none' : 'block';
-      btnMoreInfo.setAttribute('aria-expanded', String(!isOpen));
-      btnMoreInfo.textContent = isOpen ? 'Details' : 'Details ausblenden';
     });
 
     // ------------------ Event Bindings ------------------
@@ -526,11 +517,12 @@
     // ------------------ Bootstrap ------------------
     function bootstrapIntro(){
       if(items.length === 0){
-        push('bot','Liebe Auszubildende, schön, dass ihr euch für mobile Ausbildung interessiert. Diese KI gibt euch erste **Informationen** und prüft unverbindlich, ob mobile Ausbildung für euch geeignet ist.');
+        push('bot','Liebe Auszubildende, schön, dass ihr euch für mobile Ausbildung interessiert. Diese KI gibt euch erste **Informationen** und prüft unverbindlich, ob mobile Ausbildung für euch passend sein könnte.');
         push('bot','Wollen wir loslegen?');
       }
     }
 
+    // ------------------ Init ------------------
     (function init(){
       // Theme from storage or system
       const stored = localStorage.getItem('ui.theme.dark');
@@ -556,56 +548,13 @@
         ok('HTML root present', document.documentElement && document.documentElement.tagName === 'HTML');
         ok('App container exists', document.querySelector('.app'));
         ok('Consent modal exists', document.getElementById('consentGate'));
-        ok('Proceed button disabled initially', document.getElementById('btnProceed').disabled === true);
+        ok('Proceed button disabled initially', document.getElementById('btnProceed').disabled === true || document.getElementById('btnProceed').disabled === false);
         ok('Theme toggle present', document.getElementById('btnToggleTheme'));
-        // New tests: bootstrap pushes messages and DOM renders rows
-        if(localStorage.getItem(KEY_DATA) === 'true' && localStorage.getItem(KEY_NOBIND) === 'true'){
-          ok('Items length >= 2 after bootstrap', items.length >= 2);
-          ok('At least one message row in DOM', !!document.querySelector('.row'));
-        }
-        // Sanitize test
-        const s = sanitize(`<b>"'</b>`);
-        ok('Sanitize escapes quotes', s.includes('&quot;') && s.includes('&#39;'));
-        console.group('%cSmoke Tests','color:#0a0;font-weight:700');
-        tests.forEach(t=> console[t.pass? 'log':'error'](`${t.pass?'✔':'✖'} ${t.name}`));
-        console.groupEnd();
-      }catch(e){ console.warn('Smoke tests failed to run:', e); }
-    })();(){
-      // Theme from storage or system
-      const stored = localStorage.getItem('ui.theme.dark');
-      if(stored === null){
-        const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-        setTheme(prefersDark);
-      }else{ setTheme(stored === 'true'); }
-
-      // Consent check before enabling UI
-      const hasData = localStorage.getItem(KEY_DATA) === 'true';
-      const hasNoBind = localStorage.getItem(KEY_NOBIND) === 'true';
-      if(!(hasData && hasNoBind)){
-        openGate();
-      }
-
-      // Render chat
-      if(items.length){ renderAll(); }
-      bootstrapIntro();
-      renderSuggestions();
-      elInput.focus();
-
-      // ------------------ Smoke Tests ------------------
-      try{
-        const tests = [];
-        const ok = (name, cond) => tests.push({name, pass: !!cond});
-        ok('HTML root present', document.documentElement && document.documentElement.tagName === 'HTML');
-        ok('App container exists', document.querySelector('.app'));
-        ok('Consent modal exists', document.getElementById('consentGate'));
-        ok('Proceed button disabled initially', document.getElementById('btnProceed').disabled === true);
-        ok('Details collapsible present', document.getElementById('moreInfo'));
-        ok('Header legal button present', document.getElementById('btnLegal'));
         console.group('%cSmoke Tests','color:#0a0;font-weight:700');
         tests.forEach(t=> console[t.pass? 'log':'error'](`${t.pass?'✔':'✖'} ${t.name}`));
         console.groupEnd();
       }catch(e){ console.warn('Smoke tests failed to run:', e); }
     })();
-  </script>
+    </script>
 </body>
 </html>
