@@ -3,6 +3,7 @@
 <head>
   <!-- ================= META & THEME ================= -->
   <meta charset="UTF-8" />
+  <!-- iOS zoom fix -->
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
   <title>Mobile Ausbildung · Chatbot</title>
   <meta name="color-scheme" content="light dark" />
@@ -11,22 +12,26 @@
 
   <!-- ================= STYLES ================= -->
   <style>
-    /* ---------- Design Tokens (BBVA Palette) ---------- */
+    /* ---------- Design Tokens (BBVA-inspiriert) ---------- */
     :root {
       --bbva-navy: #072146;
       --bbva-blue: #1973b8;
       --bbva-cyan: #5bc2e7;
+
       --text: #1c2430;
       --text-2: #5f6b7a;
+
       --bg: #f5f7fa;
       --panel: #ffffff;
       --border: #e1e5eb;
       --shadow: 0 8px 24px rgba(0, 0, 0, .08);
       --radius: 18px;
+
       --bubble-user: #1973b8;
       --bubble-bot: #f1f4f8;
     }
 
+    html, body { height: 100%; }
     body {
       margin: 0;
       font: 17px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Inter, Arial, sans-serif;
@@ -115,10 +120,11 @@
     .notice { position:fixed; inset:auto 16px 16px auto; background:#d4edda; color:#155724; border-radius:10px; padding:10px 12px; box-shadow:var(--shadow); display:none; z-index:50; }
     .notice.error{ background:#f8d7da; color:#721c24; }
 
-    /* ---------- Modal (Consent BBVA Look) ---------- */
+    /* ---------- Modal (Consent) ---------- */
     .modal { position:fixed; inset:0; background:rgba(7,18,35,.55); backdrop-filter:blur(8px); display:none; align-items:center; justify-content:center; z-index:100; }
-.modal.show{ display:flex; animation:fadeIn .35s ease both; }
+    .modal.show{ display:flex; animation:fadeIn .35s ease both; }
     @keyframes fadeIn{ from{opacity:0} to{opacity:1} }
+
     .modal-card { width:min(780px,96vw); background:var(--panel); border-radius:20px; box-shadow:var(--shadow); overflow:hidden; }
     .modal-head { background:linear-gradient(90deg,var(--bbva-navy),var(--bbva-blue)); color:#fff; padding:16px 18px; display:flex; align-items:center; gap:10px; }
     .modal-body { padding:18px; display:grid; gap:14px; }
@@ -158,7 +164,7 @@
           <svg viewBox="0 0 24 24" aria-hidden="true"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
           Drucken
         </button>
-        <!-- WhatsApp Kontakt (nur Light Mode sichtbar; im Dark Mode optional ausblenden per CSS) -->
+        <!-- WhatsApp Kontakt -->
         <button type="button" class="btn btn-wa" id="btnWA" title="WhatsApp Kontakt 0160 98665006">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <path d="M20 4.5A9.8 9.8 0 0 0 12 2a9.9 9.9 0 0 0-9.9 9.9c0 1.8.5 3.5 1.4 5L2 22l5.2-1.4a9.9 9.9 0 0 0 4.8 1.3c5.4 0 9.9-4.4 9.9-9.9 0-2.5-1-4.9-2.9-6.5Z"/>
@@ -195,7 +201,7 @@
       </div>
       <div class="modal-body">
         <p><strong>Worum geht’s?</strong> Dieser KI-Dialog nutzt Dienste von <strong>Microsoft (SharePoint Online)</strong> und <strong>OpenAI</strong>. Deine Eingaben werden technisch an diese Plattformen zur Verarbeitung weitergeleitet.</p>
-        <p class="legal"><strong>Wichtig:</strong> Bitte gib <u>keine personenbezogenen Daten</u> ein (z. B. Namen, Kontaktdaten, Gesundheits- oder Kundendaten, interne Aktenzeichen). Nutze nur abstrakte oder beispielhafte Angaben.</p>
+        <p class="legal"><strong>Wichtig:</strong> Bitte gib <u>keine personenbezogenen Daten</u> ein (z. B. Namen, Kontaktdaten, Gesundheits- oder Kundendaten, interne Aktenzeichen). Nutze nur abstrakte oder beispielhafte Angaben.</p>
         <div class="checkline">
           <input type="checkbox" id="chkData" />
           <label for="chkData">Ich habe den Datenschutzhinweis gelesen und bin mit der Verarbeitung meiner Eingaben durch Microsoft (SharePoint) und OpenAI einverstanden.</label>
@@ -208,8 +214,8 @@
           <div id="moreInfoInner" class="content">
             <h3 style="margin:0 0 8px 0; font-size:16px;">Details zur Verarbeitung</h3>
             <ul style="margin:0 0 10px 18px; line-height:1.6;">
-              <li><strong>Verantwortlichkeit:</strong> Weiterleitung/Speicherung über <em>Microsoft SharePoint Online</em> und KI‑Verarbeitung durch <em>OpenAI</em>.</li>
-              <li><strong>Zweck:</strong> Unverbindliche Vorschläge im Rahmen eines Personal‑KI‑Dialogs.</li>
+              <li><strong>Verantwortlichkeit:</strong> Weiterleitung/Speicherung über <em>Microsoft SharePoint Online</em> und KI-Verarbeitung durch <em>OpenAI</em>.</li>
+              <li><strong>Zweck:</strong> Unverbindliche Vorschläge im Rahmen eines Personal-KI-Dialogs.</li>
               <li><strong>Rechtsgrundlage:</strong> Einwilligung (Art. 6 Abs. 1 lit. a DSGVO). Ohne Einwilligung keine Nutzung.</li>
               <li><strong>Datenkategorien:</strong> Inhalte deiner Texteingaben. Bitte keine personenbezogenen Daten.</li>
               <li><strong>Empfänger:</strong> Microsoft Corporation (SharePoint Online) und OpenAI, L.L.C.</li>
@@ -221,6 +227,7 @@
       </div>
       <div class="modal-actions">
         <button type="button" class="btn-primary" id="btnMoreInfo" aria-expanded="false" aria-controls="moreInfo">Details</button>
+        <button type="button" class="btn-primary" id="btnCloseModal">Schließen</button>
         <button type="button" class="btn-primary" id="btnProceed" disabled>Verstanden & fortfahren</button>
       </div>
     </div>
@@ -255,6 +262,7 @@
     const chkNoBinding = document.getElementById('chkNoBinding');
     const btnProceed = document.getElementById('btnProceed');
     const btnMoreInfo = document.getElementById('btnMoreInfo');
+    const btnCloseModal = document.getElementById('btnCloseModal');
 
     const btnWA = document.getElementById('btnWA');
 
@@ -274,6 +282,7 @@
 
     let isBusy = false;
     let lastBotAnswer = '';
+    let introShown = false;
 
     // ------------------ Helpers ------------------
     function notify(msg, isError=false){
@@ -292,7 +301,6 @@
       const row = document.createElement('div');
       row.className = 'row ' + sender;
 
-      // optional avatar (BBVA style minimal)
       const bubble = document.createElement('div');
       bubble.className = 'bubble';
       bubble.innerHTML = sanitize(text);
@@ -312,16 +320,36 @@
       });
     }
 
-    // Guard gegen personenbezogene Daten
-    function containsPersonalData(t){
-      const patterns = [
-        /\b([A-ZÄÖÜ][a-zäöü]{2,}\s+[A-ZÄÖÜ][a-zäöü]{2,})\b/, // Vor- & Nachname
-        /\b\d{5}\b/,                                        // PLZ
-        /\+?\d[\d\s\/-]{6,}/,                             // Telefonnummern
-        /[\w.+-]+@[^\s@]+\.[A-Za-z]{2,}/,                  // Email
-        /\b(IBAN|Konto|Kundennummer|Personalnummer)\b/i       // typische Keywords
-      ];
-      return patterns.some(rx => rx.test(t));
+    // ------------------ PII Check (verbessert) ------------------
+    function piiCheck(t){
+      const text = String(t || '');
+      const lower = text.toLowerCase();
+
+      // 1) E-Mail
+      if (/[\\w.+-]+@[\\w-]+\\.[A-Za-z]{2,}/.test(text)) return 'E-Mail-Adresse';
+
+      // 2) Telefon (mind. 7 Ziffern inkl. Trennzeichen)
+      if (/\\+?\\d[\\d\\s\\/-]{6,}/.test(text)) return 'Telefonnummer';
+
+      // 3) IBAN/Konto/Kundennummer (Keywords)
+      if (/\\b(iban|konto|kundennummer|personalnummer)\\b/i.test(text)) return 'IBAN/Konto/Kundennummer';
+
+      // 3b) DE-IBAN-Anfang (auch Kurzform wie "DE 93")
+      if (/\\bDE\\s?\\d{2}/i.test(text)) return 'mögliche IBAN (DE)';
+
+      // 4) Adresse (Straßenmuster + Hausnummer)
+      if (/\\b(straße|str\\.|weg|allee)\\s+\\d+[a-zA-Z]?\\b/i.test(lower)) return 'Adresse';
+
+      // 5) Geburtsdatum
+      if (/\\b\\d{2}[\\.\\/-]\\d{2}[\\.\\/-]\\d{4}\\b/.test(text) || /\\b(geburtsdatum|geb\\.|dob)\\b/i.test(text)) return 'Geburtsdatum';
+
+      // 6) Personenname (zwei groß geschriebene Wörter, >=3 Buchstaben) – Whitelist schützt Fachbegriffe
+      const m = text.match(/\\b([A-ZÄÖÜ][a-zäöüß]{2,})\\s+([A-ZÄÖÜ][a-zäöüß]{2,})\\b/);
+      if (m) {
+        const whitelist = new Set(['Mobile','Ausbildung','Beantragen','Chatbot','Datenschutz','Whatsapp','Kontakt','Vorteile','Beginn']);
+        if (!(whitelist.has(m[1]) || whitelist.has(m[2]))) return 'Personenname';
+      }
+      return false;
     }
 
     // ------------------ Network with Retry ------------------
@@ -347,8 +375,9 @@
       if(!text || isBusy) return;
 
       // Eingabe-Guard
-      if(containsPersonalData(text)){
-        notify('Bitte keine personenbezogenen oder vertraulichen Daten eingeben.', true);
+      const reason = piiCheck(text);
+      if (reason) {
+        notify('Bitte keine personenbezogenen oder vertraulichen Daten eingeben. (Erkannt: ' + reason + ')', true);
         return;
       }
 
@@ -374,7 +403,13 @@
     // ------------------ Consent Gate ------------------
     function validateGate(){ btnProceed.disabled = !(chkData.checked && chkNoBinding.checked); }
     function openGate(){ dlg.classList.add('show'); elInput.disabled = true; elSend.disabled = true; }
-    function closeGate(){ dlg.classList.remove('show'); elInput.disabled = false; elSend.disabled = false; renderSuggestions(); bootstrapIntro(); elInput.focus(); }
+    function closeGate(){
+      dlg.classList.remove('show');
+      elInput.disabled = false; elSend.disabled = false;
+      renderSuggestions();
+      if(!introShown){ bootstrapIntro(); introShown = true; }
+      elInput.focus();
+    }
 
     chkData.addEventListener('change', validateGate);
     chkNoBinding.addEventListener('change', validateGate);
@@ -389,7 +424,24 @@
       btnMoreInfo.textContent = isOpen ? 'Details' : 'Details ausblenden';
     });
 
+    // Modal offen/zu
     btnLegal.addEventListener('click', openGate);
+
+    // Schließen-Button – nur wenn bestätigt
+    btnCloseModal.addEventListener('click', ()=>{
+      if(!(chkData.checked && chkNoBinding.checked)){
+        notify('Bitte zuerst die Hinweise bestätigen.', true); return;
+      }
+      closeGate();
+    });
+
+    // ESC schließt nur, wenn bestätigt
+    document.addEventListener('keydown', (e)=>{
+      if(e.key === 'Escape' && dlg.classList.contains('show')){
+        if(chkData.checked && chkNoBinding.checked){ closeGate(); }
+        else { notify('Bitte zuerst die Hinweise bestätigen.', true); }
+      }
+    });
 
     // ------------------ Print Overlay ------------------
     btnPrint.addEventListener('click', (e)=>{ e.preventDefault(); printOverlay.classList.add('show'); });
@@ -411,14 +463,13 @@
 
     // ------------------ Init ------------------
     function bootstrapIntro(){
-      push('bot','Liebe Auszubildende, schön, dass ihr euch für mobile Ausbildung interessiert. Diese KI gibt euch erste **Informationen** und prüft unverbindlich, ob mobile Ausbildung für euch passend sein könnte.');
+      push('bot','Liebe Auszubildende, schön, dass ihr euch für mobile Ausbildung interessiert. Diese KI gibt euch erste <strong>Informationen</strong> und prüft unverbindlich, ob mobile Ausbildung für euch passend sein könnte.');
       push('bot','Wollen wir loslegen?');
     }
 
     // Start: Consent muss bestätigt werden
     openGate();
     renderSuggestions();
-    // Falls du Intro direkt nach Consent willst, wird es in closeGate() gestartet
 
     // Events
     elSend.addEventListener('click', send);
