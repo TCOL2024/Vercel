@@ -183,6 +183,9 @@
         <h1>Mobile Ausbildung · Chatbot</h1>
       </div>
       <div class="actions">
+        <button class="btn btn--ghost" id="btnLegal" title="Hinweise anzeigen / zurücksetzen">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><circle cx="12" cy="16" r="1"/></svg>
+        </button>
         <button class="btn btn--ghost" id="btnToggleTheme" title="Dunkelmodus umschalten" aria-pressed="false">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 1 0 9 9 6 6 0 0 1-9-9z"/></svg>
           <span class="sr-only">Theme</span>
@@ -256,6 +259,7 @@
           </section>
         </div>
         <div class="modal-actions">
+          <button class="btn-link" id="btnResetConsent" type="button" title="Hinweise zurücksetzen">Zurücksetzen</button>
           <button class="btn-link" id="btnMoreInfo" type="button" aria-expanded="false" aria-controls="moreInfo">Details</button>
           <button class="btn-primary" id="btnProceed" type="button" disabled>Verstanden & fortfahren</button>
         </div>
@@ -273,12 +277,14 @@
     const btnPrint = document.getElementById('btnPrint');
     const btnClear = document.getElementById('btnClear');
     const btnTheme = document.getElementById('btnToggleTheme');
+    const btnLegal = document.getElementById('btnLegal');
     // Consent modal elements
     const dlg = document.getElementById('consentGate');
     const chkData = document.getElementById('chkData');
     const chkNoBinding = document.getElementById('chkNoBinding');
     const btnProceed = document.getElementById('btnProceed');
     const btnMoreInfo = document.getElementById('btnMoreInfo');
+    const btnResetConsent = document.getElementById('btnResetConsent');
 
     // ------------------ Config ------------------
     const WEBHOOK = 'https://hook.us2.make.com/qa8g1cw25ec5lbydckaga3y4vqj9lx1n';
@@ -468,6 +474,23 @@
       btnMoreInfo.textContent = isOpen ? 'Details' : 'Details ausblenden';
     });
 
+    btnResetConsent?.addEventListener('click', ()=>{
+      localStorage.removeItem(KEY_DATA);
+      localStorage.removeItem(KEY_NOBIND);
+      openGate();
+      notify('Hinweise zurückgesetzt.');
+    });
+
+    btnLegal?.addEventListener('click', ()=>{
+      openGate();
+    });
+      if(!panel) return;
+      const isOpen = panel.style.display !== 'none';
+      panel.style.display = isOpen ? 'none' : 'block';
+      btnMoreInfo.setAttribute('aria-expanded', String(!isOpen));
+      btnMoreInfo.textContent = isOpen ? 'Details' : 'Details ausblenden';
+    });
+
     // ------------------ Event Bindings ------------------
     elSend.addEventListener('click', send);
     elInput.addEventListener('keydown', (e)=>{
@@ -529,7 +552,8 @@
         ok('App container exists', document.querySelector('.app'));
         ok('Consent modal exists', document.getElementById('consentGate'));
         ok('Proceed button disabled initially', document.getElementById('btnProceed').disabled === true);
-        ok('Theme toggle present', document.getElementById('btnToggleTheme'));
+        ok('Details collapsible present', document.getElementById('moreInfo'));
+        ok('Header legal button present', document.getElementById('btnLegal'));
         console.group('%cSmoke Tests','color:#0a0;font-weight:700');
         tests.forEach(t=> console[t.pass? 'log':'error'](`${t.pass?'✔':'✖'} ${t.name}`));
         console.groupEnd();
