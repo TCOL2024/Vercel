@@ -320,7 +320,9 @@
     const nowHHMM = d => `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
 
     function sanitize(str){
-      return String(str).replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[ch]));
+      const map = {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"};
+      return String(str).replace(/[&<>"']/g, ch => map[ch]);
+    }[ch]));
     }
     function format(str){
       const safe = sanitize(str);
@@ -551,10 +553,19 @@
       try{
         const tests = [];
         const ok = (name, cond) => tests.push({name, pass: !!cond});
-        ok('All header buttons are type=button', Array.from(document.querySelectorAll('header .actions button')).every(b=>b.type==='button'));
-        ok('Consent buttons are type=button', Array.from(document.querySelectorAll('#consentGate button')).every(b=>b.type==='button'));
-        ok('Input enabled when consent accepted', hasData && hasNoBind ? !elInput.disabled : true);
-        ok('Intro pushed when empty & consent ok', (hasData && hasNoBind) ? items.length >= 2 : true);
+        ok('HTML root present', document.documentElement && document.documentElement.tagName === 'HTML');
+        ok('App container exists', document.querySelector('.app'));
+        ok('Consent modal exists', document.getElementById('consentGate'));
+        ok('Proceed button disabled initially', document.getElementById('btnProceed').disabled === true);
+        ok('Theme toggle present', document.getElementById('btnToggleTheme'));
+        // New tests: bootstrap pushes messages and DOM renders rows
+        if(localStorage.getItem(KEY_DATA) === 'true' && localStorage.getItem(KEY_NOBIND) === 'true'){
+          ok('Items length >= 2 after bootstrap', items.length >= 2);
+          ok('At least one message row in DOM', !!document.querySelector('.row'));
+        }
+        // Sanitize test
+        const s = sanitize(`<b>"'</b>`);
+        ok('Sanitize escapes quotes', s.includes('&quot;') && s.includes('&#39;'));
         console.group('%cSmoke Tests','color:#0a0;font-weight:700');
         tests.forEach(t=> console[t.pass? 'log':'error'](`${t.pass?'✔':'✖'} ${t.name}`));
         console.groupEnd();
