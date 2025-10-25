@@ -2,64 +2,153 @@
 <html lang="de">
 <head>
 <meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Gemini Mini-Chat</title>
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Gemini 2.5 (via Make) – Mini-Chat</title>
 <meta name="color-scheme" content="light dark" />
 <style>
   :root{
-    --bg:#0b1020; --panel:#121a2b; --accent:#4da3ff; --muted:#7a8aa1; --text:#eaf2ff; --bubble:#1b2740;
+    --bg:#0b1020; --panel:#121a2b; --accent:#4da3ff; --muted:#8aa0bd; --text:#eaf2ff; --bubble:#1b2740;
+    --ok:#23c55e; --warn:#f59e0b; --err:#ef4444;
   }
-  *{box-sizing:border-box} body{margin:0;background:linear-gradient(180deg,#0b1020,#0b1426);color:var(--text);font:16px/1.45 system-ui,Segoe UI,Roboto,Inter,sans-serif}
+  *{box-sizing:border-box}
+  body{margin:0;background:linear-gradient(180deg,#0b1020,#0b1426);color:var(--text);
+       font:16px/1.45 system-ui,Segoe UI,Roboto,Inter,"Helvetica Neue",Arial,sans-serif}
   .wrap{max-width:840px;margin:0 auto;padding:20px}
-  .card{background:rgba(18,26,43,.8);backdrop-filter:blur(6px);border:1px solid #1d2a46;border-radius:16px;box-shadow:0 10px 30px rgba(0,0,0,.25)}
+  .card{background:rgba(18,26,43,.85);backdrop-filter:blur(6px);border:1px solid #1d2a46;border-radius:16px;box-shadow:0 10px 30px rgba(0,0,0,.25)}
   header{padding:16px 18px;border-bottom:1px solid #1d2a46;display:flex;align-items:center;gap:12px}
   header .dot{width:10px;height:10px;border-radius:50%;background:var(--accent);box-shadow:0 0 12px var(--accent)}
-  header h1{font-size:16px;margin:0} header small{color:var(--muted)}
-  #chat{height:52vh;min-height:320px;max-height:60vh;overflow:auto;padding:16px 16px 8px 16px;scroll-behavior:smooth}
+  header h1{font-size:16px;margin:0}
+  header .status{margin-left:auto;font-size:12px;color:var(--muted)}
+  #chat{height:56vh;min-height:320px;max-height:66vh;overflow:auto;padding:16px 16px 8px 16px;scroll-behavior:smooth}
   .row{display:flex;gap:10px;margin:10px 0}
   .row.user{justify-content:flex-end}
   .bubble{max-width:74%;padding:10px 12px;border-radius:14px;background:var(--bubble);border:1px solid #263554;white-space:pre-wrap}
   .row.user .bubble{background:#113055;border-color:#1e4c86}
   .row.assistant .bubble{background:#0f213f;border-color:#263a62}
-  .meta{font-size:12px;color:var(--muted);margin-top:4px}
   .toolbar{display:flex;gap:8px;flex-wrap:wrap;padding:12px 16px;border-top:1px solid #1d2a46}
-  input, select, button{border-radius:12px;border:1px solid #243250;background:#0e1a31;color:var(--text);padding:10px 12px}
-  input::placeholder{color:#7787a3}
-  input[type="password"]{letter-spacing:.1em}
+  input,button{border-radius:12px;border:1px solid #243250;background:#0e1a31;color:var(--text);padding:10px 12px}
+  input::placeholder{color:#7c8faa}
   .grow{flex:1}
   button{background:linear-gradient(180deg,#1b5bb3,#164a91);cursor:pointer}
+  button.secondary{background:#0e1a31}
   button:disabled{opacity:.6;cursor:not-allowed}
   .hint{padding:10px 16px;color:#a7b7d1;border-top:1px dashed #213255;font-size:13px}
-  .spinner{width:14px;height:14px;border:2px solid #8fbfff;border-top-color:transparent;border-radius:50%;display:inline-block;animation:spin .9s linear infinite;vertical-align:-2px}
+  .spinner{width:14px;height:14px;border:2px solid #8fbfff;border-top-color:transparent;border-radius:50%;
+           display:inline-block;animation:spin .9s linear infinite;vertical-align:-2px}
   @keyframes spin{to{transform:rotate(360deg)}}
-  .small{font-size:12px;color:#9ab0cb}
+  .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);border:0}
+  .notice{padding:8px 12px;margin:8px 16px;border-left:3px solid var(--warn);color:#d9e1ee;background:#0d1a2f;border-radius:8px}
+  .ok{border-left-color:var(--ok)}
+  .err{border-left-color:var(--err)}
 </style>
 </head>
 <body>
   <div class="wrap">
-    <div class="card">
+    <div class="card" role="application" aria-labelledby="appTitle">
       <header>
-        <div class="dot"></div>
-        <h1>Gemini Mini-Chat</h1>
-        <small id="status" title="Verbindungsstatus">bereit</small>
+        <div class="dot" aria-hidden="true"></div>
+        <h1 id="appTitle">Gemini 2.5 – Mini-Chat</h1>
+        <div id="status" class="status" title="Verbindungsstatus">bereit</div>
       </header>
 
-      <div id="chat" aria-live="polite"></div>
+      <div id="chat" aria-live="polite" aria-label="Chatverlauf"></div>
 
-      <div class="toolbar">
-        <input id="apiKey" class="grow" type="password" placeholder="API-Key einfügen (nur zu Demo-Zwecken im Browser!)" />
-        <select id="model">
-          <option value="gemini-1.5-flash">gemini-1.5-flash (schnell)</option>
-          <option value="gemini-1.5-pro">gemini-1.5-pro (präziser)</option>
-          <option value="gemini-2.0-flash-exp">gemini-2.0-flash-exp (experimentell)</option>
-        </select>
-        <button id="clearBtn" title="Chat leeren">Neu</button>
+      <div class="toolbar" role="form" aria-label="Eingabezeile">
+        <label class="sr-only" for="prompt">Frage</label>
+        <input id="prompt" class="grow" placeholder="Frage eingeben und Enter drücken …" autocomplete="off" />
+        <button id="sendBtn" aria-label="Senden">Senden</button>
+        <button id="clearBtn" class="secondary" aria-label="Chat leeren">Neu</button>
       </div>
 
-      <div class="toolbar">
-        <input id="prompt" class="grow" placeholder="Frage eingeben und Enter drücken …" />
-        <button id="sendBtn">Senden</button>
+      <div id="note" class="hint">
+        Nutzt deinen <strong>Make-Proxy</strong> (Webhook → HTTP → Webhook-Response) für <em>gemini-2.5-flash</em>.
       </div>
+    </div>
+  </div>
 
-      <div class="hint">
-        Hinweis: Für Produktion bitte <strong>keinen</strong> API-Key im Frontend ausliefern. Nutze einen kleinen Proxy (z. B. Cloud Functio
+<script>
+  // ⬇️ Trage hier DEINE Webhook-Adresse aus Make ein:
+  const MAKE_URL = "https://hook.integromat.com/DEIN_WEBHOOK_ID";
+
+  // ---------- UI Helpers ----------
+  const $ = (s)=>document.querySelector(s);
+  const chat = $("#chat");
+  const statusEl = $("#status");
+  const promptInput = $("#prompt");
+  const sendBtn = $("#sendBtn");
+  const clearBtn = $("#clearBtn");
+
+  function addMsg(role, text){
+    const row = document.createElement("div");
+    row.className = `row ${role}`;
+    const b = document.createElement("div");
+    b.className = "bubble";
+    b.textContent = text;
+    row.appendChild(b);
+    chat.appendChild(row);
+    chat.scrollTop = chat.scrollHeight;
+    return b;
+  }
+
+  function setBusy(busy){
+    sendBtn.disabled = busy;
+    promptInput.disabled = busy;
+    statusEl.innerHTML = busy ? '<span class="spinner"></span> wird verarbeitet…' : 'bereit';
+  }
+
+  async function askViaMake(prompt){
+    const res = await fetch(MAKE_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      // Temperatur/MaxTokens sind optional; Make setzt Defaults (0.6 / 1024) falls nicht vorhanden
+      body: JSON.stringify({ prompt, temperature: 0.6, maxTokens: 1024 })
+    });
+    if(!res.ok){
+      const text = await res.text().catch(()=> "");
+      throw new Error(`Proxy-Fehler ${res.status}: ${text || res.statusText}`);
+    }
+    const data = await res.json().catch(()=> ({}));
+    // Erwartet: { text: "..." } – siehe dein Webhook-Response-Mapping in Make
+    return typeof data.text === "string" ? data.text : "";
+  }
+
+  async function send(){
+    const userText = promptInput.value.trim();
+    if(!userText) return;
+
+    promptInput.value = "";
+    addMsg("user", userText);
+    const aBubble = addMsg("assistant", "Tippen …");
+    setBusy(true);
+
+    try{
+      const answer = await askViaMake(userText);
+      aBubble.textContent = answer || "— leer —";
+    }catch(err){
+      console.error(err);
+      aBubble.textContent = "⚠️ Fehler: " + (err?.message || err);
+    }finally{
+      setBusy(false);
+      promptInput.focus();
+    }
+  }
+
+  // Events
+  sendBtn.addEventListener("click", send);
+  promptInput.addEventListener("keydown", (e)=>{
+    if(e.key === "Enter" && !e.shiftKey){
+      e.preventDefault();
+      send();
+    }
+  });
+  clearBtn.addEventListener("click", ()=>{
+    chat.innerHTML = "";
+    addMsg("assistant","Neuer Chat gestartet. Wie kann ich helfen?");
+    promptInput.focus();
+  });
+
+  // Startnachricht
+  addMsg("assistant","Hi! Ich frage für dich Gemini 2.5 (Flash) über deinen Make-Proxy an. Stell mir eine Frage.");
+</script>
+</body>
+</html>
