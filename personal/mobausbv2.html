@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+  <title>Mobile Ausbildung · Chatbot</title>
+  <meta name="color-scheme" content="light dark" />
+  <meta name="theme-color" content="#004a99" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#121212" media="(prefers-color-scheme: dark)">
+  <style>
+    :root{
+      --primary:#004a99;--primary-600:#0060c2;--primary-700:#003d80;--accent:#0078d7;
+      --text:#1c2430;--text-2:#606b7a;--bg:#f4f6fb;--panel:#ffffff;--chat-bg:#f9fafc;
+      --bubble-user:#004a99;--bubble-bot:#eceff3;--border:#e5e7eb;
+      --shadow:0 8px 24px rgba(0,0,0,.08);--radius:14px;
+    }
+    :root.dark{
+      --primary:#2c6ca8;--primary-600:#3a88c9;--primary-700:#1c5080;
+      --accent:#5aa7ea;--text:#e7edf5;--text-2:#b1bed0;
+      --bg:#0f1217;--panel:#121821;--chat-bg:#171d26;
+      --bubble-user:#2c6ca8;--bubble-bot:#232b36;--border:#263243;
+      --shadow:0 10px 28px rgba(0,0,0,.35);
+    }
+    *{box-sizing:border-box;}
+    html,body{height:100%;}
+    body{
+      margin:0;
+      font:17px/1.45 -apple-system,system-ui,Segoe UI,Roboto,Inter,sans-serif;
+      background:var(--bg);color:var(--text);
+    }
+
+    .app{max-width:840px;height:100dvh;margin:0 auto;
+      display:grid;grid-template-rows:auto 1fr auto;
+      background:var(--panel);border-radius:20px;
+      box-shadow:var(--shadow);overflow:hidden;
+    }
+    header.appbar{display:flex;align-items:center;
+      justify-content:space-between;padding:14px 16px;
+      background:var(--primary);color:#fff;}
+    .brand h1{font-size:18px;margin:0;font-weight:600;}
+    .btn{border:0;padding:10px 14px;border-radius:10px;
+      cursor:pointer;display:inline-flex;align-items:center;gap:8px;font-weight:600;}
+    .btn--ghost{background:rgba(255,255,255,.16);color:#fff;}
+    .btn--ghost:hover{background:rgba(255,255,255,.24);}
+
+    main#chat{background:var(--chat-bg);overflow:auto;padding:16px;scroll-behavior:smooth;}
+    .row{display:flex;gap:10px;margin:10px 0;max-width:86%;}
+    .row.bot{justify-content:flex-start;}
+    .row.user{margin-left:auto;justify-content:flex-end;}
+    .avatar{flex:0 0 36px;height:36px;width:36px;border-radius:50%;
+      display:flex;align-items:center;justify-content:center;font-weight:700;
+      background:#c9d7ef;color:#0e254b;}
+    :root.dark .avatar{background:#2b3b56;color:#d9e6ff;}
+    .bubble{background:var(--bubble-bot);color:var(--text);
+      padding:12px 14px;border-radius:var(--radius);
+      line-height:1.5;word-break:break-word;white-space:pre-wrap;
+      animation:slideIn .25s ease;}
+    .row.bot .bubble{border-bottom-left-radius:6px;}
+    .row.user .bubble{background:var(--bubble-user);color:#fff;border-bottom-right-radius:6px;}
+    @keyframes slideIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+
+    .composer{background:var(--panel);border-top:1px solid var(--border);
+      padding:12px;display:grid;gap:8px;}
+    .composer-row{display:flex;gap:10px;}
+    .field{flex:1;display:flex;align-items:center;gap:8px;background:#fff;
+      border:1px solid var(--border);border-radius:12px;padding:8px 10px;}
+    :root.dark .field{background:#1b222d;}
+    .input{flex:1;border:0;outline:none;background:transparent;color:inherit;
+      font:inherit;padding:6px 2px;}
+    .send{background:var(--primary-600);color:#fff;border-radius:12px;
+      padding:12px 18px;border:0;font-weight:700;cursor:pointer;
+      display:inline-flex;align-items:center;gap:8px;}
+    .send:hover{background:var(--primary-700);}
+    .suggest{display:flex;flex-wrap:wrap;gap:8px;padding:4px 2px 0;}
+    .chip{background:#e6f0ff;color:#0d3b82;border:0;padding:8px 10px;
+      border-radius:999px;cursor:pointer;font-weight:600;}
+    :root.dark .chip{background:#243551;color:#cfe0ff;}
+
+    .notice{position:fixed;inset:auto 16px 16px auto;background:#d4edda;color:#155724;
+      border-radius:10px;padding:10px 12px;box-shadow:var(--shadow);
+      display:none;z-index:50;}
+    .notice.error{background:#f8d7da;color:#721c24;}
+
+    .modal{position:fixed;inset:0;background:rgba(7,18,35,.55);
+      backdrop-filter:blur(6px);display:none;align-items:center;justify-content:center;
+      padding:16px;z-index:100;}
+    .modal.show{display:flex;animation:fadeIn .35s ease both;}
+    @keyframes fadeIn{from{opacity:0}to{opacity:1}}
+    .modal-card{width:min(780px,96vw);background:var(--panel);color:var(--text);
+      border-radius:18px;box-shadow:var(--shadow);overflow:hidden;border:1px solid var(--border);}
+    .modal-head{background:var(--primary);color:#fff;padding:16px 18px;display:flex;align-items:center;gap:10px;}
+    .modal-body{padding:18px;display:grid;gap:14px;background:linear-gradient(180deg,var(--panel),var(--chat-bg));}
+    #moreInfo{max-height:0;overflow:hidden;transition:max-height .35s ease,opacity .35s ease;opacity:0;}
+    #moreInfo.show{max-height:600px;opacity:1;}
+
+    .btn-whatsapp{position:fixed;bottom:18px;right:18px;width:58px;height:58px;border-radius:50%;
+      background:#25D366;display:flex;align-items:center;justify-content:center;
+      box-shadow:0 4px 10px rgba(0,0,0,.25);z-index:90;}
+    .btn-whatsapp svg{width:28px;height:28px;fill:white;}
+    :root.dark .btn-whatsapp{display:none;}
+
+    .print-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);
+      display:none;align-items:center;justify-content:center;z-index:200;color:#fff;}
+    .print-overlay.show{display:flex;}
+
+    @media(max-width:640px){.app{border-radius:0;}body{font-size:18px;}button{min-height:44px;}}
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header class="appbar">
+      <div class="brand"><h1>Mobile Ausbildung · Chatbot</h1></div>
+      <button class="btn btn--ghost" id="btnLegal">ℹ Datenschutz & Hinweise</button>
+    </header>
+    <main id="chat"></main>
+    <div class="composer">
+      <div class="composer-row">
+        <div class="field"><input class="input" id="input" placeholder="Schreibe hier deine Nachricht…" /></div>
+        <button class="send" id="btnSend">Senden</button>
+      </div>
+      <div class="suggest" id="suggest"></div>
+    </div>
+    <div class="notice" id="notice"></div>
+  </div>
+
+  <!-- Consent Modal -->
+  <div class="modal" id="consentGate">
+    <div class="modal-card">
+      <div class="modal-head"><h2>Datenschutz & Nutzungshinweis</h2></div>
+      <div class="modal-body">
+        <p><strong>Worum geht’s?</strong> Dieser KI-Dialog nutzt Microsoft (SharePoint Online) und OpenAI. Deine Eingaben werden dort verarbeitet.</p>
+        <p><strong>Wichtig:</strong> Bitte gib keine personenbezogenen Daten ein.</p>
+        <div><input type="checkbox" id="chkData"> <label for="chkData">Ich akzeptiere den Datenschutzhinweis.</label></div>
+        <div><input type="checkbox" id="chkNoBinding"> <label for="chkNoBinding">Ich verstehe, dass die KI unverbindliche Vorschläge erzeugt, die fehlerhaft sein können.</label></div>
+        <button id="btnMoreInfo">Details</button>
+        <div id="moreInfo"><p>Verarbeitung durch Microsoft (SharePoint) und OpenAI. Keine personenbezogenen Daten eingeben.</p></div>
+      </div>
+      <div class="modal-actions"><button id="btnProceed">Verstanden & fortfahren</button></div>
+    </div>
+  </div>
+
+  <!-- Print Overlay -->
+  <div class="print-overlay" id="printOverlay">
+    <div>
+      <p style="font-size:18px;margin-bottom:12px;text-align:center">
+        ⚠️ Achte darauf, dass keine firmeninternen oder vertraulichen Daten im Ausdruck enthalten sind.
+      </p>
+      <button id="btnConfirmPrint" class="send">Verstanden – Drucken</button>
+    </div>
+  </div>
+
+  <!-- WhatsApp -->
+  <a href="https://wa.me/4916098665006" class="btn-whatsapp" target="_blank" title="Schreibe uns auf WhatsApp" aria-label="WhatsApp Kontakt">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><path d="M19.11 17.72c-.33-.17-1.95-.96-2.25-1.07-.3-.11-.52-.17-.74.17-.22.33-.85 1.07-1.04 1.29-.19.22-.38.25-.71.08-.33-.17-1.38-.51-2.64-1.63-.97-.86-1.63-1.92-1.82-2.25-.19-.33-.02-.51.15-.68.16-.16.33-.38.5-.57.17-.19.22-.33.33-.55.11-.22.06-.41-.03-.57-.09-.17-.74-1.78-1.01-2.44-.27-.66-.54-.57-.74-.57h-.63c-.22 0-.57.08-.87.41-.3.33-1.14 1.12-1.14 2.72 0 1.6 1.17 3.14 1.33 3.35.16.22 2.3 3.5 5.57 4.9.78.34 1.39.54 1.87.69.78.25 1.49.21 2.05.13.63-.09 1.95-.8 2.22-1.58.27-.79.27-1.46.19-1.58-.08-.12-.3-.19-.63-.36z"/></svg>
+  </a>
+
+  <script>
+    const elChat=document.getElementById('chat'),
+          elInput=document.getElementById('input'),
+          elSend=document.getElementById('btnSend'),
+          elSuggest=document.getElementById('suggest'),
+          elNotice=document.getElementById('notice'),
+          dlg=document.getElementById('consentGate'),
+          chkData=document.getElementById('chkData'),
+          chkNoBinding=document.getElementById('chkNoBinding'),
+          btnProceed=document.getElementById('btnProceed'),
+          btnMoreInfo=document.getElementById('btnMoreInfo'),
+          btnLegal=document.getElementById('btnLegal'),
+          printOverlay=document.getElementById('printOverlay'),
+          btnConfirmPrint=document.getElementById('btnConfirmPrint');
+
+    const defaultPrompts=[
+      'Was ist mobile Ausbildung?',
+      'Wer kann mobile Ausbildung machen?',
+      'Welche Vorteile bietet mobile Ausbildung?',
+      'Wie beginne ich mit mobiler Ausbildung?',
+      'Mobile Ausbildung beantragen'
+    ];
+
+    function sanitize(t){
+      const map={"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"};
+      return String(t).replace(/[&<>\"']/g,c=>map[c]);
+    }
+    function notify(m,e=false){
+      elNotice.textContent=m;
+      elNotice.className='notice'+(e?' error':'');
+      elNotice.style.display='block';
+      setTimeout(()=>elNotice.style.display='none',3000);
+    }
+    function renderSuggestions(){
+      elSuggest.innerHTML='';
+      defaultPrompts.forEach(p=>{
+        const b=document.createElement('button');
+        b.className='chip';b.textContent=p;b.type='button';
+        b.onclick=()=>{elInput.value=p;};
+        elSuggest.appendChild(b);
+      });
+    }
+    function push(s,t){
+      const d=document.createElement('div');d.className='row '+s;
+      const a=document.createElement('div');a.className='avatar';a.textContent=s==='bot'?'B':'Du';
+      const w=document.createElement('div');const b=document.createElement('div');
+      b.className='bubble';b.innerHTML=sanitize(t);w.appendChild(b);
+      if(s==='bot'){d.append(a,w);}else{d.append(w,a);}
+      elChat.append(d);elChat.scrollTop=elChat.scrollHeight;
+    }
+    function bootstrapIntro(){
+      push('bot','Willkommen! Diese KI informiert dich über mobile Ausbildung und prüft unverbindlich, ob sie für dich geeignet ist.');
+      push('bot','Wollen wir loslegen?');
+    }
+    function openGate(){dlg.classList.add('show');elInput.disabled=true;elSend.disabled=true;}
+    function closeGate(){dlg.classList.remove('show');elInput.disabled=false;elSend.disabled=false;renderSuggestions();elInput.focus();}
+    function validateGate(){btnProceed.disabled=!(chkData.checked&&chkNoBinding.checked);}
+    chkData.onchange=chkNoBinding.onchange=validateGate;
+    btnProceed.onclick=()=>{closeGate();bootstrapIntro();notify('Hinweise bestätigt.');};
+    btnMoreInfo.onclick=()=>{
+      const p=document.getElementById('moreInfo');
+      p.classList.toggle('show');
+      btnMoreInfo.textContent=p.classList.contains('show')?'Details ausblenden':'Details';
+    };
+    btnLegal.onclick=openGate;
+
+    // Eingabe-Guard
+    function guardInput(txt){
+      const sensitive=/(\\b[A-ZÄÖÜ][a-zäöü]+\\b|\\d{5}|\\+?\\d{6,}|@|iban|konto|kundennummer)/i;
+      return sensitive.test(txt);
+    }
+    elSend.onclick=()=>{
+      const v=elInput.value.trim();
+      if(!v)return;
+      if(guardInput(v)){notify('Bitte keine personenbezogenen oder firmeninternen Daten eingeben.',true);return;}
+      push('user',v);elInput.value='';
+      setTimeout(()=>push('bot','(Demo) Antwort auf: '+v),500);
+    };
+    elInput.onkeydown=e=>{
+      if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();elSend.click();}
+    };
+
+    // Druckoverlay
+    window.onbeforeprint=()=>{printOverlay.classList.add('show');return false;};
+    btnConfirmPrint.onclick=()=>{printOverlay.classList.remove('show');window.print();};
+
+    // Start
+    openGate();
+  </script>
+</body>
+</html>
