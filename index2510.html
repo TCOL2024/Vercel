@@ -1,260 +1,395 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Linda – v27.1</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet"/>
-  <style>
-    :root{
-      --bg:#f8f9fb;--panel:#ffffff;--text:#0f172a;--muted:#64748b;--line:#eceff3;--brand:#0b5bd3;--accent:#0d6efd;
-      --shadow:0 8px 24px rgba(15,23,42,.06),0 1px 2px rgba(15,23,42,.04)
-    }
-    *{box-sizing:border-box}html,body{height:100%}body{margin:0;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--text)}
-    .app{min-height:100%;display:flex;flex-direction:column}
-    /* Header */
-    .top{position:sticky;top:0;z-index:10;background:var(--panel);border-bottom:1px solid var(--line);padding:.85rem 1rem;display:flex;align-items:center;justify-content:space-between}
-    .brand{font-weight:600;letter-spacing:.2px}
-    .icon-btn{appearance:none;border:0;background:transparent;cursor:pointer;padding:.3rem;border-radius:.6rem;display:inline-flex;align-items:center;justify-content:center}
-    .icon-btn:hover{background:#eef4ff}
-    .sliders{width:22px;height:22px}
-    /* Layout */
-    .chat{flex:1;display:flex;flex-direction:column;max-width:1200px;margin:0 auto;width:100%}
-    .log{flex:1;overflow:auto;padding:1rem;display:flex;flex-direction:column;gap:.75rem}
-    .msg{max-width:72ch;border-radius:14px;padding:.9rem 1.1rem;box-shadow:var(--shadow);background:var(--panel)}
-    .me{align-self:flex-end;background:#0b5bd3;color:#fff;box-shadow:none}
-    .bar{display:flex;gap:.6rem;align-items:center;padding:.75rem 1rem;border-top:1px solid var(--line);background:var(--panel)}
-    .in{flex:1;border:1px solid var(--line);background:#f6f7fb;border-radius:.7rem;padding:.9rem 1rem;font-size:1rem;outline:none}
-    .send{appearance:none;border:0;background:var(--brand);color:#fff;border-radius:.7rem;padding:.75rem 1rem;cursor:pointer;font-weight:600}
-    .send:disabled{opacity:.6;cursor:not-allowed}
-    /* Modals */
-    .modal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(17,24,39,.3);backdrop-filter:saturate(140%) blur(6px);z-index:100}
-    .card{background:var(--panel);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);width:min(92vw,560px);max-height:82vh;overflow:auto}
-    .card-h{padding:1rem 1.2rem;border-bottom:1px solid var(--line);font-weight:600}
-    .card-b{padding:1rem 1.2rem;color:var(--muted);line-height:1.55}
-    .card-f{padding:1rem 1.2rem;display:flex;gap:.6rem;justify-content:flex-end;border-top:1px solid var(--line)}
-    .btn{appearance:none;border:1px solid var(--line);background:#f6f7fb;color:#0b5bd3;border-radius:.7rem;padding:.55rem .9rem;cursor:pointer;font-weight:600}
-    .btn.primary{background:var(--brand);border-color:var(--brand);color:#fff}
-    /* Settings modal content */
-    .group{padding:1rem 1.2rem;border-bottom:1px solid var(--line)}
-    .row{display:flex;align-items:center;justify-content:space-between;gap:1rem;margin:.55rem 0}
-    .row label{color:#334155}
-    .chips{display:flex;gap:.4rem;flex-wrap:wrap}
-    .chip{padding:.4rem .7rem;border:1px solid var(--line);border-radius:999px;cursor:pointer;background:#fff}
-    .chip.active{background:#0b5bd3;border-color:#0b5bd3;color:#fff}
-    .ta{width:100%;min-height:72px;border:1px solid var(--line);border-radius:10px;padding:.6rem;background:#f6f7fb}
-    .muted{color:#94a3b8;font-size:.9rem}
-    .disabled{opacity:.55;cursor:not-allowed;user-select:none}
-    @media (max-width:640px){.msg{max-width:100%}}
-  </style>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Linda – Deine persönliche Assistentin (v27.3)</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet"/>
+<style>
+  :root{
+    --bg:#f7f8fb;--panel:#ffffff;--line:#e7ebf0;--text:#0f172a;--muted:#5b6678;
+    --brand:#0b5bd3;--accent:#0d6efd;--shadow:0 8px 24px rgba(15,23,42,.06),0 1px 2px rgba(15,23,42,.04)
+  }
+  *{box-sizing:border-box} html,body{height:100%} body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif}
+  /* Header */
+  .top{position:sticky;top:0;z-index:20;background:var(--panel);border-bottom:1px solid var(--line);padding:.9rem 1rem;display:flex;align-items:center;justify-content:space-between}
+  .brand{font-weight:600;letter-spacing:.2px}
+  .icon-btn{appearance:none;border:0;background:transparent;cursor:pointer;padding:.35rem;border-radius:.6rem}
+  .icon-btn:hover{background:#eef4ff}
+  .sliders{width:22px;height:22px}
+  /* Layout */
+  .container{max-width:1200px;margin:0 auto;padding:1rem;display:grid;grid-template-columns:220px 1fr;gap:1rem}
+  .sidebar{background:var(--panel);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);padding:.9rem;height:fit-content;position:sticky;top:84px}
+  .sidebar img{width:100%;border-radius:10px;display:block}
+  .sidebar .name{margin-top:.55rem;font-weight:600;color:#263041;text-align:center}
+  .chat{display:flex;flex-direction:column;min-height:calc(100vh - 120px)}
+  .log{flex:1;overflow:auto;display:flex;flex-direction:column;gap:.8rem;background:transparent;padding:.25rem}
+  .bubble{max-width:72ch;border-radius:14px;padding:1rem 1.1rem;background:var(--panel);box-shadow:var(--shadow)}
+  .me{align-self:flex-end;background:#0b5bd3;color:#fff;box-shadow:none}
+  .composer{position:sticky;bottom:0;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:.7rem;display:flex;gap:.6rem;align-items:center}
+  .in{flex:1;border:1px solid var(--line);border-radius:10px;background:#f6f7fb;padding:.85rem 1rem;font-size:1rem;outline:none}
+  .send{appearance:none;border:0;background:var(--brand);color:#fff;font-weight:600;border-radius:10px;padding:.7rem 1rem;cursor:pointer}
+  .send:disabled{opacity:.6;cursor:not-allowed}
+  /* Slash palette */
+  .palette{position:absolute;bottom:66px;left:16px;right:16px;max-width:620px;background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);display:none}
+  .pal-list{max-height:260px;overflow:auto}
+  .pal-item{padding:.7rem .9rem;border-top:1px solid var(--line);cursor:pointer;display:flex;justify-content:space-between;gap:.6rem}
+  .pal-item:first-child{border-top:0}.pal-item:hover{background:#f2f6ff}
+  .pal-tag{color:#64748b;font-size:.85rem}
+  /* Modals */
+  .modal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(17,24,39,.32);backdrop-filter:saturate(140%) blur(6px);z-index:1000}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);width:min(92vw,680px);max-height:82vh;overflow:auto}
+  .card-h{padding:1rem 1.2rem;border-bottom:1px solid var(--line);font-weight:600}
+  .card-b{padding:1rem 1.2rem;color:#334155;line-height:1.55}
+  .card-f{padding:1rem 1.2rem;border-top:1px solid var(--line);display:flex;gap:.6rem;justify-content:flex-end}
+  .btn{appearance:none;border:1px solid var(--line);background:#f6f7fb;color:#0b5bd3;border-radius:.7rem;padding:.55rem .9rem;cursor:pointer;font-weight:600}
+  .btn.primary{background:var(--brand);border-color:var(--brand);color:#fff}
+  .muted{color:#64748b}
+  /* Settings content */
+  .group{padding:1rem 1.2rem;border-top:1px solid var(--line)}
+  .row{display:flex;align-items:center;justify-content:space-between;gap:1rem;margin:.55rem 0}
+  .chips{display:flex;gap:.45rem;flex-wrap:wrap}
+  .chip{padding:.42rem .72rem;border:1px solid var(--line);border-radius:999px;background:#fff;cursor:pointer}
+  .chip.active{background:#0b5bd3;border-color:#0b5bd3;color:#fff}
+  .ta{width:100%;min-height:72px;border:1px solid var(--line);border-radius:10px;padding:.6rem;background:#f6f7fb}
+  .disabled{opacity:.55;cursor:not-allowed;user-select:none}
+  /* Prompt manager */
+  .pm-grid{display:grid;grid-template-columns:1fr 1fr;gap:.7rem}
+  .pm-card{border:1px solid var(--line);border-radius:12px;padding:.6rem;background:#fff}
+  .pm-actions{display:flex;gap:.4rem;justify-content:flex-end;margin-top:.5rem}
+  .pm-actions .btn{padding:.4rem .6rem}
+  @media (max-width: 980px){.container{grid-template-columns:1fr}.sidebar{position:static}}
+</style>
 </head>
 <body>
-  <!-- Datenschutz-Modal -->
-  <div id="m-privacy" class="modal" style="display:flex">
-    <div class="card" role="dialog" aria-modal="true" aria-labelledby="p-h">
-      <div class="card-h" id="p-h">Datenschutzhinweis</div>
-      <div class="card-b">
-        <p>Um diesen Chatbot zu nutzen, bestätige bitte die Datenschutzhinweise:</p>
-        <ul style="margin:.6rem 0 0 1.2rem">
-          <li>Deine Eingaben werden an Dienste zur Antwortgenerierung übermittelt.</li>
-          <li>Die Daten dienen ausschließlich der Verarbeitung der Anfrage.</li>
-          <li>Bitte gib <b>keine sensiblen oder personenbezogenen Daten</b> ein.</li>
-        </ul>
-      </div>
-      <div class="card-f">
-        <button class="btn" id="p-decline">Ablehnen</button>
-        <button class="btn primary" id="p-accept">Zustimmen</button>
-      </div>
+
+<!-- Datenschutz-Modal (Original) -->
+<div id="m-privacy" class="modal" style="display:flex">
+  <div class="card" role="dialog" aria-modal="true">
+    <div class="card-h">Datenschutzhinweis</div>
+    <div class="card-b">
+      <p>Um diesen Chatbot nutzen zu können, ist deine Zustimmung zur Datenschutzerklärung erforderlich:</p>
+      <ul style="margin:.6rem 0 0 1.2rem">
+        <li>Deine Eingaben werden an OpenAI (USA) und Make (EU) übermittelt.</li>
+        <li>Die übermittelten Daten werden zur Generierung von Antworten verarbeitet.</li>
+        <li>Bitte gib <strong>keine sensiblen oder personenbezogenen Daten</strong> ein!</li>
+        <li>Weitere Informationen: <a href="https://openai.com/policies/privacy-policy" target="_blank" rel="noopener">OpenAI</a>, <a href="https://www.make.com/en/privacy-policy" target="_blank" rel="noopener">Make.com</a>.</li>
+      </ul>
+    </div>
+    <div class="card-f">
+      <button class="btn" id="p-decline">Ablehnen</button>
+      <button class="btn primary" id="p-accept">Zustimmen</button>
     </div>
   </div>
+</div>
 
-  <!-- First-run Hinweis (führt in Einstellungen) -->
-  <div id="m-first" class="modal">
-    <div class="card">
-      <div class="card-h">Willkommen</div>
-      <div class="card-b">
-        <p>Bevor du startest: Schau kurz in die <b>Einstellungen</b> (Sprache, Fachmodi, Datenschutz-Blacklist, KI-Version).</p>
-      </div>
-      <div class="card-f">
-        <button class="btn primary" id="f-open">Zu den Einstellungen</button>
-      </div>
+<!-- Nutzungshinweise (Original) -->
+<div id="m-usage" class="modal">
+  <div class="card" role="dialog" aria-modal="true">
+    <div class="card-h">Wichtige Hinweise zur Bot-Nutzung</div>
+    <div class="card-b">
+      <p>Bitte lesen Sie diese Hinweise sorgfältig durch und bestätigen Sie diese, bevor Sie den Bot verwenden.</p>
+      <ul style="margin:.6rem 0 0 1.2rem">
+        <li><strong>Automatisierte Antworten</strong><br>
+          Sie interagieren mit einem automatisierten Bot-System. Alle Antworten werden von künstlicher Intelligenz generiert, nicht von einem Menschen.
+        </li>
+        <li><strong>Keine Gewähr für Richtigkeit</strong><br>
+          Die vom Bot bereitgestellten Informationen können unvollständig, veraltet oder fehlerhaft sein. Jede Antwort muss von Ihnen eigenständig überprüft und validiert werden.
+        </li>
+        <li><strong>Kein Ersatz für professionelle Beratung</strong><br>
+          Der Bot ersetzt keine professionelle Beratung, insbesondere keine:
+          <ul style="margin:.4rem 0 0 1.2rem">
+            <li>Rechtsberatung</li>
+            <li>Medizinische Beratung</li>
+            <li>Steuerberatung</li>
+            <li>Finanzberatung</li>
+            <li>Andere fachspezifische Beratungsleistungen</li>
+          </ul>
+          Wenden Sie sich für rechtliche, medizinische oder andere fachliche Angelegenheiten immer an entsprechende Fachkräfte.
+        </li>
+        <li><strong>Haftungsausschluss</strong><br>
+          Jegliche Haftung für Schäden, die durch die Nutzung des Bots oder durch das Vertrauen auf die bereitgestellten Informationen entstehen, wird vollständig ausgeschlossen.
+        </li>
+        <li><strong>Eigenverantwortung</strong><br>
+          Sie nutzen den Bot auf eigene Verantwortung und bestätigen, dass Sie:
+          <ul style="margin:.4rem 0 0 1.2rem">
+            <li>Die Grenzen des Systems verstehen</li>
+            <li>Alle Antworten kritisch hinterfragen</li>
+            <li>Bei wichtigen Entscheidungen zusätzliche Quellen konsultieren</li>
+          </ul>
+        </li>
+      </ul>
+    </div>
+    <div class="card-f">
+      <button class="btn primary" id="u-accept">Einverstanden</button>
     </div>
   </div>
+</div>
 
-  <!-- Einstellungen -->
-  <div id="m-settings" class="modal">
-    <div class="card" role="dialog" aria-modal="true" aria-labelledby="s-h">
-      <div class="card-h" id="s-h">Einstellungen</div>
+<!-- Einstellungen -->
+<div id="m-settings" class="modal">
+  <div class="card" role="dialog" aria-modal="true" aria-labelledby="s-h">
+    <div class="card-h" id="s-h">Einstellungen</div>
 
-      <div class="group">
-        <div class="row">
-          <label>Darstellung</label>
-          <div class="chips" id="theme-choices">
-            <div class="chip" data-val="light">Hell</div>
-            <div class="chip" data-val="dark">Dunkel</div>
-            <div class="chip" data-val="system">System</div>
-          </div>
+    <div class="group">
+      <div class="row">
+        <label>Darstellung</label>
+        <div class="chips" id="theme">
+          <div class="chip" data-val="light">Hell</div>
+          <div class="chip" data-val="dark">Dunkel</div>
+          <div class="chip" data-val="system">System</div>
         </div>
-        <div class="row"><label>Gender-Sprache</label><input type="checkbox" id="opt-gender"/></div>
-        <div class="row"><label>VWL-Modus</label><input type="checkbox" id="opt-vwl"/></div>
-        <div class="row"><label>Begrüßung anzeigen</label><input type="checkbox" id="opt-greet" checked/></div>
       </div>
+      <div class="row"><label>Gender-Sprache</label><input type="checkbox" id="opt-gender"/></div>
+      <div class="row"><label>Begrüßung anzeigen</label><input type="checkbox" id="opt-greet" checked/></div>
+    </div>
 
-      <div class="group">
-        <div class="row">
-          <label>KI-Version</label>
-          <div class="chips" id="model-choices">
-            <div class="chip" data-val="gpt-4.1">GPT&nbsp;4.1</div>
-            <div class="chip active" data-val="gpt-5">GPT&nbsp;5</div>
-          </div>
-        </div>
-        <div class="row disabled" title="Demnächst verfügbar">
-          <label>Eigene Dateien</label>
-          <button class="btn disabled"><span style="opacity:.8">Upload (bald)</span></button>
+    <div class="group">
+      <div class="row">
+        <label>KI-Version</label>
+        <div class="chips disabled" id="model" title="Ab Dezember verfügbar">
+          <div class="chip" data-val="gpt-4.1">GPT 4.1</div>
+          <div class="chip active" data-val="gpt-5">GPT 5</div>
         </div>
       </div>
-
-      <div class="group">
-        <div style="margin-bottom:.35rem"><label>Persönliche Blacklist</label></div>
-        <textarea id="ta-blacklist" class="ta" placeholder="z. B. Name, Adresse, Kundennummer, Geburtsdatum"></textarea>
-        <div class="muted" style="margin-top:.4rem">Wörter/Begriffe (Komma oder Zeile). Werden <b>nur lokal</b> gespeichert und vor dem Senden blockiert.</div>
+      <div class="row disabled" title="Upload (bald verfügbar)">
+        <label>Eigene Dateien</label>
+        <button class="btn disabled">Upload (inaktiv)</button>
       </div>
+    </div>
 
-      <div class="group disabled" title="Demnächst verfügbar">
-        <div><label>Feedback</label></div>
-        <div class="muted">In Vorbereitung – bald direkt hier Rückmeldungen senden.</div>
-      </div>
+    <div class="group">
+      <div style="margin-bottom:.35rem"><label>Persönliche Blacklist</label></div>
+      <textarea id="ta-blacklist" class="ta" placeholder="z. B. Name, Adresse, Kundennummer, Geburtsdatum"></textarea>
+      <div class="muted" style="margin-top:.35rem">Wörter/Begriffe (Komma oder Zeile). Werden <b>nur lokal</b> gespeichert und vor dem Senden blockiert.</div>
+    </div>
 
-      <div class="card-f">
-        <button class="btn" id="s-cancel">Schließen</button>
-        <button class="btn primary" id="s-save">Speichern</button>
+    <!-- Prompt-Manager -->
+    <div class="group">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.6rem">
+        <div><strong>Prompt-Snippets</strong> <span class="muted">(lokal gespeichert, per „/alias“ nutzbar)</span></div>
+        <div>
+          <button class="btn" id="pm-add">Neu</button>
+          <button class="btn" id="pm-export">Export</button>
+          <button class="btn" id="pm-import">Import</button>
+        </div>
       </div>
+      <div id="pm-list" class="pm-grid"></div>
+    </div>
+
+    <div class="card-f">
+      <button class="btn" id="s-close">Schließen</button>
+      <button class="btn primary" id="s-save">Speichern</button>
     </div>
   </div>
+</div>
 
-  <!-- App -->
-  <div class="app">
-    <div class="top">
-      <div class="brand">Linda</div>
-      <!-- elegantes Schieberegler-Icon (kein Zahnrad) -->
-      <button class="icon-btn" id="btn-settings" aria-label="Einstellungen öffnen">
-        <svg class="sliders" viewBox="0 0 24 24" fill="none" stroke="#0b5bd3" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <line x1="4" y1="6" x2="20" y2="6"></line>
-          <line x1="4" y1="12" x2="20" y2="12"></line>
-          <line x1="4" y1="18" x2="20" y2="18"></line>
-          <circle cx="9" cy="6" r="2.2"></circle>
-          <circle cx="15" cy="12" r="2.2"></circle>
-          <circle cx="7" cy="18" r="2.2"></circle>
-        </svg>
-      </button>
-    </div>
-
-    <div class="chat">
-      <div id="log" class="log"></div>
-      <div class="bar">
-        <input id="in" class="in" placeholder="Deine Frage…" autocomplete="off"/>
-        <button id="btn-send" class="send">Senden</button>
+<!-- Prompt-Editor (kleines Modal) -->
+<div id="m-prompt" class="modal">
+  <div class="card" role="dialog" aria-modal="true">
+    <div class="card-h">Snippet</div>
+    <div class="card-b">
+      <div class="row"><label style="min-width:120px">Titel</label><input id="pe-title" class="in" style="border:1px solid var(--line);background:#f6f7fb;border-radius:10px;padding:.6rem"/></div>
+      <div class="row"><label style="min-width:120px">Alias</label><input id="pe-alias" class="in" placeholder="/aevo" style="border:1px solid var(--line);background:#f6f7fb;border-radius:10px;padding:.6rem"/></div>
+      <div style="margin:.6rem 0 .3rem">Inhalt</div>
+      <textarea id="pe-content" class="ta" placeholder="Text mit optionalen Platzhaltern wie {{Thema}} oder {{Zielgruppe|Azubis}}"></textarea>
+      <div class="muted" style="margin-top:.35rem">Modus:
+        <select id="pe-mode" style="border:1px solid var(--line);border-radius:8px;padding:.25rem .5rem;background:#fff">
+          <option value="insert">Insert</option>
+          <option value="append">Append</option>
+          <option value="prefix">Prefix (nur intern an den Bot)</option>
+        </select>
       </div>
     </div>
+    <div class="card-f">
+      <button class="btn" id="pe-cancel">Abbrechen</button>
+      <button class="btn primary" id="pe-save">Speichern</button>
+    </div>
   </div>
+</div>
 
-  <script>
-    (function(){
-      const $=id=>document.getElementById(id);
-      const show=m=>m.style.display='flex', hide=m=>m.style.display='none';
-      const LS={get(k,d){try{return JSON.parse(localStorage.getItem(k))??d}catch{return d}},set(k,v){localStorage.setItem(k,JSON.stringify(v))}};
-      const el={
-        log:$('log'), input:$('in'), send:$('btn-send'),
-        mPrivacy:$('m-privacy'), mFirst:$('m-first'), mSettings:$('m-settings'),
-        accept:$('p-accept'), decline:$('p-decline'), firstOpen:$('f-open'),
-        settingsBtn:$('btn-settings'), sSave:$('s-save'), sCancel:$('s-cancel'),
-        themeChoices:document.querySelectorAll('#theme-choices .chip'),
-        modelChoices:document.querySelectorAll('#model-choices .chip'),
-        optGender:$('opt-gender'), optVwl:$('opt-vwl'), optGreet:$('opt-greet'),
-        taBlacklist:$('ta-blacklist')
-      };
+<!-- App -->
+<div class="top">
+  <div class="brand">Linda</div>
+  <button class="icon-btn" id="btn-settings" aria-label="Einstellungen öffnen">
+    <!-- elegantes Schieberegler-Icon -->
+    <svg class="sliders" viewBox="0 0 24 24" fill="none" stroke="#0b5bd3" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <line x1="4" y1="6" x2="20" y2="6"></line>
+      <line x1="4" y1="12" x2="20" y2="12"></line>
+      <line x1="4" y1="18" x2="20" y2="18"></line>
+      <circle cx="9" cy="6" r="2.2"></circle>
+      <circle cx="15" cy="12" r="2.2"></circle>
+      <circle cx="7" cy="18" r="2.2"></circle>
+    </svg>
+  </button>
+</div>
 
-      // --- State
-      const State=LS.get('linda-settings',{theme:'light',gender:false,vwl:false,greet:true,model:'gpt-5'});
-      const Black=LS.get('linda-blacklist',[]);
+<div class="container">
+  <aside class="sidebar">
+    <img src="https://ntc-bot1.netlify.app/Bildschirmfoto%202025-06-26%20um%2021.09.25.png" alt="Linda"/>
+    <div class="name">Linda</div>
+  </aside>
 
-      // Apply UI state
-      function applyStateToUI(){
-        // theme chips
-        el.themeChoices.forEach(c=>c.classList.toggle('active',c.dataset.val===State.theme));
-        // model chips
-        el.modelChoices.forEach(c=>c.classList.toggle('active',c.dataset.val===State.model));
-        el.optGender.checked=!!State.gender;
-        el.optVwl.checked=!!State.vwl;
-        el.optGreet.checked=!!State.greet;
-        el.taBlacklist.value=Black.join(', ');
-      }
-      function applyTheme(){
-        if(State.theme==='dark') document.documentElement.style.backgroundColor='#0b0e14';
-      }
-      applyTheme(); applyStateToUI();
+  <section class="chat">
+    <div id="log" class="log"></div>
+    <div style="position:relative">
+      <div id="palette" class="palette">
+        <div id="pal-list" class="pal-list"></div>
+      </div>
+      <div class="composer">
+        <input id="in" class="in" placeholder="Deine Frage… (Tipp „/“ für Snippets)"/>
+        <button id="send" class="send">Senden</button>
+      </div>
+    </div>
+  </section>
+</div>
 
-      // chip handlers
-      function chipGroupHandler(nodeList, setter){
-        nodeList.forEach(c=>c.addEventListener('click',()=>{nodeList.forEach(x=>x.classList.remove('active')); c.classList.add('active'); setter(c.dataset.val)}));
-      }
-      chipGroupHandler(el.themeChoices,val=>State.theme=val);
-      chipGroupHandler(el.modelChoices,val=>State.model=val);
+<script>
+(function(){
+  const $=id=>document.getElementById(id);
+  const LS={get(k,d){try{return JSON.parse(localStorage.getItem(k))??d}catch{return d}},set(k,v){localStorage.setItem(k,JSON.stringify(v))}};
+  const el={log:$('log'),input:$('in'),send:$('send'),palette:$('palette'),palList:$('pal-list'),
+            mP:$('m-privacy'),mU:$('m-usage'),mS:$('m-settings'),btnS:$('btn-settings'),
+            sSave:$('s-save'),sClose:$('s-close'),taBL:$('ta-blacklist'),
+            theme:document.querySelectorAll('#theme .chip'), model:document.querySelectorAll('#model .chip'),
+            optGender:$('opt-gender'), optGreet:$('opt-greet'),
+            pmList:$('pm-list'), pmAdd:$('pm-add'), pmExport:$('pm-export'), pmImport:$('pm-import'),
+            mPE:$('m-prompt'), peTitle:$('pe-title'), peAlias:$('pe-alias'), peContent:$('pe-content'), peMode:$('pe-mode'),
+            peSave:$('pe-save'), peCancel:$('pe-cancel')
+          };
 
-      // modals
-      el.settingsBtn.onclick=()=>show(el.mSettings);
-      el.sCancel.onclick=()=>hide(el.mSettings);
-      el.sSave.onclick=()=>{
-        State.gender=el.optGender.checked; State.vwl=el.optVwl.checked; State.greet=el.optGreet.checked;
-        LS.set('linda-settings',State);
-        const words=el.taBlacklist.value.split(/,|\n/).map(x=>x.trim()).filter(Boolean);
-        LS.set('linda-blacklist',words);
-        hide(el.mSettings);
-      };
+  // ---- State
+  const S=LS.get('linda-settings',{theme:'light',gender:false,greet:true,model:'gpt-5'});
+  let BL=LS.get('linda-blacklist',[]);
+  let SN=LS.get('linda-snippets',[ // Starter
+    {id:'sn_aevo',title:'AEVO-Standardantwort',alias:'/aevo',content:'Formuliere juristisch saubere AEVO-Antwort. Thema: {{Thema}}. Struktur: Definition → Rechtsgrundlage → Praxisbeispiel → kurzes Fazit.',mode:'prefix'},
+    {id:'sn_check',title:'Antwort-Check',alias:'/check',content:'Prüfe Antwort auf Fehler, Lücken und unklare Stellen. Empfehle präzise Nachfragen.',mode:'append'},
+    {id:'sn_tldr',title:'Kurzfassung',alias:'/tldr',content:'Erstelle eine TL;DR in 3 Bulletpoints mit je max. 12 Wörtern.',mode:'append'}
+  ]);
+  let CHAT=LS.get('linda-chat',[]); // [{role:'assistant'|'user',content:'...'}]
+  let editingId=null;
 
-      // privacy flow
-      el.accept.onclick=()=>{
-        hide(el.mPrivacy);
-        if(!LS.get('linda_firstRunDone',false)){ show(el.mFirst); }
-        else if(State.greet){ addMsg('a','Hallo! Wie kann ich helfen?'); }
-      };
-      el.decline.onclick=()=>location.reload();
-      $('f-open').onclick=()=>{ hide(el.mFirst); show(el.mSettings); LS.set('linda_firstRunDone',true) };
+  // ---- Helpers
+  const show=m=>m.style.display='flex', hide=m=>m.style.display='none';
+  const addMsg=(role,text)=>{const d=document.createElement('div');d.className='bubble'+(role==='u'?' me':'');d.innerHTML=text;el.log.appendChild(d);el.log.scrollTop=el.log.scrollHeight};
+  const renderChat=()=>{el.log.innerHTML='';CHAT.forEach(m=>addMsg(m.role==='user'?'u':'a',m.content))};
+  const saveChat=()=>LS.set('linda-chat',CHAT);
+  const templ=(s)=>s.replace(/\{\{([\w]+)(\|([^}]+))?\}\}/g,(m,k,_d,def)=>prompt(k,def||'')||def||'');
 
-      // chat rendering
-      function addMsg(role,text){
-        const d=document.createElement('div'); d.className='msg'+(role==='u'?' me':''); d.textContent=text; el.log.appendChild(d); el.log.scrollTop=el.log.scrollHeight;
-      }
+  // ---- Settings UI
+  function applySettingsToUI(){
+    el.theme.forEach(c=>c.classList.toggle('active',c.dataset.val===S.theme));
+    el.model.forEach(c=>c.classList.toggle('active',c.dataset.val===S.model));
+    el.optGender.checked=!!S.gender; el.optGreet.checked=!!S.greet; el.taBL.value=BL.join(', ');
+  }
+  function chipGroupHandler(nodes,setter){nodes.forEach(c=>c.addEventListener('click',()=>{nodes.forEach(x=>x.classList.remove('active'));c.classList.add('active');setter(c.dataset.val)}))}
+  chipGroupHandler(el.theme,val=>S.theme=val);
+  chipGroupHandler(el.model,val=>{/* inaktiv bis Dez. */});
 
-      // blacklist check
-      function violatesBlacklist(txt){
-        const list=LS.get('linda-blacklist',[]);
-        const lower=txt.toLowerCase();
-        for(const w of list){ if(w && lower.includes(String(w).toLowerCase())) return w; }
-        return null;
-      }
+  // ---- Prompt Manager
+  function renderPM(){
+    el.pmList.innerHTML = SN.map(s=>`
+      <div class="pm-card" data-id="${s.id}">
+        <div><b>${s.title}</b> <span class="muted">${s.alias}</span></div>
+        <div class="muted" style="margin-top:.3rem;max-height:4.2em;overflow:hidden">${s.content}</div>
+        <div class="pm-actions">
+          <button class="btn pm-insert">Einfügen</button>
+          <button class="btn pm-edit">Bearb.</button>
+          <button class="btn pm-del">Löschen</button>
+        </div>
+      </div>
+    `).join('');
+    el.pmList.querySelectorAll('.pm-insert').forEach(b=>b.onclick=(e)=>{const id=e.target.closest('.pm-card').dataset.id;const s=SN.find(x=>x.id===id); if(!s)return; handleSnippetUse(s,true)});
+    el.pmList.querySelectorAll('.pm-edit').forEach(b=>b.onclick=(e)=>{const id=e.target.closest('.pm-card').dataset.id; editSnippet(id)});
+    el.pmList.querySelectorAll('.pm-del').forEach(b=>b.onclick=(e)=>{const id=e.target.closest('.pm-card').dataset.id; SN=SN.filter(x=>x.id!==id); LS.set('linda-snippets',SN); renderPM()});
+  }
+  function editSnippet(id){
+    const s=SN.find(x=>x.id===id) || {id:'sn_'+Date.now(),title:'',alias:'',content:'',mode:'insert'};
+    editingId=s.id; el.peTitle.value=s.title; el.peAlias.value=s.alias; el.peContent.value=s.content; el.peMode.value=s.mode; show(el.mPE);
+  }
+  el.pmAdd.onclick=()=>editSnippet(null);
+  el.peCancel.onclick=()=>hide(el.mPE);
+  el.peSave.onclick=()=>{const obj={id:editingId||('sn_'+Date.now()),title:el.peTitle.value.trim(),alias:el.peAlias.value.trim(),content:el.peContent.value.trim(),mode:el.peMode.value};
+    if(!obj.alias.startsWith('/')){alert('Alias muss mit / beginnen.');return}
+    const ex=SN.findIndex(x=>x.id===obj.id);
+    if(ex>=0) SN[ex]=obj; else SN.push(obj);
+    LS.set('linda-snippets',SN); hide(el.mPE); renderPM();
+  };
+  el.pmExport.onclick=()=>{const blob=new Blob([JSON.stringify(SN,null,2)],{type:'application/json'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='linda-snippets.json'; a.click(); URL.revokeObjectURL(a.href);};
+  el.pmImport.onclick=()=>{const i=document.createElement('input'); i.type='file'; i.accept='application/json'; i.onchange=async()=>{const f=i.files[0]; if(!f)return; const txt=await f.text(); try{const arr=JSON.parse(txt); if(Array.isArray(arr)){SN=arr; LS.set('linda-snippets',SN); renderPM();}}catch(e){alert('Import fehlgeschlagen.')} }; i.click();};
 
-      // send
-      async function send(){
-        const q=el.input.value.trim();
-        if(!q) return;
-        const hit=violatesBlacklist(q);
-        if(hit){ alert('⚠️ Nachricht enthält gesperrte Begriffe: '+hit); return; }
-        addMsg('u',q); el.input.value=''; el.send.disabled=true; addMsg('a','⏳ Einen Moment …');
-        try{
-          const r=await fetch('/api/bot',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({question:q,model:State.model})});
-          const t=await r.text();
-          // replace last assistant message
-          const last=el.log.querySelector('.msg:not(.me):last-child'); if(last) last.textContent=t||'—';
-        }catch(e){
-          const last=el.log.querySelector('.msg:not(.me):last-child'); if(last) last.textContent='Fehler bei der Antwort.';
-        }finally{ el.send.disabled=false; }
-      }
-      el.send.onclick=send;
-      el.input.addEventListener('keydown',e=>{ if(e.key==='Enter'&&!e.shiftKey){ e.preventDefault(); send(); } });
+  // ---- Slash Palette
+  function openPalette(matches){
+    el.palList.innerHTML = matches.map(s=>`<div class="pal-item" data-id="${s.id}"><span>${s.title}</span><span class="pal-tag">${s.alias}</span></div>`).join('');
+    el.palette.style.display = matches.length ? 'block' : 'none';
+    el.palList.querySelectorAll('.pal-item').forEach(it=>it.onclick=()=>{const s=SN.find(x=>x.id===it.dataset.id); if(!s)return; el.palette.style.display='none'; handleSnippetUse(s,false); });
+  }
+  function handleSnippetUse(snippet,fromManager){
+    let s={...snippet}; s.content=templ(s.content);
+    if(s.mode==='prefix'){ // nur intern: wir merken es im pendingPrefix
+      pendingPrefix = (pendingPrefix? pendingPrefix+"\n":"") + s.content;
+      if(!fromManager) el.input.value = el.input.value.replace(/\/\w*$/,''); // /alias entfernen
+    }else if(s.mode==='append'){
+      el.input.value = (el.input.value.trim() ? el.input.value+' ' : '') + s.content;
+    }else{ // insert
+      el.input.value = s.content;
+    }
+    el.input.focus();
+  }
 
-      // start with privacy modal shown (already visible via inline style)
-    })();
-  </script>
+  // ---- Render initial
+  renderChat(); applySettingsToUI(); renderPM();
+
+  // ---- Privacy flow
+  $('p-accept').onclick=()=>{hide(el.mP);show(el.mU)};
+  $('p-decline').onclick=()=>location.reload();
+  $('u-accept').onclick=()=>{hide(el.mU); if(S.greet){const w='<b>Willkommen!</b><br>Du kannst mich zu AEVO, HR- & Prüfungsfragen nutzen. Wenn du möchtest, nutze oben rechts die <i>Einstellungen</i> (Sprache, Snippets, Datenschutz).'; CHAT.push({role:'assistant',content:w}); saveChat(); renderChat(); }};
+
+  // ---- Settings save
+  $('s-save').onclick=()=>{ S.gender=$('opt-gender').checked; S.greet=$('opt-greet').checked; BL=$('ta-blacklist').value.split(/,|\n/).map(x=>x.trim()).filter(Boolean); LS.set('linda-settings',S); LS.set('linda-blacklist',BL); hide(el.mS); };
+  $('s-close').onclick=()=>hide(el.mS);
+  $('btn-settings').onclick=()=>show(el.mS);
+
+  // theme chip handler
+  document.querySelectorAll('#theme .chip').forEach(c=>c.onclick=()=>{document.querySelectorAll('#theme .chip').forEach(x=>x.classList.remove('active')); c.classList.add('active'); S.theme=c.dataset.val; LS.set('linda-settings',S);});
+
+  // ---- Blacklist check
+  function violatesBL(txt){const L=(LS.get('linda-blacklist',[])||[]).map(w=>String(w).toLowerCase()).filter(Boolean); const low=txt.toLowerCase(); for(const w of L){if(low.includes(w)) return w} return null;}
+
+  // ---- Send flow
+  let pendingPrefix='';
+  async function send(){
+    const q=el.input.value.trim();
+    if(!q) return;
+    const hit=violatesBL(q); if(hit){alert('⚠️ Nachricht enthält gesperrte Begriffe: '+hit); return;}
+    CHAT.push({role:'user',content:q}); saveChat(); renderChat(); el.input.value=''; el.send.disabled=true;
+    const waiting='⏳ Einen Moment …'; CHAT.push({role:'assistant',content:waiting}); saveChat(); renderChat();
+    try{
+      const payload={question: (pendingPrefix?pendingPrefix+'\n\n':'') + q, model:S.model};
+      pendingPrefix='';
+      const r=await fetch('/api/bot',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+      const t=await r.text();
+      // replace last assistant bubble
+      CHAT[CHAT.length-1]={role:'assistant',content:t||'—'}; saveChat(); renderChat();
+    }catch(e){
+      CHAT[CHAT.length-1]={role:'assistant',content:'Fehler bei der Antwort.'}; saveChat(); renderChat();
+    }finally{ el.send.disabled=false; }
+  }
+  $('send').onclick=send;
+  $('in').addEventListener('keydown',e=>{
+    if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); send(); return;}
+    // Slash palette
+    const v=e.target.value; const m=v.match(/\/([\w-]{0,24})$/);
+    if(m){ const q=m[1].toLowerCase(); const list=SN.filter(s=>s.alias.toLowerCase().startsWith('/'+q) || s.title.toLowerCase().includes(q)); openPalette(list); }
+    else{ el.palette.style.display='none'; }
+  });
+
+  // close palette when clicking outside composer
+  document.addEventListener('click',e=>{ if(!e.target.closest('.composer')) el.palette.style.display='none'; });
+
+  // expose for debugging (optional)
+  window.__linda={S,BL,SN,CHAT};
+})();
+</script>
 </body>
 </html>
