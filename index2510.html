@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Linda – Deine persönliche Assistentin (V25.7)</title>
+
+  <!-- Manifest & Meta -->
+  <link rel="manifest" href="manifest.json"/>
+  <meta name="theme-color" content="#2346e4"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-title" content="ChatBot"/>
+
+  <!-- Icons & Inter -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet"/>
+
+  <style>
+    * { box-sizing: border-box; margin:0; padding:0 }
+    html, body { height:100%; font-family:'Inter',sans-serif; overflow:auto; }
+    body { display:flex; flex-direction:column; background:#f7f7f8; color:#24292e; }
+
+    .modal-content p, .modal-content li, .chat-area header, .message p { margin-bottom:1em }
+    ol, ul { margin-left:1.5rem }
+
+    .modal-overlay { position:fixed; inset:0; background:rgba(0,38,90,0.45); display:flex; align-items:center; justify-content:center; z-index:3000 }
+    .modal-card { background:#fff; border-radius:16px; width:90vw; max-width:500px; box-shadow:0 8px 32px rgba(0,70,160,0.13); border:1.5px solid #0059b3; overflow:hidden }
+    .modal-head { background:#0059b3; color:#fff; padding:20px; display:flex; align-items:center; font-size:1.1rem; font-weight:600 }
+    .modal-content { padding:16px; font-size:.9rem; line-height:1.6; color:#1c273a; max-height:60vh; overflow-y:auto }
+    .modal-footer { display:flex; justify-content:flex-end; gap:14px; padding:12px 16px }
+    .modal-btn { padding:10px 20px; border:none; border-radius:20px; font-size:1rem; font-weight:600; cursor:pointer }
+    .modal-btn.accept { background:#0059b3; color:#fff }
+    .modal-btn.decline { background:#f3f4f6; color:#0059b3; border:1px solid #c7d5ea }
+
+    #mainContainer { display:none; flex:1; overflow:auto; }
+    .container { display:flex; height:100%; }
+
+    .comic { flex:0 0 200px; background:#fff; display:flex; flex-direction:column; align-items:center; border-right:1px solid #e1e4e8; padding:1rem }
+    .comic img { width:100%; border-radius:.5rem }
+    .comic-name { margin-top:.5rem; font-family:'Segoe Script','Comic Sans MS',cursive; font-size:1.3rem; color:#333 }
+
+    .chat-area { flex:1; display:flex; flex-direction:column; position:relative; }
+    .chat-area header { padding:1rem; font-size:1.2rem; background:#fff; border-bottom:1px solid #e1e4e8 }
+
+    #chat { flex:1; overflow-y:auto; padding:1rem; display:flex; flex-direction:column; gap:1rem; background:#f7f7f8 }
+    .message { max-width:75%; padding:.75rem 1rem; border-radius:1rem; box-shadow:0 1px 2px rgba(0,0,0,0.1); line-height:1.5 }
+    .bot { align-self:flex-start; background:#fff }
+    .user { align-self:flex-end; background:#0969da; color:#fff }
+
+    .input-bar { display:flex; align-items:center; padding:.5rem 1rem; background:#fff; border-top:1px solid #e1e4e8 }
+    .input-bar button { background:none; border:none; font-size:1.5rem; cursor:pointer; color:#57606a; margin-right:.5rem }
+    .input-bar input { flex:1; border:none; outline:none; background:#f0f4f8; border-radius:.5rem; padding:0.75rem; font-size:1rem }
+
+    #toggle-change {
+      background: none;
+      border: none;
+      font-size: 1rem;
+      cursor: pointer;
+      padding: 0.5rem 1rem;
+      margin-right: 0.5rem;
+      border-radius: 0.5rem;
+    }
+    #toggle-change.active {
+      background: #0059b3;
+      color: #fff;
+    }
+
+    .session-item { display:flex; justify-content:space-between; padding:.5rem 0; border-bottom:1px solid #e3eefa; cursor:pointer }
+
+    @media (max-width: 768px) {
+      .container { flex-direction:column; }
+      .comic { display:none; }
+      .chat-area header { font-size:1rem; }
+      #chat { padding:0.5rem; }
+      .input-bar { padding:.5rem; }
+      html, body { overflow:auto; height:auto; }
+    }
+
+    body.changed { text-transform: uppercase; }
+  </style>
+</head>
+<body>
+  <!-- Datenschutzhinweis -->
+  <div class="modal-overlay" id="privacy-modal">
+    <div class="modal-card">
+      <div class="modal-head"><i class="fa-solid fa-lock"></i>&nbsp;Datenschutzhinweis</div>
+      <div class="modal-content">
+        <p>Um diesen Chatbot nutzen zu können, ist deine Zustimmung zur Datenschutzerklärung erforderlich:</p>
+        <ul>
+          <li>Deine Eingaben werden an OpenAI (USA) und Make (EU) übermittelt.</li>
+          <li>Die übermittelten Daten werden zur Generierung von Antworten verarbeitet.</li>
+          <li>Bitte gib <strong>keine sensiblen oder personenbezogenen Daten</strong> ein!</li>
+          <li>Weitere Informationen: <a href="https://openai.com/policies/privacy-policy" target="_blank">OpenAI</a>, <a href="https://www.make.com/en/privacy-policy" target="_blank">Make.com</a>.</li>
+        </ul>
+        <hr style="margin:1rem 0; border:none; border-top:1px solid #c7d5ea;">
+        <p><strong>Neu ab November:</strong> Linda kann nun auch Fragen aus der <strong>Volkswirtschaftslehre (VWL)</strong> beantworten.<br>
+        Um die Antwortqualität zu verbessern, beginne bitte alle VWL-Fragen mit dem Präfix <strong>„VWL:“</strong><br>
+        <em>Beispiel:</em> <code>VWL: Erkläre das Bruttoinlandsprodukt</code></p>
+      </div>
+      <div class="modal-footer">
+        <button class="modal-btn accept" id="acceptPrivacy">Zustimmen</button>
+        <button class="modal-btn decline" onclick="location.reload()">Ablehnen</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Nutzungshinweise -->
+  <div class="modal-overlay" id="usage-modal" style="display:none">
+    <div class="modal-card">
+      <div class="modal-head"><i class="fa-solid fa-bullhorn"></i>&nbsp;Wichtige Hinweise zur Bot-Nutzung</div>
+      <div class="modal-content">
+        <p>Bitte lesen Sie diese Hinweise sorgfältig durch und bestätigen Sie diese, bevor Sie den Bot verwenden.</p>
+        <ul>
+          <li><strong>Automatisierte Antworten</strong><br>
+            Sie interagieren mit einem automatisierten Bot-System. Alle Antworten werden von künstlicher Intelligenz generiert, nicht von einem Menschen.
+          </li>
+          <li><strong>Keine Gewähr für Richtigkeit</strong><br>
+            Die vom Bot bereitgestellten Informationen können unvollständig, veraltet oder fehlerhaft sein. Jede Antwort muss von Ihnen eigenständig überprüft und validiert werden.
+          </li>
+          <li><strong>Kein Ersatz für professionelle Beratung</strong><br>
+            Der Bot ersetzt keine professionelle Beratung, insbesondere keine:
+            <ul>
+              <li>Rechtsberatung</li>
+              <li>Medizinische Beratung</li>
+              <li>Steuerberatung</li>
+              <li>Finanzberatung</li>
+              <li>Andere fachspezifische Beratungsleistungen</li>
+            </ul>
+            Wenden Sie sich für rechtliche, medizinische oder andere fachliche Angelegenheiten immer an entsprechende Fachkräfte.
+          </li>
+          <li><strong>Haftungsausschluss</strong><br>
+            Jegliche Haftung für Schäden, die durch die Nutzung des Bots oder durch das Vertrauen auf die bereitgestellten Informationen entstehen, wird vollständig ausgeschlossen.
+          </li>
+          <li><strong>Eigenverantwortung</strong><br>
+            Sie nutzen den Bot auf eigene Verantwortung und bestätigen, dass Sie:
+            <ul>
+              <li>Die Grenzen des Systems verstehen</li>
+              <li>Alle Antworten kritisch hinterfragen</li>
+              <li>Bei wichtigen Entscheidungen zusätzliche Quellen konsultieren</li>
+            </ul>
+          </li>
+        </ul>
+      </div>
+      <div class="modal-footer">
+        <button class="modal-btn accept" id="acceptUsage">Einverstanden</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Hauptinterface -->
+  <div id="mainContainer">
+    <div class="container">
+      <aside class="comic">
+        <img src="https://ntc-bot1.netlify.app/Bildschirmfoto%202025-06-26%20um%2021.09.25.png" alt="Linda"/>
+        <div class="comic-name">Linda</div>
+      </aside>
+      <section class="chat-area">
+        <header>Linda – Deine persönliche Assistentin</header>
+        <div id="chat"></div>
+        <div class="input-bar">
+          <button id="btnSessions" title="Gespeicherte Chats"><i class="fa-solid fa-list"></i></button>
+          <button id="btnNew" title="Neuer Chat"><i class="fa-solid fa-plus"></i></button>
+          <button id="btnDel" title="Chat löschen"><i class="fa-solid fa-trash"></i></button>
+          <button id="toggle-change" title="Alle Texte ändern">Aa</button>
+          <input id="q" type="text" placeholder="Deine Frage…" autocomplete="off" />
+          <button id="mic-btn" title="Spracheingabe"><i class="fa-solid fa-microphone"></i></button>
+          <button id="send-btn" title="Senden"><i class="fa-solid fa-paper-plane"></i></button>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="sessions-modal" style="display:none" onclick="if(event.target===this)hideSessionsModal()">
+    <div class="modal-card">
+      <div class="modal-head"><i class="fa-solid fa-list"></i>&nbsp;Gespeicherte Chats</div>
+      <div class="modal-content" id="sessions-list"></div>
+      <div class="modal-footer">
+        <button class="modal-btn accept" id="sessions-close">Schließen</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const privacyModal  = document.getElementById('privacy-modal');
+      const usageModal    = document.getElementById('usage-modal');
+      const mainContainer = document.getElementById('mainContainer');
+      const sessionsModal = document.getElementById('sessions-modal');
+      const chatEl        = document.getElementById('chat');
+      const toggleBtn     = document.getElementById('toggle-change');
+
+      document.getElementById('acceptPrivacy').onclick = () => {
+        privacyModal.style.display = 'none';
+        usageModal.style.display   = 'flex';
+      };
+      document.getElementById('acceptUsage').onclick = () => {
+        usageModal.style.display    = 'none';
+        mainContainer.style.display = 'flex';
+        initChat();
+      };
+
+      toggleBtn.onclick = () => {
+        document.body.classList.toggle('changed');
+        toggleBtn.classList.toggle('active');
+      };
+
+      const STORAGE_KEY = 'chat-sessions';
+      let sessions = [], activeId = null, messages = [];
+
+      const initialMsg = {
+        role: 'assistant',
+        content: 'Hallo! Wie kann ich Sie im Bereich Personalmanagement, Ausbildung oder Prüfungsvorbereitung unterstützen?'
+      };
+
+      function loadSessions() {
+        sessions = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+      }
+      function saveSessions() {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(sessions));
+      }
+      function createSession() {
+        const id = Date.now().toString();
+        const session = { id, name: '', messages: [initialMsg] };
+        sessions.unshift(session);
+        activeId = id;
+        saveSessions();
+        return session;
+      }
+      function loadSession(id) {
+        const s = sessions.find(x => x.id === id);
+        if (!s) return;
+        activeId = id;
+        messages = s.messages.slice();
+        renderMessages();
+        hideSessionsModal();
+      }
+      function updateSession() {
+        const s = sessions.find(x => x.id === activeId);
+        if (!s) return;
+        s.messages = messages.slice();
+        const first = messages.find(m => m.role === 'user');
+        s.name = first ? first.content.substr(0, 32) : 'Chat';
+        saveSessions();
+        renderSessionList();
+      }
+      function deleteSession(id) {
+        sessions = sessions.filter(x => x.id !== id);
+        if (activeId === id) {
+          if (sessions.length) loadSession(sessions[0].id);
+          else {
+            const s = createSession();
+            messages = s.messages.slice();
+            renderMessages();
+          }
+        }
+        saveSessions();
+        renderSessionList();
+      }
+      function renderMessages() {
+        chatEl.innerHTML = '';
+        messages.forEach(m => {
+          const d = document.createElement('div');
+          d.className = 'message ' + (m.role==='assistant' ? 'bot' : 'user');
+          d.innerHTML = `<strong>${m.role==='assistant' ? 'Linda' : 'Du'}:</strong><br>${marked.parse(m.content)}`;
+          chatEl.appendChild(d);
+        });
+        chatEl.scrollTop = chatEl.scrollHeight;
+      }
+      function renderSessionList() {
+        const el = document.getElementById('sessions-list');
+        el.innerHTML = sessions.map(s => `
+          <div class="session-item" data-id="${s.id}">
+            <span>${s.name||'Chat'}</span>
+            <button class="del-session" data-id="${s.id}">🗑️</button>
+          </div>
+        `).join('');
+        document.querySelectorAll('.session-item').forEach(e => e.onclick = () => loadSession(e.dataset.id));
+        document.querySelectorAll('.del-session').forEach(btn => btn.onclick = e => {
+          e.stopPropagation();
+          deleteSession(btn.dataset.id);
+        });
+      }
+      function showSessionsModal() {
+        renderSessionList();
+        sessionsModal.style.display = 'flex';
+      }
+      function hideSessionsModal() {
+        sessionsModal.style.display = 'none';
+      }
+
+      document.getElementById('btnSessions').onclick = showSessionsModal;
+      document.getElementById('sessions-close').onclick = hideSessionsModal;
+      document.getElementById('btnNew').onclick = () => {
+        if (confirm('Neuer Chat?')) {
+          const s = createSession();
+          messages = s.messages.slice();
+          renderMessages();
+        }
+      };
+      document.getElementById('btnDel').onclick = () => {
+        if (confirm('Chat löschen?')) {
+          messages = [];
+          updateSession();
+          renderMessages();
+        }
+      };
+
+      const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (SR) {
+        const rec = new SR();
+        rec.lang = 'de-DE';
+        rec.interimResults = false;
+        rec.maxAlternatives = 1;
+        rec.onstart = () => document.getElementById('mic-btn').classList.add('recording');
+        rec.onend = () => document.getElementById('mic-btn').classList.remove('recording');
+        rec.onresult = e => document.getElementById('q').value = e.results[0][0].transcript;
+        document.getElementById('mic-btn').onclick = () => rec.start();
+      } else {
+        document.getElementById('mic-btn').disabled = true;
+      }
+
+      async function send() {
+        const inp = document.getElementById('q');
+        const text = inp.value.trim();
+        if (!text) return;
+        messages.push({ role: 'user', content: text });
+        renderMessages();
+        inp.value = '';
+        messages.push({ role: 'assistant', content: '⏳ Einen Moment bitte ...' });
+        renderMessages();
+        updateSession();
+
+        try {
+          const res = await fetch('/api/bot', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              question: text,
+              history: messages.map(m => ({ role: m.role, content: m.content }))
+            })
+          });
+          const reply = await res.text();
+          messages = messages.map(m =>
+            m.role === 'assistant' && m.content.startsWith('⏳')
+              ? { role: 'assistant', content: reply }
+              : m
+          );
+        } catch {
+          messages.push({ role: 'assistant', content: '❌ Fehler aufgetreten.' });
