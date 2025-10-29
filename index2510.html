@@ -3,13 +3,13 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Linda – Deine persönliche Assistentin (v27.5-pro)</title>
+<title>Linda – Deine persönliche Assistentin (v27.6-pro)</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet"/>
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <style>
   :root{
     --bg:#f7f8fb;--panel:#ffffff;--line:#e7ebf0;--text:#0f172a;--muted:#5b6678;
-    --brand:#0b5bd3;--brand-2:#2b6ff0;--ok:#0ea5e9;--shadow:0 8px 24px rgba(15,23,42,.06),0 1px 2px rgba(15,23,42,.04)
+    --brand:#0b5bd3;--brand-2:#2b6ff0;--shadow:0 8px 24px rgba(15,23,42,.06),0 1px 2px rgba(15,23,42,.04)
   }
   body.dark{--bg:#0b0e14;--panel:#0f1420;--line:#1d2535;--text:#e7eaf0;--muted:#a4b0c3;--brand:#6aa4ff;--brand-2:#88b2ff}
   *{box-sizing:border-box}
@@ -24,11 +24,25 @@
   .icon-btn{appearance:none;border:0;background:transparent;cursor:pointer;padding:.35rem;border-radius:.6rem}
   .icon-btn:hover{background:rgba(11,91,211,.08)}
   .sliders{width:22px;height:22px}
-  /* Layout */
-  .container{max-width:1200px;margin:0 auto;padding:1rem;display:grid;grid-template-columns:220px 1fr;gap:1rem}
-  .sidebar{background:var(--panel);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);padding:.9rem;height:fit-content;position:sticky;top:86px}
-  .sidebar img{width:100%;border-radius:10px;display:block}
-  .sidebar .name{margin-top:.55rem;font-weight:600;text-align:center}
+  /* Layout grid */
+  .container{max-width:1200px;margin:0 auto;padding:1rem;display:grid;grid-template-columns:260px 1fr;gap:1rem}
+  /* Sidebar (avatar + sessions) */
+  .sidebar{display:flex;flex-direction:column;gap:1rem}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow)}
+  .avatar{padding:.9rem;display:flex;flex-direction:column;align-items:center}
+  .avatar img{width:100%;border-radius:10px;display:block}
+  .avatar .name{margin-top:.55rem;font-weight:600;text-align:center}
+  .sessions{display:flex;flex-direction:column;max-height:50vh}
+  .sessions .head{padding:.8rem .9rem;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between}
+  .sessions .list{overflow:auto}
+  .sess{display:flex;align-items:center;justify-content:space-between;gap:.5rem;padding:.65rem .9rem;border-top:1px solid var(--line);cursor:pointer}
+  .sess:first-child{border-top:0}
+  .sess .ttl{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:150px}
+  .sess.active{background:rgba(11,91,211,.06)}
+  .sess .rowbtns{display:flex;gap:.35rem}
+  .sm-btn{appearance:none;border:1px solid var(--line);background:color-mix(in oklab, var(--panel) 80%, var(--bg));color:var(--brand);border-radius:8px;padding:.25rem .45rem;cursor:pointer;font-size:.85rem}
+  .sm-btn:hover{background:rgba(11,91,211,.08)}
+  /* Chat column */
   .chat{display:flex;flex-direction:column;min-height:calc(100vh - 120px)}
   .log{flex:1;overflow:auto;display:flex;flex-direction:column;gap:1rem;padding:.25rem;scroll-behavior:smooth}
   .bubble{max-width:78ch;border-radius:12px;padding:1rem 1.1rem;background:var(--panel);box-shadow:var(--shadow)}
@@ -39,9 +53,14 @@
   .in{flex:1;border:1px solid var(--line);border-radius:10px;background:color-mix(in oklab, var(--panel) 80%, var(--bg));padding:.85rem 1rem;font-size:1rem;outline:none;color:var(--text)}
   .send{appearance:none;border:0;background:var(--brand);color:#fff;font-weight:600;border-radius:10px;padding:.7rem 1rem;cursor:pointer}
   .send:disabled{opacity:.6;cursor:not-allowed}
-  /* Modal/Sheet */
+  /* Palette (snippets) */
+  .palette{position:absolute;bottom:66px;left:16px;max-width:640px;background:var(--panel);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);display:none}
+  .pal-item{padding:.7rem .9rem;border-top:1px solid var(--line);cursor:pointer;display:flex;justify-content:space-between;gap:.6rem}
+  .pal-item:first-child{border-top:0}.pal-item:hover{background:rgba(11,91,211,.06)}
+  .pal-tag{color:var(--muted);font-size:.85rem}
+  /* Modal */
   .modal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(17,24,39,.32);backdrop-filter:saturate(140%) blur(6px);z-index:1000}
-  .card{background:var(--panel);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);width:min(92vw,720px);max-height:85vh;overflow:auto}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);width:min(92vw,760px);max-height:85vh;overflow:auto}
   .card-h{padding:1rem 1.2rem;border-bottom:1px solid var(--line);font-weight:600}
   .card-b{padding:1rem 1.2rem;line-height:1.55}
   .card-f{padding:1rem 1.2rem;border-top:1px solid var(--line);display:flex;gap:.6rem;justify-content:flex-end}
@@ -58,10 +77,9 @@
   .select{border:1px solid var(--line);border-radius:10px;padding:.5rem .65rem;background:color-mix(in oklab, var(--panel) 80%, var(--bg));color:var(--text)}
   .switch{width:46px;height:26px;border-radius:999px;background:#dfe6f3;position:relative;cursor:pointer;border:1px solid var(--line)}
   .switch>i{position:absolute;width:22px;height:22px;top:1px;left:1px;border-radius:50%;background:#fff;transition:left .18s}
-  .switch.on{background:#bcd4ff}
-  .switch.on>i{left:23px}
+  .switch.on{background:#bcd4ff}.switch.on>i{left:23px}
   .disabled{opacity:.55;cursor:not-allowed;user-select:none}
-  @media (max-width: 980px){.container{grid-template-columns:1fr}.sidebar{position:static}}
+  @media (max-width: 980px){.container{grid-template-columns:1fr}.sessions{max-height:none}}
 </style>
 </head>
 <body>
@@ -78,7 +96,7 @@
         <li>Bitte gib <strong>keine sensiblen oder personenbezogenen Daten</strong> ein!</li>
         <li>Weitere Informationen: <a href="https://openai.com/policies/privacy-policy" target="_blank" rel="noopener">OpenAI</a>, <a href="https://www.make.com/en/privacy-policy" target="_blank" rel="noopener">Make.com</a>.</li>
       </ul>
-      <p class="muted" style="margin-top:.8rem">Hinweis: Dein <b>Chatverlauf</b> wird <b>nur lokal</b> in deinem Browser gespeichert (localStorage). Du kannst ihn in den Einstellungen löschen oder exportieren.</p>
+      <p class="muted" style="margin-top:.8rem">Hinweis: Dein <b>Chatverlauf</b> und deine <b>Snippets</b> werden <b>nur lokal</b> auf deinem Gerät gespeichert (localStorage). Du kannst beides in den Einstellungen verwalten (löschen/exportieren).</p>
     </div>
     <div class="card-f">
       <button class="btn" id="p-decline">Ablehnen</button>
@@ -103,7 +121,7 @@
   </div>
 </div>
 
-<!-- Einstellungen -->
+<!-- Einstellungen (inkl. Snippet-Manager) -->
 <div id="m-settings" class="modal">
   <div class="card" role="dialog" aria-modal="true">
     <div class="card-h">Einstellungen</div>
@@ -136,6 +154,20 @@
       </div>
     </div>
 
+    <!-- Snippets -->
+    <div class="group">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.6rem">
+        <div><strong>Prompt-Snippets</strong> <span class="muted">(per „/alias“ einfügen)</span></div>
+        <div>
+          <button class="btn" id="pm-add">Neu</button>
+          <button class="btn" id="pm-export">Export</button>
+          <button class="btn" id="pm-import">Import</button>
+        </div>
+      </div>
+      <div id="pm-list" style="display:grid;grid-template-columns:1fr 1fr;gap:.7rem"></div>
+    </div>
+
+    <!-- Verlauf Verwaltung -->
     <div class="group">
       <div class="row" style="align-items:flex-start">
         <div>
@@ -143,8 +175,8 @@
           <div class="muted">Nur lokal gespeichert. Du kannst ihn löschen oder exportieren.</div>
         </div>
         <div style="display:flex;gap:.5rem">
-          <button class="btn" id="btn-export">Export (.txt)</button>
-          <button class="btn" id="btn-clear">Löschen</button>
+          <button class="btn" id="btn-export-all">Gesamt-Export (.txt)</button>
+          <button class="btn" id="btn-clear-all">Alle löschen</button>
         </div>
       </div>
     </div>
@@ -152,6 +184,23 @@
     <div class="card-f">
       <button class="btn" id="s-close">Schließen</button>
       <button class="btn primary" id="s-save">Speichern</button>
+    </div>
+  </div>
+</div>
+
+<!-- Prompt-Editor -->
+<div id="m-prompt" class="modal">
+  <div class="card" role="dialog" aria-modal="true">
+    <div class="card-h">Snippet</div>
+    <div class="card-b">
+      <div class="row"><label style="min-width:120px">Titel</label><input id="pe-title" class="in" style="border:1px solid var(--line);border-radius:10px;padding:.6rem;background:color-mix(in oklab, var(--panel) 80%, var(--bg));color:var(--text)"/></div>
+      <div class="row"><label style="min-width:120px">Alias</label><input id="pe-alias" class="in" placeholder="/aevo" style="border:1px solid var(--line);border-radius:10px;padding:.6rem;background:color-mix(in oklab, var(--panel) 80%, var(--bg));color:var(--text)"/></div>
+      <div style="margin:.6rem 0 .3rem">Text</div>
+      <textarea id="pe-content" class="ta" placeholder="Dieser Text wird bei /alias eingefügt."></textarea>
+    </div>
+    <div class="card-f">
+      <button class="btn" id="pe-cancel">Abbrechen</button>
+      <button class="btn primary" id="pe-save">Speichern</button>
     </div>
   </div>
 </div>
@@ -175,15 +224,28 @@
 
 <div class="container">
   <aside class="sidebar">
-    <img src="https://ntc-bot1.netlify.app/Bildschirmfoto%202025-06-26%20um%2021.09.25.png" alt="Linda"/>
-    <div class="name">Linda</div>
+    <div class="panel avatar">
+      <img src="https://ntc-bot1.netlify.app/Bildschirmfoto%202025-06-26%20um%2021.09.25.png" alt="Linda"/>
+      <div class="name">Linda</div>
+    </div>
+
+    <div class="panel sessions">
+      <div class="head">
+        <div style="font-weight:600">Verläufe</div>
+        <button id="btn-new" class="sm-btn">Neu</button>
+      </div>
+      <div id="sess-list" class="list"></div>
+    </div>
   </aside>
 
   <section class="chat">
     <div id="log" class="log"></div>
-    <div class="composer">
-      <input id="in" class="in" placeholder="Deine Frage…"/>
-      <button id="send" class="send">Senden</button>
+    <div style="position:relative">
+      <div id="palette" class="palette"></div>
+      <div class="composer">
+        <input id="in" class="in" placeholder="Deine Frage… (Tipp „/“ für Snippets)"/>
+        <button id="send" class="send">Senden</button>
+      </div>
     </div>
   </section>
 </div>
@@ -192,12 +254,24 @@
 (function(){
   const $=id=>document.getElementById(id);
   const LS={get(k,d){try{return JSON.parse(localStorage.getItem(k))??d}catch{return d}},set(k,v){localStorage.setItem(k,JSON.stringify(v))},del(k){localStorage.removeItem(k)}};
+  const nowStr=()=>new Date().toLocaleString();
 
-  // ---- State (persisted)
+  // ----- Persistent State
   const S=LS.get('linda.settings',{theme:'light',gender:false,greet:true,domain:''});
-  let CHAT=LS.get('linda.chat.history',[]); // [{role:'user'|'assistant',content:'...'}]
+  let SN=LS.get('linda.snippets',[
+    {id:'s1',title:'AEVO-Kurz',alias:'/aevo',content:'Bitte juristisch sauber und prüfungsrelevant zur AEVO antworten.'},
+    {id:'s2',title:'TL;DR',alias:'/tldr',content:'TL;DR in drei Bulletpoints, je max. 12 Wörter.'}
+  ]);
+  let Sessions=LS.get('linda.sessions',[]); // [{id,name,ts,messages:[{role,content}]}]
+  let activeId=LS.get('linda.activeId',null);
 
-  // ---- Theme
+  // ----- Utilities
+  const md=(txt)=>{try{return marked.parse(txt)}catch{return txt}};
+  const show=m=>m.style.display='flex', hide=m=>m.style.display='none';
+  const uid=()=> 's_'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+  function saveAll(){ LS.set('linda.settings',S); LS.set('linda.snippets',SN); LS.set('linda.sessions',Sessions); LS.set('linda.activeId',activeId); }
+
+  // ----- Theme
   function applyTheme(){
     if(S.theme==='system'){
       const m=window.matchMedia('(prefers-color-scheme: dark)');
@@ -209,36 +283,64 @@
     document.querySelectorAll('#chip-theme .chip').forEach(c=>c.classList.toggle('active',c.dataset.val===S.theme));
   }
 
-  // ---- UI helpers
-  function show(m){m.style.display='flex'} function hide(m){m.style.display='none'}
-  function md(txt){try{return marked.parse(txt)}catch{return txt}}
-  function addMsg(role,content){const d=document.createElement('div');d.className='bubble'+(role==='user'?' me':'');d.innerHTML='<div class="md">'+md(content)+'</div>'; $('log').appendChild(d); $('log').scrollTop=$('log').scrollHeight}
-  function renderChat(){ $('log').innerHTML=''; CHAT.forEach(m=>addMsg(m.role,m.content)); }
-  function saveChat(){ LS.set('linda.chat.history',CHAT) }
+  // ----- Sessions (CRUD)
+  function ensureFirstSession(){
+    if(!Sessions.length){
+      const id=uid();
+      Sessions=[{id,name:'Neuer Chat',ts:Date.now(),messages:[]}];
+      activeId=id; Sessions[0].id=id; saveAll();
+    }
+    if(!activeId || !Sessions.find(s=>s.id===activeId)){ activeId=Sessions[0].id; saveAll(); }
+  }
+  function active(){ return Sessions.find(s=>s.id===activeId); }
+  function setActive(id){ activeId=id; saveAll(); renderSessions(); renderChat(); }
+  function addSession(){
+    const id=uid();
+    Sessions.unshift({id,name:'Neuer Chat',ts:Date.now(),messages:[]});
+    setActive(id);
+  }
+  function renameSession(id){
+    const s=Sessions.find(x=>x.id===id); if(!s) return;
+    const nn=prompt('Neuer Name für Verlauf:', s.name||''); if(nn!==null){ s.name=nn.trim()||s.name; saveAll(); renderSessions(); }
+  }
+  function deleteSession(id){
+    if(!confirm('Diesen Verlauf wirklich löschen?')) return;
+    Sessions=Sessions.filter(x=>x.id!==id);
+    if(!Sessions.length){ addSession(); } else if(activeId===id){ activeId=Sessions[0].id; }
+    saveAll(); renderSessions(); renderChat();
+  }
+  function exportSession(id){
+    const s=Sessions.find(x=>x.id===id); if(!s) return;
+    const text=s.messages.map(m=>(m.role==='user'?'Du: ':'Linda: ')+m.content).join('\n\n');
+    const blob=new Blob([text],{type:'text/plain'}); const a=document.createElement('a');
+    a.href=URL.createObjectURL(blob); a.download=(s.name||'linda_chat')+'.txt'; a.click(); URL.revokeObjectURL(a.href);
+  }
+
+  function renderSessions(){
+    const el=$('sess-list');
+    el.innerHTML = Sessions.map(s=>`
+      <div class="sess ${s.id===activeId?'active':''}" data-id="${s.id}">
+        <div class="ttl">${s.name||'Chat'}<div class="muted" style="font-size:.8rem">${new Date(s.ts).toLocaleDateString()}</div></div>
+        <div class="rowbtns">
+          <button class="sm-btn s-rename" title="Umbenennen">✎</button>
+          <button class="sm-btn s-export" title="Exportieren">⤓</button>
+          <button class="sm-btn s-del" title="Löschen">🗑</button>
+        </div>
+      </div>
+    `).join('');
+    el.querySelectorAll('.sess').forEach(n=>n.onclick=(e)=>{ if(e.target.closest('.rowbtns')) return; setActive(n.dataset.id); });
+    el.querySelectorAll('.s-rename').forEach(b=>b.onclick=(e)=>{e.stopPropagation(); renameSession(b.closest('.sess').dataset.id);});
+    el.querySelectorAll('.s-export').forEach(b=>b.onclick=(e)=>{e.stopPropagation(); exportSession(b.closest('.sess').dataset.id);});
+    el.querySelectorAll('.s-del').forEach(b=>b.onclick=(e)=>{e.stopPropagation(); deleteSession(b.closest('.sess').dataset.id);});
+  }
+
+  // ----- Chat rendering
+  function addMsg(role,content){ const d=document.createElement('div'); d.className='bubble'+(role==='user'?' me':''); d.innerHTML='<div class="md">'+md(content)+'</div>'; $('log').appendChild(d); $('log').scrollTop=$('log').scrollHeight; }
+  function renderChat(){ $('log').innerHTML=''; const s=active(); if(!s) return; s.messages.forEach(m=>addMsg(m.role,m.content)); }
+  function push(role,content){ const s=active(); s.messages.push({role,content}); s.ts=Date.now(); saveAll(); }
+
+  // ----- Badge & Prefix
   function setBadge(){ const b=$('domain-badge'); if(S.domain){ b.style.display='inline-flex'; b.textContent='📘 Fachmodus: '+S.domain } else { b.style.display='none' } }
-
-  // ---- Privacy flow
-  $('p-accept').onclick=()=>{hide($('m-privacy'));show($('m-usage'))};
-  $('p-decline').onclick=()=>location.reload();
-  $('u-accept').onclick=()=>{hide($('m-usage')); if(S.greet && CHAT.length===0){ CHAT.push({role:'assistant',content:'**Willkommen!** Nutze mich für AEVO-, Personal-, Rechts- und Prüfungsfragen. Öffne die *Einstellungen*, um Fachmodus & Darstellung zu wählen.'}); saveChat(); renderChat(); }};
-
-  // ---- Settings UI wire
-  applyTheme(); setBadge();
-  document.querySelectorAll('#chip-theme .chip').forEach(c=>c.onclick=()=>{S.theme=c.dataset.val; LS.set('linda.settings',S); applyTheme();});
-  const sw = (el, val)=>{el.classList.toggle('on',val)}
-  sw($('sw-gender'), S.gender); $('sw-gender').onclick=()=>{S.gender=!S.gender; sw($('sw-gender'),S.gender)}
-  sw($('sw-greet'), S.greet); $('sw-greet').onclick=()=>{S.greet=!S.greet; sw($('sw-greet'),S.greet)}
-  $('sel-domain').value=S.domain||'';
-  $('s-save').onclick=()=>{S.domain=$('sel-domain').value; LS.set('linda.settings',S); setBadge(); hide($('m-settings'))}
-  $('s-close').onclick=()=>hide($('m-settings'));
-  $('btn-settings').onclick=()=>show($('m-settings'));
-  $('btn-clear').onclick=()=>{ if(confirm('Verlauf wirklich löschen?')){ CHAT=[]; saveChat(); renderChat(); } }
-  $('btn-export').onclick=()=>{ const text=CHAT.map(m=> (m.role==='user'?'Du: ':'Linda: ')+m.content.replace(/\n/g,'\n') ).join('\n\n'); const blob=new Blob([text],{type:'text/plain'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='linda_chat.txt'; a.click(); URL.revokeObjectURL(a.href); };
-
-  // ---- Initial chat render
-  renderChat();
-
-  // ---- Build system prefix (Domain + Gender)
   function systemPrefix(){
     const lines=[];
     if(S.domain){
@@ -257,27 +359,115 @@
     return lines.filter(Boolean).join('\n');
   }
 
-  // ---- Send flow (robust, keine VWL-Sonderfälle)
+  // ----- Send (robust; kein VWL-Routing, „Accepted“-Fallback)
   async function send(){
-    const q=$('in').value.trim();
-    if(!q) return;
-    $('in').value=''; $('send').disabled=true;
-    CHAT.push({role:'user',content:q}); saveChat(); renderChat();
-    CHAT.push({role:'assistant',content:'⏳ Einen Moment …'}); saveChat(); renderChat();
+    const inp=$('in'); const q=inp.value.trim(); if(!q) return;
+    inp.value=''; $('send').disabled=true;
+    push('user',q); renderChat();
+    push('assistant','⏳ Einen Moment …'); renderChat();
+
     try{
-      // robustes Payload – kein Sonderrouting, keine Filter (VWL ok)
-      const payload={question: systemPrefix()+ '\n\n' + q};
+      const payload={question: systemPrefix()+'\n\n'+q};
       const r=await fetch('/api/bot',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
       const text=await r.text();
-      // Falls Backend wider Erwarten "Accepted" liefert, abfangen:
       const out=(text && text.trim().toLowerCase()!=='accepted') ? text : 'Ich habe deine Frage erhalten und beantworte sie gleich – bitte erneut senden, falls nichts erscheint.';
-      CHAT[CHAT.length-1]={role:'assistant',content:out}; saveChat(); renderChat();
+      const s=active(); s.messages[s.messages.length-1]={role:'assistant',content:out}; saveAll(); renderChat();
     }catch(e){
-      CHAT[CHAT.length-1]={role:'assistant',content:'Es gab ein Verbindungsproblem. Bitte noch einmal senden.'}; saveChat(); renderChat();
+      const s=active(); s.messages[s.messages.length-1]={role:'assistant',content:'Es gab ein Verbindungsproblem. Bitte noch einmal senden.'}; saveAll(); renderChat();
     }finally{$('send').disabled=false;}
   }
+
+  // ----- Palette (Snippets, /-Autocomplete)
+  function openPalette(list){
+    const pal=$('palette');
+    pal.innerHTML = list.map(s=>`<div class="pal-item" data-id="${s.id}"><span>${s.title}</span><span class="pal-tag">${s.alias}</span></div>`).join('');
+    pal.style.display = list.length ? 'block' : 'none';
+    pal.querySelectorAll('.pal-item').forEach(it=>it.onclick=()=>{const s=SN.find(x=>x.id===it.dataset.id); pal.style.display='none'; if(!s) return; replaceAliasWithText($('in'), s.alias, s.content); $('in').focus();});
+  }
+  function replaceAliasWithText(inp,alias,text){const v=inp.value; const i=v.lastIndexOf(alias); if(i>=0){inp.value=v.slice(0,i)+text+v.slice(i+alias.length);} else {const s=inp.selectionStart; inp.value=v.slice(0,s)+text+v.slice(s);} }
+
+  // ----- Snippet Manager
+  function renderPM(){
+    const list=$('pm-list');
+    list.innerHTML = SN.map(s=>`
+      <div class="panel" style="padding:.7rem">
+        <div style="display:flex;justify-content:space-between;gap:.5rem;align-items:center">
+          <div><b>${s.title}</b> <span class="muted">${s.alias}</span></div>
+          <div>
+            <button class="sm-btn pm-use" data-id="${s.id}">Einfügen</button>
+            <button class="sm-btn pm-edit" data-id="${s.id}">Bearb.</button>
+            <button class="sm-btn pm-del" data-id="${s.id}">🗑</button>
+          </div>
+        </div>
+        <div class="muted" style="margin-top:.35rem;max-height:4.2em;overflow:hidden">${s.content}</div>
+      </div>`).join('');
+    list.querySelectorAll('.pm-use').forEach(b=>b.onclick=()=>{const s=SN.find(x=>x.id===b.dataset.id); if(!s)return; replaceAliasWithText($('in'), s.alias, s.content); hide($('m-settings')); $('in').focus();});
+    list.querySelectorAll('.pm-edit').forEach(b=>b.onclick=()=>editSnippet(b.dataset.id));
+    list.querySelectorAll('.pm-del').forEach(b=>b.onclick=()=>{SN=SN.filter(x=>x.id!==b.dataset.id); saveAll(); renderPM();});
+  }
+  function editSnippet(id){
+    const s=SN.find(x=>x.id===id) || {id:uid(),title:'',alias:'',content:''};
+    editingId=s.id; $('pe-title').value=s.title; $('pe-alias').value=s.alias; $('pe-content').value=s.content; show($('m-prompt'));
+  }
+  let editingId=null;
+  $('pm-add').onclick=()=>editSnippet(null);
+  $('pe-cancel').onclick=()=>hide($('m-prompt'));
+  $('pe-save').onclick=()=>{const obj={id:editingId||uid(),title:$('pe-title').value.trim(),alias:$('pe-alias').value.trim(),content:$('pe-content').value.trim()};
+    if(!obj.alias.startsWith('/')){alert('Alias muss mit / beginnen.');return}
+    const i=SN.findIndex(x=>x.id===obj.id); if(i>=0) SN[i]=obj; else SN.push(obj);
+    saveAll(); hide($('m-prompt')); renderPM();
+  };
+  $('pm-export').onclick=()=>{const blob=new Blob([JSON.stringify(SN,null,2)],{type:'application/json'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='linda-snippets.json'; a.click(); URL.revokeObjectURL(a.href);};
+  $('pm-import').onclick=()=>{const i=document.createElement('input'); i.type='file'; i.accept='application/json'; i.onchange=async()=>{const f=i.files[0]; if(!f)return; const txt=await f.text(); try{const arr=JSON.parse(txt); if(Array.isArray(arr)){SN=arr; saveAll(); renderPM();}}catch{alert('Import fehlgeschlagen.')}}; i.click();};
+
+  // ----- Input & Events
   $('send').onclick=send;
-  $('in').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send();}});
+  $('in').addEventListener('keydown',e=>{ if(e.key==='Enter'&&!e.shiftKey){ e.preventDefault(); send(); }});
+  $('in').addEventListener('input',e=>{
+    const v=e.target.value; const m=v.match(/\/([\w-]{0,24})$/);
+    if(m){ const q=m[1].toLowerCase(); const list=SN.filter(s=>s.alias.toLowerCase().startsWith('/'+q)||s.title.toLowerCase().includes(q)); openPalette(list); }
+    else $('palette').style.display='none';
+  });
+  document.addEventListener('click',e=>{ if(!e.target.closest('.composer')) $('palette').style.display='none'; });
+
+  // ----- Privacy
+  $('p-accept').onclick=()=>{hide($('m-privacy'));show($('m-usage'))};
+  $('p-decline').onclick=()=>location.reload();
+  $('u-accept').onclick=()=>{hide($('m-usage'));
+    const s=active();
+    if(S.greet && s.messages.length===0){
+      push('assistant','**Willkommen!** Nutze mich für AEVO-, Personal-, Rechts- und Prüfungsfragen. Öffne *Einstellungen* (Fachmodus, Snippets).');
+      renderChat();
+    }
+  };
+
+  // ----- Settings wiring
+  applyTheme(); 
+  const sw=(el,val)=>{el.classList.toggle('on',val)}
+  sw($('sw-gender'),S.gender); $('sw-gender').onclick=()=>{S.gender=!S.gender; sw($('sw-gender'),S.gender)}
+  sw($('sw-greet'),S.greet); $('sw-greet').onclick=()=>{S.greet=!S.greet; sw($('sw-greet'),S.greet)}
+  document.querySelectorAll('#chip-theme .chip').forEach(c=>c.onclick=()=>{S.theme=c.dataset.val; saveAll(); applyTheme();});
+  $('sel-domain').value=S.domain||'';
+  function setBadge(){ const b=$('domain-badge'); if(S.domain){ b.style.display='inline-flex'; b.textContent='📘 Fachmodus: '+S.domain } else { b.style.display='none' } }
+  setBadge();
+  $('s-save').onclick=()=>{S.domain=$('sel-domain').value; saveAll(); setBadge(); hide($('m-settings'));};
+  $('s-close').onclick=()=>hide($('m-settings'));
+  $('btn-settings').onclick=()=>{ renderPM(); show($('m-settings')); };
+
+  // Global export/clear
+  $('btn-export-all').onclick=()=>{ 
+    const all=Sessions.map(s=>`# ${s.name||'Chat'} (${new Date(s.ts).toLocaleString()})\n\n`+s.messages.map(m=>(m.role==='user'?'Du: ':'Linda: ')+m.content).join('\n\n')).join('\n\n---\n\n');
+    const blob=new Blob([all],{type:'text/plain'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='linda_all_chats.txt'; a.click(); URL.revokeObjectURL(a.href);
+  };
+  $('btn-clear-all').onclick=()=>{ if(confirm('Wirklich alle Verläufe löschen?')){ Sessions=[]; addSession(); saveAll(); renderSessions(); renderChat(); } };
+
+  // Sidebar buttons
+  $('btn-new').onclick=addSession;
+
+  // ----- Boot
+  ensureFirstSession();
+  renderSessions();
+  renderChat();
 
 })();
 </script>
