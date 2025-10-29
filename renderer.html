@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Quellen-Renderer – Demo</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet"/>
+<style>
+  :root{
+    --bg:#f7f8fb;--panel:#fff;--line:#e7ebf0;--text:#0f172a;--muted:#5b6678;--brand:#0b5bd3;
+    --shadow:0 8px 24px rgba(15,23,42,.06),0 1px 2px rgba(15,23,42,.04)
+  }
+  body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif}
+  .wrap{max-width:860px;margin:40px auto;padding:0 16px}
+  .answer{background:var(--panel);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);padding:18px 20px;margin-bottom:14px}
+  /* Quellen-Block */
+  .sources{border:1px solid var(--line);border-radius:12px;background:var(--panel);box-shadow:var(--shadow);overflow:hidden}
+  .src-head{display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid var(--line)}
+  .src-pill{display:inline-flex;align-items:center;gap:8px;background:rgba(11,91,211,.08);color:var(--brand);border:1px solid var(--line);padding:6px 10px;border-radius:999px;font-size:.9rem}
+  .src-toggle{margin-left:auto;appearance:none;border:1px solid var(--line);background:#f3f6fb;color:var(--brand);border-radius:9px;padding:6px 10px;cursor:pointer}
+  .src-list{padding:10px 12px}
+  .src-item{display:grid;grid-template-columns:22px 1fr auto;gap:8px;align-items:start;padding:8px 6px;border-top:1px solid var(--line)}
+  .src-item:first-child{border-top:none}
+  .src-idx{width:22px;height:22px;display:inline-grid;place-items:center;background:#e9f0ff;color:#2554d6;border-radius:50%;font-weight:600;font-size:.85rem}
+  .src-meta{font-size:.92rem;line-height:1.35}
+  .src-title{font-weight:600}
+  .src-host{color:var(--muted);font-size:.85rem}
+  .src-btn{appearance:none;border:1px solid var(--line);background:#fff;border-radius:8px;padding:5px 9px;cursor:pointer}
+  .src-collapsed .src-list{display:none}
+  /* Mini-badges (Inline-Variante) */
+  .src-inline{margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;padding:0 2px 10px 2px}
+  .badge{border:1px solid var(--line);background:#fff;border-radius:999px;padding:5px 10px;font-size:.85rem;color:#2b6ff0}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="answer">
+    <h3 style="margin:0 0 6px 0">Beispielantwort</h3>
+    <p>… strukturierte Erklärung (Definition • Theoriebezug • Praxisbeispiel • Prüfungsrelevanz) …</p>
+  </div>
+
+  <!-- Variante A: kompakte Inline-Badges -->
+  <div class="sources" id="srcA">
+    <div class="src-head">
+      <div class="src-pill">📚 Quellen (kompakt)</div>
+      <button class="src-toggle" data-target="srcA">Ein-/Ausklappen</button>
+    </div>
+    <div class="src-list">
+      <div class="src-inline" id="srcA-inline"></div>
+    </div>
+  </div>
+
+  <br/>
+
+  <!-- Variante B: detaillierte Liste -->
+  <div class="sources" id="srcB">
+    <div class="src-head">
+      <div class="src-pill">📚 Quellen (detailliert)</div>
+      <button class="src-toggle" data-target="srcB">Ein-/Ausklappen</button>
+    </div>
+    <div class="src-list" id="srcB-list"></div>
+  </div>
+</div>
+
+<script>
+  // Demo-Daten (so würde dein Backend strukturieren können)
+  const sources = [
+    {
+      title: "AEVO-Rahmenplan 2023 – Abschnitt B3",
+      host: "BIBB",
+      url: "https://www.bibb.de/aevo",
+      year: "2023"
+    },
+    {
+      title: "SGB IV – Allgemeiner Teil (Auszug)",
+      host: "gesetze-im-internet.de",
+      url: "https://www.gesetze-im-internet.de/",
+      year: "aktuell"
+    },
+    {
+      title: "IHK Prüferleitfaden (Kap. 2.1)",
+      host: "DIHK",
+      url: "https://www.dihk.de/",
+      year: "2024"
+    }
+  ];
+
+  // Variante A: kompakte Badges
+  const inline = document.getElementById('srcA-inline');
+  inline.innerHTML = sources.map(s =>
+    `<a class="badge" href="${s.url}" target="_blank" rel="noopener">${escapeHtml(s.host||'Quelle')}</a>`
+  ).join('');
+
+  // Variante B: detaillierte Liste mit Index
+  const list = document.getElementById('srcB-list');
+  list.innerHTML = sources.map((s,i) => `
+    <div class="src-item">
+      <div class="src-idx">${i+1}</div>
+      <div class="src-meta">
+        <div class="src-title">${escapeHtml(s.title||'Quelle')}</div>
+        <div class="src-host">${escapeHtml(s.host||'')} · ${escapeHtml(s.year||'')}</div>
+      </div>
+      <div><a class="src-btn" href="${s.url}" target="_blank" rel="noopener">Öffnen</a></div>
+    </div>
+  `).join('');
+
+  // Ein-/Ausklappen
+  document.querySelectorAll('.src-toggle').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const id = btn.getAttribute('data-target');
+      const box = document.getElementById(id);
+      box.classList.toggle('src-collapsed');
+      btn.textContent = box.classList.contains('src-collapsed') ? 'Einblenden' : 'Ausblenden';
+    });
+  });
+
+  // Hilfsfunktion
+  function escapeHtml(str=''){
+    return str.replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+  }
+</script>
+</body>
+</html>
