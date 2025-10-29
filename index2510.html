@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Linda – Deine persönliche Assistentin (V25.10)</title>
+  <title>Linda – Deine persönliche Assistentin (V26.2)</title>
 
   <!-- Manifest & Meta -->
   <link rel="manifest" href="manifest.json"/>
@@ -45,7 +45,7 @@
 
     /* Chat */
     .chat-area { flex:1; display:flex; flex-direction:column; position:relative; }
-    .chat-area header { padding:1rem; font-size:1.2rem; background:#fff; border-bottom:1px solid #e1e4e8 }
+    .chat-area header { padding:1rem; font-size:1.2rem; background:#fff; border-bottom:1px solid #e1e4e8; display:flex; align-items:center; justify-content:space-between; gap:.75rem }
 
     /* Chat window */
     #chat { flex:1; overflow-y:auto; padding:1rem; display:flex; flex-direction:column; gap:1rem; background:#f7f7f8 }
@@ -57,24 +57,6 @@
     .input-bar { display:flex; align-items:center; padding:.5rem 1rem; background:#fff; border-top:1px solid #e1e4e8; flex-wrap:wrap; gap:.5rem }
     .input-bar button { background:none; border:none; font-size:1.5rem; cursor:pointer; color:#57606a; }
     .input-bar input { flex:1; border:none; outline:none; background:#f0f4f8; border-radius:.5rem; padding:0.75rem; font-size:1rem; min-width:200px; }
-
-    /* VWL Button (Modus) */
-    #vwl-badge {
-      background:#e8f0ff;
-      color:#0041c2;
-      border:1px solid #0059b3;
-      border-radius:20px;
-      padding:0.3rem 0.75rem;
-      font-size:0.9rem;
-      font-weight:600;
-      cursor:pointer;
-      transition:all 0.2s ease;
-    }
-    #vwl-badge.active {
-      background:#0059b3;
-      color:#fff;
-      box-shadow:0 0 8px rgba(0,89,179,0.4);
-    }
 
     /* Toggle-Change Button */
     #toggle-change {
@@ -89,6 +71,12 @@
       background: #0059b3;
       color: #fff;
     }
+
+    /* Settings icon */
+    .settings-btn {
+      background:none; border:none; cursor:pointer; color:#0059b3; font-size:1.1rem; padding:.35rem .6rem; border-radius:.5rem;
+    }
+    .settings-btn.active { background:#e6efff; }
 
     /* Sessions */
     .session-item { display:flex; justify-content:space-between; padding:.5rem 0; border-bottom:1px solid #e3eefa; cursor:pointer }
@@ -120,10 +108,6 @@
           <li>Bitte gib <strong>keine sensiblen oder personenbezogenen Daten</strong> ein!</li>
           <li>Weitere Informationen: <a href="https://openai.com/policies/privacy-policy" target="_blank">OpenAI</a>, <a href="https://www.make.com/en/privacy-policy" target="_blank">Make.com</a>.</li>
         </ul>
-        <hr style="margin:1rem 0; border:none; border-top:1px solid #c7d5ea;">
-        <p><strong>Neu ab November:</strong> Linda kann nun auch Fragen aus der <strong>Volkswirtschaftslehre (VWL)</strong> beantworten.<br>
-        Um die Antwortqualität zu verbessern, beginne bitte alle VWL-Fragen mit dem Präfix <strong>„VWL:“</strong>.<br>
-        <em>Beispiel:</em> <code>VWL: Erkläre das Bruttoinlandsprodukt</code></p>
       </div>
       <div class="modal-footer">
         <button class="modal-btn accept" id="acceptPrivacy">Zustimmen</button>
@@ -179,15 +163,19 @@
         <div class="comic-name">Linda</div>
       </aside>
       <section class="chat-area">
-        <header>Linda – Deine persönliche Assistentin</header>
+        <header>
+          <div>Linda – Deine persönliche Assistentin</div>
+          <div>
+            <button id="settingsBtn" class="settings-btn" title="Fach-Disclaimer an/aus"><i class="fa-solid fa-shield-halved"></i></button>
+          </div>
+        </header>
         <div id="chat"></div>
         <div class="input-bar">
-          <span id="vwl-badge" title="VWL-Modus aktivieren oder deaktivieren">VWL</span>
           <button id="btnSessions" title="Gespeicherte Chats"><i class="fa-solid fa-list"></i></button>
           <button id="btnNew" title="Neuer Chat"><i class="fa-solid fa-plus"></i></button>
           <button id="btnDel" title="Chat löschen"><i class="fa-solid fa-trash"></i></button>
           <button id="toggle-change" title="Alle Texte ändern">Aa</button>
-          <input id="q" type="text" placeholder="Deine Frage… (z. B. VWL: Erkläre das BIP)" autocomplete="off" />
+          <input id="q" type="text" placeholder="Deine Frage…" autocomplete="off" />
           <button id="mic-btn" title="Spracheingabe"><i class="fa-solid fa-microphone"></i></button>
           <button id="send-btn" title="Senden"><i class="fa-solid fa-paper-plane"></i></button>
         </div>
@@ -206,6 +194,27 @@
     </div>
   </div>
 
+  <!-- Settings Modal -->
+  <div class="modal-overlay" id="settings-modal" style="display:none" onclick="if(event.target===this)this.style.display='none'">
+    <div class="modal-card" role="dialog" aria-modal="true">
+      <div class="modal-head"><i class="fa-solid fa-gear"></i>&nbsp;Einstellungen</div>
+      <div class="modal-content">
+        <label style="display:flex;align-items:center;gap:.5rem;cursor:pointer">
+          <input type="checkbox" id="disclaimerToggle"/>
+          <span>Fach-Disclaimer aktiv (bei erkannten VWL-Fragen Hinweis an Bot senden)</span>
+        </label>
+        <p style="margin-top:.75rem;font-size:.9rem;color:#445;">
+          Hinweistext (wird nur intern an den Bot übermittelt, nicht im Chat angezeigt):
+        </p>
+        <pre id="disclaimerPreview" style="background:#f6f8fa;padding:.75rem;border-radius:.5rem;white-space:pre-wrap;font-size:.85rem;">
+Beantworte volkswirtschaftliche Fragen ausschließlich fachlich. Keine rechtliche Beratung, keine rechtliche Bewertung und keine Umsetzungsempfehlungen.</pre>
+      </div>
+      <div class="modal-footer">
+        <button class="modal-btn accept" id="settingsClose">OK</button>
+      </div>
+    </div>
+  </div>
+
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   <script>
     document.addEventListener('DOMContentLoaded', () => {
@@ -213,11 +222,11 @@
       const usageModal    = document.getElementById('usage-modal');
       const mainContainer = document.getElementById('mainContainer');
       const sessionsModal = document.getElementById('sessions-modal');
+      const settingsModal = document.getElementById('settings-modal');
+      const settingsBtn   = document.getElementById('settingsBtn');
+      const disclaimerToggle = document.getElementById('disclaimerToggle');
       const chatEl        = document.getElementById('chat');
       const toggleBtn     = document.getElementById('toggle-change');
-      const vwlBadge      = document.getElementById('vwl-badge');
-      const input         = document.getElementById('q');
-      let vwlMode = false;
 
       // Modal sequence
       document.getElementById('acceptPrivacy').onclick = () => {
@@ -230,25 +239,33 @@
         initChat();
       };
 
+      // Settings
+      const SETTINGS_KEY = 'linda-settings';
+      const defaultSettings = { disclaimer:true };
+      function loadSettings(){
+        try { return JSON.parse(localStorage.getItem(SETTINGS_KEY)) || defaultSettings; }
+        catch(e){ return defaultSettings; }
+      }
+      function saveSettings(s){ localStorage.setItem(SETTINGS_KEY, JSON.stringify(s)); }
+      let settings = loadSettings();
+      disclaimerToggle.checked = !!settings.disclaimer;
+
+      settingsBtn.onclick = () => {
+        settingsBtn.classList.toggle('active');
+        settingsModal.style.display = 'flex';
+      };
+      document.getElementById('settingsClose').onclick = () => {
+        settings.disclaimer = !!disclaimerToggle.checked;
+        saveSettings(settings);
+        settingsModal.style.display = 'none';
+        settingsBtn.classList.remove('active');
+      };
+
       // Toggle all text change
       toggleBtn.onclick = () => {
         document.body.classList.toggle('changed');
         toggleBtn.classList.toggle('active');
       };
-
-      // VWL Modus Toggle
-      vwlBadge.addEventListener('click', () => {
-        vwlMode = !vwlMode;
-        vwlBadge.classList.toggle('active', vwlMode);
-        if (vwlMode) {
-          input.placeholder = "VWL-Modus aktiv – beginne deine Frage…";
-          if (!input.value.startsWith("VWL: ")) input.value = "VWL: " + input.value;
-        } else {
-          input.placeholder = "Deine Frage… (z. B. VWL: Erkläre das BIP)";
-          input.value = input.value.replace(/^VWL:\s*/,'');
-        }
-        input.focus();
-      });
 
       // Chat functions
       const STORAGE_KEY = 'chat-sessions';
@@ -360,23 +377,35 @@
         rec.interimResults = false;
         rec.maxAlternatives = 1;
         rec.onstart = () => document.getElementById('mic-btn').classList.add('recording');
-        rec.onend   = () => document.getElementById('mic-btn').classList.remove('recording');
+        rec.onend = () => document.getElementById('mic-btn').classList.remove('recording');
         rec.onresult = e => document.getElementById('q').value = e.results[0][0].transcript;
         document.getElementById('mic-btn').onclick = () => rec.start();
       } else {
         document.getElementById('mic-btn').disabled = true;
       }
 
+      // --- VWL-Erkennung & Disclaimer (intern) ---
+      // Kein UI-Bezug auf VWL – nur interne Erkennung + optionaler Schalter
+      const econRegex = new RegExp(
+        "\\b(BIP|Inflation|Deflation|Rezession|Konjunktur|Geldpolitik|Fiskalpolitik|Zins(en)?|EZB|IS-?LM|AS-?AD|Nachfrage|Angebot|Arbeitslosigkeit|Phillips-?Kurve|Keynes|Monetarismus|Makroökonomie|Mikroökonomie|Wirtschaftswachstum|Wirtschaftspolitik)\\b",
+        "i"
+      );
+      const econDisclaimer = "Hinweis: Beantworte volkswirtschaftliche Fragen ausschließlich fachlich. Keine rechtliche Beratung, keine rechtliche Bewertung und keine Umsetzungsempfehlungen.";
+
       // Send message
       async function send() {
         const inp = document.getElementById('q');
-        let text = inp.value.trim();
-        if (!text) return;
+        const raw = inp.value.trim();
+        if (!raw) return;
 
-        // Wenn VWL-Modus aktiv, Präfix sicherstellen
-        if (vwlMode && !text.startsWith('VWL:')) text = 'VWL: ' + text;
+        // interne Erkennung
+        let question = raw;
+        if (settings.disclaimer && econRegex.test(raw)) {
+          // schmales, aber wirkungsvolles Prefix als Kontext-Hinweis
+          question = `${econDisclaimer}\n\n${raw}`;
+        }
 
-        messages.push({ role: 'user', content: text });
+        messages.push({ role: 'user', content: raw });
         renderMessages();
         inp.value = '';
         messages.push({ role: 'assistant', content: '⏳ Einen Moment bitte ...' });
@@ -388,7 +417,7 @@
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              question: text,
+              question,
               history: messages.map(m => ({ role: m.role, content: m.content }))
             })
           });
