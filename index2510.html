@@ -1,67 +1,260 @@
-<!DOCTYPE html><html lang="de"><head>
-<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<title>Linda – v27.0-pro</title>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet"/>
-<style>
-*{box-sizing:border-box;margin:0;padding:0}html,body{height:100%;font-family:'Inter',sans-serif;background:#f7f7f8;color:#24292e}
-#c{display:flex;flex-direction:column;height:100%}
-header{background:#fff;border-bottom:1px solid #e1e4e8;padding:1rem;display:flex;justify-content:space-between;align-items:center}
-#x{width:22px;height:22px;cursor:pointer;transition:.3s all ease}
-#x:hover{filter:drop-shadow(0 0 3px rgba(0,89,179,.6))}
-#chat{flex:1;overflow-y:auto;padding:1rem;display:flex;flex-direction:column;gap:1rem}
-.m{max-width:75%;padding:.75rem 1rem;border-radius:1rem;box-shadow:0 1px 2px rgba(0,0,0,.1);line-height:1.5}
-.b{align-self:flex-start;background:#fff}.u{align-self:flex-end;background:#0969da;color:#fff}
-#bar{display:flex;align-items:center;padding:.5rem 1rem;background:#fff;border-top:1px solid #e1e4e8}
-#bar input{flex:1;border:none;outline:none;background:#f0f4f8;border-radius:.5rem;padding:.75rem;font-size:1rem}
-#bar button{background:none;border:none;font-size:1.3rem;margin-left:.5rem;color:#57606a;cursor:pointer}
-.modal{position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;align-items:center;justify-content:center;z-index:2000}
-.card{background:#fff;border-radius:16px;width:90%;max-width:520px;box-shadow:0 8px 32px rgba(0,70,160,.13);border:1px solid #c7d5ea;padding:1.2rem;max-height:80vh;overflow-y:auto}
-.card h2{font-size:1.1rem;margin-bottom:.8rem;color:#0059b3}
-.opt{display:flex;justify-content:space-between;align-items:center;margin-bottom:.8rem}
-.opt label{flex:1}.sw{cursor:pointer}
-input[type="checkbox"],input[type="radio"]{transform:scale(1.2);cursor:pointer}
-.sel{padding:.4rem .6rem;border:1px solid #ccc;border-radius:.4rem}
-#uArea{width:100%;padding:.5rem;border:1px solid #ccc;border-radius:.5rem;resize:vertical}
-button[disabled]{opacity:.5;cursor:not-allowed}
-.dark body{background:#111;color:#eee}
-</style></head>
-<body><div id="privacy" class="modal" style="display:flex"><div class="card"><h2><i class="fa-solid fa-lock"></i> Datenschutzhinweis</h2>
-<p>Um den Chatbot nutzen zu können, stimme bitte der Datenschutzerklärung zu. Keine sensiblen Daten eingeben.</p>
-<button id="okP" style="margin-top:1rem;background:#0059b3;color:#fff;padding:.5rem 1rem;border:none;border-radius:8px;cursor:pointer">Zustimmen</button></div></div>
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Linda – v27.1</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet"/>
+  <style>
+    :root{
+      --bg:#f8f9fb;--panel:#ffffff;--text:#0f172a;--muted:#64748b;--line:#eceff3;--brand:#0b5bd3;--accent:#0d6efd;
+      --shadow:0 8px 24px rgba(15,23,42,.06),0 1px 2px rgba(15,23,42,.04)
+    }
+    *{box-sizing:border-box}html,body{height:100%}body{margin:0;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--text)}
+    .app{min-height:100%;display:flex;flex-direction:column}
+    /* Header */
+    .top{position:sticky;top:0;z-index:10;background:var(--panel);border-bottom:1px solid var(--line);padding:.85rem 1rem;display:flex;align-items:center;justify-content:space-between}
+    .brand{font-weight:600;letter-spacing:.2px}
+    .icon-btn{appearance:none;border:0;background:transparent;cursor:pointer;padding:.3rem;border-radius:.6rem;display:inline-flex;align-items:center;justify-content:center}
+    .icon-btn:hover{background:#eef4ff}
+    .sliders{width:22px;height:22px}
+    /* Layout */
+    .chat{flex:1;display:flex;flex-direction:column;max-width:1200px;margin:0 auto;width:100%}
+    .log{flex:1;overflow:auto;padding:1rem;display:flex;flex-direction:column;gap:.75rem}
+    .msg{max-width:72ch;border-radius:14px;padding:.9rem 1.1rem;box-shadow:var(--shadow);background:var(--panel)}
+    .me{align-self:flex-end;background:#0b5bd3;color:#fff;box-shadow:none}
+    .bar{display:flex;gap:.6rem;align-items:center;padding:.75rem 1rem;border-top:1px solid var(--line);background:var(--panel)}
+    .in{flex:1;border:1px solid var(--line);background:#f6f7fb;border-radius:.7rem;padding:.9rem 1rem;font-size:1rem;outline:none}
+    .send{appearance:none;border:0;background:var(--brand);color:#fff;border-radius:.7rem;padding:.75rem 1rem;cursor:pointer;font-weight:600}
+    .send:disabled{opacity:.6;cursor:not-allowed}
+    /* Modals */
+    .modal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(17,24,39,.3);backdrop-filter:saturate(140%) blur(6px);z-index:100}
+    .card{background:var(--panel);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);width:min(92vw,560px);max-height:82vh;overflow:auto}
+    .card-h{padding:1rem 1.2rem;border-bottom:1px solid var(--line);font-weight:600}
+    .card-b{padding:1rem 1.2rem;color:var(--muted);line-height:1.55}
+    .card-f{padding:1rem 1.2rem;display:flex;gap:.6rem;justify-content:flex-end;border-top:1px solid var(--line)}
+    .btn{appearance:none;border:1px solid var(--line);background:#f6f7fb;color:#0b5bd3;border-radius:.7rem;padding:.55rem .9rem;cursor:pointer;font-weight:600}
+    .btn.primary{background:var(--brand);border-color:var(--brand);color:#fff}
+    /* Settings modal content */
+    .group{padding:1rem 1.2rem;border-bottom:1px solid var(--line)}
+    .row{display:flex;align-items:center;justify-content:space-between;gap:1rem;margin:.55rem 0}
+    .row label{color:#334155}
+    .chips{display:flex;gap:.4rem;flex-wrap:wrap}
+    .chip{padding:.4rem .7rem;border:1px solid var(--line);border-radius:999px;cursor:pointer;background:#fff}
+    .chip.active{background:#0b5bd3;border-color:#0b5bd3;color:#fff}
+    .ta{width:100%;min-height:72px;border:1px solid var(--line);border-radius:10px;padding:.6rem;background:#f6f7fb}
+    .muted{color:#94a3b8;font-size:.9rem}
+    .disabled{opacity:.55;cursor:not-allowed;user-select:none}
+    @media (max-width:640px){.msg{max-width:100%}}
+  </style>
+</head>
+<body>
+  <!-- Datenschutz-Modal -->
+  <div id="m-privacy" class="modal" style="display:flex">
+    <div class="card" role="dialog" aria-modal="true" aria-labelledby="p-h">
+      <div class="card-h" id="p-h">Datenschutzhinweis</div>
+      <div class="card-b">
+        <p>Um diesen Chatbot zu nutzen, bestätige bitte die Datenschutzhinweise:</p>
+        <ul style="margin:.6rem 0 0 1.2rem">
+          <li>Deine Eingaben werden an Dienste zur Antwortgenerierung übermittelt.</li>
+          <li>Die Daten dienen ausschließlich der Verarbeitung der Anfrage.</li>
+          <li>Bitte gib <b>keine sensiblen oder personenbezogenen Daten</b> ein.</li>
+        </ul>
+      </div>
+      <div class="card-f">
+        <button class="btn" id="p-decline">Ablehnen</button>
+        <button class="btn primary" id="p-accept">Zustimmen</button>
+      </div>
+    </div>
+  </div>
 
-<div id="first" class="modal"><div class="card"><h2><i class="fa-solid fa-circle-info"></i> Willkommen</h2>
-<p>Bevor du startest: Schau dir kurz deine Einstellungen an – dort kannst du Datenschutz, Sprache und Fachmodi steuern.</p>
-<button id="okF" style="margin-top:1rem;background:#0059b3;color:#fff;padding:.5rem 1rem;border:none;border-radius:8px;cursor:pointer">Zu den Einstellungen</button></div></div>
+  <!-- First-run Hinweis (führt in Einstellungen) -->
+  <div id="m-first" class="modal">
+    <div class="card">
+      <div class="card-h">Willkommen</div>
+      <div class="card-b">
+        <p>Bevor du startest: Schau kurz in die <b>Einstellungen</b> (Sprache, Fachmodi, Datenschutz-Blacklist, KI-Version).</p>
+      </div>
+      <div class="card-f">
+        <button class="btn primary" id="f-open">Zu den Einstellungen</button>
+      </div>
+    </div>
+  </div>
 
-<div id="set" class="modal"><div class="card">
-<h2><i class="fa-solid fa-sliders"></i> Einstellungen</h2>
-<div class="opt"><label>☀️ Darstellung</label><select id="t" class="sel"><option value="light">Hell</option><option value="dark">Dunkel</option><option value="sys">System</option></select></div>
-<div class="opt"><label>🗣️ Gender-Sprache</label><input id="g" type="checkbox" class="sw"/></div>
-<div class="opt"><label>📊 VWL-Modus</label><input id="v" type="checkbox" class="sw"/></div>
-<div class="opt"><label>👋 Begrüßung anzeigen</label><input id="r" type="checkbox" class="sw" checked/></div>
-<div class="opt"><label>🤖 KI-Version</label><div><input type="radio" name="m" value="gpt-4.1" id="m1"/><label for="m1">4.1</label>&nbsp;<input type="radio" name="m" value="gpt-5" id="m2" checked/><label for="m2">5</label></div></div>
-<div class="opt"><label>📎 Eigene Dateien</label><button disabled title="Demnächst verfügbar" style="padding:.3rem .8rem;border-radius:6px;border:1px solid #ccc;background:#f5f5f5"><i class="fa-solid fa-cloud-arrow-up"></i> Upload</button></div>
-<div class="opt" style="flex-direction:column;align-items:flex-start"><label>🔒 Persönliche Blacklist</label>
-<textarea id="bl" placeholder="Name, Adresse, Kundennummer" style="width:100%;height:70px;border:1px solid #ccc;border-radius:6px;padding:.3rem;margin-top:.3rem"></textarea></div>
-<div class="opt"><label>📝 Feedback</label><button disabled title="Demnächst verfügbar" style="padding:.3rem .8rem;border-radius:6px;border:1px solid #ccc;background:#f5f5f5"><i class="fa-regular fa-message"></i> Coming soon</button></div>
-<div style="text-align:right;margin-top:1rem"><button id="okS" style="background:#0059b3;color:#fff;padding:.5rem 1rem;border:none;border-radius:8px;cursor:pointer">Speichern</button></div>
-</div></div>
+  <!-- Einstellungen -->
+  <div id="m-settings" class="modal">
+    <div class="card" role="dialog" aria-modal="true" aria-labelledby="s-h">
+      <div class="card-h" id="s-h">Einstellungen</div>
 
-<div id="c"><header><span>Linda v27.0-pro</span><svg id="x" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#0059b3"><path d="M4 5h16v2H4zm3 6h10v2H7zm-3 6h16v2H4z"/></svg></header>
-<div id="chat"></div>
-<div id="bar"><input id="q" placeholder="Deine Frage…" autocomplete="off"/><button id="s"><i class="fa-solid fa-paper-plane"></i></button></div></div>
+      <div class="group">
+        <div class="row">
+          <label>Darstellung</label>
+          <div class="chips" id="theme-choices">
+            <div class="chip" data-val="light">Hell</div>
+            <div class="chip" data-val="dark">Dunkel</div>
+            <div class="chip" data-val="system">System</div>
+          </div>
+        </div>
+        <div class="row"><label>Gender-Sprache</label><input type="checkbox" id="opt-gender"/></div>
+        <div class="row"><label>VWL-Modus</label><input type="checkbox" id="opt-vwl"/></div>
+        <div class="row"><label>Begrüßung anzeigen</label><input type="checkbox" id="opt-greet" checked/></div>
+      </div>
 
-<script>
-(()=>{let S={},B=[];const p=(k,v)=>localStorage.setItem(k,JSON.stringify(v)),g=k=>{try{return JSON.parse(localStorage.getItem(k))||{}}catch{return{}}};
-const l=()=>{S=g('linda-settings'),B=g('linda-blacklist')||[];if(!S.theme)S={theme:'light',gender:!1,vwl:!1,greet:!0,model:'gpt-5'}},u=()=>{p('linda-settings',S);p('linda-blacklist',B)};
-const a=id=>document.getElementById(id),C=a('chat');function n(t,r){let d=document.createElement('div');d.className='m '+(t=='a'?'b':'u');d.innerHTML=(t=='a'?'Linda':'Du')+': '+r;C.appendChild(d);C.scrollTop=C.scrollHeight}
-async function send(){let i=a('q');let v=i.value.trim();if(!v)return;let blk=B.filter(x=>v.toLowerCase().includes(x.toLowerCase()));if(blk.length){alert("⚠️ Enthält gesperrte Begriffe: "+blk.join(', '));return}
-n('u',v);i.value='';n('a','⏳ Bitte warten ...');try{let r=await fetch('/api/bot',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({question:v,model:S.model||'gpt-5'})});let t=await r.text();C.lastChild.innerHTML='Linda: '+t}catch(e){C.lastChild.innerHTML='Fehler 😕'}}
-a('s').onclick=send;a('q').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send()}})
-a('x').onclick=()=>{a('set').style.display='flex'};
-a('okS').onclick=()=>{S.theme=a('t').value;S.gender=a('g').checked;S.vwl=a('v').checked;S.greet=a('r').checked;S.model=document.querySelector('input[name="m"]:checked').value;B=a('bl').value.split(/,|\n/).map(x=>x.trim()).filter(x=>x);u();a('set').style.display='none'};
-a('okP').onclick=()=>{a('privacy').style.display='none';if(!localStorage.getItem('linda_firstRunDone'))a('first').style.display='flex';else n('a','Hallo! Wie kann ich helfen?')};
-a('okF').onclick=()=>{a('first').style.display='none';a('set').style.display='flex';localStorage.setItem('linda_firstRunDone',1)};
-l();})();
-</script></body></html>
+      <div class="group">
+        <div class="row">
+          <label>KI-Version</label>
+          <div class="chips" id="model-choices">
+            <div class="chip" data-val="gpt-4.1">GPT&nbsp;4.1</div>
+            <div class="chip active" data-val="gpt-5">GPT&nbsp;5</div>
+          </div>
+        </div>
+        <div class="row disabled" title="Demnächst verfügbar">
+          <label>Eigene Dateien</label>
+          <button class="btn disabled"><span style="opacity:.8">Upload (bald)</span></button>
+        </div>
+      </div>
+
+      <div class="group">
+        <div style="margin-bottom:.35rem"><label>Persönliche Blacklist</label></div>
+        <textarea id="ta-blacklist" class="ta" placeholder="z. B. Name, Adresse, Kundennummer, Geburtsdatum"></textarea>
+        <div class="muted" style="margin-top:.4rem">Wörter/Begriffe (Komma oder Zeile). Werden <b>nur lokal</b> gespeichert und vor dem Senden blockiert.</div>
+      </div>
+
+      <div class="group disabled" title="Demnächst verfügbar">
+        <div><label>Feedback</label></div>
+        <div class="muted">In Vorbereitung – bald direkt hier Rückmeldungen senden.</div>
+      </div>
+
+      <div class="card-f">
+        <button class="btn" id="s-cancel">Schließen</button>
+        <button class="btn primary" id="s-save">Speichern</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- App -->
+  <div class="app">
+    <div class="top">
+      <div class="brand">Linda</div>
+      <!-- elegantes Schieberegler-Icon (kein Zahnrad) -->
+      <button class="icon-btn" id="btn-settings" aria-label="Einstellungen öffnen">
+        <svg class="sliders" viewBox="0 0 24 24" fill="none" stroke="#0b5bd3" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <line x1="4" y1="6" x2="20" y2="6"></line>
+          <line x1="4" y1="12" x2="20" y2="12"></line>
+          <line x1="4" y1="18" x2="20" y2="18"></line>
+          <circle cx="9" cy="6" r="2.2"></circle>
+          <circle cx="15" cy="12" r="2.2"></circle>
+          <circle cx="7" cy="18" r="2.2"></circle>
+        </svg>
+      </button>
+    </div>
+
+    <div class="chat">
+      <div id="log" class="log"></div>
+      <div class="bar">
+        <input id="in" class="in" placeholder="Deine Frage…" autocomplete="off"/>
+        <button id="btn-send" class="send">Senden</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function(){
+      const $=id=>document.getElementById(id);
+      const show=m=>m.style.display='flex', hide=m=>m.style.display='none';
+      const LS={get(k,d){try{return JSON.parse(localStorage.getItem(k))??d}catch{return d}},set(k,v){localStorage.setItem(k,JSON.stringify(v))}};
+      const el={
+        log:$('log'), input:$('in'), send:$('btn-send'),
+        mPrivacy:$('m-privacy'), mFirst:$('m-first'), mSettings:$('m-settings'),
+        accept:$('p-accept'), decline:$('p-decline'), firstOpen:$('f-open'),
+        settingsBtn:$('btn-settings'), sSave:$('s-save'), sCancel:$('s-cancel'),
+        themeChoices:document.querySelectorAll('#theme-choices .chip'),
+        modelChoices:document.querySelectorAll('#model-choices .chip'),
+        optGender:$('opt-gender'), optVwl:$('opt-vwl'), optGreet:$('opt-greet'),
+        taBlacklist:$('ta-blacklist')
+      };
+
+      // --- State
+      const State=LS.get('linda-settings',{theme:'light',gender:false,vwl:false,greet:true,model:'gpt-5'});
+      const Black=LS.get('linda-blacklist',[]);
+
+      // Apply UI state
+      function applyStateToUI(){
+        // theme chips
+        el.themeChoices.forEach(c=>c.classList.toggle('active',c.dataset.val===State.theme));
+        // model chips
+        el.modelChoices.forEach(c=>c.classList.toggle('active',c.dataset.val===State.model));
+        el.optGender.checked=!!State.gender;
+        el.optVwl.checked=!!State.vwl;
+        el.optGreet.checked=!!State.greet;
+        el.taBlacklist.value=Black.join(', ');
+      }
+      function applyTheme(){
+        if(State.theme==='dark') document.documentElement.style.backgroundColor='#0b0e14';
+      }
+      applyTheme(); applyStateToUI();
+
+      // chip handlers
+      function chipGroupHandler(nodeList, setter){
+        nodeList.forEach(c=>c.addEventListener('click',()=>{nodeList.forEach(x=>x.classList.remove('active')); c.classList.add('active'); setter(c.dataset.val)}));
+      }
+      chipGroupHandler(el.themeChoices,val=>State.theme=val);
+      chipGroupHandler(el.modelChoices,val=>State.model=val);
+
+      // modals
+      el.settingsBtn.onclick=()=>show(el.mSettings);
+      el.sCancel.onclick=()=>hide(el.mSettings);
+      el.sSave.onclick=()=>{
+        State.gender=el.optGender.checked; State.vwl=el.optVwl.checked; State.greet=el.optGreet.checked;
+        LS.set('linda-settings',State);
+        const words=el.taBlacklist.value.split(/,|\n/).map(x=>x.trim()).filter(Boolean);
+        LS.set('linda-blacklist',words);
+        hide(el.mSettings);
+      };
+
+      // privacy flow
+      el.accept.onclick=()=>{
+        hide(el.mPrivacy);
+        if(!LS.get('linda_firstRunDone',false)){ show(el.mFirst); }
+        else if(State.greet){ addMsg('a','Hallo! Wie kann ich helfen?'); }
+      };
+      el.decline.onclick=()=>location.reload();
+      $('f-open').onclick=()=>{ hide(el.mFirst); show(el.mSettings); LS.set('linda_firstRunDone',true) };
+
+      // chat rendering
+      function addMsg(role,text){
+        const d=document.createElement('div'); d.className='msg'+(role==='u'?' me':''); d.textContent=text; el.log.appendChild(d); el.log.scrollTop=el.log.scrollHeight;
+      }
+
+      // blacklist check
+      function violatesBlacklist(txt){
+        const list=LS.get('linda-blacklist',[]);
+        const lower=txt.toLowerCase();
+        for(const w of list){ if(w && lower.includes(String(w).toLowerCase())) return w; }
+        return null;
+      }
+
+      // send
+      async function send(){
+        const q=el.input.value.trim();
+        if(!q) return;
+        const hit=violatesBlacklist(q);
+        if(hit){ alert('⚠️ Nachricht enthält gesperrte Begriffe: '+hit); return; }
+        addMsg('u',q); el.input.value=''; el.send.disabled=true; addMsg('a','⏳ Einen Moment …');
+        try{
+          const r=await fetch('/api/bot',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({question:q,model:State.model})});
+          const t=await r.text();
+          // replace last assistant message
+          const last=el.log.querySelector('.msg:not(.me):last-child'); if(last) last.textContent=t||'—';
+        }catch(e){
+          const last=el.log.querySelector('.msg:not(.me):last-child'); if(last) last.textContent='Fehler bei der Antwort.';
+        }finally{ el.send.disabled=false; }
+      }
+      el.send.onclick=send;
+      el.input.addEventListener('keydown',e=>{ if(e.key==='Enter'&&!e.shiftKey){ e.preventDefault(); send(); } });
+
+      // start with privacy modal shown (already visible via inline style)
+    })();
+  </script>
+</body>
+</html>
