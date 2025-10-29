@@ -3,23 +3,24 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Linda – Deine persönliche Assistentin (v27.4)</title>
+<title>Linda – Deine persönliche Assistentin (v27.5-pro)</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet"/>
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <style>
   :root{
     --bg:#f7f8fb;--panel:#ffffff;--line:#e7ebf0;--text:#0f172a;--muted:#5b6678;
-    --brand:#0b5bd3;--shadow:0 8px 24px rgba(15,23,42,.06),0 1px 2px rgba(15,23,42,.04)
+    --brand:#0b5bd3;--brand-2:#2b6ff0;--ok:#0ea5e9;--shadow:0 8px 24px rgba(15,23,42,.06),0 1px 2px rgba(15,23,42,.04)
   }
-  body.dark{
-    --bg:#0b0e14;--panel:#0f1420;--line:#1d2535;--text:#e7eaf0;--muted:#a4b0c3;--brand:#6aa4ff;
-  }
+  body.dark{--bg:#0b0e14;--panel:#0f1420;--line:#1d2535;--text:#e7eaf0;--muted:#a4b0c3;--brand:#6aa4ff;--brand-2:#88b2ff}
   *{box-sizing:border-box}
   html,body{height:100%}
   body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif}
+  a{color:var(--brand-2)}
   /* Header */
-  .top{position:sticky;top:0;z-index:20;background:var(--panel);border-bottom:1px solid var(--line);padding:.9rem 1rem;display:flex;align-items:center;justify-content:space-between}
+  .top{position:sticky;top:0;z-index:30;background:var(--panel);border-bottom:1px solid var(--line);padding:.9rem 1rem;display:flex;align-items:center;gap:.75rem}
   .brand{font-weight:600;letter-spacing:.2px}
+  .grow{flex:1}
+  .badge{display:inline-flex;align-items:center;gap:.35rem;background:rgba(11,91,211,.08);color:var(--brand);border:1px solid var(--line);padding:.35rem .6rem;border-radius:999px;font-size:.85rem}
   .icon-btn{appearance:none;border:0;background:transparent;cursor:pointer;padding:.35rem;border-radius:.6rem}
   .icon-btn:hover{background:rgba(11,91,211,.08)}
   .sliders{width:22px;height:22px}
@@ -27,26 +28,22 @@
   .container{max-width:1200px;margin:0 auto;padding:1rem;display:grid;grid-template-columns:220px 1fr;gap:1rem}
   .sidebar{background:var(--panel);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);padding:.9rem;height:fit-content;position:sticky;top:86px}
   .sidebar img{width:100%;border-radius:10px;display:block}
-  .sidebar .name{margin-top:.55rem;font-weight:600;color:var(--text);text-align:center}
+  .sidebar .name{margin-top:.55rem;font-weight:600;text-align:center}
   .chat{display:flex;flex-direction:column;min-height:calc(100vh - 120px)}
-  .log{flex:1;overflow:auto;display:flex;flex-direction:column;gap:1rem;padding:.25rem}
-  .bubble{max-width:72ch;border-radius:14px;padding:1rem 1.1rem;background:var(--panel);box-shadow:var(--shadow)}
-  .bubble .md :is(p,ul,ol,pre,blockquote){margin:.5rem 0}
+  .log{flex:1;overflow:auto;display:flex;flex-direction:column;gap:1rem;padding:.25rem;scroll-behavior:smooth}
+  .bubble{max-width:78ch;border-radius:12px;padding:1rem 1.1rem;background:var(--panel);box-shadow:var(--shadow)}
+  .bubble .md :is(h1,h2,h3){margin:.25rem 0 .35rem;font-size:1.02rem}
+  .bubble .md :is(p,ul,ol,pre,blockquote,table){margin:.45rem 0}
   .me{align-self:flex-end;background:var(--brand);color:#fff;box-shadow:none}
   .composer{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:.7rem;display:flex;gap:.6rem;align-items:center;position:sticky;bottom:0}
-  .in{flex:1;border:1px solid var(--line);border-radius:10px;background:color-mix(in oklab, var(--panel) 60%, var(--bg));padding:.85rem 1rem;font-size:1rem;outline:none;color:var(--text)}
+  .in{flex:1;border:1px solid var(--line);border-radius:10px;background:color-mix(in oklab, var(--panel) 80%, var(--bg));padding:.85rem 1rem;font-size:1rem;outline:none;color:var(--text)}
   .send{appearance:none;border:0;background:var(--brand);color:#fff;font-weight:600;border-radius:10px;padding:.7rem 1rem;cursor:pointer}
   .send:disabled{opacity:.6;cursor:not-allowed}
-  /* Palette */
-  .palette{position:absolute;bottom:66px;left:16px;max-width:640px;background:var(--panel);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);display:none}
-  .pal-item{padding:.7rem .9rem;border-top:1px solid var(--line);cursor:pointer;display:flex;justify-content:space-between;gap:.6rem}
-  .pal-item:first-child{border-top:0}.pal-item:hover{background:rgba(11,91,211,.06)}
-  .pal-tag{color:var(--muted);font-size:.85rem}
-  /* Modals */
+  /* Modal/Sheet */
   .modal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(17,24,39,.32);backdrop-filter:saturate(140%) blur(6px);z-index:1000}
-  .card{background:var(--panel);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);width:min(92vw,680px);max-height:82vh;overflow:auto}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);width:min(92vw,720px);max-height:85vh;overflow:auto}
   .card-h{padding:1rem 1.2rem;border-bottom:1px solid var(--line);font-weight:600}
-  .card-b{padding:1rem 1.2rem;color:var(--text);line-height:1.55}
+  .card-b{padding:1rem 1.2rem;line-height:1.55}
   .card-f{padding:1rem 1.2rem;border-top:1px solid var(--line);display:flex;gap:.6rem;justify-content:flex-end}
   .btn{appearance:none;border:1px solid var(--line);background:color-mix(in oklab, var(--panel) 80%, var(--bg));color:var(--brand);border-radius:.7rem;padding:.55rem .9rem;cursor:pointer;font-weight:600}
   .btn.primary{background:var(--brand);border-color:var(--brand);color:#fff}
@@ -58,18 +55,18 @@
   .chip{padding:.42rem .72rem;border:1px solid var(--line);border-radius:999px;background:var(--panel);cursor:pointer}
   .chip.active{background:var(--brand);border-color:var(--brand);color:#fff}
   .ta{width:100%;min-height:72px;border:1px solid var(--line);border-radius:10px;padding:.6rem;background:color-mix(in oklab, var(--panel) 80%, var(--bg));color:var(--text)}
+  .select{border:1px solid var(--line);border-radius:10px;padding:.5rem .65rem;background:color-mix(in oklab, var(--panel) 80%, var(--bg));color:var(--text)}
+  .switch{width:46px;height:26px;border-radius:999px;background:#dfe6f3;position:relative;cursor:pointer;border:1px solid var(--line)}
+  .switch>i{position:absolute;width:22px;height:22px;top:1px;left:1px;border-radius:50%;background:#fff;transition:left .18s}
+  .switch.on{background:#bcd4ff}
+  .switch.on>i{left:23px}
   .disabled{opacity:.55;cursor:not-allowed;user-select:none}
-  /* Prompt manager */
-  .pm-grid{display:grid;grid-template-columns:1fr 1fr;gap:.7rem}
-  .pm-card{border:1px solid var(--line);border-radius:12px;padding:.6rem;background:var(--panel)}
-  .pm-actions{display:flex;gap:.4rem;justify-content:flex-end;margin-top:.5rem}
-  .pm-actions .btn{padding:.4rem .6rem}
   @media (max-width: 980px){.container{grid-template-columns:1fr}.sidebar{position:static}}
 </style>
 </head>
 <body>
 
-<!-- Datenschutz-Modal -->
+<!-- Datenschutzhinweis -->
 <div id="m-privacy" class="modal" style="display:flex">
   <div class="card" role="dialog" aria-modal="true">
     <div class="card-h">Datenschutzhinweis</div>
@@ -81,6 +78,7 @@
         <li>Bitte gib <strong>keine sensiblen oder personenbezogenen Daten</strong> ein!</li>
         <li>Weitere Informationen: <a href="https://openai.com/policies/privacy-policy" target="_blank" rel="noopener">OpenAI</a>, <a href="https://www.make.com/en/privacy-policy" target="_blank" rel="noopener">Make.com</a>.</li>
       </ul>
+      <p class="muted" style="margin-top:.8rem">Hinweis: Dein <b>Chatverlauf</b> wird <b>nur lokal</b> in deinem Browser gespeichert (localStorage). Du kannst ihn in den Einstellungen löschen oder exportieren.</p>
     </div>
     <div class="card-f">
       <button class="btn" id="p-decline">Ablehnen</button>
@@ -94,87 +92,61 @@
   <div class="card" role="dialog" aria-modal="true">
     <div class="card-h">Wichtige Hinweise zur Bot-Nutzung</div>
     <div class="card-b">
-      <p>Bitte lesen Sie diese Hinweise sorgfältig durch und bestätigen Sie diese, bevor Sie den Bot verwenden.</p>
       <ul style="margin:.6rem 0 0 1.2rem">
-        <li><strong>Automatisierte Antworten</strong><br>
-          Sie interagieren mit einem automatisierten Bot-System. Alle Antworten werden von künstlicher Intelligenz generiert, nicht von einem Menschen.
-        </li>
-        <li><strong>Keine Gewähr für Richtigkeit</strong><br>
-          Die vom Bot bereitgestellten Informationen können unvollständig, veraltet oder fehlerhaft sein. Jede Antwort muss von Ihnen eigenständig überprüft und validiert werden.
-        </li>
-        <li><strong>Kein Ersatz für professionelle Beratung</strong><br>
-          Der Bot ersetzt keine professionelle Beratung, insbesondere keine:
-          <ul style="margin:.4rem 0 0 1.2rem">
-            <li>Rechtsberatung</li><li>Medizinische Beratung</li><li>Steuerberatung</li><li>Finanzberatung</li><li>Andere fachspezifische Beratungsleistungen</li>
-          </ul>
-          Wenden Sie sich für rechtliche, medizinische oder andere fachliche Angelegenheiten immer an entsprechende Fachkräfte.
-        </li>
-        <li><strong>Haftungsausschluss</strong><br>
-          Jegliche Haftung für Schäden, die durch die Nutzung des Bots oder durch das Vertrauen auf die bereitgestellten Informationen entstehen, wird vollständig ausgeschlossen.
-        </li>
-        <li><strong>Eigenverantwortung</strong><br>
-          Sie nutzen den Bot auf eigene Verantwortung und bestätigen, dass Sie:
-          <ul style="margin:.4rem 0 0 1.2rem">
-            <li>Die Grenzen des Systems verstehen</li><li>Alle Antworten kritisch hinterfragen</li><li>Bei wichtigen Entscheidungen zusätzliche Quellen konsultieren</li>
-          </ul>
-        </li>
+        <li><strong>Automatisierte Antworten:</strong> Alle Antworten werden von KI generiert.</li>
+        <li><strong>Keine Gewähr:</strong> Inhalte können unvollständig/fehlerhaft sein – bitte prüfen.</li>
+        <li><strong>Kein Ersatz für Beratung:</strong> keine Rechts-, Medizin-, Steuer- oder Finanzberatung.</li>
+        <li><strong>Eigenverantwortung:</strong> Antworten kritisch hinterfragen und Quellen beachten.</li>
       </ul>
     </div>
-    <div class="card-f">
-      <button class="btn primary" id="u-accept">Einverstanden</button>
-    </div>
+    <div class="card-f"><button class="btn primary" id="u-accept">Einverstanden</button></div>
   </div>
 </div>
 
 <!-- Einstellungen -->
 <div id="m-settings" class="modal">
-  <div class="card" role="dialog" aria-modal="true" aria-labelledby="s-h">
-    <div class="card-h" id="s-h">Einstellungen</div>
+  <div class="card" role="dialog" aria-modal="true">
+    <div class="card-h">Einstellungen</div>
 
     <div class="group">
       <div class="row">
         <label>Darstellung</label>
-        <div class="chips" id="theme">
+        <div class="chips" id="chip-theme">
           <div class="chip" data-val="light">Hell</div>
           <div class="chip" data-val="dark">Dunkel</div>
           <div class="chip" data-val="system">System</div>
         </div>
       </div>
-      <div class="row"><label>Gender-Sprache</label><input type="checkbox" id="opt-gender"/></div>
-      <div class="row"><label>Begrüßung anzeigen</label><input type="checkbox" id="opt-greet" checked/></div>
+      <div class="row"><label>Gender-Sprache</label><div id="sw-gender" class="switch"><i></i></div></div>
+      <div class="row"><label>Begrüßung anzeigen</label><div id="sw-greet" class="switch on"><i></i></div></div>
+      <div class="row"><label>Lernmodus (inaktiv)</label><div class="switch disabled" title="Demnächst"><i></i></div></div>
     </div>
 
     <div class="group">
       <div class="row">
-        <label>KI-Version</label>
-        <div class="chips disabled" id="model" title="Ab Dezember verfügbar">
-          <div class="chip">GPT 4.1</div>
-          <div class="chip active">GPT 5</div>
-        </div>
-      </div>
-      <div class="row disabled" title="Upload (bald verfügbar)">
-        <label>Eigene Dateien</label>
-        <button class="btn disabled">Upload (inaktiv)</button>
+        <label>Fachmodus</label>
+        <select id="sel-domain" class="select">
+          <option value="">— Kein spezieller Modus —</option>
+          <option value="AEVO">AEVO</option>
+          <option value="Personal">Personal</option>
+          <option value="Recht">Recht</option>
+          <option value="Kommunikation">Kommunikation</option>
+          <option value="VWL">VWL</option>
+        </select>
       </div>
     </div>
 
     <div class="group">
-      <div style="margin-bottom:.35rem"><label>Persönliche Blacklist</label></div>
-      <textarea id="ta-blacklist" class="ta" placeholder="z. B. Name, Adresse, Kundennummer, Geburtsdatum"></textarea>
-      <div class="muted" style="margin-top:.35rem">Wörter/Begriffe (Komma oder Zeile). Werden <b>nur lokal</b> gespeichert und vor dem Senden blockiert.</div>
-    </div>
-
-    <!-- Prompt-Snippets (einfach) -->
-    <div class="group">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.6rem">
-        <div><strong>Prompt-Snippets</strong> <span class="muted">(per „/alias“ einfügen)</span></div>
+      <div class="row" style="align-items:flex-start">
         <div>
-          <button class="btn" id="pm-add">Neu</button>
-          <button class="btn" id="pm-export">Export</button>
-          <button class="btn" id="pm-import">Import</button>
+          <div><strong>Chatverlauf</strong></div>
+          <div class="muted">Nur lokal gespeichert. Du kannst ihn löschen oder exportieren.</div>
+        </div>
+        <div style="display:flex;gap:.5rem">
+          <button class="btn" id="btn-export">Export (.txt)</button>
+          <button class="btn" id="btn-clear">Löschen</button>
         </div>
       </div>
-      <div id="pm-list" class="pm-grid"></div>
     </div>
 
     <div class="card-f">
@@ -184,26 +156,11 @@
   </div>
 </div>
 
-<!-- Prompt-Editor -->
-<div id="m-prompt" class="modal">
-  <div class="card" role="dialog" aria-modal="true">
-    <div class="card-h">Snippet</div>
-    <div class="card-b">
-      <div class="row"><label style="min-width:120px">Titel</label><input id="pe-title" class="in" style="border:1px solid var(--line);background:color-mix(in oklab, var(--panel) 80%, var(--bg));border-radius:10px;padding:.6rem;color:var(--text)"/></div>
-      <div class="row"><label style="min-width:120px">Alias</label><input id="pe-alias" class="in" placeholder="/aevo" style="border:1px solid var(--line);background:color-mix(in oklab, var(--panel) 80%, var(--bg));border-radius:10px;padding:.6rem;color:var(--text)"/></div>
-      <div style="margin:.6rem 0 .3rem">Text</div>
-      <textarea id="pe-content" class="ta" placeholder="Dieser Text wird bei /alias eingefügt."></textarea>
-    </div>
-    <div class="card-f">
-      <button class="btn" id="pe-cancel">Abbrechen</button>
-      <button class="btn primary" id="pe-save">Speichern</button>
-    </div>
-  </div>
-</div>
-
 <!-- App -->
 <div class="top">
   <div class="brand">Linda</div>
+  <div class="grow"></div>
+  <div id="domain-badge" class="badge" style="display:none">📘 Fachmodus: —</div>
   <button class="icon-btn" id="btn-settings" aria-label="Einstellungen öffnen">
     <svg class="sliders" viewBox="0 0 24 24" fill="none" stroke="var(--brand)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
       <line x1="4" y1="6" x2="20" y2="6"></line>
@@ -224,12 +181,9 @@
 
   <section class="chat">
     <div id="log" class="log"></div>
-    <div style="position:relative">
-      <div id="palette" class="palette"></div>
-      <div class="composer">
-        <input id="in" class="in" placeholder="Deine Frage… (Tipp „/“ für Snippets)"/>
-        <button id="send" class="send">Senden</button>
-      </div>
+    <div class="composer">
+      <input id="in" class="in" placeholder="Deine Frage…"/>
+      <button id="send" class="send">Senden</button>
     </div>
   </section>
 </div>
@@ -237,25 +191,11 @@
 <script>
 (function(){
   const $=id=>document.getElementById(id);
-  const LS={get(k,d){try{return JSON.parse(localStorage.getItem(k))??d}catch{return d}},set(k,v){localStorage.setItem(k,JSON.stringify(v))}};
-  const el={log:$('log'),input:$('in'),send:$('send'),palette:$('palette'),
-            mP:$('m-privacy'),mU:$('m-usage'),mS:$('m-settings'),btnS:$('btn-settings'),
-            sSave:$('s-save'),sClose:$('s-close'),taBL:$('ta-blacklist'),
-            theme:document.querySelectorAll('#theme .chip'),
-            pmList:$('pm-list'), pmAdd:$('pm-add'), pmExport:$('pm-export'), pmImport:$('pm-import'),
-            mPE:$('m-prompt'), peTitle:$('pe-title'), peAlias:$('pe-alias'), peContent:$('pe-content'),
-            peSave:$('pe-save'), peCancel:$('pe-cancel')
-          };
+  const LS={get(k,d){try{return JSON.parse(localStorage.getItem(k))??d}catch{return d}},set(k,v){localStorage.setItem(k,JSON.stringify(v))},del(k){localStorage.removeItem(k)}};
 
-  // ---- State
-  const S=LS.get('linda.settings',{theme:'light',gender:false,greet:true});
-  let BL=LS.get('linda.blacklist',[]);
-  let SN=LS.get('linda.snippets',[
-    {id:'s1',title:'AEVO-Standard',alias:'/aevo',content:'Bitte juristisch sauber, kurz & präzise zur AEVO antworten.'},
-    {id:'s2',title:'TL;DR',alias:'/tldr',content:'TL;DR in drei Bulletpoints, je max. 12 Wörter.'}
-  ]);
-  let CHAT=LS.get('linda.chat',[]); // [{role:'user'|'assistant',content:'...'}]
-  let editingId=null;
+  // ---- State (persisted)
+  const S=LS.get('linda.settings',{theme:'light',gender:false,greet:true,domain:''});
+  let CHAT=LS.get('linda.chat.history',[]); // [{role:'user'|'assistant',content:'...'}]
 
   // ---- Theme
   function applyTheme(){
@@ -266,100 +206,79 @@
     }else{
       document.body.classList.toggle('dark',S.theme==='dark');
     }
-    // UI reflect chips
-    document.querySelectorAll('#theme .chip').forEach(c=>c.classList.toggle('active',c.dataset.val===S.theme));
+    document.querySelectorAll('#chip-theme .chip').forEach(c=>c.classList.toggle('active',c.dataset.val===S.theme));
   }
-  document.querySelectorAll('#theme .chip').forEach(c=>c.onclick=()=>{S.theme=c.dataset.val; LS.set('linda.settings',S); applyTheme();});
-  applyTheme();
 
-  // ---- Chat render
-  const md=(txt)=>{try{return marked.parse(txt)}catch{return txt}};
-  function addMsg(role,html){const d=document.createElement('div');d.className='bubble'+(role==='u'?' me':''); d.innerHTML='<div class="md">'+html+'</div>'; el.log.appendChild(d); el.log.scrollTop=el.log.scrollHeight;}
-  function renderChat(){el.log.innerHTML=''; CHAT.forEach(m=>addMsg(m.role==='user'?'u':'a', md(m.content)))}
-  function saveChat(){LS.set('linda.chat',CHAT)}
-  renderChat();
+  // ---- UI helpers
+  function show(m){m.style.display='flex'} function hide(m){m.style.display='none'}
+  function md(txt){try{return marked.parse(txt)}catch{return txt}}
+  function addMsg(role,content){const d=document.createElement('div');d.className='bubble'+(role==='user'?' me':'');d.innerHTML='<div class="md">'+md(content)+'</div>'; $('log').appendChild(d); $('log').scrollTop=$('log').scrollHeight}
+  function renderChat(){ $('log').innerHTML=''; CHAT.forEach(m=>addMsg(m.role,m.content)); }
+  function saveChat(){ LS.set('linda.chat.history',CHAT) }
+  function setBadge(){ const b=$('domain-badge'); if(S.domain){ b.style.display='inline-flex'; b.textContent='📘 Fachmodus: '+S.domain } else { b.style.display='none' } }
 
   // ---- Privacy flow
-  $('p-accept').onclick=()=>{hide($('m-privacy'));show($('m-usage'));};
+  $('p-accept').onclick=()=>{hide($('m-privacy'));show($('m-usage'))};
   $('p-decline').onclick=()=>location.reload();
-  $('u-accept').onclick=()=>{hide($('m-usage')); if(S.greet && CHAT.length===0){ CHAT.push({role:'assistant',content:'**Willkommen!** Du kannst mich zu AEVO, HR- und Prüfungsfragen nutzen. Öffne bei Bedarf rechts oben die *Einstellungen* (Theme, Snippets, Datenschutz).'}); saveChat(); renderChat(); }};
+  $('u-accept').onclick=()=>{hide($('m-usage')); if(S.greet && CHAT.length===0){ CHAT.push({role:'assistant',content:'**Willkommen!** Nutze mich für AEVO-, Personal-, Rechts- und Prüfungsfragen. Öffne die *Einstellungen*, um Fachmodus & Darstellung zu wählen.'}); saveChat(); renderChat(); }};
 
-  // ---- Settings
-  function show(m){m.style.display='flex'} function hide(m){m.style.display='none'}
-  $('btn-settings').onclick=()=>show($('m-settings'));
+  // ---- Settings UI wire
+  applyTheme(); setBadge();
+  document.querySelectorAll('#chip-theme .chip').forEach(c=>c.onclick=()=>{S.theme=c.dataset.val; LS.set('linda.settings',S); applyTheme();});
+  const sw = (el, val)=>{el.classList.toggle('on',val)}
+  sw($('sw-gender'), S.gender); $('sw-gender').onclick=()=>{S.gender=!S.gender; sw($('sw-gender'),S.gender)}
+  sw($('sw-greet'), S.greet); $('sw-greet').onclick=()=>{S.greet=!S.greet; sw($('sw-greet'),S.greet)}
+  $('sel-domain').value=S.domain||'';
+  $('s-save').onclick=()=>{S.domain=$('sel-domain').value; LS.set('linda.settings',S); setBadge(); hide($('m-settings'))}
   $('s-close').onclick=()=>hide($('m-settings'));
-  $('s-save').onclick=()=>{ S.gender=$('opt-gender').checked; S.greet=$('opt-greet').checked; BL=$('ta-blacklist').value.split(/,|\n/).map(x=>x.trim()).filter(Boolean); LS.set('linda.settings',S); LS.set('linda.blacklist',BL); hide($('m-settings')); };
+  $('btn-settings').onclick=()=>show($('m-settings'));
+  $('btn-clear').onclick=()=>{ if(confirm('Verlauf wirklich löschen?')){ CHAT=[]; saveChat(); renderChat(); } }
+  $('btn-export').onclick=()=>{ const text=CHAT.map(m=> (m.role==='user'?'Du: ':'Linda: ')+m.content.replace(/\n/g,'\n') ).join('\n\n'); const blob=new Blob([text],{type:'text/plain'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='linda_chat.txt'; a.click(); URL.revokeObjectURL(a.href); };
 
-  // ---- Snippets (einfach)
-  function renderPM(){
-    el.pmList.innerHTML = SN.map(s=>`
-      <div class="pm-card" data-id="${s.id}">
-        <div><b>${s.title}</b> <span class="muted">${s.alias}</span></div>
-        <div class="muted" style="margin-top:.3rem;max-height:4.2em;overflow:hidden">${s.content}</div>
-        <div class="pm-actions">
-          <button class="btn pm-use">Einfügen</button>
-          <button class="btn pm-edit">Bearb.</button>
-          <button class="btn pm-del">Löschen</button>
-        </div>
-      </div>`).join('');
-    el.pmList.querySelectorAll('.pm-use').forEach(b=>b.onclick=(e)=>{const id=e.target.closest('.pm-card').dataset.id; const s=SN.find(x=>x.id===id); if(!s)return; insertAtCaret($('in'), s.content);});
-    el.pmList.querySelectorAll('.pm-edit').forEach(b=>b.onclick=(e)=>{const id=e.target.closest('.pm-card').dataset.id; editSnippet(id)});
-    el.pmList.querySelectorAll('.pm-del').forEach(b=>b.onclick=(e)=>{const id=e.target.closest('.pm-card').dataset.id; SN=SN.filter(x=>x.id!==id); LS.set('linda.snippets',SN); renderPM();});
+  // ---- Initial chat render
+  renderChat();
+
+  // ---- Build system prefix (Domain + Gender)
+  function systemPrefix(){
+    const lines=[];
+    if(S.domain){
+      const map={
+        'AEVO':'Antworte fachlich fundiert im AEVO-Kontext mit kurzer Prüfungsrelevanz.',
+        'Personal':'Antworte als Expertin für Personal/HR mit Praxisbeispiel.',
+        'Recht':'Antworte juristisch sauber (Normen nennen) und praxisnah.',
+        'Kommunikation':'Antworte als Trainerin für Kommunikation, klar strukturiert.',
+        'VWL':'Antworte fachlich fundiert in Volkswirtschaftslehre (IHK-Prüfungskontext).'
+      };
+      lines.push(map[S.domain]||'');
+    }
+    lines.push(S.gender ? 'Verwende gendergerechte Sprache (neutral, inklusiv, gut lesbar).' :
+                          'Verwende neutrale, nicht gegenderte Sprache.');
+    lines.push('Strukturiere Antworten: 1) Definition/Einordnung 2) Rechts-/Theoriebezug 3) Praxisbeispiel 4) Prüfungsrelevanz 5) kurze Quellenhinweise (falls vorhanden).');
+    return lines.filter(Boolean).join('\n');
   }
-  renderPM();
-  function editSnippet(id){
-    const s=SN.find(x=>x.id===id) || {id:'sn_'+Date.now(),title:'',alias:'',content:''};
-    editingId=s.id; $('pe-title').value=s.title; $('pe-alias').value=s.alias; $('pe-content').value=s.content; show($('m-prompt'));
-  }
-  $('pm-add').onclick=()=>editSnippet(null);
-  $('pe-cancel').onclick=()=>hide($('m-prompt'));
-  $('pe-save').onclick=()=>{const obj={id:editingId||('sn_'+Date.now()),title:$('pe-title').value.trim(),alias:$('pe-alias').value.trim(),content:$('pe-content').value.trim()};
-    if(!obj.alias.startsWith('/')){alert('Alias muss mit / beginnen.');return}
-    const i=SN.findIndex(x=>x.id===obj.id); if(i>=0) SN[i]=obj; else SN.push(obj);
-    LS.set('linda.snippets',SN); hide($('m-prompt')); renderPM();
-  };
-  $('pm-export').onclick=()=>{const blob=new Blob([JSON.stringify(SN,null,2)],{type:'application/json'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='linda-snippets.json'; a.click(); URL.revokeObjectURL(a.href);};
-  $('pm-import').onclick=()=>{const i=document.createElement('input'); i.type='file'; i.accept='application/json'; i.onchange=async()=>{const f=i.files[0]; if(!f)return; const txt=await f.text(); try{const arr=JSON.parse(txt); if(Array.isArray(arr)){SN=arr; LS.set('linda.snippets',SN); renderPM();}}catch{alert('Import fehlgeschlagen.')}}; i.click();};
 
-  // ---- Palette („/“)
-  function openPalette(list){
-    el.palette.innerHTML = list.map(s=>`<div class="pal-item" data-id="${s.id}"><span>${s.title}</span><span class="pal-tag">${s.alias}</span></div>`).join('');
-    el.palette.style.display = list.length ? 'block' : 'none';
-    el.palette.querySelectorAll('.pal-item').forEach(it=>it.onclick=()=>{const s=SN.find(x=>x.id===it.dataset.id); el.palette.style.display='none'; if(!s)return; replaceAliasWithText($('in'), s.alias, s.content); $('in').focus();});
-  }
-  $('in').addEventListener('input',e=>{
-    const v=e.target.value;
-    const m=v.match(/\/([\w-]{0,24})$/);
-    if(m){
-      const q=m[1].toLowerCase();
-      const list=SN.filter(s=>s.alias.toLowerCase().startsWith('/'+q)||s.title.toLowerCase().includes(q));
-      openPalette(list);
-    }else el.palette.style.display='none';
-  });
-  document.addEventListener('click',e=>{ if(!e.target.closest('.composer')) el.palette.style.display='none'; });
-
-  // caret helpers
-  function insertAtCaret(inp,text){const s=inp.selectionStart,e=inp.selectionEnd,v=inp.value; inp.value=v.slice(0,s)+text+v.slice(e); inp.selectionStart=inp.selectionEnd=s+text.length;}
-  function replaceAliasWithText(inp,alias,text){const v=inp.value; const i=v.lastIndexOf(alias); if(i>=0){inp.value=v.slice(0,i)+text+v.slice(i+alias.length);} else {insertAtCaret(inp,text)}}
-
-  // ---- Blacklist
-  function violatesBL(txt){const L=(LS.get('linda.blacklist',[])||[]).map(w=>String(w).toLowerCase()).filter(Boolean); const low=txt.toLowerCase(); for(const w of L){if(low.includes(w)) return w} return null;}
-
-  // ---- Send
+  // ---- Send flow (robust, keine VWL-Sonderfälle)
   async function send(){
-    const q=$('in').value.trim(); if(!q) return;
-    const hit=violatesBL(q); if(hit){alert('⚠️ Nachricht enthält gesperrte Begriffe: '+hit); return;}
-    CHAT.push({role:'user',content:q}); saveChat(); renderChat(); $('in').value=''; $('send').disabled=true;
+    const q=$('in').value.trim();
+    if(!q) return;
+    $('in').value=''; $('send').disabled=true;
+    CHAT.push({role:'user',content:q}); saveChat(); renderChat();
     CHAT.push({role:'assistant',content:'⏳ Einen Moment …'}); saveChat(); renderChat();
     try{
-      const r=await fetch('/api/bot',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({question:q})});
-      const t=await r.text();
-      CHAT[CHAT.length-1]={role:'assistant',content:t||'—'}; saveChat(); renderChat();
-    }catch(e){ CHAT[CHAT.length-1]={role:'assistant',content:'Fehler bei der Antwort.'}; saveChat(); renderChat(); }
-    finally{$('send').disabled=false;}
+      // robustes Payload – kein Sonderrouting, keine Filter (VWL ok)
+      const payload={question: systemPrefix()+ '\n\n' + q};
+      const r=await fetch('/api/bot',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+      const text=await r.text();
+      // Falls Backend wider Erwarten "Accepted" liefert, abfangen:
+      const out=(text && text.trim().toLowerCase()!=='accepted') ? text : 'Ich habe deine Frage erhalten und beantworte sie gleich – bitte erneut senden, falls nichts erscheint.';
+      CHAT[CHAT.length-1]={role:'assistant',content:out}; saveChat(); renderChat();
+    }catch(e){
+      CHAT[CHAT.length-1]={role:'assistant',content:'Es gab ein Verbindungsproblem. Bitte noch einmal senden.'}; saveChat(); renderChat();
+    }finally{$('send').disabled=false;}
   }
   $('send').onclick=send;
   $('in').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send();}});
+
 })();
 </script>
 </body>
