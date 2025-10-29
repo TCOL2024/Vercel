@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Linda – Deine persönliche Assistentin (v27.6-pro + Quellen)</title>
+<title>Linda – Deine persönliche Assistentin (v27.6-pro)</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet"/>
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <style>
@@ -80,22 +80,6 @@
   .switch.on{background:#bcd4ff}.switch.on>i{left:23px}
   .disabled{opacity:.55;cursor:not-allowed;user-select:none}
   @media (max-width: 980px){.container{grid-template-columns:1fr}.sessions{max-height:none}}
-
-  /* Quellen-Renderer (intern, ohne Download/Links) */
-  .sources{border:1px solid var(--line);border-radius:12px;background:var(--panel);box-shadow:var(--shadow);overflow:hidden;margin-top:8px}
-  .src-head{display:flex;align-items:center;gap:10px;padding:10px 12px;border-bottom:1px solid var(--line)}
-  .src-pill{display:inline-flex;align-items:center;gap:8px;background:rgba(11,91,211,.08);color:var(--brand);border:1px solid var(--line);padding:6px 10px;border-radius:999px;font-size:.9rem}
-  .src-note{margin-left:auto;color:var(--muted);font-size:.85rem;display:flex;align-items:center;gap:6px}
-  .src-toggle{appearance:none;border:1px solid var(--line);background:color-mix(in oklab, var(--panel) 80%, var(--bg));color:var(--brand);
-              border-radius:9px;padding:6px 10px;cursor:pointer;margin-left:8px}
-  .src-list{padding:8px 10px}
-  .src-item{display:grid;grid-template-columns:22px 1fr;gap:8px;align-items:start;padding:8px 4px;border-top:1px solid var(--line)}
-  .src-item:first-child{border-top:none}
-  .src-idx{width:22px;height:22px;display:inline-grid;place-items:center;background:#e9f0ff;color:#2554d6;border-radius:50%;font-weight:600;font-size:.85rem}
-  .src-meta{font-size:.92rem;line-height:1.35}
-  .src-title{font-weight:600}
-  .src-sub{color:var(--muted);font-size:.85rem}
-  .src-collapsed .src-list{display:none}
 </style>
 </head>
 <body>
@@ -137,7 +121,7 @@
   </div>
 </div>
 
-<!-- Einstellungen (inkl. Snippet-Manager + Quellen-Renderer-Option) -->
+<!-- Einstellungen (inkl. Snippet-Manager) -->
 <div id="m-settings" class="modal">
   <div class="card" role="dialog" aria-modal="true">
     <div class="card-h">Einstellungen</div>
@@ -154,7 +138,6 @@
       <div class="row"><label>Gender-Sprache</label><div id="sw-gender" class="switch"><i></i></div></div>
       <div class="row"><label>Begrüßung anzeigen</label><div id="sw-greet" class="switch on"><i></i></div></div>
       <div class="row"><label>Lernmodus (inaktiv)</label><div class="switch disabled" title="Demnächst"><i></i></div></div>
-      <div class="row"><label>Quellen-Renderer</label><div id="sw-sources" class="switch"><i></i></div></div>
     </div>
 
     <div class="group">
@@ -184,7 +167,7 @@
       <div id="pm-list" style="display:grid;grid-template-columns:1fr 1fr;gap:.7rem"></div>
     </div>
 
-    <!-- Verlauf Verwaltung (global) -->
+    <!-- Verlauf Verwaltung -->
     <div class="group">
       <div class="row" style="align-items:flex-start">
         <div>
@@ -274,7 +257,7 @@
   const nowStr=()=>new Date().toLocaleString();
 
   // ----- Persistent State
-  const S=LS.get('linda.settings',{theme:'light',gender:false,greet:true,domain:'',sourcesOn:false});
+  const S=LS.get('linda.settings',{theme:'light',gender:false,greet:true,domain:''});
   let SN=LS.get('linda.snippets',[
     {id:'s1',title:'AEVO-Kurz',alias:'/aevo',content:'Bitte juristisch sauber und prüfungsrelevant zur AEVO antworten.'},
     {id:'s2',title:'TL;DR',alias:'/tldr',content:'TL;DR in drei Bulletpoints, je max. 12 Wörter.'}
@@ -287,67 +270,6 @@
   const show=m=>m.style.display='flex', hide=m=>m.style.display='none';
   const uid=()=> 's_'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
   function saveAll(){ LS.set('linda.settings',S); LS.set('linda.snippets',SN); LS.set('linda.sessions',Sessions); LS.set('linda.activeId',activeId); }
-
-  // Quellen-Renderer (intern, ohne Download/Links)
-  function escapeHtml(str=''){return String(str).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
-  function renderSourcesInternal(sources=[]) {
-    if(!Array.isArray(sources) || !sources.length) return '';
-    const id='src_'+Math.random().toString(36).slice(2,8);
-    const items = sources.map((s,i)=>`
-      <div class="src-item">
-        <div class="src-idx">${i+1}</div>
-        <div class="src-meta">
-          <div class="src-title">${escapeHtml(s.title || s.doc || 'Quelle')}</div>
-          <div class="src-sub">
-            ${escapeHtml(s.doc || '')}
-            ${s.page ? ' · Seite/Kapitel: '+escapeHtml(s.page) : ''}
-            ${s.section ? ' · Abschnitt: '+escapeHtml(s.section) : ''}
-            ${s.year ? ' · '+escapeHtml(s.year) : ''}
-            ${s.note ? ' · '+escapeHtml(s.note) : ''}
-          </div>
-        </div>
-      </div>`).join('');
-    return `
-      <div class="sources" id="${id}">
-        <div class="src-head">
-          <div class="src-pill">📚 Quellen</div>
-          <div class="src-note">🔒 internes Archiv</div>
-          <button class="src-toggle" data-target="${id}">Ausblenden</button>
-        </div>
-        <div class="src-list">${items}</div>
-      </div>`;
-  }
-  // Delegierter Toggle
-  document.addEventListener('click',(e)=>{
-    const btn=e.target.closest('.src-toggle'); if(!btn) return;
-    const box=document.getElementById(btn.getAttribute('data-target')); if(!box) return;
-    box.classList.toggle('src-collapsed');
-    btn.textContent=box.classList.contains('src-collapsed')?'Einblenden':'Ausblenden';
-  });
-
-  // Versucht Quellen aus dem Antworttext zu extrahieren (unterstützt 3 Varianten)
-  function tryExtractSources(text){
-    try{
-      // Variante 1: Fenced code block ```sources ... ```
-      const m1 = text.match(/```sources\s*?\n([\s\S]*?)```/i);
-      if(m1){ const arr=JSON.parse(m1[1].trim()); if(Array.isArray(arr)) return arr; }
-      // Variante 2: HTML-Kommentar <!--SOURCES:{...}-->
-      const m2 = text.match(/<!--\s*SOURCES\s*:(\{[\s\S]*?\})\s*-->/i);
-      if(m2){ const obj=JSON.parse(m2[1]); if(Array.isArray(obj.sources)) return obj.sources; }
-      // Variante 3: Inline Marker __SOURCES__=...
-      const m3 = text.match/__SOURCES__\s*=\s*(\{[\s\S]*?\})/;
-      if(m3){ const obj=JSON.parse(m3[1]); if(Array.isArray(obj.sources)) return obj.sources; }
-    }catch(e){}
-    return null;
-  }
-  // Entfernt ggf. den Quellenblock-Text aus der sichtbaren Antwort
-  function stripSourceMarkup(text){
-    return text
-      .replace(/```sources[\s\S]*?```/gi,'')
-      .replace(/<!--\s*SOURCES\s*:[\s\S]*?-->/gi,'')
-      .replace(/__SOURCES__\s*=\s*\{[\s\S]*?\}/gi,'')
-      .trim();
-  }
 
   // ----- Theme
   function applyTheme(){
@@ -413,19 +335,9 @@
   }
 
   // ----- Chat rendering
-  function addMsg(role,content,sourcesMeta){
-    const d=document.createElement('div');
-    d.className='bubble'+(role==='user'?' me':'');
-    let html = '<div class="md">'+md(content)+'</div>';
-    if(role!=='user' && S.sourcesOn && Array.isArray(sourcesMeta) && sourcesMeta.length){
-      html += renderSourcesInternal(sourcesMeta);
-    }
-    d.innerHTML = html;
-    $('log').appendChild(d); $('log').scrollTop=$('log').scrollHeight;
-  }
-
-  function renderChat(){ $('log').innerHTML=''; const s=active(); if(!s) return; s.messages.forEach(m=>addMsg(m.role,m.content,m.sources)); }
-  function push(role,content,sources){ const s=active(); s.messages.push({role,content, ...(sources?{sources}:{} )}); s.ts=Date.now(); saveAll(); }
+  function addMsg(role,content){ const d=document.createElement('div'); d.className='bubble'+(role==='user'?' me':''); d.innerHTML='<div class="md">'+md(content)+'</div>'; $('log').appendChild(d); $('log').scrollTop=$('log').scrollHeight; }
+  function renderChat(){ $('log').innerHTML=''; const s=active(); if(!s) return; s.messages.forEach(m=>addMsg(m.role,m.content)); }
+  function push(role,content){ const s=active(); s.messages.push({role,content}); s.ts=Date.now(); saveAll(); }
 
   // ----- Badge & Prefix
   function setBadge(){ const b=$('domain-badge'); if(S.domain){ b.style.display='inline-flex'; b.textContent='📘 Fachmodus: '+S.domain } else { b.style.display='none' } }
@@ -447,7 +359,7 @@
     return lines.filter(Boolean).join('\n');
   }
 
-  // ----- Send (robust; kein VWL-Routing, „Accepted“-Fallback, Quellen-Parsing)
+  // ----- Send (robust; kein VWL-Routing, „Accepted“-Fallback)
   async function send(){
     const inp=$('in'); const q=inp.value.trim(); if(!q) return;
     inp.value=''; $('send').disabled=true;
@@ -457,14 +369,9 @@
     try{
       const payload={question: systemPrefix()+'\n\n'+q};
       const r=await fetch('/api/bot',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
-      const raw=await r.text();
-      const isAccepted = raw && raw.trim().toLowerCase()==='accepted';
-      const cleaned = stripSourceMarkup(raw||'');
-      const sources = tryExtractSources(raw||'') || [];
-      const out = (!isAccepted && cleaned) ? cleaned : 'Ich habe deine Frage erhalten und beantworte sie gleich – bitte erneut senden, falls nichts erscheint.';
-      const s=active();
-      s.messages[s.messages.length-1]={role:'assistant',content:out, ...(S.sourcesOn && sources.length?{sources}:{} )};
-      saveAll(); renderChat();
+      const text=await r.text();
+      const out=(text && text.trim().toLowerCase()!=='accepted') ? text : 'Ich habe deine Frage erhalten und beantworte sie gleich – bitte erneut senden, falls nichts erscheint.';
+      const s=active(); s.messages[s.messages.length-1]={role:'assistant',content:out}; saveAll(); renderChat();
     }catch(e){
       const s=active(); s.messages[s.messages.length-1]={role:'assistant',content:'Es gab ein Verbindungsproblem. Bitte noch einmal senden.'}; saveAll(); renderChat();
     }finally{$('send').disabled=false;}
@@ -529,7 +436,7 @@
   $('u-accept').onclick=()=>{hide($('m-usage'));
     const s=active();
     if(S.greet && s.messages.length===0){
-      push('assistant','**Willkommen!** Nutze mich für AEVO-, Personal-, Rechts- und Prüfungsfragen. Öffne *Einstellungen* (Fachmodus, Snippets, Quellen-Renderer).');
+      push('assistant','**Willkommen!** Nutze mich für AEVO-, Personal-, Rechts- und Prüfungsfragen. Öffne *Einstellungen* (Fachmodus, Snippets).');
       renderChat();
     }
   };
@@ -539,7 +446,6 @@
   const sw=(el,val)=>{el.classList.toggle('on',val)}
   sw($('sw-gender'),S.gender); $('sw-gender').onclick=()=>{S.gender=!S.gender; sw($('sw-gender'),S.gender)}
   sw($('sw-greet'),S.greet); $('sw-greet').onclick=()=>{S.greet=!S.greet; sw($('sw-greet'),S.greet)}
-  sw($('sw-sources'),S.sourcesOn); $('sw-sources').onclick=()=>{S.sourcesOn=!S.sourcesOn; sw($('sw-sources'),S.sourcesOn)}
   document.querySelectorAll('#chip-theme .chip').forEach(c=>c.onclick=()=>{S.theme=c.dataset.val; saveAll(); applyTheme();});
   $('sel-domain').value=S.domain||'';
   function setBadge(){ const b=$('domain-badge'); if(S.domain){ b.style.display='inline-flex'; b.textContent='📘 Fachmodus: '+S.domain } else { b.style.display='none' } }
