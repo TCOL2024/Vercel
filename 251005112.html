@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Linda – Deine persönliche Assistentin (v27.7-genderfix)</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet"/>
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<style>
+  :root{
+    --bg:#f7f8fb;--panel:#ffffff;--line:#e7ebf0;--text:#0f172a;--muted:#5b6678;
+    --brand:#0b5bd3;--brand-2:#2b6ff0;--shadow:0 8px 24px rgba(15,23,42,.06),0 1px 2px rgba(15,23,42,.04)
+  }
+  body.dark{--bg:#0b0e14;--panel:#0f1420;--line:#1d2535;--text:#e7eaf0;--muted:#a4b0c3;--brand:#6aa4ff;--brand-2:#88b2ff}
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif}
+  a{color:var(--brand-2)}
+  .top{position:sticky;top:0;z-index:30;background:var(--panel);border-bottom:1px solid var(--line);padding:.9rem 1rem;display:flex;align-items:center;gap:.75rem}
+  .brand{font-weight:600;letter-spacing:.2px}
+  .grow{flex:1}
+  .badge{display:inline-flex;align-items:center;gap:.35rem;background:rgba(11,91,211,.08);color:var(--brand);border:1px solid var(--line);padding:.35rem .6rem;border-radius:999px;font-size:.85rem}
+  .icon-btn{appearance:none;border:0;background:transparent;cursor:pointer;padding:.35rem;border-radius:.6rem}
+  .icon-btn:hover{background:rgba(11,91,211,.08)}
+  .sliders{width:22px;height:22px}
+  .container{max-width:1200px;margin:0 auto;padding:1rem;display:grid;grid-template-columns:260px 1fr;gap:1rem}
+  .sidebar{display:flex;flex-direction:column;gap:1rem}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow)}
+  .avatar{padding:.9rem;display:flex;flex-direction:column;align-items:center}
+  .avatar img{width:100%;border-radius:10px;display:block}
+  .avatar .name{margin-top:.55rem;font-weight:600;text-align:center}
+  .sessions{display:flex;flex-direction:column;max-height:50vh}
+  .sessions .head{padding:.8rem .9rem;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between}
+  .sessions .list{overflow:auto}
+  .sess{display:flex;align-items:center;justify-content:space-between;gap:.5rem;padding:.65rem .9rem;border-top:1px solid var(--line);cursor:pointer}
+  .sess:first-child{border-top:0}
+  .sess .ttl{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:150px}
+  .sess.active{background:rgba(11,91,211,.06)}
+  .sess .rowbtns{display:flex;gap:.35rem}
+  .sm-btn{appearance:none;border:1px solid var(--line);background:color-mix(in oklab, var(--panel) 80%, var(--bg));color:var(--brand);border-radius:8px;padding:.25rem .45rem;cursor:pointer;font-size:.85rem}
+  .sm-btn:hover{background:rgba(11,91,211,.08)}
+  .chat{display:flex;flex-direction:column;min-height:calc(100vh - 120px)}
+  .log{flex:1;overflow:auto;display:flex;flex-direction:column;gap:1rem;padding:.25rem;scroll-behavior:smooth}
+  .bubble{max-width:78ch;border-radius:12px;padding:1rem 1.1rem;background:var(--panel);box-shadow:var(--shadow)}
+  .me{align-self:flex-end;background:var(--brand);color:#fff;box-shadow:none}
+  .composer{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:.7rem;display:flex;gap:.6rem;align-items:center;position:sticky;bottom:0}
+  .in{flex:1;border:1px solid var(--line);border-radius:10px;background:color-mix(in oklab, var(--panel) 80%, var(--bg));padding:.85rem 1rem;font-size:1rem;outline:none;color:var(--text)}
+  .send{appearance:none;border:0;background:var(--brand);color:#fff;font-weight:600;border-radius:10px;padding:.7rem 1rem;cursor:pointer}
+  .send:disabled{opacity:.6;cursor:not-allowed}
+  .palette{position:absolute;bottom:66px;left:16px;max-width:640px;background:var(--panel);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);display:none}
+  .pal-item{padding:.7rem .9rem;border-top:1px solid var(--line);cursor:pointer;display:flex;justify-content:space-between;gap:.6rem}
+  .pal-item:first-child{border-top:0}.pal-item:hover{background:rgba(11,91,211,.06)}
+  .pal-tag{color:var(--muted);font-size:.85rem}
+  @media (max-width:980px){.container{grid-template-columns:1fr}.sessions{max-height:none}}
+</style>
+</head>
+<body>
+
+<div class="top">
+  <div class="brand">Linda</div>
+  <div class="grow"></div>
+  <div id="domain-badge" class="badge" style="display:none">📘 Fachmodus: —</div>
+  <button class="icon-btn" id="btn-settings" aria-label="Einstellungen">
+    <svg class="sliders" viewBox="0 0 24 24" fill="none" stroke="var(--brand)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/><circle cx="9" cy="6" r="2.2"/><circle cx="15" cy="12" r="2.2"/><circle cx="7" cy="18" r="2.2"/></svg>
+  </button>
+</div>
+
+<div class="container">
+  <aside class="sidebar">
+    <div class="panel avatar">
+      <img src="https://ntc-bot1.netlify.app/Bildschirmfoto%202025-06-26%20um%2021.09.25.png" alt="Linda"/>
+      <div class="name">Linda</div>
+    </div>
+    <div class="panel sessions">
+      <div class="head"><div style="font-weight:600">Verläufe</div><button id="btn-new" class="sm-btn">Neu</button></div>
+      <div id="sess-list" class="list"></div>
+    </div>
+  </aside>
+
+  <section class="chat">
+    <div id="log" class="log"></div>
+    <div style="position:relative">
+      <div id="palette" class="palette"></div>
+      <div class="composer">
+        <input id="in" class="in" placeholder="Deine Frage…"/>
+        <button id="send" class="send">Senden</button>
+      </div>
+    </div>
+  </section>
+</div>
+
+<script>
+(function(){
+  const $=id=>document.getElementById(id);
+  const LS={get(k,d){try{return JSON.parse(localStorage.getItem(k))??d}catch{return d}},set(k,v){localStorage.setItem(k,JSON.stringify(v))}};
+  const nowStr=()=>new Date().toLocaleString();
+  const S=LS.get('linda.settings',{theme:'light',gender:false,domain:''});
+  let Sessions=LS.get('linda.sessions',[]); let activeId=LS.get('linda.activeId',null);
+
+  const md=t=>{try{return marked.parse(t)}catch{return t}};
+  const uid=()=> 's_'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+  function saveAll(){LS.set('linda.settings',S);LS.set('linda.sessions',Sessions);LS.set('linda.activeId',activeId);}
+
+  function ensureSession(){if(!Sessions.length){const id=uid();Sessions=[{id,name:'Neuer Chat',ts:Date.now(),messages:[]}];activeId=id;saveAll();}}
+  function active(){return Sessions.find(s=>s.id===activeId);}
+  function push(role,c){const s=active();s.messages.push({role,content:c});s.ts=Date.now();saveAll();}
+  function addMsg(role,c){const d=document.createElement('div');d.className='bubble'+(role==='user'?' me':'');d.innerHTML='<div class="md">'+md(c)+'</div>';$('log').appendChild(d);$('log').scrollTop=$('log').scrollHeight;}
+  function renderChat(){$('log').innerHTML='';const s=active();if(!s)return;s.messages.forEach(m=>addMsg(m.role,m.content));}
+
+  function systemPrefix(){
+    const lines=[];
+    lines.push(S.gender ? 'Verwende gendergerechte Sprache (neutral, inklusiv, gut lesbar).' : 'Verwende neutrale, nicht gegenderte Sprache.');
+    return lines.join('\n');
+  }
+
+  // ✅ Variante 1 – Gender-Fix: Systemanweisung explizit kennzeichnen
+  async function send(){
+    const inp=$('in'); const q=inp.value.trim(); if(!q)return;
+    inp.value=''; $('send').disabled=true;
+    push('user',q); renderChat();
+    push('assistant','⏳ Einen Moment …'); renderChat();
+    try{
+      const payload={
+        question:"Systemanweisung:\n"+systemPrefix()+"\n\nNutzerfrage:\n"+q
+      };
+      const r=await fetch('/api/bot',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+      const text=await r.text();
+      const out=(text&&text.trim().toLowerCase()!=='accepted')?text:'Ich habe deine Frage erhalten und beantworte sie gleich – bitte erneut senden, falls nichts erscheint.';
+      const s=active(); s.messages[s.messages.length-1]={role:'assistant',content:out}; saveAll(); renderChat();
+    }catch(e){
+      const s=active(); s.messages[s.messages.length-1]={role:'assistant',content:'Es gab ein Verbindungsproblem.'}; saveAll(); renderChat();
+    }finally{$('send').disabled=false;}
+  }
+
+  $('send').onclick=send;
+  $('in').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send();}});
+  $('btn-new').onclick=()=>{const id=uid();Sessions.unshift({id,name:'Neuer Chat',ts:Date.now(),messages:[]});activeId=id;saveAll();renderChat();};
+
+  ensureSession(); renderChat();
+})();
+</script>
+</body>
+</html>
