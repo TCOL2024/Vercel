@@ -646,7 +646,21 @@
           <button class="btn" id="pm-import">Import</button>
         </div>
       </div>
-      <div id="pm-list" style="display:grid;grid-template-columns:repeat(auto-fit, minmax(300px, 1fr));gap:1rem"></div> <!-- Verbessertes Grid für Snippets -->
+      <div id="pm-list" style="display:grid;grid-template-columns:repeat(auto-fit, minmax(300px, 1fr));gap:1rem"></div>
+    </div>
+
+    <!-- Upload (nur mit Codewort) -->
+    <div class="group">
+      <div class="row" style="align-items:flex-start">
+        <div>
+          <div><strong>Upload (Dozenten-Zugang)</strong></div>
+          <div class="muted">Gib das Codewort ein, um den Upload-Bereich zu öffnen.</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:0.75rem">
+          <input id="upload-code" type="password" class="in" placeholder="Codewort eingeben" style="width:200px"/>
+          <button class="btn" id="btn-upload" style="display:none">Upload öffnen</button>
+        </div>
+      </div>
     </div>
 
     <!-- Verlauf Verwaltung -->
@@ -752,18 +766,17 @@
   const LS={get(k,d){try{return JSON.parse(localStorage.getItem(k))??d}catch{return d}},set(k,v){localStorage.setItem(k,JSON.stringify(v))},del(k){localStorage.removeItem(k)}};
   const nowStr=()=>new Date().toLocaleString();
 
-  const S=LS.get('linda.settings',{theme:'light',gender:false,greet:true,domain:''}); // Default light, orientiert an bbva.design
+  const S=LS.get('linda.settings',{theme:'light',gender:false,greet:true,domain:''});
   let SN=LS.get('linda.snippets',[
     {id:'s1',title:'AEVO-Kurz',alias:'/aevo',content:'Bitte juristisch sauber und prüfungsrelevant zur AEVO antworten.'},
     {id:'s2',title:'TL;DR',alias:'/tldr',content:'TL;DR in drei Bulletpoints, je max. 12 Wörter.'}
   ]);
   let Sessions=LS.get('linda.sessions',[]);
-  let activeId=LS.get('linda.activeId',null);
 
   const md=(txt)=>{try{return marked.parse(txt)}catch{return txt}};
   const show=m=>m.style.display='flex', hide=m=>m.style.display='none';
   const uid=()=> 's_'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
-  function saveAll(){ LS.set('linda.settings',S); LS.set('linda.snippets',SN); LS.set('linda.sessions',Sessions); LS.set('linda.activeId',activeId); }
+  function saveAll(){ LS.set('linda.settings',S); LS.set('linda.snippets',SN); LS.set('linda.sessions',Sessions); }
 
   function applyTheme(){
     if(S.theme==='system'){
@@ -778,31 +791,29 @@
 
   function ensureFirstSession(){
     if(!Sessions.length){
-      const id=uid();
-      Sessions=[{id,name:'Neuer Chat',ts:Date.now(),messages:[]}];
-      activeId=id; Sessions[0].id=id; saveAll();
+      Sessions=[{id:uid(),name:'Neuer Chat',ts:Date.now(),messages:[]}];
     }
-    if(!activeId || !Sessions.find(s=>s.id===activeId)){ activeId=Sessions[0].id; saveAll(); }
+    if(!Sessions.find(s=>s.active)){ Sessions[0].active=true; }
   }
-  function active(){ return Sessions.find(s=>s.id===activeId); }
-  function setActive(id){ activeId=id; saveAll(); renderSessions(); renderChat(); }
+  function active(){ return Sessions.find(s=>s.active); }
+  function setActive(id){ Sessions.forEach(s=>s.active=false); const s=Sessions.find(x=>x.id===id); if(s)s.active=true; saveAll(); renderSessions(); renderChat(); }
   function addSession(){
     const id=uid();
-    Sessions.unshift({id,name:'Neuer Chat',ts:Date.now(),messages:[]});
-    setActive(id);
+    Sessions.unshift({id,name:'Neuer Chat',ts:Date.now(),messages:[],active:true});
+    Sessions.forEach(s=>s.active=false); Sessions[0].active=true; saveAll(); renderSessions(); renderChat();
   }
   function renameSession(id){
-    const s=Sessions.find(x=>x.id); if(!s) return;
+    const s=Sessions.find(x=>x.id===id); if(!s) return;
     const nn=prompt('Neuer Name für Verlauf:', s.name||''); if(nn!==null){ s.name=nn.trim()||s.name; saveAll(); renderSessions(); }
   }
   function deleteSession(id){
     if(!confirm('Diesen Verlauf wirklich löschen?')) return;
     Sessions=Sessions.filter(x=>x.id!==id);
-    if(!Sessions.length){ addSession(); } else if(activeId===id){ activeId=Sessions[0].id; }
+    if(!Sessions.length){ addSession(); } else if(!Sessions.find(s=>s.active)){ Sessions[0].active=true; }
     saveAll(); renderSessions(); renderChat();
   }
   function exportSession(id){
-    const s=Sessions.find(x=>x.id); if(!s) return;
+    const s=Sessions.find(x=>x.id===id); if(!s) return;
     const text=s.messages.map(m=>(m.role==='user'?'Du: ':'Linda: ')+m.content).join('\n\n');
     const blob=new Blob([text],{type:'text/plain'}); const a=document.createElement('a');
     a.href=URL.createObjectURL(blob); a.download=(s.name||'linda_chat')+'.txt'; a.click(); URL.revokeObjectURL(a.href);
@@ -811,7 +822,7 @@
   function renderSessions(){
     const el=$('sess-list');
     el.innerHTML = Sessions.map(s=>`
-      <div class="sess ${s.id===activeId?'active':''}" data-id="${s.id}">
+      <div class="sess ${s.active?'active':''}" data-id="${s.id}">
         <div class="ttl">${s.name||'Chat'}<div class="muted" style="font-size:.85rem">${new Date(s.ts).toLocaleDateString()}</div></div>
         <div class="rowbtns">
           <button class="sm-btn s-rename" title="Umbenennen">✎</button>
@@ -936,6 +947,19 @@
   $('s-save').onclick=()=>{S.domain=$('sel-domain').value; saveAll(); setBadge(); hide($('m-settings'));};
   $('s-close').onclick=()=>hide($('m-settings'));
   $('btn-settings').onclick=()=>{ renderPM(); show($('m-settings')); };
+
+  // Upload Codewort
+  $('upload-code').addEventListener('input', e => {
+    const btn = $('btn-upload');
+    if (e.target.value === 'Dozenten') {
+      btn.style.display = 'block';
+    } else {
+      btn.style.display = 'none';
+    }
+  });
+  $('btn-upload').onclick = () => {
+    window.open('https://vercel-kappa-seven-33.vercel.app/upload/formular.html', '_blank');
+  };
 
   $('btn-export-all').onclick=()=>{ 
     const all=Sessions.map(s=>`# ${s.name||'Chat'} (${new Date(s.ts).toLocaleString()})\n\n`+s.messages.map(m=>(m.role==='user'?'Du: ':'Linda: ')+m.content).join('\n\n')).join('\n\n---\n\n');
