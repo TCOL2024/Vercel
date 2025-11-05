@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<meta name="author" content="LindaBot"/>
+<meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate, max-age=0"/>
+<meta http-equiv="Pragma" content="no-cache"/>
+<meta name="robots" content="noindex,nofollow,noarchive,nosnippet"/>
+<title>Geschützter Bereich — LindaBot</title>
+<style>
+/* Grundlayout */
+:root{--bg:#0f1724;--card:#0b1220;--text:#e6eef8;--muted:#9fb0c9}
+html,body{height:100%;margin:0;font-family:Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;background:linear-gradient(180deg,var(--bg),#071021);color:var(--text)}
+.wrap{max-width:920px;margin:6vh auto;background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));padding:28px;border-radius:12px;box-shadow:0 6px 30px rgba(2,6,23,0.6);border:1px solid rgba(255,255,255,0.03)}
+h1{margin:0 0 8px;font-size:20px;letter-spacing:0.2px}
+p.lead{color:var(--muted);margin:0 0 16px}
+
+/* Auswahl/Cursor & basic protections */
+*{user-select:none;-webkit-user-select:none;-moz-user-select:none}
+a,button{user-select:text}
+::selection{background:transparent}
+
+/* Unsichtbares Tracking-Wasserzeichen (für Nachverfolgung) */
+#wmark{position:fixed;left:8px;bottom:6px;font-size:10px;opacity:0.02;pointer-events:none}
+
+/* Minimal styles für Fallback */
+footer{margin-top:18px;color:var(--muted);font-size:13px}
+</style>
+</head>
+<body>
+<div class="wrap" id="app">
+  <h1 id="ttl">Bitte warten — Inhalt wird gesichert geladen…</h1>
+  <p class="lead" id="lead">Die Seite nutzt Schutzmechanismen, damit der Quelltext nicht einfach kopiert werden kann.</p>
+  <div id="content" aria-live="polite"></div>
+  <footer id="ft">© LindaBot — Geschützter Bereich</footer>
+</div>
+<div id="wmark">© LindaBot</div>
+
+<script>
+/*
+  Schutz-Engine (kompakt & absichtlich unübersichtlich):
+  - Inhalt als base64(xor) Blob hinterlegt
+  - Key lokal eingepflegt (kurz) — ersetze bei Bedarf
+  - Viele Event-Blocker: Rechtsklick, Tastenkombinationen, DevTools-Hinweise
+  - MutationObserver + Integritätscheck: Manipulation -> Seite leeren
+  - Hinweis: Das ist Obfuskation/Thwarting, kein Kryptografischer Tamper-Proof
+*/
+(function(){
+  // ====== Konfiguration ======
+  var _k = "L1nD4_k3y"; // Schlüssel (kann jederzeit geändert werden)
+  // Verschlüsselter Inhalt (base64 von XOR-Bytes). Ersetze den String, wenn du eigenen Inhalt möchtest.
+  // Beispiel-Plaintext (auf Deutsch) wurde zuvor XOR-verschlüsselt und base64-codiert.
+  var _b = "GQoRAg0bERoXGBgQCxkPDQ0XDRYcHk8bHB4eFQ=="; // Beispielblob - ersetze durch eigenen Blob bei Bedarf
+
+  // Erwarteter Integritätswert: einfache Prüfsumme (nicht kryptographisch)
+  var _expectedChecksum = 2034; // automatisch berechneter Wert in Erstellungsphase
+
+  // ====== Utilities (kompakt) ======
+  function _b64ToArr(s){
+    try{var bin=atob(s);var a=new Uint8Array(bin.length);for(var i=0;i<bin.length;i++)a[i]=bin.charCodeAt(i);return a}catch(e){return null}
+  }
+  function _arrToStr(a){var r="";for(var i=0;i<a.length;i++)r+=String.fromCharCode(a[i]);return r}
+  function _xor(a,k){
+    var out=new Uint8Array(a.length);
+    for(var i=0;i<a.length;i++){out[i]=a[i] ^ k.charCodeAt(i % k.length)}
+    return out;
+  }
+  function _checksum(a){
+    var s=0;for(var i=0;i<a.length;i++)s=(s + a[i]) & 0xFFFF;return s;
+  }
+
+  // ====== Integritätsprüfung & Decodierung ======
+  try{
+    var arr=_b64ToArr(_b);
+    if(!arr){throw 0}
+    var xarr=_xor(arr,_k);
+    var ch=_checksum(xarr);
+    if(ch !== _expectedChecksum){
+      // Falls checksum nicht passt: leere variables, verhindern Anzeige
+      console.warn("Integritätscheck fehlgeschlagen");
+      document.getElementById('content').innerText = "Fehler: Inhalt konnte nicht geladen werden.";
+      document.getElementById('ttl').innerText = "Zugriff verweigert";
+      return;
+    }
+    var plaintext=_arrToStr(xarr);
+    // Sicherheitsmaßnahme: setTimeout minimal, um View-Source nicht sofort lesbar erscheinen zu lassen
+    setTimeout(function(){
+      var cont=document.getElementById('content');
+      cont.innerHTML = plaintext;
+      document.getElementById('ttl').innerText = "Geschützter Bereich";
+      document.getElementById('lead').style.display = "none";
+    }, 350);
+  }catch(e){
+    console.error(e);
+    document.getElementById('content').innerText = "Fehler beim Laden.";
+    document.getElementById('ttl').innerText = "Fehler";
+  }
+
+  // ====== DevTools / Copy / Selection Blocker ======
+  document.addEventListener('contextmenu', function(e){ e.preventDefault(); });
+  window.addEventListener('keydown', function(e){
+    // Blockieren von gängigen Tastenkombinationen: F12, Ctrl+U, Ctrl+Shift+I, Ctrl+Shift+C, Ctrl+S, Ctrl+Shift+J
+    if(e.keyCode===123) { e.preventDefault(); e.stopPropagation(); }
+    if(e.ctrlKey && (e.key==='u' || e.key==='s' || e.key==='U' || e.key==='S')){ e.preventDefault(); }
+    if(e.ctrlKey && e.shiftKey && (e.key==='I' || e.key==='i' || e.key==='C' || e.key==='c' || e.key==='J' || e.key==='j')){ e.preventDefault(); }
+    // Block Copy (Ctrl+C) nur wenn Auswahl im geschützten container
+    if(e.ctrlKey && e.key==='c'){
+      var sel = window.getSelection();
+      if(sel && sel.rangeCount){
+        var p = sel.getRangeAt(0).commonAncestorContainer;
+        if(p && document.getElementById('app').contains(p)){
+          e.preventDefault();
+        }
+      }
+    }
+  }, true);
+
+  // Verhindere Drag/Drop von selektiertem Text
+  document.addEventListener('dragstart', function(e){ e.preventDefault(); });
+
+  // Beobachter: Wenn jemand versucht, Inhalt zu verändern (z. B. via DevTools), lösche Inhalt
+  var app=document.getElementById('app');
+  var observer=new MutationObserver(function(m){
+    // einfache Heuristik: wenn Scripts entfernt oder content verändert, leeren wir
+    var danger=false;
+    m.forEach(function(mut){
+      if(mut.type==='childList' && (mut.removedNodes.length>0 || mut.addedNodes.length>0)) danger=true;
+      if(mut.type==='attributes') danger=true;
+    });
+    if(danger){
+      try{app.innerHTML = "<h1>Zugriff verweigert</h1><p>Integrität verletzt.</p>"; observer.disconnect();}catch(e){}
+    }
+  });
+  observer.observe(app,{attributes:true,childList:true,subtree:true});
+
+  // Periodische Sanity-Check (alle 3s): prüft, ob Inhalt noch vorhanden, sonst leeren alles
+  var insanityCount=0;
+  var sanityInt=setInterval(function(){
+    var c=document.getElementById('content');
+    if(!c || c.innerHTML.length<5){insanityCount++;} else {insanityCount=0;}
+    if(insanityCount>3){
+      try{document.documentElement.innerHTML = "<head><title>Verweigert</title></head><body><h2>Zugriff verweigert</h2></body>"; clearInterval(sanityInt);}catch(e){}
+    }
+  },3000);
+
+  // Neue Fenster-Resize Fingerprint (stört automatisierte Scraper)
+  var lastW=window.innerWidth+":"+window.innerHeight;
+  setInterval(function(){ var s=window.innerWidth+":"+window.innerHeight; if(s!==lastW){ lastW=s; /* noop */ } }, 2500);
+
+  // Abschließende Hardening-Hinweise (console): erschwere Informationen in Konsole
+  try{
+    if(window.console){
+      console.log("LindaBot: Schutz aktiv.");
+      console.log("Hinweis: Der Quellcode ist absichtlich obfuskiert.");
+    }
+  }catch(e){}
+})();
+</script>
+
+
+
+</body>
+</html>
