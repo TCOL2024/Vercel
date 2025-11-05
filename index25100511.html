@@ -571,7 +571,7 @@
   <div class="card">
     <div class="card-h">Datenschutzhinweis</div>
     <div class="card-b">
-      <p>Um diesen Chatbot nutzen zu können, ist deine Zustimmung zur Datenschutzerklärung erforderlich:</p>
+      <p>Um diesen Chatbot nutzen zu können, ist deine Zustimmung zur Datenschuterklärung erforderlich:</p>
       <ul style="margin:1rem 0 0 1.5rem">
         <li>Deine Eingaben werden an OpenAI (USA) und Make (EU) übermittelt.</li>
         <li>Die übermittelten Daten werden zur Generierung von Antworten verarbeitet.</li>
@@ -772,11 +772,12 @@
     {id:'s2',title:'TL;DR',alias:'/tldr',content:'TL;DR in drei Bulletpoints, je max. 12 Wörter.'}
   ]);
   let Sessions=LS.get('linda.sessions',[]);
+  let activeId=LS.get('linda.activeId',null);
 
   const md=(txt)=>{try{return marked.parse(txt)}catch{return txt}};
   const show=m=>m.style.display='flex', hide=m=>m.style.display='none';
   const uid=()=> 's_'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
-  function saveAll(){ LS.set('linda.settings',S); LS.set('linda.snippets',SN); LS.set('linda.sessions',Sessions); }
+  function saveAll(){ LS.set('linda.settings',S); LS.set('linda.snippets',SN); LS.set('linda.sessions',Sessions); LS.set('linda.activeId',activeId); }
 
   function applyTheme(){
     if(S.theme==='system'){
@@ -791,16 +792,18 @@
 
   function ensureFirstSession(){
     if(!Sessions.length){
-      Sessions=[{id:uid(),name:'Neuer Chat',ts:Date.now(),messages:[]}];
+      const id=uid();
+      Sessions=[{id,name:'Neuer Chat',ts:Date.now(),messages:[]}];
+      activeId=id; Sessions[0].id=id; saveAll();
     }
-    if(!Sessions.find(s=>s.active)){ Sessions[0].active=true; }
+    if(!activeId || !Sessions.find(s=>s.id===activeId)){ activeId=Sessions[0].id; saveAll(); }
   }
-  function active(){ return Sessions.find(s=>s.active); }
-  function setActive(id){ Sessions.forEach(s=>s.active=false); const s=Sessions.find(x=>x.id===id); if(s)s.active=true; saveAll(); renderSessions(); renderChat(); }
+  function active(){ return Sessions.find(s=>s.id===activeId); }
+  function setActive(id){ activeId=id; saveAll(); renderSessions(); renderChat(); }
   function addSession(){
     const id=uid();
-    Sessions.unshift({id,name:'Neuer Chat',ts:Date.now(),messages:[],active:true});
-    Sessions.forEach(s=>s.active=false); Sessions[0].active=true; saveAll(); renderSessions(); renderChat();
+    Sessions.unshift({id,name:'Neuer Chat',ts:Date.now(),messages:[]});
+    setActive(id);
   }
   function renameSession(id){
     const s=Sessions.find(x=>x.id===id); if(!s) return;
@@ -809,7 +812,7 @@
   function deleteSession(id){
     if(!confirm('Diesen Verlauf wirklich löschen?')) return;
     Sessions=Sessions.filter(x=>x.id!==id);
-    if(!Sessions.length){ addSession(); } else if(!Sessions.find(s=>s.active)){ Sessions[0].active=true; }
+    if(!Sessions.length){ addSession(); } else if(activeId===id){ activeId=Sessions[0].id; }
     saveAll(); renderSessions(); renderChat();
   }
   function exportSession(id){
@@ -822,7 +825,7 @@
   function renderSessions(){
     const el=$('sess-list');
     el.innerHTML = Sessions.map(s=>`
-      <div class="sess ${s.active?'active':''}" data-id="${s.id}">
+      <div class="sess ${s.id===activeId?'active':''}" data-id="${s.id}">
         <div class="ttl">${s.name||'Chat'}<div class="muted" style="font-size:.85rem">${new Date(s.ts).toLocaleDateString()}</div></div>
         <div class="rowbtns">
           <button class="sm-btn s-rename" title="Umbenennen">✎</button>
@@ -904,13 +907,13 @@
     list.querySelectorAll('.pm-del').forEach(b=>b.onclick=()=>{SN=SN.filter(x=>x.id!==b.dataset.id); saveAll(); renderPM();});
   }
   function editSnippet(id){
-    const s=SN.find(x=>x.id) || {id:uid(),title:'',alias:'',content:''};
+    const s=id ? SN.find(x=>x.id===id) : {id:uid(),title:'',alias:'',content:''};
     editingId=s.id; $('pe-title').value=s.title; $('pe-alias').value=s.alias; $('pe-content').value=s.content; show($('m-prompt'));
   }
   let editingId=null;
   $('pm-add').onclick=()=>editSnippet(null);
   $('pe-cancel').onclick=()=>hide($('m-prompt'));
-  $('pe-save').onclick=()=>{const obj={id:editingId||uid(),title:$('pe-title').value.trim(),alias:$('pe-alias').value.trim(),content:$('pe-content').value.trim()};
+  $('pe-save').onclick=()=>{const obj={id:editingId,title:$('pe-title').value.trim(),alias:$('pe-alias').value.trim(),content:$('pe-content').value.trim()};
     if(!obj.alias.startsWith('/')){alert('Alias muss mit / beginnen.');return}
     const i=SN.findIndex(x=>x.id===obj.id); if(i>=0) SN[i]=obj; else SN.push(obj);
     saveAll(); hide($('m-prompt')); renderPM();
