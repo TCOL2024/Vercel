@@ -1,164 +1,875 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="de">
 <head>
-<meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1"/>
-<meta name="author" content="LindaBot"/>
-<meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate, max-age=0"/>
-<meta http-equiv="Pragma" content="no-cache"/>
-<meta name="robots" content="noindex,nofollow,noarchive,nosnippet"/>
-<title>Geschützter Bereich — LindaBot</title>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Linda – Juristische Assistentin (v28.0-pro)</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <style>
-/* Grundlayout */
-:root{--bg:#0f1724;--card:#0b1220;--text:#e6eef8;--muted:#9fb0c9}
-html,body{height:100%;margin:0;font-family:Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;background:linear-gradient(180deg,var(--bg),#071021);color:var(--text)}
-.wrap{max-width:920px;margin:6vh auto;background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));padding:28px;border-radius:12px;box-shadow:0 6px 30px rgba(2,6,23,0.6);border:1px solid rgba(255,255,255,0.03)}
-h1{margin:0 0 8px;font-size:20px;letter-spacing:0.2px}
-p.lead{color:var(--muted);margin:0 0 16px}
-
-/* Auswahl/Cursor & basic protections */
-*{user-select:none;-webkit-user-select:none;-moz-user-select:none}
-a,button{user-select:text}
-::selection{background:transparent}
-
-/* Unsichtbares Tracking-Wasserzeichen (für Nachverfolgung) */
-#wmark{position:fixed;left:8px;bottom:6px;font-size:10px;opacity:0.02;pointer-events:none}
-
-/* Minimal styles für Fallback */
-footer{margin-top:18px;color:var(--muted);font-size:13px}
+  :root{
+    --bg:#f9fafb;
+    --panel:#ffffff;
+    --line:#e5e7eb;
+    --text:#111827;
+    --muted:#6b7280;
+    --brand:#0066cc;
+    --brand-2:#0052a3;
+    --brand-light:rgba(0,102,204,.08);
+    --success:#10b981;
+    --warning:#f59e0b;
+    --shadow:0 4px 12px rgba(0,0,0,.08);
+    --shadow-sm:0 1px 3px rgba(0,0,0,.05);
+  }
+  body.dark{
+    --bg:#0f172a;
+    --panel:#1a202c;
+    --line:#2d3748;
+    --text:#f3f4f6;
+    --muted:#9ca3af;
+    --brand:#66b2ff;
+    --brand-2:#88c2ff;
+    --brand-light:rgba(102,178,255,.12);
+    --shadow:0 4px 12px rgba(0,0,0,.32);
+    --shadow-sm:0 1px 3px rgba(0,0,0,.16);
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,sans-serif;transition:background .3s ease,color .3s ease}
+  a{color:var(--brand);text-decoration:none}
+  a:hover{text-decoration:underline}
+  
+  /* Header */
+  .top{
+    position:sticky;
+    top:0;
+    z-index:30;
+    background:var(--panel);
+    border-bottom:1px solid var(--line);
+    padding:1rem 1.5rem;
+    display:flex;
+    align-items:center;
+    gap:1rem;
+    box-shadow:var(--shadow-sm);
+  }
+  .brand{
+    font-weight:700;
+    font-size:1.25rem;
+    letter-spacing:.3px;
+    color:var(--brand);
+  }
+  .grow{flex:1}
+  .badge{
+    display:inline-flex;
+    align-items:center;
+    gap:.4rem;
+    background:var(--brand-light);
+    color:var(--brand);
+    border:1px solid rgba(0,102,204,.2);
+    padding:.5rem .75rem;
+    border-radius:999px;
+    font-size:.875rem;
+    font-weight:500;
+  }
+  .icon-btn{
+    appearance:none;
+    border:0;
+    background:transparent;
+    cursor:pointer;
+    padding:.6rem;
+    border-radius:.8rem;
+    transition:background .2s;
+  }
+  .icon-btn:hover{background:var(--brand-light)}
+  .sliders{width:24px;height:24px}
+  
+  /* Layout grid */
+  .container{max-width:1400px;margin:0 auto;padding:1.5rem;display:grid;grid-template-columns:280px 1fr;gap:1.5rem}
+  
+  /* Sidebar */
+  .sidebar{display:flex;flex-direction:column;gap:1rem}
+  .panel{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:12px;
+    box-shadow:var(--shadow-sm);
+  }
+  .avatar{padding:1.5rem;display:flex;flex-direction:column;align-items:center;text-align:center}
+  .avatar img{width:100%;max-width:140px;border-radius:12px;display:block}
+  .avatar .name{margin-top:1rem;font-weight:700;font-size:1.125rem}
+  .avatar .role{margin-top:.25rem;color:var(--muted);font-size:.875rem}
+  .sessions{display:flex;flex-direction:column;max-height:55vh}
+  .sessions .head{
+    padding:1rem;
+    border-bottom:1px solid var(--line);
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    font-weight:600;
+  }
+  .sessions .list{overflow:auto}
+  .sess{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:.5rem;
+    padding:.75rem 1rem;
+    border-top:1px solid var(--line);
+    cursor:pointer;
+    transition:background .2s;
+  }
+  .sess:first-child{border-top:0}
+  .sess:hover{background:var(--brand-light)}
+  .sess .ttl{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:160px;font-weight:500}
+  .sess .ts{color:var(--muted);font-size:.8rem}
+  .sess.active{background:var(--brand-light);border-left:3px solid var(--brand);padding-left:calc(1rem - 3px)}
+  .sess .rowbtns{display:flex;gap:.4rem}
+  .sm-btn{
+    appearance:none;
+    border:1px solid var(--line);
+    background:var(--panel);
+    color:var(--brand);
+    border-radius:8px;
+    padding:.35rem .55rem;
+    cursor:pointer;
+    font-size:.8rem;
+    font-weight:500;
+    transition:all .2s;
+  }
+  .sm-btn:hover{background:var(--brand-light);border-color:var(--brand)}
+  
+  /* Chat column */
+  .chat{display:flex;flex-direction:column;min-height:calc(100vh - 140px)}
+  .log{flex:1;overflow:auto;display:flex;flex-direction:column;gap:1.25rem;padding:1rem .5rem;scroll-behavior:smooth}
+  .bubble{
+    max-width:80ch;
+    border-radius:12px;
+    padding:1rem 1.25rem;
+    background:var(--panel);
+    box-shadow:var(--shadow-sm);
+    line-height:1.6;
+  }
+  .bubble .md :is(h1,h2,h3){margin:.5rem 0 .75rem;font-weight:700}
+  .bubble .md h1{font-size:1.25rem}
+  .bubble .md h2{font-size:1.125rem}
+  .bubble .md h3{font-size:1rem}
+  .bubble .md :is(p,ul,ol,pre,blockquote,table){margin:.75rem 0}
+  .bubble .md code{
+    background:var(--brand-light);
+    padding:.2rem .4rem;
+    border-radius:4px;
+    font-family:monospace;
+    font-size:.9em;
+  }
+  .bubble .md pre{
+    background:var(--brand-light);
+    padding:.75rem;
+    border-radius:8px;
+    overflow:auto;
+  }
+  .bubble .md strong{font-weight:700;color:var(--brand)}
+  .me{
+    align-self:flex-end;
+    background:var(--brand);
+    color:#fff;
+    box-shadow:none;
+  }
+  .composer{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:12px;
+    padding:1rem;
+    display:flex;
+    gap:.75rem;
+    align-items:center;
+    position:sticky;
+    bottom:0;
+    box-shadow:var(--shadow-sm);
+  }
+  .in{
+    flex:1;
+    border:1px solid var(--line);
+    border-radius:10px;
+    background:var(--bg);
+    padding:1rem;
+    font-size:1rem;
+    outline:none;
+    color:var(--text);
+    transition:border .2s;
+    font-family:inherit;
+  }
+  .in:focus{border-color:var(--brand)}
+  .send{
+    appearance:none;
+    border:0;
+    background:var(--brand);
+    color:#fff;
+    font-weight:600;
+    border-radius:10px;
+    padding:.85rem 1.5rem;
+    cursor:pointer;
+    transition:background .2s;
+  }
+  .send:hover:not(:disabled){background:var(--brand-2)}
+  .send:disabled{opacity:.6;cursor:not-allowed}
+  
+  /* Palette */
+  .palette{
+    position:absolute;
+    bottom:70px;
+    left:16px;
+    max-width:600px;
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:12px;
+    box-shadow:var(--shadow);
+    display:none;
+    max-height:300px;
+    overflow:auto;
+    z-index:10;
+  }
+  .pal-item{
+    padding:.85rem 1rem;
+    border-top:1px solid var(--line);
+    cursor:pointer;
+    display:flex;
+    justify-content:space-between;
+    gap:.75rem;
+    align-items:center;
+    transition:background .2s;
+  }
+  .pal-item:first-child{border-top:0}
+  .pal-item:hover{background:var(--brand-light)}
+  .pal-tag{color:var(--muted);font-size:.8rem;font-weight:500;background:var(--bg);padding:.2rem .4rem;border-radius:4px}
+  
+  /* Modal */
+  .modal{
+    position:fixed;
+    inset:0;
+    display:none;
+    align-items:center;
+    justify-content:center;
+    background:rgba(17,24,39,.5);
+    backdrop-filter:blur(8px);
+    z-index:1000;
+  }
+  .card{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:16px;
+    box-shadow:var(--shadow);
+    width:min(94vw,820px);
+    max-height:88vh;
+    overflow:auto;
+  }
+  .card-h{
+    padding:1.5rem;
+    border-bottom:1px solid var(--line);
+    font-weight:700;
+    font-size:1.25rem;
+  }
+  .card-b{
+    padding:1.5rem;
+    line-height:1.7;
+  }
+  .card-f{
+    padding:1.5rem;
+    border-top:1px solid var(--line);
+    display:flex;
+    gap:.75rem;
+    justify-content:flex-end;
+  }
+  .btn{
+    appearance:none;
+    border:1px solid var(--line);
+    background:var(--panel);
+    color:var(--brand);
+    border-radius:10px;
+    padding:.75rem 1.25rem;
+    cursor:pointer;
+    font-weight:600;
+    font-size:.95rem;
+    transition:all .2s;
+  }
+  .btn:hover{background:var(--brand-light)}
+  .btn.primary{
+    background:var(--brand);
+    border-color:var(--brand);
+    color:#fff;
+  }
+  .btn.primary:hover{background:var(--brand-2)}
+  .muted{color:var(--muted)}
+  
+  /* Settings */
+  .group{
+    padding:1.5rem;
+    border-top:1px solid var(--line);
+  }
+  .group:first-child{border-top:0}
+  .row{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:1.5rem;
+    margin:.75rem 0;
+  }
+  .chips{
+    display:flex;
+    gap:.5rem;
+    flex-wrap:wrap;
+  }
+  .chip{
+    padding:.6rem 1rem;
+    border:1px solid var(--line);
+    border-radius:999px;
+    background:var(--panel);
+    cursor:pointer;
+    font-weight:500;
+    transition:all .2s;
+  }
+  .chip:hover{border-color:var(--brand);background:var(--brand-light)}
+  .chip.active{
+    background:var(--brand);
+    border-color:var(--brand);
+    color:#fff;
+  }
+  .ta{
+    width:100%;
+    min-height:100px;
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:1rem;
+    background:var(--bg);
+    color:var(--text);
+    font-family:inherit;
+    font-size:.95rem;
+    resize:vertical;
+  }
+  .ta:focus{outline:none;border-color:var(--brand)}
+  .select{
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:.75rem;
+    background:var(--bg);
+    color:var(--text);
+    font-size:.95rem;
+    cursor:pointer;
+  }
+  .select:focus{outline:none;border-color:var(--brand)}
+  .switch{
+    width:52px;
+    height:30px;
+    border-radius:999px;
+    background:#d1d5db;
+    position:relative;
+    cursor:pointer;
+    border:0;
+    transition:background .2s;
+  }
+  .switch>i{
+    position:absolute;
+    width:26px;
+    height:26px;
+    top:2px;
+    left:2px;
+    border-radius:50%;
+    background:#fff;
+    transition:left .25s;
+    box-shadow:var(--shadow-sm);
+  }
+  .switch.on{background:var(--success)}
+  .switch.on>i{left:24px}
+  .disabled{opacity:.5;cursor:not-allowed;user-select:none}
+  
+  /* Snippet Cards */
+  .snippet-card{
+    background:var(--bg);
+    border:1px solid var(--line);
+    border-radius:12px;
+    padding:1rem;
+    transition:all .2s;
+  }
+  .snippet-card:hover{
+    border-color:var(--brand);
+    box-shadow:0 0 0 3px var(--brand-light);
+  }
+  .snippet-header{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-start;
+    gap:.75rem;
+    margin-bottom:.75rem;
+  }
+  .snippet-title{font-weight:700;color:var(--brand)}
+  .snippet-alias{
+    display:inline-block;
+    background:var(--brand-light);
+    color:var(--brand);
+    padding:.3rem .6rem;
+    border-radius:6px;
+    font-size:.8rem;
+    font-weight:600;
+    font-family:monospace;
+  }
+  .snippet-content{
+    color:var(--muted);
+    font-size:.9rem;
+    line-height:1.5;
+    margin-bottom:.75rem;
+    max-height:3.5em;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    display:-webkit-box;
+    -webkit-line-clamp:3;
+    -webkit-box-orient:vertical;
+  }
+  .snippet-buttons{
+    display:flex;
+    gap:.5rem;
+    flex-wrap:wrap;
+  }
+  
+  @media (max-width:1024px){
+    .container{
+      grid-template-columns:1fr;
+    }
+    .sessions{max-height:none}
+  }
 </style>
 </head>
 <body>
-<div class="wrap" id="app">
-  <h1 id="ttl">Bitte warten — Inhalt wird gesichert geladen…</h1>
-  <p class="lead" id="lead">Die Seite nutzt Schutzmechanismen, damit der Quelltext nicht einfach kopiert werden kann.</p>
-  <div id="content" aria-live="polite"></div>
-  <footer id="ft">© LindaBot — Geschützter Bereich</footer>
+
+<!-- Privacy Modal -->
+<div id="m-privacy" class="modal" style="display:flex">
+  <div class="card" role="dialog" aria-modal="true">
+    <div class="card-h">Datenschutzhinweis</div>
+    <div class="card-b">
+      <p>Um diesen Chatbot nutzen zu können, ist deine Zustimmung zur Datenschutzerklärung erforderlich:</p>
+      <ul style="margin:.8rem 0 0 1.5rem;line-height:1.8">
+        <li>Deine Eingaben werden an OpenAI (USA) und Make (EU) übermittelt.</li>
+        <li>Die übermittelten Daten werden zur Generierung von Antworten verarbeitet.</li>
+        <li>Bitte gib <strong>keine sensiblen oder personenbezogenen Daten</strong> ein!</li>
+        <li>Weitere Informationen: <a href="https://openai.com/policies/privacy-policy" target="_blank" rel="noopener">OpenAI</a>, <a href="https://www.make.com/en/privacy-policy" target="_blank" rel="noopener">Make.com</a>.</li>
+      </ul>
+      <p class="muted" style="margin-top:1rem">Hinweis: Dein <b>Chatverlauf</b> und deine <b>Snippets</b> werden <b>nur lokal</b> auf deinem Gerät gespeichert (localStorage). Du kannst beides in den Einstellungen verwalten (löschen/exportieren).</p>
+    </div>
+    <div class="card-f">
+      <button class="btn" id="p-decline">Ablehnen</button>
+      <button class="btn primary" id="p-accept">Zustimmen</button>
+    </div>
+  </div>
 </div>
-<div id="wmark">© LindaBot</div>
+
+<!-- Usage Modal -->
+<div id="m-usage" class="modal">
+  <div class="card" role="dialog" aria-modal="true">
+    <div class="card-h">⚠️ Wichtige Hinweise zur Bot-Nutzung</div>
+    <div class="card-b">
+      <ul style="margin:.8rem 0 0 1.5rem;line-height:1.8">
+        <li><strong>Automatisierte Antworten:</strong> Alle Antworten werden von KI generiert.</li>
+        <li><strong>Keine Gewähr:</strong> Inhalte können unvollständig/fehlerhaft sein – bitte prüfen.</li>
+        <li><strong>Kein Ersatz für Beratung:</strong> Keine Rechts-, Medizin-, Steuer- oder Finanzberatung.</li>
+        <li><strong>Eigenverantwortung:</strong> Antworten kritisch hinterfragen und Quellen beachten.</li>
+      </ul>
+    </div>
+    <div class="card-f"><button class="btn primary" id="u-accept">Einverstanden</button></div>
+  </div>
+</div>
+
+<!-- Settings Modal -->
+<div id="m-settings" class="modal">
+  <div class="card" role="dialog" aria-modal="true">
+    <div class="card-h">⚙️ Einstellungen</div>
+
+    <!-- Theme & Display -->
+    <div class="group">
+      <div class="row">
+        <label style="font-weight:600">Darstellung</label>
+        <div class="chips" id="chip-theme">
+          <div class="chip" data-val="light">☀️ Hell</div>
+          <div class="chip" data-val="dark">🌙 Dunkel</div>
+        </div>
+      </div>
+      <div class="row">
+        <label style="font-weight:600">Gender-Sprache</label>
+        <div id="sw-gender" class="switch"><i></i></div>
+      </div>
+      <div class="row">
+        <label style="font-weight:600">Begrüßung anzeigen</label>
+        <div id="sw-greet" class="switch on"><i></i></div>
+      </div>
+    </div>
+
+    <!-- Expert Mode -->
+    <div class="group">
+      <div class="row">
+        <label style="font-weight:600">📚 Fachmodus</label>
+        <select id="sel-domain" class="select">
+          <option value="">— Allgemeiner Modus —</option>
+          <option value="Prüferseminar">🎓 Prüferseminar (Rechtssicherheit max.)</option>
+          <option value="AEVO">📖 AEVO</option>
+          <option value="Personal">👥 Personal / HR</option>
+          <option value="Recht">⚖️ Rechtswissenschaft</option>
+          <option value="Kommunikation">💬 Kommunikation</option>
+          <option value="VWL">📊 Volkswirtschaftslehre</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Snippets -->
+    <div class="group">
+      <div style="margin-bottom:1rem">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
+          <div>
+            <div style="font-weight:700;font-size:1.05rem">📌 Prompt-Snippets</div>
+            <div class="muted" style="font-size:.9rem;margin-top:.25rem">Schnelle Vorlagen – tippe „/" um sie zu finden</div>
+          </div>
+          <div style="display:flex;gap:.5rem">
+            <button class="btn" id="pm-add">➕ Neu</button>
+            <button class="btn" id="pm-export">⬇️ Export</button>
+            <button class="btn" id="pm-import">⬆️ Import</button>
+          </div>
+        </div>
+        <div id="pm-list" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:1rem"></div>
+      </div>
+    </div>
+
+    <!-- Chat Management -->
+    <div class="group">
+      <div class="row" style="align-items:flex-start;flex-direction:column;gap:1rem">
+        <div>
+          <div style="font-weight:700;font-size:1.05rem">💾 Chatverlauf-Verwaltung</div>
+          <div class="muted">Nur lokal gespeichert. Du kannst ihn jederzeit exportieren oder löschen.</div>
+        </div>
+        <div style="display:flex;gap:.75rem;flex-wrap:wrap">
+          <button class="btn" id="btn-export-all">⬇️ Alle Chats exportieren</button>
+          <button class="btn" id="btn-clear-all" style="border-color:#ef4444;color:#ef4444">🗑️ Alles löschen</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card-f">
+      <button class="btn" id="s-close">Schließen</button>
+      <button class="btn primary" id="s-save">Speichern</button>
+    </div>
+  </div>
+</div>
+
+<!-- Snippet Editor -->
+<div id="m-prompt" class="modal">
+  <div class="card" role="dialog" aria-modal="true">
+    <div class="card-h">✏️ Snippet bearbeiten</div>
+    <div class="card-b">
+      <div class="row" style="flex-direction:column;gap:1rem;align-items:flex-start">
+        <div style="width:100%">
+          <label style="display:block;font-weight:600;margin-bottom:.5rem">Titel</label>
+          <input id="pe-title" class="in" placeholder="z.B. AEVO Fokus"/>
+        </div>
+        <div style="width:100%">
+          <label style="display:block;font-weight:600;margin-bottom:.5rem">Alias (Shortcut)</label>
+          <input id="pe-alias" class="in" placeholder="/aevo"/>
+        </div>
+        <div style="width:100%">
+          <label style="display:block;font-weight:600;margin-bottom:.5rem">Text</label>
+          <textarea id="pe-content" class="ta" placeholder="Dieser Text wird eingefügt, wenn du den Alias tippst..."></textarea>
+        </div>
+      </div>
+    </div>
+    <div class="card-f">
+      <button class="btn" id="pe-cancel">Abbrechen</button>
+      <button class="btn primary" id="pe-save">Speichern</button>
+    </div>
+  </div>
+</div>
+
+<!-- Header -->
+<div class="top">
+  <div class="brand">Linda</div>
+  <div class="grow"></div>
+  <div id="domain-badge" class="badge" style="display:none">📘 <span id="badge-text">—</span></div>
+  <button class="icon-btn" id="btn-settings" aria-label="Einstellungen">
+    <svg class="sliders" viewBox="0 0 24 24" fill="none" stroke="var(--brand)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="3"></circle>
+      <path d="M12 1v6m0 6v6M4.22 4.22l4.24 4.24m2.12 2.12l4.24 4.24M1 12h6m6 0h6m-16.78 7.78l4.24-4.24m2.12-2.12l4.24-4.24"></path>
+    </svg>
+  </button>
+</div>
+
+<!-- Main Container -->
+<div class="container">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="panel avatar">
+      <img src="https://ntc-bot1.netlify.app/Bildschirmfoto%202025-06-26%20um%2021.09.25.png" alt="Linda"/>
+      <div class="name">Linda</div>
+      <div class="role">Juristische Assistentin</div>
+    </div>
+
+    <div class="panel sessions">
+      <div class="head">
+        <div>Verläufe</div>
+        <button id="btn-new" class="sm-btn">+ Neu</button>
+      </div>
+      <div id="sess-list" class="list"></div>
+    </div>
+  </aside>
+
+  <!-- Chat Section -->
+  <section class="chat">
+    <div id="log" class="log"></div>
+    <div style="position:relative">
+      <div id="palette" class="palette"></div>
+      <div class="composer">
+        <input id="in" class="in" placeholder="Deine Frage… (Tipp „/" für Snippets)"/>
+        <button id="send" class="send">Senden</button>
+      </div>
+    </div>
+  </section>
+</div>
 
 <script>
-/*
-  Schutz-Engine (kompakt & absichtlich unübersichtlich):
-  - Inhalt als base64(xor) Blob hinterlegt
-  - Key lokal eingepflegt (kurz) — ersetze bei Bedarf
-  - Viele Event-Blocker: Rechtsklick, Tastenkombinationen, DevTools-Hinweise
-  - MutationObserver + Integritätscheck: Manipulation -> Seite leeren
-  - Hinweis: Das ist Obfuskation/Thwarting, kein Kryptografischer Tamper-Proof
-*/
 (function(){
-  // ====== Konfiguration ======
-  var _k = "L1nD4_k3y"; // Schlüssel (kann jederzeit geändert werden)
-  // Verschlüsselter Inhalt (base64 von XOR-Bytes). Ersetze den String, wenn du eigenen Inhalt möchtest.
-  // Beispiel-Plaintext (auf Deutsch) wurde zuvor XOR-verschlüsselt und base64-codiert.
-  var _b = "GQoRAg0bERoXGBgQCxkPDQ0XDRYcHk8bHB4eFQ=="; // Beispielblob - ersetze durch eigenen Blob bei Bedarf
+  const $=id=>document.getElementById(id);
+  const LS={get(k,d){try{return JSON.parse(localStorage.getItem(k))??d}catch{return d}},set(k,v){localStorage.setItem(k,JSON.stringify(v))},del(k){localStorage.removeItem(k)}};
 
-  // Erwarteter Integritätswert: einfache Prüfsumme (nicht kryptographisch)
-  var _expectedChecksum = 2034; // automatisch berechneter Wert in Erstellungsphase
+  // ----- State
+  const S=LS.get('linda.settings',{theme:'light',gender:false,greet:true,domain:''});
+  let SN=LS.get('linda.snippets',[
+    {id:'s1',title:'Prüferseminar Fokus',alias:'/prüfer',content:'Antworte streng nach Prüferseminar-Materialien. Nur Inhalte, die explizit in den Skripten/Dokumenten vorkommen. Weise auf Seiten/Kapitel hin. Höchste Rechtssicherheit.'},
+    {id:'s2',title:'AEVO-Kurz',alias:'/aevo',content:'Bitte juristisch sauber im AEVO-Kontext mit Prüfungsrelevanz antworten. Beziehe dich auf die vier Ausbilderstufen.'},
+    {id:'s3',title:'TL;DR',alias:'/tldr',content:'Gib mir die 3 wichtigsten Punkte zu dieser Frage – jeweils max. 15 Wörter – ohne unnötige Details.'},
+    {id:'s4',title:'Mit Normen',alias:'/normen',content:'Antworte mit direkten Normenreferenzen (§ XX BGB, etc.). Zitiere Regeltext, nicht nur Nummern.'}
+  ]);
+  let Sessions=LS.get('linda.sessions',[]); 
+  let activeId=LS.get('linda.activeId',null);
 
-  // ====== Utilities (kompakt) ======
-  function _b64ToArr(s){
-    try{var bin=atob(s);var a=new Uint8Array(bin.length);for(var i=0;i<bin.length;i++)a[i]=bin.charCodeAt(i);return a}catch(e){return null}
-  }
-  function _arrToStr(a){var r="";for(var i=0;i<a.length;i++)r+=String.fromCharCode(a[i]);return r}
-  function _xor(a,k){
-    var out=new Uint8Array(a.length);
-    for(var i=0;i<a.length;i++){out[i]=a[i] ^ k.charCodeAt(i % k.length)}
-    return out;
-  }
-  function _checksum(a){
-    var s=0;for(var i=0;i<a.length;i++)s=(s + a[i]) & 0xFFFF;return s;
+  // ----- Utils
+  const md=(txt)=>{try{return marked.parse(txt)}catch{return txt}};
+  const show=m=>m.style.display='flex';
+  const hide=m=>m.style.display='none';
+  const uid=()=>'s_'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+  function saveAll(){LS.set('linda.settings',S);LS.set('linda.snippets',SN);LS.set('linda.sessions',Sessions);LS.set('linda.activeId',activeId);}
+
+  // ----- Theme
+  function applyTheme(){
+    document.body.classList.toggle('dark',S.theme==='dark');
+    document.querySelectorAll('#chip-theme .chip').forEach(c=>c.classList.toggle('active',c.dataset.val===S.theme));
   }
 
-  // ====== Integritätsprüfung & Decodierung ======
-  try{
-    var arr=_b64ToArr(_b);
-    if(!arr){throw 0}
-    var xarr=_xor(arr,_k);
-    var ch=_checksum(xarr);
-    if(ch !== _expectedChecksum){
-      // Falls checksum nicht passt: leere variables, verhindern Anzeige
-      console.warn("Integritätscheck fehlgeschlagen");
-      document.getElementById('content').innerText = "Fehler: Inhalt konnte nicht geladen werden.";
-      document.getElementById('ttl').innerText = "Zugriff verweigert";
-      return;
+  // ----- Sessions
+  function ensureFirstSession(){
+    if(!Sessions.length){
+      const id=uid();
+      Sessions=[{id,name:'Neuer Chat',ts:Date.now(),messages:[]}];
+      activeId=id;
+      saveAll();
     }
-    var plaintext=_arrToStr(xarr);
-    // Sicherheitsmaßnahme: setTimeout minimal, um View-Source nicht sofort lesbar erscheinen zu lassen
-    setTimeout(function(){
-      var cont=document.getElementById('content');
-      cont.innerHTML = plaintext;
-      document.getElementById('ttl').innerText = "Geschützter Bereich";
-      document.getElementById('lead').style.display = "none";
-    }, 350);
-  }catch(e){
-    console.error(e);
-    document.getElementById('content').innerText = "Fehler beim Laden.";
-    document.getElementById('ttl').innerText = "Fehler";
+    if(!activeId||!Sessions.find(s=>s.id===activeId)){activeId=Sessions[0].id;saveAll();}
+  }
+  function active(){return Sessions.find(s=>s.id===activeId);}
+  function setActive(id){activeId=id;saveAll();renderSessions();renderChat();}
+  function addSession(){
+    const id=uid();
+    Sessions.unshift({id,name:'Neuer Chat',ts:Date.now(),messages:[]});
+    setActive(id);
+  }
+  function renameSession(id){
+    const s=Sessions.find(x=>x.id===id);if(!s)return;
+    const nn=prompt('Neuer Name für Verlauf:',s.name||'');
+    if(nn!==null){s.name=nn.trim()||s.name;saveAll();renderSessions();}
+  }
+  function deleteSession(id){
+    if(!confirm('Diesen Verlauf wirklich löschen?'))return;
+    Sessions=Sessions.filter(x=>x.id!==id);
+    if(!Sessions.length){addSession();}else if(activeId===id){activeId=Sessions[0].id;}
+    saveAll();renderSessions();renderChat();
+  }
+  function exportSession(id){
+    const s=Sessions.find(x=>x.id===id);if(!s)return;
+    const text=s.messages.map(m=>(m.role==='user'?'Du: ':'Linda: ')+m.content).join('\n\n');
+    const blob=new Blob([text],{type:'text/plain'});const a=document.createElement('a');
+    a.href=URL.createObjectURL(blob);a.download=(s.name||'linda_chat')+'.txt';a.click();URL.revokeObjectURL(a.href);
   }
 
-  // ====== DevTools / Copy / Selection Blocker ======
-  document.addEventListener('contextmenu', function(e){ e.preventDefault(); });
-  window.addEventListener('keydown', function(e){
-    // Blockieren von gängigen Tastenkombinationen: F12, Ctrl+U, Ctrl+Shift+I, Ctrl+Shift+C, Ctrl+S, Ctrl+Shift+J
-    if(e.keyCode===123) { e.preventDefault(); e.stopPropagation(); }
-    if(e.ctrlKey && (e.key==='u' || e.key==='s' || e.key==='U' || e.key==='S')){ e.preventDefault(); }
-    if(e.ctrlKey && e.shiftKey && (e.key==='I' || e.key==='i' || e.key==='C' || e.key==='c' || e.key==='J' || e.key==='j')){ e.preventDefault(); }
-    // Block Copy (Ctrl+C) nur wenn Auswahl im geschützten container
-    if(e.ctrlKey && e.key==='c'){
-      var sel = window.getSelection();
-      if(sel && sel.rangeCount){
-        var p = sel.getRangeAt(0).commonAncestorContainer;
-        if(p && document.getElementById('app').contains(p)){
-          e.preventDefault();
-        }
-      }
-    }
-  }, true);
+  function renderSessions(){
+    const el=$('sess-list');
+    el.innerHTML=Sessions.map(s=>`
+      <div class="sess ${s.id===activeId?'active':''}" data-id="${s.id}">
+        <div>
+          <div class="ttl">${s.name||'Chat'}</div>
+          <div class="ts">${new Date(s.ts).toLocaleDateString()}</div>
+        </div>
+        <div class="rowbtns">
+          <button class="sm-btn s-rename" title="Umbenennen">✏️</button>
+          <button class="sm-btn s-export" title="Exportieren">⬇️</button>
+          <button class="sm-btn s-del" title="Löschen">🗑️</button>
+        </div>
+      </div>
+    `).join('');
+    el.querySelectorAll('.sess').forEach(n=>n.onclick=(e)=>{if(e.target.closest('.rowbtns'))return;setActive(n.dataset.id);});
+    el.querySelectorAll('.s-rename').forEach(b=>b.onclick=(e)=>{e.stopPropagation();renameSession(b.closest('.sess').dataset.id);});
+    el.querySelectorAll('.s-export').forEach(b=>b.onclick=(e)=>{e.stopPropagation();exportSession(b.closest('.sess').dataset.id);});
+    el.querySelectorAll('.s-del').forEach(b=>b.onclick=(e)=>{e.stopPropagation();deleteSession(b.closest('.sess').dataset.id);});
+  }
 
-  // Verhindere Drag/Drop von selektiertem Text
-  document.addEventListener('dragstart', function(e){ e.preventDefault(); });
+  // ----- Chat
+  function addMsg(role,content){const d=document.createElement('div');d.className='bubble'+(role==='user'?' me':'');d.innerHTML='<div class="md">'+md(content)+'</div>';$('log').appendChild(d);$('log').scrollTop=$('log').scrollHeight;}
+  function renderChat(){$('log').innerHTML='';const s=active();if(!s)return;s.messages.forEach(m=>addMsg(m.role,m.content));}
+  function push(role,content){const s=active();s.messages.push({role,content});s.ts=Date.now();saveAll();}
 
-  // Beobachter: Wenn jemand versucht, Inhalt zu verändern (z. B. via DevTools), lösche Inhalt
-  var app=document.getElementById('app');
-  var observer=new MutationObserver(function(m){
-    // einfache Heuristik: wenn Scripts entfernt oder content verändert, leeren wir
-    var danger=false;
-    m.forEach(function(mut){
-      if(mut.type==='childList' && (mut.removedNodes.length>0 || mut.addedNodes.length>0)) danger=true;
-      if(mut.type==='attributes') danger=true;
-    });
-    if(danger){
-      try{app.innerHTML = "<h1>Zugriff verweigert</h1><p>Integrität verletzt.</p>"; observer.disconnect();}catch(e){}
+  // ----- Badge & System Prefix
+  function setBadge(){
+    const b=$('domain-badge');
+    const txt=$('badge-text');
+    if(S.domain){
+      b.style.display='inline-flex';
+      const emoji={
+        'Prüferseminar':'🎓',
+        'AEVO':'📖',
+        'Personal':'👥',
+        'Recht':'⚖️',
+        'Kommunikation':'💬',
+        'VWL':'📊'
+      };
+      txt.textContent=(emoji[S.domain]||'📘')+' '+S.domain;
+    }else{
+      b.style.display='none';
     }
+  }
+
+  function systemPrefix(){
+    const lines=[];
+    if(S.domain){
+      const map={
+        'Prüferseminar':'Du bist ein hochspezialisierter Assistent für Prüferseminar-Inhalte. SEHR WICHTIG: Antworte NUR mit Inhalten, die explizit in Prüferseminar-Dokumenten/Skripten vorkommen. Jede Aussage muss sich auf konkrete Seiten/Kapitel beziehen. Höchste Rechtssicherheit und Genauigkeit sind absolut erforderlich. Wenn etwas nicht in den Materialien steht: explizit sagen "Das steht nicht in den Seminarunterlagen." Keine Spekulationen.',
+        'AEVO':'Antworte fachlich fundiert im AEVO-Kontext mit Prüfungsrelevanz. Beziehe dich auf die vier Ausbilderstufen und relevant VO.',
+        'Personal':'Antworte als Expertin für Personalwirtschaft/HR mit praktischen Beispielen und Gesetzbezügen.',
+        'Recht':'Antworte juristisch sauber mit Normenreferenzen (§-Angaben) und praxisnahen Fällen.',
+        'Kommunikation':'Antworte als Trainerin für Kommunikation, klar strukturiert mit Modellen und Übungen.',
+        'VWL':'Antworte fachlich fundiert in Volkswirtschaftslehre (IHK-Prüfungskontext) mit Grafiken/Beispielen.'
+      };
+      lines.push(map[S.domain]||'');
+    }
+    lines.push(S.gender?'Verwende gendergerechte Sprache (neutral, inklusiv, gut lesbar).':'Verwende neutrale, nicht gegenderte Sprache.');
+    lines.push('Strukturiere Antworten: 1) Definition/Einordnung 2) Theorie/Rechtsbezug 3) Praxisbeispiel 4) Prüfungsrelevanz (falls zutreffend).');
+    return lines.filter(Boolean).join('\n');
+  }
+
+  // ----- Send
+  async function send(){
+    const inp=$('in');const q=inp.value.trim();if(!q)return;
+    inp.value='';$('send').disabled=true;
+    push('user',q);renderChat();
+    push('assistant','⏳ Verarbeitung läuft…');renderChat();
+
+    try{
+      const payload={question:systemPrefix()+'\n\n'+q};
+      const r=await fetch('/api/bot',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+      const text=await r.text();
+      const out=(text&&text.trim().toLowerCase()!=='accepted')?text:'Ich habe deine Frage erhalten und beantworte sie gleich.';
+      const s=active();s.messages[s.messages.length-1]={role:'assistant',content:out};saveAll();renderChat();
+    }catch(e){
+      const s=active();s.messages[s.messages.length-1]={role:'assistant',content:'⚠️ Verbindungsfehler. Bitte erneut senden.'};saveAll();renderChat();
+    }finally{$('send').disabled=false;}
+  }
+
+  // ----- Palette
+  function openPalette(list){
+    const pal=$('palette');
+    pal.innerHTML=list.map(s=>`<div class="pal-item" data-id="${s.id}"><div><strong>${s.title}</strong></div><span class="pal-tag">${s.alias}</span></div>`).join('');
+    pal.style.display=list.length?'block':'none';
+    pal.querySelectorAll('.pal-item').forEach(it=>it.onclick=()=>{const s=SN.find(x=>x.id===it.dataset.id);pal.style.display='none';if(!s)return;replaceAliasWithText($('in'),s.alias,s.content);$('in').focus();});
+  }
+  function replaceAliasWithText(inp,alias,text){const v=inp.value;const i=v.lastIndexOf(alias);if(i>=0){inp.value=v.slice(0,i)+text+v.slice(i+alias.length);}else{const s=inp.selectionStart;inp.value=v.slice(0,s)+text+v.slice(s);}}
+
+  // ----- Snippet Manager
+  function renderPM(){
+    const list=$('pm-list');
+    list.innerHTML=SN.map(s=>`
+      <div class="snippet-card">
+        <div class="snippet-header">
+          <div>
+            <div class="snippet-title">${s.title}</div>
+            <span class="snippet-alias">${s.alias}</span>
+          </div>
+        </div>
+        <div class="snippet-content">${s.content}</div>
+        <div class="snippet-buttons">
+          <button class="sm-btn pm-use" data-id="${s.id}">📋 Einfügen</button>
+          <button class="sm-btn pm-edit" data-id="${s.id}">✏️ Bearb.</button>
+          <button class="sm-btn pm-del" data-id="${s.id}">🗑️ Löschen</button>
+        </div>
+      </div>
+    `).join('');
+    list.querySelectorAll('.pm-use').forEach(b=>b.onclick=()=>{const s=SN.find(x=>x.id===b.dataset.id);if(!s)return;replaceAliasWithText($('in'),s.alias,s.content);hide($('m-settings'));$('in').focus();});
+    list.querySelectorAll('.pm-edit').forEach(b=>b.onclick=()=>editSnippet(b.dataset.id));
+    list.querySelectorAll('.pm-del').forEach(b=>b.onclick=()=>{SN=SN.filter(x=>x.id!==b.dataset.id);saveAll();renderPM();});
+  }
+  function editSnippet(id){
+    const s=SN.find(x=>x.id===id)||{id:uid(),title:'',alias:'',content:''};
+    editingId=s.id;$('pe-title').value=s.title;$('pe-alias').value=s.alias;$('pe-content').value=s.content;show($('m-prompt'));
+  }
+  let editingId=null;
+  $('pm-add').onclick=()=>editSnippet(null);
+  $('pe-cancel').onclick=()=>hide($('m-prompt'));
+  $('pe-save').onclick=()=>{
+    const obj={id:editingId||uid(),title:$('pe-title').value.trim(),alias:$('pe-alias').value.trim(),content:$('pe-content').value.trim()};
+    if(!obj.alias.startsWith('/')){alert('Alias muss mit / beginnen.');return;}
+    const i=SN.findIndex(x=>x.id===obj.id);if(i>=0)SN[i]=obj;else SN.push(obj);
+    saveAll();hide($('m-prompt'));renderPM();
+  };
+  $('pm-export').onclick=()=>{const blob=new Blob([JSON.stringify(SN,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='linda-snippets.json';a.click();URL.revokeObjectURL(a.href);};
+  $('pm-import').onclick=()=>{const i=document.createElement('input');i.type='file';i.accept='application/json';i.onchange=async()=>{const f=i.files[0];if(!f)return;const txt=await f.text();try{const arr=JSON.parse(txt);if(Array.isArray(arr)){SN=arr;saveAll();renderPM();}}catch{alert('Import fehlgeschlagen.')}};i.click();};
+
+  // ----- Input & Events
+  $('send').onclick=send;
+  $('in').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send();}});
+  $('in').addEventListener('input',e=>{
+    const v=e.target.value;const m=v.match(/\/([\w-]{0,24})$/);
+    if(m){const q=m[1].toLowerCase();const list=SN.filter(s=>s.alias.toLowerCase().startsWith('/'+q)||s.title.toLowerCase().includes(q));openPalette(list);}
+    else $('palette').style.display='none';
   });
-  observer.observe(app,{attributes:true,childList:true,subtree:true});
+  document.addEventListener('click',e=>{if(!e.target.closest('.composer'))$('palette').style.display='none';});
 
-  // Periodische Sanity-Check (alle 3s): prüft, ob Inhalt noch vorhanden, sonst leeren alles
-  var insanityCount=0;
-  var sanityInt=setInterval(function(){
-    var c=document.getElementById('content');
-    if(!c || c.innerHTML.length<5){insanityCount++;} else {insanityCount=0;}
-    if(insanityCount>3){
-      try{document.documentElement.innerHTML = "<head><title>Verweigert</title></head><body><h2>Zugriff verweigert</h2></body>"; clearInterval(sanityInt);}catch(e){}
+  // ----- Privacy/Usage
+  $('p-accept').onclick=()=>{hide($('m-privacy'));show($('m-usage'));};
+  $('p-decline').onclick=()=>location.reload();
+  $('u-accept').onclick=()=>{
+    hide($('m-usage'));
+    const s=active();
+    if(S.greet&&s.messages.length===0){
+      push('assistant','👋 **Willkommen!** Ich bin Linda, deine juristische Assistentin.\n\n**Fachmodi verfügbar:**\n- 🎓 **Prüferseminar** – Für absolut sichere, dokumentengestützte Antworten\n- ⚖️ **Recht** – Juristisch fundiert mit Normenreferenzen\n- 📖 **AEVO** – Ausbildereignung\n- 👥 **Personal** – HR-Expertise\n- 💬 **Kommunikation** – Trainingsberatung\n- 📊 **VWL** – Wirtschaftswissenschaften\n\nTipp: Öffne *Einstellungen* (⚙️), wähle deinen **Fachmodus** und erstelle **Snippets** (schnelle Vorlagen) für häufige Anfragen!');
+      renderChat();
     }
-  },3000);
+  };
 
-  // Neue Fenster-Resize Fingerprint (stört automatisierte Scraper)
-  var lastW=window.innerWidth+":"+window.innerHeight;
-  setInterval(function(){ var s=window.innerWidth+":"+window.innerHeight; if(s!==lastW){ lastW=s; /* noop */ } }, 2500);
+  // ----- Settings
+  applyTheme();
+  const sw=(el,val)=>{el.classList.toggle('on',val);}
+  sw($('sw-gender'),S.gender);$('sw-gender').onclick=()=>{S.gender=!S.gender;sw($('sw-gender'),S.gender);};
+  sw($('sw-greet'),S.greet);$('sw-greet').onclick=()=>{S.greet=!S.greet;sw($('sw-greet'),S.greet);};
+  document.querySelectorAll('#chip-theme .chip').forEach(c=>c.onclick=()=>{S.theme=c.dataset.val;saveAll();applyTheme();});
+  $('sel-domain').value=S.domain||'';
+  setBadge();
+  $('s-save').onclick=()=>{S.domain=$('sel-domain').value;saveAll();setBadge();hide($('m-settings'));};
+  $('s-close').onclick=()=>hide($('m-settings'));
+  $('btn-settings').onclick=()=>{renderPM();show($('m-settings'));};
 
-  // Abschließende Hardening-Hinweise (console): erschwere Informationen in Konsole
-  try{
-    if(window.console){
-      console.log("LindaBot: Schutz aktiv.");
-      console.log("Hinweis: Der Quellcode ist absichtlich obfuskiert.");
-    }
-  }catch(e){}
+  // ----- Export/Clear
+  $('btn-export-all').onclick=()=>{
+    const all=Sessions.map(s=>`# ${s.name||'Chat'} (${new Date(s.ts).toLocaleString()})\n\n`+s.messages.map(m=>(m.role==='user'?'Du: ':'Linda: ')+m.content).join('\n\n')).join('\n\n---\n\n');
+    const blob=new Blob([all],{type:'text/plain'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='linda_all_chats.txt';a.click();URL.revokeObjectURL(a.href);
+  };
+  $('btn-clear-all').onclick=()=>{if(confirm('Wirklich alle Verläufe löschen? Dies kann nicht rückgängig gemacht werden.')){Sessions=[];addSession();saveAll();renderSessions();renderChat();alert('Alle Chats gelöscht.');}};
+
+  $('btn-new').onclick=addSession;
+
+  // ----- Boot
+  ensureFirstSession();
+  renderSessions();
+  renderChat();
+
 })();
 </script>
-
-
-
 </body>
 </html>
