@@ -1,66 +1,120 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Geschützter Bereich – LindaBot</title>
+  <meta name="robots" content="noindex,nofollow" />
   <style>
-    body {
-      font-family: Inter, Arial, sans-serif;
-      background: linear-gradient(135deg, #002b5c, #0072ce);
-      color: white;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-      margin: 0;
+    /* Einfaches, klares Styling passend zur Linda-Oberfläche */
+    :root{
+      --bg1:#002b5c; --bg2:#0072ce; --btn:#00a3e0;
+      --btn-hover:#007bb8; --err:#ffbaba;
     }
-    h1 { font-size: 1.8rem; margin-bottom: 10px; }
-    p { opacity: 0.9; }
-    input {
-      padding: 10px 12px;
-      border: none;
-      border-radius: 8px;
-      margin-top: 10px;
-      font-size: 1rem;
-      width: 240px;
-      text-align: center;
+    html,body{height:100%;margin:0;font-family:Inter,Arial,sans-serif}
+    body{
+      display:flex; align-items:center; justify-content:center;
+      background:linear-gradient(135deg,var(--bg1),var(--bg2));
+      color:#fff;
     }
-    button {
-      margin-top: 15px;
-      padding: 10px 16px;
-      background: #00a3e0;
-      border: none;
-      border-radius: 8px;
-      color: white;
-      cursor: pointer;
-      font-weight: 600;
-      transition: background 0.2s ease;
+    .card{
+      width:100%; max-width:420px; padding:28px;
+      border-radius:12px; box-shadow:0 8px 24px rgba(0,0,0,0.25);
+      background:rgba(255,255,255,0.04); text-align:center;
     }
-    button:hover { background: #007bb8; }
-    .error { color: #ffbaba; margin-top: 10px; }
+    h1{font-size:1.5rem; margin:0 0 8px}
+    p.lead{opacity:0.95; margin:0 0 18px;font-size:0.95rem}
+    input[type="password"]{
+      width:100%; padding:12px 14px; border-radius:8px; border:0;
+      font-size:1rem; box-sizing:border-box;
+    }
+    .actions{display:flex; gap:10px; margin-top:14px; justify-content:center}
+    button{
+      padding:10px 14px; border-radius:8px; border:0; cursor:pointer;
+      font-weight:600; background:var(--btn); color:#fff;
+    }
+    button:hover{background:var(--btn-hover)}
+    .error{color:var(--err); margin-top:12px; min-height:1.25em}
+    .muted{opacity:0.9; font-size:0.85rem; margin-top:10px}
+    .small{font-size:0.82rem; opacity:0.85}
   </style>
 </head>
 <body>
-  <h1>🔒 Geschützter Bereich</h1>
-  <p>Bitte gib das Passwort ein, um LindaBot zu starten.</p>
+  <div class="card" role="main" aria-labelledby="title">
+    <h1 id="title">🔒 Geschützter Bereich</h1>
+    <p class="lead">Bitte gib das Passwort ein, um LindaBot zu starten.</p>
 
-  <input type="password" id="pw" placeholder="Passwort eingeben" />
-  <button onclick="checkLogin()">Anmelden</button>
-  <p id="error" class="error"></p>
+    <label for="pw" class="small" style="display:none">Passwort</label>
+    <input id="pw" type="password" inputmode="text" autocomplete="current-password" placeholder="Passwort eingeben" aria-describedby="help" />
+
+    <div class="actions" aria-hidden="false">
+      <button id="btn">Anmelden</button>
+      <button id="btnClear" title="Eingabe löschen">Zurücksetzen</button>
+    </div>
+
+    <div id="error" class="error" role="status" aria-live="polite"></div>
+    <div id="help" class="muted">Weitere Sicherheit: 5 Fehlversuche → 5 Minuten Sperre. Browser-Storage wird lokal verwendet.</div>
+  </div>
 
   <script>
-    function checkLogin() {
-      const input = document.getElementById("pw").value.trim();
-      // ✅ Passwort hier anpassen
-      const correctPassword = "Norwegen2025";  
-      if (input === correctPassword) {
-        window.location.href = "index2510.html"; // Bot-Seite
-      } else {
-        document.getElementById("error").textContent = "Falsches Passwort. Bitte versuch es erneut.";
+    const STORED_HASH = "b91b8c3fb9581f3a2f14020fd19c74d53e60dd3aa7379dffd2f037a7a6c38407";
+
+    const MAX_ATTEMPTS = 5;
+    const LOCK_DURATION_MS = 5 * 60 * 1000; // 5 Minuten
+
+    // LocalStorage-Keys (prefix "lb_" = LindaBot)
+    const KEY_ATTEMPTS = "lb_attempts";
+    const KEY_LOCK_UNTIL = "lb_lock_until";
+
+    // Utility: sichere, konstante Zeit Vergleich (um Timing-Angriffe zu reduzieren)
+    function constantTimeEquals(a, b) {
+      if (a.length !== b.length) return false;
+      let res = 0;
+      for (let i = 0; i < a.length; i++) {
+        res |= a.charCodeAt(i) ^ b.charCodeAt(i);
       }
+      return res === 0;
     }
-  </script>
-</body>
-</html>
+
+    // Hash-Funktion: SHA-256 über Web Crypto API -> hex string
+    async function sha256Hex(message) {
+      const enc = new TextEncoder();
+      const data = enc.encode(message);
+      const hashBuffer = await crypto.subtle.digest("SHA-256", data);
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      return hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
+    }
+
+    // Lesen / Setzen Versuche & Lock
+    function getAttempts() {
+      const v = parseInt(localStorage.getItem(KEY_ATTEMPTS) || "0", 10);
+      return Number.isFinite(v) ? v : 0;
+    }
+    function setAttempts(n) { localStorage.setItem(KEY_ATTEMPTS, String(n)); }
+    function getLockUntil() {
+      const v = parseInt(localStorage.getItem(KEY_LOCK_UNTIL) || "0", 10);
+      return Number.isFinite(v) ? v : 0;
+    }
+    function setLockUntil(ts) { localStorage.setItem(KEY_LOCK_UNTIL, String(ts)); }
+
+    // UI-Elemente
+    const pwInput = document.getElementById("pw");
+    const btn = document.getElementById("btn");
+    const btnClear = document.getElementById("btnClear");
+    const errorEl = document.getElementById("error");
+
+    // Initialize
+    (function init(){
+      // Accessibility: focus input
+      pwInput.focus();
+      updateLockStatus();
+    })();
+
+    // Prüft Sperre und aktualisiert Meldung
+    function updateLockStatus(){
+      const now = Date.now();
+      const lockUntil = getLockUntil();
+      if (lockUntil && now < lockUntil) {
+        const remaining = Math.ceil((lockUntil - now) / 1000);
+        const mins = Math.ceil(remaining/60);
+        btn.disabled = true; pwInput.d
