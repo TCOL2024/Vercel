@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1.0" />
+<title>Linda GPT-Store</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#f7f8fb; --panel:#fff; --line:#e4e9f2; --text:#0f172a;
+  --brand:#0b5bd3; --muted:#5b6678; --radius:10px;
+}
+body {
+  font-family: Inter, sans-serif;
+  background: var(--bg);
+  margin: 0; color: var(--text);
+}
+header {
+  background: var(--brand);
+  color: #fff;
+  padding: 1rem 2rem;
+  font-size: 1.4rem;
+  font-weight: 600;
+}
+main {max-width:1000px; margin:2rem auto; padding:0 1rem;}
+#searchBar {
+  width:100%; padding:10px; border:1px solid var(--line);
+  border-radius:var(--radius); margin-bottom:20px; font-size:1rem;
+}
+.gpt-card {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+  padding: 1.2rem;
+  margin-bottom: 1rem;
+  transition: transform 0.1s ease;
+}
+.gpt-card:hover {transform: scale(1.01);}
+.gpt-card h2 {margin:0 0 0.5rem; font-size:1.2rem; color:var(--brand);}
+.gpt-card p {margin:0.3rem 0;}
+button {
+  background: var(--brand); color:#fff; border:none; border-radius:6px;
+  padding:8px 14px; cursor:pointer; font-weight:500;
+}
+button:hover {background:#094fc0;}
+#responseModal {
+  display:none; position:fixed; inset:0;
+  background:rgba(0,0,0,0.5);
+  align-items:center; justify-content:center;
+}
+.modal-content {
+  background:#fff; border-radius:var(--radius);
+  padding:1.5rem; width:90%; max-width:600px;
+  max-height:80vh; overflow:auto;
+}
+.close-btn {
+  float:right; font-weight:bold; cursor:pointer;
+}
+</style>
+</head>
+<body>
+<header>Linda GPT-Store</header>
+<main>
+  <input type="text" id="searchBar" placeholder="🔍 GPT suchen..." oninput="filterGPTs()">
+  <div id="gptList"></div>
+</main>
+
+<!-- Modal -->
+<div id="responseModal">
+  <div class="modal-content">
+    <span class="close-btn" onclick="closeModal()">✖</span>
+    <div id="modalContent"></div>
+  </div>
+</div>
+
+<script>
+// Beispielhafte GPT-Liste
+const gpts = [
+  {id:"aevo-coach", name:"AEVO-Coach", category:"Ausbildung",
+   description:"Erstellt Lernziele, Methoden & Prüfungsfragen nach AEVO.",
+   author:"Jens", version:"v1.0", webhook:"https://hook.make.com/xyz1"},
+  {id:"bbig-navigator", name:"BBiG-Navigator", category:"Recht",
+   description:"Erklärt Paragraphen und prüft Argumentationen im BBiG.",
+   author:"Jens", version:"v1.0", webhook:"https://hook.make.com/xyz2"},
+  {id:"hr-feedback", name:"Feedback-Coach", category:"HR",
+   description:"Formuliert wertschätzende Feedbacks nach dem 3-Ebenen-Modell.",
+   author:"Jens", version:"v1.0", webhook:"https://hook.make.com/xyz3"}
+];
+
+// Darstellung
+function renderGPTs(list){
+  const container=document.getElementById("gptList");
+  container.innerHTML="";
+  list.forEach(g=>{
+    const card=document.createElement("div");
+    card.className="gpt-card";
+    card.innerHTML=`
+      <h2>${g.name}</h2>
+      <p><strong>Kategorie:</strong> ${g.category}</p>
+      <p>${g.description}</p>
+      <p><em>Autor:</em> ${g.author} | <em>Version:</em> ${g.version}</p>
+      <button onclick="startGPT('${g.webhook}','${g.name}')">Starten</button>`;
+    container.appendChild(card);
+  });
+}
+renderGPTs(gpts);
+
+// Suche
+function filterGPTs(){
+  const val=document.getElementById("searchBar").value.toLowerCase();
+  renderGPTs(gpts.filter(g=>g.name.toLowerCase().includes(val)
+      || g.category.toLowerCase().includes(val)
+      || g.description.toLowerCase().includes(val)));
+}
+
+// Start-Funktion (Webhook)
+async function startGPT(url,name){
+  const prompt=prompt(`🧠 ${name}\n\nBitte gib deine Frage ein:`,"Was kann ich heute lernen?");
+  if(!prompt) return;
+  const modal=document.getElementById("responseModal");
+  const content=document.getElementById("modalContent");
+  content.innerHTML="<p><em>Bitte warten...</em></p>";
+  modal.style.display="flex";
+
+  try{
+    const res=await fetch(url,{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({prompt})
+    });
+    const data=await res.json();
+    content.innerHTML=`<h3>${name}</h3><p>${data.reply || data.message || "Keine Antwort erhalten."}</p>`;
+  }catch(err){
+    content.innerHTML=`<p style='color:red'>Fehler: ${err.message}</p>`;
+  }
+}
+function closeModal(){document.getElementById("responseModal").style.display="none";}
+</script>
+</body>
+</html>
