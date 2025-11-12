@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Linda – Deine persönliche Assistentin (v27.7-pro)</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <style>
+    :root {
+      --bg:#f7f8fb;--panel:#ffffff;--line:#e7ebf0;--text:#0f172a;--muted:#5b6678;
+      --brand:#0b5bd3;--brand-2:#2b6ff0;
+      --shadow:0 8px 24px rgba(15,23,42,.06),0 1px 2px rgba(15,23,42,.03);
+    }
+    body {
+      font-family:Inter,Arial,sans-serif;
+      margin:0;padding:0;background:var(--bg);color:var(--text);
+      display:flex;flex-direction:column;align-items:center;justify-content:flex-start;
+    }
+    header {
+      width:100%;background:var(--panel);box-shadow:var(--shadow);
+      padding:16px;text-align:center;font-weight:600;
+    }
+    main {
+      width:100%;max-width:800px;margin-top:20px;background:var(--panel);
+      box-shadow:var(--shadow);border-radius:12px;padding:20px;
+      display:flex;flex-direction:column;gap:10px;
+    }
+    .chat-container {
+      max-height:60vh;overflow-y:auto;padding:10px;border:1px solid var(--line);
+      border-radius:8px;background:#fafbfc;
+    }
+    .msg {margin:6px 0;padding:10px 14px;border-radius:10px;max-width:80%;}
+    .msg.user {background:var(--brand-2);color:#fff;align-self:flex-end;}
+    .msg.bot {background:#e7ebf0;align-self:flex-start;}
+    .input-row {
+      display:flex;gap:10px;margin-top:12px;
+    }
+    input[type=text] {
+      flex:1;padding:10px;border:1px solid var(--line);border-radius:8px;
+      font-size:15px;
+    }
+    button {
+      background:var(--brand);color:#fff;border:none;padding:10px 16px;
+      border-radius:8px;cursor:pointer;font-weight:500;
+    }
+    button:hover {background:var(--brand-2);}
+    select {
+      padding:8px;border-radius:8px;border:1px solid var(--line);
+      background:white;font-size:14px;
+    }
+  </style>
+</head>
+<body>
+  <header>Linda – Deine persönliche Assistentin (v27.7-pro)</header>
+
+  <main>
+    <section id="info">
+      <p><strong>Datenschutzhinweis:</strong> Deine Eingaben werden an OpenAI (USA) und Make (EU) übermittelt.
+      Bitte gib keine sensiblen Daten ein. Dein Verlauf wird nur lokal gespeichert.</p>
+    </section>
+
+    <label for="fachmodus">Fachmodus auswählen:</label>
+    <select id="fachmodus">
+      <option value="">— Kein spezieller Modus —</option>
+      <option value="AEVO">AEVO</option>
+      <option value="Personal" selected>Personal</option>
+      <option value="Recht">Recht</option>
+      <option value="Kommunikation">Kommunikation</option>
+      <option value="VWL">VWL</option>
+    </select>
+
+    <div id="chat-container" class="chat-container">
+      <div class="msg bot">Hallo! Ich bin Linda. Wie kann ich dir heute helfen?</div>
+    </div>
+
+    <div class="input-row">
+      <input id="user-input" type="text" placeholder="Schreib deine Frage..." />
+      <button id="send-btn">Senden</button>
+    </div>
+  </main>
+
+  <footer style="margin-top:20px;font-size:13px;color:var(--muted);">
+    © 2025 Linda Assistent · <a href="https://openai.com/policies/privacy-policy" target="_blank">OpenAI</a> · 
+    <a href="https://www.make.com/en/privacy-policy" target="_blank">Make.com</a> · 
+    Inspiriert von <a href="https://bbva.design/" target="_blank">bbva.design</a>
+  </footer>
+
+  <script>
+    // =========================
+    // Linda Kontext & Fachmodus-Logik (v27.7)
+    // =========================
+
+    const inputField = document.getElementById("user-input");
+    const sendButton = document.getElementById("send-btn");
+    const chatContainer = document.getElementById("chat-container");
+
+    // Hilfsfunktion zur Anzeige
+    function renderMessage(sender, text) {
+      const msg = document.createElement("div");
+      msg.className = sender === "User" ? "msg user" : "msg bot";
+      msg.textContent = text;
+      chatContainer.appendChild(msg);
+      chatContainer.scrollTop = chatContainer.scrollHeight;
+    }
+
+    // Nachricht an Bot senden
+    async function sendToBot(userInput) {
+      const fullHistory = JSON.parse(localStorage.getItem("chatHistory")) || [];
+
+      // letzte 5 Runden zusammenfassen
+      const lastTurns = fullHistory.slice(-5);
+      let context = lastTurns
+        .map(turn => `User: ${turn.user}\nLinda: ${turn.bot}`)
+        .join("\n");
+
+      // Token-Optimierung: max. 2500 Zeichen
+      if (context.length > 2500) {
+        context = "Kurzzusammenfassung vorheriger Dialoge:\n" + context.slice(-2500);
+      }
+
+      const fachmodus = document.getElementById("fachmodus").value || "Personal";
+
+      const payload = {
+        message: userInput.trim(),
+        context: context,
+        fachmodus: fachmodus,
+        user: "Dozent"
+      };
+
+      try {
+        const response = await fetch("https://hook.eu1.make.com/DEIN_WEBHOOK", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+
+        if (!response.ok) throw new Error("Fehler beim Senden der Anfrage");
+        const data = await response.json();
+        const botReply = data.reply || "Keine Antwort erhalten.";
+
+        fullHistory.push({ user: userInput, bot: botReply });
+        localStorage.setItem("chatHistory", JSON.stringify(fullHistory));
+
+        renderMessage("Linda", botReply);
+      } catch (error) {
+        console.error("Fehler:", error);
+        renderMessage("System", "❌ Es gab ein Verbindungsproblem. Bitte versuch es erneut.");
+      }
+    }
+
+    // Event Listener
+    sendButton.addEventListener("click", () => {
+      const userInput = inputField.value.trim();
+      if (!userInput) return;
+      renderMessage("User", userInput);
+      sendToBot(userInput);
+      inputField.value = "";
+    });
+
+    inputField.addEventListener("keypress", e => {
+      if (e.key === "Enter") {
+        sendButton.click();
+      }
+    });
+  </script>
+</body>
+</html>
