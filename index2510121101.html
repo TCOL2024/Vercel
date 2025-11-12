@@ -759,19 +759,55 @@
     return val && val.length ? val : "Personal";
   }
 
+  // Build compressed context:
+  // 1) prefer explicit chatHistory (localStorage.chatHistory)
+  // 2) fallback to linda.sessions (localStorage.linda.sessions) and derive last turns
   function buildCompressedContext() {
-    let history;
+    let historyArr = [];
     try {
-      history = JSON.parse(localStorage.getItem("chatHistory")) || [];
-    } catch {
-      history = [];
+      const raw = localStorage.getItem("chatHistory");
+      if (raw) {
+        historyArr = JSON.parse(raw) || [];
+      }
+    } catch {}
+    // If no explicit chatHistory, fallback to linda.sessions
+    if (!historyArr || historyArr.length === 0) {
+      try {
+        const rawSessions = localStorage.getItem('linda.sessions');
+        const activeId = localStorage.getItem('linda.activeId');
+        const sessions = rawSessions ? JSON.parse(rawSessions) : [];
+        // pick active session if exists, else last session
+        let session = null;
+        if (activeId) session = sessions.find(s=>s.id===activeId);
+        if (!session && sessions && sessions.length) session = sessions[sessions.length-1];
+        if (session && Array.isArray(session.messages)) {
+          // convert messages into turns: find pairs user->assistant
+          const turns = [];
+          let pendingUser = null;
+          for (const m of session.messages) {
+            if (m.role === 'user') {
+              pendingUser = (pendingUser ? (pendingUser + ' ' + m.content) : m.content) || '';
+            } else if (m.role === 'assistant') {
+              if (pendingUser !== null) {
+                turns.push({ user: pendingUser, bot: m.content || '' });
+                pendingUser = null;
+              } else {
+                // assistant without preceding user -> ignore or attach as bot-only turn
+              }
+            }
+          }
+          // if pendingUser remains, push with empty bot
+          if (pendingUser !== null) turns.push({ user: pendingUser, bot: '' });
+          historyArr = turns.map(t => ({ user: t.user, bot: t.bot }));
+        }
+      } catch (e) {
+        historyArr = [];
+      }
     }
 
-    const lastTurns = history.slice(-HISTORY_TURNS);
-    let context = lastTurns
-      .map(turn => `User: ${turn?.user ?? ""}\nLinda: ${turn?.bot ?? ""}`)
-      .join("\n");
-
+    // compress to last N turns
+    const last = historyArr.slice(-HISTORY_TURNS);
+    let context = last.map(turn => `User: ${turn.user || ''}\nLinda: ${turn.bot || ''}`).join("\n");
     if (context.length > MAX_CONTEXT_CHARS) {
       context = "Kurzzusammenfassung vorheriger Dialoge:\n" + context.slice(-MAX_CONTEXT_CHARS);
     }
@@ -977,6 +1013,14 @@
   async function send(){
     const inp=$('in'); const q=inp.value.trim(); if(!q) return;
     inp.value=''; $('send').disabled=true;
+
+    // write to local history (ensures addon can read it)
+    try {
+      const hist = JSON.parse(localStorage.getItem('chatHistory')) || [];
+      hist.push({ user: q, bot: '' });
+      localStorage.setItem('chatHistory', JSON.stringify(hist));
+    } catch (e) { /* ignore */ }
+
     push('user',q); renderChat();
     push('assistant','⏳ Einen Moment …'); renderChat();
 
@@ -985,9 +1029,28 @@
       const r=await fetch('/api/bot',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
       const text=await r.text();
       const out=(text && text.trim().toLowerCase()!=='accepted') ? text : 'Ich habe deine Frage erhalten und beantworte sie gleich – bitte erneut senden, falls nichts erscheint.';
-      const s=active(); s.messages[s.messages.length-1]={role:'assistant',content:out}; saveAll(); renderChat();
+      const s=active(); s.messages[s.messages.length-1]={role:'assistant',content:out}; saveAll();
+
+      // update chatHistory last entry with bot response (if exists)
+      try {
+        const hist = JSON.parse(localStorage.getItem('chatHistory')) || [];
+        if (hist.length) {
+          hist[hist.length-1].bot = out;
+          localStorage.setItem('chatHistory', JSON.stringify(hist));
+        }
+      } catch (e) { /* ignore */ }
+
+      renderChat();
     }catch(e){
       const s=active(); s.messages[s.messages.length-1]={role:'assistant',content:'Es gab ein Verbindungsproblem. Bitte noch einmal senden.'}; saveAll(); renderChat();
+      // mark last hist entry bot as error
+      try {
+        const hist = JSON.parse(localStorage.getItem('chatHistory')) || [];
+        if (hist.length) {
+          hist[hist.length-1].bot = 'ERROR: Verbindung';
+          localStorage.setItem('chatHistory', JSON.stringify(hist));
+        }
+      } catch (e) {}
     }finally{$('send').disabled=false;}
   }
 
