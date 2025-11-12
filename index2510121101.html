@@ -738,17 +738,19 @@
 
 <script id="linda-context-addon">
 // --- Linda Add-on: History + Fachmodus + Token-Optimierung (non-invasive) ---
-// Wirkung: Interzeptiert fetch-POSTs mit JSON-Body, die ein {message: "..."} senden,
+// Wirkung: Interzeptiert fetch-POSTs mit JSON-Body, die ein {message: "..."} oder {question: "..."} senden,
 // und ergänzt automatisch {context, fachmodus, user} – ohne dein UI/HTML zu verändern.
+// Quick-disable: in der Konsole setzen: localStorage.setItem('linda.addon.disabled','1')
 
 (function(){
+  // Fast disable if requested
+  if (localStorage.getItem('linda.addon.disabled') === '1') { console.info('[linda-addon] disabled via localStorage'); return; }
+
   const MAX_CONTEXT_CHARS = 2500;
   const HISTORY_TURNS = 5;
 
-  // Robuste Erkennung deines Fachmodus-Selects (bevorzugt eines mit AEVO/Personal/…)
   function getFachmodus() {
     const selects = Array.from(document.querySelectorAll("select"));
-    // Heuristik: ein Select, das AEVO/Personal/Recht/VWL enthält
     const candidate = selects.find(sel => {
       const txt = sel.textContent || "";
       return /AEVO|Personal|Recht|VWL|Kommunikation/i.test(txt);
@@ -757,12 +759,13 @@
     return val && val.length ? val : "Personal";
   }
 
-  // Kompakter Kontext aus localStorage (letzte N Runden)
   function buildCompressedContext() {
     let history;
     try {
       history = JSON.parse(localStorage.getItem("chatHistory")) || [];
-    } catch { history = []; }
+    } catch {
+      history = [];
+    }
 
     const lastTurns = history.slice(-HISTORY_TURNS);
     let context = lastTurns
@@ -776,54 +779,51 @@
   }
 
   // Non-invasive fetch-Patch
-  const _origFetch = window.fetch;
+  const _origFetch = window.fetch.bind(window);
   window.fetch = async function(url, options = {}) {
     try {
-      const isPost = (options.method || "GET").toUpperCase() === "POST";
-      const isJson = options.headers && (
-        (options.headers["Content-Type"] || options.headers["content-type"] || "").toLowerCase().includes("application/json")
-      );
+      const method = ((options && options.method) || "GET").toUpperCase();
+      const isPost = method === "POST";
+      const headers = options && options.headers ? options.headers : {};
+      const contentType = (headers["Content-Type"] || headers["content-type"] || "").toLowerCase();
+      const isJson = contentType.includes("application/json") || (typeof options.body === "string" && options.body.trim().startsWith("{"));
 
       if (isPost && isJson && typeof options.body === "string") {
         try {
           const body = JSON.parse(options.body);
-
-          // Nur wenn eine Nachricht gesendet wird – und Kontext noch fehlt – ergänzen
-          if (body && typeof body === "object" && typeof body.message === "string" && !("context" in body)) {
-            const context   = buildCompressedContext();
+          const hasMessageLike = (typeof body.message === "string") || (typeof body.question === "string");
+          if (body && typeof body === "object" && hasMessageLike && !("context" in body) && localStorage.getItem('linda.addon.disabled') !== '1') {
+            const context = buildCompressedContext();
             const fachmodus = getFachmodus();
-
             const augmented = {
               ...body,
               context,
               fachmodus,
               user: body.user || "Dozent"
             };
-
             options.body = JSON.stringify(augmented);
+            console.info('[linda-addon] augmented fetch ->', url, { fachmodus, contextAdded: !!context, originalHasQuestion: !!body.question, originalHasMessage: !!body.message });
           }
-        } catch {
-          // Body war kein JSON – ignorieren
+        } catch (err) {
+          // Body not parseable as JSON: ignore augmentation
+          console.warn('[linda-addon] could not parse JSON body, skipping augmentation', err);
         }
       }
-    } catch {
-      // Falls irgendetwas schiefgeht, rufen wir fetch normal auf
+    } catch (err) {
+      console.warn('[linda-addon] wrapper error, calling original fetch', err);
     }
-    return _origFetch.call(this, url, options);
+    return _origFetch(url, options);
   };
 
-  // Optional: Mini-Listener, um neue User-Nachrichten in den Verlauf zu schreiben,
-  // falls dein bestehender Code das noch nicht macht. Nicht invasiv – nur Best-Effort.
+  // Best-effort: Hook send button to record user messages in local chatHistory (used for context)
   function attachInputHook() {
-    // Suche nach einem Senden-Button und zugehörigem Textfeld
     const buttons = Array.from(document.querySelectorAll("button"));
     const sendBtn = buttons.find(b => (b.innerText || b.textContent || "").trim().toLowerCase() === "senden");
-    const inputs  = Array.from(document.querySelectorAll("input[type='text'], textarea"));
+    const inputs  = Array.from(document.querySelectorAll("input[type='text'], textarea, input:not([type])"));
     const userInput = inputs[0];
 
     if (!sendBtn || !userInput) return;
 
-    // Hook: vor Abschicken Text in den lokalen Verlauf schreiben (nur User-Seite)
     const handler = () => {
       const text = (userInput.value || "").trim();
       if (!text) return;
@@ -831,11 +831,11 @@
         const hist = JSON.parse(localStorage.getItem("chatHistory")) || [];
         hist.push({ user: text, bot: "" });
         localStorage.setItem("chatHistory", JSON.stringify(hist));
-      } catch {}
-      // Bot-Antwort schreibt weiterhin dein bestehender Code in den Verlauf.
+      } catch (e) {
+        // ignore
+      }
     };
 
-    // Nicht doppelt binden
     if (!sendBtn.__lindaHooked) {
       sendBtn.addEventListener("click", handler, { capture: true });
       if (userInput && !userInput.__lindaHooked) {
@@ -848,7 +848,6 @@
     }
   }
 
-  // Später anhängen, damit das DOM vorhanden ist
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", attachInputHook);
   } else {
@@ -913,8 +912,11 @@
     setActive(id);
   }
   function renameSession(id){
-    const s=Sessions.find(x=>x.id); if(!s) return;
-    const nn=prompt('Neuer Name für Verlauf:', s.name||''); if(nn!==null){ s.name=nn.trim()||s.name; saveAll(); renderSessions(); }
+    // fixed: correctly find the session by id
+    const s=Sessions.find(x=>x.id===id);
+    if(!s) return;
+    const nn=prompt('Neuer Name für Verlauf:', s.name||'');
+    if(nn!==null){ s.name=nn.trim()||s.name; saveAll(); renderSessions(); }
   }
   function deleteSession(id){
     if(!confirm('Diesen Verlauf wirklich löschen?')) return;
@@ -923,7 +925,9 @@
     saveAll(); renderSessions(); renderChat();
   }
   function exportSession(id){
-    const s=Sessions.find(x=>x.id); if(!s) return;
+    // fixed: correctly find the session by id
+    const s=Sessions.find(x=>x.id===id);
+    if(!s) return;
     const text=s.messages.map(m=>(m.role==='user'?'Du: ':'Linda: ')+m.content).join('\n\n');
     const blob=new Blob([text],{type:'text/plain'}); const a=document.createElement('a');
     a.href=URL.createObjectURL(blob); a.download=(s.name||'linda_chat')+'.txt'; a.click(); URL.revokeObjectURL(a.href);
@@ -1014,7 +1018,8 @@
     list.querySelectorAll('.pm-del').forEach(b=>b.onclick=()=>{SN=SN.filter(x=>x.id!==b.dataset.id); saveAll(); renderPM();});
   }
   function editSnippet(id){
-    const s=SN.find(x=>x.id) || {id:uid(),title:'',alias:'',content:''};
+    // fixed: correctly find snippet by id
+    const s = id ? (SN.find(x=>x.id===id) || {id:uid(),title:'',alias:'',content:''}) : {id:uid(),title:'',alias:'',content:''};
     editingId=s.id; $('pe-title').value=s.title; $('pe-alias').value=s.alias; $('pe-content').value=s.content; show($('m-prompt'));
   }
   let editingId=null;
@@ -1047,7 +1052,7 @@
     }
   };
 
-  applyTheme(); 
+  applyTheme();
   const sw=(el,val)=>{el.classList.toggle('on',val)}
   sw($('sw-gender'),S.gender); $('sw-gender').onclick=()=>{S.gender=!S.gender; sw($('sw-gender'),S.gender); saveAll();} // Speicherung hinzugefügt
   sw($('sw-greet'),S.greet); $('sw-greet').onclick=()=>{S.greet=!S.greet; sw($('sw-greet'),S.greet); saveAll();} // Speicherung hinzugefügt
