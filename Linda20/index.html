@@ -853,6 +853,7 @@
     return lines.filter(Boolean).join('\n');
   }
 
+  // >>>>>>>>>>>>>>> send() MIT HISTORY >>>>>>>>>>>>>>>
   async function send(){
     const inp=$('in');
     const q=inp.value.trim();
@@ -862,11 +863,22 @@
     $('send').disabled=true;
 
     const prefix = systemPrefix();
-    const combined = prefix ? prefix + '\\n\\n' + q : q;
+    const combined = prefix ? prefix + '\n\n' + q : q;
 
+    // User-Nachricht im Verlauf speichern
     push('user', q);
     renderChat();
 
+    // History für das Backend (aktueller Verlauf ohne Platzhalter)
+    const session = active();
+    const historyForApi = (session?.messages || []).map(m => ({
+      role: m.role === 'assistant' ? 'assistant' : 'user',
+      content: m.content
+    }));
+    // Optional begrenzen:
+    // const historyForApi = (session?.messages || []).slice(-10).map(...)
+
+    // Platzhalter anzeigen
     push('assistant','⏳ Linda denkt …');
     renderChat();
 
@@ -874,7 +886,10 @@
       const response = await fetch('/api/linda20', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ input_as_text: combined })
+        body: JSON.stringify({
+          input_as_text: combined,
+          history: historyForApi
+        })
       });
 
       if(!response.ok){
@@ -897,6 +912,7 @@
       $('send').disabled=false;
     }
   }
+  // <<<<<<<<<<<<<<< send() MIT HISTORY ENDE <<<<<<<<<<<<<<
 
   function openPalette(list){
     const pal=$('palette');
