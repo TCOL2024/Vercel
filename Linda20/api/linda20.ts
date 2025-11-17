@@ -1,9 +1,6 @@
-// api/linda20.ts
-import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { runWorkflow } from "../lindaAgent";
 
-export default async function handler(req: VercelRequest, res: VercelResponse) {
-  // Nur POST erlauben
+export default async function handler(req: any, res: any) {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Only POST is allowed" });
   }
@@ -17,7 +14,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const result = await runWorkflow({ input_as_text });
 
-    // result ist z. B. { output_text: "..." }
     return res.status(200).json(result);
   } catch (err: any) {
     console.error("Linda 2.0 Fehler:", err);
