@@ -1,58 +1,29 @@
-// lindaAgent.ts
-import { fileSearchTool, Agent, AgentInputItem, Runner, withTrace } from "@openai/agents";
+// api/linda20.ts
+import type { VercelRequest, VercelResponse } from "@vercel/node";
+import { runWorkflow } from "../lindaAgent";
 
-const fileSearch = fileSearchTool([
-  "vs_6916eafa6a3481918ccf6ef526fa9aa3"
-]);
-
-const linda20 = new Agent({
-  name: "Linda 2.0",
-  instructions: `Du sprichst im Business-Du, ohne Gendern.
-Du antwortest IMMER im folgenden Format:
-
-1. Kernaussage: (max. 3 Sätze)
-2. Begründung
-3. Paragraphen
-4. Quelle (Dateiname aus File Search + ggf. Gesetz)
-
-Juristisch sauber, mit Paragraphenangaben.
-Zielgruppe: Ausbilder, Prüfer, Fachwirte, HR.
-Wenn etwas unklar ist, stell gezielte Rückfragen.
-Kein Code im Output für Endnutzer.
-Das ist der „Charakter“ von Linda.`,
-  model: "gpt-4.1",
-  tools: [fileSearch],
-  modelSettings: {
-    temperature: 0.3,
-    topP: 1,
-    maxTokens: 2048,
-    store: true
+export default async function handler(req: VercelRequest, res: VercelResponse) {
+  // Nur POST erlauben
+  if (req.method !== "POST") {
+    return res.status(405).json({ error: "Only POST is allowed" });
   }
-});
 
-type WorkflowInput = { input_as_text: string };
+  try {
+    const { input_as_text } = req.body as { input_as_text?: string };
 
-export const runWorkflow = async (workflow: WorkflowInput) => {
-  return await withTrace("Linda 2.0", async () => {
-    const conversationHistory: AgentInputItem[] = [
-      { role: "user", content: [{ type: "input_text", text: workflow.input_as_text }] }
-    ];
-
-    const runner = new Runner({
-      traceMetadata: {
-        __trace_source__: "agent-builder",
-        workflow_id: "wf_691b1e13337081908b691613d98fa27d05fc3d687a3da1e0"
-      }
-    });
-
-    const linda20ResultTemp = await runner.run(linda20, conversationHistory);
-
-    if (!linda20ResultTemp.finalOutput) {
-      throw new Error("Agent result is undefined");
+    if (!input_as_text || typeof input_as_text !== "string") {
+      return res.status(400).json({ error: "input_as_text is required" });
     }
 
-    return {
-      output_text: linda20ResultTemp.finalOutput
-    };
-  });
-};
+    const result = await runWorkflow({ input_as_text });
+
+    // result ist z. B. { output_text: "..." }
+    return res.status(200).json(result);
+  } catch (err: any) {
+    console.error("Linda 2.0 Fehler:", err);
+    return res.status(500).json({
+      error: "Fehler beim Aufruf von Linda 2.0",
+      details: err?.message ?? String(err)
+    });
+  }
+}
