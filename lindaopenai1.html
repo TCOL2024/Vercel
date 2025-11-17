@@ -91,6 +91,7 @@
       background: var(--accent-light);
       color: var(--accent);
       border: 1px solid rgba(59, 130, 246, 0.3);
+      white-space: nowrap;
     }
 
     .chat-messages {
@@ -131,6 +132,7 @@
       background: #ffffff;
       border: 1px solid rgba(148, 163, 184, 0.6);
       color: var(--text);
+      border-radius: 12px 12px 12px 4px;
     }
 
     .message-bubble.user {
@@ -210,6 +212,8 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
     }
 
     .dot-pulse {
@@ -239,6 +243,13 @@
       50% { transform: scale(1.2); opacity: 1; }
     }
 
+    .disclaimer {
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 4px;
+      line-height: 1.4;
+    }
+
     @media (max-width: 768px) {
       .chat-shell {
         height: 100vh;
@@ -258,7 +269,7 @@
         <div class="avatar">L</div>
         <div>
           <div class="chat-header-title">Linda 2.0</div>
-          <div class="chat-header-subtitle">Juristische Assistenz für Ausbilder · Prüfer · HR</div>
+          <div class="chat-header-subtitle">Juristische Assistenz für Ausbildung · Prüfungen · HR</div>
         </div>
       </div>
       <div class="chat-badge">File Search aktiv · gpt-4.1</div>
@@ -271,7 +282,7 @@
         <textarea
           id="user-input"
           class="chat-input"
-          placeholder="Stell Linda deine Frage, z. B.: ‚Welche Paragraphen gelten bei vorzeitiger Zulassung zur Abschlussprüfung?‘"
+          placeholder="Beispiel: „Welche Paragraphen gelten bei vorzeitiger Zulassung zur Abschlussprüfung?“"
         ></textarea>
         <button type="submit" class="chat-button" id="send-button">
           <span>Senden</span>
@@ -279,13 +290,16 @@
         </button>
       </form>
       <div class="chat-status">
-        <span id="status-text">Verbunden mit Linda 2.0 (Demo)</span>
+        <span id="status-text">Verbunden mit Linda 2.0 (Backend: /api/linda20)</span>
         <span id="typing-indicator" style="visibility: hidden;">
           <span class="dot-pulse">
             <span></span><span></span><span></span>
           </span>
           <span style="margin-left: 4px;">Linda denkt …</span>
         </span>
+      </div>
+      <div class="disclaimer">
+        Hinweis: Linda 2.0 ersetzt keine individuelle Rechtsberatung. Antworten basieren auf deinen hinterlegten Unterlagen und öffentlich zugänglichen Rechtsquellen.
       </div>
     </footer>
   </div>
@@ -333,7 +347,7 @@
     // Begrüßungsnachricht
     appendMessage(
       "Linda 2.0",
-      "Hi, ich bin Linda 2.0. Ich unterstütze dich bei juristischen Fragen rund um Ausbildung, Prüfungsrecht und HR. Formuliere deine Frage bitte möglichst konkret – ich antworte mit Kernaussage, Begründung, Paragraphen und Quelle.",
+      "Hi, ich bin Linda 2.0. Ich unterstütze dich bei juristischen Fragen rund um Ausbildung, Prüfungsrecht und HR. Ich antworte mit Kernaussage, Begründung, Paragraphen und Quelle.",
       "assistant"
     );
 
@@ -347,9 +361,8 @@
       setLoading(true);
 
       try {
-        // WICHTIG:
-        // Passe die URL /api/linda20 an deinen Backend-Endpunkt an,
-        // der intern runWorkflow({ input_as_text }) aufruft.
+        // Wichtig: /api/linda20 ist deine Vercel-Function,
+        // die intern runWorkflow({ input_as_text }) aufruft.
         const response = await fetch("/api/linda20", {
           method: "POST",
           headers: {
