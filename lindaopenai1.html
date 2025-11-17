@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <title>Linda 2.0 – Juristische Assistenz</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    :root {
+      --bg: #f5f6fa;
+      --panel: #ffffff;
+      --border: #d0d4dd;
+      --accent: #0b5bd3;
+      --accent-light: #e3efff;
+      --text: #111827;
+      --muted: #6b7280;
+    }
+
+    * {
+      box-sizing: border-box;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      background: radial-gradient(circle at top, #e5edff, #f5f6fa);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .chat-shell {
+      width: 100%;
+      max-width: 960px;
+      height: 90vh;
+      max-height: 720px;
+      background: var(--panel);
+      border-radius: 16px;
+      box-shadow: 0 18px 45px rgba(15, 23, 42, 0.18);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      border: 1px solid rgba(148, 163, 184, 0.25);
+    }
+
+    .chat-header {
+      padding: 16px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--border);
+      background: linear-gradient(to right, #ffffff, #f3f6ff);
+    }
+
+    .chat-header-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 999px;
+      background: radial-gradient(circle at 30% 20%, #ffffff, #0b5bd3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #ffffff;
+      font-weight: 600;
+      font-size: 18px;
+      box-shadow: 0 3px 8px rgba(15, 23, 42, 0.25);
+    }
+
+    .chat-header-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .chat-header-subtitle {
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .chat-badge {
+      font-size: 11px;
+      padding: 4px 8px;
+      border-radius: 999px;
+      background: var(--accent-light);
+      color: var(--accent);
+      border: 1px solid rgba(59, 130, 246, 0.3);
+    }
+
+    .chat-messages {
+      flex: 1;
+      padding: 16px 20px;
+      overflow-y: auto;
+      background: linear-gradient(to bottom, #f9fafb, #eef2ff);
+    }
+
+    .message-row {
+      margin-bottom: 14px;
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+    }
+
+    .message-row.user {
+      justify-content: flex-end;
+    }
+
+    .message-bubble {
+      max-width: 70%;
+      padding: 10px 12px;
+      border-radius: 12px;
+      font-size: 14px;
+      line-height: 1.4;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+    }
+
+    .message-meta {
+      font-size: 11px;
+      color: var(--muted);
+      margin-bottom: 4px;
+    }
+
+    .message-bubble.assistant {
+      background: #ffffff;
+      border: 1px solid rgba(148, 163, 184, 0.6);
+      color: var(--text);
+    }
+
+    .message-bubble.user {
+      background: var(--accent);
+      color: #ffffff;
+      border-radius: 12px 12px 4px 12px;
+    }
+
+    .message-bubble.system {
+      background: #fef3c7;
+      color: #92400e;
+      border: 1px solid #fbbf24;
+    }
+
+    .chat-footer {
+      border-top: 1px solid var(--border);
+      padding: 10px 12px;
+      background: #ffffff;
+    }
+
+    .chat-footer form {
+      display: flex;
+      gap: 8px;
+      align-items: flex-end;
+    }
+
+    .chat-input {
+      flex: 1;
+      min-height: 46px;
+      max-height: 120px;
+      resize: vertical;
+      padding: 10px 12px;
+      font-size: 14px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      outline: none;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+
+    .chat-input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.35);
+    }
+
+    .chat-button {
+      padding: 10px 16px;
+      border-radius: 999px;
+      border: none;
+      background: var(--accent);
+      color: #ffffff;
+      font-weight: 500;
+      font-size: 14px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      box-shadow: 0 4px 10px rgba(37, 99, 235, 0.35);
+      transition: transform 0.1s, box-shadow 0.1s, background 0.1s;
+    }
+
+    .chat-button:disabled {
+      opacity: 0.5;
+      cursor: default;
+      box-shadow: none;
+    }
+
+    .chat-button:not(:disabled):hover {
+      background: #0f6fff;
+      transform: translateY(-1px);
+      box-shadow: 0 6px 18px rgba(37, 99, 235, 0.45);
+    }
+
+    .chat-status {
+      margin-top: 4px;
+      font-size: 11px;
+      color: var(--muted);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .dot-pulse {
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+    }
+
+    .dot-pulse span {
+      width: 4px;
+      height: 4px;
+      border-radius: 999px;
+      background: var(--accent);
+      animation: pulse 1s infinite ease-in-out;
+    }
+
+    .dot-pulse span:nth-child(2) {
+      animation-delay: 0.2s;
+    }
+
+    .dot-pulse span:nth-child(3) {
+      animation-delay: 0.4s;
+    }
+
+    @keyframes pulse {
+      0%, 100% { transform: scale(0.8); opacity: 0.4; }
+      50% { transform: scale(1.2); opacity: 1; }
+    }
+
+    @media (max-width: 768px) {
+      .chat-shell {
+        height: 100vh;
+        max-height: none;
+        border-radius: 0;
+      }
+      .message-bubble {
+        max-width: 85%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="chat-shell">
+    <header class="chat-header">
+      <div class="chat-header-left">
+        <div class="avatar">L</div>
+        <div>
+          <div class="chat-header-title">Linda 2.0</div>
+          <div class="chat-header-subtitle">Juristische Assistenz für Ausbilder · Prüfer · HR</div>
+        </div>
+      </div>
+      <div class="chat-badge">File Search aktiv · gpt-4.1</div>
+    </header>
+
+    <main id="messages" class="chat-messages"></main>
+
+    <footer class="chat-footer">
+      <form id="chat-form">
+        <textarea
+          id="user-input"
+          class="chat-input"
+          placeholder="Stell Linda deine Frage, z. B.: ‚Welche Paragraphen gelten bei vorzeitiger Zulassung zur Abschlussprüfung?‘"
+        ></textarea>
+        <button type="submit" class="chat-button" id="send-button">
+          <span>Senden</span>
+          <span>⏎</span>
+        </button>
+      </form>
+      <div class="chat-status">
+        <span id="status-text">Verbunden mit Linda 2.0 (Demo)</span>
+        <span id="typing-indicator" style="visibility: hidden;">
+          <span class="dot-pulse">
+            <span></span><span></span><span></span>
+          </span>
+          <span style="margin-left: 4px;">Linda denkt …</span>
+        </span>
+      </div>
+    </footer>
+  </div>
+
+  <script>
+    const messagesEl = document.getElementById("messages");
+    const formEl = document.getElementById("chat-form");
+    const inputEl = document.getElementById("user-input");
+    const sendButtonEl = document.getElementById("send-button");
+    const typingEl = document.getElementById("typing-indicator");
+    const statusEl = document.getElementById("status-text");
+
+    function appendMessage(author, text, role) {
+      const row = document.createElement("div");
+      row.className = "message-row " + role;
+
+      const bubble = document.createElement("div");
+      bubble.className = "message-bubble " + role;
+
+      const meta = document.createElement("div");
+      meta.className = "message-meta";
+      meta.textContent = author;
+
+      const content = document.createElement("div");
+      content.textContent = text;
+
+      bubble.appendChild(meta);
+      bubble.appendChild(content);
+      row.appendChild(bubble);
+      messagesEl.appendChild(row);
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+    }
+
+    function setLoading(isLoading) {
+      typingEl.style.visibility = isLoading ? "visible" : "hidden";
+      sendButtonEl.disabled = isLoading;
+      inputEl.disabled = isLoading;
+      if (isLoading) {
+        statusEl.textContent = "Linda 2.0 verarbeitet deine Anfrage …";
+      } else {
+        statusEl.textContent = "Bereit für deine nächste Frage.";
+      }
+    }
+
+    // Begrüßungsnachricht
+    appendMessage(
+      "Linda 2.0",
+      "Hi, ich bin Linda 2.0. Ich unterstütze dich bei juristischen Fragen rund um Ausbildung, Prüfungsrecht und HR. Formuliere deine Frage bitte möglichst konkret – ich antworte mit Kernaussage, Begründung, Paragraphen und Quelle.",
+      "assistant"
+    );
+
+    formEl.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const text = inputEl.value.trim();
+      if (!text) return;
+
+      appendMessage("Du", text, "user");
+      inputEl.value = "";
+      setLoading(true);
+
+      try {
+        // WICHTIG:
+        // Passe die URL /api/linda20 an deinen Backend-Endpunkt an,
+        // der intern runWorkflow({ input_as_text }) aufruft.
+        const response = await fetch("/api/linda20", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({ input_as_text: text })
+        });
+
+        if (!response.ok) {
+          throw new Error("HTTP " + response.status + " – " + response.statusText);
+        }
+
+        const data = await response.json();
+        const answer = data.output_text || "Es kam keine Antwort von Linda zurück.";
+
+        appendMessage("Linda 2.0", answer, "assistant");
+      } catch (err) {
+        console.error(err);
+        appendMessage(
+          "System",
+          "Es ist ein Fehler aufgetreten: " + (err.message || err),
+          "system"
+        );
+      } finally {
+        setLoading(false);
+      }
+    });
+  </script>
+</body>
+</html>
