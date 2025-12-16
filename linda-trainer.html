@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Linda – Coaching Bot (Dynamic Trainer)</title>
+  <title>Linda – Coaching Bot (Dynamic Trainer V16122025)</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <link href="https://fonts.cdnfonts.com/css/aptos" rel="stylesheet" />
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
@@ -95,15 +95,15 @@
     .stat .val { font-weight: 800; font-size: 1.05rem; }
 
     .log { flex: 1; overflow: auto; display: flex; flex-direction: column; gap: 1rem; padding: 0.25rem 0.5rem 0.5rem; }
-    .bubble { max-width: 82ch; border-radius: 16px; padding: 1.25rem 1.35rem; background: var(--panel); border: 1px solid var(--line); box-shadow: var(--shadow); line-height: 1.7; position: relative; }
+    .bubble { max-width: 82ch; border-radius: 16px; padding: 1.25rem 1.35rem; background: var(--panel); border: 1px solid var(--line); box-shadow: var(--shadow); line-height: 1.7; position: relative; scroll-margin-top: 92px; }
     .bubble.me { align-self: flex-end; background: linear-gradient(135deg, rgba(10,102,194,0.12), rgba(0,138,106,0.1)); border-color: rgba(10,102,194,0.3); }
     .bubble .md h1, .bubble .md h2, .bubble .md h3 { margin: 0.5rem 0 0.8rem; color: var(--brand); }
     .bubble .md p, .bubble .md ul, .bubble .md ol, .bubble .md pre { margin: 0.65rem 0; }
     .bubble .md pre { background: var(--panel-2); border-radius: 10px; padding: 0.8rem; overflow-x: auto; }
     .bubble .md code { background: var(--panel-2); padding: 0.25rem 0.45rem; border-radius: 8px; }
-    .bubble-header { display: flex; justify-content: flex-end; gap: 0.5rem; margin-bottom: 0.4rem; }
-    .copy-btn, .pdf-btn { appearance: none; border: 1px solid var(--line); background: var(--panel-2); color: var(--muted); border-radius: 999px; padding: 0.3rem 0.7rem; cursor: pointer; display: inline-flex; align-items: center; gap: 0.4rem; transition: var(--transition); }
-    .copy-btn:hover, .pdf-btn:hover { border-color: var(--brand); color: var(--brand); }
+    .bubble-header { display: flex; justify-content: flex-end; gap: 0.5rem; margin-bottom: 0.4rem; flex-wrap: wrap; }
+    .copy-btn, .pdf-btn, .rem-btn { appearance: none; border: 1px solid var(--line); background: var(--panel-2); color: var(--muted); border-radius: 999px; padding: 0.3rem 0.7rem; cursor: pointer; display: inline-flex; align-items: center; gap: 0.4rem; transition: var(--transition); }
+    .copy-btn:hover, .pdf-btn:hover, .rem-btn:hover { border-color: var(--brand); color: var(--brand); box-shadow: var(--glow); }
     .footnotes { margin-top: 1rem; padding-top: 0.6rem; border-top: 1px solid var(--line); color: var(--muted); font-size: 0.9rem; }
     .footnotes ol { margin-left: 1.1rem; }
     .footnote-marker { color: var(--brand); font-size: 0.75em; vertical-align: super; }
@@ -130,7 +130,7 @@
     .card-h { padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--line); font-weight: 800; font-size: 1.1rem; color: var(--brand); display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; }
     .card-b { padding: 1.5rem; line-height: 1.6; }
     .beta { background: var(--panel-2); border: 1px solid var(--line); padding: 0.4rem 0.7rem; border-radius: 999px; font-weight: 800; color: var(--brand); font-size: 0.8rem; }
-    .card-f { padding: 1.25rem 1.5rem; border-top: 1px solid var(--line); display: flex; gap: 0.75rem; justify-content: flex-end; }
+    .card-f { padding: 1.25rem 1.5rem; border-top: 1px solid var(--line); display: flex; gap: 0.75rem; justify-content: flex-end; flex-wrap: wrap; }
     .btn { appearance: none; border: 1px solid var(--line); background: var(--panel-2); color: var(--text); border-radius: 12px; padding: 0.65rem 1.15rem; font-weight: 700; cursor: pointer; transition: var(--transition); }
     .btn.primary { background: linear-gradient(135deg, var(--brand), var(--brand-2)); color: #fff; border: none; }
     .btn:hover { border-color: var(--brand); box-shadow: var(--glow); }
@@ -143,8 +143,24 @@
     .switch > i { position: absolute; width: 24px; height: 24px; top: 2px; left: 2px; border-radius: 12px; background: #fff; transition: var(--transition); }
     .switch.on { background: linear-gradient(135deg, var(--brand), var(--brand-2)); border: none; }
     .switch.on > i { left: 28px; }
-
     .muted { color: var(--muted); font-size: 0.9rem; }
+
+    /* Reminder UI */
+    .rem-grid { display: grid; gap: 0.8rem; }
+    .rem-modes { display: grid; grid-template-columns: 1fr; gap: 0.6rem; }
+    .rem-mode { border: 1px solid var(--line); background: var(--panel-2); border-radius: 14px; padding: 0.9rem 1rem; display: grid; gap: 0.6rem; }
+    .rem-mode .head { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; font-weight: 800; }
+    .rem-mode .desc { color: var(--muted); font-size: 0.92rem; }
+    .rem-inline { display: flex; gap: 0.75rem; flex-wrap: wrap; align-items: center; }
+    .rem-inline > * { flex: 1; min-width: 220px; }
+    .rem-pill { display:inline-flex; gap:0.5rem; align-items:center; border:1px solid var(--line); background: var(--panel-2); padding:0.35rem 0.6rem; border-radius:999px; color: var(--muted); font-weight:700; font-size:0.85rem; }
+
+    .rem-list { display: grid; gap: 0.75rem; }
+    .rem-item { border: 1px solid var(--line); background: var(--panel-2); border-radius: 14px; padding: 0.95rem 1rem; display: grid; gap: 0.5rem; }
+    .rem-item .topline { display:flex; align-items:center; justify-content:space-between; gap:0.75rem; }
+    .rem-item .topic { font-weight: 900; }
+    .rem-item .meta { color: var(--muted); font-size: 0.9rem; }
+    .rem-item .actions { display:flex; gap:0.5rem; flex-wrap:wrap; justify-content:flex-end; }
 
     @media (max-width: 1100px) {
       .container { grid-template-columns: 1fr; }
@@ -156,6 +172,7 @@
       .composer { flex-direction: column; align-items: stretch; }
       .send { width: 100%; }
       .answer-mode { justify-content: flex-start; }
+      .rem-inline > * { min-width: 160px; }
     }
   </style>
 </head>
@@ -190,7 +207,7 @@
         </li>
         <li>
           Gib bitte <strong>keine sensiblen oder personenbezogenen Daten</strong> ein
-          (z. B. Gesundheitsdaten, Klarnamen Dritter, Kontodaten).
+          (z. B. Gesundheitsdaten, Klarnamen Dritter, Kontodaten).
         </li>
         <li>
           Weitere Informationen:
@@ -262,6 +279,106 @@
     </div>
     <div class="card-f">
       <button class="btn primary" id="u-accept">Einverstanden</button>
+    </div>
+  </div>
+</div>
+
+<!-- Reminder Editor (NEU) -->
+<div id="m-reminder" class="modal">
+  <div class="card">
+    <div class="card-h">
+      Erinnerung erstellen
+      <span class="rem-pill" id="rem-link-pill">🔗 Link: —</span>
+    </div>
+    <div class="card-b">
+      <div class="rem-grid">
+        <div>
+          <div style="font-weight:800;margin-bottom:0.35rem">Thema</div>
+          <input id="rem-topic" class="in-inline" placeholder="z. B. 'AEVO: Beurteilungsfehler vermeiden'" />
+          <div class="muted" style="margin-top:0.35rem">
+            Tipp: Das Thema wird zusammen mit einem Link direkt zur passenden Chatstelle gespeichert.
+          </div>
+        </div>
+
+        <div class="rem-modes">
+          <div class="rem-mode">
+            <div class="head">
+              <label style="display:flex;gap:0.5rem;align-items:center;cursor:pointer;">
+                <input type="radio" name="rem-mode" value="datetime" checked />
+                <span>📅 Einmalig (Datum &amp; Uhrzeit)</span>
+              </label>
+              <span class="muted">Trigger: wenn fällig</span>
+            </div>
+            <div class="desc">Beim Öffnen des Bots erscheint die Erinnerung, sobald das Datum/Uhrzeit erreicht ist.</div>
+            <div class="rem-inline">
+              <input id="rem-dt" class="in-inline" type="datetime-local" />
+            </div>
+          </div>
+
+          <div class="rem-mode">
+            <div class="head">
+              <label style="display:flex;gap:0.5rem;align-items:center;cursor:pointer;">
+                <input type="radio" name="rem-mode" value="weekly" />
+                <span>🔁 Wöchentlich</span>
+              </label>
+              <span class="muted">Trigger: am Wochentag</span>
+            </div>
+            <div class="desc">Beim Öffnen des Bots erscheint die Erinnerung, sobald der nächste Wochentermin fällig ist.</div>
+            <div class="rem-inline">
+              <select id="rem-weekday" class="select">
+                <option value="1">Montag</option>
+                <option value="2">Dienstag</option>
+                <option value="3">Mittwoch</option>
+                <option value="4">Donnerstag</option>
+                <option value="5">Freitag</option>
+                <option value="6">Samstag</option>
+                <option value="0">Sonntag</option>
+              </select>
+              <input id="rem-weektime" class="in-inline" type="time" value="09:00" />
+            </div>
+          </div>
+
+          <div class="rem-mode">
+            <div class="head">
+              <label style="display:flex;gap:0.5rem;align-items:center;cursor:pointer;">
+                <input type="radio" name="rem-mode" value="onopen" />
+                <span>🚪 Bei jedem Öffnen</span>
+              </label>
+              <span class="muted">Trigger: immer</span>
+            </div>
+            <div class="desc">Diese Erinnerung erscheint jedes Mal, wenn der Bot geöffnet wird.</div>
+          </div>
+        </div>
+
+        <div class="muted">
+          Speicherung erfolgt lokal im Browser (localStorage). Keine Cloud, kein Server.
+        </div>
+      </div>
+    </div>
+    <div class="card-f">
+      <button class="btn" id="rem-cancel">Abbrechen</button>
+      <button class="btn primary" id="rem-save">Speichern</button>
+    </div>
+  </div>
+</div>
+
+<!-- Reminder Inbox / Verwaltung (NEU) -->
+<div id="m-reminders" class="modal">
+  <div class="card">
+    <div class="card-h">
+      Erinnerungen
+      <span class="beta" id="rem-badge">—</span>
+    </div>
+    <div class="card-b">
+      <div class="muted" style="margin-bottom:0.8rem">
+        Fällige Erinnerungen werden beim Öffnen automatisch angezeigt. Hier kannst du alle verwalten.
+      </div>
+      <div id="rem-list" class="rem-list"></div>
+      <div id="rem-empty" class="muted" style="display:none">Noch keine Erinnerungen gespeichert.</div>
+    </div>
+    <div class="card-f">
+      <button class="btn" id="rem-close">Schließen</button>
+      <button class="btn" id="rem-clear-all">Alle löschen</button>
     </div>
   </div>
 </div>
@@ -414,6 +531,7 @@
   </div>
   <div class="badge" id="domain-badge" style="display:none">📘 Fachmodus: —</div>
   <div class="top-actions">
+    <button class="icon-btn" id="btn-reminders" aria-label="Erinnerungen öffnen">⏰</button>
     <button class="icon-btn" id="btn-learn" aria-label="Lernen öffnen">📚</button>
     <button class="icon-btn" id="btn-settings" aria-label="Einstellungen öffnen">⚙️</button>
   </div>
@@ -639,10 +757,14 @@
   let Sessions = LS.get('linda.sessions',[]);
   let activeId = LS.get('linda.activeId',null);
 
+  // Erinnerungen (NEU)
+  let Reminders = LS.get('linda.reminders',[]);
+
   const md   = (txt)=>{ try { return marked.parse(txt) } catch { return txt } };
   const show = m => m.style.display='flex';
   const hide = m => m.style.display='none';
   const uid  = () => 's_'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+  const rid  = () => 'r_'+Date.now().toString(36)+Math.random().toString(36).slice(2,7);
 
   function updateStats(){
     const el = $('stat-snippets');
@@ -663,6 +785,7 @@
     LS.set('linda.sessions', Sessions);
     LS.set('linda.activeId', activeId);
     LS.set('linda.learn', Learn);
+    LS.set('linda.reminders', Reminders);
     updateStats();
     renderLearnMini();
   }
@@ -806,14 +929,323 @@
     win.print();
   }
 
-  function addMsg(role,content){
+  // ---------- Erinnerungen (NEU) ----------
+  function stripToPlainFromMarkdown(markdownText){
+    try {
+      const tmp = document.createElement('div');
+      tmp.innerHTML = md(markdownText || '');
+      const t = (tmp.innerText || '').replace(/\s+/g,' ').trim();
+      return t;
+    } catch {
+      return (markdownText || '').replace(/\s+/g,' ').trim();
+    }
+  }
+
+  function buildChatHashLink(sessionId, msgIndex){
+    return `#chat=${encodeURIComponent(sessionId)}&m=${encodeURIComponent(String(msgIndex))}`;
+  }
+
+  function formatWhen(rem){
+    if(rem.type==='onopen') return 'Bei jedem Öffnen';
+    if(rem.type==='datetime'){
+      const d = new Date(rem.at);
+      return `Einmalig: ${d.toLocaleString()}`;
+    }
+    if(rem.type==='weekly'){
+      const names = ['Sonntag','Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag'];
+      const next = rem.nextAt ? new Date(rem.nextAt).toLocaleString() : '—';
+      return `Wöchentlich: ${names[rem.weekday]} ${rem.time} (nächster: ${next})`;
+    }
+    return '—';
+  }
+
+  function computeNextWeekly(weekday, timeHHMM, fromTs){
+    const from = new Date(fromTs || Date.now());
+    const [hh, mm] = (timeHHMM || '09:00').split(':').map(x=>parseInt(x,10));
+    const base = new Date(from.getFullYear(), from.getMonth(), from.getDate(), hh||0, mm||0, 0, 0);
+    const delta = ((weekday - base.getDay()) + 7) % 7;
+    let target = new Date(base);
+    target.setDate(base.getDate() + delta);
+
+    // wenn exakt heute aber Zeit schon vorbei => nächste Woche
+    if (target.getTime() <= from.getTime()) {
+      target.setDate(target.getDate() + 7);
+    }
+    return target.getTime();
+  }
+
+  function isDue(rem, nowTs){
+    const now = nowTs || Date.now();
+    if(rem.type==='onopen') return true;
+    if(rem.type==='datetime'){
+      if(rem.done) return false;
+      return typeof rem.at==='number' && rem.at <= now;
+    }
+    if(rem.type==='weekly'){
+      return typeof rem.nextAt==='number' && rem.nextAt <= now;
+    }
+    return false;
+  }
+
+  function countDue(){
+    const now = Date.now();
+    return (Reminders||[]).filter(r=>isDue(r, now)).length;
+  }
+
+  function updateReminderBadge(){
+    const due = countDue();
+    const badge = $('rem-badge');
+    if (badge) badge.textContent = due ? `${due} fällig` : 'keine fälligen';
+  }
+
+  function openRemindersModal(showAll){
+    renderRemindersList(showAll ? 'all' : 'due');
+    updateReminderBadge();
+    show($('m-reminders'));
+  }
+
+  function renderRemindersList(mode){
+    const list = $('rem-list');
+    const empty = $('rem-empty');
+    const badge = $('rem-badge');
+    const now = Date.now();
+
+    const items = (Reminders || [])
+      .filter(r => mode==='all' ? true : isDue(r, now))
+      .sort((a,b)=>{
+        const ax = (a.type==='onopen') ? -1 : (a.type==='datetime' ? a.at : a.nextAt);
+        const bx = (b.type==='onopen') ? -1 : (b.type==='datetime' ? b.at : b.nextAt);
+        return (ax||0) - (bx||0);
+      });
+
+    if (!items.length){
+      list.innerHTML = '';
+      empty.style.display = 'block';
+      badge.textContent = mode==='all' ? '0 gespeichert' : 'keine fälligen';
+      return;
+    }
+
+    empty.style.display = 'none';
+    badge.textContent = mode==='all' ? `${items.length} gespeichert` : `${items.length} fällig`;
+
+    list.innerHTML = items.map(r=>{
+      const link = buildChatHashLink(r.sessionId, r.msgIndex);
+      return `
+        <div class="rem-item" data-rid="${r.id}">
+          <div class="topline">
+            <div class="topic">⏰ ${escapeHtml(r.topic || 'Ohne Thema')}</div>
+            <div class="muted">${new Date(r.createdAt||Date.now()).toLocaleDateString()}</div>
+          </div>
+          <div class="meta">${escapeHtml(formatWhen(r))}</div>
+          <div class="meta">Chat-Link: <a href="${link}" class="rem-jump">Zum Chat springen</a></div>
+          <div class="actions">
+            ${r.type==='datetime' && !r.done ? `<button class="btn rem-done">Erledigt</button>` : ``}
+            ${r.type==='weekly' ? `<button class="btn rem-snooze">Für nächste Woche</button>` : ``}
+            <button class="btn rem-del">Entfernen</button>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    list.querySelectorAll('.rem-del').forEach(btn=>{
+      btn.onclick = () => {
+        const id = btn.closest('.rem-item').dataset.rid;
+        Reminders = (Reminders||[]).filter(r=>r.id!==id);
+        saveAll();
+        renderRemindersList(mode);
+        updateReminderBadge();
+      };
+    });
+
+    list.querySelectorAll('.rem-done').forEach(btn=>{
+      btn.onclick = () => {
+        const id = btn.closest('.rem-item').dataset.rid;
+        const r = (Reminders||[]).find(x=>x.id===id);
+        if (!r) return;
+        r.done = true;
+        saveAll();
+        renderRemindersList(mode);
+        updateReminderBadge();
+      };
+    });
+
+    list.querySelectorAll('.rem-snooze').forEach(btn=>{
+      btn.onclick = () => {
+        const id = btn.closest('.rem-item').dataset.rid;
+        const r = (Reminders||[]).find(x=>x.id===id);
+        if (!r || r.type!=='weekly') return;
+        r.nextAt = computeNextWeekly(r.weekday, r.time, Date.now()+60*1000);
+        saveAll();
+        renderRemindersList(mode);
+        updateReminderBadge();
+      };
+    });
+
+    list.querySelectorAll('.rem-jump').forEach(a=>{
+      a.onclick = () => {
+        hide($('m-reminders'));
+      };
+    });
+  }
+
+  function maybeShowDueRemindersOnOpen(){
+    // nur anzeigen, wenn Datenschutz+Nutzung akzeptiert
+    const privAccepted  = LS.get('linda.privacyAccepted', false);
+    const usageAccepted = LS.get('linda.usageAccepted', false);
+    if (!privAccepted || !usageAccepted) return;
+
+    const due = countDue();
+    if (due > 0) {
+      openRemindersModal(false);
+    }
+  }
+
+  let reminderTarget = null;
+  function openReminderEditor(sessionId, msgIndex, assistantContent){
+    reminderTarget = { sessionId, msgIndex };
+
+    const plain = stripToPlainFromMarkdown(assistantContent || '');
+    const suggested = (plain || '').slice(0, 90) + ((plain||'').length > 90 ? '…' : '');
+    $('rem-topic').value = suggested || 'Erinnerung';
+
+    // Default: "in 1 Stunde"
+    try {
+      const d = new Date(Date.now() + 60*60*1000);
+      const pad = n => String(n).padStart(2,'0');
+      const local = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+      $('rem-dt').value = local;
+    } catch {}
+
+    const hash = buildChatHashLink(sessionId, msgIndex);
+    $('rem-link-pill').textContent = `🔗 Link: ${hash}`;
+
+    // Mode default (Einmalig)
+    document.querySelectorAll('input[name="rem-mode"]').forEach(r=>{
+      r.checked = (r.value==='datetime');
+    });
+
+    show($('m-reminder'));
+  }
+
+  function readSelectedReminderMode(){
+    const checked = document.querySelector('input[name="rem-mode"]:checked');
+    return checked ? checked.value : 'datetime';
+  }
+
+  function localDateTimeToTimestamp(dtLocal){
+    // dtLocal: "YYYY-MM-DDTHH:MM"
+    if(!dtLocal) return null;
+    const d = new Date(dtLocal);
+    if (isNaN(d.getTime())) return null;
+    return d.getTime();
+  }
+
+  function saveReminderFromEditor(){
+    if(!reminderTarget) return;
+
+    const topic = ($('rem-topic').value || '').trim() || 'Erinnerung';
+    const mode  = readSelectedReminderMode();
+    const base = {
+      id: rid(),
+      topic,
+      type: mode,
+      sessionId: reminderTarget.sessionId,
+      msgIndex: reminderTarget.msgIndex,
+      createdAt: Date.now()
+    };
+
+    if(mode==='datetime'){
+      const ts = localDateTimeToTimestamp($('rem-dt').value);
+      if(!ts){
+        alert('Bitte ein gültiges Datum mit Uhrzeit auswählen.');
+        return;
+      }
+      base.at = ts;
+      base.done = false;
+      Reminders.unshift(base);
+    }
+
+    if(mode==='weekly'){
+      const weekday = parseInt(($('rem-weekday').value || '1'),10);
+      const time = ($('rem-weektime').value || '09:00');
+      base.weekday = isNaN(weekday) ? 1 : weekday;
+      base.time = time;
+      base.nextAt = computeNextWeekly(base.weekday, base.time, Date.now());
+      Reminders.unshift(base);
+    }
+
+    if(mode==='onopen'){
+      Reminders.unshift(base);
+    }
+
+    saveAll();
+    hide($('m-reminder'));
+    reminderTarget = null;
+    updateReminderBadge();
+  }
+
+  $('rem-cancel').onclick = () => { hide($('m-reminder')); reminderTarget=null; };
+  $('rem-save').onclick   = saveReminderFromEditor;
+
+  $('rem-close').onclick = () => hide($('m-reminders'));
+  $('rem-clear-all').onclick = () => {
+    if(!confirm('Wirklich alle Erinnerungen löschen?')) return;
+    Reminders = [];
+    saveAll();
+    renderRemindersList('all');
+    updateReminderBadge();
+  };
+
+  // Hash-Navigation: #chat=<sessionId>&m=<index>
+  function parseHashAndJump(){
+    const h = location.hash || '';
+    const m = h.match(/chat=([^&]+)&m=([^&]+)/);
+    if(!m) return;
+    const sid = decodeURIComponent(m[1] || '');
+    const idx = parseInt(decodeURIComponent(m[2] || '0'),10);
+    if(!sid) return;
+
+    if (sid !== activeId) setActive(sid);
+
+    setTimeout(()=>{
+      const el = document.getElementById(`msg-${sid}-${idx}`);
+      if (el) {
+        el.scrollIntoView({behavior:'smooth', block:'start'});
+        el.style.boxShadow = 'var(--glow)';
+        setTimeout(()=>{ el.style.boxShadow=''; }, 900);
+      }
+    }, 80);
+  }
+  window.addEventListener('hashchange', parseHashAndJump);
+
+  function escapeHtml(s){
+    return String(s||'')
+      .replaceAll('&','&amp;')
+      .replaceAll('<','&lt;')
+      .replaceAll('>','&gt;')
+      .replaceAll('"','&quot;')
+      .replaceAll("'","&#039;");
+  }
+  // ---------- /Erinnerungen ----------
+
+  function addMsg(role,content,meta){
     const d = document.createElement('div');
     d.className = 'bubble' + (role==='user' ? ' me' : '');
     d.dataset.role = role;
 
+    // Anker für Chat-Link (NEU)
+    if(meta && meta.sessionId != null && meta.msgIndex != null){
+      d.id = `msg-${meta.sessionId}-${meta.msgIndex}`;
+      d.dataset.sid = meta.sessionId;
+      d.dataset.mid = String(meta.msgIndex);
+    }
+
     if (role === 'assistant') {
       d.innerHTML =
         '<div class="bubble-header">' +
+          '<button type="button" class="rem-btn" title="Erinnerung zu dieser Antwort erstellen">' +
+            '<span>⏰</span><span>erinnern</span>' +
+          '</button>' +
           '<button type="button" class="copy-btn" title="Antwort kopieren">' +
             '<span>📋</span><span>kopieren</span>' +
           '</button>' +
@@ -830,9 +1262,15 @@
     $('log').scrollTop = $('log').scrollHeight;
 
     if (role === 'assistant') {
+      const rem  = d.querySelector('.rem-btn');
       const btn  = d.querySelector('.copy-btn');
       const pdf  = d.querySelector('.pdf-btn');
       const mdEl = d.querySelector('.md');
+
+      // Reminder click (NEU)
+      if (rem && meta && meta.sessionId != null && meta.msgIndex != null) {
+        rem.addEventListener('click', () => openReminderEditor(meta.sessionId, meta.msgIndex, content));
+      }
 
       if (btn && mdEl && navigator.clipboard && navigator.clipboard.writeText) {
         btn.addEventListener('click', async () => {
@@ -862,7 +1300,7 @@
     $('log').innerHTML='';
     const s = active();
     if(!s) return;
-    s.messages.forEach(m=>addMsg(m.role,m.content));
+    s.messages.forEach((m,i)=>addMsg(m.role,m.content,{sessionId:s.id,msgIndex:i}));
   }
 
   function push(role,content){
@@ -1160,6 +1598,9 @@
     hide($('m-privacy'));
     if (!LS.get(USAGE_KEY, false)) {
       show($('m-usage'));
+    } else {
+      // falls schon akzeptiert
+      maybeShowDueRemindersOnOpen();
     }
   };
 
@@ -1185,6 +1626,9 @@
       );
       renderChat();
     }
+
+    // Erinnerungen nach Akzeptanz anzeigen (NEU)
+    maybeShowDueRemindersOnOpen();
   };
 
   // Einstellungen / Switches / Theme
@@ -1279,6 +1723,9 @@
     hide($('m-learn'));
   };
 
+  // Erinnerungen Button (NEU)
+  $('btn-reminders').onclick = () => openRemindersModal(true);
+
   // Initialisierung
   ensureFirstSession();
   renderSessions();
@@ -1286,6 +1733,11 @@
   updateStats();
   renderLearnMini();
   openInitialModals();
+
+  // Hash jump + Due reminders on open (NEU)
+  parseHashAndJump();
+  updateReminderBadge();
+  maybeShowDueRemindersOnOpen();
 })();
 </script>
 </body>
