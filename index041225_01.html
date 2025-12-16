@@ -449,6 +449,7 @@
     const userInput = inputs[0];
 
     if (!sendBtn || !userInput) return;
+    if (sendBtn.dataset.historyManaged === '1') return;
 
     const handler = () => {
       const text = (userInput.value || "").trim();
@@ -675,17 +676,37 @@
     return msgs.map(m => ({ role: m.role, content: m.content }));
   }
 
+  const LOCAL_HISTORY_MAX = 100;
+  function getLocalHistory(){
+    try {
+      return JSON.parse(localStorage.getItem('chatHistory')) || [];
+    } catch (e) {
+      return [];
+    }
+  }
+  function saveLocalHistory(list){
+    localStorage.setItem('chatHistory', JSON.stringify(list.slice(-LOCAL_HISTORY_MAX)));
+  }
+  function appendLocalHistoryUser(text){
+    if (!text) return;
+    const hist = getLocalHistory();
+    hist.push({ user: text, bot: '' });
+    saveLocalHistory(hist);
+  }
+  function updateLastHistoryBot(text){
+    const hist = getLocalHistory();
+    if (hist.length) {
+      hist[hist.length-1].bot = text;
+      saveLocalHistory(hist);
+    }
+  }
+
   // Send-Funktion mit explizitem History-Feld
   async function send(){
     const inp=$('in'); const q=inp.value.trim(); if(!q) return;
     inp.value=''; $('send').disabled=true;
 
-    // local chatHistory updaten
-    try {
-      const hist = JSON.parse(localStorage.getItem('chatHistory')) || [];
-      hist.push({ user: q, bot: '' });
-      localStorage.setItem('chatHistory', JSON.stringify(hist));
-    } catch (e) {}
+    appendLocalHistoryUser(q);
 
     push('user',q); renderChat();
     push('assistant','⏳ Einen Moment …'); renderChat();
@@ -704,24 +725,12 @@
 
       const s=active(); s.messages[s.messages.length-1]={role:'assistant',content:out}; saveAll();
 
-      try {
-        const hist = JSON.parse(localStorage.getItem('chatHistory')) || [];
-        if (hist.length) {
-          hist[hist.length-1].bot = out;
-          localStorage.setItem('chatHistory', JSON.stringify(hist));
-        }
-      } catch (e) {}
+      updateLastHistoryBot(out);
 
       renderChat();
     }catch(e){
       const s=active(); s.messages[s.messages.length-1]={role:'assistant',content:'Es gab ein Verbindungsproblem. Bitte noch einmal senden.'}; saveAll(); renderChat();
-      try {
-        const hist = JSON.parse(localStorage.getItem('chatHistory')) || [];
-        if (hist.length) {
-          hist[hist.length-1].bot = 'ERROR: Verbindung';
-          localStorage.setItem('chatHistory', JSON.stringify(hist));
-        }
-      } catch (e) {}
+      updateLastHistoryBot('ERROR: Verbindung');
     }finally{$('send').disabled=false;}
   }
 
@@ -766,6 +775,7 @@
   $('pm-export').onclick=()=>{const blob=new Blob([JSON.stringify(SN,null,2)],{type:'application/json'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='linda-snippets.json'; a.click(); URL.revokeObjectURL(a.href);};
   $('pm-import').onclick=()=>{const i=document.createElement('input'); i.type='file'; i.accept='application/json'; i.onchange=async()=>{const f=i.files[0]; if(!f)return; const txt=await f.text(); try{const arr=JSON.parse(txt); if(Array.isArray(arr)){SN=arr; saveAll(); renderPM();}}catch{alert('Import fehlgeschlagen.')}}; i.click();};
 
+  $('send').dataset.historyManaged='1';
   $('send').onclick=send;
   $('in').addEventListener('keydown',e=>{ if(e.key==='Enter'&&!e.shiftKey){ e.preventDefault(); send(); }});
   $('in').addEventListener('input',e=>{
