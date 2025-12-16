@@ -8,6 +8,8 @@
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <style>
   :root {
+    --font-body: 'Inter', system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+    --font-size: 12px;
     --bg: #ffffff;
     --panel: #f8f9fa;
     --line: #e9ecef;
@@ -29,7 +31,7 @@
     --brand-2: #0071ce;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  html, body { height: 100%; font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; }
+  html, body { height: 100%; font-family: var(--font-body); font-size: var(--font-size); background: var(--bg); color: var(--text); line-height: 1.6; }
   a { color: var(--brand-2); text-decoration: none; transition: var(--transition); }
   a:hover { color: var(--brand); }
 
@@ -73,9 +75,10 @@
   .bubble-header {
     display: flex;
     justify-content: flex-end;
+    gap: 0.35rem;
     margin-bottom: 0.5rem;
   }
-  .copy-btn {
+  .copy-btn, .pdf-btn {
     appearance: none;
     border: 1px solid var(--line);
     background: rgba(248, 249, 250, 0.9);
@@ -89,7 +92,7 @@
     transition: var(--transition);
     color: var(--muted);
   }
-  .copy-btn:hover {
+  .copy-btn:hover, .pdf-btn:hover {
     background: rgba(0, 68, 129, 0.08);
     color: var(--brand);
   }
@@ -164,6 +167,19 @@
   .footer { text-align: center; padding: 1rem; color: var(--muted); font-size: 0.9rem; border-top: 1px solid var(--line); margin-top: 2rem; }
   .footer a { color: var(--brand); }
 
+  .mobile-info {
+    background: #fff4e6;
+    color: #8a5200;
+    border: 1px solid #ffd8a8;
+    padding: 0.85rem 1rem;
+    text-align: center;
+    font-weight: 600;
+  }
+
+  body.mobile .panel { box-shadow: none; }
+  body.mobile .top { box-shadow: none; }
+  body.mobile #btn-settings { opacity: 0.45; pointer-events: none; }
+
   @media (max-width: 1024px) {
     .container { grid-template-columns: 1fr; gap: 1.5rem; }
     .sessions { max-height: none; }
@@ -236,6 +252,23 @@
       <div class="row"><label>Gender-Sprache</label><div id="sw-gender" class="switch"><i></i></div></div>
       <div class="row"><label>Begrüßung anzeigen</label><div id="sw-greet" class="switch on"><i></i></div></div>
       <div class="row"><label>Lernmodus (inaktiv)</label><div class="switch disabled" title="Demnächst"><i></i></div></div>
+      <div class="row">
+        <label>Schriftart</label>
+        <select id="sel-font" class="select">
+          <option value="Arial">Arial</option>
+          <option value="Aptos">Aptos</option>
+          <option value="Times New Roman">Times New Roman</option>
+          <option value="Index">Index</option>
+        </select>
+      </div>
+      <div class="row">
+        <label>Schriftgröße</label>
+        <select id="sel-font-size" class="select">
+          <option value="11">11</option>
+          <option value="12">12</option>
+          <option value="13">13</option>
+        </select>
+      </div>
     </div>
 
     <div class="group">
@@ -319,6 +352,8 @@
     </svg>
   </button>
 </div>
+
+<div id="mobile-info" class="mobile-info" style="display:none">Du nutzt die mobile Version – Einstellungen sind hier nicht verfügbar.</div>
 
 <div class="container">
   <aside class="sidebar">
@@ -449,6 +484,7 @@
     const userInput = inputs[0];
 
     if (!sendBtn || !userInput) return;
+    if (sendBtn.dataset.historyManaged === '1') return;
 
     const handler = () => {
       const text = (userInput.value || "").trim();
@@ -493,11 +529,13 @@
   const uniqueToken = 'Linda-v27.6-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
   console.log('Unique Session Token:', uniqueToken);
 
+  const IS_MOBILE = /Mobi|Android|iPhone/i.test(navigator.userAgent || '');
+
   const $=id=>document.getElementById(id);
   const LS={get(k,d){try{return JSON.parse(localStorage.getItem(k))??d}catch{return d}},set(k,v){localStorage.setItem(k,JSON.stringify(v))},del(k){localStorage.removeItem(k)}};
   const nowStr=()=>new Date().toLocaleString();
 
-  const S=LS.get('linda.settings',{theme:'light',gender:false,greet:true,domain:''});
+  const S=LS.get('linda.settings',{theme:'light',gender:false,greet:true,domain:'',font:'Arial',fontSize:'12'});
   let SN=LS.get('linda.snippets',[
     {id:'s1',title:'AEVO-Kurz',alias:'/aevo',content:'Bitte juristisch sauber und prüfungsrelevant zur AEVO antworten.'},
     {id:'s2',title:'TL;DR',alias:'/tldr',content:'TL;DR in drei Bulletpoints, je max. 12 Wörter.'}
@@ -519,6 +557,24 @@
       document.body.classList.toggle('dark',S.theme==='dark');
     }
     document.querySelectorAll('#chip-theme .chip').forEach(c=>c.classList.toggle('active',c.dataset.val===S.theme));
+  }
+
+  function applyTypography(){
+    const fontMap={
+      'Arial': 'Arial, Helvetica, sans-serif',
+      'Aptos': '"Aptos", "Segoe UI", sans-serif',
+      'Times New Roman': '"Times New Roman", Times, serif',
+      'Index': '"Index", "Inter", system-ui, sans-serif'
+    };
+    const fontVal=fontMap[S.font] || fontMap['Arial'];
+    document.documentElement.style.setProperty('--font-body', fontVal);
+    const sizeVal = parseInt(S.fontSize,10);
+    const safeSize = isNaN(sizeVal) ? 12 : Math.min(14, Math.max(11, sizeVal));
+    document.documentElement.style.setProperty('--font-size', safeSize + 'px');
+    const fontSelect=$('sel-font');
+    const sizeSelect=$('sel-font-size');
+    if(fontSelect) fontSelect.value=S.font;
+    if(sizeSelect) sizeSelect.value=String(safeSize);
   }
 
   function ensureFirstSession(){
@@ -603,6 +659,34 @@
   }
 
   // NEU: Bubble-Renderer inkl. Kopier-Button + Fußnoten
+  function copyAnswerText(mdEl, btn){
+    const txt = mdEl?.innerText || '';
+    if (!txt) return;
+    const originalHTML = btn.innerHTML;
+    navigator.clipboard.writeText(txt).then(()=>{
+      btn.innerHTML = '<span>✔</span><span>kopiert</span>';
+      setTimeout(()=>{ btn.innerHTML = originalHTML; }, 1200);
+    }).catch(()=>{
+      btn.innerHTML = '<span>!</span><span>Fehler</span>';
+      setTimeout(()=>{ btn.innerHTML = originalHTML; }, 1500);
+    });
+  }
+
+  function downloadAnswerPdf(mdEl){
+    const txt = mdEl?.innerText || '';
+    const title = 'Linda-Antwort';
+    const w = window.open('', '_blank', 'width=800,height=900');
+    if (!w) return;
+    w.document.write(`<!DOCTYPE html><html><head><title>${title}</title><style>
+      body { font-family: ${getComputedStyle(document.documentElement).getPropertyValue('--font-body')}; margin: 24px; line-height: 1.6; font-size: ${getComputedStyle(document.documentElement).getPropertyValue('--font-size')}; }
+      h1 { font-size: 1.25em; margin-bottom: 0.75em; }
+      pre { white-space: pre-wrap; }
+    </style></head><body><h1>${title}</h1><pre>${txt.replace(/</g,'&lt;')}</pre></body></html>`);
+    w.document.close();
+    w.focus();
+    w.print();
+  }
+
   function addMsg(role,content){
     const d=document.createElement('div');
     d.className='bubble'+(role==='user'?' me':'');
@@ -613,6 +697,9 @@
         '<div class="bubble-header">' +
           '<button type="button" class="copy-btn" title="Antwort kopieren">' +
             '<span>📋</span><span>kopieren</span>' +
+          '</button>' +
+          '<button type="button" class="pdf-btn" title="Als PDF drucken">' +
+            '<span>🖨</span><span>PDF</span>' +
           '</button>' +
         '</div>' +
         '<div class="md">'+md(content)+'</div>';
@@ -625,22 +712,12 @@
 
     if (role === 'assistant') {
       const btn = d.querySelector('.copy-btn');
+      const pdfBtn = d.querySelector('.pdf-btn');
       const mdEl = d.querySelector('.md');
       if (btn && mdEl && navigator.clipboard && navigator.clipboard.writeText) {
-        btn.addEventListener('click', async () => {
-          const txt = mdEl.innerText || '';
-          if (!txt) return;
-          const originalHTML = btn.innerHTML;
-          try {
-            await navigator.clipboard.writeText(txt);
-            btn.innerHTML = '<span>✔</span><span>kopiert</span>';
-            setTimeout(()=>{ btn.innerHTML = originalHTML; }, 1200);
-          } catch (err) {
-            btn.innerHTML = '<span>!</span><span>Fehler</span>';
-            setTimeout(()=>{ btn.innerHTML = originalHTML; }, 1500);
-          }
-        });
+        btn.addEventListener('click', () => copyAnswerText(mdEl, btn));
       }
+      if (pdfBtn && mdEl) pdfBtn.addEventListener('click', () => downloadAnswerPdf(mdEl));
       enhanceFootnotes(d);
     }
   }
@@ -675,17 +752,37 @@
     return msgs.map(m => ({ role: m.role, content: m.content }));
   }
 
+  const LOCAL_HISTORY_MAX = 100;
+  function getLocalHistory(){
+    try {
+      return JSON.parse(localStorage.getItem('chatHistory')) || [];
+    } catch (e) {
+      return [];
+    }
+  }
+  function saveLocalHistory(list){
+    localStorage.setItem('chatHistory', JSON.stringify(list.slice(-LOCAL_HISTORY_MAX)));
+  }
+  function appendLocalHistoryUser(text){
+    if (!text) return;
+    const hist = getLocalHistory();
+    hist.push({ user: text, bot: '' });
+    saveLocalHistory(hist);
+  }
+  function updateLastHistoryBot(text){
+    const hist = getLocalHistory();
+    if (hist.length) {
+      hist[hist.length-1].bot = text;
+      saveLocalHistory(hist);
+    }
+  }
+
   // Send-Funktion mit explizitem History-Feld
   async function send(){
     const inp=$('in'); const q=inp.value.trim(); if(!q) return;
     inp.value=''; $('send').disabled=true;
 
-    // local chatHistory updaten
-    try {
-      const hist = JSON.parse(localStorage.getItem('chatHistory')) || [];
-      hist.push({ user: q, bot: '' });
-      localStorage.setItem('chatHistory', JSON.stringify(hist));
-    } catch (e) {}
+    appendLocalHistoryUser(q);
 
     push('user',q); renderChat();
     push('assistant','⏳ Einen Moment …'); renderChat();
@@ -704,24 +801,12 @@
 
       const s=active(); s.messages[s.messages.length-1]={role:'assistant',content:out}; saveAll();
 
-      try {
-        const hist = JSON.parse(localStorage.getItem('chatHistory')) || [];
-        if (hist.length) {
-          hist[hist.length-1].bot = out;
-          localStorage.setItem('chatHistory', JSON.stringify(hist));
-        }
-      } catch (e) {}
+      updateLastHistoryBot(out);
 
       renderChat();
     }catch(e){
       const s=active(); s.messages[s.messages.length-1]={role:'assistant',content:'Es gab ein Verbindungsproblem. Bitte noch einmal senden.'}; saveAll(); renderChat();
-      try {
-        const hist = JSON.parse(localStorage.getItem('chatHistory')) || [];
-        if (hist.length) {
-          hist[hist.length-1].bot = 'ERROR: Verbindung';
-          localStorage.setItem('chatHistory', JSON.stringify(hist));
-        }
-      } catch (e) {}
+      updateLastHistoryBot('ERROR: Verbindung');
     }finally{$('send').disabled=false;}
   }
 
@@ -766,6 +851,7 @@
   $('pm-export').onclick=()=>{const blob=new Blob([JSON.stringify(SN,null,2)],{type:'application/json'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='linda-snippets.json'; a.click(); URL.revokeObjectURL(a.href);};
   $('pm-import').onclick=()=>{const i=document.createElement('input'); i.type='file'; i.accept='application/json'; i.onchange=async()=>{const f=i.files[0]; if(!f)return; const txt=await f.text(); try{const arr=JSON.parse(txt); if(Array.isArray(arr)){SN=arr; saveAll(); renderPM();}}catch{alert('Import fehlgeschlagen.')}}; i.click();};
 
+  $('send').dataset.historyManaged='1';
   $('send').onclick=send;
   $('in').addEventListener('keydown',e=>{ if(e.key==='Enter'&&!e.shiftKey){ e.preventDefault(); send(); }});
   $('in').addEventListener('input',e=>{
@@ -786,15 +872,20 @@
   };
 
   applyTheme();
+  applyTypography();
   const sw=(el,val)=>{el.classList.toggle('on',val)}
   sw($('sw-gender'),S.gender); $('sw-gender').onclick=()=>{S.gender=!S.gender; sw($('sw-gender'),S.gender); saveAll();} 
   sw($('sw-greet'),S.greet); $('sw-greet').onclick=()=>{S.greet=!S.greet; sw($('sw-greet'),S.greet); saveAll();} 
   document.querySelectorAll('#chip-theme .chip').forEach(c=>c.onclick=()=>{S.theme=c.dataset.val; saveAll(); applyTheme();});
   $('sel-domain').value=S.domain||'';
+  $('sel-font').value=S.font||'Arial';
+  $('sel-font-size').value=String(S.fontSize||'12');
   setBadge();
-  $('s-save').onclick=()=>{S.domain=$('sel-domain').value; saveAll(); setBadge(); hide($('m-settings'));};
+  $('s-save').onclick=()=>{S.domain=$('sel-domain').value; S.font=$('sel-font').value; S.fontSize=$('sel-font-size').value; saveAll(); setBadge(); applyTypography(); hide($('m-settings'));};
   $('s-close').onclick=()=>hide($('m-settings'));
-  $('btn-settings').onclick=()=>{ renderPM(); show($('m-settings')); };
+  $('sel-font').onchange=()=>{S.font=$('sel-font').value; saveAll(); applyTypography();};
+  $('sel-font-size').onchange=()=>{S.fontSize=$('sel-font-size').value; saveAll(); applyTypography();};
+  $('btn-settings').onclick=()=>{ if(IS_MOBILE){alert('Einstellungen sind in der mobilen Version nicht verfügbar.'); return;} renderPM(); show($('m-settings')); };
 
   $('btn-export-all').onclick=()=>{ 
     const all=Sessions.map(s=>`# ${s.name||'Chat'} (${new Date(s.ts).toLocaleString()})\n\n`+s.messages.map(m=>(m.role==='user'?'Du: ':'Linda: ')+m.content).join('\n\n')).join('\n\n---\n\n');
@@ -805,6 +896,13 @@
   $('btn-new').onclick=addSession;
 
   ensureFirstSession();
+  if(IS_MOBILE){
+    document.body.classList.add('mobile');
+    const info=$('mobile-info');
+    if(info) info.style.display='block';
+    const settingsBtn=$('btn-settings');
+    if(settingsBtn) settingsBtn.setAttribute('aria-disabled','true');
+  }
   renderSessions();
   renderChat();
 
