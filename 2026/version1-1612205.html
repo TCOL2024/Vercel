@@ -1,0 +1,1043 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Linda – Clean Trainer</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet"/>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <style>
+    :root{
+      --bg:#ffffff;
+      --panel:#ffffff;
+      --line:#e9eef6;
+      --text:#0f1b2d;
+      --muted:#5b6b85;
+      --brand:#0a66c2;
+      --shadow:0 14px 30px rgba(10,102,194,.08);
+      --radius:14px;
+      --radius-sm:12px;
+      --pad:16px;
+      --max:920px;
+    }
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{
+      font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+      background:var(--bg);
+      color:var(--text);
+    }
+    a{color:var(--brand);text-decoration:none}
+    a:hover{text-decoration:underline}
+    .wrap{max-width:var(--max);margin:0 auto;padding:18px}
+    .top{
+      position:sticky; top:0; z-index:20;
+      background:rgba(255,255,255,.92);
+      backdrop-filter: blur(10px);
+      border-bottom:1px solid var(--line);
+    }
+    .top .row{
+      max-width:var(--max);
+      margin:0 auto;
+      padding:14px 18px;
+      display:flex;
+      gap:12px;
+      align-items:center;
+      justify-content:space-between;
+    }
+    .brand{
+      display:flex; gap:10px; align-items:center;
+      font-weight:800; letter-spacing:-.02em;
+    }
+    .brand .dot{
+      width:10px;height:10px;border-radius:10px;background:var(--brand);
+      box-shadow:0 0 0 6px rgba(10,102,194,.12);
+    }
+    .actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
+    .select{
+      border:1px solid var(--line);
+      background:#fff;
+      color:var(--text);
+      padding:10px 12px;
+      border-radius:12px;
+      font-weight:600;
+      outline:none;
+    }
+    .btn{
+      appearance:none;
+      border:1px solid var(--line);
+      background:#fff;
+      color:var(--text);
+      padding:10px 12px;
+      border-radius:12px;
+      font-weight:700;
+      cursor:pointer;
+      transition:.15s ease;
+    }
+    .btn:hover{border-color:rgba(10,102,194,.35); box-shadow:0 10px 22px rgba(10,102,194,.08)}
+    .btn.primary{
+      background:var(--brand);
+      color:#fff;
+      border-color:transparent;
+    }
+    .btn.primary:hover{filter:brightness(.98)}
+    .pill{
+      border:1px solid var(--line);
+      background:#f7f9fe;
+      padding:10px 12px;
+      border-radius:999px;
+      display:flex;gap:8px;align-items:center;
+      color:var(--muted);
+      font-weight:700;
+      min-width:220px;
+      justify-content:space-between;
+    }
+    .main{padding-top:18px}
+    .card{
+      border:1px solid var(--line);
+      border-radius:var(--radius);
+      background:var(--panel);
+      box-shadow:var(--shadow);
+      overflow:hidden;
+    }
+    .chat{
+      padding:18px;
+      display:flex;
+      flex-direction:column;
+      gap:12px;
+      min-height:52vh;
+    }
+    .msg{
+      border:1px solid var(--line);
+      border-radius:16px;
+      padding:14px 14px;
+      line-height:1.65;
+      background:#fff;
+      position:relative;
+      scroll-margin-top:90px;
+    }
+    .msg.user{
+      background:#f7f9fe;
+      border-color:rgba(10,102,194,.18);
+      align-self:flex-end;
+      max-width:min(80ch, 100%);
+    }
+    .msg.assistant{
+      align-self:flex-start;
+      max-width:min(80ch, 100%);
+    }
+    .msg .bar{
+      display:flex;
+      justify-content:flex-end;
+      gap:8px;
+      margin-bottom:8px;
+      flex-wrap:wrap;
+    }
+    .icon{
+      border:1px solid var(--line);
+      background:#fff;
+      padding:7px 10px;
+      border-radius:999px;
+      cursor:pointer;
+      font-weight:800;
+      color:var(--muted);
+    }
+    .icon:hover{border-color:rgba(10,102,194,.35); color:var(--brand)}
+    .md h1,.md h2,.md h3{margin:.4rem 0 .6rem; color:var(--brand); letter-spacing:-.01em}
+    .md p,.md ul,.md ol,.md pre{margin:.6rem 0}
+    .md pre{background:#f7f9fe;border:1px solid var(--line);padding:12px;border-radius:12px;overflow:auto}
+    .md code{background:#f7f9fe;border:1px solid var(--line);padding:2px 6px;border-radius:8px}
+
+    .composer{
+      border-top:1px solid var(--line);
+      padding:14px;
+      display:flex; gap:10px; align-items:center; flex-wrap:wrap;
+      background:#fff;
+    }
+    .mode{
+      display:flex; gap:10px; align-items:center;
+      color:var(--muted);
+      font-weight:700;
+      padding:8px 10px;
+      border-radius:12px;
+      border:1px solid var(--line);
+      background:#fff;
+    }
+    .mode label{display:flex;gap:8px;align-items:center;cursor:pointer}
+    .in{
+      flex:1;
+      min-width:240px;
+      border:1px solid var(--line);
+      border-radius:12px;
+      padding:12px 12px;
+      font-size:16px;
+      outline:none;
+    }
+    .in:focus{border-color:rgba(10,102,194,.35); box-shadow:0 0 0 6px rgba(10,102,194,.08)}
+
+    /* snippet palette */
+    .palette{
+      position:relative;
+    }
+    .pal{
+      position:absolute;
+      left:0;
+      right:0;
+      bottom:58px;
+      background:#fff;
+      border:1px solid var(--line);
+      border-radius:14px;
+      box-shadow:var(--shadow);
+      overflow:hidden;
+      display:none;
+      z-index:50;
+    }
+    .pal-item{
+      padding:12px 12px;
+      display:flex; justify-content:space-between; gap:10px;
+      cursor:pointer;
+      border-bottom:1px solid var(--line);
+    }
+    .pal-item:last-child{border-bottom:none}
+    .pal-item:hover{background:#f7f9fe}
+    .pal-item small{color:var(--muted);font-weight:700}
+
+    /* modals */
+    .modal{
+      position:fixed; inset:0;
+      display:none;
+      align-items:center;
+      justify-content:center;
+      background:rgba(10,20,40,.45);
+      backdrop-filter: blur(8px);
+      z-index:1000;
+      padding:18px;
+    }
+    .mcard{
+      width:min(720px, 100%);
+      max-height:90vh;
+      overflow:auto;
+      background:#fff;
+      border:1px solid var(--line);
+      border-radius:18px;
+      box-shadow:0 28px 90px rgba(0,0,0,.25);
+    }
+    .mhead{
+      padding:14px 16px;
+      border-bottom:1px solid var(--line);
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      font-weight:900;
+      color:var(--brand);
+    }
+    .mbody{padding:16px}
+    .mfoot{
+      padding:14px 16px;
+      border-top:1px solid var(--line);
+      display:flex;
+      gap:10px;
+      justify-content:flex-end;
+      flex-wrap:wrap;
+    }
+    .grid{display:grid; gap:12px}
+    .row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .field label{display:block;font-weight:800;margin-bottom:6px}
+    .field input,.field select,.field textarea{
+      width:100%;
+      border:1px solid var(--line);
+      border-radius:12px;
+      padding:10px 12px;
+      outline:none;
+      font-size:15px;
+    }
+    .field textarea{min-height:92px;resize:vertical}
+    .hint{color:var(--muted); font-size:13px; line-height:1.5}
+    .list{display:grid;gap:10px}
+    .item{
+      border:1px solid var(--line);
+      border-radius:14px;
+      padding:12px;
+      background:#fff;
+      display:grid;
+      gap:6px;
+    }
+    .item .topline{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
+    .item b{font-weight:900}
+    .item .meta{color:var(--muted);font-weight:700;font-size:13px}
+    .item .buttons{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
+
+    @media (max-width:720px){
+      .row2{grid-template-columns:1fr}
+      .pill{min-width:unset;width:100%}
+      .actions{width:100%}
+      .top .row{align-items:flex-start;flex-direction:column}
+    }
+  </style>
+</head>
+<body>
+
+<div class="top">
+  <div class="row">
+    <div class="brand" title="Clean UI">
+      <span class="dot"></span>
+      <span>Linda Trainer</span>
+    </div>
+    <div class="actions">
+      <select id="domain" class="select" title="Fachmodus">
+        <option value="">Fachmodus: —</option>
+        <option value="AEVO">AEVO</option>
+        <option value="Personal">Personal</option>
+        <option value="Recht">Recht</option>
+        <option value="Kommunikation">Kommunikation</option>
+        <option value="VWL">VWL</option>
+      </select>
+
+      <button class="btn" id="btn-snippets">Snippets</button>
+      <button class="btn" id="btn-reminders">Erinnerungen <span id="dueDot" style="margin-left:6px;display:none;">•</span></button>
+
+      <div class="pill" title="Hinweis">
+        <span>Tippe „/“ für Snippets</span>
+        <span style="font-weight:900;color:var(--brand)">clean</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="wrap main">
+  <div class="card">
+    <div id="chat" class="chat"></div>
+
+    <div class="composer">
+      <div class="mode" title="Antwortstil">
+        <label><input type="radio" name="mode" value="fast" checked> Kurz</label>
+        <label><input type="radio" name="mode" value="full"> Ausführlich</label>
+      </div>
+
+      <div class="palette" style="flex:1;min-width:260px;">
+        <div id="pal" class="pal"></div>
+        <input id="in" class="in" placeholder="Deine Frage … ( / für Snippets )" autocomplete="off"/>
+      </div>
+
+      <button id="send" class="btn primary">Senden</button>
+    </div>
+  </div>
+</div>
+
+<!-- Snippet Manager -->
+<div id="mSnip" class="modal">
+  <div class="mcard">
+    <div class="mhead">
+      Snippets
+      <button class="btn" id="snipClose">Schließen</button>
+    </div>
+    <div class="mbody">
+      <div class="grid">
+        <div class="hint">
+          Snippets werden lokal gespeichert. In der Eingabe kannst du sie per „/alias“ suchen und einfügen.
+        </div>
+
+        <div class="row2">
+          <div class="field">
+            <label>Titel</label>
+            <input id="snTitle" placeholder="z. B. AEVO Kurz"/>
+          </div>
+          <div class="field">
+            <label>Alias</label>
+            <input id="snAlias" placeholder="/aevo"/>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Text</label>
+          <textarea id="snText" placeholder="Text, der eingefügt werden soll …"></textarea>
+        </div>
+
+        <div style="display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap">
+          <button class="btn" id="snNew">Neu</button>
+          <button class="btn primary" id="snSave">Speichern</button>
+        </div>
+
+        <div style="border-top:1px solid var(--line);padding-top:12px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;gap:10px;flex-wrap:wrap">
+            <b>Liste</b>
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              <button class="btn" id="snExport">Export</button>
+              <button class="btn" id="snImport">Import</button>
+            </div>
+          </div>
+          <div id="snList" class="list"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Reminder Editor -->
+<div id="mRem" class="modal">
+  <div class="mcard">
+    <div class="mhead">
+      Erinnerung erstellen
+      <button class="btn" id="remCancel">Schließen</button>
+    </div>
+    <div class="mbody">
+      <div class="grid">
+        <div class="field">
+          <label>Thema</label>
+          <input id="remTopic" placeholder="z. B. 'AEVO: Beurteilungsfehler vermeiden'"/>
+          <div class="hint" id="remLinkHint" style="margin-top:6px"></div>
+        </div>
+
+        <div class="field">
+          <label>Typ</label>
+          <select id="remType">
+            <option value="datetime">Einmalig (Datum & Uhrzeit)</option>
+            <option value="weekly">Wöchentlich (Wochentag & Uhrzeit)</option>
+            <option value="onopen">Bei jedem Öffnen</option>
+          </select>
+        </div>
+
+        <div id="remDatetime" class="row2">
+          <div class="field">
+            <label>Datum & Uhrzeit</label>
+            <input id="remDT" type="datetime-local"/>
+          </div>
+          <div class="field">
+            <label>&nbsp;</label>
+            <div class="hint">Wird beim Öffnen angezeigt, sobald fällig.</div>
+          </div>
+        </div>
+
+        <div id="remWeekly" class="row2" style="display:none">
+          <div class="field">
+            <label>Wochentag</label>
+            <select id="remDay">
+              <option value="1">Montag</option>
+              <option value="2">Dienstag</option>
+              <option value="3">Mittwoch</option>
+              <option value="4">Donnerstag</option>
+              <option value="5">Freitag</option>
+              <option value="6">Samstag</option>
+              <option value="0">Sonntag</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Uhrzeit</label>
+            <input id="remTime" type="time" value="09:00"/>
+          </div>
+          <div class="hint">Wenn fällig: erscheint beim Öffnen einmal, dann nächste Woche.</div>
+        </div>
+
+        <div class="hint">
+          Speicherung erfolgt lokal im Browser (localStorage). Kein Server, keine Cloud.
+        </div>
+      </div>
+    </div>
+    <div class="mfoot">
+      <button class="btn primary" id="remSave">Speichern</button>
+    </div>
+  </div>
+</div>
+
+<!-- Reminder Inbox -->
+<div id="mDue" class="modal">
+  <div class="mcard">
+    <div class="mhead">
+      Erinnerungen
+      <button class="btn" id="dueClose">Schließen</button>
+    </div>
+    <div class="mbody">
+      <div class="hint" style="margin-bottom:10px">
+        Fällige Erinnerungen erscheinen beim Öffnen. Du kannst hier auch alle verwalten.
+      </div>
+      <div style="display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap;margin-bottom:10px">
+        <button class="btn" id="showAll">Alle anzeigen</button>
+        <button class="btn" id="clearAll">Alle löschen</button>
+      </div>
+      <div id="remList" class="list"></div>
+      <div id="remEmpty" class="hint" style="display:none">Keine Erinnerungen gespeichert.</div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const $ = (id)=>document.getElementById(id);
+  const LS = {
+    get(k,d){ try{ return JSON.parse(localStorage.getItem(k)) ?? d } catch { return d } },
+    set(k,v){ localStorage.setItem(k, JSON.stringify(v)) }
+  };
+
+  // ---------- State ----------
+  let domain = LS.get('linda.clean.domain', '');
+  let snippets = LS.get('linda.clean.snippets', [
+    {id:'s1', title:'AEVO Kurz', alias:'/aevo', text:'Bitte juristisch sauber, prüfungsrelevant und knapp zur AEVO antworten.'},
+    {id:'s2', title:'TL;DR', alias:'/tldr', text:'TL;DR in 3 Bulletpoints, je max. 12 Wörter.'}
+  ]);
+  let chat = LS.get('linda.clean.chat', []); // {id, role, content, ts}
+  let reminders = LS.get('linda.clean.reminders', []); // {id, topic, type, at?, weekday?, time?, nextAt?, msgId, createdAt, done?}
+
+  const uid = (p)=> (p||'id') + '_' + Date.now().toString(36) + Math.random().toString(36).slice(2,7);
+  const md = (t)=>{ try { return marked.parse(t||'') } catch { return (t||'') } };
+
+  function save(){
+    LS.set('linda.clean.domain', domain);
+    LS.set('linda.clean.snippets', snippets);
+    LS.set('linda.clean.chat', chat);
+    LS.set('linda.clean.reminders', reminders);
+  }
+
+  // ---------- Fachmodus ----------
+  $('domain').value = domain || '';
+  $('domain').addEventListener('change', ()=>{
+    domain = $('domain').value || '';
+    save();
+  });
+
+  function systemPrefix(){
+    if(!domain) return 'Antworte neutral, strukturiert und praxisnah.';
+    const map = {
+      AEVO: 'Antworte im AEVO-Kontext (prüfungsrelevant, klare Struktur, Praxisbezug).',
+      Personal: 'Antworte als Expertin für Personal/HR (praxisnah, klar strukturiert).',
+      Recht: 'Antworte juristisch sauber (Normen nennen, sauber subsumieren).',
+      Kommunikation: 'Antworte als Kommunikationstrainerin (klar, empathisch, praxisnah).',
+      VWL: 'Antworte fundiert in VWL (Begriffe definieren, Beispiele, Prüfungsrelevanz).'
+    };
+    return map[domain] || 'Antworte neutral, strukturiert und praxisnah.';
+  }
+
+  function answerMode(){
+    const el = document.querySelector('input[name="mode"]:checked');
+    return el ? el.value : 'fast';
+  }
+
+  // ---------- Render Chat ----------
+  function renderChat(){
+    const box = $('chat');
+    box.innerHTML = '';
+    chat.forEach(m=>{
+      const div = document.createElement('div');
+      div.className = 'msg ' + (m.role === 'user' ? 'user' : 'assistant');
+      div.id = 'm-' + m.id;
+
+      if(m.role === 'assistant'){
+        div.innerHTML = `
+          <div class="bar">
+            <button class="icon" data-act="rem" title="Erinnerung zu dieser Antwort">⏰</button>
+            <button class="icon" data-act="copy" title="Kopieren">📋</button>
+          </div>
+          <div class="md">${md(m.content)}</div>
+        `;
+        div.querySelector('[data-act="copy"]').onclick = async ()=>{
+          try{
+            const tmp = document.createElement('div');
+            tmp.innerHTML = md(m.content);
+            const txt = (tmp.innerText || '').trim();
+            if(navigator.clipboard?.writeText) await navigator.clipboard.writeText(txt);
+          }catch{}
+        };
+        div.querySelector('[data-act="rem"]').onclick = ()=>{
+          openReminderEditor(m.id, m.content);
+        };
+      } else {
+        div.innerHTML = `<div class="md">${md(m.content)}</div>`;
+      }
+
+      box.appendChild(div);
+    });
+    box.scrollTop = box.scrollHeight;
+  }
+
+  // ---------- Snippets: Palette + Manager ----------
+  function openPalette(list){
+    const pal = $('pal');
+    if(!list.length){ pal.style.display='none'; return; }
+    pal.innerHTML = list.map(s=>`
+      <div class="pal-item" data-id="${s.id}">
+        <div><b>${escapeHtml(s.title)}</b></div>
+        <small>${escapeHtml(s.alias)}</small>
+      </div>
+    `).join('');
+    pal.style.display = 'block';
+    pal.querySelectorAll('.pal-item').forEach(it=>{
+      it.onclick = ()=>{
+        const s = snippets.find(x=>x.id===it.dataset.id);
+        if(!s) return;
+        insertSnippet(s.alias, s.text);
+        pal.style.display='none';
+        $('in').focus();
+      };
+    });
+  }
+
+  function insertSnippet(alias, text){
+    const inp = $('in');
+    const v = inp.value || '';
+    const i = v.lastIndexOf(alias);
+    if(i>=0){
+      inp.value = v.slice(0,i) + text + v.slice(i+alias.length);
+    } else {
+      inp.value = (v + ' ' + text).trim();
+    }
+  }
+
+  $('in').addEventListener('input', (e)=>{
+    const v = e.target.value || '';
+    const m = v.match(/\/([\w-]{0,24})$/);
+    if(!m){ $('pal').style.display='none'; return; }
+    const q = m[1].toLowerCase();
+    const list = snippets.filter(s =>
+      s.alias.toLowerCase().startsWith('/'+q) ||
+      s.title.toLowerCase().includes(q)
+    ).slice(0,8);
+    openPalette(list);
+  });
+
+  document.addEventListener('click', (e)=>{
+    if(!e.target.closest('.palette')) $('pal').style.display='none';
+  });
+
+  function renderSnipList(){
+    const list = $('snList');
+    list.innerHTML = '';
+    if(!snippets.length){
+      list.innerHTML = `<div class="hint">Noch keine Snippets.</div>`;
+      return;
+    }
+    snippets.forEach(s=>{
+      const item = document.createElement('div');
+      item.className = 'item';
+      item.innerHTML = `
+        <div class="topline">
+          <div>
+            <b>${escapeHtml(s.title)}</b>
+            <div class="meta">${escapeHtml(s.alias)}</div>
+          </div>
+          <div class="buttons">
+            <button class="btn" data-act="use">Einfügen</button>
+            <button class="btn" data-act="edit">Bearbeiten</button>
+            <button class="btn" data-act="del">Löschen</button>
+          </div>
+        </div>
+        <div class="hint">${escapeHtml((s.text||'').slice(0,160))}${(s.text||'').length>160?'…':''}</div>
+      `;
+      item.querySelector('[data-act="use"]').onclick = ()=>{
+        insertSnippet(s.alias, s.text);
+        closeModal('mSnip');
+        $('in').focus();
+      };
+      item.querySelector('[data-act="edit"]').onclick = ()=>{
+        $('snTitle').value = s.title || '';
+        $('snAlias').value = s.alias || '';
+        $('snText').value  = s.text || '';
+        $('snSave').dataset.editId = s.id;
+      };
+      item.querySelector('[data-act="del"]').onclick = ()=>{
+        if(!confirm('Snippet löschen?')) return;
+        snippets = snippets.filter(x=>x.id!==s.id);
+        save(); renderSnipList();
+      };
+      list.appendChild(item);
+    });
+  }
+
+  function openModal(id){ $(id).style.display='flex'; }
+  function closeModal(id){ $(id).style.display='none'; }
+
+  $('btn-snippets').onclick = ()=>{
+    // reset editor
+    $('snTitle').value=''; $('snAlias').value=''; $('snText').value='';
+    $('snSave').dataset.editId = '';
+    renderSnipList();
+    openModal('mSnip');
+  };
+  $('snipClose').onclick = ()=>closeModal('mSnip');
+
+  $('snNew').onclick = ()=>{
+    $('snTitle').value=''; $('snAlias').value=''; $('snText').value='';
+    $('snSave').dataset.editId = '';
+  };
+
+  $('snSave').onclick = ()=>{
+    const title = ($('snTitle').value||'').trim();
+    const alias = ($('snAlias').value||'').trim();
+    const text  = ($('snText').value||'').trim();
+    if(!title || !alias || !text){ alert('Bitte Titel, Alias und Text ausfüllen.'); return; }
+    if(!alias.startsWith('/')){ alert('Alias muss mit / beginnen.'); return; }
+
+    const editId = $('snSave').dataset.editId;
+    if(editId){
+      const i = snippets.findIndex(x=>x.id===editId);
+      if(i>=0) snippets[i] = { ...snippets[i], title, alias, text };
+    } else {
+      snippets.unshift({ id: uid('s'), title, alias, text });
+    }
+    save();
+    renderSnipList();
+    $('snTitle').value=''; $('snAlias').value=''; $('snText').value='';
+    $('snSave').dataset.editId = '';
+  };
+
+  $('snExport').onclick = ()=>{
+    const blob = new Blob([JSON.stringify(snippets,null,2)], {type:'application/json'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'linda-snippets.json';
+    a.click();
+    URL.revokeObjectURL(a.href);
+  };
+
+  $('snImport').onclick = ()=>{
+    const i = document.createElement('input');
+    i.type='file'; i.accept='application/json';
+    i.onchange = async ()=>{
+      const f = i.files?.[0]; if(!f) return;
+      try{
+        const txt = await f.text();
+        const arr = JSON.parse(txt);
+        if(!Array.isArray(arr)) throw new Error('format');
+        // minimal sanitize
+        snippets = arr
+          .filter(x=>x && typeof x.alias==='string' && typeof x.text==='string')
+          .map(x=>({ id: x.id || uid('s'), title: x.title||'Snippet', alias: x.alias, text: x.text }));
+        save();
+        renderSnipList();
+      }catch{
+        alert('Import fehlgeschlagen.');
+      }
+    };
+    i.click();
+  };
+
+  // ---------- Reminders ----------
+  function computeNextWeekly(weekday, timeHHMM, fromTs){
+    const from = new Date(fromTs || Date.now());
+    const [hh, mm] = (timeHHMM || '09:00').split(':').map(n=>parseInt(n,10));
+    const base = new Date(from.getFullYear(), from.getMonth(), from.getDate(), hh||0, mm||0, 0, 0);
+    const delta = ((weekday - base.getDay()) + 7) % 7;
+    let target = new Date(base);
+    target.setDate(base.getDate() + delta);
+    if(target.getTime() <= from.getTime()) target.setDate(target.getDate() + 7);
+    return target.getTime();
+  }
+
+  function isDue(r, now){
+    const t = now || Date.now();
+    if(r.type === 'onopen') return true;
+    if(r.type === 'datetime') return !r.done && typeof r.at==='number' && r.at <= t;
+    if(r.type === 'weekly') return typeof r.nextAt==='number' && r.nextAt <= t;
+    return false;
+  }
+
+  function dueCount(){
+    const now = Date.now();
+    return reminders.filter(r=>isDue(r, now)).length;
+  }
+
+  function setDueDot(){
+    const n = dueCount();
+    $('dueDot').style.display = n ? 'inline' : 'none';
+    $('dueDot').textContent = n ? `• ${n}` : '';
+  }
+
+  let remTargetMsgId = null;
+
+  function openReminderEditor(msgId, assistantContent){
+    remTargetMsgId = msgId;
+
+    const text = plainFromMarkdown(assistantContent||'');
+    const suggest = (text.slice(0, 90) + (text.length>90?'…':'')).trim() || 'Erinnerung';
+    $('remTopic').value = suggest;
+
+    // default: in 1 Stunde
+    const d = new Date(Date.now() + 60*60*1000);
+    $('remDT').value = toDTLocal(d);
+
+    $('remType').value = 'datetime';
+    updateRemTypeUI();
+
+    const link = buildLink(msgId);
+    $('remLinkHint').innerHTML = `Link zum Chat: <a href="${link}">${escapeHtml(link)}</a>`;
+
+    openModal('mRem');
+  }
+
+  function toDTLocal(d){
+    const pad = n => String(n).padStart(2,'0');
+    return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  }
+
+  function fromDTLocal(v){
+    if(!v) return null;
+    const d = new Date(v);
+    if(isNaN(d.getTime())) return null;
+    return d.getTime();
+  }
+
+  function buildLink(msgId){
+    return `${location.pathname}${location.search}#m=${encodeURIComponent(msgId)}`;
+  }
+
+  function updateRemTypeUI(){
+    const t = $('remType').value;
+    $('remDatetime').style.display = (t==='datetime') ? 'grid' : 'none';
+    $('remWeekly').style.display   = (t==='weekly') ? 'grid' : 'none';
+  }
+  $('remType').addEventListener('change', updateRemTypeUI);
+
+  $('remCancel').onclick = ()=>closeModal('mRem');
+
+  $('remSave').onclick = ()=>{
+    const topic = ($('remTopic').value||'').trim() || 'Erinnerung';
+    const type  = $('remType').value;
+    if(!remTargetMsgId){ closeModal('mRem'); return; }
+
+    const r = { id: uid('r'), topic, type, msgId: remTargetMsgId, createdAt: Date.now() };
+
+    if(type==='datetime'){
+      const at = fromDTLocal($('remDT').value);
+      if(!at){ alert('Bitte gültiges Datum/Uhrzeit wählen.'); return; }
+      r.at = at; r.done = false;
+    }
+    if(type==='weekly'){
+      const wd = parseInt($('remDay').value||'1', 10);
+      const tm = ($('remTime').value||'09:00');
+      r.weekday = isNaN(wd) ? 1 : wd;
+      r.time = tm;
+      r.nextAt = computeNextWeekly(r.weekday, r.time, Date.now());
+    }
+
+    reminders.unshift(r);
+    save();
+    setDueDot();
+    closeModal('mRem');
+    remTargetMsgId = null;
+  };
+
+  function renderReminders(mode){
+    const list = $('remList');
+    const empty = $('remEmpty');
+    list.innerHTML = '';
+
+    const now = Date.now();
+    const data = reminders
+      .filter(r => mode==='all' ? true : isDue(r, now))
+      .sort((a,b)=>{
+        const ax = a.type==='onopen' ? -1 : (a.type==='datetime' ? a.at : a.nextAt);
+        const bx = b.type==='onopen' ? -1 : (b.type==='datetime' ? b.at : b.nextAt);
+        return (ax||0) - (bx||0);
+      });
+
+    if(!data.length){
+      empty.style.display = 'block';
+      return;
+    }
+    empty.style.display = 'none';
+
+    data.forEach(r=>{
+      const item = document.createElement('div');
+      item.className = 'item';
+      item.dataset.id = r.id;
+
+      const link = buildLink(r.msgId);
+      item.innerHTML = `
+        <div class="topline">
+          <div>
+            <b>⏰ ${escapeHtml(r.topic)}</b>
+            <div class="meta">${escapeHtml(whenText(r))}</div>
+            <div class="meta">Link: <a href="${link}">Zum Chat springen</a></div>
+          </div>
+          <div class="buttons">
+            ${r.type==='datetime' && !r.done ? `<button class="btn" data-act="done">Erledigt</button>` : ``}
+            ${r.type==='weekly' ? `<button class="btn" data-act="skip">Nächste Woche</button>` : ``}
+            <button class="btn" data-act="del">Entfernen</button>
+          </div>
+        </div>
+      `;
+
+      item.querySelector('[data-act="del"]').onclick = ()=>{
+        reminders = reminders.filter(x=>x.id!==r.id);
+        save(); setDueDot(); renderReminders(mode);
+      };
+
+      const doneBtn = item.querySelector('[data-act="done"]');
+      if(doneBtn){
+        doneBtn.onclick = ()=>{
+          const x = reminders.find(z=>z.id===r.id);
+          if(x){ x.done = true; save(); }
+          setDueDot(); renderReminders(mode);
+        };
+      }
+
+      const skipBtn = item.querySelector('[data-act="skip"]');
+      if(skipBtn){
+        skipBtn.onclick = ()=>{
+          const x = reminders.find(z=>z.id===r.id);
+          if(x && x.type==='weekly'){
+            x.nextAt = computeNextWeekly(x.weekday, x.time, Date.now()+60*1000);
+            save();
+          }
+          setDueDot(); renderReminders(mode);
+        };
+      }
+
+      list.appendChild(item);
+    });
+  }
+
+  function whenText(r){
+    if(r.type==='onopen') return 'Bei jedem Öffnen';
+    if(r.type==='datetime') return `Einmalig: ${new Date(r.at).toLocaleString()}${r.done?' (erledigt)':''}`;
+    if(r.type==='weekly'){
+      const names = ['So','Mo','Di','Mi','Do','Fr','Sa'];
+      const next = r.nextAt ? new Date(r.nextAt).toLocaleString() : '—';
+      return `Wöchentlich: ${names[r.weekday]} ${r.time} (nächstes: ${next})`;
+    }
+    return '—';
+  }
+
+  function openReminderInbox(mode){
+    renderReminders(mode||'due');
+    openModal('mDue');
+  }
+
+  $('btn-reminders').onclick = ()=>openReminderInbox('all');
+  $('dueClose').onclick = ()=>closeModal('mDue');
+  $('showAll').onclick = ()=>renderReminders('all');
+  $('clearAll').onclick = ()=>{
+    if(!confirm('Wirklich alle Erinnerungen löschen?')) return;
+    reminders = [];
+    save(); setDueDot(); renderReminders('all');
+  };
+
+  function showDueOnOpen(){
+    const due = reminders.filter(r=>isDue(r, Date.now()));
+    if(!due.length) return;
+
+    // Auto-advance weekly when shown (einmal pro Woche beim Öffnen)
+    due.forEach(r=>{
+      if(r.type==='weekly'){
+        r.nextAt = computeNextWeekly(r.weekday, r.time, Date.now()+60*1000);
+      }
+      if(r.type==='datetime'){
+        // bleibt bis "Erledigt"
+      }
+      // onopen bleibt immer
+    });
+    save();
+    setDueDot();
+    openReminderInbox('due');
+  }
+
+  // ---------- Send ----------
+  async function send(){
+    const inp = $('in');
+    const q = (inp.value||'').trim();
+    if(!q) return;
+
+    inp.value = '';
+    $('send').disabled = true;
+
+    const userMsg = { id: uid('m'), role:'user', content:q, ts:Date.now() };
+    chat.push(userMsg);
+
+    const waitMsg = { id: uid('m'), role:'assistant', content:'⏳ Einen Moment …', ts:Date.now() };
+    chat.push(waitMsg);
+
+    save();
+    renderChat();
+
+    const mode = answerMode();
+    const modePrompt = (mode==='fast')
+      ? 'Bitte kompakt (max. 6 Bulletpoints).'
+      : 'Bitte ausführlich, aber klar gegliedert.';
+
+    const payload = {
+      question: systemPrefix() + '\n' + modePrompt + '\n\n' + q
+    };
+
+    try{
+      const r = await fetch('/api/bot', {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify(payload)
+      });
+      const text = await r.text();
+      const out = (text && text.trim().toLowerCase()!=='accepted')
+        ? text
+        : 'Ich habe deine Frage erhalten – bitte erneut senden, falls nichts erscheint.';
+
+      // replace wait message
+      chat = chat.map(m => m.id === waitMsg.id ? ({...m, content: out, ts:Date.now()}) : m);
+      save();
+      renderChat();
+    }catch{
+      chat = chat.map(m => m.id === waitMsg.id ? ({...m, content:'Es gab ein Verbindungsproblem. Bitte erneut senden.'}) : m);
+      save();
+      renderChat();
+    }finally{
+      $('send').disabled = false;
+    }
+  }
+
+  $('send').onclick = send;
+  $('in').addEventListener('keydown', (e)=>{
+    if(e.key==='Enter'){
+      e.preventDefault();
+      send();
+    }
+  });
+
+  // ---------- Hash jump ----------
+  function jumpFromHash(){
+    const m = (location.hash||'').match(/m=([^&]+)/);
+    if(!m) return;
+    const id = decodeURIComponent(m[1]||'');
+    const el = document.getElementById('m-' + id);
+    if(el){
+      el.scrollIntoView({behavior:'smooth', block:'start'});
+      el.style.boxShadow = '0 0 0 8px rgba(10,102,194,.10)';
+      setTimeout(()=>el.style.boxShadow='', 900);
+    }
+  }
+  window.addEventListener('hashchange', jumpFromHash);
+
+  // ---------- Helpers ----------
+  function plainFromMarkdown(markdownText){
+    try{
+      const tmp = document.createElement('div');
+      tmp.innerHTML = md(markdownText||'');
+      return (tmp.innerText||'').replace(/\s+/g,' ').trim();
+    }catch{
+      return (markdownText||'').replace(/\s+/g,' ').trim();
+    }
+  }
+  function escapeHtml(s){
+    return String(s||'')
+      .replaceAll('&','&amp;')
+      .replaceAll('<','&lt;')
+      .replaceAll('>','&gt;')
+      .replaceAll('"','&quot;')
+      .replaceAll("'","&#039;");
+  }
+
+  // ---------- Init ----------
+  // minimal greeting
+  if(!chat.length){
+    chat.push({
+      id: uid('m'),
+      role:'assistant',
+      content:'**Hi!** Stell deine Frage – Snippets per „/“, Fachmodus oben auswählbar, Erinnerungen über ⏰ in Antworten.',
+      ts: Date.now()
+    });
+    save();
+  }
+
+  renderChat();
+  setDueDot();
+  jumpFromHash();
+  showDueOnOpen();
+})();
+</script>
+</body>
+</html>
