@@ -4,9 +4,9 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="color-scheme" content="light dark" />
-  <title>Linda – Coaching Bot (Dynamic Trainer)</title>
+  <title>Linda – Coaching Bot</title>
 
-  <!-- Preconnects (geringer, aber kostenloser Win) -->
+  <!-- Preconnects -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
@@ -17,166 +17,604 @@
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 
   <style>
-    :root {
-      --bg: #f5f7fb;
+    :root{
+      /* McKinsey-clean / neutral grayscale */
+      --bg: #f6f6f7;
       --panel: #ffffff;
-      --panel-2: #f0f4fb;
-      --line: #dbe3f3;
-      --text: #1f2a44;
-      --muted: #5a6c87;
-      --brand: #0a66c2;
-      --brand-2: #008a6a;
-      --shadow: 0 12px 30px rgba(10, 102, 194, 0.12);
-      --radius: 14px;
-      --transition: all 0.25s ease;
-      --glow: 0 0 18px rgba(10, 102, 194, 0.18);
+      --panel-2: #f1f2f3;
+      --line: #d9dcdf;
+      --text: #1f2328;
+      --muted: #5f6b76;
+
+      --btn-bg: #f2f3f4;
+      --btn-bg-hover: #e7e9eb;
+      --btn-text: #1f2328;
+      --btn-border: #cfd4d9;
+
+      --accent: #2b2f36; /* very subtle */
+      --radius: 10px;
+      --radius-sm: 8px;
+      --shadow: 0 1px 0 rgba(31,35,40,0.04);
+      --transition: 160ms ease;
+      --focus: 0 0 0 3px rgba(31,35,40,0.12);
     }
 
-    body.dark {
-      --bg: #050916;
-      --panel: rgba(12, 18, 34, 0.92);
-      --panel-2: rgba(255, 255, 255, 0.05);
-      --line: rgba(255, 255, 255, 0.14);
-      --text: #e8ecf7;
-      --muted: #a8b3c7;
-      --brand: #5aa8ff;
-      --brand-2: #5be7c4;
-      --shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
-      --glow: 0 0 22px rgba(90, 168, 255, 0.45);
+    body.dark{
+      --bg: #0f1114;
+      --panel: #14181d;
+      --panel-2: #1a1f25;
+      --line: #2a3038;
+      --text: #e7eaee;
+      --muted: #a8b0ba;
+
+      --btn-bg: #1a1f25;
+      --btn-bg-hover: #242b33;
+      --btn-text: #e7eaee;
+      --btn-border: #2a3038;
+
+      --accent: #e7eaee;
+      --shadow: 0 1px 0 rgba(0,0,0,0.25);
+      --focus: 0 0 0 3px rgba(231,234,238,0.12);
     }
 
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    html, body { height: 100%; font-family: 'Inter', system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--text); }
-    a { color: var(--brand); text-decoration: none; }
-    a:hover { color: var(--brand-2); }
-    img { max-width: 100%; height: auto; }
-
-    /* Header */
-    .top { position: sticky; top: 0; z-index: 20; padding: 1rem 1.25rem; display: grid; grid-template-columns: auto 1fr auto; gap: 1.25rem; align-items: center; background: var(--panel); border-bottom: 1px solid var(--line); box-shadow: var(--shadow); }
-    .brand-wrap { display: flex; align-items: center; gap: 0.85rem; }
-    .brand-portrait { width: 64px; height: 64px; border-radius: 16px; object-fit: cover; border: 2px solid var(--line); box-shadow: var(--shadow); }
-    .brand { font-size: 1.35rem; font-weight: 800; letter-spacing: -0.01em; }
-    .pulse { display: inline-flex; align-items: center; gap: 0.45rem; padding: 0.55rem 0.85rem; border-radius: 999px; border: 1px solid var(--line); background: var(--panel-2); color: var(--muted); font-size: 0.95rem; }
-    .top-actions { display: flex; align-items: center; gap: 0.6rem; justify-content: flex-end; }
-    .icon-btn { appearance: none; border: 1px solid var(--line); background: var(--panel-2); color: var(--text); border-radius: 12px; padding: 0.65rem; cursor: pointer; transition: var(--transition); display: grid; place-items: center; }
-    .icon-btn:hover { border-color: var(--brand); box-shadow: var(--glow); }
-    .badge { display: inline-flex; align-items: center; gap: 0.4rem; background: var(--panel-2); border: 1px solid var(--line); padding: 0.55rem 0.9rem; border-radius: 999px; font-weight: 700; color: var(--brand); }
+    *{ box-sizing:border-box; margin:0; padding:0; }
+    html,body{ height:100%; }
+    body{
+      font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      letter-spacing: -0.01em;
+    }
+    a{ color: inherit; text-decoration: underline; text-decoration-color: rgba(31,35,40,0.25); }
+    a:hover{ text-decoration-color: rgba(31,35,40,0.6); }
 
     /* Layout */
-    .container { display: grid; grid-template-columns: 330px 1fr; gap: 1.5rem; padding: 1.5rem; max-width: 1450px; margin: 0 auto; min-height: calc(100vh - 72px); }
-    .sidebar { display: flex; flex-direction: column; gap: 1rem; }
-    .panel { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); position: relative; overflow: hidden; }
+    .top{
+      position: sticky; top: 0; z-index: 20;
+      background: var(--panel);
+      border-bottom: 1px solid var(--line);
+      box-shadow: var(--shadow);
+      padding: 14px 18px;
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      gap: 12px;
+      align-items: center;
+    }
+    .brand-wrap{ display:flex; align-items:center; gap:12px; min-width: 260px; }
+    .brand-portrait{
+      width: 44px; height: 44px;
+      border-radius: 10px;
+      object-fit: cover;
+      border: 1px solid var(--line);
+    }
+    .brand{
+      font-weight: 700;
+      font-size: 14px;
+      letter-spacing: 0.02em;
+      text-transform: uppercase;
+    }
+    .pulse{
+      margin-top: 2px;
+      font-size: 12px;
+      color: var(--muted);
+    }
 
-    .coach { padding: 1.5rem; display: flex; gap: 1rem; align-items: center; position: relative; z-index: 1; }
-    .coach img { width: 96px; height: 96px; object-fit: cover; border-radius: 18px; border: 2px solid var(--line); box-shadow: var(--shadow); }
-    .coach h2 { font-size: 1.2rem; letter-spacing: -0.01em; }
-    .coach p { color: var(--muted); margin-top: 0.35rem; font-size: 0.95rem; }
+    .badge{
+      justify-self: center;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      border: 1px solid var(--line);
+      background: var(--panel-2);
+      padding: 8px 12px;
+      border-radius: 999px;
+      font-weight: 600;
+      font-size: 12px;
+      color: var(--text);
+    }
 
-    .quick { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 0.65rem; padding: 1rem; position: relative; z-index: 1; }
-    .chip { background: var(--panel-2); border: 1px solid var(--line); border-radius: 12px; padding: 0.7rem 0.9rem; font-weight: 700; cursor: pointer; transition: var(--transition); color: var(--text); text-align: center; }
-    .chip:hover { transform: translateY(-2px); border-color: var(--brand); box-shadow: var(--glow); }
+    .top-actions{ display:flex; gap:8px; justify-content:flex-end; }
+    .icon-btn{
+      appearance:none;
+      border: 1px solid var(--btn-border);
+      background: var(--btn-bg);
+      color: var(--btn-text);
+      border-radius: 999px;
+      padding: 9px 12px;
+      font-weight: 600;
+      font-size: 12px;
+      cursor:pointer;
+      transition: background var(--transition), border-color var(--transition);
+      box-shadow: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      white-space: nowrap;
+    }
+    .icon-btn:hover{ background: var(--btn-bg-hover); }
+    .icon-btn:focus{ outline:none; box-shadow: var(--focus); }
+
+    .container{
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 18px;
+      display:grid;
+      grid-template-columns: 320px 1fr;
+      gap: 16px;
+      min-height: calc(100vh - 70px);
+    }
+    .sidebar{ display:flex; flex-direction:column; gap:12px; }
+    .panel{
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    /* Coach */
+    .coach{ padding: 16px; display:flex; gap:12px; align-items: center; }
+    .coach img{
+      width: 56px; height: 56px;
+      border-radius: 12px;
+      border: 1px solid var(--line);
+      object-fit: cover;
+    }
+    .coach h2{ font-size: 14px; font-weight: 700; }
+    .coach p{ margin-top: 6px; font-size: 12px; color: var(--muted); line-height: 1.5; }
+
+    /* Quick */
+    .quick{
+      padding: 12px;
+      display:grid;
+      grid-template-columns: repeat(2, minmax(0,1fr));
+      gap: 8px;
+    }
+    .chip{
+      border: 1px solid var(--btn-border);
+      background: var(--btn-bg);
+      color: var(--btn-text);
+      border-radius: 999px;
+      padding: 10px 12px;
+      font-weight: 600;
+      font-size: 12px;
+      cursor:pointer;
+      transition: background var(--transition);
+      text-align: center;
+    }
+    .chip:hover{ background: var(--btn-bg-hover); }
 
     /* Sessions */
-    .sessions { position: relative; z-index: 1; }
-    .sessions .head { display: flex; align-items: center; justify-content: space-between; padding: 1.1rem 1.25rem; border-bottom: 1px solid var(--line); }
-    .sessions .list { max-height: 60vh; overflow: auto; padding: 0.75rem 1rem 1.1rem; display: grid; gap: 0.75rem; }
-    .sess { border: 1px solid var(--line); border-radius: 12px; padding: 0.85rem 0.95rem; background: var(--panel-2); cursor: pointer; transition: var(--transition); }
-    .sess:hover { transform: translateY(-1px); border-color: var(--brand); box-shadow: var(--glow); }
-    .sess.active { border-color: var(--brand); box-shadow: var(--glow); }
-    .sess .ttl { font-weight: 700; display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; }
-    .sess small { color: var(--muted); font-size: 0.85rem; }
-    .sess .rowbtns { display: flex; gap: 0.4rem; margin-top: 0.5rem; }
-    .sm-btn { appearance: none; border: 1px solid var(--line); background: transparent; color: var(--text); border-radius: 10px; padding: 0.35rem 0.65rem; cursor: pointer; transition: var(--transition); font-size: 0.85rem; }
-    .sm-btn:hover { border-color: var(--brand); color: var(--brand); }
-
-    /* Lernpanel */
-    .learn { padding: 1.2rem; }
-    .tag-list { display: flex; flex-wrap: wrap; gap: 0.5rem; }
-    .tag-pill { padding: 0.45rem 0.75rem; border-radius: 12px; background: var(--panel-2); border: 1px solid var(--line); font-weight: 600; color: var(--text); }
-
-    /* Chat */
-    .chat { position: relative; display: flex; flex-direction: column; gap: 1rem; }
-    .hero { background: linear-gradient(120deg, rgba(10,102,194,0.12), rgba(0,138,106,0.12)); border: 1px solid rgba(10,102,194,0.18); border-radius: var(--radius); padding: 1.2rem 1.5rem; box-shadow: var(--shadow); display: grid; grid-template-columns: 1fr auto; gap: 1rem; align-items: center; }
-    .hero h1 { font-size: 1.25rem; letter-spacing: -0.01em; }
-    .hero p { color: var(--muted); }
-    .hero .stats { display: flex; gap: 0.75rem; }
-    .stat { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 0.75rem 1rem; text-align: center; }
-    .stat .label { color: var(--muted); font-size: 0.85rem; }
-    .stat .val { font-weight: 800; font-size: 1.05rem; }
-
-    .log { flex: 1; overflow: auto; display: flex; flex-direction: column; gap: 1rem; padding: 0.25rem 0.5rem 0.5rem; }
-    .bubble { max-width: 82ch; border-radius: 16px; padding: 1.25rem 1.35rem; background: var(--panel); border: 1px solid var(--line); box-shadow: var(--shadow); line-height: 1.7; position: relative; }
-    .bubble.me { align-self: flex-end; background: linear-gradient(135deg, rgba(10,102,194,0.12), rgba(0,138,106,0.1)); border-color: rgba(10,102,194,0.3); }
-    .bubble .md h1, .bubble .md h2, .bubble .md h3 { margin: 0.5rem 0 0.8rem; color: var(--brand); }
-    .bubble .md p, .bubble .md ul, .bubble .md ol, .bubble .md pre { margin: 0.65rem 0; }
-    .bubble .md pre { background: var(--panel-2); border-radius: 10px; padding: 0.8rem; overflow-x: auto; }
-    .bubble .md code { background: var(--panel-2); padding: 0.25rem 0.45rem; border-radius: 8px; }
-    .bubble-header { display: flex; justify-content: flex-end; gap: 0.5rem; margin-bottom: 0.4rem; }
-    .copy-btn, .pdf-btn { appearance: none; border: 1px solid var(--line); background: var(--panel-2); color: var(--muted); border-radius: 999px; padding: 0.3rem 0.7rem; cursor: pointer; display: inline-flex; align-items: center; gap: 0.4rem; transition: var(--transition); }
-    .copy-btn:hover, .pdf-btn:hover { border-color: var(--brand); color: var(--brand); }
-    .footnotes { margin-top: 1rem; padding-top: 0.6rem; border-top: 1px solid var(--line); color: var(--muted); font-size: 0.9rem; }
-    .footnotes ol { margin-left: 1.1rem; }
-    .footnote-marker { color: var(--brand); font-size: 0.75em; vertical-align: super; }
-
-    .palette { position: absolute; bottom: 92px; left: 0; width: min(540px, 100%); background: var(--panel); border: 1px solid var(--line); border-radius: 14px; box-shadow: var(--shadow); display: none; z-index: 10; overflow: hidden; }
-    .pal-item { padding: 0.9rem 1rem; border-bottom: 1px solid var(--line); cursor: pointer; display: flex; justify-content: space-between; gap: 0.75rem; transition: var(--transition); }
-    .pal-item:hover { background: var(--panel-2); }
-    .pal-tag { color: var(--muted); font-size: 0.9rem; }
-
-    .composer { position: sticky; bottom: 0; background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 0.9rem; display: flex; gap: 0.75rem; align-items: center; box-shadow: var(--shadow); }
-    .answer-mode { display: flex; gap: 0.75rem; align-items: center; padding: 0 0.4rem; color: var(--muted); }
-    .answer-mode label { display: inline-flex; gap: 0.35rem; align-items: center; font-weight: 600; cursor: pointer; }
-    .in { flex: 1; border: 1px solid var(--line); border-radius: 12px; background: var(--panel-2); color: var(--text); padding: 0.95rem 1.1rem; font-size: 1rem; outline: none; transition: var(--transition); }
-    .in:focus { border-color: var(--brand); box-shadow: var(--glow); }
-    .send { appearance: none; border: none; background: linear-gradient(135deg, var(--brand), var(--brand-2)); color: #fff; font-weight: 800; padding: 0.95rem 1.35rem; border-radius: 12px; cursor: pointer; transition: var(--transition); letter-spacing: 0.01em; }
-    .send:hover { transform: translateY(-1px); box-shadow: var(--glow); }
-    .send:disabled { opacity: 0.65; cursor: not-allowed; }
-
-    .footer { text-align: center; padding: 1.2rem; color: var(--muted); border-top: 1px solid var(--line); margin-top: 1rem; background: var(--panel); }
-
-    /* Modals */
-    .modal { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; background: rgba(0,0,0,0.5); backdrop-filter: blur(8px); z-index: 1000; }
-    .card { background: var(--panel); color: var(--text); border: 1px solid var(--line); border-radius: 16px; box-shadow: var(--shadow); width: min(95vw, 860px); max-height: 90vh; overflow: auto; }
-    .card-h { padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--line); font-weight: 800; font-size: 1.1rem; color: var(--brand); display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; }
-    .card-b { padding: 1.5rem; line-height: 1.6; }
-    .beta { background: var(--panel-2); border: 1px solid var(--line); padding: 0.4rem 0.7rem; border-radius: 999px; font-weight: 800; color: var(--brand); font-size: 0.8rem; }
-    .card-f { padding: 1.25rem 1.5rem; border-top: 1px solid var(--line); display: flex; gap: 0.75rem; justify-content: flex-end; }
-    .btn { appearance: none; border: 1px solid var(--line); background: var(--panel-2); color: var(--text); border-radius: 12px; padding: 0.65rem 1.15rem; font-weight: 700; cursor: pointer; transition: var(--transition); }
-    .btn.primary { background: linear-gradient(135deg, var(--brand), var(--brand-2)); color: #fff; border: none; }
-    .btn:hover { border-color: var(--brand); box-shadow: var(--glow); }
-
-    .group { padding: 1.5rem; border-top: 1px solid var(--line); }
-    .group:first-child { border-top: none; }
-    .row { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin: 0.75rem 0; }
-    .select, .ta, .in-inline { width: 100%; border: 1px solid var(--line); border-radius: 12px; background: var(--panel-2); color: var(--text); padding: 0.85rem 1rem; }
-    .switch { width: 54px; height: 30px; border-radius: 16px; border: 1px solid var(--line); background: var(--panel-2); position: relative; cursor: pointer; transition: var(--transition); }
-    .switch > i { position: absolute; width: 24px; height: 24px; top: 2px; left: 2px; border-radius: 12px; background: #fff; transition: var(--transition); }
-    .switch.on { background: linear-gradient(135deg, var(--brand), var(--brand-2)); border: none; }
-    .switch.on > i { left: 28px; }
-
-    .muted { color: var(--muted); font-size: 0.9rem; }
-
-    /* Performance: Browser kann Offscreen-Content überspringen */
-    .sess, .bubble {
+    .sessions .head{
+      padding: 12px 14px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      border-bottom: 1px solid var(--line);
+    }
+    .sessions .head > div{ font-weight:700; font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); }
+    .sessions .list{
+      max-height: 60vh;
+      overflow:auto;
+      padding: 10px;
+      display:grid;
+      gap: 8px;
+    }
+    .sess{
+      border: 1px solid var(--line);
+      background: var(--panel);
+      border-radius: var(--radius-sm);
+      padding: 10px 10px 8px;
+      cursor:pointer;
+      transition: background var(--transition), border-color var(--transition);
       content-visibility: auto;
       contain-intrinsic-size: 220px;
     }
+    .sess:hover{ background: var(--panel-2); }
+    .sess.active{ border-color: var(--accent); }
+    .sess .ttl{
+      display:flex;
+      align-items: baseline;
+      justify-content:space-between;
+      gap: 10px;
+      font-weight: 700;
+      font-size: 12px;
+    }
+    .sess small{ font-weight: 500; color: var(--muted); font-size: 11px; }
+    .sess .rowbtns{ margin-top: 8px; display:flex; gap: 6px; flex-wrap: wrap; }
 
-    @media (prefers-reduced-motion: reduce) {
-      * { transition: none !important; animation: none !important; }
-      .chip:hover, .sess:hover, .send:hover { transform: none !important; }
+    .sm-btn{
+      appearance:none;
+      border: 1px solid var(--btn-border);
+      background: var(--btn-bg);
+      color: var(--btn-text);
+      border-radius: 999px;
+      padding: 7px 10px;
+      font-weight: 600;
+      font-size: 11px;
+      cursor:pointer;
+      transition: background var(--transition);
+    }
+    .sm-btn:hover{ background: var(--btn-bg-hover); }
+    .sm-btn:focus{ outline:none; box-shadow: var(--focus); }
+
+    /* Learn mini */
+    .learn{ padding: 12px; }
+    .learn-head{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap: 10px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--line);
+      margin-bottom: 10px;
+    }
+    .learn-head .title{
+      font-weight: 700;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--muted);
+    }
+    .tag-list{ display:flex; flex-wrap:wrap; gap: 6px; }
+    .tag-pill{
+      border: 1px solid var(--line);
+      background: var(--panel-2);
+      color: var(--text);
+      border-radius: 999px;
+      padding: 6px 10px;
+      font-size: 11px;
+      font-weight: 600;
     }
 
-    @media (max-width: 1100px) {
-      .container { grid-template-columns: 1fr; }
-      .log { padding: 0.5rem 0; }
+    /* Chat */
+    .chat{
+      display:flex;
+      flex-direction:column;
+      gap: 12px;
+      min-width: 0;
     }
-    @media (max-width: 720px) {
-      .top { grid-template-columns: 1fr; justify-items: flex-start; }
-      .hero { grid-template-columns: 1fr; }
-      .composer { flex-direction: column; align-items: stretch; }
-      .send { width: 100%; }
-      .answer-mode { justify-content: flex-start; }
+    .hero{
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 14px 16px;
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap: 14px;
+    }
+    .hero h1{
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+    }
+    .hero p{
+      margin-top: 6px;
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+    .stats{
+      display:flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content:flex-end;
+      min-width: 240px;
+    }
+    .stat{
+      border: 1px solid var(--line);
+      background: var(--panel-2);
+      border-radius: var(--radius-sm);
+      padding: 10px 12px;
+      text-align: left;
+      min-width: 120px;
+    }
+    .stat .label{ font-size: 11px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
+    .stat .val{ margin-top: 4px; font-size: 12px; font-weight: 700; }
+
+    .log{
+      flex: 1;
+      min-height: 280px;
+      overflow:auto;
+      display:flex;
+      flex-direction:column;
+      gap: 10px;
+      padding: 6px 2px 10px;
+    }
+    .bubble{
+      max-width: 86ch;
+      border: 1px solid var(--line);
+      background: var(--panel);
+      border-radius: var(--radius);
+      padding: 12px 14px;
+      line-height: 1.65;
+      box-shadow: none;
+      content-visibility: auto;
+      contain-intrinsic-size: 220px;
+    }
+    .bubble.me{
+      align-self:flex-end;
+      background: var(--panel-2);
+    }
+
+    .bubble-header{
+      display:flex;
+      justify-content:flex-end;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+    .copy-btn, .pdf-btn{
+      appearance:none;
+      border: 1px solid var(--btn-border);
+      background: var(--btn-bg);
+      color: var(--btn-text);
+      border-radius: 999px;
+      padding: 7px 10px;
+      font-weight: 600;
+      font-size: 11px;
+      cursor:pointer;
+      transition: background var(--transition);
+    }
+    .copy-btn:hover, .pdf-btn:hover{ background: var(--btn-bg-hover); }
+    .copy-btn:focus, .pdf-btn:focus{ outline:none; box-shadow: var(--focus); }
+
+    .bubble .md h1, .bubble .md h2, .bubble .md h3{
+      margin: 6px 0 10px;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text);
+      letter-spacing: -0.01em;
+    }
+    .bubble .md p, .bubble .md ul, .bubble .md ol, .bubble .md pre{ margin: 10px 0; }
+    .bubble .md pre{
+      background: var(--panel-2);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-sm);
+      padding: 10px 12px;
+      overflow-x: auto;
+    }
+    .bubble .md code{
+      background: var(--panel-2);
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      padding: 2px 6px;
+    }
+
+    .footnotes{
+      margin-top: 12px;
+      padding-top: 10px;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.5;
+    }
+    .footnotes ol{ margin-left: 16px; }
+    .footnote-marker{ color: var(--muted); font-size: 0.75em; vertical-align: super; }
+
+    /* Palette */
+    .palette{
+      position:absolute;
+      bottom: 86px;
+      left: 0;
+      width: min(540px, 100%);
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      display:none;
+      overflow:hidden;
+      z-index: 10;
+    }
+    .pal-item{
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--line);
+      cursor:pointer;
+      display:flex;
+      justify-content:space-between;
+      gap: 12px;
+      transition: background var(--transition);
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .pal-item:hover{ background: var(--panel-2); }
+    .pal-tag{ color: var(--muted); font-weight: 600; font-size: 11px; }
+
+    /* Composer */
+    .composer{
+      position: sticky;
+      bottom: 0;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 10px;
+      box-shadow: var(--shadow);
+      display:flex;
+      gap: 10px;
+      align-items:center;
+    }
+    .answer-mode{
+      display:flex;
+      gap: 10px;
+      align-items:center;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+    .answer-mode input{ accent-color: var(--accent); }
+    .in{
+      flex:1;
+      border: 1px solid var(--btn-border);
+      background: var(--panel-2);
+      border-radius: 999px;
+      padding: 10px 14px;
+      font-size: 13px;
+      color: var(--text);
+      outline:none;
+      transition: box-shadow var(--transition), background var(--transition), border-color var(--transition);
+    }
+    .in:focus{
+      box-shadow: var(--focus);
+      border-color: var(--accent);
+      background: var(--panel);
+    }
+    .send{
+      appearance:none;
+      border: 1px solid var(--btn-border);
+      background: var(--btn-bg);
+      color: var(--btn-text);
+      border-radius: 999px;
+      padding: 10px 14px;
+      font-weight: 700;
+      font-size: 12px;
+      cursor:pointer;
+      transition: background var(--transition);
+      white-space: nowrap;
+    }
+    .send:hover{ background: var(--btn-bg-hover); }
+    .send:disabled{ opacity: 0.6; cursor:not-allowed; }
+
+    .footer{
+      text-align:center;
+      padding: 14px 18px;
+      color: var(--muted);
+      border-top: 1px solid var(--line);
+      background: var(--panel);
+      font-size: 11px;
+    }
+
+    /* Modals */
+    .modal{
+      position: fixed; inset: 0;
+      display:none;
+      align-items:center;
+      justify-content:center;
+      background: rgba(0,0,0,0.45);
+      z-index: 1000;
+      padding: 16px;
+    }
+    .card{
+      width: min(96vw, 860px);
+      max-height: 90vh;
+      overflow:auto;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+    .card-h{
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--line);
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap: 12px;
+      font-weight: 700;
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--muted);
+    }
+    .card-b{ padding: 16px; line-height: 1.6; font-size: 13px; }
+    .card-f{
+      padding: 14px 16px;
+      border-top: 1px solid var(--line);
+      display:flex;
+      justify-content:flex-end;
+      gap: 8px;
+    }
+    .btn{
+      appearance:none;
+      border: 1px solid var(--btn-border);
+      background: var(--btn-bg);
+      color: var(--btn-text);
+      border-radius: 999px;
+      padding: 9px 12px;
+      font-weight: 700;
+      font-size: 12px;
+      cursor:pointer;
+      transition: background var(--transition);
+    }
+    .btn:hover{ background: var(--btn-bg-hover); }
+    .btn.primary{
+      background: var(--accent);
+      border-color: var(--accent);
+      color: var(--bg);
+    }
+    body.dark .btn.primary{
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #0f1114;
+    }
+
+    .group{ padding: 16px; border-top: 1px solid var(--line); }
+    .group:first-child{ border-top: none; }
+
+    .row{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap: 12px;
+      margin: 10px 0;
+    }
+    .select, .ta, .in-inline{
+      width: 100%;
+      border: 1px solid var(--btn-border);
+      background: var(--panel-2);
+      border-radius: var(--radius-sm);
+      padding: 10px 12px;
+      color: var(--text);
+      font-size: 13px;
+      outline:none;
+    }
+    .select:focus, .ta:focus, .in-inline:focus{ box-shadow: var(--focus); border-color: var(--accent); background: var(--panel); }
+    .ta{ min-height: 120px; resize: vertical; }
+
+    /* Switch - clean */
+    .switch{
+      width: 46px; height: 26px;
+      border-radius: 999px;
+      border: 1px solid var(--btn-border);
+      background: var(--btn-bg);
+      position: relative;
+      cursor:pointer;
+      transition: background var(--transition), border-color var(--transition);
+      flex: 0 0 auto;
+    }
+    .switch > i{
+      position:absolute;
+      width: 20px; height: 20px;
+      top: 2px; left: 2px;
+      border-radius: 999px;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      transition: left var(--transition);
+    }
+    .switch.on{
+      background: var(--accent);
+      border-color: var(--accent);
+    }
+    body.dark .switch.on{ background: var(--accent); border-color: var(--accent); }
+    .switch.on > i{ left: 24px; }
+
+    .muted{ color: var(--muted); font-size: 12px; }
+
+    @media (max-width: 1100px){
+      .container{ grid-template-columns: 1fr; }
+      .brand-wrap{ min-width: unset; }
+      .stats{ min-width: unset; }
+    }
+    @media (max-width: 720px){
+      .top{ grid-template-columns: 1fr; gap: 10px; }
+      .badge{ justify-self: start; }
+      .top-actions{ justify-content:flex-start; flex-wrap: wrap; }
+      .hero{ flex-direction: column; }
+      .composer{ flex-direction: column; align-items: stretch; }
+      .send{ width: 100%; }
+      .in{ width: 100%; }
+      .answer-mode{ justify-content:flex-start; }
     }
   </style>
 </head>
@@ -187,53 +625,33 @@
   <div class="card">
     <div class="card-h">
       Datenschutzhinweis
-      <span class="beta">Beta-Version</span>
+      <span class="muted" style="font-weight:700;font-size:12px;">BETA</span>
     </div>
     <div class="card-b">
-      <p class="beta">
-        Wichtiger Hinweis: Dieser Bot befindet sich im <strong>Beta-Stadium</strong>.
-        Antworten können unvollständig oder falsch sein.
+      <p class="muted" style="margin-bottom:10px;">
+        Hinweis: Dieser Bot befindet sich im Beta-Stadium. Antworten können unvollständig oder falsch sein.
       </p>
 
-      <p>
-        Um diesen Chatbot nutzen zu können, ist deine Zustimmung zur folgenden
-        Datenverarbeitung erforderlich:
+      <p style="margin-bottom:10px;">
+        Um diesen Chatbot nutzen zu können, ist deine Zustimmung zur folgenden Datenverarbeitung erforderlich:
       </p>
 
-      <ul style="margin:1rem 0 0 1.5rem">
-        <li>
-          Deine Eingaben werden an <strong>OpenAI</strong> (USA) und
-          <strong>Make</strong> (EU) übermittelt.
-        </li>
-        <li>
-          Die übermittelten Daten werden dort zur
-          <strong>Generierung von Antworten</strong> automatisiert verarbeitet.
-        </li>
-        <li>
-          Gib bitte <strong>keine sensiblen oder personenbezogenen Daten</strong> ein
-          (z. B. Gesundheitsdaten, Klarnamen Dritter, Kontodaten).
-        </li>
-        <li>
-          Weitere Informationen:
-          <a href="https://openai.com/policies/privacy-policy" target="_blank" rel="noopener">
-            Datenschutz bei OpenAI
-          </a>,
-          <a href="https://www.make.com/en/privacy-policy" target="_blank" rel="noopener">
-            Datenschutz bei Make.com
-          </a>.
+      <ul style="margin:10px 0 0 18px; line-height:1.6;">
+        <li>Deine Eingaben werden an <strong>OpenAI</strong> (USA) und <strong>Make</strong> (EU) übermittelt.</li>
+        <li>Die übermittelten Daten werden dort zur <strong>Generierung von Antworten</strong> automatisiert verarbeitet.</li>
+        <li>Gib bitte <strong>keine sensiblen oder personenbezogenen Daten</strong> ein (z. B. Gesundheitsdaten, Klarnamen Dritter, Kontodaten).</li>
+        <li>Weitere Informationen:
+          <a href="https://openai.com/policies/privacy-policy" target="_blank" rel="noopener">Datenschutz OpenAI</a>,
+          <a href="https://www.make.com/en/privacy-policy" target="_blank" rel="noopener">Datenschutz Make</a>.
         </li>
       </ul>
 
-      <p class="muted" style="margin-top:1rem">
-        Hinweis: Dein <strong>Chatverlauf</strong> und deine
-        <strong>Snippets</strong> werden <strong>nur lokal</strong> auf deinem Gerät
-        gespeichert (localStorage). Du kannst beides in den Einstellungen verwalten
-        (löschen / exportieren).
+      <p class="muted" style="margin-top:12px;">
+        Hinweis: Chatverläufe und Snippets werden nur lokal im Browser gespeichert (localStorage). Verwaltung über Einstellungen (löschen/exportieren).
       </p>
 
-      <p style="margin-top:1rem">
-        Durch Klick auf <strong>„Zustimmen“</strong> erklärst du dich mit dieser
-        beschriebenen Verarbeitung im Rahmen der Nutzung des Bots einverstanden.
+      <p style="margin-top:12px;">
+        Durch Klick auf <strong>„Zustimmen“</strong> erklärst du dich mit der beschriebenen Verarbeitung einverstanden.
       </p>
     </div>
     <div class="card-f">
@@ -247,38 +665,18 @@
 <div id="m-usage" class="modal" style="display:none">
   <div class="card">
     <div class="card-h">
-      Wichtige Hinweise zur Bot-Nutzung
-      <span class="beta">Beta</span>
+      Nutzungshinweise
+      <span class="muted" style="font-weight:700;font-size:12px;">BETA</span>
     </div>
     <div class="card-b">
-      <ul style="margin:1rem 0 0 1.5rem">
-        <li>
-          <strong>Automatisierte Antworten:</strong>
-          Alle Antworten werden von einer KI generiert.
-        </li>
-        <li>
-          <strong>Keine Gewähr:</strong>
-          Inhalte können unvollständig oder fehlerhaft sein – bitte immer prüfen.
-        </li>
-        <li>
-          <strong>Kein Ersatz für Beratung:</strong>
-          Keine Rechts-, Medizin-, Steuer- oder Finanzberatung und
-          keine individuelle Einzelfallberatung.
-        </li>
-        <li>
-          <strong>Eigenverantwortung:</strong>
-          Antworten kritisch hinterfragen, mit Fachquellen abgleichen und
-          Entscheidungen nicht ausschließlich auf Basis der KI-Antworten treffen.
-        </li>
-        <li>
-          <strong>Beta-Status:</strong>
-          Funktionen können sich ändern; Feedback ist ausdrücklich erwünscht.
-        </li>
+      <ul style="margin:10px 0 0 18px; line-height:1.6;">
+        <li><strong>Automatisierte Antworten:</strong> Inhalte werden von KI generiert.</li>
+        <li><strong>Keine Gewähr:</strong> Inhalte können unvollständig oder fehlerhaft sein.</li>
+        <li><strong>Kein Ersatz für Beratung:</strong> keine Rechts-, Medizin-, Steuer- oder Finanzberatung.</li>
+        <li><strong>Eigenverantwortung:</strong> Inhalte prüfen, mit Fachquellen abgleichen.</li>
       </ul>
-
-      <p style="margin-top:1rem">
-        Durch Klick auf <strong>„Einverstanden“</strong> bestätigst du, dass du diese
-        Nutzungshinweise verstanden hast und sie für die Arbeit mit dem Bot berücksichtigst.
+      <p style="margin-top:12px;">
+        Durch Klick auf <strong>„Einverstanden“</strong> bestätigst du, dass du die Hinweise verstanden hast.
       </p>
     </div>
     <div class="card-f">
@@ -294,34 +692,33 @@
 
     <div class="group">
       <div class="row">
-        <label>Darstellung</label>
-        <div class="chips" id="chip-theme">
+        <label style="font-weight:700;font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:0.04em;">Darstellung</label>
+        <div class="chips" id="chip-theme" style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;">
           <div class="chip" data-val="light">Hell</div>
           <div class="chip" data-val="dark">Dunkel</div>
           <div class="chip" data-val="system">System</div>
         </div>
       </div>
+
       <div class="row">
-        <label>Gender-Sprache</label>
+        <label style="font-weight:600;">Gender-Sprache</label>
         <div id="sw-gender" class="switch"><i></i></div>
       </div>
+
       <div class="row">
-        <label>Begrüßung anzeigen</label>
+        <label style="font-weight:600;">Begrüßung anzeigen</label>
         <div id="sw-greet" class="switch on"><i></i></div>
       </div>
+
       <div class="row">
-        <label>Fachmodus</label>
-        <div class="muted">Im nächsten Abschnitt auswählbar</div>
-      </div>
-      <div class="row">
-        <label>Lernmodus (inaktiv)</label>
-        <div class="switch" style="opacity:0.5;pointer-events:none"><i></i></div>
+        <label style="font-weight:600;">Lernen aktiv</label>
+        <div id="sw-learn" class="switch"><i></i></div>
       </div>
     </div>
 
     <div class="group">
       <div class="row">
-        <label>Fachmodus</label>
+        <label style="font-weight:600;">Fachmodus</label>
         <select id="sel-domain" class="select">
           <option value="">— Kein spezieller Modus —</option>
           <option value="AEVO">AEVO</option>
@@ -331,35 +728,31 @@
           <option value="VWL">VWL</option>
         </select>
       </div>
-      <div class="row">
-        <label>Lernmodus</label>
-        <div id="sw-learn" class="switch"><i></i></div>
-      </div>
     </div>
 
     <div class="group">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:12px;flex-wrap:wrap;">
         <div>
-          <strong>Prompt-Snippets</strong>
-          <span class="muted">(per „/alias“ einfügen)</span>
+          <strong style="text-transform:uppercase;letter-spacing:0.04em;color:var(--muted);font-size:12px;">Prompt-Snippets</strong>
+          <div class="muted" style="margin-top:4px;">per „/alias“ einfügen</div>
         </div>
-        <div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
           <button class="btn" id="pm-add">Neu</button>
           <button class="btn" id="pm-export">Export</button>
           <button class="btn" id="pm-import">Import</button>
         </div>
       </div>
-      <div id="pm-list" style="display:grid;grid-template-columns:repeat(auto-fit, minmax(280px, 1fr));gap:0.8rem"></div>
+      <div id="pm-list" style="display:grid;grid-template-columns:repeat(auto-fit, minmax(280px, 1fr));gap:10px"></div>
     </div>
 
     <div class="group">
       <div class="row" style="align-items:flex-start">
         <div>
-          <div><strong>Chatverlauf</strong></div>
+          <div style="font-weight:700;">Chatverlauf</div>
           <div class="muted">Nur lokal gespeichert. Du kannst ihn löschen oder exportieren.</div>
         </div>
-        <div style="display:flex;gap:0.75rem">
-          <button class="btn" id="btn-export-all">Gesamt-Export (.txt)</button>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;">
+          <button class="btn" id="btn-export-all">Gesamt-Export</button>
           <button class="btn" id="btn-clear-all">Alle löschen</button>
         </div>
       </div>
@@ -378,14 +771,14 @@
     <div class="card-h">Snippet</div>
     <div class="card-b">
       <div class="row">
-        <label style="min-width:140px">Titel</label>
+        <label style="min-width:140px;font-weight:600;">Titel</label>
         <input id="pe-title" class="in-inline" />
       </div>
       <div class="row">
-        <label style="min-width:140px">Alias</label>
+        <label style="min-width:140px;font-weight:600;">Alias</label>
         <input id="pe-alias" class="in-inline" placeholder="/aevo" />
       </div>
-      <div style="margin:0.6rem 0 0.35rem">Text</div>
+      <div style="margin:10px 0 6px;font-weight:600;">Text</div>
       <textarea id="pe-content" class="ta" placeholder="Dieser Text wird bei /alias eingefügt."></textarea>
     </div>
     <div class="card-f">
@@ -398,23 +791,22 @@
 <!-- Lernen -->
 <div id="m-learn" class="modal">
   <div class="card">
-    <div class="card-h">
-      Lernen
-      <span class="muted" style="font-size:0.9rem">Beta</span>
-    </div>
+    <div class="card-h">Lernen</div>
     <div class="card-b">
       <div class="row">
-        <input id="learn-tag-input" class="in-inline" placeholder="Thema taggen (z.B. AEVO Ausbilderrolle)" />
-        <button class="btn primary" id="learn-add">Tag speichern</button>
+        <input id="learn-tag-input" class="in-inline" placeholder="Thema taggen (z. B. AEVO Ausbilderrolle)" />
+        <button class="btn primary" id="learn-add">Speichern</button>
       </div>
       <div class="tag-list" id="learn-tags"></div>
-      <div style="margin-top:1rem">
-        <label style="font-weight:700">Notizen</label>
+
+      <div style="margin-top:12px;">
+        <label style="font-weight:700;">Notizen</label>
         <textarea id="learn-notes" class="ta" placeholder="Eigene Notizen zum Lernen"></textarea>
       </div>
-      <div style="margin-top:1rem">
-        <label style="font-weight:700">Lernkarten-Idee</label>
-        <textarea id="learn-cards" class="ta" placeholder="Stichworte für Lernkarten (wird lokal gespeichert)"></textarea>
+
+      <div style="margin-top:12px;">
+        <label style="font-weight:700;">Lernkarten-Idee</label>
+        <textarea id="learn-cards" class="ta" placeholder="Stichworte für Lernkarten (lokal gespeichert)"></textarea>
       </div>
     </div>
     <div class="card-f">
@@ -431,20 +823,21 @@
       class="brand-portrait"
       src="https://ntc-bot1.netlify.app/Bildschirmfoto%202025-06-26%20um%2021.09.25.png"
       alt="Linda"
-      width="64"
-      height="64"
+      width="44" height="44"
       decoding="async"
       fetchpriority="high"
     />
     <div>
-      <div class="brand">Linda Trainer</div>
-      <div class="pulse">Coach-Session aktiv</div>
+      <div class="brand">Linda</div>
+      <div class="pulse">Coaching Session</div>
     </div>
   </div>
-  <div class="badge" id="domain-badge" style="display:none">📘 Fachmodus: —</div>
+
+  <div class="badge" id="domain-badge" style="display:none">Fachmodus: —</div>
+
   <div class="top-actions">
-    <button class="icon-btn" id="btn-learn" aria-label="Lernen öffnen">📚</button>
-    <button class="icon-btn" id="btn-settings" aria-label="Einstellungen öffnen">⚙️</button>
+    <button class="icon-btn" id="btn-learn" aria-label="Lernen öffnen">Lernen</button>
+    <button class="icon-btn" id="btn-settings" aria-label="Einstellungen öffnen">Einstellungen</button>
   </div>
 </div>
 
@@ -454,20 +847,13 @@
       <img
         src="https://ntc-bot1.netlify.app/Bildschirmfoto%202025-06-26%20um%2021.09.25.png"
         alt="Linda"
-        width="96"
-        height="96"
+        width="56" height="56"
         loading="lazy"
         decoding="async"
       />
       <div>
         <h2>Coach Linda</h2>
-        <p>Strukturiertes Coaching, schnelle oder ausführliche Antworten. Einfach oben den Stil wählen.</p>
-        <p>Trainingsimpulse, klare Struktur, schnelle Snippets. Ideal für AEVO & Prüfungen.</p>
-        <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-top:0.4rem">
-          <span class="tag">⚡ Fokus</span>
-          <span class="tag">🧭 Guideline</span>
-          <span class="tag">🛠️ Praxis</span>
-        </div>
+        <p>Strukturiertes Coaching mit schnellen oder ausführlichen Antworten. Snippets per „/“.</p>
       </div>
     </div>
 
@@ -481,16 +867,16 @@
     </div>
 
     <div class="panel learn">
-      <div style="display:flex;align-items:center;justify-content:space-between;gap:0.5rem; margin-bottom:0.75rem;">
-        <div style="font-weight:800">Lernen (Beta)</div>
-        <button class="btn sm-btn" id="learn-open" style="padding:0.35rem 0.75rem">Öffnen</button>
+      <div class="learn-head">
+        <div class="title">Lernen</div>
+        <button class="sm-btn" id="learn-open">Öffnen</button>
       </div>
       <div class="tag-list" id="learn-tags-mini"></div>
     </div>
 
     <div class="panel sessions">
       <div class="head">
-        <div style="font-weight:700">Verläufe</div>
+        <div>Verläufe</div>
         <button id="btn-new" class="sm-btn">Neu</button>
       </div>
       <div id="sess-list" class="list"></div>
@@ -500,14 +886,15 @@
   <section class="chat">
     <div class="hero">
       <div>
-        <h1>Trainiere Antworten mit Struktur &amp; Tempo</h1>
-        <p>Nutze Snippets über „/“, verwende den Fachmodus in den Einstellungen und kopiere Antworten direkt.</p>
-        <p>Kontext: Die letzten 3 Nachrichten werden automatisch als Gesprächskontext übermittelt.</p>
+        <h1>Training mit Struktur & Tempo</h1>
+        <p>Snippets per „/“. Fachmodus in den Einstellungen. Antworten kopieren oder als PDF exportieren.</p>
+        <p class="muted">Kontext: 3 letzte Nachrichten werden als Gesprächskontext übermittelt.</p>
       </div>
+
       <div class="stats">
         <div class="stat">
           <div class="label">Kontext</div>
-          <div class="val">3 letzte Nachrichten</div>
+          <div class="val">3 Nachrichten</div>
         </div>
         <div class="stat">
           <div class="label">Snippets</div>
@@ -517,13 +904,16 @@
     </div>
 
     <div id="log" class="log"></div>
+
     <div style="position:relative">
       <div id="palette" class="palette"></div>
+
       <div class="composer">
         <div class="answer-mode">
           <label><input type="radio" name="answer-mode" value="fast" checked /> Schnell</label>
           <label><input type="radio" name="answer-mode" value="full" /> Ausführlich</label>
         </div>
+
         <input id="in" class="in" placeholder="Deine Frage… (Tipp „/“ für Snippets)" />
         <button id="send" class="send">Senden</button>
       </div>
@@ -532,7 +922,7 @@
 </div>
 
 <div class="footer">
-  <p>&copy; 2025 Linda Coach. Dynamic Training Experience.</p>
+  <p>&copy; 2025 Linda. Clean Training UI.</p>
 </div>
 
 <!-- Kontext-Add-on (unverändert) -->
@@ -605,7 +995,7 @@
             const fachmodus = getFachmodus();
             const augmented = { ...body, context, fachmodus, user: body.user || "Dozent" };
             options.body = JSON.stringify(augmented);
-            console.info('[linda-addon] augmented fetch ->', url, { fachmodus, contextAdded: !!context, originalHasQuestion: !!body.question, originalHasMessage: !!body.message });
+            console.info('[linda-addon] augmented fetch ->', url, { fachmodus, contextAdded: !!context });
           }
         } catch (err) {
           console.warn('[linda-addon] could not parse JSON body, skipping augmentation', err);
@@ -647,7 +1037,7 @@
 
 <script>
 (function(){
-  // Anti-Duplication / Kopierschutz (Hinweis: kostet minimal Events; wenn Performance wichtiger ist, kann man es entfernen)
+  // Anti-Duplication / Kopierschutz (optional: entfernen, wenn du selektieren willst)
   document.addEventListener('contextmenu', e => e.preventDefault());
   document.addEventListener('copy', e => e.preventDefault());
   document.addEventListener('cut', e => e.preventDefault());
@@ -655,7 +1045,6 @@
   document.addEventListener('selectstart', e => e.preventDefault());
 
   const uniqueToken = 'Linda-v27.6-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
-  console.log('Unique Session Token:', uniqueToken);
 
   const $ = id => document.getElementById(id);
   const LS = {
@@ -664,8 +1053,8 @@
     del(k){ localStorage.removeItem(k) }
   };
 
-  // === Performance-Guards ===
-  const MAX_MESSAGES_PER_SESSION = 250;   // verhindert riesige DOM- und localStorage-Wachstumsprobleme
+  // Performance / Storage guards
+  const MAX_MESSAGES_PER_SESSION = 250;
   const SAVE_DEBOUNCE_MS = 120;
   let _saveT = null;
   function saveAllDebounced(){
@@ -716,7 +1105,7 @@
     renderLearnMini();
   }
 
-  // Theme: matchMedia Listener nur einmal sauber setzen
+  // Theme
   let _mql = null;
   let _mqlHandler = null;
   function applyTheme(){
@@ -786,14 +1175,13 @@
           <small>${new Date(s.ts).toLocaleDateString()}</small>
         </div>
         <div class="rowbtns">
-          <button class="sm-btn" data-action="rename" title="Umbenennen">✎</button>
-          <button class="sm-btn" data-action="export" title="Exportieren">⤓</button>
-          <button class="sm-btn" data-action="delete" title="Löschen">🗑</button>
+          <button class="sm-btn" data-action="rename" title="Umbenennen">Umbenennen</button>
+          <button class="sm-btn" data-action="export" title="Exportieren">Export</button>
+          <button class="sm-btn" data-action="delete" title="Löschen">Löschen</button>
         </div>
       </div>
     `).join('');
 
-    // Delegation nur einmal
     if (!el.__bound) {
       el.addEventListener('click', (e) => {
         const sessEl = e.target.closest('.sess');
@@ -815,11 +1203,8 @@
   }
 
   function enhanceFootnotes(bubbleEl) {
-    // Performance: nur wenige + nur relevante Tags
     const mdEl = bubbleEl.querySelector('.md');
     if (!mdEl) return;
-
-    // schon gemacht?
     if (mdEl.__footnoted) return;
 
     const sections = mdEl.querySelectorAll('h1, h2, h3, p');
@@ -869,8 +1254,8 @@
           <link href="https://fonts.cdnfonts.com/css/aptos" rel="stylesheet">
           <style>
             body{font-family:'Aptos','Segoe UI',Arial,sans-serif;font-size:11pt;line-height:1.6;padding:32px;color:#111;}
-            h1,h2,h3{color:#0a66c2;}
-            .footnote-marker{color:#0a66c2;}
+            h1,h2,h3{color:#111;}
+            .footnote-marker{color:#555;}
             .footer-note{margin-top:24px;font-size:9pt;color:#555;}
             hr{margin:18px 0;border:0;border-top:1px solid #ddd;}
           </style>
@@ -882,7 +1267,7 @@
           <div class="footer-note">
             ${timestamp}<br/>
             Antwort mit KI erstellt. Keine Gewähr für Richtigkeit und Aktualität.
-            BOT-Antworten müssen immer überprüft werden.
+            Inhalte bitte prüfen.
           </div>
         </body>
       </html>
@@ -893,7 +1278,6 @@
   }
 
   function scrollToBottom(){
-    // rAF verhindert “Layout Thrash” bei schnellen DOM-Änderungen
     requestAnimationFrame(() => { logEl.scrollTop = logEl.scrollHeight; });
   }
 
@@ -906,30 +1290,16 @@
     if (role === 'assistant') {
       d.innerHTML =
         '<div class="bubble-header">' +
-          '<button type="button" class="copy-btn" title="Antwort kopieren">' +
-            '<span>📋</span><span>kopieren</span>' +
-          '</button>' +
-          '<button type="button" class="pdf-btn" title="Als PDF exportieren">' +
-            '<span>🖨️</span><span>PDF</span>' +
-          '</button>' +
+          '<button type="button" class="copy-btn" title="Antwort kopieren">Kopieren</button>' +
+          '<button type="button" class="pdf-btn" title="Als PDF exportieren">PDF</button>' +
         '</div>' +
         '<div class="md">'+md(content)+'</div>';
 
-      // Footnotes nicht für Platzhalter
       if (!String(content).startsWith('⏳')) enhanceFootnotes(d);
     } else {
       d.innerHTML = '<div class="md">'+md(content)+'</div>';
     }
     return d;
-  }
-
-  function appendMsg(role, content){
-    const s = active();
-    const idx = s.messages.length - 1;
-    const el = createBubbleEl(role, content, idx);
-    logEl.appendChild(el);
-    scrollToBottom();
-    return idx;
   }
 
   function updateAssistantMsg(idx, newContent){
@@ -938,12 +1308,8 @@
 
     bubble.innerHTML =
       '<div class="bubble-header">' +
-        '<button type="button" class="copy-btn" title="Antwort kopieren">' +
-          '<span>📋</span><span>kopieren</span>' +
-        '</button>' +
-        '<button type="button" class="pdf-btn" title="Als PDF exportieren">' +
-          '<span>🖨️</span><span>PDF</span>' +
-        '</button>' +
+        '<button type="button" class="copy-btn" title="Antwort kopieren">Kopieren</button>' +
+        '<button type="button" class="pdf-btn" title="Als PDF exportieren">PDF</button>' +
       '</div>' +
       '<div class="md">'+md(newContent)+'</div>';
 
@@ -957,9 +1323,7 @@
     if(!s) return;
 
     const frag = document.createDocumentFragment();
-    s.messages.forEach((m, idx) => {
-      frag.appendChild(createBubbleEl(m.role, m.content, idx));
-    });
+    s.messages.forEach((m, idx) => frag.appendChild(createBubbleEl(m.role, m.content, idx)));
     logEl.appendChild(frag);
     scrollToBottom();
   }
@@ -967,7 +1331,6 @@
   function push(role, content, immediateSave=false){
     const s = active();
     s.messages.push({role,content});
-    // Cap pro Session (Performance + Storage)
     if (s.messages.length > MAX_MESSAGES_PER_SESSION) {
       s.messages.splice(0, s.messages.length - MAX_MESSAGES_PER_SESSION);
     }
@@ -979,7 +1342,7 @@
     const b = $('domain-badge');
     if(S.domain){
       b.style.display='inline-flex';
-      b.textContent='📘 Fachmodus: '+S.domain;
+      b.textContent = 'Fachmodus: ' + S.domain;
     } else {
       b.style.display='none';
     }
@@ -1002,8 +1365,7 @@
       : 'Verwende neutrale, nicht gegenderte Sprache.'
     );
     lines.push('Strukturiere Antworten: 1) Definition/Einordnung 2) Rechts-/Theoriebezug 3) Praxisbeispiel 4) Prüfungsrelevanz 5) kurze Quellenhinweise (falls vorhanden).');
-    if (S.learn)
-      lines.push('Merke Stellen für Lernen: markiere relevante Tags, damit Notizen und Lernkarten gepflegt werden können.');
+    if (S.learn) lines.push('Merke Stellen für Lernen: markiere relevante Tags, damit Notizen und Lernkarten gepflegt werden können.');
     return lines.filter(Boolean).join('\n');
   }
 
@@ -1015,7 +1377,6 @@
   }
 
   function buildCompressedContextForAddon() {
-    // damit das Add-on nicht jedes Mal teuer bauen muss (weil context im Payload existiert)
     const s = active();
     if (!s || !Array.isArray(s.messages)) return '';
     const msgs = s.messages.slice(-3);
@@ -1041,15 +1402,16 @@
     try {
       const s = active();
 
-      // 1) User-Bubble incremental
+      // User bubble
       push('user', q);
-      appendMsg('user', q);
+      logEl.appendChild(createBubbleEl('user', q, s.messages.length - 1));
+      scrollToBottom();
 
-      // 2) history/context VOR Platzhalter (damit ⏳ nicht im Kontext landet)
+      // context/history before placeholder
       const historyArray = buildHistoryArray();
       const contextStr = buildCompressedContextForAddon();
 
-      // 3) Platzhalter-Bubble incremental
+      // placeholder
       push('assistant','⏳ Einen Moment …');
       const placeholderIdx = s.messages.length - 1;
       logEl.appendChild(createBubbleEl('assistant', '⏳ Einen Moment …', placeholderIdx));
@@ -1063,7 +1425,6 @@
         question: systemPrefix() + '\n\n' + modePrompt + '\n\n' + q,
         token: uniqueToken,
         history: historyArray,
-        // Add-on entlasten:
         context: contextStr,
         fachmodus: S.domain || '',
         user: 'Dozent'
@@ -1078,14 +1439,12 @@
       const text = await r.text();
       const out  = (text && text.trim().toLowerCase()!=='accepted')
         ? text
-        : 'Ich habe deine Frage erhalten und beantworte sie gleich – bitte erneut senden, falls nichts erscheint.';
+        : 'Ich habe deine Frage erhalten. Bitte erneut senden, falls nichts erscheint.';
 
       s.messages[placeholderIdx] = {role:'assistant', content: out};
       saveAllDebounced();
 
       updateAssistantMsg(placeholderIdx, out);
-
-      // optional: chatHistory wird vom Add-on gepflegt, hier nicht doppelt schreiben
     } catch(e) {
       const s = active();
       const lastIdx = s.messages.length - 1;
@@ -1120,16 +1479,19 @@
   function renderPM(){
     const list = $('pm-list');
     list.innerHTML = SN.map(s=>`
-      <div class="panel" style="padding:1rem;min-height:120px">
-        <div style="display:flex;justify-content:space-between;gap:0.75rem;align-items:center">
-          <div><b>${s.title}</b> <span class="muted">${s.alias}</span></div>
+      <div class="panel" style="padding:12px;">
+        <div style="display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap;">
           <div>
-            <button class="sm-btn pm-use"  data-id="${s.id}">Einfügen</button>
-            <button class="sm-btn pm-edit" data-id="${s.id}">Bearb.</button>
-            <button class="sm-btn pm-del"  data-id="${s.id}">🗑</button>
+            <div style="font-weight:700;font-size:12px;">${s.title}</div>
+            <div class="muted" style="margin-top:2px;">${s.alias}</div>
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;">
+            <button class="sm-btn pm-use" data-id="${s.id}">Einfügen</button>
+            <button class="sm-btn pm-edit" data-id="${s.id}">Bearbeiten</button>
+            <button class="sm-btn pm-del" data-id="${s.id}">Löschen</button>
           </div>
         </div>
-        <div class="muted" style="margin-top:0.5rem;max-height:5em;overflow:hidden">${s.content}</div>
+        <div class="muted" style="margin-top:10px;max-height:5em;overflow:hidden;">${s.content}</div>
       </div>`).join('');
 
     list.querySelectorAll('.pm-use').forEach(b=>b.onclick=()=>{
@@ -1159,7 +1521,6 @@
     show($('m-prompt'));
   }
 
-  // Snippet-Editor Buttons
   $('pm-add').onclick    = () => editSnippet(null);
   $('pe-cancel').onclick = () => hide($('m-prompt'));
   $('pe-save').onclick   = () => {
@@ -1210,7 +1571,6 @@
     i.click();
   };
 
-  // Senden & Eingabe
   sendBtn.onclick = send;
   inputEl.addEventListener('keydown',e=>{
     if(e.key==='Enter' && !e.shiftKey){
@@ -1219,7 +1579,7 @@
     }
   });
 
-  // Palette: Debounce für weniger Filter-Druck
+  // Palette debounce
   let _palT = null;
   inputEl.addEventListener('input', (e) => {
     const v = e.target.value;
@@ -1243,7 +1603,6 @@
     if(!e.target.closest('.composer')) palEl.style.display='none';
   });
 
-  // Palette click delegation
   palEl.addEventListener('click', (e) => {
     const it = e.target.closest('.pal-item');
     if (!it) return;
@@ -1254,7 +1613,7 @@
     inputEl.focus();
   });
 
-  // Copy/PDF: Event Delegation (statt pro Bubble Listener)
+  // Copy/PDF delegation
   if (!logEl.__bound) {
     logEl.addEventListener('click', async (e) => {
       const bubble = e.target.closest('.bubble');
@@ -1268,14 +1627,14 @@
       if (copyBtn && navigator.clipboard && navigator.clipboard.writeText) {
         const txt = mdEl.innerText || '';
         if (!txt) return;
-        const original = copyBtn.innerHTML;
+        const original = copyBtn.textContent;
         try {
           await navigator.clipboard.writeText(txt);
-          copyBtn.innerHTML = '<span>✔</span><span>kopiert</span>';
-          setTimeout(()=>{ copyBtn.innerHTML = original; }, 1200);
+          copyBtn.textContent = 'Kopiert';
+          setTimeout(()=>{ copyBtn.textContent = original; }, 900);
         } catch {
-          copyBtn.innerHTML = '<span>!</span><span>Fehler</span>';
-          setTimeout(()=>{ copyBtn.innerHTML = original; }, 1500);
+          copyBtn.textContent = 'Fehler';
+          setTimeout(()=>{ copyBtn.textContent = original; }, 900);
         }
         return;
       }
@@ -1287,7 +1646,7 @@
     logEl.__bound = true;
   }
 
-  // Datenschutz- & Nutzungshinweis-Logik
+  // Datenschutz & Nutzungshinweis
   const PRIV_KEY  = 'linda.privacyAccepted';
   const USAGE_KEY = 'linda.usageAccepted';
 
@@ -1295,30 +1654,20 @@
     const privAccepted  = LS.get(PRIV_KEY, false);
     const usageAccepted = LS.get(USAGE_KEY, false);
 
-    if (!privAccepted) {
-      show($('m-privacy'));
-      return;
-    }
-    if (!usageAccepted) {
-      show($('m-usage'));
-    }
+    if (!privAccepted) { show($('m-privacy')); return; }
+    if (!usageAccepted) { show($('m-usage')); }
   }
 
   $('p-accept').onclick = () => {
     LS.set(PRIV_KEY, true);
     hide($('m-privacy'));
-    if (!LS.get(USAGE_KEY, false)) {
-      show($('m-usage'));
-    }
+    if (!LS.get(USAGE_KEY, false)) show($('m-usage'));
   };
 
   $('p-decline').onclick = () => {
     LS.del(PRIV_KEY);
     LS.del(USAGE_KEY);
-    alert(
-      'Ohne Zustimmung zur Datenschutzerklärung kann der Bot leider nicht genutzt werden.\n' +
-      'Das Fenster bleibt daher geöffnet.'
-    );
+    alert('Ohne Zustimmung zur Datenschutzerklärung kann der Bot nicht genutzt werden.');
   };
 
   $('u-accept').onclick = () => {
@@ -1327,17 +1676,12 @@
 
     const s = active();
     if (S.greet && s.messages.length === 0) {
-      push(
-        'assistant',
-        '**Willkommen!** Starte deine Trainingseinheit. ' +
-        'Nutze Snippets ("/"), den Fachmodus in den Einstellungen und kopiere Antworten bei Bedarf direkt.',
-        true
-      );
+      push('assistant', '**Willkommen.** Stelle deine Frage. Nutze Snippets („/“) und den Fachmodus in den Einstellungen.', true);
       renderChat();
     }
   };
 
-  // Einstellungen / Switches / Theme
+  // Settings
   applyTheme();
   const sw = (el,val)=>{ el.classList.toggle('on',val); };
 
@@ -1363,10 +1707,10 @@
     setBadge();
     hide($('m-settings'));
   };
-  $('s-close').onclick    = () => hide($('m-settings'));
+  $('s-close').onclick = () => hide($('m-settings'));
   $('btn-settings').onclick = () => { renderPM(); show($('m-settings')); };
 
-  // Export / Clear all Chats
+  // Export / Clear
   $('btn-export-all').onclick = () => {
     const all = Sessions.map(s=>
       `# ${s.name||'Chat'} (${new Date(s.ts).toLocaleString()})\n\n` +
@@ -1392,7 +1736,7 @@
 
   $('btn-new').onclick = addSession;
 
-  // Quick Chips
+  // Quick chips
   document.querySelectorAll('[data-quick]').forEach(chip=>{
     chip.onclick = () => {
       const alias = chip.getAttribute('data-quick');
@@ -1429,7 +1773,7 @@
     hide($('m-learn'));
   };
 
-  // Initialisierung
+  // Init
   ensureFirstSession();
   renderSessions();
   renderChat();
