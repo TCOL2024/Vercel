@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
-<title>Linda – Deine persönliche Assistentin (v28.0-secure)</title>
+<title>Linda – Deine persönliche Assistentin (v28.1-fix)</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.8/purify.min.js"></script>
@@ -958,15 +958,30 @@
     const filename = 'linda-chat.txt';
     const file = new File([txt], filename, { type: 'text/plain' });
 
+    // Prüfung: Kann das Gerät Dateien teilen? (iOS/Android)
     const canShareFile = !!(navigator.share && navigator.canShare && navigator.canShare({ files: [file] }));
+    
     if (canShareFile) {
-      try { await navigator.share({ title: subject, text: intro, files: [file] }); return; } catch(_) {}
+      try {
+        // Versuche das native Teilen-Menü zu öffnen
+        await navigator.share({ title: subject, text: intro, files: [file] });
+      } catch(err) {
+        // Wenn der Nutzer "Abbrechen" drückt, passiert hier nichts mehr.
+        // Wir verhindern das automatische Öffnen des Mail-Programms danach.
+        console.log('Teilen abgebrochen oder fehlgeschlagen.');
+      }
+      return; // WICHTIG: Hier beenden, damit nicht zusätzlich mailto aufgerufen wird.
     }
+
+    // FALLBACK: Nur wenn Teilen-Funktion GAR NICHT existiert (z.B. Desktop PC ohne Share-API)
     try {
+      // Datei herunterladen, da mailto keine Anhänge kann
       const blob = new Blob([txt], { type: 'text/plain' });
       const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = filename;
       document.body.appendChild(a); a.click(); URL.revokeObjectURL(a.href); a.remove();
     } catch(_) {}
+    
+    // Mail-Programm öffnen
     const mailto = `mailto:${encodeURIComponent(to)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(intro)}`;
     window.location.href = mailto;
   }
