@@ -35,51 +35,72 @@
   a { color: var(--brand-2); text-decoration: none; transition: var(--transition); }
   a:hover { color: var(--brand); }
 
-  .top { position: sticky; top: 0; z-index: 30; background: var(--panel); border-bottom: 1px solid var(--line); padding: 1rem 1.5rem; display: flex; align-items: center; gap: 1rem; box-shadow: var(--shadow); }
+  .top {
+    position: sticky; top: 0; z-index: 30;
+    background: var(--panel);
+    border-bottom: 1px solid var(--line);
+    padding: 1rem 1.5rem;
+    display: flex; align-items: center; gap: 1rem;
+    box-shadow: var(--shadow);
+  }
   .brand { font-weight: 700; font-size: 1.5rem; letter-spacing: -0.02em; color: var(--brand); }
   .grow { flex: 1; }
-
-  .badge { display: inline-flex; align-items: center; gap: 0.5rem; background: rgba(0, 68, 129, 0.1); color: var(--brand); border: 1px solid var(--line); padding: 0.5rem 1rem; border-radius: var(--radius); font-size: 0.9rem; font-weight: 500; }
-  .badge .sep { opacity: 0.35; margin: 0 0.25rem; }
-  .gender-ico {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 26px;
-    height: 22px;
-    border-radius: 6px;
+  .badge {
+    display: inline-flex; align-items: center; gap: 0.6rem;
+    background: rgba(0, 68, 129, 0.1);
+    color: var(--brand);
     border: 1px solid var(--line);
-    background: rgba(248, 249, 250, 0.9);
+    padding: 0.5rem 0.9rem;
+    border-radius: var(--radius);
+    font-size: 0.9rem;
+    font-weight: 500;
+  }
+  .badge .sep { width: 1px; height: 16px; background: rgba(0,0,0,0.12); display:inline-block; }
+  .gender-pill {
+    display:inline-flex; align-items:center; justify-content:center;
+    width: 22px; height: 22px;
+    border-radius: 999px;
+    border: 1px solid rgba(0,0,0,0.12);
     font-size: 14px;
     line-height: 1;
     user-select: none;
-    transition: var(--transition);
   }
-  .gender-ico.off { color: var(--muted); }
-  .gender-ico.on  { color: var(--brand-2); background: rgba(0, 113, 206, 0.12); border-color: rgba(0, 113, 206, 0.25); }
+  .gender-pill.on  { color: var(--brand-2); background: rgba(0,113,206,0.10); border-color: rgba(0,113,206,0.25); }
+  .gender-pill.off { color: #98a2b3; background: rgba(152,162,179,0.12); border-color: rgba(152,162,179,0.25); }
 
   .icon-btn { appearance: none; border: 0; background: transparent; cursor: pointer; padding: 0.5rem; border-radius: var(--radius); transition: var(--transition); }
   .icon-btn:hover { background: rgba(0, 68, 129, 0.1); }
   .sliders { width: 24px; height: 24px; }
 
-  /* Mobile Drawer Backdrop (hidden by default) */
+  /* Drawer / Hamburger (mobile-first clean) */
+  .hamburger { display:none; }
+  .hamburger svg { width: 24px; height: 24px; }
+
   .drawer-backdrop {
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,0.35);
-    z-index: 1990;
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.30);
+    backdrop-filter: blur(4px);
+    z-index: 1900;
     display: none;
   }
-  .drawer-backdrop.show { display: block; }
+  .drawer-backdrop.open { display:block; }
 
-  .hamburger { display: none; }
+  .container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 1.5rem;
+    display: grid;
+    grid-template-columns: 300px 1fr;
+    gap: 2rem;
+    min-height: calc(100vh - 80px);
+  }
 
-  .container { max-width: 1400px; margin: 0 auto; padding: 1.5rem; display: grid; grid-template-columns: 300px 1fr; gap: 2rem; min-height: calc(100vh - 80px); }
   .sidebar { display: flex; flex-direction: column; gap: 1.5rem; }
   .panel { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; }
   .avatar { padding: 1.5rem; display: flex; flex-direction: column; align-items: center; text-align: center; }
   .avatar img { width: 100%; max-width: 120px; border-radius: var(--radius); display: block; box-shadow: var(--shadow); }
   .avatar .name { margin-top: 1rem; font-weight: 600; font-size: 1.2rem; color: var(--brand); }
+
   .sessions { display: flex; flex-direction: column; max-height: 60vh; overflow: hidden; }
   .sessions .head { padding: 1rem 1.5rem; border-bottom: 1px solid var(--line); display: flex; align-items: center; justify-content: space-between; background: var(--bg); }
   .sessions .head div { font-weight: 600; }
@@ -95,14 +116,22 @@
 
   .chat { display: flex; flex-direction: column; min-height: calc(100vh - 200px); }
   .log { flex: 1; overflow: auto; display: flex; flex-direction: column; gap: 1.5rem; padding: 1rem; scroll-behavior: smooth; }
-  .bubble { max-width: 85ch; border-radius: var(--radius); padding: 1.5rem; background: var(--panel); box-shadow: var(--shadow); line-height: 1.7; word-wrap: break-word; position: relative; }
+  .bubble {
+    max-width: 85ch;
+    border-radius: var(--radius);
+    padding: 1.5rem;
+    background: var(--panel);
+    box-shadow: var(--shadow);
+    line-height: 1.7;
+    word-wrap: break-word;
+    position: relative;
+  }
   .bubble .md h1, .bubble .md h2, .bubble .md h3 { margin: 0.5rem 0 1rem; font-weight: 600; color: var(--brand); }
   .bubble .md p, .bubble .md ul, .bubble .md ol, .bubble .md pre, .bubble .md blockquote, .bubble .md table { margin: 0.75rem 0; }
   .bubble .md pre { background: var(--bg); padding: 1rem; border-radius: var(--radius); overflow-x: auto; }
   .bubble .md code { background: var(--bg); padding: 0.2rem 0.4rem; border-radius: 4px; font-family: 'Courier New', monospace; }
   .me { align-self: flex-end; background: var(--brand); color: #fff; }
 
-  /* Kopfzeile + Kopier-Button in Bot-Bubbles */
   .bubble-header {
     display: flex;
     justify-content: flex-end;
@@ -123,15 +152,43 @@
     transition: var(--transition);
     color: var(--muted);
   }
-  .copy-btn:hover, .pdf-btn:hover {
-    background: rgba(0, 68, 129, 0.08);
-    color: var(--brand);
-  }
+  .copy-btn:hover, .pdf-btn:hover { background: rgba(0, 68, 129, 0.08); color: var(--brand); }
 
-  .composer { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 1rem; display: flex; gap: 1rem; align-items: center; position: sticky; bottom: 0; box-shadow: var(--shadow); }
-  .in { flex: 1; border: 1px solid var(--line); border-radius: var(--radius); background: rgba(248, 249, 250, 0.8); padding: 1rem; font-size: 1rem; outline: none; color: var(--text); transition: var(--transition); }
+  .composer {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 1rem;
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+    position: sticky;
+    bottom: 0;
+    box-shadow: var(--shadow);
+  }
+  .in {
+    flex: 1;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    background: rgba(248, 249, 250, 0.8);
+    padding: 1rem;
+    font-size: 1rem;
+    outline: none;
+    color: var(--text);
+    transition: var(--transition);
+  }
   .in:focus { border-color: var(--brand); box-shadow: 0 0 0 2px rgba(0, 68, 129, 0.2); }
-  .send { appearance: none; border: 0; background: var(--brand); color: #fff; font-weight: 600; border-radius: var(--radius); padding: 1rem 2rem; cursor: pointer; transition: var(--transition); }
+  .send {
+    appearance: none;
+    border: 0;
+    background: var(--brand);
+    color: #fff;
+    font-weight: 600;
+    border-radius: var(--radius);
+    padding: 1rem 2rem;
+    cursor: pointer;
+    transition: var(--transition);
+  }
   .send:hover { background: var(--brand-2); }
   .send:disabled { opacity: 0.6; cursor: not-allowed; }
 
@@ -177,25 +234,28 @@
   .footer { text-align: center; padding: 1rem; color: var(--muted); font-size: 0.9rem; border-top: 1px solid var(--line); margin-top: 2rem; }
   .footer a { color: var(--brand); }
 
-  /* Desktop/tablet: grid collapses (wie vorher) */
-  @media (max-width: 1024px) {
-    .container { grid-template-columns: 1fr; gap: 1.5rem; }
-    .sessions { max-height: none; }
+  .mobile-info {
+    background: #fff4e6;
+    color: #8a5200;
+    border: 1px solid #ffd8a8;
+    padding: 0.85rem 1rem;
+    text-align: center;
+    font-weight: 600;
   }
 
-  /* MOBILE CLEAN (McKinsey-like) + Drawer – DESKTOP bleibt unberührt */
-  @media (max-width: 768px) {
+  body.mobile .panel { box-shadow: none; }
+  body.mobile .top { box-shadow: none; }
+  body.mobile #btn-settings { opacity: 0.45; }
+
+  @media (max-width: 1024px), (hover: none) and (pointer: coarse) {
     .top { padding: 0.85rem 0.9rem; gap: 0.6rem; box-shadow: none; background: #fff; }
     .hamburger { display: inline-flex; }
-    .icon-btn:hover { background: rgba(0,0,0,0.04); }
 
-    .container { padding: 0.8rem; gap: 0; }
+    .container { grid-template-columns: 1fr; gap: 0; padding: 0.8rem; }
     .chat { min-height: calc(100vh - 120px); }
     .log { padding: 0.6rem 0.25rem 6.5rem; gap: 1rem; max-width: 760px; margin: 0 auto; }
 
     .bubble { padding: 1.1rem; max-width: 100%; border-radius: 14px; box-shadow: none; background: #fff; border: 1px solid rgba(0,0,0,0.08); }
-    .me { border-radius: 14px; border: none; }
-
     .bubble .md h1, .bubble .md h2, .bubble .md h3 { color: #111; }
     .bubble .md pre { background: rgba(0,0,0,0.02); border: 1px solid rgba(0,0,0,0.08); }
 
@@ -215,7 +275,7 @@
     }
     .in {
       padding: 0.9rem;
-      font-size: 16px; /* iOS Zoom verhindern */
+      font-size: 16px; /* verhindert iOS Zoom */
       border-radius: 16px;
       background: #fff;
       border: 2px solid rgba(0,0,0,0.12);
@@ -224,12 +284,7 @@
       border-color: rgba(0, 113, 206, 0.60);
       box-shadow: 0 0 0 3px rgba(0, 113, 206, 0.18);
     }
-    .send {
-      padding: 0.95rem 1.1rem;
-      border-radius: 16px;
-      width: 100%;
-      background: var(--brand-2);
-    }
+    .send { padding: 0.95rem 1.1rem; border-radius: 16px; width: 100%; background: var(--brand-2); }
 
     .palette { left: 12px; right: 12px; max-width: unset; }
 
@@ -245,12 +300,13 @@
       padding: 1rem;
       overflow: auto;
       box-shadow: 10px 0 28px rgba(0,0,0,0.14);
+      gap: 1rem;
     }
     .sidebar.open { transform: translateX(0); }
-
     .sidebar .panel { box-shadow: none; border: 1px solid rgba(0,0,0,0.08); border-radius: 14px; background: #fff; }
     .avatar { padding: 14px; }
     .avatar img { box-shadow: none; border-radius: 14px; }
+    .sessions { max-height: none; }
     .footer { display:none; }
   }
 
@@ -260,6 +316,7 @@
 </head>
 <body>
 
+<!-- Drawer Backdrop -->
 <div id="drawer-backdrop" class="drawer-backdrop" aria-hidden="true"></div>
 
 <!-- Datenschutzhinweis -->
@@ -402,8 +459,8 @@
 
 <!-- App -->
 <div class="top">
-  <button class="icon-btn hamburger" id="btn-menu" aria-label="Menü öffnen">
-    <svg class="sliders" viewBox="0 0 24 24" fill="none" stroke="var(--brand)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <button class="icon-btn hamburger" id="btn-menu" aria-label="Menü öffnen" title="Menü">
+    <svg viewBox="0 0 24 24" fill="none" stroke="var(--brand)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
       <line x1="4" y1="6" x2="20" y2="6"></line>
       <line x1="4" y1="12" x2="20" y2="12"></line>
       <line x1="4" y1="18" x2="20" y2="18"></line>
@@ -413,9 +470,13 @@
   <div class="brand">Linda</div>
   <div class="grow"></div>
 
-  <div id="domain-badge" class="badge" style="display:none"></div>
+  <div id="domain-badge" class="badge" style="display:none">
+    <span id="domain-text">📘 Fachmodus: —</span>
+    <span class="sep"></span>
+    <span id="gender-icon" class="gender-pill off" title="Gendern AUS" aria-label="Genderstatus">⚥</span>
+  </div>
 
-  <button class="icon-btn" id="btn-settings" aria-label="Einstellungen öffnen">
+  <button class="icon-btn" id="btn-settings" aria-label="Einstellungen öffnen" title="Einstellungen">
     <svg class="sliders" viewBox="0 0 24 24" fill="none" stroke="var(--brand)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
       <line x1="4" y1="6" x2="20" y2="6"></line>
       <line x1="4" y1="12" x2="20" y2="12"></line>
@@ -426,6 +487,8 @@
     </svg>
   </button>
 </div>
+
+<div id="mobile-info" class="mobile-info" style="display:none">Du nutzt die mobile Version – links oben öffnen sich Verläufe & Avatar.</div>
 
 <div class="container">
   <aside class="sidebar" id="sidebar">
@@ -460,14 +523,11 @@
 </div>
 
 <script id="linda-context-addon">
-// Add-on: Augmentation remains non-invasive; it may augment only if body contains message OR question
-// Quick-disable: localStorage.setItem('linda.addon.disabled','1')
-
 (function(){
   if (localStorage.getItem('linda.addon.disabled') === '1') { console.info('[linda-addon] disabled'); return; }
 
   const MAX_CONTEXT_CHARS = 2500;
-  const HISTORY_TURNS = 3;
+  const HISTORY_TURNS = 3; // NUR noch letzte 3 Einträge
 
   function getFachmodus() {
     const sel = document.getElementById('sel-domain');
@@ -537,7 +597,7 @@
             const fachmodus = getFachmodus();
             const augmented = { ...body, context, fachmodus, user: body.user || "Dozent" };
             options.body = JSON.stringify(augmented);
-            console.info('[linda-addon] augmented fetch ->', url, { fachmodus, contextAdded: !!context });
+            console.info('[linda-addon] augmented fetch ->', url, { fachmodus, contextAdded: !!context, originalHasQuestion: !!body.question, originalHasMessage: !!body.message });
           }
         } catch (err) {
           console.warn('[linda-addon] could not parse JSON body, skipping augmentation', err);
@@ -548,12 +608,49 @@
     }
     return _origFetch(url, options);
   };
+
+  function attachInputHook() {
+    const buttons = Array.from(document.querySelectorAll("button"));
+    const sendBtn = buttons.find(b => (b.innerText || b.textContent || "").trim().toLowerCase() === "senden" || (b.getAttribute('id') === 'send'));
+    const inputs  = Array.from(document.querySelectorAll("input[type='text'], textarea, input:not([type])"));
+    const userInput = inputs[0];
+
+    if (!sendBtn || !userInput) return;
+    if (sendBtn.dataset.historyManaged === '1') return;
+
+    const handler = () => {
+      const text = (userInput.value || "").trim();
+      if (!text) return;
+      try {
+        const hist = JSON.parse(localStorage.getItem("chatHistory")) || [];
+        hist.push({ user: text, bot: "" });
+        localStorage.setItem("chatHistory", JSON.stringify(hist));
+      } catch {}
+    };
+
+    if (!sendBtn.__lindaHooked) {
+      sendBtn.addEventListener("click", handler, { capture: true });
+      if (userInput && !userInput.__lindaHooked) {
+        userInput.addEventListener("keydown", (e) => {
+          if (e.key === "Enter" && !e.shiftKey) handler();
+        }, { capture: true });
+        userInput.__lindaHooked = true;
+      }
+      sendBtn.__lindaHooked = true;
+    }
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", attachInputHook);
+  } else {
+    attachInputHook();
+  }
 })();
 </script>
 
 <script>
 (function(){
-  // Anti-Duplication (wie vorher)
+  // Anti-Duplication
   document.addEventListener('contextmenu', e => e.preventDefault());
   document.addEventListener('copy', e => e.preventDefault());
   document.addEventListener('cut', e => e.preventDefault());
@@ -563,8 +660,11 @@
   const uniqueToken = 'Linda-v27.6-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
   console.log('Unique Session Token:', uniqueToken);
 
+  const IS_MOBILE = /Mobi|Android|iPhone/i.test(navigator.userAgent || '');
+
   const $=id=>document.getElementById(id);
   const LS={get(k,d){try{return JSON.parse(localStorage.getItem(k))??d}catch{return d}},set(k,v){localStorage.setItem(k,JSON.stringify(v))},del(k){localStorage.removeItem(k)}};
+  const nowStr=()=>new Date().toLocaleString();
 
   const S=LS.get('linda.settings',{theme:'light',gender:false,greet:true,domain:'',font:'Arial',fontSize:'12'});
   let SN=LS.get('linda.snippets',[
@@ -617,19 +717,6 @@
     if(!activeId || !Sessions.find(s=>s.id===activeId)){ activeId=Sessions[0].id; saveAll(); }
   }
   function active(){ return Sessions.find(s=>s.id===activeId); }
-
-  // Drawer helpers (mobile)
-  const backdrop = $('drawer-backdrop');
-  const sidebar = $('sidebar');
-  function openDrawer(){
-    if (sidebar) sidebar.classList.add('open');
-    if (backdrop) backdrop.classList.add('show');
-  }
-  function closeDrawer(){
-    if (sidebar) sidebar.classList.remove('open');
-    if (backdrop) backdrop.classList.remove('show');
-  }
-
   function setActive(id){ activeId=id; saveAll(); renderSessions(); renderChat(); closeDrawer(); }
   function addSession(){
     const id=uid();
@@ -653,12 +740,9 @@
     a.href=URL.createObjectURL(blob); a.download=(s.name||'linda_chat')+'.txt'; a.click(); URL.revokeObjectURL(a.href);
   }
 
-  const MAX_VISIBLE_SESSIONS = 4;
-
   function renderSessions(){
     const el=$('sess-list');
-    const list = Sessions.slice(0, MAX_VISIBLE_SESSIONS);
-    el.innerHTML = list.map(s=>`
+    el.innerHTML = Sessions.map(s=>`
       <div class="sess ${s.id===activeId?'active':''}" data-id="${s.id}">
         <div class="ttl">${s.name||'Chat'}<div class="muted" style="font-size:.85rem">${new Date(s.ts).toLocaleDateString()}</div></div>
         <div class="rowbtns">
@@ -687,27 +771,62 @@
     });
   }
 
-  function downloadAnswerPdf(mdEl){
-    const txt = mdEl?.innerText || '';
-    const title = 'Linda-Antwort';
-    const w = window.open('', '_blank', 'width=800,height=900');
+  function escapeHtml(s){
+    return String(s||'')
+      .replace(/&/g,'&amp;')
+      .replace(/</g,'&lt;')
+      .replace(/>/g,'&gt;')
+      .replace(/"/g,'&quot;')
+      .replace(/'/g,'&#039;');
+  }
+
+  // PDF-DRUCK: Frage oben + Antwort + Disclaimer unten
+  function downloadAnswerPdf(answerText, questionText){
+    const title = 'Linda – Ausdruck';
+    const q = (questionText || '').trim();
+    const a = (answerText || '').trim();
+
+    const disclaimer = 'Disclaimer: KI-Antworten können unvollständig oder fehlerhaft sein. Bitte prüfe die Auskunft vor einer Verwendung (insbesondere bei rechtlichen, steuerlichen oder medizinischen Themen).';
+
+    const w = window.open('', '_blank', 'width=900,height=1000');
     if (!w) return;
-    w.document.write(`<!DOCTYPE html><html><head><title>${title}</title><style>
-      body { font-family: ${getComputedStyle(document.documentElement).getPropertyValue('--font-body')}; margin: 24px; line-height: 1.6; font-size: ${getComputedStyle(document.documentElement).getPropertyValue('--font-size')}; }
-      h1 { font-size: 1.25em; margin-bottom: 0.75em; }
-      pre { white-space: pre-wrap; }
-    </style></head><body><h1>${title}</h1><pre>${txt.replace(/</g,'&lt;')}</pre></body></html>`);
+
+    const font = getComputedStyle(document.documentElement).getPropertyValue('--font-body') || 'Inter, Arial, sans-serif';
+    w.document.write(`<!DOCTYPE html><html><head><title>${escapeHtml(title)}</title><meta charset="utf-8"/>
+      <style>
+        body { font-family: ${escapeHtml(font)}; margin: 28px; line-height: 1.55; color: #111; }
+        h1 { font-size: 18px; margin: 0 0 10px; }
+        h2 { font-size: 14px; margin: 18px 0 8px; }
+        .box { border: 1px solid #ddd; border-radius: 10px; padding: 12px 14px; }
+        .q { background: #f7f7f8; }
+        .a { background: #fff; }
+        pre { white-space: pre-wrap; word-break: break-word; margin: 0; font-family: inherit; }
+        .disc { margin-top: 18px; font-size: 11px; color: #444; border-top: 1px solid #e5e5e5; padding-top: 10px; }
+        @media print {
+          body { margin: 18mm; }
+        }
+      </style></head><body>
+      <h1>${escapeHtml(title)}</h1>
+
+      ${q ? `<h2>Frage</h2><div class="box q"><pre>${escapeHtml(q)}</pre></div>` : ''}
+
+      <h2>Antwort</h2>
+      <div class="box a"><pre>${escapeHtml(a)}</pre></div>
+
+      <div class="disc">${escapeHtml(disclaimer)}</div>
+      </body></html>`);
     w.document.close();
     w.focus();
     w.print();
   }
 
-  function addMsg(role,content){
+  function addMsg(role,content,meta={}){
     const d=document.createElement('div');
     d.className='bubble'+(role==='user'?' me':'');
     d.dataset.role = role;
 
     if (role === 'assistant') {
+      d.dataset.q = meta.question || '';
       d.innerHTML =
         '<div class="bubble-header">' +
           '<button type="button" class="copy-btn" title="Antwort kopieren">' +
@@ -729,30 +848,58 @@
       const btn = d.querySelector('.copy-btn');
       const pdfBtn = d.querySelector('.pdf-btn');
       const mdEl = d.querySelector('.md');
+
       if (btn && mdEl && navigator.clipboard && navigator.clipboard.writeText) {
         btn.addEventListener('click', () => copyAnswerText(mdEl, btn));
       }
-      if (pdfBtn && mdEl) pdfBtn.addEventListener('click', () => downloadAnswerPdf(mdEl));
-      // NOTE: Abschnittsliste/Fußnoten bewusst entfernt
+      if (pdfBtn && mdEl) {
+        pdfBtn.addEventListener('click', () => {
+          const ansTxt = mdEl.innerText || '';
+          const qTxt = d.dataset.q || '';
+          downloadAnswerPdf(ansTxt, qTxt);
+        });
+      }
     }
   }
 
-  function renderChat(){ $('log').innerHTML=''; const s=active(); if(!s) return; s.messages.forEach(m=>addMsg(m.role,m.content)); }
+  function renderChat(){
+    $('log').innerHTML='';
+    const s=active(); if(!s) return;
+
+    // Beim Rendern: jeder Bot-Antwort die letzte User-Frage davor mitgeben (für PDF)
+    for (let i=0; i<s.messages.length; i++){
+      const m = s.messages[i];
+      if (m.role === 'assistant') {
+        let q = '';
+        for (let j=i-1; j>=0; j--){
+          if (s.messages[j].role === 'user') { q = s.messages[j].content || ''; break; }
+        }
+        addMsg(m.role, m.content, { question: q });
+      } else {
+        addMsg(m.role, m.content);
+      }
+    }
+  }
   function push(role,content){ const s=active(); s.messages.push({role,content}); s.ts=Date.now(); saveAll(); }
+
+  function setGenderIcon(){
+    const gi = $('gender-icon');
+    if (!gi) return;
+    gi.classList.toggle('on', !!S.gender);
+    gi.classList.toggle('off', !S.gender);
+    gi.title = S.gender ? 'Gendern AN' : 'Gendern AUS';
+    gi.setAttribute('aria-label', S.gender ? 'Genderstatus: an' : 'Genderstatus: aus');
+  }
 
   function setBadge(){
     const b=$('domain-badge');
+    const dt=$('domain-text');
     if(S.domain){
       b.style.display='inline-flex';
-      const state = S.gender ? 'on' : 'off';
-      const title = S.gender ? 'Gendern AN' : 'Gendern AUS';
-      b.innerHTML =
-        `<span>📘 Fachmodus: ${S.domain}</span>` +
-        `<span class="sep">|</span>` +
-        `<span class="gender-ico ${state}" title="${title}" aria-label="${title}">⚥</span>`;
+      if (dt) dt.textContent='📘 Fachmodus: '+S.domain;
+      setGenderIcon();
     } else {
       b.style.display='none';
-      b.textContent='';
     }
   }
 
@@ -770,22 +917,26 @@
     }
     lines.push(S.gender ? 'Verwende gendergerechte Sprache (neutral, inklusiv, gut lesbar).' :
                           'Verwende neutrale, nicht gegenderte Sprache.');
-    lines.push('Hinweis zur Spracheinstellung: Die Einstellung „Gendern AN/AUS“ ist verbindlich. Stelle dazu keine Rückfragen (auch nicht zu Pronomen/Neopronomen). Antworte direkt in der vorgegebenen Spracheinstellung.');
     lines.push('Strukturiere Antworten: 1) Definition/Einordnung 2) Rechts-/Theoriebezug 3) Praxisbeispiel 4) Prüfungsrelevanz 5) kurze Quellenhinweise (falls vorhanden).');
     return lines.filter(Boolean).join('\n');
   }
 
-  // Nur letzte 3 Messages ans Backend
+  // --- History aus aktiver Session: nur letzte 3 Einträge an Backend geben ---
   function buildHistoryArray() {
     const s = active();
     if (!s || !Array.isArray(s.messages)) return [];
-    const msgs = s.messages.slice(-3);
+    const msgs = s.messages.slice(-3); // NUR noch letzte 3 Messages
     return msgs.map(m => ({ role: m.role, content: m.content }));
   }
 
   const LOCAL_HISTORY_MAX = 100;
-  function getLocalHistory(){ try { return JSON.parse(localStorage.getItem('chatHistory')) || []; } catch { return []; } }
-  function saveLocalHistory(list){ localStorage.setItem('chatHistory', JSON.stringify(list.slice(-LOCAL_HISTORY_MAX))); }
+  function getLocalHistory(){
+    try { return JSON.parse(localStorage.getItem('chatHistory')) || []; }
+    catch (e) { return []; }
+  }
+  function saveLocalHistory(list){
+    localStorage.setItem('chatHistory', JSON.stringify(list.slice(-LOCAL_HISTORY_MAX)));
+  }
   function appendLocalHistoryUser(text){
     if (!text) return;
     const hist = getLocalHistory();
@@ -817,11 +968,13 @@
         history: historyArray
       };
 
+      // NICHT ändern: Proxy/Backend bleibt wie gehabt
       const r=await fetch('/api/bot',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
       const text=await r.text();
       const out=(text && text.trim().toLowerCase()!=='accepted') ? text : 'Ich habe deine Frage erhalten und beantworte sie gleich – bitte erneut senden, falls nichts erscheint.';
 
       const s=active(); s.messages[s.messages.length-1]={role:'assistant',content:out}; saveAll();
+
       updateLastHistoryBot(out);
 
       renderChat();
@@ -837,11 +990,7 @@
     pal.style.display = list.length ? 'block' : 'none';
     pal.querySelectorAll('.pal-item').forEach(it=>it.onclick=()=>{const s=SN.find(x=>x.id===it.dataset.id); pal.style.display='none'; if(!s) return; replaceAliasWithText($('in'), s.alias, s.content); $('in').focus();});
   }
-  function replaceAliasWithText(inp,alias,text){
-    const v=inp.value; const i=v.lastIndexOf(alias);
-    if(i>=0){inp.value=v.slice(0,i)+text+v.slice(i+alias.length);}
-    else {const s=inp.selectionStart; inp.value=v.slice(0,s)+text+v.slice(s);}
-  }
+  function replaceAliasWithText(inp,alias,text){const v=inp.value; const i=v.lastIndexOf(alias); if(i>=0){inp.value=v.slice(0,i)+text+v.slice(i+alias.length);} else {const s=inp.selectionStart; inp.value=v.slice(0,s)+text+v.slice(s);} }
 
   function renderPM(){
     const list=$('pm-list');
@@ -868,8 +1017,7 @@
   let editingId=null;
   $('pm-add').onclick=()=>editSnippet(null);
   $('pe-cancel').onclick=()=>hide($('m-prompt'));
-  $('pe-save').onclick=()=>{
-    const obj={id:editingId||uid(),title:$('pe-title').value.trim(),alias:$('pe-alias').value.trim(),content:$('pe-content').value.trim()};
+  $('pe-save').onclick=()=>{const obj={id:editingId||uid(),title:$('pe-title').value.trim(),alias:$('pe-alias').value.trim(),content:$('pe-content').value.trim()};
     if(!obj.alias.startsWith('/')){alert('Alias muss mit / beginnen.');return}
     const i=SN.findIndex(x=>x.id===obj.id); if(i>=0) SN[i]=obj; else SN.push(obj);
     saveAll(); hide($('m-prompt')); renderPM();
@@ -877,6 +1025,7 @@
   $('pm-export').onclick=()=>{const blob=new Blob([JSON.stringify(SN,null,2)],{type:'application/json'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='linda-snippets.json'; a.click(); URL.revokeObjectURL(a.href);};
   $('pm-import').onclick=()=>{const i=document.createElement('input'); i.type='file'; i.accept='application/json'; i.onchange=async()=>{const f=i.files[0]; if(!f)return; const txt=await f.text(); try{const arr=JSON.parse(txt); if(Array.isArray(arr)){SN=arr; saveAll(); renderPM();}}catch{alert('Import fehlgeschlagen.')}}; i.click();};
 
+  $('send').dataset.historyManaged='1';
   $('send').onclick=send;
   $('in').addEventListener('keydown',e=>{ if(e.key==='Enter'&&!e.shiftKey){ e.preventDefault(); send(); }});
   $('in').addEventListener('input',e=>{
@@ -888,8 +1037,7 @@
 
   $('p-accept').onclick=()=>{hide($('m-privacy'));show($('m-usage'))};
   $('p-decline').onclick=()=>location.reload();
-  $('u-accept').onclick=()=>{
-    hide($('m-usage'));
+  $('u-accept').onclick=()=>{hide($('m-usage'));
     const s=active();
     if(S.greet && s.messages.length===0){
       push('assistant','**Willkommen!** Nutze mich für AEVO-, Personal-, Rechts- und Prüfungsfragen. Öffne *Einstellungen* (Fachmodus, Snippets).');
@@ -899,23 +1047,38 @@
 
   applyTheme();
   applyTypography();
-  const sw=(el,val)=>{el.classList.toggle('on',val)};
+  const sw=(el,val)=>{el.classList.toggle('on',val)}
   sw($('sw-gender'),S.gender);
-  $('sw-gender').onclick=()=>{S.gender=!S.gender; sw($('sw-gender'),S.gender); saveAll(); setBadge();};
-  sw($('sw-greet'),S.greet);
-  $('sw-greet').onclick=()=>{S.greet=!S.greet; sw($('sw-greet'),S.greet); saveAll();};
+  $('sw-gender').onclick=()=>{S.gender=!S.gender; sw($('sw-gender'),S.gender); saveAll(); setBadge();}
+
+  sw($('sw-greet'),S.greet); $('sw-greet').onclick=()=>{S.greet=!S.greet; sw($('sw-greet'),S.greet); saveAll();}
 
   document.querySelectorAll('#chip-theme .chip').forEach(c=>c.onclick=()=>{S.theme=c.dataset.val; saveAll(); applyTheme();});
+
   $('sel-domain').value=S.domain||'';
   $('sel-font').value=S.font||'Arial';
   $('sel-font-size').value=String(S.fontSize||'12');
   setBadge();
 
-  $('s-save').onclick=()=>{S.domain=$('sel-domain').value; S.font=$('sel-font').value; S.fontSize=$('sel-font-size').value; saveAll(); setBadge(); applyTypography(); hide($('m-settings'));};
+  $('s-save').onclick=()=>{
+    S.domain=$('sel-domain').value;
+    S.font=$('sel-font').value;
+    S.fontSize=$('sel-font-size').value;
+    saveAll();
+    setBadge();
+    applyTypography();
+    hide($('m-settings'));
+  };
   $('s-close').onclick=()=>hide($('m-settings'));
+
   $('sel-font').onchange=()=>{S.font=$('sel-font').value; saveAll(); applyTypography();};
   $('sel-font-size').onchange=()=>{S.fontSize=$('sel-font-size').value; saveAll(); applyTypography();};
-  $('btn-settings').onclick=()=>{ renderPM(); show($('m-settings')); };
+
+  $('btn-settings').onclick=()=>{
+    // Desktop: normal. Mobile: optional zulassen (du wolltest clean; wir lassen es erreichbar, aber nicht "im Weg")
+    renderPM();
+    show($('m-settings'));
+  };
 
   $('btn-export-all').onclick=()=>{ 
     const all=Sessions.map(s=>`# ${s.name||'Chat'} (${new Date(s.ts).toLocaleString()})\n\n`+s.messages.map(m=>(m.role==='user'?'Du: ':'Linda: ')+m.content).join('\n\n')).join('\n\n---\n\n');
@@ -925,13 +1088,30 @@
 
   $('btn-new').onclick=addSession;
 
-  // Drawer wiring
-  const btnMenu = $('btn-menu');
-  if (btnMenu) btnMenu.onclick = openDrawer;
+  // Drawer-Logik
+  const sidebar = $('sidebar');
+  const backdrop = $('drawer-backdrop');
+  function openDrawer(){ if(!sidebar) return; sidebar.classList.add('open'); if(backdrop) backdrop.classList.add('open'); }
+  function closeDrawer(){ if(!sidebar) return; sidebar.classList.remove('open'); if(backdrop) backdrop.classList.remove('open'); }
+  window.closeDrawer = closeDrawer;
+
+  $('btn-menu').onclick=()=>{ 
+    const isOpen = sidebar.classList.contains('open');
+    if (isOpen) closeDrawer(); else openDrawer();
+  };
   if (backdrop) backdrop.onclick = closeDrawer;
+
+  // ESC schließt Drawer
   document.addEventListener('keydown', (e)=>{ if(e.key==='Escape') closeDrawer(); });
 
   ensureFirstSession();
+
+  if(IS_MOBILE){
+    document.body.classList.add('mobile');
+    const info=$('mobile-info');
+    if(info) info.style.display='block';
+  }
+
   renderSessions();
   renderChat();
 
