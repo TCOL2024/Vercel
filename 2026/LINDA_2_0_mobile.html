@@ -1,0 +1,941 @@
+<!DOCTYPE html>
+<html lang="de" dir="ltr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="color-scheme" content="light dark" />
+  <title>LINDA 2.0 (mobile)</title>
+
+  <!-- Font (optional). If offline, it will fall back gracefully. -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    :root{
+      --bg: #0b1220;
+      --panel: rgba(255,255,255,0.06);
+      --panel-2: rgba(255,255,255,0.09);
+      --text: rgba(255,255,255,0.92);
+      --muted: rgba(255,255,255,0.70);
+      --muted-2: rgba(255,255,255,0.55);
+      --border: rgba(255,255,255,0.10);
+      --accent: #5dd6ff;
+      --accent-2: #4aa3ff;
+      --danger: #ff5d7a;
+      --ok: #4ee59a;
+
+      --radius: 18px;
+      --radius-sm: 12px;
+      --shadow: 0 18px 45px rgba(0,0,0,0.35);
+      --maxw: 980px;
+
+      --chat-font: 16.5px;
+      --chat-line: 1.45;
+      --input-font: 16.5px;
+    }
+
+    @media (prefers-color-scheme: light) {
+      :root{
+        --bg:#f6f7fb;
+        --panel: rgba(0,0,0,0.04);
+        --panel-2: rgba(0,0,0,0.06);
+        --text: rgba(0,0,0,0.90);
+        --muted: rgba(0,0,0,0.68);
+        --muted-2: rgba(0,0,0,0.52);
+        --border: rgba(0,0,0,0.10);
+        --shadow: 0 14px 35px rgba(15,23,42,0.10);
+      }
+    }
+
+    *{ box-sizing: border-box; }
+    html, body { height: 100%; }
+    body{
+      margin:0;
+      font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      background:
+        radial-gradient(1000px 650px at 15% -15%, rgba(93,214,255,0.22), transparent 65%),
+        radial-gradient(900px 600px at 100% 0%, rgba(74,163,255,0.18), transparent 55%),
+        radial-gradient(900px 600px at 50% 115%, rgba(78,229,154,0.12), transparent 60%),
+        var(--bg);
+      color: var(--text);
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    a{ color: var(--accent); text-decoration: none; }
+    a:hover{ text-decoration: underline; }
+
+    .app{
+      min-height: 100%;
+      display: flex;
+      flex-direction: column;
+      padding: env(safe-area-inset-top) 14px env(safe-area-inset-bottom) 14px;
+    }
+
+    .shell{
+      width: min(var(--maxw), 100%);
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      flex: 1;
+    }
+
+    /* Top bar */
+    .topbar{
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      background: linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.04));
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      position: sticky;
+      top: env(safe-area-inset-top);
+      backdrop-filter: blur(14px);
+      z-index: 10;
+    }
+
+    .brand{
+      display:flex;
+      align-items:center;
+      gap: 10px;
+      min-width: 0;
+    }
+    .logo{
+      width: 36px; height: 36px;
+      border-radius: 12px;
+      background: radial-gradient(circle at 30% 30%, rgba(93,214,255,0.95), rgba(74,163,255,0.55) 45%, rgba(0,0,0,0.05) 75%);
+      border: 1px solid var(--border);
+      box-shadow: 0 10px 22px rgba(0,0,0,0.18);
+      flex: 0 0 auto;
+      position: relative;
+      overflow: hidden;
+    }
+    .logo:after{
+      content:"";
+      position:absolute;
+      inset:-20px;
+      background: conic-gradient(from 180deg, rgba(255,255,255,0.0), rgba(255,255,255,0.20), rgba(255,255,255,0.0));
+      transform: rotate(15deg);
+      opacity: 0.8;
+    }
+    .titleblock{ min-width: 0; }
+    .title{
+      display:flex;
+      align-items:center;
+      gap: 10px;
+      font-weight: 700;
+      letter-spacing: 0.2px;
+      font-size: 15.5px;
+      line-height: 1.2;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .badge{
+      font-size: 11px;
+      padding: 3px 8px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,0.08);
+      color: var(--muted);
+      font-weight: 600;
+    }
+    .subtitle{
+      margin-top: 3px;
+      font-size: 12.5px;
+      color: var(--muted-2);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .actions{
+      display:flex;
+      align-items:center;
+      gap: 8px;
+      flex: 0 0 auto;
+    }
+
+    .select, .btn{
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,0.06);
+      color: var(--text);
+      border-radius: 12px;
+      padding: 9px 10px;
+      font-size: 13px;
+      line-height: 1;
+      outline: none;
+      box-shadow: 0 10px 24px rgba(0,0,0,0.10);
+      backdrop-filter: blur(10px);
+    }
+    .select{
+      padding-right: 34px;
+      appearance: none;
+      -webkit-appearance: none;
+      position: relative;
+      background-image:
+        linear-gradient(45deg, transparent 50%, var(--muted) 50%),
+        linear-gradient(135deg, var(--muted) 50%, transparent 50%),
+        linear-gradient(to right, transparent, transparent);
+      background-position:
+        calc(100% - 18px) 55%,
+        calc(100% - 13px) 55%,
+        100% 0;
+      background-size: 5px 5px, 5px 5px, 2.5em 2.5em;
+      background-repeat: no-repeat;
+      max-width: 175px;
+    }
+    .btn{
+      cursor:pointer;
+      user-select: none;
+      font-weight: 600;
+    }
+    .btn:active{ transform: translateY(1px); }
+    .btn.primary{
+      background: linear-gradient(180deg, rgba(93,214,255,0.35), rgba(74,163,255,0.18));
+      border-color: rgba(93,214,255,0.35);
+    }
+    .btn.ghost{
+      background: rgba(255,255,255,0.04);
+    }
+    .btn:disabled{
+      opacity: 0.55;
+      cursor: not-allowed;
+    }
+
+    /* Main card */
+    .card{
+      flex: 1;
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,0.04);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      display:flex;
+      flex-direction: column;
+      min-height: 56vh;
+    }
+
+    .chat{
+      flex: 1;
+      padding: 14px 12px 12px;
+      overflow: auto;
+      scroll-behavior: smooth;
+      user-select: none; /* Copy/Paste only in input */
+    }
+
+    .row{
+      display:flex;
+      gap: 10px;
+      margin: 10px 0;
+      align-items: flex-end;
+    }
+    .row.user{ justify-content: flex-end; }
+    .row.bot{ justify-content: flex-start; }
+
+    .bubble{
+      max-width: min(86%, 700px);
+      border-radius: 18px;
+      padding: 12px 12px;
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,0.06);
+      box-shadow: 0 10px 25px rgba(0,0,0,0.12);
+    }
+    .bubble.user{
+      background: linear-gradient(180deg, rgba(93,214,255,0.18), rgba(74,163,255,0.09));
+      border-color: rgba(93,214,255,0.22);
+    }
+    .bubble.bot{
+      background: rgba(255,255,255,0.05);
+    }
+
+    .meta{
+      font-size: 11.5px;
+      color: var(--muted-2);
+      margin-top: 6px;
+      display:flex;
+      gap: 10px;
+      align-items:center;
+      justify-content: space-between;
+    }
+    .pill{
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,0.05);
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-weight: 600;
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+    .msg{
+      font-size: var(--chat-font);
+      line-height: var(--chat-line);
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    .msg code{
+      background: rgba(0,0,0,0.12);
+      padding: 2px 6px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+    }
+    .msg pre{
+      background: rgba(0,0,0,0.16);
+      padding: 10px 10px;
+      border-radius: 14px;
+      overflow:auto;
+      border: 1px solid var(--border);
+    }
+
+    .sources{
+      margin-top: 10px;
+      border-top: 1px dashed var(--border);
+      padding-top: 10px;
+      color: var(--muted);
+      font-size: 12.5px;
+      line-height: 1.35;
+    }
+    .sources-title{
+      font-weight: 700;
+      color: var(--text);
+      font-size: 12.5px;
+      margin-bottom: 6px;
+      display:flex;
+      gap: 8px;
+      align-items:center;
+    }
+    .sources-list{
+      display:flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .src{
+      padding: 8px 10px;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      background: rgba(255,255,255,0.04);
+    }
+    .src b{ color: var(--text); font-weight: 700; }
+    .src small{ color: var(--muted-2); display:block; margin-top: 2px; }
+
+    .composer{
+      border-top: 1px solid var(--border);
+      background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.03));
+      padding: 10px 10px;
+    }
+
+    .inputrow{
+      display:flex;
+      gap: 10px;
+      align-items: flex-end;
+    }
+    textarea{
+      width: 100%;
+      min-height: 52px;
+      max-height: 160px;
+      resize: none;
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,0.06);
+      color: var(--text);
+      border-radius: 16px;
+      padding: 12px 12px;
+      font-size: var(--input-font);
+      line-height: 1.35;
+      outline: none;
+      box-shadow: 0 12px 28px rgba(0,0,0,0.12);
+    }
+    textarea::placeholder{ color: var(--muted-2); }
+    textarea:focus{
+      border-color: rgba(93,214,255,0.35);
+      box-shadow: 0 0 0 4px rgba(93,214,255,0.14), 0 12px 28px rgba(0,0,0,0.12);
+    }
+
+    .composer-meta{
+      display:flex;
+      justify-content: space-between;
+      gap: 10px;
+      margin-top: 10px;
+      color: var(--muted-2);
+      font-size: 12px;
+      line-height: 1.25;
+    }
+    .composer-meta .left{ display:flex; gap: 10px; align-items:center; }
+    .dot{
+      width: 7px; height: 7px; border-radius: 99px;
+      background: rgba(255,255,255,0.22);
+      border: 1px solid var(--border);
+      display:inline-block;
+    }
+    .dot.ok{ background: rgba(78,229,154,0.55); border-color: rgba(78,229,154,0.55); }
+    .dot.bad{ background: rgba(255,93,122,0.55); border-color: rgba(255,93,122,0.55); }
+
+    .kbd{
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      font-size: 11px;
+      padding: 2px 6px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,0.06);
+      color: var(--muted);
+    }
+
+    /* Share sheet */
+    .sheet-backdrop{
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.55);
+      display:none;
+      align-items: flex-end;
+      justify-content: center;
+      z-index: 50;
+      padding: 18px;
+      padding-bottom: calc(18px + env(safe-area-inset-bottom));
+    }
+    .sheet{
+      width: min(560px, 100%);
+      border-radius: 22px;
+      border: 1px solid var(--border);
+      background: rgba(20,22,35,0.92);
+      backdrop-filter: blur(16px);
+      box-shadow: var(--shadow);
+      overflow:hidden;
+      color: var(--text);
+    }
+    @media (prefers-color-scheme: light){
+      .sheet{ background: rgba(255,255,255,0.96); }
+    }
+    .sheet header{
+      padding: 14px 14px 10px;
+      border-bottom: 1px solid var(--border);
+      display:flex;
+      justify-content: space-between;
+      align-items:center;
+      gap: 10px;
+    }
+    .sheet header h3{
+      margin:0;
+      font-size: 14px;
+      font-weight: 800;
+    }
+    .sheet header .x{
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,0.06);
+      color: var(--text);
+      border-radius: 12px;
+      padding: 8px 10px;
+      cursor:pointer;
+      font-weight: 800;
+    }
+    .sheet .body{
+      padding: 12px 14px 14px;
+      display:flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .sheet .hint{
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.35;
+    }
+    .sheet .grid{
+      display:grid;
+      grid-template-columns: 1fr;
+      gap: 10px;
+    }
+    .sheet .action{
+      text-align:left;
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,0.06);
+      color: var(--text);
+      border-radius: 16px;
+      padding: 12px 12px;
+      cursor:pointer;
+      font-weight: 800;
+      display:flex;
+      justify-content: space-between;
+      align-items:center;
+      gap: 10px;
+    }
+    .sheet .action small{
+      display:block;
+      font-weight: 600;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+
+    /* Print */
+    @media print{
+      body{ background: #fff !important; color:#000 !important; }
+      .topbar, .composer, .sheet-backdrop{ display:none !important; }
+      .app{ padding: 0 !important; }
+      .card{ border: none !important; box-shadow: none !important; }
+      .chat{ user-select: text !important; } /* for print workflow */
+      .bubble{ box-shadow: none !important; }
+      .bubble.user{
+        background: #e7f3ff !important; /* light blue highlight for questions */
+        border-color: #c5e3ff !important;
+      }
+      *{
+        font-family: Aptos, "Aptos Display", Calibri, Arial, sans-serif !important;
+      }
+    }
+
+    /* Small screens */
+    @media (max-width: 420px){
+      .select{ max-width: 150px; }
+      .title{ font-size: 15px; }
+      .subtitle{ display:none; }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="app">
+    <div class="shell">
+
+      <div class="topbar" role="banner" aria-label="LINDA 2.0 Topbar">
+        <div class="brand" aria-label="Brand">
+          <div class="logo" aria-hidden="true"></div>
+          <div class="titleblock">
+            <div class="title">
+              LINDA 2.0 (mobile)
+              <span class="badge" id="badge">BETA</span>
+            </div>
+            <div class="subtitle" id="subtitle">Antworten mit Quellen — kompakt, nachvollziehbar, mobil.</div>
+          </div>
+        </div>
+
+        <div class="actions">
+          <select class="select" id="fachmodus" aria-label="Fachmodus">
+            <option value="Allgemein">Fachmodus: Allgemein</option>
+            <option value="AEVO">Fachmodus: AEVO</option>
+            <option value="VWL">Fachmodus: VWL</option>
+            <option value="Sozialrecht">Fachmodus: Sozialrecht</option>
+            <option value="Prüfungsrecht">Fachmodus: Prüfungsrecht</option>
+          </select>
+
+          <button class="btn ghost" id="newChat" title="Neuer Chat">Neuer Chat</button>
+          <button class="btn primary" id="scrollBottom" title="Zum Ende">↓</button>
+        </div>
+      </div>
+
+      <div class="card" role="region" aria-label="Chat">
+        <div class="chat" id="chat" aria-live="polite" aria-relevant="additions"></div>
+
+        <div class="composer" role="form" aria-label="Eingabe">
+          <div class="inputrow">
+            <textarea id="input" placeholder="Schreib deine Frage … (Einfügen ist hier erlaubt)" autocomplete="off" spellcheck="true"></textarea>
+            <button class="btn primary" id="send" aria-label="Senden">Senden</button>
+          </div>
+
+          <div class="composer-meta">
+            <div class="left">
+              <span class="dot ok" id="connDot" title="Status"></span>
+              <span id="status">Bereit</span>
+              <span class="kbd">Enter</span><span>sendet ·</span><span class="kbd">Shift</span><span>+ Enter neue Zeile</span>
+            </div>
+            <div class="right" id="privacyHint" title="Datenschutz/Compliance">
+              Kein Einfügen von Gesundheitsdaten, Kontonummern oder Kreditkarten. Verarbeitung via Make.com.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Share sheet -->
+      <div class="sheet-backdrop" id="sheetBackdrop" role="dialog" aria-modal="true" aria-label="Teilen">
+        <div class="sheet">
+          <header>
+            <h3>Antwort teilen</h3>
+            <button class="x" id="sheetClose" aria-label="Schließen">✕</button>
+          </header>
+          <div class="body">
+            <div class="hint">Du kannst die letzte Antwort kopieren oder an Apps übergeben. (Im Chat selbst ist Markieren deaktiviert.)</div>
+            <div class="grid">
+              <button class="action" id="actCopy">
+                <div>
+                  Kopieren
+                  <small>In die Zwischenablage</small>
+                </div>
+                <span>⎘</span>
+              </button>
+              <button class="action" id="actWhatsApp">
+                <div>
+                  WhatsApp
+                  <small>Als Text weiterleiten</small>
+                </div>
+                <span>↗</span>
+              </button>
+              <button class="action" id="actMail">
+                <div>
+                  E‑Mail
+                  <small>Entwurf öffnen</small>
+                </div>
+                <span>✉</span>
+              </button>
+            </div>
+            <div class="hint" id="sheetHint"></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+<script>
+/**
+ * LINDA 2.0 (mobile) – clean standalone page
+ * - No third-party trackers
+ * - Fachmodus + systemPrefix() + history (max 4)
+ * - Copy/Paste only in textarea: chat is user-select:none; sharing uses buttons
+ *
+ * IMPORTANT: Set your Make.com webhook below.
+ */
+const CONFIG = {
+  MAKE_WEBHOOK_URL: "https://hook.eu1.make.com/DEIN_WEBHOOK_HIER",
+  HISTORY_MAX: 4,
+  REQUEST_TIMEOUT_MS: 45000
+};
+
+const elChat = document.getElementById("chat");
+const elInput = document.getElementById("input");
+const elSend = document.getElementById("send");
+const elNewChat = document.getElementById("newChat");
+const elScrollBottom = document.getElementById("scrollBottom");
+const elMode = document.getElementById("fachmodus");
+const elStatus = document.getElementById("status");
+const elConnDot = document.getElementById("connDot");
+
+/* Share sheet */
+const sheetBackdrop = document.getElementById("sheetBackdrop");
+const sheetClose = document.getElementById("sheetClose");
+const actCopy = document.getElementById("actCopy");
+const actWhatsApp = document.getElementById("actWhatsApp");
+const actMail = document.getElementById("actMail");
+const sheetHint = document.getElementById("sheetHint");
+
+let history = []; // {role:"user"|"assistant", content:"..."}
+let lastAssistantText = "";
+
+function nowTime(){
+  const d = new Date();
+  return d.toLocaleTimeString([], {hour:"2-digit", minute:"2-digit"});
+}
+
+function setStatus(text, ok=true){
+  elStatus.textContent = text;
+  elConnDot.classList.remove("ok","bad");
+  elConnDot.classList.add(ok ? "ok" : "bad");
+}
+
+function escapeHtml(str){
+  return str.replace(/[&<>"']/g, m => ({
+    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
+  }[m]));
+}
+
+/** Split assistant response into main text + sources block (if present). */
+function splitSources(raw){
+  const markers = [
+    "\n\nQuellen:",
+    "\n\nQuellenangaben:",
+    "\n\nSources:",
+    "\n\nReferences:"
+  ];
+  for(const m of markers){
+    const idx = raw.indexOf(m);
+    if(idx !== -1){
+      return { main: raw.slice(0, idx).trim(), sources: raw.slice(idx + m.length).trim() };
+    }
+  }
+  return { main: raw.trim(), sources: "" };
+}
+
+/** Render sources into nice cards (one per line / bullet). */
+function renderSourcesBlock(sourcesText){
+  if(!sourcesText) return "";
+
+  // Split by line breaks; remove empties; strip common bullet chars
+  const lines = sourcesText
+    .split("\n")
+    .map(l => l.trim().replace(/^[-•\u2022]\s+/, ""))
+    .filter(Boolean);
+
+  if(!lines.length) return "";
+
+  const items = lines.map((l) => {
+    // Try to format "Doc, Seite, Kapitel" if present
+    const parts = l.split(",").map(p => p.trim()).filter(Boolean);
+    const head = escapeHtml(parts[0] || l);
+    const tail = parts.slice(1).join(", ");
+    return `
+      <div class="src">
+        <b>${head}</b>
+        ${tail ? `<small>${escapeHtml(tail)}</small>` : ``}
+      </div>`;
+  }).join("");
+
+  return `
+    <div class="sources" aria-label="Quellen">
+      <div class="sources-title">Quellen</div>
+      <div class="sources-list">${items}</div>
+    </div>`;
+}
+
+function addMessage(role, text, modeLabel){
+  const row = document.createElement("div");
+  row.className = "row " + (role === "user" ? "user" : "bot");
+
+  const bubble = document.createElement("div");
+  bubble.className = "bubble " + (role === "user" ? "user" : "bot");
+
+  const t = splitSources(text);
+  const msgHtml = `
+    <div class="msg">${escapeHtml(t.main)}</div>
+    ${renderSourcesBlock(t.sources)}
+    <div class="meta">
+      <span>${role === "user" ? "Du" : "LINDA"} · ${nowTime()}</span>
+      <span class="pill">${escapeHtml(modeLabel || elMode.value)}</span>
+    </div>
+  `;
+
+  bubble.innerHTML = msgHtml;
+
+  // For assistant messages: open share sheet on tap/click
+  if(role !== "user"){
+    bubble.style.cursor = "pointer";
+    bubble.title = "Tippen: Teilen/Kopieren";
+    bubble.addEventListener("click", () => {
+      lastAssistantText = text;
+      openSheet(text);
+    });
+  }
+
+  row.appendChild(bubble);
+  elChat.appendChild(row);
+  scrollToBottom();
+}
+
+function scrollToBottom(){
+  elChat.scrollTop = elChat.scrollHeight;
+}
+
+function systemPrefix(mode){
+  const base = [
+    "Du bist LINDA 2.0 (mobile), eine neutrale, sorgfältige Assistenz.",
+    "Antworte klar, strukturiert und nachvollziehbar.",
+    "Wenn Quellen verfügbar sind, nenne sie am Ende im Format: Dokumentname, Seite, Kapitel.",
+    "Falls etwas unklar ist, stelle maximal 1 kurze Rückfrage."
+  ];
+
+  const modeHints = {
+    "Allgemein": "Fokus: allgemeine, verständliche Antworten ohne unnötige Fachbegriffe.",
+    "AEVO": "Fokus: AEVO-Praxis, BBiG, Prüfungslogik, didaktische Umsetzung; keine unnötigen Exkurse.",
+    "VWL": "Fokus: VWL mit sauberen Definitionen, Begründungslogik und Prüfungsniveau; kompakt.",
+    "Sozialrecht": "Fokus: Sozialrecht mit korrekten Begriffen/Normlogik; praxisnah, vorsichtig bei Einzelfällen.",
+    "Prüfungsrecht": "Fokus: Prüfungsrecht, Verfahrenslogik, saubere Argumentation, keine Spekulation."
+  };
+
+  base.push(modeHints[mode] || modeHints["Allgemein"]);
+
+  // Compliance: user's explicit requirement
+  base.push("Datenschutz/Compliance: Bitte keine Gesundheitsdaten, Kontonummern oder Kreditkarten abfragen oder wiederholen. Verarbeitung der Anfrage erfolgt über Make.com.");
+
+  return base.join("\n");
+}
+
+/** Build payload with reduced history. */
+function buildPayload(userText){
+  const mode = elMode.value;
+  const prefix = systemPrefix(mode);
+
+  // Only last CONFIG.HISTORY_MAX exchanges, but keep them in order
+  const trimmed = history.slice(-CONFIG.HISTORY_MAX);
+
+  return {
+    mode,
+    systemPrefix: prefix,
+    message: userText,
+    history: trimmed
+  };
+}
+
+async function callMake(payload){
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), CONFIG.REQUEST_TIMEOUT_MS);
+
+  try{
+    const res = await fetch(CONFIG.MAKE_WEBHOOK_URL, {
+      method: "POST",
+      headers: { "Content-Type":"application/json" },
+      body: JSON.stringify(payload),
+      signal: controller.signal
+    });
+    clearTimeout(timer);
+
+    if(!res.ok){
+      const txt = await res.text().catch(() => "");
+      throw new Error(`HTTP ${res.status}${txt ? " – " + txt.slice(0,160) : ""}`);
+    }
+
+    // Expect JSON { reply: "..." } or plain text
+    const ct = (res.headers.get("content-type") || "").toLowerCase();
+    if(ct.includes("application/json")){
+      const data = await res.json();
+      return (data && (data.reply || data.text || data.answer)) ? (data.reply || data.text || data.answer) : JSON.stringify(data);
+    } else {
+      return await res.text();
+    }
+  } catch(err){
+    clearTimeout(timer);
+    throw err;
+  }
+}
+
+/* Auto-grow textarea */
+function autoGrow(){
+  elInput.style.height = "auto";
+  elInput.style.height = Math.min(elInput.scrollHeight, 160) + "px";
+}
+
+elInput.addEventListener("input", autoGrow);
+
+elInput.addEventListener("keydown", (e) => {
+  if(e.key === "Enter" && !e.shiftKey){
+    e.preventDefault();
+    send();
+  }
+});
+
+elSend.addEventListener("click", send);
+
+elNewChat.addEventListener("click", () => {
+  if(confirm("Neuen Chat starten? Verlauf wird geleert.")){
+    history = [];
+    lastAssistantText = "";
+    elChat.innerHTML = "";
+    setStatus("Neuer Chat", true);
+    seedWelcome();
+  }
+});
+
+elScrollBottom.addEventListener("click", scrollToBottom);
+
+function seedWelcome(){
+  const welcome =
+`Hi Jens – ich bin LINDA 2.0 (mobile).
+Stell mir deine Frage. Wenn du willst, antworte ich zuerst kurz und kann danach mehr Details liefern.`;
+  addMessage("assistant", welcome, elMode.value);
+}
+
+function openSheet(text){
+  sheetHint.textContent = "Tipp: Du kannst auch danach 'Drucken' im Browser nutzen.";
+  sheetBackdrop.style.display = "flex";
+  // close on backdrop click (but not on sheet)
+  sheetBackdrop.addEventListener("click", onBackdropClick);
+  function onBackdropClick(ev){
+    if(ev.target === sheetBackdrop){
+      closeSheet();
+    }
+  }
+}
+
+function closeSheet(){
+  sheetBackdrop.style.display = "none";
+  sheetBackdrop.removeEventListener("click", closeSheet);
+}
+
+sheetClose.addEventListener("click", closeSheet);
+
+actCopy.addEventListener("click", async () => {
+  try{
+    await navigator.clipboard.writeText(lastAssistantText || "");
+    sheetHint.textContent = "Kopiert ✓";
+  } catch(e){
+    sheetHint.textContent = "Kopieren hat nicht geklappt (Browserrechte).";
+  }
+});
+
+actWhatsApp.addEventListener("click", () => {
+  const txt = encodeURIComponent(lastAssistantText || "");
+  // WhatsApp share URL (works on mobile; on desktop may open web)
+  window.open(`https://wa.me/?text=${txt}`, "_blank", "noopener,noreferrer");
+});
+
+actMail.addEventListener("click", () => {
+  const subject = encodeURIComponent("LINDA 2.0 – Antwort");
+  const body = encodeURIComponent(lastAssistantText || "");
+  window.location.href = `mailto:?subject=${subject}&body=${body}`;
+});
+
+async function send(){
+  const text = (elInput.value || "").trim();
+  if(!text) return;
+
+  if(CONFIG.MAKE_WEBHOOK_URL.includes("DEIN_WEBHOOK_HIER")){
+    addMessage("assistant",
+      "Hinweis: Bitte trage zuerst deine Make.com Webhook-URL in CONFIG.MAKE_WEBHOOK_URL ein.",
+      elMode.value
+    );
+    return;
+  }
+
+  // Local quick-check for forbidden content (light-touch; no false positives)
+  const forbiddenHints = [
+    { re: /\b(iban|bic)\b/i, label: "Kontodaten (IBAN/BIC)" },
+    { re: /\b(kreditkarte|credit card|kartennummer)\b/i, label: "Kreditkartenangaben" }
+  ];
+  for(const f of forbiddenHints){
+    if(f.re.test(text)){
+      addMessage("assistant", `Bitte keine ${f.label} senden. Formuliere die Frage ohne solche Angaben.`, elMode.value);
+      return;
+    }
+  }
+
+  const mode = elMode.value;
+
+  addMessage("user", text, mode);
+
+  // Update history
+  history.push({ role: "user", content: text });
+  history = history.slice(-Math.max(CONFIG.HISTORY_MAX * 2, 8)); // small hard limit
+
+  elInput.value = "";
+  autoGrow();
+
+  setStatus("Sende …", true);
+  elSend.disabled = true;
+
+  try{
+    const payload = buildPayload(text);
+    const reply = await callMake(payload);
+
+    const safeReply = (reply ?? "").toString().trim() || "Ich habe keine Antwort erhalten. Bitte versuche es erneut.";
+    addMessage("assistant", safeReply, mode);
+
+    history.push({ role: "assistant", content: safeReply });
+    history = history.slice(-Math.max(CONFIG.HISTORY_MAX * 2, 8));
+
+    setStatus("Bereit", true);
+  } catch(err){
+    addMessage("assistant",
+      `Fehler beim Abruf über Make.com: ${String(err && err.message ? err.message : err)}`,
+      mode
+    );
+    setStatus("Fehler", false);
+  } finally {
+    elSend.disabled = false;
+  }
+}
+
+/* Init */
+seedWelcome();
+autoGrow();
+</script>
+</body>
+</html>
