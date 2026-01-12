@@ -1,9 +1,47 @@
-// /api/linda-proxy.js  (Vercel: req,res)
+// /api/linda-proxy.js  (Vercel: req,res) — hardened
 
 const MAX_TEXT_LEN = 8000;
 const MAX_HISTORY_MESSAGES = 6; // 3 Turns
 const BLOCK_MESSAGE =
   "Dabei kann ich nicht helfen. Ich beantworte ausschließlich fachliche Fragen (z. B. Ausbildung/AEVO, Prüfungen, Personalmanagement).";
+
+/* =========================
+   ORIGIN WHITELIST (CORS)
+   - set your allowed origins here
+========================= */
+const ALLOWED_ORIGINS = new Set([
+  "https://ntc-bot1.netlify.app",
+  "https://main--ntc-bot1.netlify.app",
+  // TODO: ergänze deine echte Vercel-Domain(s)
+  // "https://dein-projekt.vercel.app",
+  // "https://deine-custom-domain.de"
+]);
+
+function setCors(req, res) {
+  const origin = req.headers.origin || "";
+
+  // If no Origin header (e.g. curl/server-to-server), don't set CORS headers.
+  if (!origin) return;
+
+  if (ALLOWED_ORIGINS.has(origin)) {
+    res.setHeader("Access-Control-Allow-Origin", origin);
+    res.setHeader("Vary", "Origin");
+    res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+  }
+  // If not allowed: set no CORS headers => browser blocks.
+}
+
+/* =========================
+   CANONICALIZE (anti obfuscation)
+========================= */
+function canonicalize(s) {
+  return String(s || "")
+    .normalize("NFKC")
+    .replace(/[\u200B-\u200F\uFEFF]/g, "") // zero-width
+    .replace(/\s+/g, " ")
+    .trim();
+}
 
 /* =========================
    AEVO / AUSBILDUNG TAGGING
@@ -40,7 +78,7 @@ const BLOCK_PATTERNS = [
   // system/prompt/tooling/secrets/payload
   /\bsystem\b/i,
   /\bdeveloper\b/i,
-  /\brole\s*:\s*(system|developer|assistant|tool)/i,
+  /\brole\s*:\s*(system|developer|assistant|tool)\b/i,
   /\bprompt\b/i,
   /\bmessages\s*=\s*\[/i,
   /\bpayload\b/i,
@@ -51,8 +89,8 @@ const BLOCK_PATTERNS = [
   /\btoken\b/i,
   /\bsecret\b/i,
   /\bwebhook\b/i,
-  /\benv\b/i,
-  /\bprocess\.env\b/i
+  /\bprocess\.env\b/i,
+  /\bnetlify\.env\b/i
 ];
 
 const INTENT_BLOCK_PATTERNS = [
@@ -64,6 +102,8 @@ const INTENT_BLOCK_PATTERNS = [
   /\bgenutzte\s+tools\b/i,
   /\btool\s*config\b/i,
   /\brequest\s*payload\b/i,
+  /\bpayload[-\s]?struktur\b/i,
+  /\bmessages[-\s]?array\b/i,
   /\bjson\b/i,
   /\bwortwörtlich\b/i,
   /\bverbatim\b/i,
@@ -72,12 +112,13 @@ const INTENT_BLOCK_PATTERNS = [
   /\bwie\s+du\s+arbeitest\b/i,
   /\bwie\s+du\s+verarbeitest\b/i,
   /\bkonfiguration\b/i,
-  /\bsetup\b/i
+  /\bsetup\b/i,
+  /\bpolicy\b/i,
+  /\brichtlinien\b/i
 ];
 
 function shouldBlockInput(text) {
-  const t = String(text || "");
-  return [...BLOCK_PATTERNS, ...INTENT_BLOCK_PATTERNS].some(rx => rx.test(t));
+  return [...BLOCK_PATTERNS, ...INTENT_BLOCK_PATTERNS].some(rx => rx.test(text));
 }
 
 /* =========================
@@ -136,34 +177,36 @@ function safeParseBody(req) {
   return body && typeof body === "object" ? body : {};
 }
 
+/* =========================
+   HANDLER
+========================= */
 export default async function handler(req, res) {
-  // CORS (optional härten: statt "*" nur deine Domain)
-  res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+  setCors(req, res);
 
   if (req.method === "OPTIONS") return res.status(204).send("");
-  if (req.method === "GET") return res.status(200).send("OK linda-proxy");
-  if (req.method !== "POST") return res.status(405).send("Method Not Allowed");
+  if (req.method === "GET") return res.status(200).type("text/plain").send("OK linda-proxy");
+  if (req.method !== "POST") return res.status(405).type("text/plain").send("Method Not Allowed");
 
-  // ✅ NUR ENV, keine hardcoded Make URL
   const url = process.env.MAKE_WEBHOOK_URL;
-  if (!url) return res.status(500).send("Server not configured");
+  if (!url) return res.status(500).type("text/plain").send("Server not configured");
+
+  const proxySecret = process.env.PROXY_SECRET || "";
 
   const body = safeParseBody(req);
 
-  const question = normalize(body.question);
+  // Expect: { question, history }
+  const questionRaw = normalize(body.question);
+  const question = canonicalize(questionRaw);
   const history = coerceHistory(body.history);
 
-  if (!question) return res.status(400).send("Missing input");
-  if (question.length > MAX_TEXT_LEN) return res.status(413).send("Input too long");
+  if (!question) return res.status(400).type("text/plain").send("Missing input");
+  if (question.length > MAX_TEXT_LEN) return res.status(413).type("text/plain").send("Input too long");
 
-  // ✅ Block BEFORE Make
+  // Block BEFORE Make
   if (shouldBlockInput(question)) {
     return res.status(200).type("text/plain").send(BLOCK_MESSAGE);
   }
 
-  // ✅ Tags (AEVO)
   const tags = detectTags(question);
 
   const payload = {
@@ -173,25 +216,28 @@ export default async function handler(req, res) {
     tags
   };
 
+  const headers = { "Content-Type": "application/json; charset=utf-8" };
+  if (proxySecret) headers["X-Proxy-Secret"] = proxySecret;
+
   try {
     const up = await fetch(url, {
       method: "POST",
-      headers: { "Content-Type": "application/json; charset=utf-8" },
+      headers,
       body: JSON.stringify(payload)
     });
 
     const txt = await up.text();
 
-    // ✅ Block AFTER Make
+    // Block AFTER Make
     if (shouldBlockOutput(txt)) {
       return res.status(502).type("text/plain").send(
         "⚠️ Die Anfrage konnte aus Sicherheitsgründen nicht verarbeitet werden."
       );
     }
 
-    // Immer als Text zurückgeben (UI rendert Markdown/HTML ggf. selbst)
     return res.status(up.status).type("text/plain").send(txt);
-  } catch (e) {
-    return res.status(502).json({ error: "Relay error", detail: String(e) });
+  } catch {
+    // Do not leak internals
+    return res.status(502).type("text/plain").send("Relay error");
   }
 }
