@@ -1,23 +1,34 @@
-// /api/bot.js  — Ursprungs-Relay (Vercel Node Function, req/res)
+// /api/bot.js — Rollback / Minimal-Stabil
 
 module.exports = async function handler(req, res) {
-  // nur POST
-  if (req.method !== "POST") {
-    return res.status(405).json({ error: "Nur POST erlaubt" });
-  }
-
-  const webhookUrl = process.env.MAKE_WEBHOOK_URL;
-  if (!webhookUrl) {
-    return res.status(500).json({ error: "MAKE_WEBHOOK_URL fehlt" });
-  }
-
   try {
-    // Body lesen
+    // Healthcheck (Browser-Aufruf)
+    if (req.method === "GET") {
+      return res.status(200).type("text/plain").send("OK bot");
+    }
+
+    // CORS Preflight
+    if (req.method === "OPTIONS") {
+      res.setHeader("Access-Control-Allow-Origin", "*");
+      res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
+      res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+      return res.status(204).send("");
+    }
+
+    if (req.method !== "POST") {
+      return res.status(405).json({ error: "Nur POST erlaubt" });
+    }
+
+    const webhookUrl = process.env.MAKE_WEBHOOK_URL;
+    if (!webhookUrl) {
+      return res.status(500).json({ error: "MAKE_WEBHOOK_URL fehlt (Production?)" });
+    }
+
     const body =
       typeof req.body === "string" ? JSON.parse(req.body || "{}") : (req.body || {});
-    const { question, history } = body;
+    const question = body?.question ?? "";
+    const history = body?.history ?? [];
 
-    // an Make weiterleiten
     const r = await fetch(webhookUrl, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -25,8 +36,8 @@ module.exports = async function handler(req, res) {
     });
 
     const txt = await r.text();
-    return res.status(r.status).send(txt);
+    return res.status(r.status).type("text/plain").send(txt);
   } catch {
-    return res.status(500).json({ error: "Fehler beim Senden an Make" });
+    return res.status(500).type("text/plain").send("Server error");
   }
 };
