@@ -1,51 +1,42 @@
-// /api/linda-proxy.js  (Vercel: req,res) — hardened
+// /api/linda-proxy.js (Vercel Node Function) — hardened v2
 
 const MAX_TEXT_LEN = 8000;
 const MAX_HISTORY_MESSAGES = 6; // 3 Turns
 const BLOCK_MESSAGE =
   "Dabei kann ich nicht helfen. Ich beantworte ausschließlich fachliche Fragen (z. B. Ausbildung/AEVO, Prüfungen, Personalmanagement).";
 
-/* =========================
-   ORIGIN WHITELIST (CORS)
-   - set your allowed origins here
-========================= */
 const ALLOWED_ORIGINS = new Set([
   "https://ntc-bot1.netlify.app",
   "https://main--ntc-bot1.netlify.app",
-  // TODO: ergänze deine echte Vercel-Domain(s)
   // "https://dein-projekt.vercel.app",
-  // "https://deine-custom-domain.de"
 ]);
 
 function setCors(req, res) {
   const origin = req.headers.origin || "";
-
-  // If no Origin header (e.g. curl/server-to-server), don't set CORS headers.
-  if (!origin) return;
+  if (!origin) return; // server-to-server
 
   if (ALLOWED_ORIGINS.has(origin)) {
     res.setHeader("Access-Control-Allow-Origin", origin);
     res.setHeader("Vary", "Origin");
     res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
-    res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type, X-Client-Secret");
   }
-  // If not allowed: set no CORS headers => browser blocks.
 }
 
-/* =========================
-   CANONICALIZE (anti obfuscation)
-========================= */
+function isBrowserOriginAllowed(req) {
+  const origin = req.headers.origin || "";
+  if (!origin) return true; // no origin => allow (server-to-server)
+  return ALLOWED_ORIGINS.has(origin);
+}
+
 function canonicalize(s) {
   return String(s || "")
     .normalize("NFKC")
-    .replace(/[\u200B-\u200F\uFEFF]/g, "") // zero-width
+    .replace(/[\u200B-\u200F\uFEFF]/g, "")
     .replace(/\s+/g, " ")
     .trim();
 }
 
-/* =========================
-   AEVO / AUSBILDUNG TAGGING
-========================= */
 const AEVO_PATTERNS = [
   /\baevo\b/i,
   /\bbbig\b/i,
@@ -71,86 +62,86 @@ function detectTags(question) {
   return [];
 }
 
-/* =========================
-   INPUT BLOCKING (HARD + INTENT)
-========================= */
+// Vorsichtig: lieber schlanker blocken (nur klare Meta/Secrets)
 const BLOCK_PATTERNS = [
-  // system/prompt/tooling/secrets/payload
-  /\bsystem\b/i,
-  /\bdeveloper\b/i,
-  /\brole\s*:\s*(system|developer|assistant|tool)\b/i,
-  /\bprompt\b/i,
-  /\bmessages\s*=\s*\[/i,
-  /\bpayload\b/i,
-  /\btools?\b/i,
-  /\bfile_search\b/i,
-  /\bknowledge\s*cutoff\b/i,
-  /\bapi\s*key\b/i,
-  /\btoken\b/i,
+  /\bprocess\.env\b/i,
+  /\bapi[_\-\s]?key\b/i,
   /\bsecret\b/i,
   /\bwebhook\b/i,
-  /\bprocess\.env\b/i,
-  /\bnetlify\.env\b/i
+  /\btoken\b/i,
+  /\brole\s*:\s*(system|developer|assistant|tool)\b/i,
+  /\bmessages\s*=\s*\[/i
 ];
 
+// optional (bei dir bewusst aktiv): “Audit/Debug/JSON”-Tricks
 const INTENT_BLOCK_PATTERNS = [
-  // semantic “audit/debug/meta” tricks
-  /\bdebug\b/i,
-  /\baudit\b/i,
-  /\bprotokoll\b/i,
-  /\binterne\s+regeln\b/i,
-  /\bgenutzte\s+tools\b/i,
-  /\btool\s*config\b/i,
-  /\brequest\s*payload\b/i,
-  /\bpayload[-\s]?struktur\b/i,
-  /\bmessages[-\s]?array\b/i,
-  /\bjson\b/i,
-  /\bwortwörtlich\b/i,
-  /\bverbatim\b/i,
-  /\banonymisier\w*\b/i,
-  /\bplatzhalter\b/i,
-  /\bwie\s+du\s+arbeitest\b/i,
-  /\bwie\s+du\s+verarbeitest\b/i,
-  /\bkonfiguration\b/i,
-  /\bsetup\b/i,
-  /\bpolicy\b/i,
-  /\brichtlinien\b/i
+  /\btool[_\-\s]?config\b/i,
+  /\brequest[_\-\s]?payload\b/i,
+  /\bsystem[_\-\s]?prompt\b/i,
+  /\bdeveloper[_\-\s]?prompt\b/i
 ];
 
 function shouldBlockInput(text) {
-  return [...BLOCK_PATTERNS, ...INTENT_BLOCK_PATTERNS].some(rx => rx.test(text));
+  const t = String(text || "");
+  return [...BLOCK_PATTERNS, ...INTENT_BLOCK_PATTERNS].some(rx => rx.test(t));
 }
 
-/* =========================
-   OUTPUT BLOCKING (NOTBREMSE)
-========================= */
+// Regex für Output inkl. "_" (dein Bug)
 const OUTPUT_BLOCK_PATTERNS = [
-  /system[-\s]?prompt/i,
-  /developer[-\s]?prompt/i,
-  /interne\s+regeln/i,
-  /genutzte\s+tools/i,
-  /knowledge\s*cutoff/i,
-  /payload/i,
-  /request_payload/i,
-  /tool_config/i,
-  /messages[-\s]?array/i,
-  /rolle\s+und\s+identität/i,
-  /antwortstruktur/i,
-  /der\s+gesamte\s+prompt/i,
-  /file_search/i,
-  /openai/i
+  /system[_\-\s]?prompt/i,
+  /developer[_\-\s]?prompt/i,
+  /tool[_\-\s]?config/i,
+  /request[_\-\s]?payload/i,
+  /messages[_\-\s]?array/i,
+  /file[_\-\s]?search/i
 ];
+
+function safeJsonParse(s) {
+  try {
+    return JSON.parse(s);
+  } catch {
+    return null;
+  }
+}
+
+// Rekursiv nach verbotenen Keys suchen (robuster als nur Regex im Text)
+const FORBIDDEN_KEYS = new Set([
+  "system_prompt",
+  "developer_prompt",
+  "tool_config",
+  "request_payload",
+  "messages",
+  "tools"
+]);
+
+function containsForbiddenKeys(obj) {
+  if (!obj || typeof obj !== "object") return false;
+  if (Array.isArray(obj)) return obj.some(containsForbiddenKeys);
+
+  for (const [k, v] of Object.entries(obj)) {
+    if (FORBIDDEN_KEYS.has(String(k))) return true;
+    if (containsForbiddenKeys(v)) return true;
+  }
+  return false;
+}
 
 function shouldBlockOutput(text) {
   const t = String(text || "").trim();
   if (!t) return false;
-  if (t.startsWith("<!DOCTYPE html") || t.startsWith("<html")) return true;
+
+  // HTML nie erlauben
+  if (t.startsWith("<!DOCTYPE html") || t.startsWith("<html") || /<script/i.test(t)) return true;
+
+  // Wenn es wie JSON aussieht: strukturell prüfen
+  if ((t.startsWith("{") && t.endsWith("}")) || (t.startsWith("[") && t.endsWith("]"))) {
+    const parsed = safeJsonParse(t);
+    if (parsed && containsForbiddenKeys(parsed)) return true;
+  }
+
+  // Zusätzlich grobe Text-Pattern
   return OUTPUT_BLOCK_PATTERNS.some(rx => rx.test(t));
 }
 
-/* =========================
-   HELPERS
-========================= */
 function normalize(str) {
   return String(str || "").trim();
 }
@@ -177,24 +168,49 @@ function safeParseBody(req) {
   return body && typeof body === "object" ? body : {};
 }
 
-/* =========================
-   HANDLER
-========================= */
+function timingSafeEq(a, b) {
+  a = String(a || "");
+  b = String(b || "");
+  if (a.length !== b.length) return false;
+  let out = 0;
+  for (let i = 0; i < a.length; i++) out |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  return out === 0;
+}
+
 export default async function handler(req, res) {
   setCors(req, res);
+
+  // Browser-Origin hart ablehnen (nicht nur “kein CORS Header”)
+  if (!isBrowserOriginAllowed(req)) {
+    return res.status(403).type("text/plain").send("Forbidden origin");
+  }
 
   if (req.method === "OPTIONS") return res.status(204).send("");
   if (req.method === "GET") return res.status(200).type("text/plain").send("OK linda-proxy");
   if (req.method !== "POST") return res.status(405).type("text/plain").send("Method Not Allowed");
 
+  // Content-Type minimal erzwingen (hilft gegen Form-Posts)
+  const ct = (req.headers["content-type"] || "").toLowerCase();
+  if (ct && !ct.includes("application/json")) {
+    return res.status(415).type("text/plain").send("Unsupported Media Type");
+  }
+
+  // Eingehende Auth (wichtig!)
+  const clientSecret = process.env.CLIENT_SECRET || "";
+  if (clientSecret) {
+    const provided = req.headers["x-client-secret"] || "";
+    if (!timingSafeEq(provided, clientSecret)) {
+      return res.status(401).type("text/plain").send("Unauthorized");
+    }
+  }
+
   const url = process.env.MAKE_WEBHOOK_URL;
   if (!url) return res.status(500).type("text/plain").send("Server not configured");
 
   const proxySecret = process.env.PROXY_SECRET || "";
-
   const body = safeParseBody(req);
 
-  // Expect: { question, history }
+  // Allowlist statt ...body
   const questionRaw = normalize(body.question);
   const question = canonicalize(questionRaw);
   const history = coerceHistory(body.history);
@@ -202,15 +218,14 @@ export default async function handler(req, res) {
   if (!question) return res.status(400).type("text/plain").send("Missing input");
   if (question.length > MAX_TEXT_LEN) return res.status(413).type("text/plain").send("Input too long");
 
-  // Block BEFORE Make
   if (shouldBlockInput(question)) {
     return res.status(200).type("text/plain").send(BLOCK_MESSAGE);
   }
 
   const tags = detectTags(question);
 
+  // Nur diese Felder gehen zu Make
   const payload = {
-    ...body,
     question,
     history,
     tags
@@ -223,21 +238,22 @@ export default async function handler(req, res) {
     const up = await fetch(url, {
       method: "POST",
       headers,
-      body: JSON.stringify(payload)
+      body: JSON.stringify(payload),
+      redirect: "error"
     });
 
     const txt = await up.text();
 
-    // Block AFTER Make
     if (shouldBlockOutput(txt)) {
-      return res.status(502).type("text/plain").send(
-        "⚠️ Die Anfrage konnte aus Sicherheitsgründen nicht verarbeitet werden."
-      );
+      return res
+        .status(502)
+        .type("text/plain")
+        .send("⚠️ Die Antwort wurde aus Sicherheitsgründen blockiert.");
     }
 
+    // Nur “text/plain” zurück (kein HTML)
     return res.status(up.status).type("text/plain").send(txt);
   } catch {
-    // Do not leak internals
     return res.status(502).type("text/plain").send("Relay error");
   }
 }
