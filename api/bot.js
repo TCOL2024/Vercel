@@ -57,32 +57,22 @@ function parseGenderFlag(value) {
   return false;
 }
 
-/**
- * Entfernt am Anfang einfache Gruß-/Füllformulierungen (prompt kleiner),
- * ohne den Kern zu zerstören.
- */
 function stripLeadingFillers(text) {
   if (!text) return "";
   let t = String(text).trim();
 
-  // klassische Grüße/Anreden am Anfang
   t = t.replace(
     /^(?:(?:hallo|hi|hey|moin|guten\s+morgen|guten\s+tag|guten\s+abend)\b[\s,!.-]*)(?:linda\b[\s,!.-]*)?/i,
     ""
   ).trim();
 
-  // "ich möchte / ich will / kannst du" am Anfang straffen
   t = t.replace(/^(ich\s+m(?:ö|oe)chte|ich\s+will)\s+(bitte\s+)?/i, "").trim();
   t = t.replace(/^(kannst\s+du|könntest\s+du)\s+(bitte\s+)?/i, "").trim();
 
-  // Mehrfach-Leerzeichen
   t = t.replace(/\s{2,}/g, " ").trim();
   return t;
 }
 
-/**
- * Filtert „Pseudo“-Nachrichten raus, die häufig als UI-Platzhalter in der History landen.
- */
 function isPlaceholderAssistantMessage(content) {
   if (!content) return false;
   const c = content.trim().toLowerCase();
@@ -91,41 +81,85 @@ function isPlaceholderAssistantMessage(content) {
     c.startsWith("einen moment bitte") ||
     c.includes("bitte warten") ||
     c.includes("lade") ||
-    c.includes("thinking") ||
-    c.includes("…") && c.length <= 20
+    c.includes("thinking")
   );
 }
 
 /**
- * Wenn Frage nur aus Gruß besteht, ist sie für Make/LLM unnötig teuer.
+ * Wichtig: Assistant-Antworten sind oft lang; der Kontextbezug ("ja") bezieht sich
+ * meist auf den LETZTEN Satz. Deshalb:
+ * - Assistant: TAIL behalten
+ * - User: HEAD behalten
  */
-function isOnlyGreeting(text) {
-  const t = (text || "").trim().toLowerCase();
-  return ["hallo", "hi", "hey", "moin", "guten morgen", "guten tag", "guten abend"].includes(t);
+function clipContent(role, text, maxLen = 1400) {
+  const t = (text || "").trim();
+  if (t.length <= maxLen) return t;
+
+  if (role === "assistant") {
+    return "… " + t.slice(-maxLen);
+  }
+  return t.slice(0, maxLen) + " …";
 }
 
 function normalizeHistory(history, maxItems = 4) {
   if (!Array.isArray(history)) return [];
 
-  // Nur die letzten maxItems übernehmen
   const last = history.slice(-maxItems);
-
   const cleaned = [];
+
   for (const h of last) {
     const role = (h && typeof h.role === "string") ? h.role.slice(0, 20) : "user";
-    const raw = (h && typeof h.content === "string") ? h.content : "";
-    let content = stripLeadingFillers(raw).slice(0, 1000);
+    let raw = (h && typeof h.content === "string") ? h.content : "";
+    raw = stripLeadingFillers(raw);
 
-    // Platzhalter-Assistant (z.B. "Einen Moment bitte") entfernen
-    if (role === "assistant" && isPlaceholderAssistantMessage(content)) continue;
+    if (!raw) continue;
 
-    // Leere Messages entfernen
-    if (!content) continue;
+    // Platzhalter raus
+    if (role === "assistant" && isPlaceholderAssistantMessage(raw)) continue;
 
+    const content = clipContent(role, raw, 1400);
     cleaned.push({ role, content });
   }
 
   return cleaned;
+}
+
+function isShortAffirmation(text) {
+  const t = (text || "").trim().toLowerCase();
+  return ["ja", "j", "ok", "okay", "passt", "gerne", "mach", "bitte", "weiter"].includes(t);
+}
+
+function isShortNegation(text) {
+  const t = (text || "").trim().toLowerCase();
+  return ["nein", "n", "no", "nicht", "lieber nicht"].includes(t);
+}
+
+/**
+ * Macht "ja/nein/ok" kontextfähig ohne Frontend-Änderung.
+ * Idee: Bestätigung wird zu einer klaren Handlungsanweisung,
+ * die sich explizit auf die letzte Assistant-Frage bezieht.
+ */
+function expandShortReply(question, history) {
+  const q = (question || "").trim();
+  if (!q) return q;
+
+  const hasHistory = Array.isArray(history) && history.length > 0;
+  const lastAssistant = hasHistory
+    ? [...history].reverse().find((m) => m.role === "assistant" && m.content)
+    : null;
+
+  // Wenn keine vorherige Assistant-Message existiert, nichts tun.
+  if (!lastAssistant) return q;
+
+  if (isShortAffirmation(q)) {
+    return `Ja. Bitte beziehe dich auf deine letzte Frage/Handlungsaufforderung und fahre damit fort.`;
+  }
+
+  if (isShortNegation(q)) {
+    return `Nein. Bitte beziehe dich auf deine letzte Frage/Handlungsaufforderung und schlage eine alternative nächste Option vor.`;
+  }
+
+  return q;
 }
 
 export default async function handler(req, res) {
@@ -166,28 +200,20 @@ export default async function handler(req, res) {
   }
 
   const questionRaw = typeof body.question === "string" ? body.question : "";
-  const question = stripLeadingFillers(questionRaw);
+  let question = stripLeadingFillers(questionRaw);
 
-  // History IMMER hart auf 4, plus Placeholder-Filter
+  // History IMMER max 4, Assistant-Tail bleibt erhalten
   const history = normalizeHistory(body.history, 4);
 
-  // Gender-Flag nur als Flag weiterreichen (keine Prompt-Texte)
+  // Kurzantworten "ja/nein/ok" kontextfähig machen
+  question = expandShortReply(question, history);
+
+  // harte Limits
+  if (!question) return sendJson(res, 400, { error: "question fehlt" });
+  if (question.length > 1600) return sendJson(res, 413, { error: "question zu lang (max 1600 Zeichen)" });
+
   const gender = parseGenderFlag(body.gender);
   const style = { gender };
-
-  // Wenn User nur "Hallo" schickt: nicht an Make durchreichen (Prompt sparen)
-  // Du kannst das Verhalten mit einer ENV steuern:
-  // LINDA_BLOCK_GREETING_ONLY=true  -> blockt
-  const blockGreetingOnly = String(process.env.LINDA_BLOCK_GREETING_ONLY || "true").toLowerCase() === "true";
-  if (blockGreetingOnly && isOnlyGreeting(question) && history.length === 0) {
-    res.statusCode = 200;
-    res.setHeader("Content-Type", "text/plain; charset=utf-8");
-    return res.end("Hi! Wobei soll ich dir helfen? Formuliere bitte kurz dein Anliegen in einem Satz.");
-  }
-
-  // harte Limits (kleiner als zuvor)
-  if (!question) return sendJson(res, 400, { error: "question fehlt" });
-  if (question.length > 1400) return sendJson(res, 413, { error: "question zu lang (max 1400 Zeichen)" });
 
   // Timeout zu Make
   const controller = new AbortController();
