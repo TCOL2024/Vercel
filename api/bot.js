@@ -89,9 +89,7 @@ function clipContent(role, text, maxLen = 1400) {
   const t = (text || "").trim();
   if (t.length <= maxLen) return t;
 
-  if (role === "assistant") {
-    return "… " + t.slice(-maxLen);
-  }
+  if (role === "assistant") return "… " + t.slice(-maxLen);
   return t.slice(0, maxLen) + " …";
 }
 
@@ -109,8 +107,7 @@ function normalizeHistory(history, maxItems = 4) {
 
     if (role === "assistant" && isPlaceholderAssistantMessage(raw)) continue;
 
-    const content = clipContent(role, raw, 1400);
-    cleaned.push({ role, content });
+    cleaned.push({ role, content: clipContent(role, raw, 1400) });
   }
 
   return cleaned;
@@ -120,7 +117,6 @@ function isShortAffirmation(text) {
   const t = (text || "").trim().toLowerCase();
   return ["ja", "j", "ok", "okay", "passt", "gerne", "mach", "bitte", "weiter"].includes(t);
 }
-
 function isShortNegation(text) {
   const t = (text || "").trim().toLowerCase();
   return ["nein", "n", "no", "nicht", "lieber nicht"].includes(t);
@@ -160,9 +156,8 @@ function isAevoContext(question, history) {
     "probezeit", "kündigung", "abschlussprüfung", "zwischenprüfung",
     "freistellung", "berufsschule", "jugendarbeitsschutz",
     "unterweisung", "lernziel", "handlungskompetenz",
-    "fachliche eignung", "persönliche eignung", "ausbildungsbeauftragter"
+    "fachliche eignung", "persönliche eignung"
   ];
-
   return keywords.some(k => hay.includes(k));
 }
 
@@ -172,28 +167,25 @@ function applyAevoPrefix(question, shouldApply) {
 
   const q = (question || "").trim();
   if (!q) return q;
-
   if (q.toLowerCase().startsWith(prefix.toLowerCase())) return q;
 
   return `${prefix}\n\n${q}`;
 }
 
-// --- Dedupe: entfernt die aktuelle Frage aus der history, wenn sie dort schon als letzte User-Message steht ---
+// --- Dedupe: entfernt die aktuelle Frage aus der history, wenn sie dort schon als User-Message steht ---
 function canonicalize(s) {
   return (s || "")
     .toLowerCase()
     .replace(/\s+/g, " ")
     .replace(/[“”„"']/g, "")
-    .replace(/[^\p{L}\p{N}\s?.!,:-]/gu, "") // grob: Sonderzeichen raus
+    .replace(/[^\p{L}\p{N}\s?.!,:-]/gu, "")
     .trim();
 }
 
 function stripAevoPrefixIfPresent(s) {
   const prefix = "Antworte fachlich fundiert im AEVO-Kontext mit kurzer Prüfungsrelevanz.";
   const t = (s || "").trim();
-  if (t.toLowerCase().startsWith(prefix.toLowerCase())) {
-    return t.slice(prefix.length).trim();
-  }
+  if (t.toLowerCase().startsWith(prefix.toLowerCase())) return t.slice(prefix.length).trim();
   return t;
 }
 
@@ -203,18 +195,92 @@ function dedupeHistoryAgainstQuestion(history, question) {
   const qCore = canonicalize(stripAevoPrefixIfPresent(question));
   if (!qCore) return history;
 
-  // Nur die letzte User-Message checken (typischer Fall)
+  // check last user message first
   const lastIdx = history.length - 1;
   const last = history[lastIdx];
-
   if (last && last.role === "user") {
     const hCore = canonicalize(stripAevoPrefixIfPresent(last.content || ""));
     if (hCore && (hCore === qCore || hCore.includes(qCore) || qCore.includes(hCore))) {
-      // Duplikat entfernen
       return history.slice(0, lastIdx);
     }
   }
+
+  // also check first user message (häufig bei deinem Frontend)
+  const first = history[0];
+  if (first && first.role === "user") {
+    const hCore = canonicalize(stripAevoPrefixIfPresent(first.content || ""));
+    if (hCore && (hCore === qCore || hCore.includes(qCore) || qCore.includes(hCore))) {
+      return history.slice(1);
+    }
+  }
+
   return history;
+}
+
+/**
+ * EMERGENCY FAST-LANE:
+ * Sofortantwort für typische AEVO-Standard-Definitionen (ohne Make),
+ * damit es morgen bei mehreren Teilnehmenden stabil läuft.
+ */
+function tryFastLaneAnswer(question) {
+  const q = stripAevoPrefixIfPresent(question);
+  const t = (q || "").trim().toLowerCase();
+
+  // nur für kurze, definitorische Fragen
+  const isDef = t.length <= 220 && (
+    t.startsWith("was ist") ||
+    t.includes("was bedeutet") ||
+    t.includes("definition") ||
+    t.includes("kurz erkl")
+  );
+  if (!isDef) return null;
+
+  // Fachliche Eignung
+  if (t.includes("fachliche eignung")) {
+    return [
+      "Fachliche Eignung bedeutet: Du verfügst über die beruflichen Fertigkeiten, Kenntnisse und Fähigkeiten sowie die berufs- und arbeitspädagogischen Kompetenzen, um die Ausbildung sachgerecht durchzuführen.",
+      "Prüfungsrelevanz: In der AEVO wird häufig die Abgrenzung zur persönlichen Eignung geprüft – fachlich = Können/Qualifikation, persönlich = Zuverlässigkeit/keine Ausschlussgründe.",
+      "Soll ich dir dazu eine kurze Prüfungsfrage formulieren?"
+    ].join("\n\n");
+  }
+
+  // Persönliche Eignung
+  if (t.includes("persönliche eignung")) {
+    return [
+      "Persönliche Eignung heißt: Es liegen keine Gründe vor, die jemanden als Ausbilder ungeeignet machen (z. B. schwere Verstöße gegen Schutzvorschriften oder einschlägige Verurteilungen).",
+      "Prüfungsrelevanz: Persönliche Eignung = rechtliche/charakterliche Zuverlässigkeit; fachliche Eignung = Qualifikation/Kompetenz.",
+      "Möchtest du die typischen Ausschlussgründe kurz als Merkliste?"
+    ].join("\n\n");
+  }
+
+  // Berichtsheft
+  if (t.includes("berichtsheft") || t.includes("ausbildungsnachweis")) {
+    return [
+      "Der Ausbildungsnachweis (Berichtsheft) dokumentiert die vermittelten Inhalte und unterstützt die Lern- und Erfolgskontrolle.",
+      "Prüfungsrelevanz: Ausbilder sollen den Nachweis regelmäßig kontrollieren; je nach Kammerpraxis kann er Zulassungsvoraussetzung sein bzw. bei der Entscheidung mitwirken.",
+      "Soll ich dir die typische Prüfungsargumentation (Zulassung ja/nein) kurz skizzieren?"
+    ].join("\n\n");
+  }
+
+  // Freistellung Berufsschule
+  if (t.includes("freistellung") && (t.includes("berufsschule") || t.includes("schule"))) {
+    return [
+      "Freistellung bedeutet: Auszubildende müssen für den Berufsschulunterricht und bestimmte Prüfungs-/Ausbildungsmaßnahmen freigestellt werden.",
+      "Prüfungsrelevanz: Klassiker ist die Frage, ob der Betrieb während der Schulzeit Arbeitsleistung verlangen darf – in der Regel nein, Schulbesuch geht vor.",
+      "Möchtest du ein kurzes Praxisbeispiel (Konfliktfall) dazu?"
+    ].join("\n\n");
+  }
+
+  // Probezeit Kündigung
+  if (t.includes("probezeit") && t.includes("kündigung")) {
+    return [
+      "In der Probezeit kann das Ausbildungsverhältnis grundsätzlich jederzeit ohne Einhalten einer Kündigungsfrist gekündigt werden (schriftlich).",
+      "Prüfungsrelevanz: Nach der Probezeit gelten strengere Voraussetzungen (z. B. fristlos aus wichtigem Grund oder Kündigung durch Azubi mit Frist bei Berufswechsel).",
+      "Soll ich die Unterschiede nach der Probezeit kurz gegenüberstellen?"
+    ].join("\n\n");
+  }
+
+  return null;
 }
 
 export default async function handler(req, res) {
@@ -257,22 +323,28 @@ export default async function handler(req, res) {
   const questionRaw = typeof body.question === "string" ? body.question : "";
   let question = stripLeadingFillers(questionRaw);
 
-  // History normalisieren (max 4)
   let history = normalizeHistory(body.history, 4);
 
-  // Kurzantworten kontextfähig
   question = expandShortReply(question, history);
 
-  // AEVO Prefix nur bei Ausbildungskontext
   const aevo = isAevoContext(question, history);
   question = applyAevoPrefix(question, aevo);
 
-  // Dedupe: gleiche Frage nicht zusätzlich in history mitsenden
   history = dedupeHistoryAgainstQuestion(history, question);
 
   // harte Limits
   if (!question) return sendJson(res, 400, { error: "question fehlt" });
   if (question.length > 1800) return sendJson(res, 413, { error: "question zu lang (max 1800 Zeichen)" });
+
+  // FAST-LANE: sofort antworten, ohne Make
+  if (aevo) {
+    const fast = tryFastLaneAnswer(question);
+    if (fast) {
+      res.statusCode = 200;
+      res.setHeader("Content-Type", "text/plain; charset=utf-8");
+      return res.end(fast);
+    }
+  }
 
   const gender = parseGenderFlag(body.gender);
   const style = { gender, aevo };
@@ -292,11 +364,7 @@ export default async function handler(req, res) {
         "X-Linda-Client-IP": ip,
         "X-Linda-Source": origin || referer || ""
       },
-      body: JSON.stringify({
-        question,
-        history,
-        style
-      }),
+      body: JSON.stringify({ question, history, style }),
       signal: controller.signal
     });
 
@@ -317,7 +385,16 @@ export default async function handler(req, res) {
     return res.end(text);
   } catch (e) {
     clearTimeout(timeout);
-    const msg = (e?.name === "AbortError") ? "Timeout zu Make (30s)" : (e?.message || "Unbekannter Fehler");
-    return sendJson(res, 500, { error: "Fehler beim Senden an Make", detail: msg });
+
+    // TIMEOUT-FALLBACK: kurz & nutzbar statt „kaputt“
+    if (e?.name === "AbortError") {
+      res.statusCode = 200;
+      res.setHeader("Content-Type", "text/plain; charset=utf-8");
+      return res.end(
+        "Das dauert gerade etwas länger. Bitte stelle die Frage noch einmal etwas konkreter (z. B. „fachliche Eignung: Definition + Abgrenzung zur persönlichen Eignung in 5 Sätzen“). Soll ich dir eine passende Prüfungsfrage dazu erstellen?"
+      );
+    }
+
+    return sendJson(res, 500, { error: "Fehler beim Senden an Make", detail: e?.message || "Unbekannter Fehler" });
   }
 }
