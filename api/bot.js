@@ -46,49 +46,7 @@ function allowSameOrigin(req) {
   return false;
 }
 
-/**
- * Entfernt nur am Anfang einfache Gruß-/Füllformulierungen,
- * damit der Prompt kleiner wird, ohne Inhalt zu zerstören.
- */
-function stripLeadingFillers(text) {
-  if (!text) return "";
-
-  let t = text.trim();
-
-  // Mehrfach-Grüße / Anreden am Anfang entfernen
-  // Beispiele: "Hallo", "Hi", "Moin", "Guten Morgen", "Hey Linda", "Hi Jens" etc.
-  t = t.replace(
-    /^(?:(?:hallo|hi|hey|moin|guten\s+morgen|guten\s+tag|guten\s+abend)\b[\s,!.-]*)(?:linda\b[\s,!.-]*)?/i,
-    ""
-  ).trim();
-
-  // "ich möchte", "ich will", "kannst du" am Anfang etwas straffen
-  // (nur wenn es direkt am Anfang steht)
-  t = t.replace(/^(ich\s+m(?:ö|oe)chte|ich\s+will)\s+(bitte\s+)?/i, "").trim();
-  t = t.replace(/^(kannst\s+du|könntest\s+du)\s+(bitte\s+)?/i, "").trim();
-
-  // Doppelte Leerzeichen
-  t = t.replace(/\s{2,}/g, " ").trim();
-
-  return t;
-}
-
-function normalizeHistory(history, maxItems = 4) {
-  if (!Array.isArray(history)) return [];
-
-  // Nur die letzten maxItems übernehmen (entscheidend für Promptgröße)
-  const last = history.slice(-maxItems);
-
-  return last.map((h) => {
-    const role = (h && typeof h.role === "string") ? h.role.slice(0, 20) : "user";
-    const contentRaw = (h && typeof h.content === "string") ? h.content : "";
-    const content = stripLeadingFillers(contentRaw).slice(0, 1200); // kürzer als vorher
-    return { role, content };
-  });
-}
-
 function parseGenderFlag(value) {
-  // akzeptiert: true/false, "true"/"false", "ja"/"nein", "1"/"0"
   if (value === true) return true;
   if (value === false) return false;
   if (typeof value === "string") {
@@ -97,6 +55,77 @@ function parseGenderFlag(value) {
     if (["false", "0", "nein", "no", "off"].includes(v)) return false;
   }
   return false;
+}
+
+/**
+ * Entfernt am Anfang einfache Gruß-/Füllformulierungen (prompt kleiner),
+ * ohne den Kern zu zerstören.
+ */
+function stripLeadingFillers(text) {
+  if (!text) return "";
+  let t = String(text).trim();
+
+  // klassische Grüße/Anreden am Anfang
+  t = t.replace(
+    /^(?:(?:hallo|hi|hey|moin|guten\s+morgen|guten\s+tag|guten\s+abend)\b[\s,!.-]*)(?:linda\b[\s,!.-]*)?/i,
+    ""
+  ).trim();
+
+  // "ich möchte / ich will / kannst du" am Anfang straffen
+  t = t.replace(/^(ich\s+m(?:ö|oe)chte|ich\s+will)\s+(bitte\s+)?/i, "").trim();
+  t = t.replace(/^(kannst\s+du|könntest\s+du)\s+(bitte\s+)?/i, "").trim();
+
+  // Mehrfach-Leerzeichen
+  t = t.replace(/\s{2,}/g, " ").trim();
+  return t;
+}
+
+/**
+ * Filtert „Pseudo“-Nachrichten raus, die häufig als UI-Platzhalter in der History landen.
+ */
+function isPlaceholderAssistantMessage(content) {
+  if (!content) return false;
+  const c = content.trim().toLowerCase();
+  return (
+    c === "einen moment bitte" ||
+    c.startsWith("einen moment bitte") ||
+    c.includes("bitte warten") ||
+    c.includes("lade") ||
+    c.includes("thinking") ||
+    c.includes("…") && c.length <= 20
+  );
+}
+
+/**
+ * Wenn Frage nur aus Gruß besteht, ist sie für Make/LLM unnötig teuer.
+ */
+function isOnlyGreeting(text) {
+  const t = (text || "").trim().toLowerCase();
+  return ["hallo", "hi", "hey", "moin", "guten morgen", "guten tag", "guten abend"].includes(t);
+}
+
+function normalizeHistory(history, maxItems = 4) {
+  if (!Array.isArray(history)) return [];
+
+  // Nur die letzten maxItems übernehmen
+  const last = history.slice(-maxItems);
+
+  const cleaned = [];
+  for (const h of last) {
+    const role = (h && typeof h.role === "string") ? h.role.slice(0, 20) : "user";
+    const raw = (h && typeof h.content === "string") ? h.content : "";
+    let content = stripLeadingFillers(raw).slice(0, 1000);
+
+    // Platzhalter-Assistant (z.B. "Einen Moment bitte") entfernen
+    if (role === "assistant" && isPlaceholderAssistantMessage(content)) continue;
+
+    // Leere Messages entfernen
+    if (!content) continue;
+
+    cleaned.push({ role, content });
+  }
+
+  return cleaned;
 }
 
 export default async function handler(req, res) {
@@ -139,19 +168,26 @@ export default async function handler(req, res) {
   const questionRaw = typeof body.question === "string" ? body.question : "";
   const question = stripLeadingFillers(questionRaw);
 
-  // harte Limits
-  if (!question) return sendJson(res, 400, { error: "question fehlt" });
-  if (question.length > 1600) return sendJson(res, 413, { error: "question zu lang (max 1600 Zeichen)" });
-
-  // History: IMMER nur 4 – egal was der Client schickt
+  // History IMMER hart auf 4, plus Placeholder-Filter
   const history = normalizeHistory(body.history, 4);
 
-  // Gender-Flag: kommt vom Frontend (z.B. Toggle)
+  // Gender-Flag nur als Flag weiterreichen (keine Prompt-Texte)
   const gender = parseGenderFlag(body.gender);
-
-  // Optional: ultra-kurze Steuerinfo nur als separates Feld (kein Prompt-Prefix!)
-  // -> In Make nutzt du dieses Feld, um die System-/Developer-Regel zu setzen.
   const style = { gender };
+
+  // Wenn User nur "Hallo" schickt: nicht an Make durchreichen (Prompt sparen)
+  // Du kannst das Verhalten mit einer ENV steuern:
+  // LINDA_BLOCK_GREETING_ONLY=true  -> blockt
+  const blockGreetingOnly = String(process.env.LINDA_BLOCK_GREETING_ONLY || "true").toLowerCase() === "true";
+  if (blockGreetingOnly && isOnlyGreeting(question) && history.length === 0) {
+    res.statusCode = 200;
+    res.setHeader("Content-Type", "text/plain; charset=utf-8");
+    return res.end("Hi! Wobei soll ich dir helfen? Formuliere bitte kurz dein Anliegen in einem Satz.");
+  }
+
+  // harte Limits (kleiner als zuvor)
+  if (!question) return sendJson(res, 400, { error: "question fehlt" });
+  if (question.length > 1400) return sendJson(res, 413, { error: "question zu lang (max 1400 Zeichen)" });
 
   // Timeout zu Make
   const controller = new AbortController();
