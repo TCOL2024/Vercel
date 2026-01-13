@@ -35,7 +35,7 @@
     .modal-btn.decline { background:#f3f4f6; color:#0059b3; border:1px solid #c7d5ea }
 
     /* Main */
-    #mainContainer { display:none; flex:1; overflow:auto; }
+    #mainContainer { display:none; flex:1; overflow:hidden; }
     .container { display:flex; height:100%; }
 
     /* Comic */
@@ -44,19 +44,53 @@
     .comic-name { margin-top:.5rem; font-family:'Segoe Script','Comic Sans MS',cursive; font-size:1.3rem; color:#333 }
 
     /* Chat */
-    .chat-area { flex:1; display:flex; flex-direction:column; position:relative; }
+    .chat-area { flex:1; display:flex; flex-direction:column; position:relative; min-width:0; }
     .chat-area header { padding:1rem; font-size:1.2rem; background:#fff; border-bottom:1px solid #e1e4e8 }
 
     /* Chat window */
-    #chat { flex:1; overflow-y:auto; padding:1rem; display:flex; flex-direction:column; gap:1rem; background:#f7f7f8 }
-    .message { max-width:75%; padding:.75rem 1rem; border-radius:1rem; box-shadow:0 1px 2px rgba(0,0,0,0.1); line-height:1.5 }
+    #chat {
+      flex:1;
+      overflow-y:auto;
+      padding:1rem;
+      display:flex;
+      flex-direction:column;
+      gap:1rem;
+      background:#f7f7f8;
+      min-width:0;
+    }
+    .message {
+      max-width:78%;
+      padding:.85rem 1rem;
+      border-radius:1rem;
+      box-shadow:0 1px 2px rgba(0,0,0,0.1);
+      line-height:1.55;
+      font-size:1rem;
+      word-wrap:break-word;
+      overflow-wrap:anywhere;
+    }
     .bot { align-self:flex-start; background:#fff }
     .user { align-self:flex-end; background:#0969da; color:#fff }
 
     /* Input bar */
-    .input-bar { display:flex; align-items:center; padding:.5rem 1rem; background:#fff; border-top:1px solid #e1e4e8 }
-    .input-bar button { background:none; border:none; font-size:1.5rem; cursor:pointer; color:#57606a; margin-right:.5rem }
-    .input-bar input { flex:1; border:none; outline:none; background:#f0f4f8; border-radius:.5rem; padding:0.75rem; font-size:1rem }
+    .input-bar {
+      display:flex;
+      align-items:center;
+      gap:.4rem;
+      padding:.6rem .75rem;
+      background:#fff;
+      border-top:1px solid #e1e4e8;
+    }
+    .input-bar button { background:none; border:none; font-size:1.35rem; cursor:pointer; color:#57606a; }
+    .input-bar input {
+      flex:1;
+      border:none;
+      outline:none;
+      background:#f0f4f8;
+      border-radius:.75rem;
+      padding:0.85rem 0.9rem;
+      font-size:1.05rem;
+      min-width:0;
+    }
 
     /* Toggle-Change Button */
     #toggle-change {
@@ -64,9 +98,8 @@
       border: none;
       font-size: 1rem;
       cursor: pointer;
-      padding: 0.5rem 1rem;
-      margin-right: 0.5rem;
-      border-radius: 0.5rem;
+      padding: 0.5rem 0.8rem;
+      border-radius: 0.6rem;
     }
     #toggle-change.active {
       background: #0059b3;
@@ -74,22 +107,28 @@
     }
 
     /* Sessions */
-    .session-item { display:flex; justify-content:space-between; padding:.5rem 0; border-bottom:1px solid #e3eefa; cursor:pointer }
+    .session-item { display:flex; justify-content:space-between; align-items:center; padding:.6rem 0; border-bottom:1px solid #e3eefa; cursor:pointer }
+    .del-session { border:none; background:transparent; cursor:pointer; font-size:1.1rem }
 
-    /* Responsive */
+    /* Mobile: sticky composer, größere Schrift, volle Breite */
     @media (max-width: 768px) {
       .container { flex-direction:column; }
       .comic { display:none; }
-      .chat-area header { font-size:1rem; }
-      #chat { padding:0.5rem; }
-      .input-bar { padding:.5rem; }
+      .chat-area header { font-size:1.05rem; padding:.85rem .85rem; }
+      #chat { padding:0.75rem; padding-bottom: 6.2rem; }
+      .message { max-width:92%; font-size:1.05rem; }
+      .input-bar {
+        position: sticky;
+        bottom: 0;
+        z-index: 50;
+        padding: .65rem .6rem;
+      }
+      .input-bar input { font-size:1.1rem; padding:0.95rem 0.95rem; }
       html, body { overflow:auto; height:auto; }
     }
 
     /* Changed state */
-    body.changed {
-      text-transform: uppercase;
-    }
+    body.changed { text-transform: uppercase; }
   </style>
 </head>
 <body>
@@ -199,6 +238,7 @@
       const sessionsModal = document.getElementById('sessions-modal');
       const chatEl        = document.getElementById('chat');
       const toggleBtn     = document.getElementById('toggle-change');
+      const inputEl       = document.getElementById('q');
 
       // Modal sequence
       document.getElementById('acceptPrivacy').onclick = () => {
@@ -209,6 +249,7 @@
         usageModal.style.display    = 'none';
         mainContainer.style.display = 'flex';
         initChat();
+        setTimeout(() => inputEl.focus(), 50);
       };
 
       // Toggle all text change
@@ -219,6 +260,7 @@
 
       // Chat functions
       const STORAGE_KEY = 'chat-sessions';
+      const MAX_HISTORY_TO_SEND = 4;   // passt zu bot.js
       let sessions = [], activeId = null, messages = [];
 
       const initialMsg = {
@@ -232,9 +274,20 @@
       function saveSessions() {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(sessions));
       }
+
+      function ensureGreeting() {
+        if (!messages || !Array.isArray(messages)) messages = [];
+        if (messages.length === 0 || messages[0].role !== 'assistant') {
+          messages.unshift({ ...initialMsg });
+        }
+        if (messages[0].role === 'assistant' && !messages[0].content) {
+          messages[0] = { ...initialMsg };
+        }
+      }
+
       function createSession() {
         const id = Date.now().toString();
-        const session = { id, name: '', messages: [initialMsg] };
+        const session = { id, name: '', messages: [{...initialMsg}] };
         sessions.unshift(session);
         activeId = id;
         saveSessions();
@@ -245,12 +298,15 @@
         if (!s) return;
         activeId = id;
         messages = s.messages.slice();
+        ensureGreeting();
         renderMessages();
         hideSessionsModal();
+        setTimeout(() => inputEl.focus(), 50);
       }
       function updateSession() {
         const s = sessions.find(x => x.id === activeId);
         if (!s) return;
+        ensureGreeting();
         s.messages = messages.slice();
         const first = messages.find(m => m.role === 'user');
         s.name = first ? first.content.substr(0, 32) : 'Chat';
@@ -264,13 +320,16 @@
           else {
             const s = createSession();
             messages = s.messages.slice();
+            ensureGreeting();
             renderMessages();
           }
         }
         saveSessions();
         renderSessionList();
       }
+
       function renderMessages() {
+        ensureGreeting();
         chatEl.innerHTML = '';
         messages.forEach(m => {
           const d = document.createElement('div');
@@ -280,12 +339,13 @@
         });
         chatEl.scrollTop = chatEl.scrollHeight;
       }
+
       function renderSessionList() {
         const el = document.getElementById('sessions-list');
         el.innerHTML = sessions.map(s => `
           <div class="session-item" data-id="${s.id}">
             <span>${s.name||'Chat'}</span>
-            <button class="del-session" data-id="${s.id}">🗑️</button>
+            <button class="del-session" data-id="${s.id}" aria-label="Chat löschen">🗑️</button>
           </div>
         `).join('');
         document.querySelectorAll('.session-item').forEach(e => e.onclick = () => loadSession(e.dataset.id));
@@ -304,18 +364,21 @@
 
       document.getElementById('btnSessions').onclick = showSessionsModal;
       document.getElementById('sessions-close').onclick = hideSessionsModal;
+
       document.getElementById('btnNew').onclick = () => {
-        if (confirm('Neuer Chat?')) {
-          const s = createSession();
-          messages = s.messages.slice();
-          renderMessages();
-        }
+        const s = createSession();
+        messages = s.messages.slice();
+        ensureGreeting();
+        renderMessages();
+        setTimeout(() => inputEl.focus(), 50);
       };
+
       document.getElementById('btnDel').onclick = () => {
         if (confirm('Chat löschen?')) {
-          messages = [];
+          messages = [{...initialMsg}]; // Begrüßung bleibt immer
           updateSession();
           renderMessages();
+          setTimeout(() => inputEl.focus(), 50);
         }
       };
 
@@ -328,49 +391,71 @@
         rec.maxAlternatives = 1;
         rec.onstart = () => document.getElementById('mic-btn').classList.add('recording');
         rec.onend = () => document.getElementById('mic-btn').classList.remove('recording');
-        rec.onresult = e => document.getElementById('q').value = e.results[0][0].transcript;
+        rec.onresult = e => inputEl.value = e.results[0][0].transcript;
         document.getElementById('mic-btn').onclick = () => rec.start();
       } else {
         document.getElementById('mic-btn').disabled = true;
       }
-  
+
+      function lastMessagesForApi(all) {
+        // Entfernt Platzhalter "⏳ ..." aus dem Payload + begrenzt auf 4
+        const cleaned = all.filter(m => !(m.role === 'assistant' && (m.content || '').startsWith('⏳')));
+        // Wir senden nur die letzten MAX_HISTORY_TO_SEND Einträge
+        return cleaned.slice(-MAX_HISTORY_TO_SEND).map(m => ({ role: m.role, content: m.content }));
+      }
+
       // Send message
       async function send() {
-        const inp = document.getElementById('q');
-        const text = inp.value.trim();
+        const text = inputEl.value.trim();
         if (!text) return;
+
+        ensureGreeting();
+
+        // User message
         messages.push({ role: 'user', content: text });
         renderMessages();
-        inp.value = '';
+        inputEl.value = '';
+
+        // UI placeholder (NICHT in API-History)
         messages.push({ role: 'assistant', content: '⏳ Einen Moment bitte ...' });
         renderMessages();
         updateSession();
 
         try {
+          const payloadHistory = lastMessagesForApi(messages);
+
           const res = await fetch('/api/bot', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               question: text,
-              history: messages.map(m => ({ role: m.role, content: m.content }))
+              history: payloadHistory
             })
           });
+
           const reply = await res.text();
-          messages = messages.map(m =>
-            m.role === 'assistant' && m.content.startsWith('⏳')
-              ? { role: 'assistant', content: reply }
-              : m
-          );
+
+          // Placeholder ersetzen (nur den letzten placeholder)
+          for (let i = messages.length - 1; i >= 0; i--) {
+            if (messages[i].role === 'assistant' && (messages[i].content || '').startsWith('⏳')) {
+              messages[i] = { role: 'assistant', content: reply };
+              break;
+            }
+          }
         } catch {
+          // Placeholder entfernen, Fehler anzeigen
+          messages = messages.filter(m => !(m.role === 'assistant' && (m.content || '').startsWith('⏳')));
           messages.push({ role: 'assistant', content: '❌ Fehler aufgetreten.' });
         }
 
         updateSession();
         renderMessages();
+        setTimeout(() => inputEl.focus(), 50);
       }
 
       document.getElementById('send-btn').onclick = send;
-      document.getElementById('q').addEventListener('keydown', e => {
+
+      inputEl.addEventListener('keydown', e => {
         if (e.key === 'Enter' && !e.shiftKey) {
           e.preventDefault();
           send();
@@ -383,8 +468,11 @@
           const s = createSession();
           messages = s.messages.slice();
         } else {
+          // lade letzte Session
           loadSession(sessions[0].id);
+          return;
         }
+        ensureGreeting();
         renderMessages();
       }
 
