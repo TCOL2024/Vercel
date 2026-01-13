@@ -85,10 +85,6 @@ function isPlaceholderAssistantMessage(content) {
   );
 }
 
-/**
- * Assistant-Antworten: TAIL behalten (letzter Satz wichtig)
- * User: HEAD behalten
- */
 function clipContent(role, text, maxLen = 1400) {
   const t = (text || "").trim();
   if (t.length <= maxLen) return t;
@@ -109,7 +105,6 @@ function normalizeHistory(history, maxItems = 4) {
     const role = (h && typeof h.role === "string") ? h.role.slice(0, 20) : "user";
     let raw = (h && typeof h.content === "string") ? h.content : "";
     raw = stripLeadingFillers(raw);
-
     if (!raw) continue;
 
     if (role === "assistant" && isPlaceholderAssistantMessage(raw)) continue;
@@ -135,8 +130,7 @@ function expandShortReply(question, history) {
   const q = (question || "").trim();
   if (!q) return q;
 
-  const hasHistory = Array.isArray(history) && history.length > 0;
-  const lastAssistant = hasHistory
+  const lastAssistant = Array.isArray(history)
     ? [...history].reverse().find((m) => m.role === "assistant" && m.content)
     : null;
 
@@ -145,25 +139,19 @@ function expandShortReply(question, history) {
   if (isShortAffirmation(q)) {
     return `Ja. Bitte beziehe dich auf deine letzte Frage/Handlungsaufforderung und fahre damit fort.`;
   }
-
   if (isShortNegation(q)) {
     return `Nein. Bitte beziehe dich auf deine letzte Frage/Handlungsaufforderung und schlage eine alternative nächste Option vor.`;
   }
-
   return q;
 }
 
-/**
- * AEVO/Ausbildung-Detektor: sehr pragmatisch, keyword-basiert.
- * Wir triggern, wenn Frage oder (kurze) History typische Ausbildung/AEVO-Begriffe enthält.
- */
+// --- AEVO Prefix ---
 function isAevoContext(question, history) {
   const hay = [
     question || "",
     ...(Array.isArray(history) ? history.map(m => m?.content || "") : [])
   ].join(" ").toLowerCase();
 
-  // Keywords breit genug, aber nicht zu aggressiv
   const keywords = [
     "aevo", "ausbilder", "ausbildung", "auszubild", "azubi",
     "bbig", "berufsbildungsgesetz", "ihk",
@@ -171,7 +159,8 @@ function isAevoContext(question, history) {
     "berichtsheft", "ausbildungsnachweis",
     "probezeit", "kündigung", "abschlussprüfung", "zwischenprüfung",
     "freistellung", "berufsschule", "jugendarbeitsschutz",
-    "unterweisung", "lernziel", "handlungskompetenz"
+    "unterweisung", "lernziel", "handlungskompetenz",
+    "fachliche eignung", "persönliche eignung", "ausbildungsbeauftragter"
   ];
 
   return keywords.some(k => hay.includes(k));
@@ -181,14 +170,51 @@ function applyAevoPrefix(question, shouldApply) {
   const prefix = "Antworte fachlich fundiert im AEVO-Kontext mit kurzer Prüfungsrelevanz.";
   if (!shouldApply) return question;
 
-  // nicht doppelt prefixen
   const q = (question || "").trim();
   if (!q) return q;
 
-  const qLower = q.toLowerCase();
-  if (qLower.startsWith(prefix.toLowerCase())) return q;
+  if (q.toLowerCase().startsWith(prefix.toLowerCase())) return q;
 
   return `${prefix}\n\n${q}`;
+}
+
+// --- Dedupe: entfernt die aktuelle Frage aus der history, wenn sie dort schon als letzte User-Message steht ---
+function canonicalize(s) {
+  return (s || "")
+    .toLowerCase()
+    .replace(/\s+/g, " ")
+    .replace(/[“”„"']/g, "")
+    .replace(/[^\p{L}\p{N}\s?.!,:-]/gu, "") // grob: Sonderzeichen raus
+    .trim();
+}
+
+function stripAevoPrefixIfPresent(s) {
+  const prefix = "Antworte fachlich fundiert im AEVO-Kontext mit kurzer Prüfungsrelevanz.";
+  const t = (s || "").trim();
+  if (t.toLowerCase().startsWith(prefix.toLowerCase())) {
+    return t.slice(prefix.length).trim();
+  }
+  return t;
+}
+
+function dedupeHistoryAgainstQuestion(history, question) {
+  if (!Array.isArray(history) || history.length === 0) return history;
+
+  const qCore = canonicalize(stripAevoPrefixIfPresent(question));
+  if (!qCore) return history;
+
+  // Nur die letzte User-Message checken (typischer Fall)
+  const lastIdx = history.length - 1;
+  const last = history[lastIdx];
+
+  if (last && last.role === "user") {
+    const hCore = canonicalize(stripAevoPrefixIfPresent(last.content || ""));
+    if (hCore && (hCore === qCore || hCore.includes(qCore) || qCore.includes(hCore))) {
+      // Duplikat entfernen
+      return history.slice(0, lastIdx);
+    }
+  }
+  return history;
 }
 
 export default async function handler(req, res) {
@@ -231,24 +257,26 @@ export default async function handler(req, res) {
   const questionRaw = typeof body.question === "string" ? body.question : "";
   let question = stripLeadingFillers(questionRaw);
 
-  // History IMMER max 4, Assistant-Tail bleibt erhalten
-  const history = normalizeHistory(body.history, 4);
+  // History normalisieren (max 4)
+  let history = normalizeHistory(body.history, 4);
 
-  // Kurzantworten "ja/nein/ok" kontextfähig machen
+  // Kurzantworten kontextfähig
   question = expandShortReply(question, history);
 
-  // AEVO-Prefix nur bei Ausbildungskontext
+  // AEVO Prefix nur bei Ausbildungskontext
   const aevo = isAevoContext(question, history);
   question = applyAevoPrefix(question, aevo);
 
-  // harte Limits (nach Prefix!)
+  // Dedupe: gleiche Frage nicht zusätzlich in history mitsenden
+  history = dedupeHistoryAgainstQuestion(history, question);
+
+  // harte Limits
   if (!question) return sendJson(res, 400, { error: "question fehlt" });
   if (question.length > 1800) return sendJson(res, 413, { error: "question zu lang (max 1800 Zeichen)" });
 
   const gender = parseGenderFlag(body.gender);
-  const style = { gender, aevo }; // aevo mitgeben (optional fürs Make-Mapping)
+  const style = { gender, aevo };
 
-  // Timeout zu Make
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 30000);
 
