@@ -2,8 +2,8 @@
 <html lang="de">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Linda – Deine persönliche Assistentin (V25.7)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+  <title>Linda – Deine persönliche Assistentin (Version 13.01.2026 2100)</title>
 
   <!-- Manifest & Meta -->
   <link rel="manifest" href="manifest.json"/>
@@ -17,8 +17,18 @@
 
   <style>
     * { box-sizing: border-box; margin:0; padding:0 }
-    html, body { height:100%; font-family:'Inter',sans-serif; overflow:auto; }
-    body { display:flex; flex-direction:column; background:#f7f7f8; color:#24292e; }
+    html, body {
+      height:100%;
+      font-family:'Inter',sans-serif;
+      overflow:auto;
+    }
+    body {
+      display:flex;
+      flex-direction:column;
+      background:#f7f7f8;
+      color:#24292e;
+      -webkit-text-size-adjust: 100%;
+    }
 
     /* Global spacing */
     .modal-content p, .modal-content li, .chat-area header, .message p { margin-bottom:1em }
@@ -57,6 +67,8 @@
       gap:1rem;
       background:#f7f7f8;
       min-width:0;
+      /* wird per JS dynamisch ergänzt: padding-bottom für fixed composer */
+      padding-bottom: 90px;
     }
     .message {
       max-width:78%;
@@ -87,7 +99,7 @@
       outline:none;
       background:#f0f4f8;
       border-radius:.75rem;
-      padding:0.85rem 0.9rem;
+      padding:0.95rem 0.95rem;
       font-size:1.05rem;
       min-width:0;
     }
@@ -101,34 +113,46 @@
       padding: 0.5rem 0.8rem;
       border-radius: 0.6rem;
     }
-    #toggle-change.active {
-      background: #0059b3;
-      color: #fff;
-    }
+    #toggle-change.active { background: #0059b3; color: #fff; }
 
     /* Sessions */
     .session-item { display:flex; justify-content:space-between; align-items:center; padding:.6rem 0; border-bottom:1px solid #e3eefa; cursor:pointer }
     .del-session { border:none; background:transparent; cursor:pointer; font-size:1.1rem }
 
-    /* Mobile: sticky composer, größere Schrift, volle Breite */
+    /* Responsive */
     @media (max-width: 768px) {
       .container { flex-direction:column; }
       .comic { display:none; }
       .chat-area header { font-size:1.05rem; padding:.85rem .85rem; }
-      #chat { padding:0.75rem; padding-bottom: 6.2rem; }
-      .message { max-width:92%; font-size:1.05rem; }
-      .input-bar {
-        position: sticky;
-        bottom: 0;
-        z-index: 50;
-        padding: .65rem .6rem;
+      #chat {
+        padding:0.75rem;
+        padding-bottom: 120px; /* Fallback, wird per JS passend gesetzt */
       }
-      .input-bar input { font-size:1.1rem; padding:0.95rem 0.95rem; }
+      .message { max-width:92%; font-size:1.08rem; }
       html, body { overflow:auto; height:auto; }
+
+      /* iOS/Safari fix: composer fixed */
+      .input-bar {
+        position: fixed;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 2000;
+        padding: .65rem .6rem;
+        padding-bottom: calc(.65rem + env(safe-area-inset-bottom));
+        background:#fff;
+      }
+
+      /* Buttons etwas kompakter, damit Input maximal breit bleibt */
+      .input-bar button { font-size:1.25rem; }
+      .input-bar input { font-size:1.12rem; }
     }
 
     /* Changed state */
     body.changed { text-transform: uppercase; }
+
+    /* Optional: visual feedback for disabled send */
+    .btn-disabled { opacity: .4; pointer-events:none; }
   </style>
 </head>
 <body>
@@ -205,7 +229,8 @@
       <section class="chat-area">
         <header>Linda – Deine persönliche Assistentin</header>
         <div id="chat"></div>
-        <div class="input-bar">
+
+        <div class="input-bar" id="composer">
           <button id="btnSessions" title="Gespeicherte Chats"><i class="fa-solid fa-list"></i></button>
           <button id="btnNew" title="Neuer Chat"><i class="fa-solid fa-plus"></i></button>
           <button id="btnDel" title="Chat löschen"><i class="fa-solid fa-trash"></i></button>
@@ -239,6 +264,8 @@
       const chatEl        = document.getElementById('chat');
       const toggleBtn     = document.getElementById('toggle-change');
       const inputEl       = document.getElementById('q');
+      const composerEl    = document.getElementById('composer');
+      const sendBtn       = document.getElementById('send-btn');
 
       // Modal sequence
       document.getElementById('acceptPrivacy').onclick = () => {
@@ -249,7 +276,8 @@
         usageModal.style.display    = 'none';
         mainContainer.style.display = 'flex';
         initChat();
-        setTimeout(() => inputEl.focus(), 50);
+        setTimeout(() => inputEl.focus(), 80);
+        setTimeout(adjustChatPaddingForComposer, 120);
       };
 
       // Toggle all text change
@@ -262,10 +290,11 @@
       const STORAGE_KEY = 'chat-sessions';
       const MAX_HISTORY_TO_SEND = 4;   // passt zu bot.js
       let sessions = [], activeId = null, messages = [];
+      let isSending = false;
 
       const initialMsg = {
         role: 'assistant',
-        content: 'Hallo! Wie kann ich Sie im Bereich Personalmanagement, Ausbildung oder Prüfungsvorbereitung unterstützen?'
+        content: 'Hallo! Wie kann ich Dich im Bereich Personalmanagement, Ausbildung oder Prüfungsvorbereitung unterstützen? Mein Spezialgebiet ist die Ausbildereignungsvorbereitung. Ich wünsche Dir in der Vorbereitung schon jetzt viel Erfolg. Frage mich sehr konkret und beschreibe Sachverhalte so genau wie möglich.'
       };
 
       function loadSessions() {
@@ -293,6 +322,7 @@
         saveSessions();
         return session;
       }
+
       function loadSession(id) {
         const s = sessions.find(x => x.id === id);
         if (!s) return;
@@ -301,8 +331,10 @@
         ensureGreeting();
         renderMessages();
         hideSessionsModal();
-        setTimeout(() => inputEl.focus(), 50);
+        setTimeout(() => inputEl.focus(), 80);
+        setTimeout(adjustChatPaddingForComposer, 120);
       }
+
       function updateSession() {
         const s = sessions.find(x => x.id === activeId);
         if (!s) return;
@@ -313,6 +345,7 @@
         saveSessions();
         renderSessionList();
       }
+
       function deleteSession(id) {
         sessions = sessions.filter(x => x.id !== id);
         if (activeId === id) {
@@ -354,6 +387,7 @@
           deleteSession(btn.dataset.id);
         });
       }
+
       function showSessionsModal() {
         renderSessionList();
         sessionsModal.style.display = 'flex';
@@ -370,15 +404,17 @@
         messages = s.messages.slice();
         ensureGreeting();
         renderMessages();
-        setTimeout(() => inputEl.focus(), 50);
+        setTimeout(() => inputEl.focus(), 80);
+        setTimeout(adjustChatPaddingForComposer, 120);
       };
 
       document.getElementById('btnDel').onclick = () => {
         if (confirm('Chat löschen?')) {
-          messages = [{...initialMsg}]; // Begrüßung bleibt immer
+          messages = [{...initialMsg}];
           updateSession();
           renderMessages();
-          setTimeout(() => inputEl.focus(), 50);
+          setTimeout(() => inputEl.focus(), 80);
+          setTimeout(adjustChatPaddingForComposer, 120);
         }
       };
 
@@ -400,12 +436,51 @@
       function lastMessagesForApi(all) {
         // Entfernt Platzhalter "⏳ ..." aus dem Payload + begrenzt auf 4
         const cleaned = all.filter(m => !(m.role === 'assistant' && (m.content || '').startsWith('⏳')));
-        // Wir senden nur die letzten MAX_HISTORY_TO_SEND Einträge
         return cleaned.slice(-MAX_HISTORY_TO_SEND).map(m => ({ role: m.role, content: m.content }));
       }
 
+      function setSendingState(on) {
+        isSending = on;
+        if (on) sendBtn.classList.add('btn-disabled');
+        else sendBtn.classList.remove('btn-disabled');
+      }
+
+      // iOS/Safari keyboard fix: composer position + chat padding
+      function adjustChatPaddingForComposer() {
+        const h = composerEl ? composerEl.getBoundingClientRect().height : 80;
+        chatEl.style.paddingBottom = (h + 16) + 'px';
+        chatEl.scrollTop = chatEl.scrollHeight;
+      }
+
+      function updateComposerBottomForKeyboard() {
+        // Only relevant on mobile when composer is fixed
+        if (!window.visualViewport) return;
+        const vv = window.visualViewport;
+        const keyboardHeight = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
+        composerEl.style.bottom = keyboardHeight + 'px';
+        adjustChatPaddingForComposer();
+      }
+
+      if (window.visualViewport) {
+        window.visualViewport.addEventListener('resize', updateComposerBottomForKeyboard);
+        window.visualViewport.addEventListener('scroll', updateComposerBottomForKeyboard);
+      }
+      window.addEventListener('resize', () => {
+        composerEl.style.bottom = '0px';
+        adjustChatPaddingForComposer();
+      });
+
+      inputEl.addEventListener('focus', () => {
+        setTimeout(updateComposerBottomForKeyboard, 50);
+      });
+      inputEl.addEventListener('blur', () => {
+        composerEl.style.bottom = '0px';
+        setTimeout(adjustChatPaddingForComposer, 50);
+      });
+
       // Send message
       async function send() {
+        if (isSending) return;
         const text = inputEl.value.trim();
         if (!text) return;
 
@@ -420,6 +495,8 @@
         messages.push({ role: 'assistant', content: '⏳ Einen Moment bitte ...' });
         renderMessages();
         updateSession();
+
+        setSendingState(true);
 
         try {
           const payloadHistory = lastMessagesForApi(messages);
@@ -446,11 +523,14 @@
           // Placeholder entfernen, Fehler anzeigen
           messages = messages.filter(m => !(m.role === 'assistant' && (m.content || '').startsWith('⏳')));
           messages.push({ role: 'assistant', content: '❌ Fehler aufgetreten.' });
+        } finally {
+          setSendingState(false);
         }
 
         updateSession();
         renderMessages();
-        setTimeout(() => inputEl.focus(), 50);
+        setTimeout(() => inputEl.focus(), 80);
+        setTimeout(adjustChatPaddingForComposer, 120);
       }
 
       document.getElementById('send-btn').onclick = send;
@@ -468,12 +548,12 @@
           const s = createSession();
           messages = s.messages.slice();
         } else {
-          // lade letzte Session
           loadSession(sessions[0].id);
           return;
         }
         ensureGreeting();
         renderMessages();
+        setTimeout(adjustChatPaddingForComposer, 120);
       }
 
       // Start
