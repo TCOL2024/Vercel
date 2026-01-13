@@ -34,62 +34,91 @@ function getClientIp(req) {
   return req.socket?.remoteAddress || "unknown";
 }
 
-/**
- * Same-Origin only:
- * Erlaubt nur Requests von der gleichen Origin wie die Vercel-Host-Domain
- * -> stabil für GitHub->Vercel Deployments, inkl. Preview und Custom Domains,
- *    solange Frontend + /api im selben Deployment liegen.
- */
 function allowSameOrigin(req) {
   const origin = req.headers.origin || "";
   const referer = req.headers.referer || "";
-  const host = req.headers.host || ""; // z.B. meinprojekt.vercel.app oder custom-domain.de
-
-  // Vercel nutzt https in der Regel; wenn du bewusst http nutzt, müssen wir anpassen.
+  const host = req.headers.host || "";
   const expected = host ? `https://${host}` : "";
 
   if (origin && origin === expected) return true;
-  // Fallback: manche Requests (selten) liefern kein Origin, dann Referer prüfen
   if (!origin && referer && expected && referer.startsWith(expected)) return true;
 
   return false;
 }
 
-function normalizeHistory(history) {
+/**
+ * Entfernt nur am Anfang einfache Gruß-/Füllformulierungen,
+ * damit der Prompt kleiner wird, ohne Inhalt zu zerstören.
+ */
+function stripLeadingFillers(text) {
+  if (!text) return "";
+
+  let t = text.trim();
+
+  // Mehrfach-Grüße / Anreden am Anfang entfernen
+  // Beispiele: "Hallo", "Hi", "Moin", "Guten Morgen", "Hey Linda", "Hi Jens" etc.
+  t = t.replace(
+    /^(?:(?:hallo|hi|hey|moin|guten\s+morgen|guten\s+tag|guten\s+abend)\b[\s,!.-]*)(?:linda\b[\s,!.-]*)?/i,
+    ""
+  ).trim();
+
+  // "ich möchte", "ich will", "kannst du" am Anfang etwas straffen
+  // (nur wenn es direkt am Anfang steht)
+  t = t.replace(/^(ich\s+m(?:ö|oe)chte|ich\s+will)\s+(bitte\s+)?/i, "").trim();
+  t = t.replace(/^(kannst\s+du|könntest\s+du)\s+(bitte\s+)?/i, "").trim();
+
+  // Doppelte Leerzeichen
+  t = t.replace(/\s{2,}/g, " ").trim();
+
+  return t;
+}
+
+function normalizeHistory(history, maxItems = 4) {
   if (!Array.isArray(history)) return [];
-  // Max 12 Einträge, jeweils begrenzte Felder
-  return history.slice(0, 12).map((h) => {
+
+  // Nur die letzten maxItems übernehmen (entscheidend für Promptgröße)
+  const last = history.slice(-maxItems);
+
+  return last.map((h) => {
     const role = (h && typeof h.role === "string") ? h.role.slice(0, 20) : "user";
-    const content = (h && typeof h.content === "string") ? h.content.slice(0, 2000) : "";
+    const contentRaw = (h && typeof h.content === "string") ? h.content : "";
+    const content = stripLeadingFillers(contentRaw).slice(0, 1200); // kürzer als vorher
     return { role, content };
   });
 }
 
+function parseGenderFlag(value) {
+  // akzeptiert: true/false, "true"/"false", "ja"/"nein", "1"/"0"
+  if (value === true) return true;
+  if (value === false) return false;
+  if (typeof value === "string") {
+    const v = value.trim().toLowerCase();
+    if (["true", "1", "ja", "yes", "on"].includes(v)) return true;
+    if (["false", "0", "nein", "no", "off"].includes(v)) return false;
+  }
+  return false;
+}
+
 export default async function handler(req, res) {
-  // Nur POST
   if (req.method !== "POST") {
     res.setHeader("Allow", "POST");
     return sendJson(res, 405, { error: "Nur POST erlaubt" });
   }
 
-  // Same-Origin Schutz
   if (!allowSameOrigin(req)) {
     return sendJson(res, 403, { error: "Origin/Referer nicht erlaubt (Same-Origin only)" });
   }
 
-  // Content-Type prüfen (soft, aber sinnvoll)
   const ct = (req.headers["content-type"] || "").toLowerCase();
   if (!ct.includes("application/json")) {
     return sendJson(res, 415, { error: "Content-Type muss application/json sein" });
   }
 
-  // Environment Variable
   const webhookUrl = process.env.MAKE_WEBHOOK_URL;
   if (!webhookUrl) {
     return sendJson(res, 500, { error: "MAKE_WEBHOOK_URL fehlt in Vercel Environment" });
   }
 
-  // Body lesen (max 32KB)
   let raw = "";
   try {
     raw = await readRawBody(req, 32 * 1024);
@@ -100,7 +129,6 @@ export default async function handler(req, res) {
     return sendJson(res, 400, { error: "Body konnte nicht gelesen werden", detail: e?.message });
   }
 
-  // JSON parse
   let body = {};
   try {
     body = raw ? JSON.parse(raw) : {};
@@ -108,14 +136,24 @@ export default async function handler(req, res) {
     return sendJson(res, 400, { error: "Ungültiges JSON" });
   }
 
-  // Validierung + Limits
-  const question = typeof body.question === "string" ? body.question.trim() : "";
-  const history = normalizeHistory(body.history);
+  const questionRaw = typeof body.question === "string" ? body.question : "";
+  const question = stripLeadingFillers(questionRaw);
 
+  // harte Limits
   if (!question) return sendJson(res, 400, { error: "question fehlt" });
-  if (question.length > 2000) return sendJson(res, 413, { error: "question zu lang (max 2000 Zeichen)" });
+  if (question.length > 1600) return sendJson(res, 413, { error: "question zu lang (max 1600 Zeichen)" });
 
-  // Timeout zu Make (15s)
+  // History: IMMER nur 4 – egal was der Client schickt
+  const history = normalizeHistory(body.history, 4);
+
+  // Gender-Flag: kommt vom Frontend (z.B. Toggle)
+  const gender = parseGenderFlag(body.gender);
+
+  // Optional: ultra-kurze Steuerinfo nur als separates Feld (kein Prompt-Prefix!)
+  // -> In Make nutzt du dieses Feld, um die System-/Developer-Regel zu setzen.
+  const style = { gender };
+
+  // Timeout zu Make
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 15000);
 
@@ -128,11 +166,14 @@ export default async function handler(req, res) {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        // optional: zum Debuggen in Make
         "X-Linda-Client-IP": ip,
         "X-Linda-Source": origin || referer || ""
       },
-      body: JSON.stringify({ question, history }),
+      body: JSON.stringify({
+        question,
+        history,
+        style
+      }),
       signal: controller.signal
     });
 
@@ -148,7 +189,6 @@ export default async function handler(req, res) {
       });
     }
 
-    // Antwort zurück
     res.statusCode = 200;
     res.setHeader("Content-Type", "text/plain; charset=utf-8");
     return res.end(text);
