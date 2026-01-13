@@ -86,10 +86,8 @@ function isPlaceholderAssistantMessage(content) {
 }
 
 /**
- * Wichtig: Assistant-Antworten sind oft lang; der Kontextbezug ("ja") bezieht sich
- * meist auf den LETZTEN Satz. Deshalb:
- * - Assistant: TAIL behalten
- * - User: HEAD behalten
+ * Assistant-Antworten: TAIL behalten (letzter Satz wichtig)
+ * User: HEAD behalten
  */
 function clipContent(role, text, maxLen = 1400) {
   const t = (text || "").trim();
@@ -114,7 +112,6 @@ function normalizeHistory(history, maxItems = 4) {
 
     if (!raw) continue;
 
-    // Platzhalter raus
     if (role === "assistant" && isPlaceholderAssistantMessage(raw)) continue;
 
     const content = clipContent(role, raw, 1400);
@@ -134,11 +131,6 @@ function isShortNegation(text) {
   return ["nein", "n", "no", "nicht", "lieber nicht"].includes(t);
 }
 
-/**
- * Macht "ja/nein/ok" kontextfähig ohne Frontend-Änderung.
- * Idee: Bestätigung wird zu einer klaren Handlungsanweisung,
- * die sich explizit auf die letzte Assistant-Frage bezieht.
- */
 function expandShortReply(question, history) {
   const q = (question || "").trim();
   if (!q) return q;
@@ -148,7 +140,6 @@ function expandShortReply(question, history) {
     ? [...history].reverse().find((m) => m.role === "assistant" && m.content)
     : null;
 
-  // Wenn keine vorherige Assistant-Message existiert, nichts tun.
   if (!lastAssistant) return q;
 
   if (isShortAffirmation(q)) {
@@ -160,6 +151,44 @@ function expandShortReply(question, history) {
   }
 
   return q;
+}
+
+/**
+ * AEVO/Ausbildung-Detektor: sehr pragmatisch, keyword-basiert.
+ * Wir triggern, wenn Frage oder (kurze) History typische Ausbildung/AEVO-Begriffe enthält.
+ */
+function isAevoContext(question, history) {
+  const hay = [
+    question || "",
+    ...(Array.isArray(history) ? history.map(m => m?.content || "") : [])
+  ].join(" ").toLowerCase();
+
+  // Keywords breit genug, aber nicht zu aggressiv
+  const keywords = [
+    "aevo", "ausbilder", "ausbildung", "auszubild", "azubi",
+    "bbig", "berufsbildungsgesetz", "ihk",
+    "ausbildungsrahmenplan", "rahmenplan", "betrieblicher ausbildungsplan",
+    "berichtsheft", "ausbildungsnachweis",
+    "probezeit", "kündigung", "abschlussprüfung", "zwischenprüfung",
+    "freistellung", "berufsschule", "jugendarbeitsschutz",
+    "unterweisung", "lernziel", "handlungskompetenz"
+  ];
+
+  return keywords.some(k => hay.includes(k));
+}
+
+function applyAevoPrefix(question, shouldApply) {
+  const prefix = "Antworte fachlich fundiert im AEVO-Kontext mit kurzer Prüfungsrelevanz.";
+  if (!shouldApply) return question;
+
+  // nicht doppelt prefixen
+  const q = (question || "").trim();
+  if (!q) return q;
+
+  const qLower = q.toLowerCase();
+  if (qLower.startsWith(prefix.toLowerCase())) return q;
+
+  return `${prefix}\n\n${q}`;
 }
 
 export default async function handler(req, res) {
@@ -208,12 +237,16 @@ export default async function handler(req, res) {
   // Kurzantworten "ja/nein/ok" kontextfähig machen
   question = expandShortReply(question, history);
 
-  // harte Limits
+  // AEVO-Prefix nur bei Ausbildungskontext
+  const aevo = isAevoContext(question, history);
+  question = applyAevoPrefix(question, aevo);
+
+  // harte Limits (nach Prefix!)
   if (!question) return sendJson(res, 400, { error: "question fehlt" });
-  if (question.length > 1600) return sendJson(res, 413, { error: "question zu lang (max 1600 Zeichen)" });
+  if (question.length > 1800) return sendJson(res, 413, { error: "question zu lang (max 1800 Zeichen)" });
 
   const gender = parseGenderFlag(body.gender);
-  const style = { gender };
+  const style = { gender, aevo }; // aevo mitgeben (optional fürs Make-Mapping)
 
   // Timeout zu Make
   const controller = new AbortController();
@@ -256,7 +289,7 @@ export default async function handler(req, res) {
     return res.end(text);
   } catch (e) {
     clearTimeout(timeout);
-    const msg = (e?.name === "AbortError") ? "Timeout zu Make (15s)" : (e?.message || "Unbekannter Fehler");
+    const msg = (e?.name === "AbortError") ? "Timeout zu Make (30s)" : (e?.message || "Unbekannter Fehler");
     return sendJson(res, 500, { error: "Fehler beim Senden an Make", detail: msg });
   }
 }
