@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"/>
-<title>Linda – Mobile (Clean)</title>
+<title>Linda – Beta Mobile</title>
 
 <link rel="manifest" href="manifest.json"/>
 <meta name="theme-color" content="#ffffff"/>
@@ -17,165 +17,251 @@
   :root{
     --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", system-ui, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 
+    /* McK-inspired clean */
     --bg:#ffffff;
-    --panel:#f7f7fb;
+    --soft:#fbfbfd;
+    --panel:#ffffff;
     --line:#e9ecef;
-    --text:#111827;
+    --text:#0b0b0f;
     --muted:#6b7280;
 
-    --brand:#2563eb;          /* clean blue */
-    --brand2:#1d4ed8;
+    --blue:#2563eb;        /* calm blue */
+    --blue2:#1d4ed8;
 
     --bubbleBot:#f2f3f7;
     --bubbleMe:#2563eb;
 
-    --shadow: 0 10px 26px rgba(17,24,39,.10);
-    --radius: 16px;
+    --shadow: 0 18px 46px rgba(17,24,39,.10);
+    --radius: 18px;
 
-    --topH: 62px;
+    --topH: 74px;          /* stable header height */
     --base: 18px;
     --chat: 17px;
-    --lh: 1.55;
+    --lh: 1.6;
+
+    --tap: 44px;
+    --maxW: 820px;         /* like McK, but still phone-perfect */
   }
 
   *{ box-sizing:border-box; margin:0; padding:0; }
   html, body{
-    height: 100%;
-    height: 100dvh;
-    overflow: hidden;                 /* WICHTIG: Seite scrollt nicht */
+    height:100%;
+    height:100dvh;
+    overflow:hidden;                 /* KEY: page does not scroll */
     background: var(--bg);
     font-family: var(--font);
     font-size: var(--base);
     color: var(--text);
+    -webkit-text-size-adjust:100%;
   }
 
-  a{ color: var(--brand2); text-decoration:none; }
+  a{ color: var(--blue2); text-decoration:none; }
   a:active{ opacity:.85; }
 
-  /* App frame */
+  /* App */
+  .app{
+    height:100%;
+    display:flex;
+    flex-direction:column;
+    background: var(--bg);
+  }
+
+  /* Header (McK-like spacing + type) */
   .top{
     position: sticky;
     top: 0;
     z-index: 30;
-    height: var(--topH);
-    background: var(--bg);            /* CRISP, kein Blur */
+    background: var(--bg);
     border-bottom: 1px solid var(--line);
+    height: var(--topH);
+    padding: 14px 16px 12px;
+    padding-top: calc(14px + env(safe-area-inset-top));
+  }
+
+  .topInner{
+    max-width: var(--maxW);
+    margin: 0 auto;
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap: 14px;
+  }
+
+  .brand{
+    display:flex;
+    flex-direction:column;
+    gap: 10px;
+    min-width:0;
+  }
+
+  .beta{
+    display:inline-flex;
+    align-items:center;
+    gap: 8px;
+    letter-spacing: .26em;
+    text-transform: uppercase;
+    font-weight: 800;
+    font-size: 12px;
+    color: rgba(11,11,15,.55);
+  }
+
+  .headline{
+    display:flex;
+    align-items:flex-end;
+    gap: 10px;
+    min-width:0;
+  }
+
+  .h1{
+    font-weight: 900;
+    font-size: 38px;
+    letter-spacing: -0.6px;
+    line-height: 0.95;
+    color: var(--blue);
+  }
+
+  .spark{
+    width: 18px; height: 18px;
+    display:inline-block;
+    transform: translateY(-6px);
+  }
+
+  .sub{
+    margin-top: 6px;
+    color: var(--muted);
+    font-size: 14px;
+    line-height: 1.3;
+    max-width: 40ch;
+  }
+
+  .topActions{
     display:flex;
     align-items:center;
-    padding: 12px 14px;
-    padding-top: calc(12px + env(safe-area-inset-top));
-    gap: 12px;
+    gap: 10px;
+    padding-top: 6px;
+    flex:0 0 auto;
   }
 
-  .mark{
-    width: 36px; height: 36px;
-    border-radius: 999px;
-    background: var(--brand);
-    color:#fff;
-    display:grid;
-    place-items:center;
-    font-weight: 900;
-    letter-spacing: .4px;
-    flex: 0 0 auto;
-  }
-
-  .titlewrap{ min-width:0; flex: 1; }
-  .title{
-    font-weight: 900;
-    font-size: 20px;
-    letter-spacing: -0.2px;
-    line-height: 1.05;
-  }
-  .subtitle{
-    margin-top: 2px;
-    font-size: 13px;
-    color: var(--muted);
-    white-space: nowrap;
-    overflow:hidden;
-    text-overflow: ellipsis;
-  }
-
-  .topbtn{
+  .linkBtn{
     appearance:none;
+    border: none;
+    background: transparent;
+    color: var(--text);
+    font-weight: 700;
+    font-size: 16px;
+    cursor:pointer;
+    padding: 8px 10px;
+    border-radius: 12px;
+    -webkit-tap-highlight-color:transparent;
+    user-select:none;
+  }
+  .linkBtn:active{ background: rgba(37,99,235,.08); }
+
+  .plus{
+    width: var(--tap);
+    height: var(--tap);
+    border-radius: 14px;
     border: 1px solid var(--line);
     background: var(--panel);
-    color: var(--text);
-    height: 38px;
-    padding: 0 12px;
-    border-radius: 999px;
-    font-weight: 700;
     cursor:pointer;
+    display:grid;
+    place-items:center;
+    box-shadow: 0 8px 22px rgba(17,24,39,.06);
+    -webkit-tap-highlight-color:transparent;
+    user-select:none;
   }
-  .topbtn:active{ transform: translateY(1px); opacity:.92; }
+  .plus:active{ transform: translateY(1px); opacity:.92; }
+  .plus span{
+    color: var(--blue);
+    font-weight: 900;
+    font-size: 20px;
+    line-height: 1;
+  }
 
-  /* Content area: fills remaining space under top */
+  /* Content area fills the screen */
   .content{
     height: calc(100dvh - var(--topH));
     display:flex;
     flex-direction:column;
-    padding: 12px 12px calc(12px + env(safe-area-inset-bottom));
-    gap: 12px;
+    padding: 14px 14px calc(14px + env(safe-area-inset-bottom));
+    background: var(--bg);
   }
 
-  /* Card that fills screen nicely (like McK) */
+  /* Card: fills, stable, clean */
   .card{
-    flex: 1;
-    min-height: 0;
-    background: var(--bg);
+    flex:1;
+    min-height:0;
+    max-width: var(--maxW);
+    width:100%;
+    margin: 0 auto;
+    background: var(--panel);
     border: 1px solid var(--line);
     border-radius: 22px;
     box-shadow: var(--shadow);
-    overflow: hidden;
+    overflow:hidden;
     display:flex;
     flex-direction:column;
   }
 
-  /* Scroll log */
+  /* Log: only scroll area */
   .log{
     flex:1;
     min-height:0;
-    overflow:auto;                    /* NUR HIER scrollen */
+    overflow:auto;
     -webkit-overflow-scrolling: touch;
-    padding: 14px 12px 10px;
+    padding: 16px 14px 10px;
     display:flex;
     flex-direction:column;
     gap: 12px;
+    background: var(--panel);
+  }
+
+  .msg{
+    display:flex;
+    gap: 10px;
+    align-items:flex-end;
+  }
+  .msg.user{ justify-content:flex-end; }
+  .msg.bot{ justify-content:flex-start; }
+
+  .avatarMini{
+    width: 28px;
+    height: 28px;
+    border-radius: 999px;
+    background: #0b0b0f;
+    color:#fff;
+    display:grid;
+    place-items:center;
+    font-weight: 900;
+    font-size: 12px;
+    flex:0 0 auto;
   }
 
   .bubble{
-    max-width: 92%;
+    max-width: 86%;
     border-radius: var(--radius);
     padding: 12px 14px;
     font-size: var(--chat);
     line-height: var(--lh);
-    word-wrap: break-word;
     overflow-wrap:anywhere;
-    box-shadow: 0 1px 0 rgba(0,0,0,.06);
+    word-break: break-word;
   }
-  .bot{
-    align-self:flex-start;
+  .bubble.bot{
     background: var(--bubbleBot);
     color: var(--text);
     border-top-left-radius: 10px;
   }
-  .me{
-    align-self:flex-end;
+  .bubble.user{
     background: var(--bubbleMe);
     color:#fff;
     border-top-right-radius: 10px;
   }
 
-  /* Markdown inside bubbles */
+  /* Markdown in bubbles */
   .bubble p{ margin: 0 0 .7em; }
   .bubble p:last-child{ margin-bottom:0; }
   .bubble ul, .bubble ol{ padding-left: 1.2em; margin:.5em 0; }
-  .bubble pre{
-    background: rgba(0,0,0,.08);
-    border-radius: 12px;
-    padding: 10px;
-    overflow:auto;
-  }
-  .me pre{ background: rgba(255,255,255,.18); }
+  .bubble a{ color: inherit; text-decoration: underline; }
   .bubble code{
     font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono","Courier New", monospace;
     font-size: .95em;
@@ -183,24 +269,30 @@
     padding: .15em .35em;
     border-radius: 8px;
   }
-  .me code{ background: rgba(255,255,255,.22); }
+  .bubble.user code{ background: rgba(255,255,255,.22); }
+  .bubble pre{
+    background: rgba(0,0,0,.08);
+    border-radius: 12px;
+    padding: 10px;
+    overflow:auto;
+  }
+  .bubble.user pre{ background: rgba(255,255,255,.18); }
 
-  /* Composer is inside the card, so it never "floats weird" */
+  /* Composer: inside card => always stable */
   .composer{
     border-top: 1px solid var(--line);
-    background: var(--panel);
+    background: var(--soft);
     padding: 10px;
   }
   .composerRow{
     display:flex;
     gap: 10px;
     align-items:flex-end;
-    background: #fff;
+    background:#fff;
     border: 1px solid var(--line);
     border-radius: 18px;
     padding: 10px 10px;
   }
-
   textarea{
     flex:1;
     min-width:0;
@@ -221,16 +313,20 @@
     height: 48px;
     border-radius: 16px;
     border:none;
-    background: var(--brand);
+    background: var(--blue);
     color:#fff;
     font-weight: 900;
     cursor:pointer;
     user-select:none;
+    -webkit-tap-highlight-color:transparent;
+    flex:0 0 auto;
+    display:grid;
+    place-items:center;
   }
   .send:active{ transform: translateY(1px); opacity:.92; }
   .send:disabled{ opacity:.45; pointer-events:none; }
 
-  /* Modal (keine Blur-Orgie) */
+  /* Modals – crisp, no blur */
   .modal{
     position: fixed;
     inset: 0;
@@ -242,8 +338,8 @@
     padding: 14px 14px calc(14px + env(safe-area-inset-bottom));
   }
   .sheet{
-    width: min(720px, 100%);
-    background: #fff;
+    width: min(var(--maxW), 100%);
+    background:#fff;
     border: 1px solid rgba(0,0,0,.08);
     border-radius: 22px;
     overflow:hidden;
@@ -263,7 +359,7 @@
     max-height: 62vh;
     overflow:auto;
   }
-  .sheetB ul{ margin: 10px 0 0 18px; }
+  .sheetB ul{ margin:10px 0 0 18px; }
   .sheetB li{ margin: 8px 0; }
   .sheetF{
     padding: 12px 16px 16px;
@@ -278,88 +374,106 @@
     border: 1px solid rgba(0,0,0,.10);
     background: #f3f4f6;
     color: #111827;
-    font-weight: 800;
+    font-weight: 900;
     cursor:pointer;
+    -webkit-tap-highlight-color:transparent;
   }
   .btn.primary{
-    background: var(--brand);
-    border-color: var(--brand);
+    background: var(--blue);
+    border-color: var(--blue);
     color:#fff;
   }
   .btn:active{ transform: translateY(1px); opacity:.92; }
 
+  /* Mobile typography tuning */
+  @media (max-width: 430px){
+    .h1{ font-size: 34px; }
+  }
 </style>
 </head>
 
 <body>
 
-  <!-- Privacy Modal -->
-  <div class="modal" id="m-privacy" style="display:flex;">
-    <div class="sheet">
-      <div class="sheetH">Datenschutzhinweis</div>
-      <div class="sheetB">
-        <p>Um Linda zu nutzen, ist deine Zustimmung erforderlich:</p>
-        <ul>
-          <li>Deine Eingaben werden an OpenAI (USA) und Make (EU) übermittelt.</li>
-          <li>Die Daten werden zur Generierung von Antworten verarbeitet.</li>
-          <li><strong>Bitte keine sensiblen oder personenbezogenen Daten</strong> eingeben.</li>
-          <li>Infos: <a href="https://openai.com/policies/privacy-policy" target="_blank" rel="noopener">OpenAI</a> ·
-              <a href="https://www.make.com/en/privacy-policy" target="_blank" rel="noopener">Make</a></li>
-        </ul>
-      </div>
-      <div class="sheetF">
-        <button class="btn" id="p-decline">Ablehnen</button>
-        <button class="btn primary" id="p-accept">Zustimmen</button>
-      </div>
+<!-- Privacy -->
+<div class="modal" id="m-privacy" style="display:flex;">
+  <div class="sheet">
+    <div class="sheetH">Datenschutzhinweis</div>
+    <div class="sheetB">
+      <p>Um Linda zu nutzen, ist deine Zustimmung erforderlich:</p>
+      <ul>
+        <li>Deine Eingaben werden an OpenAI (USA) und Make (EU) übermittelt.</li>
+        <li>Die Daten werden zur Generierung von Antworten verarbeitet.</li>
+        <li><strong>Bitte keine sensiblen oder personenbezogenen Daten</strong> eingeben.</li>
+        <li>Infos: <a href="https://openai.com/policies/privacy-policy" target="_blank" rel="noopener">OpenAI</a> ·
+            <a href="https://www.make.com/en/privacy-policy" target="_blank" rel="noopener">Make</a></li>
+      </ul>
+    </div>
+    <div class="sheetF">
+      <button class="btn" id="p-decline">Ablehnen</button>
+      <button class="btn primary" id="p-accept">Zustimmen</button>
     </div>
   </div>
+</div>
 
-  <!-- Usage Modal -->
-  <div class="modal" id="m-usage">
-    <div class="sheet">
-      <div class="sheetH">Wichtige Hinweise</div>
-      <div class="sheetB">
-        <ul>
-          <li><strong>Automatisierte Antworten:</strong> Inhalte werden von KI generiert.</li>
-          <li><strong>Keine Gewähr:</strong> Bitte kritisch prüfen.</li>
-          <li><strong>Kein Ersatz</strong> für Rechts-, Steuer-, Finanz- oder medizinische Beratung.</li>
-        </ul>
-      </div>
-      <div class="sheetF">
-        <button class="btn primary" id="u-accept">Einverstanden</button>
-      </div>
+<!-- Usage -->
+<div class="modal" id="m-usage">
+  <div class="sheet">
+    <div class="sheetH">Wichtige Hinweise</div>
+    <div class="sheetB">
+      <ul>
+        <li><strong>Automatisierte Antworten</strong>: Inhalte werden von KI generiert.</li>
+        <li><strong>Keine Gewähr</strong>: bitte kritisch prüfen.</li>
+        <li><strong>Kein Ersatz</strong> für Rechts-, Steuer-, Finanz- oder medizinische Beratung.</li>
+      </ul>
+    </div>
+    <div class="sheetF">
+      <button class="btn primary" id="u-accept">Einverstanden</button>
     </div>
   </div>
+</div>
 
-  <!-- App -->
-  <div class="top">
-    <div class="mark">L</div>
-    <div class="titlewrap">
-      <div class="title">Linda</div>
-      <div class="subtitle">Ausbildung · Prüfung · Personal</div>
+<div class="app">
+  <header class="top">
+    <div class="topInner">
+      <div class="brand">
+        <div class="beta">BETA</div>
+        <div class="headline">
+          <div class="h1">Linda</div>
+          <!-- tiny spark -->
+          <svg class="spark" viewBox="0 0 24 24" fill="none">
+            <path d="M12 2l1.6 6.1L20 10l-6.4 1.9L12 18l-1.6-6.1L4 10l6.4-1.9L12 2Z" fill="rgba(37,99,235,.85)"/>
+          </svg>
+        </div>
+        <div class="sub">Dein Assistenz-Chat für Ausbildung, Prüfung und Personal.</div>
+      </div>
+
+      <div class="topActions">
+        <button class="linkBtn" id="btnNewText">New Chat</button>
+        <button class="plus" id="btnNew" aria-label="New Chat"><span>+</span></button>
+      </div>
     </div>
-    <button class="topbtn" id="btnNew">New Chat</button>
-  </div>
+  </header>
 
-  <div class="content">
-    <div class="card">
-      <div class="log" id="log"></div>
+  <main class="content">
+    <section class="card" aria-label="Chat">
+      <div class="log" id="log" aria-live="polite"></div>
 
       <div class="composer">
         <div class="composerRow">
           <textarea id="in" rows="1" placeholder="Schreibe an Linda …"></textarea>
-          <button id="send" class="send">➤</button>
+          <button id="send" class="send" aria-label="Senden">➤</button>
         </div>
       </div>
-    </div>
-  </div>
+    </section>
+  </main>
+</div>
 
 <script>
 (function(){
   const $ = (id)=>document.getElementById(id);
 
   const MAX_HISTORY_TO_SEND = 4;
-  const STORAGE_KEY = 'linda.mobile.clean.v1';
+  const STORAGE_KEY = 'linda.beta.mobile.v1';
 
   let messages = [];
   let isSending = false;
@@ -373,7 +487,7 @@
 
   const initialMsg = {
     role:'assistant',
-    content:'Hallo Jens! Ich bin **Linda**. Wobei kann ich dir helfen – AEVO, Personal, Recht oder Prüfungsvorbereitung?'
+    content:'Hallo Jens! Ich bin **Linda (BETA)**. Wobei kann ich dir helfen – AEVO, Personal, Recht oder Prüfungsvorbereitung?'
   };
 
   function load(){
@@ -392,12 +506,26 @@
   function render(){
     const log = $('log');
     log.innerHTML = '';
+
     messages.forEach(m=>{
-      const d = document.createElement('div');
-      d.className = 'bubble ' + (m.role==='user' ? 'me' : 'bot');
-      d.innerHTML = window.marked ? marked.parse(m.content || '') : (m.content || '');
-      log.appendChild(d);
+      const row = document.createElement('div');
+      row.className = 'msg ' + (m.role==='user' ? 'user' : 'bot');
+
+      if (m.role !== 'user'){
+        const av = document.createElement('div');
+        av.className = 'avatarMini';
+        av.textContent = 'L';
+        row.appendChild(av);
+      }
+
+      const b = document.createElement('div');
+      b.className = 'bubble ' + (m.role==='user' ? 'user' : 'bot');
+      b.innerHTML = window.marked ? marked.parse(m.content || '') : (m.content || '');
+      row.appendChild(b);
+
+      log.appendChild(row);
     });
+
     log.scrollTop = log.scrollHeight;
   }
 
@@ -453,6 +581,13 @@
     }
   }
 
+  function newChat(){
+    messages = [{...initialMsg}];
+    save();
+    render();
+    setTimeout(()=> $('in').focus(), 50);
+  }
+
   // Modals
   $('p-accept').onclick = ()=>{ $('m-privacy').style.display='none'; $('m-usage').style.display='flex'; };
   $('p-decline').onclick = ()=> location.reload();
@@ -462,11 +597,8 @@
     setTimeout(()=> $('in').focus(), 80);
   };
 
-  $('btnNew').onclick = ()=>{
-    messages = [{...initialMsg}];
-    save(); render();
-    setTimeout(()=> $('in').focus(), 50);
-  };
+  $('btnNew').onclick = newChat;
+  $('btnNewText').onclick = newChat;
 
   $('send').onclick = send;
   $('in').addEventListener('input', autosize);
