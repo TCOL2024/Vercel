@@ -17,11 +17,11 @@
   :root{
     --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", system-ui, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 
-    /* Clean / McK-like */
     --bg:#ffffff;
     --soft:#fbfbfd;
     --panel:#ffffff;
     --line:#e9ecef;
+    --line2: rgba(17,24,39,.10);
     --text:#0b0b0f;
     --muted:#667085;
 
@@ -37,12 +37,12 @@
     --topH: 82px;
     --maxW: 860px;
 
-    /* Bigger + more premium rhythm */
-    --base: 19px;          /* overall */
-    --chat: 18px;          /* bubbles */
-    --input: 19px;         /* textarea */
-    --lh: 1.72;            /* elegant line-height */
-    --ls: -0.22px;         /* subtle negative tracking */
+    --base: 19px;
+    --chat: 18px;
+    --input: 19px;
+    --lh: 1.72;
+    --ls: -0.22px;
+
     --tap: 44px;
   }
 
@@ -213,10 +213,10 @@
     min-height:0;
     overflow:auto;
     -webkit-overflow-scrolling: touch;
-    padding: 18px 18px 12px;   /* more premium padding */
+    padding: 18px 18px 12px;
     display:flex;
     flex-direction:column;
-    gap: 14px;                 /* more air */
+    gap: 16px; /* a bit more separation */
     background: var(--panel);
   }
 
@@ -225,14 +225,9 @@
     gap: 10px;
     align-items:flex-start;
   }
-  .msg.user{
-    justify-content:flex-end;
-  }
-  .msg.bot{
-    justify-content:flex-start;
-  }
+  .msg.user{ justify-content:flex-end; }
+  .msg.bot{ justify-content:flex-start; }
 
-  /* Avatar ONLY left (bot) */
   .avatarMini{
     width: 30px;
     height: 30px;
@@ -247,10 +242,26 @@
     margin-top: 2px;
   }
 
-  .bubble{
+  /* Message "box" wrapper like McK */
+  .msgBox{
     max-width: 86%;
+    display:flex;
+    flex-direction:column;
     border-radius: 18px;
-    padding: 14px 16px;         /* more card-like */
+    overflow:hidden;
+    border: 1px solid var(--line2);
+    background: #fff;
+  }
+  .msg.user .msgBox{
+    border: none;
+    background: transparent;
+    max-width: 86%;
+  }
+
+  /* Bubble surface */
+  .bubble{
+    border-radius: 0; /* inside msgBox */
+    padding: 14px 16px;
     font-size: var(--chat);
     line-height: var(--lh);
     letter-spacing: var(--ls);
@@ -258,18 +269,17 @@
     word-break: break-word;
   }
 
-  /* McK-like bubble: soft gray card */
   .bubble.bot{
     background: var(--bubbleBot);
     color: var(--text);
-    border-top-left-radius: 12px;
   }
 
-  /* User bubble: calm blue, less “neon” */
   .bubble.user{
     background: var(--bubbleMe);
     color:#fff;
+    border-radius: 18px;
     border-top-right-radius: 12px;
+    padding: 14px 16px;
   }
 
   /* Markdown */
@@ -277,12 +287,12 @@
   .bubble p:last-child{ margin-bottom:0; }
   .bubble ul, .bubble ol{ padding-left: 1.2em; margin:.6em 0; }
   .bubble li{ margin: .35em 0; }
-
   .bubble a{
     color: inherit;
     text-decoration: underline;
     text-underline-offset: 3px;
   }
+  .bubble.bot a{ color: var(--blue2); }
 
   .bubble code{
     font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono","Courier New", monospace;
@@ -292,7 +302,6 @@
     border-radius: 8px;
   }
   .bubble.user code{ background: rgba(255,255,255,.22); }
-
   .bubble pre{
     background: rgba(0,0,0,.08);
     border-radius: 12px;
@@ -301,31 +310,66 @@
   }
   .bubble.user pre{ background: rgba(255,255,255,.18); }
 
-  /* Small inline “action links” style (McK-ish) */
-  .actionRow{
-    display:flex;
-    gap: 10px;
-    margin-top: 10px;
-    flex-wrap: wrap;
+  /* Divider row */
+  .divider{
+    height: 1px;
+    background: var(--line2);
   }
-  .pillLink{
+
+  /* Action row under bot answers */
+  .actionsRow{
+    padding: 10px 12px;
+    background: #fff;
+    display:flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    align-items:center;
+  }
+
+  .pillBtn{
+    appearance:none;
+    border: 1px solid rgba(17,24,39,.12);
+    background: rgba(255,255,255,.78);
+    color: rgba(11,11,15,.82);
+    border-radius: 999px;
+    padding: 7px 10px;
+    font-weight: 800;
+    font-size: 13.5px;
+    letter-spacing: -0.1px;
+    cursor:pointer;
+    -webkit-tap-highlight-color:transparent;
+    user-select:none;
     display:inline-flex;
     align-items:center;
     gap: 8px;
-    padding: 8px 10px;
-    border-radius: 999px;
-    border: 1px solid rgba(17,24,39,.12);
-    background: rgba(255,255,255,.65);
-    color: rgba(11,11,15,.78);
-    font-weight: 700;
-    font-size: 14px;
-    letter-spacing: -0.1px;
   }
-  .pillLink:active{ transform: translateY(1px); opacity:.92; }
-  .bubble.user .pillLink{
-    border-color: rgba(255,255,255,.25);
-    background: rgba(255,255,255,.18);
-    color: rgba(255,255,255,.92);
+  .pillBtn:active{ transform: translateY(1px); opacity:.92; }
+
+  .pillIcon{
+    width: 18px;
+    height: 18px;
+    display:inline-grid;
+    place-items:center;
+    border-radius: 999px;
+    background: rgba(37,99,235,.10);
+    color: var(--blue);
+    font-size: 12px;
+    line-height: 1;
+  }
+
+  .pillBtn.ghost .pillIcon{ background: rgba(0,0,0,.06); color: rgba(11,11,15,.6); }
+
+  .pillBtn.activeUp{
+    border-color: rgba(37,99,235,.22);
+    background: rgba(37,99,235,.10);
+  }
+  .pillBtn.activeDown{
+    border-color: rgba(220,38,38,.22);
+    background: rgba(220,38,38,.10);
+  }
+  .pillBtn.activeDown .pillIcon{
+    background: rgba(220,38,38,.12);
+    color: #dc2626;
   }
 
   /* Composer */
@@ -442,7 +486,8 @@
   @media (max-width: 430px){
     .h1{ font-size: 36px; }
     .sub{ font-size: 14px; }
-    .log{ padding: 16px 14px 10px; }
+    .log{ padding: 16px 14px 12px; }
+    .bubble{ padding: 13px 14px; }
   }
 </style>
 </head>
@@ -527,7 +572,7 @@
   const $ = (id)=>document.getElementById(id);
 
   const MAX_HISTORY_TO_SEND = 4;
-  const STORAGE_KEY = 'linda.beta.mobile.v2';
+  const STORAGE_KEY = 'linda.beta.mobile.v3';
 
   let messages = [];
   let isSending = false;
@@ -557,41 +602,73 @@
     el.style.height = Math.min(el.scrollHeight, 180) + 'px';
   }
 
-  function enhanceBotBubble(bubbleEl, plainText){
-    // Optional “McK-ish” micro actions
-    const row = document.createElement('div');
-    row.className = 'actionRow';
+  function makePill(label, icon, cls){
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'pillBtn ' + (cls || '');
+    const i = document.createElement('span');
+    i.className = 'pillIcon' + (cls ? '' : '');
+    i.textContent = icon;
+    const t = document.createElement('span');
+    t.textContent = label;
+    b.appendChild(i);
+    b.appendChild(t);
+    return b;
+  }
 
-    const copy = document.createElement('button');
-    copy.type = 'button';
-    copy.className = 'pillLink';
-    copy.textContent = 'Kopieren';
-    copy.onclick = async () => {
+  function enhanceBotBox(msgBoxEl, bubbleEl){
+    // Divider + actions row beneath the answer (McK-like)
+    const divider = document.createElement('div');
+    divider.className = 'divider';
+
+    const actions = document.createElement('div');
+    actions.className = 'actionsRow';
+
+    const plain = (bubbleEl.innerText || '').trim();
+
+    const copyBtn = makePill('Kopieren', '⎘', 'ghost');
+    copyBtn.onclick = async () => {
       try{
-        await navigator.clipboard.writeText(plainText || '');
-        copy.textContent = 'Kopiert ✓';
-        setTimeout(()=> copy.textContent = 'Kopieren', 1200);
+        await navigator.clipboard.writeText(plain);
+        copyBtn.querySelector('span:last-child').textContent = 'Kopiert ✓';
+        setTimeout(()=> copyBtn.querySelector('span:last-child').textContent = 'Kopieren', 1200);
       }catch{}
     };
 
-    const share = document.createElement('button');
-    share.type = 'button';
-    share.className = 'pillLink';
-    share.textContent = 'Teilen';
-    share.onclick = async () => {
-      const text = plainText || '';
+    const shareBtn = makePill('Teilen', '↗', 'ghost');
+    shareBtn.onclick = async () => {
       if (navigator.share){
-        try{ await navigator.share({ title:'Linda', text }); }catch{}
+        try{ await navigator.share({ title:'Linda', text: plain }); }catch{}
       } else {
         const subject = encodeURIComponent('Linda');
-        const body = encodeURIComponent(text);
+        const body = encodeURIComponent(plain);
         window.location.href = `mailto:?subject=${subject}&body=${body}`;
       }
     };
 
-    row.appendChild(copy);
-    row.appendChild(share);
-    bubbleEl.appendChild(row);
+    const upBtn = makePill('', '👍', 'ghost');
+    upBtn.onclick = () => {
+      upBtn.classList.toggle('activeUp');
+      downBtn.classList.remove('activeDown');
+    };
+
+    const downBtn = makePill('', '👎', 'ghost');
+    downBtn.onclick = () => {
+      downBtn.classList.toggle('activeDown');
+      upBtn.classList.remove('activeUp');
+    };
+
+    // remove label text for thumb pills (more McK-like)
+    upBtn.querySelector('span:last-child').remove();
+    downBtn.querySelector('span:last-child').remove();
+
+    actions.appendChild(copyBtn);
+    actions.appendChild(shareBtn);
+    actions.appendChild(upBtn);
+    actions.appendChild(downBtn);
+
+    msgBoxEl.appendChild(divider);
+    msgBoxEl.appendChild(actions);
   }
 
   function render(){
@@ -609,18 +686,28 @@
         row.appendChild(av);
       }
 
-      const b = document.createElement('div');
-      b.className = 'bubble ' + (m.role==='user' ? 'user' : 'bot');
+      if (m.role === 'user'){
+        const b = document.createElement('div');
+        b.className = 'bubble user';
+        b.innerHTML = window.marked ? marked.parse(m.content || '') : (m.content || '');
+        row.appendChild(b);
+        log.appendChild(row);
+      } else {
+        const box = document.createElement('div');
+        box.className = 'msgBox';
 
-      const html = window.marked ? marked.parse(m.content || '') : (m.content || '');
-      b.innerHTML = html;
+        const b = document.createElement('div');
+        b.className = 'bubble bot';
+        b.innerHTML = window.marked ? marked.parse(m.content || '') : (m.content || '');
+        box.appendChild(b);
 
-      row.appendChild(b);
-      log.appendChild(row);
+        // add actions only for real answers (not placeholder)
+        if (!String(m.content||'').startsWith('⏳')) {
+          enhanceBotBox(box, b);
+        }
 
-      if (m.role !== 'user' && !String(m.content||'').startsWith('⏳')){
-        const plain = (b.innerText || '').trim();
-        enhanceBotBubble(b, plain);
+        row.appendChild(box);
+        log.appendChild(row);
       }
     });
 
@@ -653,7 +740,6 @@
 
     try{
       const payloadHistory = lastMessagesForApi(messages);
-
       const res = await fetch('/api/bot', {
         method:'POST',
         headers:{ 'Content-Type':'application/json' },
