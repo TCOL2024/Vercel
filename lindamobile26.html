@@ -6,7 +6,7 @@
   <title>Linda – iMessage</title>
 
   <link rel="manifest" href="manifest.json"/>
-  <meta name="theme-color" content="#f2f2f7"/>
+  <meta name="theme-color" content="#ffffff"/>
   <meta name="apple-mobile-web-app-capable" content="yes"/>
   <meta name="apple-mobile-web-app-status-bar-style" content="default"/>
   <meta name="apple-mobile-web-app-title" content="Linda"/>
@@ -15,49 +15,50 @@
 
   <style>
     :root{
-      --bg: #f2f2f7;
-      --text: #111;
-      --muted: #6b7280;
+      /* iMessage base */
+      --bg: #ffffff;
+      --bar: rgba(255,255,255,.92);
       --hairline: rgba(60,60,67,.16);
-
-      --imGreen: #34C759;
-      --imGray: #e5e5ea;
+      --text: #111111;
+      --muted: rgba(60,60,67,.60);
 
       --blue: #007aff;
+      --leftBubble: #e5e5ea;    /* iMessage gray */
+      --rightBubble: #007aff;   /* iMessage blue */
 
       --max: 520px;
       --base: 19px;
       --bubble: 18px;
       --input: 19px;
-
       --tap: 44px;
-      --shadow: 0 10px 28px rgba(0,0,0,.08);
     }
 
     *{ box-sizing:border-box; margin:0; padding:0; }
-    html, body{ height:100%; }
+    html, body { height:100%; }
+
     body{
       font-family:-apple-system, BlinkMacSystemFont, "SF Pro Text","SF Pro Display", system-ui, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
       background: var(--bg);
       color: var(--text);
       font-size: var(--base);
-      line-height:1.45;
-      -webkit-text-size-adjust:100%;
-      overflow:hidden;            /* wichtig: nur chat scrollt */
+      -webkit-text-size-adjust: 100%;
+      overflow: hidden;              /* NUR Chat scrollt */
       height: 100vh;
       height: 100dvh;
-      overscroll-behavior: none;
     }
+
     a{ color: var(--blue); text-decoration:none; }
     a:active{ opacity:.85; }
 
-    /* Full-width frame + centered wrap (stabil, kein Shift) */
+    /* Full width frame */
     .frame{
       width:100%;
       height:100%;
       display:flex;
       flex-direction:column;
+      background: var(--bg);
     }
+
     .wrap{
       width:100%;
       max-width: var(--max);
@@ -66,221 +67,285 @@
       padding-right: env(safe-area-inset-right);
     }
 
-    /* Topbar (full width) */
+    /* Topbar like iMessage */
     .topbar{
       position: sticky;
       top: 0;
       z-index: 50;
-      background: rgba(242,242,247,.92);
+      background: var(--bar);
       backdrop-filter: blur(18px);
       -webkit-backdrop-filter: blur(18px);
       border-bottom: 1px solid var(--hairline);
       padding-top: env(safe-area-inset-top);
     }
     .topbar .inner{
-      padding: 10px 12px 10px;
       display:flex;
       align-items:center;
       justify-content:space-between;
-      gap:10px;
+      gap: 10px;
+      padding: 10px 12px;
+      min-height: 56px;
     }
 
-    .left{
+    .leftActions, .rightActions{
       display:flex;
       align-items:center;
-      gap:10px;
-      min-width:0;
+      gap: 10px;
+      flex: 0 0 auto;
+      min-width: 72px;
     }
-    .avatar{
-      width:34px; height:34px;
-      border-radius:999px;
-      display:grid; place-items:center;
-      color:#fff;
-      font-weight:800;
-      background: linear-gradient(135deg, #007aff, #5856d6);
-      box-shadow: 0 8px 18px rgba(0,122,255,.18);
-      flex:0 0 auto;
-      font-size:14px;
-      letter-spacing:.3px;
-    }
-    .namewrap{ min-width:0; line-height:1.1; }
-    .title{
-      font-weight:900;
-      font-size:18px;
-      white-space:nowrap;
-      overflow:hidden;
-      text-overflow:ellipsis;
-    }
-    .subtitle{
-      margin-top:2px;
-      font-size:13px;
-      color: var(--muted);
-      white-space:nowrap;
-      overflow:hidden;
-      text-overflow:ellipsis;
-    }
+
     .iconbtn{
       width: var(--tap);
       height: var(--tap);
-      border-radius:999px;
-      border:none;
-      background: rgba(0,0,0,.05);
+      border-radius: 999px;
+      border: none;
+      background: rgba(0,0,0,.03);
       display:grid;
       place-items:center;
       cursor:pointer;
-      user-select:none;
       -webkit-tap-highlight-color: transparent;
-      font-weight:900;
-      color: var(--text);
-      flex:0 0 auto;
+      user-select:none;
     }
-    .iconbtn:active{ transform: translateY(1px); opacity:.9; }
+    .iconbtn:active{ transform: translateY(1px); opacity:.92; }
+
+    .iconbtn svg{ width:22px; height:22px; }
+    .iconbtn .stroke{ stroke: var(--blue); }
+    .iconbtn .fill{ fill: var(--blue); }
+
+    /* Center contact chip */
+    .contact{
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      flex: 1 1 auto;
+      min-width: 0;
+    }
+    .contactChip{
+      display:flex;
+      align-items:center;
+      gap: 10px;
+      padding: 7px 12px;
+      border-radius: 999px;
+      background: rgba(0,0,0,.03);
+      border: 1px solid rgba(0,0,0,.06);
+      min-width: 0;
+      max-width: 100%;
+    }
+    .avatar{
+      width: 32px;
+      height: 32px;
+      border-radius: 999px;
+      background: linear-gradient(135deg, #d1d5db, #f3f4f6);
+      display:grid;
+      place-items:center;
+      color: rgba(17,17,17,.55);
+      font-weight: 800;
+      font-size: 13px;
+      flex: 0 0 auto;
+      overflow:hidden;
+    }
+    .avatar img{
+      width:100%;
+      height:100%;
+      object-fit:cover;
+      display:block;
+    }
+    .contactName{
+      font-weight: 800;
+      font-size: 18px;
+      white-space: nowrap;
+      overflow:hidden;
+      text-overflow: ellipsis;
+      max-width: 260px;
+    }
+    .chev{
+      color: rgba(17,17,17,.45);
+      font-weight: 900;
+      margin-left: 2px;
+    }
 
     /* Chat scroll */
-    .chat{
+    .chatWrap{
       flex:1;
+      min-height:0;
+    }
+    .chat{
+      height:100%;
       overflow:auto;
       -webkit-overflow-scrolling: touch;
-      padding: 12px 12px 0;
+      padding: 14px 12px 0;
+      background: var(--bg);
     }
 
-    .group{
+    .msgRow{
       display:flex;
       flex-direction:column;
-      gap:4px;
+      gap: 4px;
       margin: 10px 0;
     }
-    .group.bot{ align-items:flex-start; }
-    .group.user{ align-items:flex-end; }
-
-    .meta{
-      font-size:12px;
-      color: var(--muted);
-      padding: 0 6px;
-    }
-    .group.user .meta{ text-align:right; }
+    .msgRow.left{ align-items:flex-start; }
+    .msgRow.right{ align-items:flex-end; }
 
     .bubble{
       position:relative;
-      max-width: 92%;
+      max-width: 82%;
       padding: 12px 14px;
-      border-radius: 20px;
+      border-radius: 22px;
       font-size: var(--bubble);
-      line-height: 1.5;
+      line-height: 1.45;
       overflow-wrap:anywhere;
       word-break: break-word;
-    }
-    .bubble.bot{
-      background: var(--imGray);
-      color: #111;
-    }
-    .bubble.user{
-      background: var(--imGreen);
-      color: #fff;
+      box-shadow: 0 1px 0 rgba(0,0,0,.06);
     }
 
-    /* iMessage tails */
-    .bubble.bot::after{
+    .bubble.left{
+      background: var(--leftBubble);
+      color: #111;
+      border-top-left-radius: 18px;
+    }
+    .bubble.right{
+      background: var(--rightBubble);
+      color: #fff;
+      border-top-right-radius: 18px;
+    }
+
+    /* Tail */
+    .bubble.left::after{
       content:"";
       position:absolute;
       left:-6px;
       bottom: 10px;
-      width:12px; height:12px;
-      background: var(--imGray);
+      width: 12px; height: 12px;
+      background: var(--leftBubble);
       transform: rotate(45deg);
       border-radius: 3px;
     }
-    .bubble.user::after{
+    .bubble.right::after{
       content:"";
       position:absolute;
       right:-6px;
       bottom: 10px;
-      width:12px; height:12px;
-      background: var(--imGreen);
+      width: 12px; height: 12px;
+      background: var(--rightBubble);
       transform: rotate(45deg);
       border-radius: 3px;
     }
 
-    /* Markdown tweaks */
+    /* Read line (optional, like screenshot "Gelesen: 11:49") */
+    .readline{
+      width:100%;
+      font-size: 13px;
+      color: rgba(60,60,67,.55);
+      text-align:right;
+      padding: 8px 2px 10px;
+    }
+
+    /* Markdown tweaks in bubbles */
     .bubble p{ margin: 0 0 .7em; }
     .bubble p:last-child{ margin-bottom:0; }
     .bubble ul, .bubble ol{ padding-left: 1.2em; margin: .5em 0; }
     .bubble code{
       font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono","Courier New", monospace;
       font-size:.95em;
-      background: rgba(0,0,0,.10);
+      background: rgba(0,0,0,.12);
       padding:.15em .35em;
-      border-radius:8px;
+      border-radius: 8px;
     }
-    .bubble.user code{ background: rgba(255,255,255,.22); }
+    .bubble.right code{ background: rgba(255,255,255,.22); }
     .bubble pre{
       background: rgba(0,0,0,.10);
       border-radius: 14px;
       padding: 12px;
       overflow:auto;
     }
-    .bubble.user pre{ background: rgba(255,255,255,.18); }
+    .bubble.right pre{ background: rgba(255,255,255,.18); }
 
-    /* Composer: full width fixed; inner centered */
+    /* Composer (full width), inner centered */
     .composer{
       position: fixed;
-      left:0; right:0;
-      bottom:0;
+      left:0; right:0; bottom:0;
       z-index: 9999;
-      background: rgba(242,242,247,.92);
+      background: var(--bar);
       backdrop-filter: blur(18px);
       -webkit-backdrop-filter: blur(18px);
       border-top: 1px solid var(--hairline);
       padding-bottom: env(safe-area-inset-bottom);
       will-change: transform;
+      display:none; /* show after modals */
     }
     .composer .inner{
-      padding: 8px 10px 10px;
+      padding: 8px 12px 10px;
     }
 
-    .composerBox{
+    .composerRow{
       display:flex;
-      gap:10px;
       align-items:flex-end;
-      padding: 8px 10px;
-      background:#fff;
-      border: 1px solid rgba(60,60,67,.18);
-      border-radius: 999px;
-      box-shadow: 0 6px 18px rgba(0,0,0,.07);
+      gap: 10px;
     }
+
+    .plusBtn, .micBtn{
+      width: 40px;
+      height: 40px;
+      border-radius: 999px;
+      border: none;
+      background: rgba(0,0,0,.06);
+      display:grid;
+      place-items:center;
+      cursor:pointer;
+      -webkit-tap-highlight-color: transparent;
+      user-select:none;
+      flex: 0 0 auto;
+    }
+    .plusBtn svg, .micBtn svg{ width:20px; height:20px; }
+    .plusBtn:active, .micBtn:active{ transform: translateY(1px); opacity:.92; }
+
+    .inputPill{
+      flex:1;
+      min-width:0;
+      border-radius: 18px;
+      border: 1px solid rgba(60,60,67,.18);
+      background: rgba(255,255,255,.96);
+      padding: 8px 10px;
+      display:flex;
+      align-items:flex-end;
+      gap: 10px;
+      box-shadow: 0 1px 0 rgba(0,0,0,.06);
+    }
+
     textarea{
       flex:1;
       min-width:0;
       border:none;
       outline:none;
       resize:none;
-      background:transparent;
+      background: transparent;
       font-size: var(--input);
-      line-height:1.3;
-      max-height: 160px;
-      padding: 8px 6px;
+      line-height:1.25;
+      max-height: 140px;
+      padding: 6px 4px;
       color: var(--text);
     }
-    textarea::placeholder{ color: rgba(60,60,67,.55); }
+    textarea::placeholder{ color: rgba(60,60,67,.45); }
 
-    .send{
-      width:40px; height:40px;
-      border-radius:999px;
+    .sendBtn{
+      width: 38px;
+      height: 38px;
+      border-radius: 999px;
       border:none;
       background: var(--blue);
-      color:#fff;
-      font-weight:900;
       display:grid;
       place-items:center;
       cursor:pointer;
-      user-select:none;
       -webkit-tap-highlight-color: transparent;
-      flex:0 0 auto;
+      user-select:none;
+      flex: 0 0 auto;
     }
-    .send:active{ transform: translateY(1px); opacity:.92; }
-    .send[disabled]{ opacity:.5; pointer-events:none; }
+    .sendBtn svg{ width:18px; height:18px; }
+    .sendBtn:active{ transform: translateY(1px); opacity:.92; }
+    .sendBtn[disabled]{ opacity:.45; pointer-events:none; }
 
-    /* Sheets */
+    /* Sheets (privacy/usage) – keep simple */
     .overlay{
       position: fixed;
       inset:0;
@@ -297,7 +362,7 @@
       background: rgba(255,255,255,.98);
       border-radius: 22px;
       border: 1px solid rgba(0,0,0,.08);
-      box-shadow: var(--shadow);
+      box-shadow: 0 10px 28px rgba(0,0,0,.12);
       overflow:hidden;
     }
     .sheethead{
@@ -309,8 +374,8 @@
     }
     .sheettitle{ font-weight: 900; font-size: 16px; }
     .sheetclose{
-      width:40px; height:40px;
-      border-radius:999px;
+      width: 40px; height: 40px;
+      border-radius: 999px;
       border:none;
       background: rgba(0,0,0,.05);
       cursor:pointer;
@@ -320,7 +385,7 @@
       padding: 12px 16px 16px;
       font-size: 15px;
       color:#374151;
-      line-height: 1.55;
+      line-height:1.55;
       max-height: 62vh;
       overflow:auto;
     }
@@ -348,39 +413,82 @@
 
 <body>
   <div class="frame">
+    <!-- TOPBAR -->
     <div class="topbar">
       <div class="wrap">
         <div class="inner">
-          <div class="left">
-            <div class="avatar" aria-hidden="true">LM</div>
-            <div class="namewrap">
-              <div class="title">Linda</div>
-              <div class="subtitle">Ausbildung · Prüfung · Personal</div>
+          <div class="leftActions">
+            <button class="iconbtn" id="btnBack" aria-label="Zurück">
+              <!-- back chevron -->
+              <svg viewBox="0 0 24 24" fill="none">
+                <path class="stroke" d="M15 5l-7 7 7 7" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </button>
+          </div>
+
+          <div class="contact">
+            <div class="contactChip" title="Linda">
+              <div class="avatar" aria-hidden="true">LM</div>
+              <div class="contactName">Linda</div>
+              <div class="chev">›</div>
             </div>
           </div>
-          <button class="iconbtn" id="btnNew" aria-label="Neuer Chat">＋</button>
+
+          <div class="rightActions">
+            <button class="iconbtn" id="btnVideo" aria-label="Video">
+              <!-- video -->
+              <svg viewBox="0 0 24 24" fill="none">
+                <path class="stroke" d="M3.5 7.5h10a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-10a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2Z" stroke-width="2" stroke-linejoin="round"/>
+                <path class="stroke" d="M15.5 10l5-2.5v9L15.5 14" stroke-width="2" stroke-linejoin="round"/>
+              </svg>
+            </button>
+          </div>
         </div>
       </div>
     </div>
 
-    <div class="wrap" style="flex:1; min-height:0;">
-      <div class="chat" id="chat" aria-live="polite"></div>
+    <!-- CHAT -->
+    <div class="chatWrap">
+      <div class="wrap" style="height:100%; min-height:0;">
+        <div class="chat" id="chat" aria-live="polite"></div>
+      </div>
     </div>
   </div>
 
-  <!-- Composer -->
-  <div class="composer" id="composer" style="display:none;">
+  <!-- COMPOSER -->
+  <div class="composer" id="composer">
     <div class="wrap">
       <div class="inner">
-        <div class="composerBox">
-          <textarea id="q" rows="1" placeholder="iMessage an Linda …"></textarea>
-          <button class="send" id="send" aria-label="Senden">↑</button>
+        <div class="composerRow">
+          <button class="plusBtn" id="btnPlus" aria-label="Plus">
+            <svg viewBox="0 0 24 24" fill="none">
+              <path d="M12 5v14M5 12h14" stroke="rgba(60,60,67,.55)" stroke-width="2.4" stroke-linecap="round"/>
+            </svg>
+          </button>
+
+          <div class="inputPill">
+            <textarea id="q" rows="1" placeholder="iMessage …"></textarea>
+
+            <button class="sendBtn" id="send" aria-label="Senden">
+              <svg viewBox="0 0 24 24" fill="none">
+                <path d="M12 5l6.5 7.5H5.5L12 5Z" fill="#fff"/>
+              </svg>
+            </button>
+          </div>
+
+          <button class="micBtn" id="btnMic" aria-label="Mikrofon">
+            <svg viewBox="0 0 24 24" fill="none">
+              <path d="M12 14a3 3 0 0 0 3-3V7a3 3 0 0 0-6 0v4a3 3 0 0 0 3 3Z" stroke="rgba(60,60,67,.55)" stroke-width="2" />
+              <path d="M6.5 11a5.5 5.5 0 0 0 11 0" stroke="rgba(60,60,67,.55)" stroke-width="2" stroke-linecap="round"/>
+              <path d="M12 16v3" stroke="rgba(60,60,67,.55)" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+          </button>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Privacy -->
+  <!-- PRIVACY -->
   <div class="overlay" id="privacyModal" role="dialog" aria-modal="true">
     <div class="sheet">
       <div class="sheethead">
@@ -402,7 +510,7 @@
     </div>
   </div>
 
-  <!-- Usage -->
+  <!-- USAGE -->
   <div class="overlay" id="usageModal" style="display:none;" role="dialog" aria-modal="true">
     <div class="sheet">
       <div class="sheethead">
@@ -429,12 +537,11 @@
       const composer = document.getElementById('composer');
       const inputEl = document.getElementById('q');
       const sendBtn = document.getElementById('send');
-      const btnNew = document.getElementById('btnNew');
 
       const privacyModal = document.getElementById('privacyModal');
       const usageModal = document.getElementById('usageModal');
 
-      const STORAGE_KEY = 'linda-imessage-stable-v1';
+      const STORAGE_KEY = 'linda-imessage-ui-v2';
       const MAX_HISTORY_TO_SEND = 4;
       let messages = [];
       let isSending = false;
@@ -457,7 +564,7 @@
         try{
           const raw = localStorage.getItem(STORAGE_KEY);
           messages = raw ? JSON.parse(raw) : [];
-        }catch{ messages = []; }
+        } catch { messages = []; }
         ensureGreeting();
       }
       function save(){
@@ -473,31 +580,26 @@
 
       function autosize(){
         inputEl.style.height = 'auto';
-        inputEl.style.height = Math.min(inputEl.scrollHeight, 160) + 'px';
-        scheduleLayout();
+        inputEl.style.height = Math.min(inputEl.scrollHeight, 140) + 'px';
+        requestAnimationFrame(adjustChatPaddingForComposer);
       }
 
-      function scheduleLayout(){
-        requestAnimationFrame(adjustChatForComposer);
-      }
-
-      function adjustChatForComposer(){
-        // Chat bottom padding == composer height + small gap
-        const h = composer.getBoundingClientRect().height || 80;
-        chatEl.style.paddingBottom = (h + 12) + 'px';
+      function adjustChatPaddingForComposer(){
+        const h = composer.getBoundingClientRect().height || 70;
+        chatEl.style.paddingBottom = (h + 10) + 'px';
         chatEl.scrollTop = chatEl.scrollHeight;
       }
 
       function updateComposerForKeyboard(){
         if (!window.visualViewport){
           composer.style.transform = 'translateY(0px)';
-          adjustChatForComposer();
+          adjustChatPaddingForComposer();
           return;
         }
         const vv = window.visualViewport;
         const keyboard = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
         composer.style.transform = keyboard ? `translateY(-${keyboard}px)` : 'translateY(0px)';
-        adjustChatForComposer();
+        adjustChatPaddingForComposer();
       }
 
       if (window.visualViewport){
@@ -518,23 +620,26 @@
         messages.forEach(m => {
           if (m.role !== 'assistant' && m.role !== 'user') return;
 
-          const group = document.createElement('div');
-          group.className = 'group ' + (m.role === 'assistant' ? 'bot' : 'user');
-
-          const meta = document.createElement('div');
-          meta.className = 'meta';
-          meta.textContent = `${m.role === 'assistant' ? 'Linda' : 'Du'} · ${(m.ts || nowTime())}`;
+          const row = document.createElement('div');
+          row.className = 'msgRow ' + (m.role === 'assistant' ? 'left' : 'right');
 
           const bubble = document.createElement('div');
-          bubble.className = 'bubble ' + (m.role === 'assistant' ? 'bot' : 'user');
+          bubble.className = 'bubble ' + (m.role === 'assistant' ? 'left' : 'right');
           bubble.innerHTML = window.marked ? marked.parse(m.content || '') : escapeHtml(m.content || '');
 
-          group.appendChild(meta);
-          group.appendChild(bubble);
-          chatEl.appendChild(group);
+          row.appendChild(bubble);
+          chatEl.appendChild(row);
+
+          // optional: only show "Gelesen" after user messages
+          if (m.role === 'user'){
+            const r = document.createElement('div');
+            r.className = 'readline';
+            r.textContent = `Gelesen: ${m.ts || nowTime()}`;
+            chatEl.appendChild(r);
+          }
         });
 
-        adjustChatForComposer();
+        adjustChatPaddingForComposer();
       }
 
       function escapeHtml(str){
@@ -560,6 +665,7 @@
         messages.push({ role:'assistant', content:'⏳ Einen Moment …', ts: nowTime() });
         render();
         save();
+
         isSending = true;
         sendBtn.disabled = true;
 
@@ -591,17 +697,19 @@
         }
       }
 
-      function newChat(){
+      document.getElementById('btnNew')?.addEventListener('click', () => {
         messages = [{ ...initialMsg, ts: nowTime() }];
-        save();
-        render();
+        save(); render();
         setTimeout(() => inputEl.focus(), 60);
-        setTimeout(updateComposerForKeyboard, 80);
-      }
+      });
+
+      // UI-only buttons (optional)
+      document.getElementById('btnBack').addEventListener('click', () => history.back());
+      document.getElementById('btnVideo').addEventListener('click', () => alert('Video (UI-Demo)'));
+      document.getElementById('btnPlus').addEventListener('click', () => alert('Plus (UI-Demo)'));
+      document.getElementById('btnMic').addEventListener('click', () => alert('Mic (UI-Demo)'));
 
       sendBtn.addEventListener('click', send);
-      btnNew.addEventListener('click', newChat);
-
       inputEl.addEventListener('input', autosize);
       inputEl.addEventListener('focus', () => setTimeout(updateComposerForKeyboard, 80));
       inputEl.addEventListener('blur', () => setTimeout(updateComposerForKeyboard, 80));
