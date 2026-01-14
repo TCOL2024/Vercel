@@ -3,11 +3,11 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
-  <title>Linda – Mobile</title>
+  <title>Linda – iMessage</title>
 
   <!-- PWA / iOS -->
   <link rel="manifest" href="manifest.json"/>
-  <meta name="theme-color" content="#ffffff"/>
+  <meta name="theme-color" content="#f2f2f7"/>
   <meta name="apple-mobile-web-app-capable" content="yes"/>
   <meta name="apple-mobile-web-app-status-bar-style" content="default"/>
   <meta name="apple-mobile-web-app-title" content="Linda"/>
@@ -18,24 +18,31 @@
   <style>
     :root{
       --bg: #f2f2f7;                 /* iOS grouped background */
-      --surface: #ffffff;
       --text: #111111;
       --muted: #6b7280;
       --hairline: rgba(60,60,67,.16);
-      --shadow: 0 10px 28px rgba(0,0,0,.08);
-      --accent: #007aff;
 
-      --max: 520px;                  /* verhindert „wird wieder breit“ */
+      --accentBlue: #007aff;
+      --imGreen: #34C759;            /* iMessage green */
+      --imGreenText: #ffffff;
+      --imGray: #e5e5ea;             /* iMessage gray */
+      --imGrayText: #111111;
+
+      --shadow: 0 10px 28px rgba(0,0,0,.08);
+
+      --max: 520px;                  /* fixed content width */
       --tap: 44px;
 
-      --base: 19px;                  /* größer */
-      --bubble: 18px;                /* größer */
-      --input: 19px;                 /* größer */
+      --base: 19px;                  /* overall */
+      --bubble: 18px;
+      --input: 19px;
+
+      --radius: 20px;                /* iMessage-ish */
     }
 
     *{ box-sizing:border-box; margin:0; padding:0; }
-
     html, body{ height: 100%; }
+
     body{
       font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", system-ui, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
       background: var(--bg);
@@ -44,15 +51,15 @@
       font-size: var(--base);
       line-height: 1.45;
 
-      /* WICHTIG: iPhone Fix — Seite selbst darf NICHT scrollen */
+      /* iOS fix: only chat scrolls */
       overflow: hidden;
       height: 100dvh;
     }
 
-    a{ color: var(--accent); text-decoration:none; }
+    a{ color: var(--accentBlue); text-decoration:none; }
     a:active{ opacity:.85; }
 
-    /* Center wrapper (prevents wide feeling) */
+    /* center wrapper */
     .shell{
       height: 100%;
       display:flex;
@@ -65,20 +72,20 @@
       width: 100%;
       max-width: var(--max);
       height: 100%;
-      display:none; /* shown after modals */
+      display:none; /* after modals */
       flex-direction:column;
       background: var(--bg);
     }
 
-    /* Topbar */
+    /* Topbar like Messages */
     .topbar{
       position: sticky;
       top: 0;
       z-index: 20;
-      padding: calc(10px + env(safe-area-inset-top)) 14px 10px;
-      background: rgba(242,242,247,.88);
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
+      padding: calc(8px + env(safe-area-inset-top)) 12px 10px;
+      background: rgba(242,242,247,.92);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
       border-bottom: 1px solid var(--hairline);
     }
 
@@ -89,17 +96,19 @@
       gap: 10px;
     }
 
-    .brand{
+    .left{
       display:flex;
       align-items:center;
       gap: 10px;
       min-width:0;
     }
 
-    .badge{
-      width: 34px; height: 34px;
-      border-radius: 12px;
-      display:grid; place-items:center;
+    .avatar{
+      width: 34px;
+      height: 34px;
+      border-radius: 999px;
+      display:grid;
+      place-items:center;
       font-weight: 800;
       color: #fff;
       background: linear-gradient(135deg, #007aff, #5856d6);
@@ -109,103 +118,136 @@
       letter-spacing: .3px;
     }
 
-    .titles{ min-width:0; display:flex; flex-direction:column; line-height: 1.15; }
-    .titles .name{
-      font-weight: 800;
-      font-size: 18px;
-      white-space: nowrap; overflow:hidden; text-overflow: ellipsis;
+    .namewrap{
+      min-width:0;
+      display:flex;
+      flex-direction:column;
+      line-height: 1.15;
     }
-    .titles .sub{
+
+    .title{
+      font-weight: 900;
+      font-size: 18px;
+      white-space: nowrap;
+      overflow:hidden;
+      text-overflow: ellipsis;
+    }
+    .subtitle{
       font-size: 13px;
       color: var(--muted);
       margin-top: 2px;
-      white-space: nowrap; overflow:hidden; text-overflow: ellipsis;
+      white-space: nowrap;
+      overflow:hidden;
+      text-overflow: ellipsis;
     }
 
     .iconbtn{
-      width: var(--tap); height: var(--tap);
-      border-radius: 14px;
-      border: 1px solid var(--hairline);
-      background: rgba(255,255,255,.92);
-      display:grid; place-items:center;
+      width: var(--tap);
+      height: var(--tap);
+      border-radius: 999px;
+      border: none;
+      background: rgba(0,0,0,.04);
+      display:grid;
+      place-items:center;
       cursor:pointer;
       user-select:none;
       -webkit-tap-highlight-color: transparent;
+      font-weight: 800;
+      color: var(--text);
     }
-    .iconbtn:active{ transform: translateY(1px); opacity:.92; }
+    .iconbtn:active{ transform: translateY(1px); opacity:.9; }
 
-    /* Chat scroll container (only this scrolls) */
+    /* Chat */
     .chat{
       flex: 1;
       overflow: auto;
       -webkit-overflow-scrolling: touch;
-      padding: 14px 14px 0;
+      padding: 12px 12px 0;
     }
 
-    .row{
+    .group{
       display:flex;
       flex-direction:column;
-      gap: 6px;
-      margin: 12px 0;
+      gap: 4px;
+      margin: 10px 0;
     }
-    .row.bot{ align-items:flex-start; }
-    .row.user{ align-items:flex-end; }
 
     .meta{
-      font-size: 13px;
+      font-size: 12px;
       color: var(--muted);
       padding: 0 6px;
     }
-    .row.user .meta{ text-align:right; }
+    .group.user .meta{ text-align:right; }
 
+    /* Bubble with tail */
     .bubble{
+      position: relative;
       max-width: 92%;
-      padding: 14px 14px;
-      border-radius: 20px;
-      box-shadow: 0 2px 10px rgba(0,0,0,.06);
-      border: 1px solid var(--hairline);
+      padding: 12px 14px;
+      border-radius: var(--radius);
       font-size: var(--bubble);
-      line-height: 1.55;
+      line-height: 1.5;
       overflow-wrap:anywhere;
       word-break: break-word;
-      background: #fff;
     }
 
+    .group.bot{ align-items:flex-start; }
+    .group.user{ align-items:flex-end; }
+
+    .bubble.bot{
+      background: var(--imGray);
+      color: var(--imGrayText);
+    }
     .bubble.user{
-      background: var(--accent);
-      color: #fff;
-      border-color: rgba(0,122,255,.28);
+      background: var(--imGreen);
+      color: var(--imGreenText);
+    }
+
+    /* tails */
+    .bubble.bot::after{
+      content:"";
+      position:absolute;
+      left:-6px;
+      bottom: 10px;
+      width: 12px;
+      height: 12px;
+      background: var(--imGray);
+      transform: rotate(45deg);
+      border-radius: 3px;
+    }
+    .bubble.user::after{
+      content:"";
+      position:absolute;
+      right:-6px;
+      bottom: 10px;
+      width: 12px;
+      height: 12px;
+      background: var(--imGreen);
+      transform: rotate(45deg);
+      border-radius: 3px;
     }
 
     /* Markdown */
-    .bubble p{ margin: 0 0 .75em; }
+    .bubble p{ margin: 0 0 .7em; }
     .bubble p:last-child{ margin-bottom:0; }
     .bubble ul, .bubble ol{ padding-left: 1.2em; margin: .5em 0; }
     .bubble code{
       font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
       font-size: .95em;
-      background: rgba(0,0,0,.06);
+      background: rgba(0,0,0,.10);
       padding: .15em .35em;
       border-radius: 8px;
-      border: 1px solid rgba(0,0,0,.08);
     }
-    .bubble.user code{
-      background: rgba(255,255,255,.18);
-      border-color: rgba(255,255,255,.22);
-    }
+    .bubble.user code{ background: rgba(255,255,255,.22); }
     .bubble pre{
-      background: rgba(0,0,0,.045);
-      border: 1px solid rgba(0,0,0,.08);
+      background: rgba(0,0,0,.10);
       border-radius: 14px;
       padding: 12px;
       overflow:auto;
     }
-    .bubble.user pre{
-      background: rgba(255,255,255,.14);
-      border-color: rgba(255,255,255,.18);
-    }
+    .bubble.user pre{ background: rgba(255,255,255,.18); }
 
-    /* Composer: truly fixed + centered */
+    /* Composer (iMessage style) */
     .composer{
       position: fixed;
       left: 50%;
@@ -213,11 +255,11 @@
       bottom: 0;
       width: 100%;
       max-width: var(--max);
-      z-index: 9999;                 /* garantiert oben */
-      padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
+      z-index: 9999;
+      padding: 8px 10px calc(10px + env(safe-area-inset-bottom));
       background: rgba(242,242,247,.92);
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
       border-top: 1px solid var(--hairline);
     }
 
@@ -225,11 +267,11 @@
       display:flex;
       gap: 10px;
       align-items:flex-end;
-      padding: 10px 12px;
-      background: rgba(255,255,255,.96);
-      border: 1px solid var(--hairline);
-      border-radius: 20px;
-      box-shadow: var(--shadow);
+      padding: 8px 10px;
+      background: #ffffff;
+      border: 1px solid rgba(60,60,67,.18);
+      border-radius: 999px;
+      box-shadow: 0 6px 18px rgba(0,0,0,.07);
     }
 
     textarea{
@@ -240,21 +282,21 @@
       resize:none;
       background: transparent;
       font-size: var(--input);
-      line-height: 1.35;
+      line-height: 1.3;
       max-height: 160px;
-      padding: 6px 0;
+      padding: 8px 6px;
       color: var(--text);
     }
     textarea::placeholder{ color: rgba(60,60,67,.55); }
 
     .send{
-      width: 44px;
-      height: 44px;
-      border-radius: 16px;
-      border: none;
-      background: var(--accent);
+      width: 40px;
+      height: 40px;
+      border-radius: 999px;
+      border:none;
+      background: var(--accentBlue);
       color: #fff;
-      font-weight: 800;
+      font-weight: 900;
       display:grid;
       place-items:center;
       cursor:pointer;
@@ -295,9 +337,9 @@
     .sheettitle{ font-weight: 900; font-size: 16px; }
     .sheetclose{
       width: 40px; height: 40px;
-      border-radius: 14px;
-      border: 1px solid rgba(0,0,0,.10);
-      background: rgba(0,0,0,.04);
+      border-radius: 999px;
+      border: none;
+      background: rgba(0,0,0,.05);
       cursor:pointer;
       user-select:none;
     }
@@ -322,9 +364,9 @@
     .btn{
       width:100%;
       padding: 13px 14px;
-      border-radius: 16px;
+      border-radius: 14px;
       border: none;
-      background: var(--accent);
+      background: var(--accentBlue);
       color: #fff;
       font-weight: 900;
       font-size: 16px;
@@ -340,11 +382,11 @@
     <div class="app" id="app">
       <div class="topbar">
         <div class="toprow">
-          <div class="brand">
-            <div class="badge" aria-hidden="true">LM</div>
-            <div class="titles">
-              <div class="name">Linda</div>
-              <div class="sub">Ausbildung · Prüfung · Personal</div>
+          <div class="left">
+            <div class="avatar" aria-hidden="true">LM</div>
+            <div class="namewrap">
+              <div class="title">Linda</div>
+              <div class="subtitle">Ausbildung · Prüfung · Personal</div>
             </div>
           </div>
           <button class="iconbtn" id="btnNew" title="Neuer Chat" aria-label="Neuer Chat">＋</button>
@@ -358,8 +400,8 @@
   <!-- Composer -->
   <div class="composer" id="composer" style="display:none;">
     <div class="composerInner">
-      <textarea id="q" rows="1" placeholder="Deine Frage an Linda …"></textarea>
-      <button class="send" id="send" aria-label="Senden">➤</button>
+      <textarea id="q" rows="1" placeholder="iMessage an Linda …"></textarea>
+      <button class="send" id="send" aria-label="Senden">↑</button>
     </div>
   </div>
 
@@ -419,7 +461,7 @@
       const sendBtn = document.getElementById('send');
       const btnNew = document.getElementById('btnNew');
 
-      const STORAGE_KEY = 'linda-mobile-clean-v2';
+      const STORAGE_KEY = 'linda-imessage-v1';
       const MAX_HISTORY_TO_SEND = 4;
       let messages = [];
       let isSending = false;
@@ -429,8 +471,14 @@
         content: 'Hallo! Ich bin **Linda**. Wie kann ich dich bei **Personal**, **Ausbildung** oder **Prüfungsvorbereitung** unterstützen?'
       };
 
-      if (window.marked) {
-        marked.setOptions({ mangle: false, headerIds: false });
+      if (window.marked) marked.setOptions({ mangle: false, headerIds: false });
+
+      function nowTime(){
+        // HH:MM
+        const d = new Date();
+        const hh = String(d.getHours()).padStart(2,'0');
+        const mm = String(d.getMinutes()).padStart(2,'0');
+        return `${hh}:${mm}`;
       }
 
       function load() {
@@ -445,33 +493,35 @@
       }
       function ensureGreeting() {
         if (!Array.isArray(messages)) messages = [];
-        if (messages.length === 0 || messages[0].role !== 'assistant') messages.unshift({ ...initialMsg });
-        if (!messages[0].content) messages[0] = { ...initialMsg };
+        if (messages.length === 0 || messages[0].role !== 'assistant') {
+          messages.unshift({ ...initialMsg, ts: nowTime() });
+        }
+        if (!messages[0].content) messages[0] = { ...initialMsg, ts: nowTime() };
       }
 
       function render() {
         ensureGreeting();
         chatEl.innerHTML = '';
+
         messages.forEach(m => {
           if (m.role !== 'assistant' && m.role !== 'user') return;
 
-          const row = document.createElement('div');
-          row.className = 'row ' + (m.role === 'assistant' ? 'bot' : 'user');
+          const group = document.createElement('div');
+          group.className = 'group ' + (m.role === 'assistant' ? 'bot' : 'user');
 
           const meta = document.createElement('div');
           meta.className = 'meta';
-          meta.textContent = (m.role === 'assistant') ? 'Linda' : 'Du';
+          meta.textContent = `${m.role === 'assistant' ? 'Linda' : 'Du'} · ${(m.ts || nowTime())}`;
 
           const bubble = document.createElement('div');
           bubble.className = 'bubble ' + (m.role === 'assistant' ? 'bot' : 'user');
           bubble.innerHTML = window.marked ? marked.parse(m.content || '') : escapeHtml(m.content || '');
 
-          row.appendChild(meta);
-          row.appendChild(bubble);
-          chatEl.appendChild(row);
+          group.appendChild(meta);
+          group.appendChild(bubble);
+          chatEl.appendChild(group);
         });
 
-        // always keep last message visible (since body doesn't scroll)
         chatEl.scrollTop = chatEl.scrollHeight;
       }
 
@@ -499,7 +549,7 @@
         return cleaned.slice(-MAX_HISTORY_TO_SEND).map(m => ({ role: m.role, content: m.content }));
       }
 
-      // KEYBOARD FIX: keep composer above iOS keyboard
+      // iOS keyboard: keep composer above keyboard
       function updateComposerBottomForKeyboard(){
         if (!window.visualViewport) {
           composer.style.bottom = '0px';
@@ -510,7 +560,6 @@
         composer.style.bottom = keyboardHeight + 'px';
         chatEl.scrollTop = chatEl.scrollHeight;
       }
-
       if (window.visualViewport){
         window.visualViewport.addEventListener('resize', updateComposerBottomForKeyboard);
         window.visualViewport.addEventListener('scroll', updateComposerBottomForKeyboard);
@@ -524,11 +573,11 @@
 
         ensureGreeting();
 
-        messages.push({ role:'user', content: text });
+        messages.push({ role:'user', content: text, ts: nowTime() });
         inputEl.value = '';
         autosize();
 
-        messages.push({ role:'assistant', content: '⏳ Einen Moment …' });
+        messages.push({ role:'assistant', content: '⏳ Einen Moment …', ts: nowTime() });
         render();
         save();
         setSending(true);
@@ -546,13 +595,13 @@
 
           for (let i = messages.length - 1; i >= 0; i--){
             if (messages[i].role === 'assistant' && (messages[i].content||'').startsWith('⏳')){
-              messages[i] = { role:'assistant', content: reply };
+              messages[i] = { role:'assistant', content: reply, ts: nowTime() };
               break;
             }
           }
         } catch {
           messages = messages.filter(m => !(m.role === 'assistant' && (m.content||'').startsWith('⏳')));
-          messages.push({ role:'assistant', content: '❌ Fehler beim Senden. Bitte prüfe Endpoint /api/bot.' });
+          messages.push({ role:'assistant', content: '❌ Fehler beim Senden. Bitte prüfe Endpoint /api/bot.', ts: nowTime() });
         } finally {
           setSending(false);
           save();
@@ -563,7 +612,7 @@
       }
 
       function newChat(){
-        messages = [{...initialMsg}];
+        messages = [{...initialMsg, ts: nowTime()}];
         save();
         render();
         setTimeout(() => inputEl.focus(), 80);
