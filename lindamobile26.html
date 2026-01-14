@@ -5,162 +5,141 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
   <title>Linda – iMessage</title>
 
-  <!-- PWA / iOS -->
   <link rel="manifest" href="manifest.json"/>
   <meta name="theme-color" content="#f2f2f7"/>
   <meta name="apple-mobile-web-app-capable" content="yes"/>
   <meta name="apple-mobile-web-app-status-bar-style" content="default"/>
   <meta name="apple-mobile-web-app-title" content="Linda"/>
 
-  <!-- Markdown -->
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 
   <style>
     :root{
-      --bg: #f2f2f7;                 /* iOS grouped background */
-      --text: #111111;
+      --bg: #f2f2f7;
+      --text: #111;
       --muted: #6b7280;
       --hairline: rgba(60,60,67,.16);
 
-      --accentBlue: #007aff;
-      --imGreen: #34C759;            /* iMessage green */
-      --imGreenText: #ffffff;
-      --imGray: #e5e5ea;             /* iMessage gray */
-      --imGrayText: #111111;
+      --imGreen: #34C759;
+      --imGray: #e5e5ea;
 
-      --shadow: 0 10px 28px rgba(0,0,0,.08);
+      --blue: #007aff;
 
-      --max: 520px;                  /* fixed content width */
-      --tap: 44px;
-
-      --base: 19px;                  /* overall */
+      --max: 520px;
+      --base: 19px;
       --bubble: 18px;
       --input: 19px;
 
-      --radius: 20px;                /* iMessage-ish */
+      --tap: 44px;
+      --shadow: 0 10px 28px rgba(0,0,0,.08);
     }
 
     *{ box-sizing:border-box; margin:0; padding:0; }
-    html, body{ height: 100%; }
-
+    html, body{ height:100%; }
     body{
-      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", system-ui, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      font-family:-apple-system, BlinkMacSystemFont, "SF Pro Text","SF Pro Display", system-ui, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
       background: var(--bg);
       color: var(--text);
-      -webkit-text-size-adjust: 100%;
       font-size: var(--base);
-      line-height: 1.45;
-
-      /* iOS fix: only chat scrolls */
-      overflow: hidden;
+      line-height:1.45;
+      -webkit-text-size-adjust:100%;
+      overflow:hidden;            /* wichtig: nur chat scrollt */
+      height: 100vh;
       height: 100dvh;
+      overscroll-behavior: none;
     }
-
-    a{ color: var(--accentBlue); text-decoration:none; }
+    a{ color: var(--blue); text-decoration:none; }
     a:active{ opacity:.85; }
 
-    /* center wrapper */
-    .shell{
-      height: 100%;
+    /* Full-width frame + centered wrap (stabil, kein Shift) */
+    .frame{
+      width:100%;
+      height:100%;
       display:flex;
-      justify-content:center;
+      flex-direction:column;
+    }
+    .wrap{
+      width:100%;
+      max-width: var(--max);
+      margin: 0 auto;
       padding-left: env(safe-area-inset-left);
       padding-right: env(safe-area-inset-right);
     }
 
-    .app{
-      width: 100%;
-      max-width: var(--max);
-      height: 100%;
-      display:none; /* after modals */
-      flex-direction:column;
-      background: var(--bg);
-    }
-
-    /* Topbar like Messages */
+    /* Topbar (full width) */
     .topbar{
       position: sticky;
       top: 0;
-      z-index: 20;
-      padding: calc(8px + env(safe-area-inset-top)) 12px 10px;
+      z-index: 50;
       background: rgba(242,242,247,.92);
       backdrop-filter: blur(18px);
       -webkit-backdrop-filter: blur(18px);
       border-bottom: 1px solid var(--hairline);
+      padding-top: env(safe-area-inset-top);
     }
-
-    .toprow{
+    .topbar .inner{
+      padding: 10px 12px 10px;
       display:flex;
       align-items:center;
       justify-content:space-between;
-      gap: 10px;
+      gap:10px;
     }
 
     .left{
       display:flex;
       align-items:center;
-      gap: 10px;
+      gap:10px;
       min-width:0;
     }
-
     .avatar{
-      width: 34px;
-      height: 34px;
-      border-radius: 999px;
-      display:grid;
-      place-items:center;
-      font-weight: 800;
-      color: #fff;
+      width:34px; height:34px;
+      border-radius:999px;
+      display:grid; place-items:center;
+      color:#fff;
+      font-weight:800;
       background: linear-gradient(135deg, #007aff, #5856d6);
       box-shadow: 0 8px 18px rgba(0,122,255,.18);
-      flex: 0 0 auto;
-      font-size: 14px;
-      letter-spacing: .3px;
+      flex:0 0 auto;
+      font-size:14px;
+      letter-spacing:.3px;
     }
-
-    .namewrap{
-      min-width:0;
-      display:flex;
-      flex-direction:column;
-      line-height: 1.15;
-    }
-
+    .namewrap{ min-width:0; line-height:1.1; }
     .title{
-      font-weight: 900;
-      font-size: 18px;
-      white-space: nowrap;
+      font-weight:900;
+      font-size:18px;
+      white-space:nowrap;
       overflow:hidden;
-      text-overflow: ellipsis;
+      text-overflow:ellipsis;
     }
     .subtitle{
-      font-size: 13px;
+      margin-top:2px;
+      font-size:13px;
       color: var(--muted);
-      margin-top: 2px;
-      white-space: nowrap;
+      white-space:nowrap;
       overflow:hidden;
-      text-overflow: ellipsis;
+      text-overflow:ellipsis;
     }
-
     .iconbtn{
       width: var(--tap);
       height: var(--tap);
-      border-radius: 999px;
-      border: none;
-      background: rgba(0,0,0,.04);
+      border-radius:999px;
+      border:none;
+      background: rgba(0,0,0,.05);
       display:grid;
       place-items:center;
       cursor:pointer;
       user-select:none;
       -webkit-tap-highlight-color: transparent;
-      font-weight: 800;
+      font-weight:900;
       color: var(--text);
+      flex:0 0 auto;
     }
     .iconbtn:active{ transform: translateY(1px); opacity:.9; }
 
-    /* Chat */
+    /* Chat scroll */
     .chat{
-      flex: 1;
-      overflow: auto;
+      flex:1;
+      overflow:auto;
       -webkit-overflow-scrolling: touch;
       padding: 12px 12px 0;
     }
@@ -168,49 +147,45 @@
     .group{
       display:flex;
       flex-direction:column;
-      gap: 4px;
+      gap:4px;
       margin: 10px 0;
     }
+    .group.bot{ align-items:flex-start; }
+    .group.user{ align-items:flex-end; }
 
     .meta{
-      font-size: 12px;
+      font-size:12px;
       color: var(--muted);
       padding: 0 6px;
     }
     .group.user .meta{ text-align:right; }
 
-    /* Bubble with tail */
     .bubble{
-      position: relative;
+      position:relative;
       max-width: 92%;
       padding: 12px 14px;
-      border-radius: var(--radius);
+      border-radius: 20px;
       font-size: var(--bubble);
       line-height: 1.5;
       overflow-wrap:anywhere;
       word-break: break-word;
     }
-
-    .group.bot{ align-items:flex-start; }
-    .group.user{ align-items:flex-end; }
-
     .bubble.bot{
       background: var(--imGray);
-      color: var(--imGrayText);
+      color: #111;
     }
     .bubble.user{
       background: var(--imGreen);
-      color: var(--imGreenText);
+      color: #fff;
     }
 
-    /* tails */
+    /* iMessage tails */
     .bubble.bot::after{
       content:"";
       position:absolute;
       left:-6px;
       bottom: 10px;
-      width: 12px;
-      height: 12px;
+      width:12px; height:12px;
       background: var(--imGray);
       transform: rotate(45deg);
       border-radius: 3px;
@@ -220,23 +195,22 @@
       position:absolute;
       right:-6px;
       bottom: 10px;
-      width: 12px;
-      height: 12px;
+      width:12px; height:12px;
       background: var(--imGreen);
       transform: rotate(45deg);
       border-radius: 3px;
     }
 
-    /* Markdown */
+    /* Markdown tweaks */
     .bubble p{ margin: 0 0 .7em; }
     .bubble p:last-child{ margin-bottom:0; }
     .bubble ul, .bubble ol{ padding-left: 1.2em; margin: .5em 0; }
     .bubble code{
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-      font-size: .95em;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono","Courier New", monospace;
+      font-size:.95em;
       background: rgba(0,0,0,.10);
-      padding: .15em .35em;
-      border-radius: 8px;
+      padding:.15em .35em;
+      border-radius:8px;
     }
     .bubble.user code{ background: rgba(255,255,255,.22); }
     .bubble pre{
@@ -247,42 +221,42 @@
     }
     .bubble.user pre{ background: rgba(255,255,255,.18); }
 
-    /* Composer (iMessage style) */
+    /* Composer: full width fixed; inner centered */
     .composer{
       position: fixed;
-      left: 50%;
-      transform: translateX(-50%);
-      bottom: 0;
-      width: 100%;
-      max-width: var(--max);
+      left:0; right:0;
+      bottom:0;
       z-index: 9999;
-      padding: 8px 10px calc(10px + env(safe-area-inset-bottom));
       background: rgba(242,242,247,.92);
       backdrop-filter: blur(18px);
       -webkit-backdrop-filter: blur(18px);
       border-top: 1px solid var(--hairline);
+      padding-bottom: env(safe-area-inset-bottom);
+      will-change: transform;
+    }
+    .composer .inner{
+      padding: 8px 10px 10px;
     }
 
-    .composerInner{
+    .composerBox{
       display:flex;
-      gap: 10px;
+      gap:10px;
       align-items:flex-end;
       padding: 8px 10px;
-      background: #ffffff;
+      background:#fff;
       border: 1px solid rgba(60,60,67,.18);
       border-radius: 999px;
       box-shadow: 0 6px 18px rgba(0,0,0,.07);
     }
-
     textarea{
       flex:1;
       min-width:0;
       border:none;
       outline:none;
       resize:none;
-      background: transparent;
+      background:transparent;
       font-size: var(--input);
-      line-height: 1.3;
+      line-height:1.3;
       max-height: 160px;
       padding: 8px 6px;
       color: var(--text);
@@ -290,27 +264,26 @@
     textarea::placeholder{ color: rgba(60,60,67,.55); }
 
     .send{
-      width: 40px;
-      height: 40px;
-      border-radius: 999px;
+      width:40px; height:40px;
+      border-radius:999px;
       border:none;
-      background: var(--accentBlue);
-      color: #fff;
-      font-weight: 900;
+      background: var(--blue);
+      color:#fff;
+      font-weight:900;
       display:grid;
       place-items:center;
       cursor:pointer;
       user-select:none;
       -webkit-tap-highlight-color: transparent;
-      flex: 0 0 auto;
+      flex:0 0 auto;
     }
     .send:active{ transform: translateY(1px); opacity:.92; }
     .send[disabled]{ opacity:.5; pointer-events:none; }
 
-    /* Sheets (privacy/usage) */
+    /* Sheets */
     .overlay{
       position: fixed;
-      inset: 0;
+      inset:0;
       z-index: 20000;
       background: rgba(0,0,0,.35);
       display:flex;
@@ -319,7 +292,7 @@
       padding: 14px 14px calc(14px + env(safe-area-inset-bottom));
     }
     .sheet{
-      width: 100%;
+      width:100%;
       max-width: var(--max);
       background: rgba(255,255,255,.98);
       border-radius: 22px;
@@ -336,26 +309,23 @@
     }
     .sheettitle{ font-weight: 900; font-size: 16px; }
     .sheetclose{
-      width: 40px; height: 40px;
-      border-radius: 999px;
-      border: none;
+      width:40px; height:40px;
+      border-radius:999px;
+      border:none;
       background: rgba(0,0,0,.05);
       cursor:pointer;
-      user-select:none;
     }
     .sheetclose:active{ transform: translateY(1px); opacity:.9; }
-
     .sheetbody{
       padding: 12px 16px 16px;
       font-size: 15px;
-      color: #374151;
+      color:#374151;
       line-height: 1.55;
       max-height: 62vh;
       overflow:auto;
     }
     .sheetbody ul{ margin: 10px 0 0 18px; }
     .sheetbody li{ margin: 8px 0; }
-
     .sheetactions{
       display:flex;
       padding: 12px 16px 16px;
@@ -365,23 +335,22 @@
       width:100%;
       padding: 13px 14px;
       border-radius: 14px;
-      border: none;
-      background: var(--accentBlue);
-      color: #fff;
+      border:none;
+      background: var(--blue);
+      color:#fff;
       font-weight: 900;
       font-size: 16px;
       cursor:pointer;
-      user-select:none;
     }
     .btn:active{ transform: translateY(1px); opacity:.92; }
   </style>
 </head>
 
 <body>
-  <div class="shell">
-    <div class="app" id="app">
-      <div class="topbar">
-        <div class="toprow">
+  <div class="frame">
+    <div class="topbar">
+      <div class="wrap">
+        <div class="inner">
           <div class="left">
             <div class="avatar" aria-hidden="true">LM</div>
             <div class="namewrap">
@@ -389,19 +358,25 @@
               <div class="subtitle">Ausbildung · Prüfung · Personal</div>
             </div>
           </div>
-          <button class="iconbtn" id="btnNew" title="Neuer Chat" aria-label="Neuer Chat">＋</button>
+          <button class="iconbtn" id="btnNew" aria-label="Neuer Chat">＋</button>
         </div>
       </div>
+    </div>
 
+    <div class="wrap" style="flex:1; min-height:0;">
       <div class="chat" id="chat" aria-live="polite"></div>
     </div>
   </div>
 
   <!-- Composer -->
   <div class="composer" id="composer" style="display:none;">
-    <div class="composerInner">
-      <textarea id="q" rows="1" placeholder="iMessage an Linda …"></textarea>
-      <button class="send" id="send" aria-label="Senden">↑</button>
+    <div class="wrap">
+      <div class="inner">
+        <div class="composerBox">
+          <textarea id="q" rows="1" placeholder="iMessage an Linda …"></textarea>
+          <button class="send" id="send" aria-label="Senden">↑</button>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -417,7 +392,7 @@
         <ul>
           <li>Deine Eingaben werden an OpenAI (USA) und Make (EU) übermittelt.</li>
           <li>Die Daten werden verarbeitet, um Antworten zu generieren.</li>
-          <li><strong>Bitte keine sensiblen oder personenbezogenen Daten eingeben.</strong></li>
+          <li><strong>Bitte keine sensiblen oder personenbezogenen Daten</strong> eingeben.</li>
           <li>Infos: <a href="https://openai.com/policies/privacy-policy" target="_blank" rel="noopener">OpenAI</a>, <a href="https://www.make.com/en/privacy-policy" target="_blank" rel="noopener">Make</a></li>
         </ul>
       </div>
@@ -437,9 +412,9 @@
       <div class="sheetbody">
         <ul>
           <li><strong>Automatisierte Antworten</strong>: Inhalte werden von KI generiert.</li>
-          <li><strong>Keine Gewähr</strong>: Antworten können unvollständig oder fehlerhaft sein.</li>
+          <li><strong>Keine Gewähr</strong>: Antworten können fehlerhaft sein.</li>
           <li><strong>Kein Ersatz</strong> für Rechts-, Steuer-, Finanz- oder medizinische Beratung.</li>
-          <li><strong>Eigenverantwortung</strong>: Bitte kritisch prüfen und ggf. weitere Quellen nutzen.</li>
+          <li><strong>Eigenverantwortung</strong>: Bitte kritisch prüfen.</li>
         </ul>
       </div>
       <div class="sheetactions">
@@ -450,18 +425,16 @@
 
   <script>
     document.addEventListener('DOMContentLoaded', () => {
-      const app = document.getElementById('app');
-      const composer = document.getElementById('composer');
       const chatEl = document.getElementById('chat');
-
-      const privacyModal = document.getElementById('privacyModal');
-      const usageModal = document.getElementById('usageModal');
-
+      const composer = document.getElementById('composer');
       const inputEl = document.getElementById('q');
       const sendBtn = document.getElementById('send');
       const btnNew = document.getElementById('btnNew');
 
-      const STORAGE_KEY = 'linda-imessage-v1';
+      const privacyModal = document.getElementById('privacyModal');
+      const usageModal = document.getElementById('usageModal');
+
+      const STORAGE_KEY = 'linda-imessage-stable-v1';
       const MAX_HISTORY_TO_SEND = 4;
       let messages = [];
       let isSending = false;
@@ -474,32 +447,71 @@
       if (window.marked) marked.setOptions({ mangle: false, headerIds: false });
 
       function nowTime(){
-        // HH:MM
         const d = new Date();
         const hh = String(d.getHours()).padStart(2,'0');
         const mm = String(d.getMinutes()).padStart(2,'0');
         return `${hh}:${mm}`;
       }
 
-      function load() {
-        try {
+      function load(){
+        try{
           const raw = localStorage.getItem(STORAGE_KEY);
           messages = raw ? JSON.parse(raw) : [];
-        } catch { messages = []; }
+        }catch{ messages = []; }
         ensureGreeting();
       }
-      function save() {
+      function save(){
         localStorage.setItem(STORAGE_KEY, JSON.stringify(messages));
       }
-      function ensureGreeting() {
+      function ensureGreeting(){
         if (!Array.isArray(messages)) messages = [];
-        if (messages.length === 0 || messages[0].role !== 'assistant') {
+        if (messages.length === 0 || messages[0].role !== 'assistant'){
           messages.unshift({ ...initialMsg, ts: nowTime() });
         }
         if (!messages[0].content) messages[0] = { ...initialMsg, ts: nowTime() };
       }
 
-      function render() {
+      function autosize(){
+        inputEl.style.height = 'auto';
+        inputEl.style.height = Math.min(inputEl.scrollHeight, 160) + 'px';
+        scheduleLayout();
+      }
+
+      function scheduleLayout(){
+        requestAnimationFrame(adjustChatForComposer);
+      }
+
+      function adjustChatForComposer(){
+        // Chat bottom padding == composer height + small gap
+        const h = composer.getBoundingClientRect().height || 80;
+        chatEl.style.paddingBottom = (h + 12) + 'px';
+        chatEl.scrollTop = chatEl.scrollHeight;
+      }
+
+      function updateComposerForKeyboard(){
+        if (!window.visualViewport){
+          composer.style.transform = 'translateY(0px)';
+          adjustChatForComposer();
+          return;
+        }
+        const vv = window.visualViewport;
+        const keyboard = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
+        composer.style.transform = keyboard ? `translateY(-${keyboard}px)` : 'translateY(0px)';
+        adjustChatForComposer();
+      }
+
+      if (window.visualViewport){
+        window.visualViewport.addEventListener('resize', updateComposerForKeyboard);
+        window.visualViewport.addEventListener('scroll', updateComposerForKeyboard);
+      }
+      window.addEventListener('resize', updateComposerForKeyboard);
+
+      function lastMessagesForApi(all){
+        const cleaned = all.filter(m => !(m.role === 'assistant' && (m.content||'').startsWith('⏳')));
+        return cleaned.slice(-MAX_HISTORY_TO_SEND).map(m => ({ role: m.role, content: m.content }));
+      }
+
+      function render(){
         ensureGreeting();
         chatEl.innerHTML = '';
 
@@ -522,7 +534,7 @@
           chatEl.appendChild(group);
         });
 
-        chatEl.scrollTop = chatEl.scrollHeight;
+        adjustChatForComposer();
       }
 
       function escapeHtml(str){
@@ -534,38 +546,6 @@
           .replaceAll("'","&#039;");
       }
 
-      function autosize() {
-        inputEl.style.height = 'auto';
-        inputEl.style.height = Math.min(inputEl.scrollHeight, 160) + 'px';
-      }
-
-      function setSending(on){
-        isSending = on;
-        sendBtn.disabled = on;
-      }
-
-      function lastMessagesForApi(all){
-        const cleaned = all.filter(m => !(m.role === 'assistant' && (m.content||'').startsWith('⏳')));
-        return cleaned.slice(-MAX_HISTORY_TO_SEND).map(m => ({ role: m.role, content: m.content }));
-      }
-
-      // iOS keyboard: keep composer above keyboard
-      function updateComposerBottomForKeyboard(){
-        if (!window.visualViewport) {
-          composer.style.bottom = '0px';
-          return;
-        }
-        const vv = window.visualViewport;
-        const keyboardHeight = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
-        composer.style.bottom = keyboardHeight + 'px';
-        chatEl.scrollTop = chatEl.scrollHeight;
-      }
-      if (window.visualViewport){
-        window.visualViewport.addEventListener('resize', updateComposerBottomForKeyboard);
-        window.visualViewport.addEventListener('scroll', updateComposerBottomForKeyboard);
-      }
-      window.addEventListener('resize', updateComposerBottomForKeyboard);
-
       async function send(){
         if (isSending) return;
         const text = (inputEl.value || '').trim();
@@ -573,24 +553,23 @@
 
         ensureGreeting();
 
-        messages.push({ role:'user', content: text, ts: nowTime() });
+        messages.push({ role:'user', content:text, ts: nowTime() });
         inputEl.value = '';
         autosize();
 
-        messages.push({ role:'assistant', content: '⏳ Einen Moment …', ts: nowTime() });
+        messages.push({ role:'assistant', content:'⏳ Einen Moment …', ts: nowTime() });
         render();
         save();
-        setSending(true);
+        isSending = true;
+        sendBtn.disabled = true;
 
         try{
           const payloadHistory = lastMessagesForApi(messages);
-
           const res = await fetch('/api/bot', {
-            method: 'POST',
-            headers: { 'Content-Type':'application/json' },
-            body: JSON.stringify({ question: text, history: payloadHistory })
+            method:'POST',
+            headers:{ 'Content-Type':'application/json' },
+            body: JSON.stringify({ question:text, history: payloadHistory })
           });
-
           const reply = await res.text();
 
           for (let i = messages.length - 1; i >= 0; i--){
@@ -601,31 +580,31 @@
           }
         } catch {
           messages = messages.filter(m => !(m.role === 'assistant' && (m.content||'').startsWith('⏳')));
-          messages.push({ role:'assistant', content: '❌ Fehler beim Senden. Bitte prüfe Endpoint /api/bot.', ts: nowTime() });
+          messages.push({ role:'assistant', content:'❌ Fehler beim Senden. Bitte prüfe /api/bot.', ts: nowTime() });
         } finally {
-          setSending(false);
+          isSending = false;
+          sendBtn.disabled = false;
           save();
           render();
           setTimeout(() => inputEl.focus(), 60);
-          setTimeout(updateComposerBottomForKeyboard, 80);
+          setTimeout(updateComposerForKeyboard, 80);
         }
       }
 
       function newChat(){
-        messages = [{...initialMsg, ts: nowTime()}];
+        messages = [{ ...initialMsg, ts: nowTime() }];
         save();
         render();
-        setTimeout(() => inputEl.focus(), 80);
-        setTimeout(updateComposerBottomForKeyboard, 80);
+        setTimeout(() => inputEl.focus(), 60);
+        setTimeout(updateComposerForKeyboard, 80);
       }
 
       sendBtn.addEventListener('click', send);
       btnNew.addEventListener('click', newChat);
 
       inputEl.addEventListener('input', autosize);
-      inputEl.addEventListener('focus', () => setTimeout(updateComposerBottomForKeyboard, 80));
-      inputEl.addEventListener('blur', () => setTimeout(updateComposerBottomForKeyboard, 80));
-
+      inputEl.addEventListener('focus', () => setTimeout(updateComposerForKeyboard, 80));
+      inputEl.addEventListener('blur', () => setTimeout(updateComposerForKeyboard, 80));
       inputEl.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' && !e.shiftKey){
           e.preventDefault();
@@ -633,7 +612,7 @@
         }
       });
 
-      // Modal flow
+      // Modals
       document.getElementById('privacyAccept').onclick = () => {
         privacyModal.style.display = 'none';
         usageModal.style.display = 'flex';
@@ -642,13 +621,14 @@
 
       document.getElementById('usageAccept').onclick = () => {
         usageModal.style.display = 'none';
-        app.style.display = 'flex';
         composer.style.display = 'block';
+
         load();
         render();
         autosize();
+
         setTimeout(() => inputEl.focus(), 80);
-        setTimeout(updateComposerBottomForKeyboard, 120);
+        setTimeout(updateComposerForKeyboard, 120);
       };
       document.getElementById('usageDecline').onclick = () => location.reload();
 
