@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
-  <title>Linda – iMessage</title>
+  <title>Linda – iMessage (Mobile)</title>
 
   <link rel="manifest" href="manifest.json"/>
   <meta name="theme-color" content="#ffffff"/>
@@ -15,198 +15,178 @@
 
   <style>
     :root{
-      /* iMessage base */
-      --bg: #ffffff;
-      --bar: rgba(255,255,255,.92);
-      --hairline: rgba(60,60,67,.16);
-      --text: #111111;
-      --muted: rgba(60,60,67,.60);
+      --bg:#ffffff;
+      --bar:rgba(255,255,255,.92);
+      --hair:rgba(60,60,67,.16);
+      --text:#111;
+      --muted:rgba(60,60,67,.55);
 
-      --blue: #007aff;
-      --leftBubble: #e5e5ea;    /* iMessage gray */
-      --rightBubble: #007aff;   /* iMessage blue */
+      --blue:#007aff;
+      --left:#e5e5ea;         /* iMessage gray */
+      --right:#007aff;        /* iMessage blue */
 
-      --max: 520px;
-      --base: 19px;
-      --bubble: 18px;
-      --input: 19px;
-      --tap: 44px;
+      --base:19px;
+      --bubble:18px;
+      --input:19px;
+
+      --tap:44px;
     }
 
     *{ box-sizing:border-box; margin:0; padding:0; }
-    html, body { height:100%; }
+    html,body{ height:100%; }
 
     body{
       font-family:-apple-system, BlinkMacSystemFont, "SF Pro Text","SF Pro Display", system-ui, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      font-size: var(--base);
-      -webkit-text-size-adjust: 100%;
-      overflow: hidden;              /* NUR Chat scrollt */
-      height: 100vh;
-      height: 100dvh;
+      background:var(--bg);
+      color:var(--text);
+      font-size:var(--base);
+      -webkit-text-size-adjust:100%;
+      overflow:hidden;                 /* wichtig: nur chat scrollt */
+      height:100vh;
+      height:100dvh;
     }
 
-    a{ color: var(--blue); text-decoration:none; }
-    a:active{ opacity:.85; }
-
-    /* Full width frame */
-    .frame{
-      width:100%;
+    /* Full screen app */
+    .app{
       height:100%;
       display:flex;
       flex-direction:column;
-      background: var(--bg);
-    }
-
-    .wrap{
-      width:100%;
-      max-width: var(--max);
-      margin: 0 auto;
-      padding-left: env(safe-area-inset-left);
-      padding-right: env(safe-area-inset-right);
+      background:var(--bg);
     }
 
     /* Topbar like iMessage */
     .topbar{
-      position: sticky;
-      top: 0;
-      z-index: 50;
-      background: var(--bar);
+      position:sticky;
+      top:0;
+      z-index:50;
+      background:var(--bar);
       backdrop-filter: blur(18px);
       -webkit-backdrop-filter: blur(18px);
-      border-bottom: 1px solid var(--hairline);
+      border-bottom:1px solid var(--hair);
       padding-top: env(safe-area-inset-top);
     }
-    .topbar .inner{
+    .topbarInner{
+      height:56px;
       display:flex;
       align-items:center;
       justify-content:space-between;
-      gap: 10px;
-      padding: 10px 12px;
-      min-height: 56px;
+      padding: 0 12px;
+      gap:10px;
     }
 
-    .leftActions, .rightActions{
+    .tbLeft,.tbRight{
       display:flex;
       align-items:center;
-      gap: 10px;
-      flex: 0 0 auto;
-      min-width: 72px;
+      gap:10px;
+      width: 88px;               /* stabil, damit Mitte wirklich mittig bleibt */
+      flex:0 0 auto;
     }
+    .tbRight{ justify-content:flex-end; }
 
-    .iconbtn{
+    .tbBtn{
       width: var(--tap);
       height: var(--tap);
-      border-radius: 999px;
-      border: none;
-      background: rgba(0,0,0,.03);
+      border:none;
+      background:transparent;
+      border-radius:999px;
       display:grid;
       place-items:center;
-      cursor:pointer;
-      -webkit-tap-highlight-color: transparent;
+      -webkit-tap-highlight-color:transparent;
       user-select:none;
     }
-    .iconbtn:active{ transform: translateY(1px); opacity:.92; }
+    .tbBtn:active{ background: rgba(0,0,0,.06); }
+    .tbBtn svg{ width:22px; height:22px; stroke:var(--blue); }
 
-    .iconbtn svg{ width:22px; height:22px; }
-    .iconbtn .stroke{ stroke: var(--blue); }
-    .iconbtn .fill{ fill: var(--blue); }
-
-    /* Center contact chip */
-    .contact{
+    .tbCenter{
+      flex:1 1 auto;
+      min-width:0;
       display:flex;
       align-items:center;
       justify-content:center;
-      flex: 1 1 auto;
-      min-width: 0;
-    }
-    .contactChip{
-      display:flex;
-      align-items:center;
-      gap: 10px;
-      padding: 7px 12px;
-      border-radius: 999px;
-      background: rgba(0,0,0,.03);
-      border: 1px solid rgba(0,0,0,.06);
-      min-width: 0;
-      max-width: 100%;
+      gap:10px;
+      pointer-events:none; /* wie iOS: mittig „nur Anzeige“ */
     }
     .avatar{
-      width: 32px;
-      height: 32px;
-      border-radius: 999px;
+      width:34px; height:34px;
+      border-radius:999px;
       background: linear-gradient(135deg, #d1d5db, #f3f4f6);
       display:grid;
       place-items:center;
-      color: rgba(17,17,17,.55);
-      font-weight: 800;
-      font-size: 13px;
-      flex: 0 0 auto;
+      font-weight:900;
+      font-size:14px;
+      color:rgba(17,17,17,.55);
       overflow:hidden;
+      flex:0 0 auto;
     }
-    .avatar img{
-      width:100%;
-      height:100%;
-      object-fit:cover;
-      display:block;
+    .nameBlock{
+      min-width:0;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      line-height:1.05;
     }
-    .contactName{
-      font-weight: 800;
-      font-size: 18px;
-      white-space: nowrap;
+    .name{
+      font-weight:900;
+      font-size:18px;
+      white-space:nowrap;
       overflow:hidden;
-      text-overflow: ellipsis;
+      text-overflow:ellipsis;
+      max-width: 220px;
+    }
+    .sub{
+      font-size:12px;
+      color:var(--muted);
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
       max-width: 260px;
-    }
-    .chev{
-      color: rgba(17,17,17,.45);
-      font-weight: 900;
-      margin-left: 2px;
+      margin-top:2px;
     }
 
-    /* Chat scroll */
-    .chatWrap{
+    /* Chat (only scroll area) */
+    .chat{
       flex:1;
       min-height:0;
-    }
-    .chat{
-      height:100%;
       overflow:auto;
       -webkit-overflow-scrolling: touch;
       padding: 14px 12px 0;
-      background: var(--bg);
+      background:var(--bg);
     }
 
-    .msgRow{
-      display:flex;
-      flex-direction:column;
-      gap: 4px;
-      margin: 10px 0;
+    /* Optional center timestamp (like iMessage when you open) */
+    .centerStamp{
+      text-align:center;
+      color:var(--muted);
+      font-size:12px;
+      margin: 6px 0 14px;
     }
-    .msgRow.left{ align-items:flex-start; }
-    .msgRow.right{ align-items:flex-end; }
+
+    .row{
+      display:flex;
+      margin: 8px 0;
+    }
+    .row.left{ justify-content:flex-start; }
+    .row.right{ justify-content:flex-end; }
 
     .bubble{
       position:relative;
-      max-width: 82%;
+      max-width: 78%;
       padding: 12px 14px;
       border-radius: 22px;
       font-size: var(--bubble);
-      line-height: 1.45;
+      line-height:1.45;
       overflow-wrap:anywhere;
       word-break: break-word;
-      box-shadow: 0 1px 0 rgba(0,0,0,.06);
     }
 
     .bubble.left{
-      background: var(--leftBubble);
-      color: #111;
+      background: var(--left);
+      color:#111;
       border-top-left-radius: 18px;
     }
     .bubble.right{
-      background: var(--rightBubble);
-      color: #fff;
+      background: var(--right);
+      color:#fff;
       border-top-right-radius: 18px;
     }
 
@@ -217,7 +197,7 @@
       left:-6px;
       bottom: 10px;
       width: 12px; height: 12px;
-      background: var(--leftBubble);
+      background: var(--left);
       transform: rotate(45deg);
       border-radius: 3px;
     }
@@ -227,90 +207,84 @@
       right:-6px;
       bottom: 10px;
       width: 12px; height: 12px;
-      background: var(--rightBubble);
+      background: var(--right);
       transform: rotate(45deg);
       border-radius: 3px;
     }
 
-    /* Read line (optional, like screenshot "Gelesen: 11:49") */
-    .readline{
-      width:100%;
-      font-size: 13px;
-      color: rgba(60,60,67,.55);
+    /* Like iMessage: "Gelesen: 11:49" under right side */
+    .readLine{
       text-align:right;
-      padding: 8px 2px 10px;
+      color:var(--muted);
+      font-size:12px;
+      margin: 2px 2px 10px;
     }
 
-    /* Markdown tweaks in bubbles */
-    .bubble p{ margin: 0 0 .7em; }
+    /* Markdown inside bubbles */
+    .bubble p{ margin:0 0 .7em; }
     .bubble p:last-child{ margin-bottom:0; }
-    .bubble ul, .bubble ol{ padding-left: 1.2em; margin: .5em 0; }
+    .bubble ul,.bubble ol{ padding-left:1.2em; margin:.5em 0; }
     .bubble code{
       font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono","Courier New", monospace;
       font-size:.95em;
       background: rgba(0,0,0,.12);
       padding:.15em .35em;
-      border-radius: 8px;
+      border-radius:8px;
     }
     .bubble.right code{ background: rgba(255,255,255,.22); }
     .bubble pre{
       background: rgba(0,0,0,.10);
       border-radius: 14px;
-      padding: 12px;
+      padding:12px;
       overflow:auto;
     }
     .bubble.right pre{ background: rgba(255,255,255,.18); }
 
-    /* Composer (full width), inner centered */
+    /* Composer (iMessage style) */
     .composer{
-      position: fixed;
+      position:fixed;
       left:0; right:0; bottom:0;
-      z-index: 9999;
+      z-index:9999;
       background: var(--bar);
       backdrop-filter: blur(18px);
       -webkit-backdrop-filter: blur(18px);
-      border-top: 1px solid var(--hairline);
-      padding-bottom: env(safe-area-inset-bottom);
+      border-top:1px solid var(--hair);
+      padding: 8px 12px calc(10px + env(safe-area-inset-bottom));
       will-change: transform;
-      display:none; /* show after modals */
-    }
-    .composer .inner{
-      padding: 8px 12px 10px;
+      display:none;
     }
 
-    .composerRow{
+    .compRow{
       display:flex;
       align-items:flex-end;
-      gap: 10px;
+      gap:10px;
     }
 
-    .plusBtn, .micBtn{
-      width: 40px;
-      height: 40px;
-      border-radius: 999px;
-      border: none;
+    .circleBtn{
+      width:40px; height:40px;
+      border-radius:999px;
+      border:none;
       background: rgba(0,0,0,.06);
       display:grid;
       place-items:center;
       cursor:pointer;
-      -webkit-tap-highlight-color: transparent;
+      -webkit-tap-highlight-color:transparent;
       user-select:none;
-      flex: 0 0 auto;
+      flex:0 0 auto;
     }
-    .plusBtn svg, .micBtn svg{ width:20px; height:20px; }
-    .plusBtn:active, .micBtn:active{ transform: translateY(1px); opacity:.92; }
+    .circleBtn:active{ transform: translateY(1px); opacity:.92; }
+    .circleBtn svg{ width:20px; height:20px; stroke: rgba(60,60,67,.55); }
 
-    .inputPill{
+    .pill{
       flex:1;
       min-width:0;
+      display:flex;
+      align-items:flex-end;
+      gap:10px;
+      padding: 6px 10px;
       border-radius: 18px;
       border: 1px solid rgba(60,60,67,.18);
       background: rgba(255,255,255,.96);
-      padding: 8px 10px;
-      display:flex;
-      align-items:flex-end;
-      gap: 10px;
-      box-shadow: 0 1px 0 rgba(0,0,0,.06);
     }
 
     textarea{
@@ -319,37 +293,43 @@
       border:none;
       outline:none;
       resize:none;
-      background: transparent;
+      background:transparent;
       font-size: var(--input);
       line-height:1.25;
       max-height: 140px;
-      padding: 6px 4px;
+      padding: 8px 6px;
       color: var(--text);
     }
     textarea::placeholder{ color: rgba(60,60,67,.45); }
 
     .sendBtn{
-      width: 38px;
-      height: 38px;
-      border-radius: 999px;
+      width:38px; height:38px;
+      border-radius:999px;
       border:none;
       background: var(--blue);
       display:grid;
       place-items:center;
       cursor:pointer;
-      -webkit-tap-highlight-color: transparent;
+      -webkit-tap-highlight-color:transparent;
       user-select:none;
-      flex: 0 0 auto;
+      flex:0 0 auto;
     }
-    .sendBtn svg{ width:18px; height:18px; }
+    .sendBtn svg{ width:18px; height:18px; fill:#fff; }
     .sendBtn:active{ transform: translateY(1px); opacity:.92; }
     .sendBtn[disabled]{ opacity:.45; pointer-events:none; }
 
-    /* Sheets (privacy/usage) – keep simple */
+    /* Desktop: optional max width for nicer look */
+    @media (min-width: 700px){
+      .app{ align-items:center; }
+      .topbarInner, .chat, .composer { max-width: 520px; margin: 0 auto; }
+      .composer{ left:50%; right:auto; transform: translateX(-50%); width: 520px; }
+    }
+
+    /* Sheets (privacy/usage) */
     .overlay{
-      position: fixed;
+      position:fixed;
       inset:0;
-      z-index: 20000;
+      z-index:20000;
       background: rgba(0,0,0,.35);
       display:flex;
       align-items:flex-end;
@@ -358,7 +338,7 @@
     }
     .sheet{
       width:100%;
-      max-width: var(--max);
+      max-width: 520px;
       background: rgba(255,255,255,.98);
       border-radius: 22px;
       border: 1px solid rgba(0,0,0,.08);
@@ -369,131 +349,116 @@
       display:flex;
       justify-content:space-between;
       align-items:center;
-      padding: 14px 16px 10px;
-      border-bottom: 1px solid rgba(0,0,0,.08);
+      padding:14px 16px 10px;
+      border-bottom:1px solid rgba(0,0,0,.08);
     }
-    .sheettitle{ font-weight: 900; font-size: 16px; }
+    .sheettitle{ font-weight:900; font-size:16px; }
     .sheetclose{
-      width: 40px; height: 40px;
-      border-radius: 999px;
+      width:40px; height:40px;
+      border-radius:999px;
       border:none;
       background: rgba(0,0,0,.05);
       cursor:pointer;
     }
-    .sheetclose:active{ transform: translateY(1px); opacity:.9; }
     .sheetbody{
-      padding: 12px 16px 16px;
-      font-size: 15px;
+      padding:12px 16px 16px;
+      font-size:15px;
       color:#374151;
       line-height:1.55;
-      max-height: 62vh;
+      max-height:62vh;
       overflow:auto;
     }
-    .sheetbody ul{ margin: 10px 0 0 18px; }
-    .sheetbody li{ margin: 8px 0; }
+    .sheetbody ul{ margin:10px 0 0 18px; }
+    .sheetbody li{ margin:8px 0; }
     .sheetactions{
       display:flex;
-      padding: 12px 16px 16px;
-      border-top: 1px solid rgba(0,0,0,.08);
+      padding:12px 16px 16px;
+      border-top:1px solid rgba(0,0,0,.08);
     }
     .btn{
       width:100%;
-      padding: 13px 14px;
-      border-radius: 14px;
+      padding:13px 14px;
+      border-radius:14px;
       border:none;
       background: var(--blue);
       color:#fff;
-      font-weight: 900;
-      font-size: 16px;
+      font-weight:900;
+      font-size:16px;
       cursor:pointer;
     }
-    .btn:active{ transform: translateY(1px); opacity:.92; }
   </style>
 </head>
 
 <body>
-  <div class="frame">
-    <!-- TOPBAR -->
+  <div class="app">
     <div class="topbar">
-      <div class="wrap">
-        <div class="inner">
-          <div class="leftActions">
-            <button class="iconbtn" id="btnBack" aria-label="Zurück">
-              <!-- back chevron -->
-              <svg viewBox="0 0 24 24" fill="none">
-                <path class="stroke" d="M15 5l-7 7 7 7" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
-              </svg>
-            </button>
-          </div>
+      <div class="topbarInner">
+        <div class="tbLeft">
+          <button class="tbBtn" id="btnBack" aria-label="Zurück">
+            <svg viewBox="0 0 24 24" fill="none">
+              <path d="M15 5l-7 7 7 7" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </button>
+        </div>
 
-          <div class="contact">
-            <div class="contactChip" title="Linda">
-              <div class="avatar" aria-hidden="true">LM</div>
-              <div class="contactName">Linda</div>
-              <div class="chev">›</div>
-            </div>
+        <div class="tbCenter">
+          <div class="avatar" aria-hidden="true">LM</div>
+          <div class="nameBlock">
+            <div class="name">Linda</div>
+            <div class="sub">Ausbildung · Prüfung · Personal</div>
           </div>
+        </div>
 
-          <div class="rightActions">
-            <button class="iconbtn" id="btnVideo" aria-label="Video">
-              <!-- video -->
-              <svg viewBox="0 0 24 24" fill="none">
-                <path class="stroke" d="M3.5 7.5h10a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-10a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2Z" stroke-width="2" stroke-linejoin="round"/>
-                <path class="stroke" d="M15.5 10l5-2.5v9L15.5 14" stroke-width="2" stroke-linejoin="round"/>
-              </svg>
-            </button>
-          </div>
+        <div class="tbRight">
+          <button class="tbBtn" id="btnVideo" aria-label="Video">
+            <svg viewBox="0 0 24 24" fill="none">
+              <path d="M3.5 7.5h10a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-10a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2Z" stroke-width="2" stroke-linejoin="round"/>
+              <path d="M15.5 10l5-2.5v9L15.5 14" stroke-width="2" stroke-linejoin="round"/>
+            </svg>
+          </button>
         </div>
       </div>
     </div>
 
-    <!-- CHAT -->
-    <div class="chatWrap">
-      <div class="wrap" style="height:100%; min-height:0;">
-        <div class="chat" id="chat" aria-live="polite"></div>
-      </div>
-    </div>
+    <div class="chat" id="chat" aria-live="polite"></div>
   </div>
 
-  <!-- COMPOSER -->
   <div class="composer" id="composer">
-    <div class="wrap">
-      <div class="inner">
-        <div class="composerRow">
-          <button class="plusBtn" id="btnPlus" aria-label="Plus">
-            <svg viewBox="0 0 24 24" fill="none">
-              <path d="M12 5v14M5 12h14" stroke="rgba(60,60,67,.55)" stroke-width="2.4" stroke-linecap="round"/>
-            </svg>
-          </button>
+    <div class="compRow">
+      <button class="circleBtn" id="btnPlus" aria-label="Plus">
+        <svg viewBox="0 0 24 24" fill="none">
+          <path d="M12 5v14M5 12h14" stroke-width="2.4" stroke-linecap="round"/>
+        </svg>
+      </button>
 
-          <div class="inputPill">
-            <textarea id="q" rows="1" placeholder="iMessage …"></textarea>
+      <div class="pill">
+        <textarea id="q" rows="1" placeholder="iMessage …"></textarea>
 
-            <button class="sendBtn" id="send" aria-label="Senden">
-              <svg viewBox="0 0 24 24" fill="none">
-                <path d="M12 5l6.5 7.5H5.5L12 5Z" fill="#fff"/>
-              </svg>
-            </button>
-          </div>
+        <!-- Mic (shown when empty) -->
+        <button class="circleBtn" id="btnMic" aria-label="Mikrofon" title="Mikrofon">
+          <svg viewBox="0 0 24 24" fill="none">
+            <path d="M12 14a3 3 0 0 0 3-3V7a3 3 0 0 0-6 0v4a3 3 0 0 0 3 3Z" stroke-width="2"/>
+            <path d="M6.5 11a5.5 5.5 0 0 0 11 0" stroke-width="2" stroke-linecap="round"/>
+            <path d="M12 16v3" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+        </button>
 
-          <button class="micBtn" id="btnMic" aria-label="Mikrofon">
-            <svg viewBox="0 0 24 24" fill="none">
-              <path d="M12 14a3 3 0 0 0 3-3V7a3 3 0 0 0-6 0v4a3 3 0 0 0 3 3Z" stroke="rgba(60,60,67,.55)" stroke-width="2" />
-              <path d="M6.5 11a5.5 5.5 0 0 0 11 0" stroke="rgba(60,60,67,.55)" stroke-width="2" stroke-linecap="round"/>
-              <path d="M12 16v3" stroke="rgba(60,60,67,.55)" stroke-width="2" stroke-linecap="round"/>
-            </svg>
-          </button>
-        </div>
+        <!-- Send (shown when text exists) -->
+        <button class="sendBtn" id="send" aria-label="Senden" style="display:none;">
+          <svg viewBox="0 0 24 24">
+            <path d="M12 5l6.5 7.5H5.5L12 5Z"/>
+          </svg>
+        </button>
       </div>
     </div>
   </div>
 
-  <!-- PRIVACY -->
+  <!-- Privacy -->
   <div class="overlay" id="privacyModal" role="dialog" aria-modal="true">
     <div class="sheet">
       <div class="sheethead">
         <div class="sheettitle">Datenschutzhinweis</div>
-        <button class="sheetclose" id="privacyDecline" aria-label="Ablehnen">✕</button>
+        <button class="sheetclose" id="privacyDecline">✕</button>
       </div>
       <div class="sheetbody">
         <p>Um Linda zu nutzen, brauchst du deine Zustimmung:</p>
@@ -510,12 +475,12 @@
     </div>
   </div>
 
-  <!-- USAGE -->
+  <!-- Usage -->
   <div class="overlay" id="usageModal" style="display:none;" role="dialog" aria-modal="true">
     <div class="sheet">
       <div class="sheethead">
         <div class="sheettitle">Wichtige Hinweise</div>
-        <button class="sheetclose" id="usageDecline" aria-label="Schließen">✕</button>
+        <button class="sheetclose" id="usageDecline">✕</button>
       </div>
       <div class="sheetbody">
         <ul>
@@ -533,25 +498,32 @@
 
   <script>
     document.addEventListener('DOMContentLoaded', () => {
-      const chatEl = document.getElementById('chat');
+      const chatEl   = document.getElementById('chat');
       const composer = document.getElementById('composer');
-      const inputEl = document.getElementById('q');
-      const sendBtn = document.getElementById('send');
+      const qEl      = document.getElementById('q');
+      const sendBtn  = document.getElementById('send');
+      const micBtn   = document.getElementById('btnMic');
 
       const privacyModal = document.getElementById('privacyModal');
-      const usageModal = document.getElementById('usageModal');
+      const usageModal   = document.getElementById('usageModal');
 
-      const STORAGE_KEY = 'linda-imessage-ui-v2';
+      const STORAGE_KEY = 'linda-imessage-final-v1';
       const MAX_HISTORY_TO_SEND = 4;
+
       let messages = [];
       let isSending = false;
 
-      const initialMsg = {
-        role: 'assistant',
-        content: 'Hallo! Ich bin **Linda**. Wie kann ich dich bei **Personal**, **Ausbildung** oder **Prüfungsvorbereitung** unterstützen?'
-      };
+      // safer markdown: disable raw HTML blocks
+      if (window.marked) {
+        const r = new marked.Renderer();
+        r.html = () => '';                // strip raw HTML from model/user
+        marked.setOptions({ renderer: r, mangle:false, headerIds:false });
+      }
 
-      if (window.marked) marked.setOptions({ mangle: false, headerIds: false });
+      const initialMsg = {
+        role:'assistant',
+        content:'Hallo! Ich bin **Linda**. Wie kann ich dich bei **Personal**, **Ausbildung** oder **Prüfungsvorbereitung** unterstützen?'
+      };
 
       function nowTime(){
         const d = new Date();
@@ -564,82 +536,16 @@
         try{
           const raw = localStorage.getItem(STORAGE_KEY);
           messages = raw ? JSON.parse(raw) : [];
-        } catch { messages = []; }
+        }catch{ messages = []; }
         ensureGreeting();
       }
-      function save(){
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(messages));
-      }
+      function save(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(messages)); }
+
       function ensureGreeting(){
         if (!Array.isArray(messages)) messages = [];
         if (messages.length === 0 || messages[0].role !== 'assistant'){
           messages.unshift({ ...initialMsg, ts: nowTime() });
         }
-        if (!messages[0].content) messages[0] = { ...initialMsg, ts: nowTime() };
-      }
-
-      function autosize(){
-        inputEl.style.height = 'auto';
-        inputEl.style.height = Math.min(inputEl.scrollHeight, 140) + 'px';
-        requestAnimationFrame(adjustChatPaddingForComposer);
-      }
-
-      function adjustChatPaddingForComposer(){
-        const h = composer.getBoundingClientRect().height || 70;
-        chatEl.style.paddingBottom = (h + 10) + 'px';
-        chatEl.scrollTop = chatEl.scrollHeight;
-      }
-
-      function updateComposerForKeyboard(){
-        if (!window.visualViewport){
-          composer.style.transform = 'translateY(0px)';
-          adjustChatPaddingForComposer();
-          return;
-        }
-        const vv = window.visualViewport;
-        const keyboard = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
-        composer.style.transform = keyboard ? `translateY(-${keyboard}px)` : 'translateY(0px)';
-        adjustChatPaddingForComposer();
-      }
-
-      if (window.visualViewport){
-        window.visualViewport.addEventListener('resize', updateComposerForKeyboard);
-        window.visualViewport.addEventListener('scroll', updateComposerForKeyboard);
-      }
-      window.addEventListener('resize', updateComposerForKeyboard);
-
-      function lastMessagesForApi(all){
-        const cleaned = all.filter(m => !(m.role === 'assistant' && (m.content||'').startsWith('⏳')));
-        return cleaned.slice(-MAX_HISTORY_TO_SEND).map(m => ({ role: m.role, content: m.content }));
-      }
-
-      function render(){
-        ensureGreeting();
-        chatEl.innerHTML = '';
-
-        messages.forEach(m => {
-          if (m.role !== 'assistant' && m.role !== 'user') return;
-
-          const row = document.createElement('div');
-          row.className = 'msgRow ' + (m.role === 'assistant' ? 'left' : 'right');
-
-          const bubble = document.createElement('div');
-          bubble.className = 'bubble ' + (m.role === 'assistant' ? 'left' : 'right');
-          bubble.innerHTML = window.marked ? marked.parse(m.content || '') : escapeHtml(m.content || '');
-
-          row.appendChild(bubble);
-          chatEl.appendChild(row);
-
-          // optional: only show "Gelesen" after user messages
-          if (m.role === 'user'){
-            const r = document.createElement('div');
-            r.className = 'readline';
-            r.textContent = `Gelesen: ${m.ts || nowTime()}`;
-            chatEl.appendChild(r);
-          }
-        });
-
-        adjustChatPaddingForComposer();
       }
 
       function escapeHtml(str){
@@ -651,15 +557,94 @@
           .replaceAll("'","&#039;");
       }
 
+      function md(str){
+        const s = str ?? '';
+        return window.marked ? marked.parse(s) : escapeHtml(s);
+      }
+
+      function adjustForComposer(){
+        const h = composer.getBoundingClientRect().height || 78;
+        chatEl.style.paddingBottom = (h + 10) + 'px';
+        chatEl.scrollTop = chatEl.scrollHeight;
+      }
+
+      function updateComposerForKeyboard(){
+        if (!window.visualViewport){
+          composer.style.transform = 'translateY(0px)';
+          adjustForComposer();
+          return;
+        }
+        const vv = window.visualViewport;
+        const kb = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
+        composer.style.transform = kb ? `translateY(-${kb}px)` : 'translateY(0px)';
+        adjustForComposer();
+      }
+
+      if (window.visualViewport){
+        window.visualViewport.addEventListener('resize', updateComposerForKeyboard);
+        window.visualViewport.addEventListener('scroll', updateComposerForKeyboard);
+      }
+      window.addEventListener('resize', updateComposerForKeyboard);
+
+      function autosize(){
+        qEl.style.height = 'auto';
+        qEl.style.height = Math.min(qEl.scrollHeight, 140) + 'px';
+        toggleMicSend();
+        requestAnimationFrame(adjustForComposer);
+      }
+
+      function toggleMicSend(){
+        const hasText = (qEl.value || '').trim().length > 0;
+        micBtn.style.display = hasText ? 'none' : 'grid';
+        sendBtn.style.display = hasText ? 'grid' : 'none';
+      }
+
+      function render(){
+        ensureGreeting();
+        chatEl.innerHTML = '';
+
+        // center timestamp like iMessage (optional)
+        const stamp = document.createElement('div');
+        stamp.className = 'centerStamp';
+        stamp.textContent = 'Heute';
+        chatEl.appendChild(stamp);
+
+        messages.forEach(m => {
+          if (m.role !== 'assistant' && m.role !== 'user') return;
+
+          const row = document.createElement('div');
+          row.className = 'row ' + (m.role === 'assistant' ? 'left' : 'right');
+
+          const bubble = document.createElement('div');
+          bubble.className = 'bubble ' + (m.role === 'assistant' ? 'left' : 'right');
+          bubble.innerHTML = md(m.content);
+
+          row.appendChild(bubble);
+          chatEl.appendChild(row);
+
+          if (m.role === 'user'){
+            const read = document.createElement('div');
+            read.className = 'readLine';
+            read.textContent = `Gelesen: ${m.ts || nowTime()}`;
+            chatEl.appendChild(read);
+          }
+        });
+
+        adjustForComposer();
+      }
+
+      function lastMessagesForApi(all){
+        const cleaned = all.filter(m => !(m.role === 'assistant' && (m.content||'').startsWith('⏳')));
+        return cleaned.slice(-MAX_HISTORY_TO_SEND).map(m => ({ role: m.role, content: m.content }));
+      }
+
       async function send(){
         if (isSending) return;
-        const text = (inputEl.value || '').trim();
+        const text = (qEl.value || '').trim();
         if (!text) return;
 
-        ensureGreeting();
-
         messages.push({ role:'user', content:text, ts: nowTime() });
-        inputEl.value = '';
+        qEl.value = '';
         autosize();
 
         messages.push({ role:'assistant', content:'⏳ Einen Moment …', ts: nowTime() });
@@ -676,6 +661,7 @@
             headers:{ 'Content-Type':'application/json' },
             body: JSON.stringify({ question:text, history: payloadHistory })
           });
+
           const reply = await res.text();
 
           for (let i = messages.length - 1; i >= 0; i--){
@@ -692,28 +678,22 @@
           sendBtn.disabled = false;
           save();
           render();
-          setTimeout(() => inputEl.focus(), 60);
+          setTimeout(() => qEl.focus(), 60);
           setTimeout(updateComposerForKeyboard, 80);
         }
       }
 
-      document.getElementById('btnNew')?.addEventListener('click', () => {
-        messages = [{ ...initialMsg, ts: nowTime() }];
-        save(); render();
-        setTimeout(() => inputEl.focus(), 60);
-      });
-
-      // UI-only buttons (optional)
+      // UI buttons (optional)
       document.getElementById('btnBack').addEventListener('click', () => history.back());
       document.getElementById('btnVideo').addEventListener('click', () => alert('Video (UI-Demo)'));
       document.getElementById('btnPlus').addEventListener('click', () => alert('Plus (UI-Demo)'));
-      document.getElementById('btnMic').addEventListener('click', () => alert('Mic (UI-Demo)'));
+      micBtn.addEventListener('click', () => alert('Mic (UI-Demo)'));
 
       sendBtn.addEventListener('click', send);
-      inputEl.addEventListener('input', autosize);
-      inputEl.addEventListener('focus', () => setTimeout(updateComposerForKeyboard, 80));
-      inputEl.addEventListener('blur', () => setTimeout(updateComposerForKeyboard, 80));
-      inputEl.addEventListener('keydown', (e) => {
+      qEl.addEventListener('input', autosize);
+      qEl.addEventListener('focus', () => setTimeout(updateComposerForKeyboard, 80));
+      qEl.addEventListener('blur',  () => setTimeout(updateComposerForKeyboard, 80));
+      qEl.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' && !e.shiftKey){
           e.preventDefault();
           send();
@@ -734,8 +714,9 @@
         load();
         render();
         autosize();
+        toggleMicSend();
 
-        setTimeout(() => inputEl.focus(), 80);
+        setTimeout(() => qEl.focus(), 80);
         setTimeout(updateComposerForKeyboard, 120);
       };
       document.getElementById('usageDecline').onclick = () => location.reload();
