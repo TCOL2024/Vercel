@@ -1,0 +1,934 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Linda – Release Notes (Jan 2025 – Jan 2026)</title>
+  <meta name="description" content="Release Notes für Linda von Jan 2025 bis Jan 2026 – im Stil von STP/WebKit Release Notes." />
+
+  <style>
+    :root{
+      /* Apple-docs-ish light */
+      --bg:#ffffff;
+      --bg2:#f5f5f7;
+      --panel:#ffffff;
+      --text:#1d1d1f;
+      --muted:#6e6e73;
+      --border:#d2d2d7;
+      --border2:#e5e5ea;
+      --accent:#0071e3;     /* Apple-ish blue */
+      --good:#1e8e3e;
+      --warn:#b95000;
+      --danger:#b42318;
+
+      --radius:16px;
+      --shadow: 0 12px 30px rgba(0,0,0,.08);
+      --shadow2: 0 8px 22px rgba(0,0,0,.06);
+
+      --sans: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    }
+
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      font-family:var(--sans);
+      color:var(--text);
+      background: linear-gradient(180deg, var(--bg2), var(--bg) 260px);
+      line-height:1.45;
+    }
+
+    a{color:var(--accent); text-decoration:none}
+    a:hover{text-decoration:underline}
+
+    header{
+      position:sticky;
+      top:0;
+      z-index:50;
+      backdrop-filter: blur(10px);
+      background: rgba(255,255,255,.82);
+      border-bottom:1px solid var(--border2);
+    }
+
+    .topbar{
+      max-width:1100px;
+      margin:0 auto;
+      padding:14px 18px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:14px;
+    }
+
+    .brand{
+      display:flex;
+      align-items:center;
+      gap:12px;
+      min-width:240px;
+    }
+    .mark{
+      width:34px;
+      height:34px;
+      border-radius:11px;
+      background: radial-gradient(120% 120% at 30% 20%, rgba(0,113,227,.18), transparent 50%),
+                  linear-gradient(135deg, rgba(0,113,227,.95), rgba(0,113,227,.55));
+      box-shadow: 0 10px 22px rgba(0,113,227,.22);
+    }
+    .brand h1{
+      font-size:14px;
+      margin:0;
+      font-weight:760;
+      letter-spacing:.1px;
+    }
+    .brand p{
+      margin:0;
+      font-size:12px;
+      color:var(--muted);
+    }
+
+    .tools{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      width:100%;
+      justify-content:flex-end;
+      flex-wrap:wrap;
+    }
+
+    .search{
+      flex:1;
+      max-width:520px;
+      display:flex;
+      align-items:center;
+      gap:8px;
+      padding:10px 12px;
+      border:1px solid var(--border);
+      border-radius:14px;
+      background:#fff;
+      box-shadow: var(--shadow2);
+    }
+    .search svg{opacity:.7; flex:0 0 auto}
+    .search input{
+      width:100%;
+      border:0;
+      outline:none;
+      font-size:14px;
+      color:var(--text);
+    }
+    .search input::placeholder{color:rgba(110,110,115,.85)}
+
+    .pill{
+      border:1px solid var(--border);
+      background:#fff;
+      border-radius:999px;
+      padding:10px 12px;
+      cursor:pointer;
+      user-select:none;
+      font-size:13px;
+      box-shadow: var(--shadow2);
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      color:var(--text);
+    }
+    .pill[aria-pressed="true"]{
+      border-color: rgba(0,113,227,.35);
+      background: rgba(0,113,227,.08);
+    }
+    .pill small{color:var(--muted)}
+    .pill:hover{border-color:#b9b9bf}
+
+    .wrap{
+      max-width:1100px;
+      margin:0 auto;
+      padding:26px 18px 60px;
+    }
+
+    .hero{
+      padding:6px 0 8px;
+    }
+    .hero h2{
+      margin:0;
+      font-size:34px;
+      letter-spacing:-.5px;
+      line-height:1.1;
+    }
+    .sub{
+      margin-top:10px;
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      color:var(--muted);
+      font-size:13px;
+      align-items:center;
+    }
+
+    .badge{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding:8px 10px;
+      border-radius:999px;
+      border:1px solid var(--border2);
+      background:#fff;
+      box-shadow: var(--shadow2);
+    }
+    .dot{width:8px;height:8px;border-radius:999px;background:var(--accent)}
+    .dot.good{background:var(--good)}
+    .dot.warn{background:var(--warn)}
+    .dot.danger{background:var(--danger)}
+
+    .grid{
+      display:grid;
+      grid-template-columns: 1.2fr .8fr;
+      gap:16px;
+      margin-top:18px;
+    }
+    @media (max-width: 900px){
+      .grid{grid-template-columns:1fr}
+      .brand{min-width:auto}
+      .search{max-width:none}
+    }
+
+    .card{
+      border:1px solid var(--border2);
+      background:var(--panel);
+      border-radius:var(--radius);
+      box-shadow: var(--shadow);
+      overflow:hidden;
+    }
+    .card .hd{
+      padding:14px 16px;
+      border-bottom:1px solid var(--border2);
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      background: linear-gradient(180deg, #fff, #fafafa);
+    }
+    .card .hd h3{
+      margin:0;
+      font-size:14px;
+      letter-spacing:.1px;
+    }
+    .card .bd{
+      padding:14px 16px;
+      color:var(--text);
+    }
+    .card .bd p{margin:0 0 10px}
+    .card .bd p:last-child{margin-bottom:0}
+
+    .toc a{
+      display:block;
+      border:1px solid var(--border2);
+      background:#fff;
+      border-radius:14px;
+      padding:10px 12px;
+      margin-bottom:10px;
+    }
+    .toc a:hover{border-color:#c7c7cc}
+    .toc .tiny{font-size:12px; color:var(--muted); margin-top:4px}
+
+    details.release{
+      border:1px solid var(--border2);
+      border-radius:16px;
+      overflow:hidden;
+      margin:12px 0;
+      background:#fff;
+      box-shadow: var(--shadow2);
+    }
+    summary{
+      list-style:none;
+      cursor:pointer;
+      padding:14px 16px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      background: linear-gradient(180deg, #fff, #fbfbfc);
+    }
+    summary::-webkit-details-marker{display:none}
+
+    .sumL{
+      display:flex;
+      align-items:center;
+      gap:12px;
+      min-width:0;
+      flex:1;
+    }
+    .ver{
+      font-family:var(--mono);
+      font-size:12px;
+      border:1px solid var(--border2);
+      background:#fff;
+      border-radius:12px;
+      padding:6px 9px;
+      white-space:nowrap;
+    }
+    .when{
+      font-size:12px;
+      color:var(--muted);
+      white-space:nowrap;
+    }
+    .sumTitle{
+      font-weight:760;
+      letter-spacing:.1px;
+      min-width:0;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      white-space:nowrap;
+    }
+
+    .tags{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+      justify-content:flex-end;
+    }
+    .tag{
+      font-size:12px;
+      color:var(--muted);
+      border:1px solid var(--border2);
+      background:#fff;
+      border-radius:999px;
+      padding:6px 9px;
+      white-space:nowrap;
+    }
+    .tag.accent{border-color:rgba(0,113,227,.35); background:rgba(0,113,227,.08); color:var(--text)}
+    .tag.good{border-color:rgba(30,142,62,.30); background:rgba(30,142,62,.10); color:var(--text)}
+    .tag.warn{border-color:rgba(185,80,0,.30); background:rgba(185,80,0,.10); color:var(--text)}
+    .tag.danger{border-color:rgba(180,35,24,.30); background:rgba(180,35,24,.10); color:var(--text)}
+
+    .relBody{
+      padding:0 16px 16px;
+      border-top:1px solid var(--border2);
+      background:#fff;
+    }
+    .cols{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap:14px;
+      margin-top:12px;
+    }
+    @media (max-width: 900px){
+      .cols{grid-template-columns:1fr}
+      .sumTitle{white-space:normal}
+    }
+
+    .box{
+      border:1px solid var(--border2);
+      background:#fff;
+      border-radius:16px;
+      padding:12px 12px;
+    }
+    .box h4{
+      margin:0 0 10px;
+      font-size:13px;
+      letter-spacing:.1px;
+    }
+    ul{margin:0; padding-left:18px}
+    li{margin:8px 0}
+    .code{
+      font-family:var(--mono);
+      font-size:12px;
+      border:1px solid var(--border2);
+      background:#fafafa;
+      border-radius:8px;
+      padding:2px 6px;
+    }
+
+    .note{
+      margin-top:12px;
+      border:1px solid rgba(0,113,227,.18);
+      background: rgba(0,113,227,.06);
+      border-radius:14px;
+      padding:10px 12px;
+      font-size:13px;
+      color:#2b2b2f;
+    }
+
+    .btn{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      border:1px solid var(--border);
+      background:#fff;
+      border-radius:14px;
+      padding:10px 12px;
+      cursor:pointer;
+      font-size:13px;
+      box-shadow: var(--shadow2);
+    }
+    .btn:hover{border-color:#b9b9bf}
+    .btn svg{opacity:.75}
+
+    .footer{
+      margin-top:18px;
+      padding-top:16px;
+      border-top:1px solid var(--border2);
+      color:var(--muted);
+      font-size:12px;
+      display:flex;
+      justify-content:space-between;
+      gap:10px;
+      flex-wrap:wrap;
+      align-items:center;
+    }
+  </style>
+</head>
+
+<body>
+<header>
+  <div class="topbar">
+    <div class="brand" aria-label="Linda Release Notes">
+      <div class="mark" aria-hidden="true"></div>
+      <div>
+        <h1>Linda – Release Notes</h1>
+        <p>Jan 2025 – Jan 2026 · STP/WebKit-Look</p>
+      </div>
+    </div>
+
+    <div class="tools">
+      <div class="search" role="search" aria-label="Release Notes durchsuchen">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M10.5 18a7.5 7.5 0 1 1 0-15 7.5 7.5 0 0 1 0 15Z" stroke="currentColor" stroke-width="2"/>
+          <path d="M16.5 16.5 21 21" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+        <input id="q" type="search" placeholder="Suche: mobile, proxy, pwa, sharepoint, file search, governance, token …" autocomplete="off" />
+      </div>
+
+      <button class="pill" id="fNew" type="button" aria-pressed="false" title="Nur New Features">
+        New <small>Features</small>
+      </button>
+      <button class="pill" id="fFix" type="button" aria-pressed="false" title="Nur Resolved Issues">
+        Resolved <small>Issues</small>
+      </button>
+      <button class="pill" id="fSec" type="button" aria-pressed="false" title="Nur Security Notes">
+        Security <small>Notes</small>
+      </button>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+  <section class="hero">
+    <h2>Linda – Development Release Notes</h2>
+    <div class="sub">
+      <span class="badge"><span class="dot"></span> Produktiv / Stable</span>
+      <span class="badge"><span class="dot good"></span> Mobile (Beta)</span>
+      <span class="badge"><span class="dot warn"></span> Fokus: Performance & Governance</span>
+      <span class="badge">Letzte Aktualisierung: <strong>16. Jan 2026</strong></span>
+    </div>
+  </section>
+
+  <section class="grid">
+    <div class="card">
+      <div class="hd">
+        <h3>Überblick</h3>
+        <button class="btn" id="expandAll" type="button" title="Alle Releases öffnen/schließen">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M12 5v14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            <path d="M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+          Alle öffnen
+        </button>
+      </div>
+      <div class="bd">
+        <p>
+          Diese Seite fasst die Entwicklung von <strong>Linda</strong> von <strong>Anfang 2025</strong> bis
+          <strong>Januar 2026</strong> zusammen — strukturiert wie STP/WebKit Release Notes: klar, scanbar, mit
+          „New Features“, „Resolved Issues“ und „Security Notes“.
+        </p>
+        <div class="note">
+          Statushinweis: Die Funktionen <strong>„Lernen“</strong> und <strong>„Fachmodus“</strong> wurden angekündigt,
+          aber (Stand Jan 2026) als <strong>noch verschoben/nicht final</strong> kommuniziert.
+        </div>
+      </div>
+    </div>
+
+    <aside class="card">
+      <div class="hd"><h3>Inhaltsverzeichnis</h3></div>
+      <div class="bd toc">
+        <a href="#latest"><strong>Latest (Jan 2026)</strong><div class="tiny">Mobile Beta, Performance, Proxy-Hardening</div></a>
+        <a href="#2025h2"><strong>2025 H2 (Jul–Dez)</strong><div class="tiny">PWA/Install, Governance-Promptstandard</div></a>
+        <a href="#2025h1"><strong>2025 H1 (Jan–Jun)</strong><div class="tiny">Make-Integration, Assistant + File Search, SharePoint-Pläne</div></a>
+        <a href="#known"><strong>Known Issues</strong><div class="tiny">Prompt-Injection, Proxy-Weiterleitung, offene Feature-Roadmap</div></a>
+      </div>
+    </aside>
+  </section>
+
+  <!-- LATEST -->
+  <section class="card" id="latest" style="margin-top:16px;">
+    <div class="hd"><h3>Latest Releases (Jan 2026)</h3></div>
+    <div class="bd">
+
+      <details class="release" data-kind="new fix sec" data-text="januar 2026 mobile beta smartphone shorter load performance gpt 5.1 vercel proxy token history 4">
+        <summary>
+          <div class="sumL">
+            <span class="ver">Linda 2026 · Release 1</span>
+            <span class="when">14. Jan 2026</span>
+            <span class="sumTitle">Mobile Beta, Performance-Verbesserungen, Modell-Upgrade (teilweise GPT-5.1)</span>
+          </div>
+          <div class="tags">
+            <span class="tag good">New Features</span>
+            <span class="tag accent">Performance</span>
+            <span class="tag warn">Beta</span>
+          </div>
+        </summary>
+        <div class="relBody">
+          <div class="cols">
+            <div class="box">
+              <h4>New Features</h4>
+              <ul>
+                <li><strong>Linda Mobile 2026 (Beta)</strong>: Smartphone-optimiert, weniger UI-Ballast, kürzere Ladezeiten.</li>
+                <li>Separate mobile URL/Ansicht mit identischer Antwortlogik, aber reduziertem Look.</li>
+              </ul>
+            </div>
+            <div class="box">
+              <h4>Resolved Issues / Improvements</h4>
+              <ul>
+                <li>Performance-Tuning: schnellere Antworten durch effizientere Requests/geringere Payload.</li>
+                <li>Teilweise Upgrade auf <span class="code">GPT-5.1</span> (je nach Setup), um Qualität/Tempo zu verbessern.</li>
+              </ul>
+            </div>
+            <div class="box">
+              <h4>Security Notes</h4>
+              <ul>
+                <li>Empfehlung/Architektur: Client ruft <strong>Vercel-Proxy</strong> statt Make-Webhook direkt auf (Endpoint-Schutz).</li>
+              </ul>
+            </div>
+            <div class="box">
+              <h4>Notes</h4>
+              <ul>
+                <li>Kommunikationshinweis: KI kann Fehler machen; gutes Prompting bleibt wichtig.</li>
+                <li>„Lernen“/„Fachmodus“: noch nicht final enthalten (verschoben).</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </details>
+
+      <details class="release" data-kind="fix sec" data-text="januar 2026 security analyse prompt injection governance guardrails system prefix trennung red team vercel proxy make webhook">
+        <summary>
+          <div class="sumL">
+            <span class="ver">Linda Secure · Hardening Sprint</span>
+            <span class="when">07.–13. Jan 2026</span>
+            <span class="sumTitle">Security-Analyse, Prompt-Injection-Risiko, Proxy-Stabilisierung</span>
+          </div>
+          <div class="tags">
+            <span class="tag danger">Security</span>
+            <span class="tag">Governance</span>
+            <span class="tag">Proxy</span>
+          </div>
+        </summary>
+        <div class="relBody">
+          <div class="cols">
+            <div class="box">
+              <h4>Security Notes</h4>
+              <ul>
+                <li><strong>Prompt-Injection</strong> als inhaltliches Risiko: nicht rein durch Frontend (HTML/JS) lösbar.</li>
+                <li>„System-Prefix + User-Text zusammenkleben“ ist angreifbar → Guardrails/Policy-Design erforderlich.</li>
+                <li>„Red-Team“-Testdenken (gezielte bösartige Eingaben) als Qualitätsstandard.</li>
+              </ul>
+            </div>
+            <div class="box">
+              <h4>Resolved Issues / Improvements</h4>
+              <ul>
+                <li>Arbeit an Proxy-Funktionen (z. B. <span class="code">PROXY_LINDA2026</span>) und Weiterleitung zu Make.</li>
+                <li>Fokus auf saubere Request-Formate (Method/Headers/Body) + Logging als Debug-Basis.</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </details>
+
+      <details class="release" data-kind="new fix" data-text="januar 2026 mobile ui schrift zu klein input feld groß imessage look share kopieren whatsapp mail druck aptos quellen rendering">
+        <summary>
+          <div class="sumL">
+            <span class="ver">Linda Mobile UI · Iteration</span>
+            <span class="when">04.–15. Jan 2026</span>
+            <span class="sumTitle">Mobile Lesbarkeit, iMessage-Feeling, Share/Print-Wünsche</span>
+          </div>
+          <div class="tags">
+            <span class="tag good">New Features</span>
+            <span class="tag accent">UX</span>
+          </div>
+        </summary>
+        <div class="relBody">
+          <div class="cols">
+            <div class="box">
+              <h4>New Features</h4>
+              <ul>
+                <li>Share-Idee: „Kopieren oder via WhatsApp/Mail teilen“ als Quick-Action.</li>
+                <li>Print-Idee: Schriftart <span class="code">Aptos</span>, Frage im Ausdruck leicht blau hinterlegt.</li>
+              </ul>
+            </div>
+            <div class="box">
+              <h4>Resolved Issues / UX Improvements</h4>
+              <ul>
+                <li>Schrift & Chat-Lesbarkeit: Feedback „zu klein“ → Typo/Spacing hochsetzen.</li>
+                <li>Composer/Input: Feedback „zu klein“ → deutlich größere Eingabe-Zone.</li>
+                <li>Neuer Chat leichter erreichbar; Avatar mobil optional/entfernt.</li>
+                <li>Quellen-Darstellung „schöner“ (statt unschöner Bullet-Optik).</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </details>
+
+      <details class="release" data-kind="new" data-text="januar 2026 svg icon set idee dokument einstellungen wissen aevo hinweis start gender toggle icon history limit 4 token sparen">
+        <summary>
+          <div class="sumL">
+            <span class="ver">UI Assets · Icon Set & Regeln</span>
+            <span class="when">04. Jan 2026</span>
+            <span class="sumTitle">SVG-Icons + Gender-Status-Icon + History-Limit (max. 4)</span>
+          </div>
+          <div class="tags">
+            <span class="tag good">New Features</span>
+            <span class="tag">UI</span>
+            <span class="tag accent">Efficiency</span>
+          </div>
+        </summary>
+        <div class="relBody">
+          <div class="cols">
+            <div class="box">
+              <h4>New Features</h4>
+              <ul>
+                <li>Geplantes SVG-Set: Idee, Dokument, Einstellungen, Wissen/AEVO, Hinweis, Start.</li>
+                <li>Icon neben Fachmodus: zeigt <strong>Gendern an/aus</strong>.</li>
+              </ul>
+            </div>
+            <div class="box">
+              <h4>Performance / Token Notes</h4>
+              <ul>
+                <li>Max. <strong>4</strong> History-Einträge anzeigen (und damit Kontext/Token sparen).</li>
+                <li>Kontext kürzen, Payload reduzieren, Requests effizienter gestalten.</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </details>
+
+    </div>
+  </section>
+
+  <!-- 2025 H2 -->
+  <section class="card" id="2025h2" style="margin-top:16px;">
+    <div class="hd"><h3>2025 H2 (Jul – Dez 2025)</h3></div>
+    <div class="bd">
+
+      <details class="release" data-kind="new fix sec" data-text="juni 2025 governance prompt struktur corporate design quellen dokumentname seite kapitel fussnoten vector store dsgvo quiz modus norwegen keine technischen tokens">
+        <summary>
+          <div class="sumL">
+            <span class="ver">Assistant Standard · Governance & Quellen</span>
+            <span class="when">Jun 2025</span>
+            <span class="sumTitle">Prompt-Standard: Corporate-Antwortstil, Quellenformat, Vector Store, DSGVO, Quiz-Modus</span>
+          </div>
+          <div class="tags">
+            <span class="tag danger">Security</span>
+            <span class="tag">Governance</span>
+            <span class="tag accent">Quality</span>
+          </div>
+        </summary>
+        <div class="relBody">
+          <div class="cols">
+            <div class="box">
+              <h4>New Features</h4>
+              <ul>
+                <li>Antworten im Corporate Design, strukturierte Logik, Business-Du.</li>
+                <li>Quellen am Ende im Stil „Dokumentname, Seite, Kapitel“ (ggf. Fußnoten).</li>
+                <li>Vector Store-Nutzung verpflichtend; DSGVO-Fokus („datenschutzkonform“).</li>
+                <li>Geschützter Quiz-Modus (Kennwort „Norwegen“).</li>
+              </ul>
+            </div>
+            <div class="box">
+              <h4>Resolved Issues / Improvements</h4>
+              <ul>
+                <li>Keine technischen Artefakte/IDs in Antworten (sauberes Frontend-Erlebnis).</li>
+                <li>Mehr Klarheit/Präzision (Feedback: weniger kompliziert, weniger Fehler).</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </details>
+
+      <details class="release" data-kind="new" data-text="juni 2025 pwa install github pages lokal gespeichert chatagent datenschutz modal netlify repositories">
+        <summary>
+          <div class="sumL">
+            <span class="ver">Frontend · PWA / Install</span>
+            <span class="when">Jun 2025</span>
+            <span class="sumTitle">Plan: installierbare PWA (GitHub/Netlify), lokal gespeicherter Bot + Datenschutz-Modal</span>
+          </div>
+          <div class="tags">
+            <span class="tag good">New Features</span>
+            <span class="tag">Frontend</span>
+          </div>
+        </summary>
+        <div class="relBody">
+          <div class="cols">
+            <div class="box">
+              <h4>New Features</h4>
+              <ul>
+                <li>Bestehender Bot soll als <strong>PWA</strong> installierbar werden (App-Feeling).</li>
+                <li>Datenschutz-Modal als Standard-UI-Element.</li>
+              </ul>
+            </div>
+            <div class="box">
+              <h4>Notes</h4>
+              <ul>
+                <li>Deployment-Basis: Repos bereits an Netlify angebunden (schnelles Rollout möglich).</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </details>
+
+      <details class="release" data-kind="new" data-text="juli 2025 didaktik druckbar interaktiv vorlesen rollen mitmach symbole">
+        <summary>
+          <div class="sumL">
+            <span class="ver">Output-Formate · Didaktische Templates</span>
+            <span class="when">Jul 2025</span>
+            <span class="sumTitle">Druckbare, interaktive Formate als Feature-Strang (Rollen, Mitmach-Symbole)</span>
+          </div>
+          <div class="tags">
+            <span class="tag good">New Features</span>
+            <span class="tag">Content</span>
+          </div>
+        </summary>
+        <div class="relBody">
+          <div class="cols">
+            <div class="box">
+              <h4>New Features</h4>
+              <ul>
+                <li>Ausgabeformate: druckbar, dialogorientiert, klar strukturierte Rollenlogik.</li>
+              </ul>
+            </div>
+            <div class="box">
+              <h4>Notes</h4>
+              <ul>
+                <li>Relevanz für Linda: „Handout-ready“ / „Print-ready“ als wiederkehrender Qualitätsmaßstab.</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </details>
+
+    </div>
+  </section>
+
+  <!-- 2025 H1 -->
+  <section class="card" id="2025h1" style="margin-top:16px;">
+    <div class="hd"><h3>2025 H1 (Jan – Jun 2025)</h3></div>
+    <div class="bd">
+
+      <details class="release" data-kind="new" data-text="maerz 2025 make gmx openai api mail automatisch antworten assistant file search eigene dokumente wissensdatenbank github ui">
+        <summary>
+          <div class="sumL">
+            <span class="ver">Automation · Make + Mail + Assistant</span>
+            <span class="when">Mar 2025</span>
+            <span class="sumTitle">Make-Workflows: automatische Mailantworten + Assistant mit File Search und eigenen Dokumenten</span>
+          </div>
+          <div class="tags">
+            <span class="tag good">New Features</span>
+            <span class="tag">Automation</span>
+          </div>
+        </summary>
+        <div class="relBody">
+          <div class="cols">
+            <div class="box">
+              <h4>New Features</h4>
+              <ul>
+                <li>GMX ↔ OpenAI API: Mailtexte automatisch beantworten.</li>
+                <li>Chatbot in Make: OpenAI API + OpenAI Assistant + File Search + eigene Dokumente.</li>
+                <li>Ziel: Antworten individueller durch Einbindung einer Wissensdatenbank.</li>
+              </ul>
+            </div>
+            <div class="box">
+              <h4>Notes</h4>
+              <ul>
+                <li>UI-Prämisse: möglichst „GitHub-einfach“ (Frontend ohne Overengineering).</li>
+                <li>Modelkosten/Setup: zeitweise schlanke Modelle im Einsatz (Kostenbewusstsein).</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </details>
+
+      <details class="release" data-kind="new" data-text="april 2025 sharepoint bot abfragen copilot studio azure ai make preferenz vertex ai">
+        <summary>
+          <div class="sumL">
+            <span class="ver">Knowledge · SharePoint Retrieval (Planung)</span>
+            <span class="when">Apr 2025</span>
+            <span class="sumTitle">Plan: Bot, der gezielt Informationen aus SharePoint abfragt (RAG-Ansatz)</span>
+          </div>
+          <div class="tags">
+            <span class="tag good">New Features</span>
+            <span class="tag">Integrations</span>
+          </div>
+        </summary>
+        <div class="relBody">
+          <div class="cols">
+            <div class="box">
+              <h4>New Features</h4>
+              <ul>
+                <li>Zielbild: SharePoint als zentrale Wissensdatenbank für Linda (Abfragen statt „nur Promptwissen“).</li>
+                <li>Bewertung/Optionen: Azure AI vs. Copilot Studio vs. Make-Integrationen.</li>
+              </ul>
+            </div>
+            <div class="box">
+              <h4>Notes</h4>
+              <ul>
+                <li>Strategische Präferenz: Make.com wird bevorzugt (praktisch/umsetzbar).</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </details>
+
+      <details class="release" data-kind="new" data-text="april 2025 sharepoint rechnungserstellung frontend vorschau berechnung pdf export email make liste">
+        <summary>
+          <div class="sumL">
+            <span class="ver">Apps · SharePoint Frontends (Blueprint)</span>
+            <span class="when">Apr 2025</span>
+            <span class="sumTitle">Modernes Frontend-Denken: Vorschau, Berechnung, PDF-Export, E-Mail-Versand, Eintrag in Listen</span>
+          </div>
+          <div class="tags">
+            <span class="tag good">New Features</span>
+            <span class="tag">SharePoint</span>
+          </div>
+        </summary>
+        <div class="relBody">
+          <div class="cols">
+            <div class="box">
+              <h4>New Features</h4>
+              <ul>
+                <li>Automatisierungsidee: Datenerfassung → Live-Vorschau → PDF → Mail-Versand → Speicherung in SharePoint-Liste.</li>
+              </ul>
+            </div>
+            <div class="box">
+              <h4>Notes</h4>
+              <ul>
+                <li>Diese Architekturprinzipien sind später in Linda-Frontends wieder relevant (UX + Automations).</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </details>
+
+    </div>
+  </section>
+
+  <!-- KNOWN -->
+  <section class="card" id="known" style="margin-top:16px;">
+    <div class="hd"><h3>Known Issues & Hinweise</h3></div>
+    <div class="bd">
+      <ul>
+        <li><strong>Prompt-Injection:</strong> Nicht durch „Frontend-Tricks“ lösbar. Du brauchst serverseitige Policy/Guardrails (und am besten ein sauberes Rollen-/Kontextmodell).</li>
+        <li><strong>Proxy → Make:</strong> Wenn „nichts ankommt“, sind die üblichen Ursachen Method/Headers/Body-Encoding, CORS/Preflight, Timeouts und fehlendes Logging.</li>
+        <li><strong>Roadmap-Lücke:</strong> „Lernen“/„Fachmodus“ sind angekündigt, aber noch nicht final (Stand Jan 2026).</li>
+      </ul>
+    </div>
+  </section>
+
+  <div class="footer">
+    <div>© Linda Release Notes · Stand: 16. Jan 2026</div>
+    <div>
+      <button class="btn" id="clearFilters" type="button" title="Filter zurücksetzen">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M6 7h12M9 12h6M10 17h4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+        Filter zurücksetzen
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+  (function(){
+    const $ = (sel, root=document) => root.querySelector(sel);
+    const $$ = (sel, root=document) => Array.from(root.querySelectorAll(sel));
+
+    const q = $("#q");
+    const btnNew = $("#fNew");
+    const btnFix = $("#fFix");
+    const btnSec = $("#fSec");
+    const btnExpandAll = $("#expandAll");
+    const btnClear = $("#clearFilters");
+
+    const releases = $$("details.release");
+    let expanded = false;
+
+    function getState(){
+      return {
+        query: (q.value || "").trim().toLowerCase(),
+        newOnly: btnNew.getAttribute("aria-pressed") === "true",
+        fixOnly: btnFix.getAttribute("aria-pressed") === "true",
+        secOnly: btnSec.getAttribute("aria-pressed") === "true",
+      };
+    }
+
+    function matchesKind(rel, st){
+      const kinds = (rel.getAttribute("data-kind") || "").split(/\s+/).filter(Boolean);
+      const active = [st.newOnly, st.fixOnly, st.secOnly].filter(Boolean).length;
+      if(active === 0) return true;
+
+      const want = [];
+      if(st.newOnly) want.push("new");
+      if(st.fixOnly) want.push("fix");
+      if(st.secOnly) want.push("sec");
+
+      // OR-Logic if multiple toggles on
+      return want.some(w => kinds.includes(w));
+    }
+
+    function matchesQuery(rel, st){
+      if(!st.query) return true;
+      const hay = (rel.getAttribute("data-text") || "").toLowerCase();
+      return hay.includes(st.query);
+    }
+
+    function apply(){
+      const st = getState();
+      releases.forEach(rel => {
+        const ok = matchesKind(rel, st) && matchesQuery(rel, st);
+        rel.style.display = ok ? "" : "none";
+        // optional: keep open state as is
+      });
+    }
+
+    function toggle(btn){
+      const on = btn.getAttribute("aria-pressed") === "true";
+      btn.setAttribute("aria-pressed", String(!on));
+      apply();
+    }
+
+    q.addEventListener("input", apply);
+    btnNew.addEventListener("click", () => toggle(btnNew));
+    btnFix.addEventListener("click", () => toggle(btnFix));
+    btnSec.addEventListener("click", () => toggle(btnSec));
+
+    btnExpandAll.addEventListener("click", () => {
+      expanded = !expanded;
+      releases.forEach(rel => {
+        if(rel.style.display === "none") return;
+        rel.open = expanded;
+      });
+      btnExpandAll.innerHTML = expanded
+        ? '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6 12h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg> Alle schließen'
+        : '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 5v14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg> Alle öffnen';
+    });
+
+    btnClear.addEventListener("click", () => {
+      q.value = "";
+      btnNew.setAttribute("aria-pressed","false");
+      btnFix.setAttribute("aria-pressed","false");
+      btnSec.setAttribute("aria-pressed","false");
+      apply();
+    });
+
+    apply();
+  })();
+</script>
+</body>
+</html>
