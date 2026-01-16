@@ -258,7 +258,7 @@ function sanitizeReply(text) {
   out = out.replace(/【[^】]{1,200}】/g, "");
 
   // Entferne "Quellen:" Abschnitt (de/eng) bis Ende
-  out = out.replace(/\n{0,2}(Quellen|Sources)\s*:\s*[\s\S]*$/i, "");
+  out = out.replace(/^\s*-\s*https?:\/\/\S+.*$/gmi, ""); // optional
 
   // Entferne Trainingsmodus-Sätze
   out = out.replace(/\(.*trainingsmodus.*\)/gi, "");
@@ -409,7 +409,7 @@ export default async function handler(req, res) {
   const style = { gender, aevo, leak };
 
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 30000);
+  const timeout = setTimeout(() => controller.abort(), 45000);
 
   const ip = getClientIp(req);
   const origin = req.headers.origin || "";
