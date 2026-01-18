@@ -236,37 +236,49 @@ function isLeakAttempt(text) {
 /**
  * Response Sanitizer: entfernt Quellenblöcke/IDs/Zitiermarker/JSON-Leaks.
  * Ziel: selbst wenn Make/LLM etwas ausspuckt, kommt es nicht beim Nutzer an.
+ *
+ * WICHTIG: Die alte Regex-Extraktion von "answer" hat Antworten abgeschnitten,
+ * sobald im Answer-Text ein Komma/Zeilenumbruch vorkam.
+ * -> Neu: Robust per JSON.parse, wenn die Antwort wie JSON aussieht.
  */
 function sanitizeReply(text) {
-  let out = String(text || "");
+  let out = String(text || "").trim();
 
-  // Falls JSON geliefert wurde: versuche "answer" zu extrahieren
-  // (robust genug für typische Fälle, ohne JSON.parse zu riskieren)
-  const m = out.match(/"answer"\s*:\s*"([\s\S]*?)"\s*(?:,|\n|\r|\})/);
-  if (m && m[1]) {
-    out = m[1]
-      .replace(/\\"/g, '"')
-      .replace(/\\n/g, "\n")
-      .replace(/\\t/g, "\t");
+  // 1) Wenn Make JSON liefert: sauber parsen und "answer" extrahieren (ohne Abschneiden)
+  const looksJson =
+    (out.startsWith("{") && out.endsWith("}")) ||
+    (out.startsWith("[") && out.endsWith("]"));
+
+  if (looksJson) {
+    try {
+      const obj = JSON.parse(out);
+
+      const answer =
+        (obj && typeof obj.answer === "string" && obj.answer) ||
+        (obj && obj.data && typeof obj.data.answer === "string" && obj.data.answer) ||
+        "";
+
+      if (answer) out = String(answer);
+    } catch {
+      // Wenn JSON ungültig ist, sanitizen wir als normalen Text weiter unten
+    }
   }
 
-  // Entferne system_prompt/secrets Felder, falls noch vorhanden
+  // 2) Entferne system_prompt/secrets Felder, falls noch vorhanden
   out = out.replace(/"system_prompt"\s*:\s*"[\s\S]*?"\s*,?/gi, "");
   out = out.replace(/"secrets"\s*:\s*"[\s\S]*?"\s*,?/gi, "");
 
-  // Entferne Zitiermarker wie  oder 【1:...】
+  // 3) Entferne Zitiermarker wie 【1:...】 / 【...】
   out = out.replace(/【[^】]{1,200}】/g, "");
 
-  // Entferne "Quellen:" Abschnitt (de/eng) bis Ende
-  out = out.replace(/^\s*-\s*https?:\/\/\S+.*$/gmi, ""); // optional
+  // 4) Optional: entferne reine URL-Quellenzeilen
+  out = out.replace(/^\s*-\s*https?:\/\/\S+.*$/gmi, "");
 
-  // Entferne Trainingsmodus-Sätze
-  out = out.replace(/\(.*trainingsmodus.*\)/gi, "");
+  // 5) Entferne Trainingsmodus-Zeilen
   out = out.replace(/.*trainingsmodus.*$/gim, "");
 
-  // Aufräumen
+  // 6) Aufräumen
   out = out.replace(/\n{3,}/g, "\n\n").trim();
-
   return out;
 }
 
