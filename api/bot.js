@@ -118,6 +118,24 @@ function expandShortReply(question, history) {
   return q;
 }
 
+// ---------- Router-Meta Guard (fehlte vorher) ----------
+function looksLikeRouterMeta(text = "") {
+  const t = String(text).trim();
+
+  const ROUTER_PIPELINE_RE =
+    /\b(CONTEXT|INTENT|TOPIC|OPEN|RISK|FM|VECTOR)\s*=\s*[^|]+(\s*\|\s*(CONTEXT|INTENT|TOPIC|OPEN|RISK|FM|VECTOR)\s*=\s*[^|]+)+/i;
+
+  const ROUTER_LINE_RE =
+    /^\s*(FM|CONTEXT|INTENT|TOPIC|OPEN|RISK|VECTOR)\s*=\s*.+$/i;
+
+  const looksLikeMetaExplanation =
+    /erkl[aä]rung und bedeutung/i.test(t) ||
+    (/\bcontext\s*:/i.test(t) && /\bintent\s*:/i.test(t)) ||
+    (/\btopic\s*:/i.test(t) && /\brisk\s*:/i.test(t));
+
+  return ROUTER_PIPELINE_RE.test(t) || ROUTER_LINE_RE.test(t) || looksLikeMetaExplanation;
+}
+
 // ---------- Leak/Injection (nur aktuelle Frage prüfen) ----------
 function isLeakAttempt(text) {
   const t = (text || "").toLowerCase();
@@ -160,27 +178,19 @@ function sanitizeReply(text) {
   // 2) Entferne Zitiermarker wie 【...】 (optional)
   out = out.replace(/【[^】]{1,200}】/g, "");
 
-  // 3) Router-/Meta-Artefakte entfernen (TOPIC=..., CONTEXT=..., RISK=... etc.)
-  //    a) Zeilenweise: remove any line that looks like router summary or tag lines
+  // 3) Router-/Meta-Artefakte entfernen
   const ROUTER_LINE_RE =
     /^\s*(FM|CONTEXT|INTENT|TOPIC|OPEN|RISK|VECTOR)\s*=\s*.+$/i;
 
-  // typische Ein-Zeilen-Summary mit Pipes:
   const ROUTER_PIPELINE_RE =
     /\b(CONTEXT|INTENT|TOPIC|OPEN|RISK|FM|VECTOR)\s*=\s*[^|]+(\s*\|\s*(CONTEXT|INTENT|TOPIC|OPEN|RISK|FM|VECTOR)\s*=\s*[^|]+)+/i;
 
   let lines = out.split(/\r?\n/);
-
-  // entferne "Pipeline"-Zeilen (z.B. "TOPIC=... | OPEN=... | RISK=...")
   lines = lines.filter((ln) => !ROUTER_PIPELINE_RE.test(ln));
-
-  // entferne einzelne Meta-Tag-Zeilen (z.B. "RISK=INJ")
   lines = lines.filter((ln) => !ROUTER_LINE_RE.test(ln));
-
   out = lines.join("\n").trim();
 
-  // 4) Wenn der Output offensichtlich nur Meta erklärt (dein Screenshot-Fall),
-  //    dann nicht diese „Erklärung von CONTEXT/INTENT“ anzeigen.
+  // 4) Falls der Output nur Meta erklärt: neutraler Hinweis statt Meta-Text
   const looksLikeMetaExplanation =
     /erkl[aä]rung und bedeutung/i.test(out) ||
     (/\bcontext\s*:/i.test(out) && /\bintent\s*:/i.test(out)) ||
@@ -195,9 +205,7 @@ function sanitizeReply(text) {
 
   // 5) Aufräumen
   out = out.replace(/\n{3,}/g, "\n\n").trim();
-
   return out;
-}
 }
 
 // ---------- FM normalize ----------
@@ -388,14 +396,14 @@ export default async function handler(req, res) {
   let question = stripLeadingFillers(questionRaw);
 
   // Guard: Router-/Meta-Text darf niemals als Nutzerfrage verarbeitet werden
-if (looksLikeRouterMeta(question)) {
-  res.statusCode = 200;
-  res.setHeader("Content-Type", "text/plain; charset=utf-8");
-  return res.end(
-    "Ich habe interne Steuer-/Routing-Informationen erkannt und ausgeblendet. " +
-    "Bitte stelle deine fachliche Frage in einem normalen Satz (AEVO/VWL/Personal), dann beantworte ich sie direkt."
-  );
-}
+  if (looksLikeRouterMeta(question)) {
+    res.statusCode = 200;
+    res.setHeader("Content-Type", "text/plain; charset=utf-8");
+    return res.end(
+      "Ich habe interne Steuer-/Routing-Informationen erkannt und ausgeblendet. " +
+      "Bitte stelle deine fachliche Frage in einem normalen Satz (AEVO/VWL/Personal), dann beantworte ich sie direkt."
+    );
+  }
 
   let history = normalizeHistory(body.history, 4);
   question = expandShortReply(question, history);
@@ -443,9 +451,9 @@ if (looksLikeRouterMeta(question)) {
         question,
         history,
         meta: {
-          fm_user,       // AEVO | VWL | PERSONAL | ""
-          vector_yes,    // true/false
-          need,          // VECTOR | FAST | DEFAULT
+          fm_user,
+          vector_yes,
+          need,
           token,
           context
         }
