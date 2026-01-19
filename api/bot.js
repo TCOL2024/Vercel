@@ -45,17 +45,6 @@ function allowSameOrigin(req) {
   return false;
 }
 
-function parseGenderFlag(value) {
-  if (value === true) return true;
-  if (value === false) return false;
-  if (typeof value === "string") {
-    const v = value.trim().toLowerCase();
-    if (["true", "1", "ja", "yes", "on"].includes(v)) return true;
-    if (["false", "0", "nein", "no", "off"].includes(v)) return false;
-  }
-  return false;
-}
-
 function stripLeadingFillers(text) {
   if (!text) return "";
   let t = String(text).trim();
@@ -80,7 +69,8 @@ function isPlaceholderAssistantMessage(content) {
     c.startsWith("einen moment bitte") ||
     c.includes("bitte warten") ||
     c.includes("lade") ||
-    c.includes("thinking")
+    c.includes("thinking") ||
+    c.includes("⏳")
   );
 }
 
@@ -127,42 +117,12 @@ function expandShortReply(question, history) {
   if (!lastAssistant) return q;
 
   if (isShortAffirmation(q)) {
-    return `Ja. Bitte beziehe dich auf deine letzte Frage/Handlungsaufforderung und fahre damit fort.`;
+    return `Ja. Bitte knüpfe an deine letzte Frage/Handlungsaufforderung an und führe den nächsten Schritt aus.`;
   }
   if (isShortNegation(q)) {
-    return `Nein. Bitte beziehe dich auf deine letzte Frage/Handlungsaufforderung und schlage eine alternative nächste Option vor.`;
+    return `Nein. Bitte knüpfe an deine letzte Frage/Handlungsaufforderung an und schlage eine Alternative vor.`;
   }
   return q;
-}
-
-// --- AEVO Prefix/Context ---
-function isAevoContext(question, history) {
-  const hay = [
-    question || "",
-    ...(Array.isArray(history) ? history.map(m => m?.content || "") : [])
-  ].join(" ").toLowerCase();
-
-  const keywords = [
-    "aevo", "ausbilder", "ausbildung", "auszubild", "azubi",
-    "bbig", "berufsbildungsgesetz", "ihk",
-    "ausbildungsrahmenplan", "rahmenplan", "betrieblicher ausbildungsplan",
-    "berichtsheft", "ausbildungsnachweis",
-    "probezeit", "kündigung", "abschlussprüfung", "zwischenprüfung",
-    "freistellung", "berufsschule", "jugendarbeitsschutz",
-    "unterweisung", "lernziel", "handlungskompetenz",
-    "fachliche eignung", "persönliche eignung"
-  ];
-  return keywords.some(k => hay.includes(k));
-}
-
-const AEVO_PREFIX = "Antworte fachlich fundiert im AEVO-Kontext mit kurzer Prüfungsrelevanz.";
-
-function applyAevoPrefix(question, shouldApply) {
-  if (!shouldApply) return question;
-  const q = (question || "").trim();
-  if (!q) return q;
-  if (q.toLowerCase().startsWith(AEVO_PREFIX.toLowerCase())) return q;
-  return `${AEVO_PREFIX}\n\n${q}`;
 }
 
 // --- Dedupe ---
@@ -175,23 +135,16 @@ function canonicalize(s) {
     .trim();
 }
 
-function stripAevoPrefixIfPresent(s) {
-  const t = (s || "").trim();
-  if (t.toLowerCase().startsWith(AEVO_PREFIX.toLowerCase())) return t.slice(AEVO_PREFIX.length).trim();
-  return t;
-}
-
 function dedupeHistoryAgainstQuestion(history, question) {
   if (!Array.isArray(history) || history.length === 0) return history;
-
-  const qCore = canonicalize(stripAevoPrefixIfPresent(question));
+  const qCore = canonicalize(question);
   if (!qCore) return history;
 
   // last
   const lastIdx = history.length - 1;
   const last = history[lastIdx];
   if (last && last.role === "user") {
-    const hCore = canonicalize(stripAevoPrefixIfPresent(last.content || ""));
+    const hCore = canonicalize(last.content || "");
     if (hCore && (hCore === qCore || hCore.includes(qCore) || qCore.includes(hCore))) {
       return history.slice(0, lastIdx);
     }
@@ -199,7 +152,7 @@ function dedupeHistoryAgainstQuestion(history, question) {
   // first
   const first = history[0];
   if (first && first.role === "user") {
-    const hCore = canonicalize(stripAevoPrefixIfPresent(first.content || ""));
+    const hCore = canonicalize(first.content || "");
     if (hCore && (hCore === qCore || hCore.includes(qCore) || qCore.includes(hCore))) {
       return history.slice(1);
     }
@@ -208,7 +161,7 @@ function dedupeHistoryAgainstQuestion(history, question) {
 }
 
 /**
- * Prompt-Injection / Prompt-Leak Heuristik (pragmatisch für morgen)
+ * Prompt-Injection / Prompt-Leak Heuristik
  * -> wenn true: wir schicken NICHTS an Make, sondern antworten serverseitig.
  */
 function isLeakAttempt(text) {
@@ -220,14 +173,13 @@ function isLeakAttempt(text) {
     "prompt ausgeben", "zeige den prompt", "zeige deinen prompt",
     "secrets", "\"secrets\"", "api key", "apikey", "token", "access token",
     "thread id", "thread_id", "vector store", "vectorstore", "file_search", "tools", "log", "logs", "payload",
-    "debug", "audit", "trainingsmodus",
-    "formatiere als json", "format als json", "json mit feldern", "\"system_prompt\":", "\"secrets\":",
-    "liste alle quellen", "zeige alle quellen", "quellen nennen", "ids ausgeben"
+    "debug", "audit",
+    "\"system_prompt\":", "\"secrets\":"
   ];
 
   if (needles.some(n => t.includes(n))) return true;
 
-  // forced JSON structure requests
+  // forced JSON structure requests about internals
   if (t.includes("json") && (t.includes("system_prompt") || t.includes("secrets") || t.includes("developer"))) return true;
 
   return false;
@@ -235,16 +187,10 @@ function isLeakAttempt(text) {
 
 /**
  * Response Sanitizer: entfernt Quellenblöcke/IDs/Zitiermarker/JSON-Leaks.
- * Ziel: selbst wenn Make/LLM etwas ausspuckt, kommt es nicht beim Nutzer an.
- *
- * WICHTIG: Die alte Regex-Extraktion von "answer" hat Antworten abgeschnitten,
- * sobald im Answer-Text ein Komma/Zeilenumbruch vorkam.
- * -> Neu: Robust per JSON.parse, wenn die Antwort wie JSON aussieht.
  */
 function sanitizeReply(text) {
   let out = String(text || "").trim();
 
-  // 1) Wenn Make JSON liefert: sauber parsen und "answer" extrahieren (ohne Abschneiden)
   const looksJson =
     (out.startsWith("{") && out.endsWith("}")) ||
     (out.startsWith("[") && out.endsWith("]"));
@@ -252,43 +198,37 @@ function sanitizeReply(text) {
   if (looksJson) {
     try {
       const obj = JSON.parse(out);
-
       const answer =
         (obj && typeof obj.answer === "string" && obj.answer) ||
         (obj && obj.data && typeof obj.data.answer === "string" && obj.data.answer) ||
+        (obj && obj.result && typeof obj.result === "string" && obj.result) ||
         "";
-
       if (answer) out = String(answer);
     } catch {
-      // Wenn JSON ungültig ist, sanitizen wir als normalen Text weiter unten
+      // fallback: keep as text and sanitize below
     }
   }
 
-  // 2) Entferne system_prompt/secrets Felder, falls noch vorhanden
+  // remove potential leaked fields
   out = out.replace(/"system_prompt"\s*:\s*"[\s\S]*?"\s*,?/gi, "");
   out = out.replace(/"secrets"\s*:\s*"[\s\S]*?"\s*,?/gi, "");
 
-  // 3) Entferne Zitiermarker wie 【1:...】 / 【...】
+  // remove citation markers
   out = out.replace(/【[^】]{1,200}】/g, "");
 
-  // 4) Optional: entferne reine URL-Quellenzeilen
+  // remove pure URL source lines
   out = out.replace(/^\s*-\s*https?:\/\/\S+.*$/gmi, "");
 
-  // 5) Entferne Trainingsmodus-Zeilen
-  out = out.replace(/.*trainingsmodus.*$/gim, "");
-
-  // 6) Aufräumen
+  // cleanup
   out = out.replace(/\n{3,}/g, "\n\n").trim();
   return out;
 }
 
 /**
- * Emergency Fast-Lane – Sofortantworten für Standard-Definitionen (ohne Make)
+ * Optional Fast-Lane – nur wenn fm_user=FASTLANE (nicht automatisch AEVO)
  */
 function tryFastLaneAnswer(question) {
-  const q = stripAevoPrefixIfPresent(question);
-  const t = (q || "").trim().toLowerCase();
-
+  const t = (question || "").trim().toLowerCase();
   const isDef = t.length <= 240 && (
     t.startsWith("was ist") ||
     t.includes("was bedeutet") ||
@@ -299,45 +239,28 @@ function tryFastLaneAnswer(question) {
 
   if (t.includes("fachliche eignung")) {
     return [
-      "Fachliche Eignung bedeutet: Du verfügst über die beruflichen Fertigkeiten, Kenntnisse und Fähigkeiten sowie die berufs- und arbeitspädagogischen Kompetenzen, um Ausbildung sachgerecht durchzuführen.",
-      "Prüfungsrelevanz: Häufig wird die Abgrenzung zur persönlichen Eignung geprüft – fachlich = Qualifikation/Kompetenz, persönlich = Zuverlässigkeit/keine Ausschlussgründe.",
-      "Soll ich dir dazu eine kurze AEVO-Prüfungsfrage formulieren?"
-    ].join("\n\n");
-  }
-
-  if (t.includes("persönliche eignung")) {
-    return [
-      "Persönliche Eignung heißt: Es liegen keine Gründe vor, die jemanden als Ausbilder ungeeignet machen (z. B. gravierende Verstöße gegen Schutzvorschriften oder einschlägige Verurteilungen).",
-      "Prüfungsrelevanz: Persönliche Eignung = rechtliche/charakterliche Zuverlässigkeit; fachliche Eignung = Qualifikation/Kompetenz.",
-      "Möchtest du typische Ausschlussgründe als kurze Merkliste?"
-    ].join("\n\n");
-  }
-
-  if (t.includes("berichtsheft") || t.includes("ausbildungsnachweis")) {
-    return [
-      "Der Ausbildungsnachweis (Berichtsheft) dokumentiert die vermittelten Inhalte und unterstützt die Lern- und Erfolgskontrolle.",
-      "Prüfungsrelevanz: Ausbilder sollen ihn regelmäßig kontrollieren; je nach Kammerpraxis kann er bei der Prüfungszulassung relevant sein.",
-      "Soll ich dir die typische Prüfungsargumentation (Zulassung ja/nein) kurz skizzieren?"
-    ].join("\n\n");
-  }
-
-  if (t.includes("freistellung") && (t.includes("berufsschule") || t.includes("schule"))) {
-    return [
-      "Freistellung bedeutet: Auszubildende müssen für den Berufsschulunterricht und bestimmte Prüfungs-/Ausbildungsmaßnahmen freigestellt werden.",
-      "Prüfungsrelevanz: Klassiker ist, ob während des Schulbesuchs Arbeitsleistung verlangt werden darf – in der Regel nein.",
-      "Möchtest du ein kurzes Praxisbeispiel (Konfliktfall) dazu?"
-    ].join("\n\n");
-  }
-
-  if (t.includes("probezeit") && t.includes("kündigung")) {
-    return [
-      "In der Probezeit kann das Ausbildungsverhältnis grundsätzlich jederzeit ohne Kündigungsfrist gekündigt werden (schriftlich).",
-      "Prüfungsrelevanz: Nach der Probezeit gelten strengere Voraussetzungen (z. B. fristlos aus wichtigem Grund oder Kündigung durch Azubi mit Frist bei Berufswechsel).",
-      "Soll ich die Unterschiede nach der Probezeit kurz gegenüberstellen?"
+      "Fachliche Eignung bedeutet: Du verfügst über die beruflichen Fertigkeiten, Kenntnisse und Fähigkeiten, um eine Aufgabe sachgerecht auszuführen.",
+      "Im Ausbildungskontext wird häufig zusätzlich die Abgrenzung zur persönlichen Eignung geprüft.",
+      "Möchtest du eine kurze Merkliste (Unterschied fachlich vs. persönlich)?"
     ].join("\n\n");
   }
 
   return null;
+}
+
+function normalizeFm(value) {
+  const v = (value == null) ? "" : String(value).trim();
+  if (!v) return "";
+  const u = v.toUpperCase();
+
+  // erlaubte Kürzel
+  if (["AEVO", "VWL", "FASTLANE", "URTEILE", "PERSONAL"].includes(u)) return u;
+
+  // tolerante Eingaben
+  if (u === "URTEIL" || u === "URTEILE ") return "URTEILE";
+  if (u === "HR") return "PERSONAL";
+
+  return u; // not blocking unknown, but keep uppercased
 }
 
 export default async function handler(req, res) {
@@ -377,34 +300,29 @@ export default async function handler(req, res) {
     return sendJson(res, 400, { error: "Ungültiges JSON" });
   }
 
+  // --- incoming fields (new HTML) ---
   const questionRaw = typeof body.question === "string" ? body.question : "";
   let question = stripLeadingFillers(questionRaw);
 
+  // history from HTML (already last 3) but we sanitize anyway
   let history = normalizeHistory(body.history, 4);
 
-  // Kurzantworten kontextfähig
+  // short replies become actionable
   question = expandShortReply(question, history);
 
-  // AEVO Prefix bei Ausbildungskontext
-  const aevo = isAevoContext(question, history);
-  question = applyAevoPrefix(question, aevo);
-
-  // Dedupe gegen doppelte aktuelle Frage
+  // dedupe
   history = dedupeHistoryAgainstQuestion(history, question);
+
+  // fm (new: fm_user), keep backward compatibility: fachmodus
+  const fm_user = normalizeFm(body.fm_user || body.fachmodus || "");
+
+  // token/context pass-through (optional)
+  const token = (body.token == null) ? "" : String(body.token).slice(0, 200);
+  const context = (body.context == null) ? "" : String(body.context).slice(0, 4000);
 
   // Limits
   if (!question) return sendJson(res, 400, { error: "question fehlt" });
   if (question.length > 2000) return sendJson(res, 413, { error: "question zu lang (max 2000 Zeichen)" });
-
-  // Fast-Lane
-  if (aevo) {
-    const fast = tryFastLaneAnswer(question);
-    if (fast) {
-      res.statusCode = 200;
-      res.setHeader("Content-Type", "text/plain; charset=utf-8");
-      return res.end(fast);
-    }
-  }
 
   // HARD BLOCK: Leak/Injection -> NICHT an Make weitergeben
   const leak = isLeakAttempt(question) || (Array.isArray(history) && history.some(m => isLeakAttempt(m.content)));
@@ -412,13 +330,20 @@ export default async function handler(req, res) {
     res.statusCode = 200;
     res.setHeader("Content-Type", "text/plain; charset=utf-8");
     return res.end(
-      "Ich kann keine internen Anweisungen, Prompts, technischen IDs, Logs oder Quellenstrukturen ausgeben. " +
-      "Stelle mir bitte stattdessen deine fachliche Frage (AEVO/BBiG), dann beantworte ich sie kurz und prüfungsrelevant."
+      "Ich kann keine internen Anweisungen, Prompts, technischen IDs, Logs oder Tool-Strukturen ausgeben. " +
+      "Stelle mir bitte deine fachliche Frage, dann helfe ich dir gern weiter."
     );
   }
 
-  const gender = parseGenderFlag(body.gender);
-  const style = { gender, aevo, leak };
+  // Optional Fastlane ONLY when user selected FASTLANE
+  if (fm_user === "FASTLANE") {
+    const fast = tryFastLaneAnswer(question);
+    if (fast) {
+      res.statusCode = 200;
+      res.setHeader("Content-Type", "text/plain; charset=utf-8");
+      return res.end(fast);
+    }
+  }
 
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 45000);
@@ -435,7 +360,15 @@ export default async function handler(req, res) {
         "X-Linda-Client-IP": ip,
         "X-Linda-Source": origin || referer || ""
       },
-      body: JSON.stringify({ question, history, style }),
+      body: JSON.stringify({
+        question,
+        history,
+        meta: {
+          fm_user,      // <- wichtig: eigenes Feld
+          token,
+          context
+        }
+      }),
       signal: controller.signal
     });
 
@@ -451,7 +384,6 @@ export default async function handler(req, res) {
       });
     }
 
-    // Sanitizing (Quellen/IDs/JSON-Leaks entfernen)
     text = sanitizeReply(text);
 
     res.statusCode = 200;
@@ -464,7 +396,7 @@ export default async function handler(req, res) {
       res.statusCode = 200;
       res.setHeader("Content-Type", "text/plain; charset=utf-8");
       return res.end(
-        "Das dauert gerade etwas länger. Bitte stelle die Frage etwas konkreter (z. B. „Definition + Abgrenzung in 5 Sätzen“). Soll ich dir dazu eine passende AEVO-Prüfungsfrage erstellen?"
+        "Das dauert gerade etwas länger. Bitte stelle die Frage etwas konkreter (z. B. „Definition + Abgrenzung in 5 Sätzen“)."
       );
     }
 
