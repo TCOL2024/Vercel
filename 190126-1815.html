@@ -345,6 +345,10 @@
       min-height: 60px;
       border-radius: 14px;
     }
+    function isQuickFeedbackPositive(t){
+  const s = (t||"").trim().toLowerCase();
+  return ["gut","sehr gut","top","super","danke","thx","passt","ok","okay"].includes(s);
+}
     .send {
       padding: 0.95rem 1.1rem;
       min-height: 56px;
@@ -1036,7 +1040,17 @@
         return;
     }
 
-    const q=inp.value.trim(); if(!q) return;
+    const q=inp.value.trim(); if(!q) return; // ✅ Kurz-Feedback abfangen (kein Make, kein LLM)
+if (isQuickFeedbackPositive(q)) {
+  inp.value = '';
+  push('user', q); addMsg('user', q);
+
+  const ack = "Danke fürs Feedback 👍";
+  push('assistant', ack); addMsg('assistant', ack);
+
+  saveAll();
+  return;
+}
     inp.value='';
 
     sendBtn.innerText = '■ Stopp';
