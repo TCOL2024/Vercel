@@ -1,0 +1,1174 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+<title>Linda – Deine persönliche Assistentin (190126-1815)</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.8/purify.min.js"></script>
+
+<style>
+  :root {
+    --font-body: 'Inter', system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+    --font-size: 12px;
+
+    --bg: #ffffff;
+    --panel: #f8f9fa;
+    --line: #e9ecef;
+    --text: #212529;
+    --muted: #6c757d;
+
+    --brand: #004481;
+    --brand-2: #0071ce;
+    --brand-danger: #dc3545;
+
+    --shadow: 0 2px 8px rgba(0, 68, 129, 0.1), 0 1px 3px rgba(0, 68, 129, 0.05);
+    --radius: 8px;
+    --transition: all 0.3s ease;
+
+    --mobile-font: 16px;
+    --mobile-chat-font: 17px;
+    --mobile-lineheight: 1.65;
+  }
+
+  body.dark {
+    --bg: #f8f9fa;
+    --panel: #ffffff;
+    --line: #dee2e6;
+    --text: #495057;
+    --muted: #6c757d;
+    --brand: #004481;
+    --brand-2: #0071ce;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; height: 100dvh; font-family: var(--font-body); font-size: var(--font-size); background: var(--bg); color: var(--text); line-height: 1.6; overflow: hidden; }
+  a { color: var(--brand-2); text-decoration: none; transition: var(--transition); }
+  a:hover { color: var(--brand); }
+
+  body { -webkit-user-select: none; user-select: none; }
+  .bubble, .in, .ta { -webkit-user-select: text; user-select: text; }
+
+  .top {
+    position: sticky; top: 0; z-index: 30;
+    background: var(--panel);
+    border-bottom: 1px solid var(--line);
+    padding: 1rem 1.5rem;
+    display: flex; align-items: center; gap: 1rem;
+    box-shadow: var(--shadow);
+    height: 70px;
+  }
+  .brand { font-weight: 700; font-size: 1.5rem; letter-spacing: -0.02em; color: var(--brand); }
+  .grow { flex: 1; }
+
+  .badge {
+    display: inline-flex; align-items: center; gap: 0.5rem;
+    background: rgba(0, 68, 129, 0.1);
+    color: var(--brand);
+    border: 1px solid var(--line);
+    padding: 0.5rem 0.9rem;
+    border-radius: 999px;
+    font-size: 0.9rem;
+    font-weight: 500;
+  }
+
+  .gender-icon {
+    display:inline-flex; align-items:center; justify-content:center;
+    width: 26px; height: 26px; border-radius: 999px;
+    border: 1px solid var(--line);
+    background: rgba(248, 249, 250, 0.9);
+    font-size: 14px; line-height: 1;
+    transition: var(--transition);
+    user-select: none;
+  }
+  .gender-icon.on { color: var(--brand-2); background: rgba(0, 113, 206, 0.10); }
+  .gender-icon.off { color: #9aa3ad; background: rgba(248, 249, 250, 0.9); }
+
+  .icon-btn { appearance: none; border: 0; background: transparent; cursor: pointer; padding: 0.5rem; border-radius: var(--radius); transition: var(--transition); }
+  .icon-btn:hover { background: rgba(0, 68, 129, 0.1); }
+  .sliders { width: 24px; height: 24px; }
+
+  .container {
+    max-width: 1400px; margin: 0 auto; padding: 1.5rem;
+    display: grid; grid-template-columns: 300px 1fr;
+    gap: 2rem;
+    height: calc(100dvh - 70px);
+  }
+  .sidebar { display: flex; flex-direction: column; gap: 1.5rem; height: 100%; overflow: hidden; }
+
+  .panel { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; }
+
+  .avatar { padding: 1.5rem; display: flex; flex-direction: column; align-items: center; text-align: center; flex-shrink: 0; }
+  .avatar img { width: 100%; max-width: 120px; border-radius: var(--radius); display: block; box-shadow: var(--shadow); }
+  .avatar .name { margin-top: 1rem; font-weight: 600; font-size: 1.2rem; color: var(--brand); }
+
+  .sessions { display: flex; flex-direction: column; flex: 1; overflow: hidden; }
+  .sessions .head { padding: 1rem 1.5rem; border-bottom: 1px solid var(--line); display: flex; align-items: center; justify-content: space-between; background: var(--bg); flex-shrink: 0; }
+  .sessions .list { overflow-y: auto; padding: 0.5rem; flex: 1; }
+
+  .sess {
+    display: flex; align-items: center; justify-content: space-between; gap: 0.75rem;
+    padding: 1rem 1.5rem; border-radius: var(--radius);
+    cursor: pointer; transition: var(--transition); margin-bottom: 0.5rem;
+  }
+  .sess:hover { background: rgba(0, 68, 129, 0.05); }
+  .sess.active { background: rgba(0, 68, 129, 0.1); border-left: 4px solid var(--brand); }
+  .sess .ttl { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 180px; font-weight: 500; }
+  .sess .rowbtns { display: flex; gap: 0.5rem; opacity: 0; transition: var(--transition); }
+  .sess:hover .rowbtns { opacity: 1; }
+
+  .sm-btn {
+    appearance: none; border: 1px solid var(--line);
+    background: rgba(248, 249, 250, 0.8); color: var(--text);
+    border-radius: 6px; padding: 0.4rem 0.8rem;
+    cursor: pointer; font-size: 0.85rem; transition: var(--transition);
+  }
+  .sm-btn:hover { background: rgba(0, 68, 129, 0.1); color: var(--brand); }
+
+  .chat {
+    display: flex; flex-direction: column;
+    height: 100%;
+    min-height: 0;
+  }
+  .log {
+    flex: 1; overflow-y: auto;
+    display: flex; flex-direction: column; gap: 1.5rem; padding: 1rem;
+    scroll-behavior: smooth;
+  }
+
+  .bubble {
+    max-width: 85ch;
+    border-radius: var(--radius);
+    padding: 1.5rem;
+    background: var(--panel);
+    box-shadow: var(--shadow);
+    line-height: 1.7;
+    word-wrap: break-word;
+    position: relative;
+  }
+
+  .bubble .md h1, .bubble .md h2, .bubble .md h3 { margin: 0.5rem 0 1rem; font-weight: 600; color: var(--brand); }
+  .bubble .md p, .bubble .md ul, .bubble .md ol, .bubble .md pre, .bubble .md blockquote, .bubble .md table { margin: 0.75rem 0; }
+  .bubble .md pre { background: var(--bg); padding: 1rem; border-radius: var(--radius); overflow-x: auto; }
+  .bubble .md code { background: var(--bg); padding: 0.2rem 0.4rem; border-radius: 4px; font-family: 'Courier New', monospace; }
+
+  .me {
+    align-self: flex-end;
+    background: var(--brand) !important;
+    color: #fff !important;
+  }
+  .me .md, .me .md * { color: #fff !important; }
+  .me .md a { color: #d7ebff !important; text-decoration: underline; }
+
+  .bubble-header {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.35rem;
+    margin-bottom: 0.5rem;
+    flex-wrap: wrap;
+  }
+
+  .copy-btn, .pdf-btn, .share-btn, .fb-down-btn {
+    appearance: none;
+    border: 1px solid var(--line);
+    background: rgba(248, 249, 250, 0.9);
+    border-radius: 999px;
+    padding: 0.25rem 0.6rem;
+    font-size: 0.85rem;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    transition: var(--transition);
+    color: var(--muted);
+  }
+  .copy-btn:hover, .pdf-btn:hover, .share-btn:hover, .fb-down-btn:hover {
+    background: rgba(0, 68, 129, 0.08);
+    color: var(--brand);
+  }
+
+  .sources {
+    margin-top: 1rem;
+    padding: 0.9rem 1rem;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    background: rgba(0, 68, 129, 0.04);
+  }
+  .sources .src-title {
+    font-weight: 600;
+    color: var(--brand);
+    margin-bottom: 0.6rem;
+  }
+  .sources ul { margin: 0.2rem 0 0; padding: 0; list-style: none; }
+  .sources li {
+    display: inline-flex;
+    margin: 0.25rem 0.35rem 0 0;
+    padding: 0.35rem 0.6rem;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    background: #fff;
+    color: var(--text);
+    font-size: 0.9em;
+  }
+
+  .composer {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 1rem;
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+    box-shadow: var(--shadow);
+    margin-top: 1rem;
+  }
+  .in {
+    flex: 1;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    background: rgba(248, 249, 250, 0.8);
+    padding: 1rem;
+    font-size: 1rem;
+    outline: none;
+    color: var(--text);
+    transition: var(--transition);
+    min-height: 48px;
+  }
+  .in:focus { border-color: var(--brand); box-shadow: 0 0 0 2px rgba(0, 68, 129, 0.2); }
+
+  .send {
+    appearance: none; border: 0;
+    background: var(--brand);
+    color: #fff;
+    font-weight: 600;
+    border-radius: var(--radius);
+    padding: 1rem 2rem;
+    cursor: pointer;
+    transition: var(--transition);
+    min-height: 48px;
+    min-width: 100px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .send:hover { background: var(--brand-2); }
+  .send:disabled { opacity: 0.6; cursor: not-allowed; }
+  .send.stop-mode { background: var(--brand-danger); }
+  .send.stop-mode:hover { background: #bb2d3b; }
+
+  .modal {
+    position: fixed; inset: 0;
+    display: none; align-items: center; justify-content: center;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(5px);
+    z-index: 1000;
+    animation: fadeIn 0.3s ease;
+  }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    width: min(95vw, 800px);
+    max-height: 90vh;
+    overflow: auto;
+    animation: slideIn 0.3s ease;
+  }
+  @keyframes slideIn { from { transform: translateY(-20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+  .card-h { padding: 1.5rem 2rem; border-bottom: 1px solid var(--line); font-weight: 700; font-size: 1.2rem; color: var(--brand); }
+  .card-b { padding: 2rem; line-height: 1.7; }
+  .card-f { padding: 1.5rem 2rem; border-top: 1px solid var(--line); display: flex; gap: 1rem; justify-content: flex-end; }
+  .btn {
+    appearance: none;
+    border: 1px solid var(--line);
+    background: rgba(248, 249, 250, 0.8);
+    color: var(--text);
+    border-radius: var(--radius);
+    padding: 0.75rem 1.5rem;
+    cursor: pointer;
+    font-weight: 600;
+    transition: var(--transition);
+  }
+  .btn:hover { background: rgba(0, 68, 129, 0.1); color: var(--brand); }
+  .btn.primary { background: var(--brand); border-color: var(--brand); color: #fff; }
+  .btn.primary:hover { background: var(--brand-2); }
+  .muted { color: var(--muted); }
+
+  .group { padding: 2rem; border-top: 1px solid var(--line); }
+  .group:first-child { border-top: none; }
+  .row { display: flex; align-items: center; justify-content: space-between; gap: 1.5rem; margin: 1rem 0; }
+  .chips { display: flex; gap: 0.75rem; flex-wrap: wrap; }
+  .chip { padding: 0.6rem 1.2rem; border: 1px solid var(--line); border-radius: 20px; background: var(--panel); cursor: pointer; transition: var(--transition); font-weight: 500; }
+  .chip:hover { border-color: var(--brand); }
+  .chip.active { background: var(--brand); border-color: var(--brand); color: #fff; }
+
+  .ta { width: 100%; min-height: 100px; border: 1px solid var(--line); border-radius: var(--radius); padding: 1rem; background: rgba(248, 249, 250, 0.8); color: var(--text); font-family: inherit; resize: vertical; transition: var(--transition); }
+  .ta:focus { border-color: var(--brand); box-shadow: 0 0 0 2px rgba(0, 68, 129, 0.2); }
+  .select { border: 1px solid var(--line); border-radius: var(--radius); padding: 0.75rem 1rem; background: rgba(248, 249, 250, 0.8); color: var(--text); font-family: inherit; transition: var(--transition); }
+  .select:focus { border-color: var(--brand); box-shadow: 0 0 0 2px rgba(0, 68, 129, 0.2); }
+  .switch { width: 50px; height: 28px; border-radius: 14px; background: #e9ecef; position: relative; cursor: pointer; border: 1px solid var(--line); transition: var(--transition); }
+  .switch > i { position: absolute; width: 24px; height: 24px; top: 1px; left: 1px; border-radius: 50%; background: #fff; transition: left 0.3s ease; }
+  .switch.on { background: var(--brand); }
+  .switch.on > i { left: 24px; }
+  .disabled { opacity: 0.5; cursor: not-allowed; user-select: none; }
+
+  .footer { text-align: center; padding: 1rem; color: var(--muted); font-size: 0.9rem; border-top: 1px solid var(--line); margin-top: auto; }
+  .footer a { color: var(--brand); }
+
+  @media (max-width: 1024px) {
+    .container { grid-template-columns: 1fr; gap: 1rem; padding: 0.9rem; }
+  }
+  @media (max-width: 768px) {
+    html, body { font-size: var(--mobile-font); }
+    .top { padding: 0.8rem 0.9rem; gap: 0.6rem; box-shadow: none; height: 60px; }
+    .brand { font-size: 1.15rem; }
+    .badge { font-size: 0.85rem; padding: 0.45rem 0.7rem; }
+
+    .container { padding: 0.8rem; height: calc(100dvh - 60px); }
+    .sidebar { display: none !important; }
+
+    .log { padding: 0.5rem; gap: 0.9rem; }
+    .bubble { padding: 1rem; max-width: 100%; }
+    .bubble .md { font-size: var(--mobile-chat-font); line-height: var(--mobile-lineheight); }
+
+    .composer {
+      padding: 0.8rem;
+      gap: 0.7rem;
+      border-radius: 14px;
+      flex-direction: column;
+      align-items: stretch;
+      margin-top: 0.5rem;
+    }
+    .in {
+      font-size: 1.05rem;
+      padding: 0.95rem 1rem;
+      min-height: 60px;
+      border-radius: 14px;
+    }
+    .send {
+      padding: 0.95rem 1.1rem;
+      min-height: 56px;
+      border-radius: 14px;
+      width: 100%;
+    }
+    .footer { display:none; }
+  }
+
+  @supports (padding: max(0px)) {
+    @media (max-width: 768px) {
+      .container { padding-bottom: max(0.8rem, env(safe-area-inset-bottom)); }
+    }
+  }
+
+  .top-actions { display:none; gap: 0.5rem; align-items:center; }
+  @media (max-width: 768px){
+    .top-actions { display:flex; }
+    .top .icon-btn { padding: 0.4rem; }
+  }
+  .mini-btn{
+    appearance:none; border:1px solid var(--line);
+    background: rgba(248, 249, 250, 0.9);
+    color: var(--text);
+    border-radius: 999px;
+    padding: 0.45rem 0.75rem;
+    font-weight: 600;
+    cursor:pointer;
+    transition: var(--transition);
+    font-size: 0.85rem;
+  }
+  .mini-btn:hover{ background: rgba(0, 68, 129, 0.08); color: var(--brand); }
+
+  .mob-sess-list .sess { margin: 0.35rem 0; padding: 0.9rem 1rem; }
+  .mob-sess-list .sess .rowbtns { opacity: 1; }
+</style>
+</head>
+
+<body>
+
+<div id="m-privacy" class="modal" style="display:flex">
+  <div class="card">
+    <div class="card-h">Datenschutzhinweis</div>
+    <div class="card-b">
+      <p>Um diesen Chatbot nutzen zu können, ist deine Zustimmung zur Datenschutzerklärung erforderlich:</p>
+      <ul style="margin:1rem 0 0 1.5rem">
+        <li>Deine Eingaben werden an OpenAI (USA) und Make (EU) übermittelt.</li>
+        <li>Die übermittelten Daten werden zur Generierung von Antworten verarbeitet.</li>
+        <li>Bitte gib <strong>keine sensiblen oder personenbezogenen Daten</strong> ein!</li>
+        <li>Weitere Informationen: <a href="https://openai.com/policies/privacy-policy" target="_blank" rel="noopener">OpenAI</a>, <a href="https://www.make.com/en/privacy-policy" target="_blank" rel="noopener">Make.com</a>.</li>
+      </ul>
+      <p class="muted" style="margin-top:1rem">Hinweis: Dein <b>Chatverlauf</b> wird <b>nur lokal</b> auf deinem Gerät gespeichert (localStorage). Du kannst ihn in den Einstellungen verwalten (löschen/exportieren).</p>
+    </div>
+    <div class="card-f">
+      <button class="btn" id="p-decline">Ablehnen</button>
+      <button class="btn primary" id="p-accept">Zustimmen</button>
+    </div>
+  </div>
+</div>
+
+<div id="m-usage" class="modal">
+  <div class="card">
+    <div class="card-h">Wichtige Hinweise zur Bot-Nutzung</div>
+    <div class="card-b">
+      <ul style="margin:1rem 0 0 1.5rem">
+        <li><strong>Automatisierte Antworten:</strong> Alle Antworten werden von KI generiert.</li>
+        <li><strong>Keine Gewähr:</strong> Inhalte können unvollständig/fehlerhaft sein – bitte prüfen.</li>
+        <li><strong>Kein Ersatz für Beratung:</strong> Keine Rechts-, Medizin-, Steuer- oder Finanzberatung.</li>
+        <li><strong>Eigenverantwortung:</strong> Antworten kritisch hinterfragen und Quellen beachten.</li>
+      </ul>
+    </div>
+    <div class="card-f"><button class="btn primary" id="u-accept">Einverstanden</button></div>
+  </div>
+</div>
+
+<div id="m-sessions" class="modal">
+  <div class="card">
+    <div class="card-h">Verläufe (max. 4)</div>
+    <div class="card-b">
+      <div style="display:flex; gap:0.6rem; flex-wrap:wrap; margin-bottom: 1rem;">
+        <button class="btn primary" id="mob-new">Neuer Chat</button>
+        <button class="btn" id="mob-export-all">Gesamt-Export</button>
+        <button class="btn" id="mob-clear-all">Alle löschen</button>
+      </div>
+      <div id="mob-sess-list" class="mob-sess-list"></div>
+    </div>
+    <div class="card-f">
+      <button class="btn" id="mob-sess-close">Schließen</button>
+    </div>
+  </div>
+</div>
+
+<div id="m-feedback" class="modal">
+  <div class="card">
+    <div class="card-h">Feedback</div>
+    <div class="card-b">
+      <p><strong>Danke, dass Du ein Feedback melden möchtest.</strong></p>
+      <p class="muted" style="margin-top:0.5rem">Dieses Feedback kannst Du gleich in Deinem Mailprogramm formulieren.</p>
+      <p class="muted" style="margin-top:0.75rem">Hinweis: Der Chat kann als <b>.txt</b> mitgegeben werden (nur wenn Du einverstanden bist). Falls dein Mailprogramm keinen Dateianhang automatisch übernimmt, wird die Datei zusätzlich heruntergeladen – du kannst sie dann manuell anhängen. Sende die Mail mit Deinem Feedback bitte an KI-TEST@GMX.COM</p>
+    </div>
+    <div class="card-f">
+      <button class="btn" id="fb-cancel">Abbrechen</button>
+      <button class="btn primary" id="fb-continue">Weiter</button>
+    </div>
+  </div>
+</div>
+
+<div id="m-settings" class="modal">
+  <div class="card">
+    <div class="card-h">Einstellungen</div>
+
+    <div class="group">
+      <div class="row">
+        <label>Darstellung</label>
+        <div class="chips" id="chip-theme">
+          <div class="chip" data-val="light">Hell</div>
+          <div class="chip" data-val="dark">Dunkel</div>
+          <div class="chip" data-val="system">System</div>
+        </div>
+      </div>
+
+      <div class="row"><label>Gender-Sprache</label><div id="sw-gender" class="switch"><i></i></div></div>
+      <div class="row"><label>Begrüßung anzeigen</label><div id="sw-greet" class="switch on"><i></i></div></div>
+      <div class="row"><label>Lernmodus (inaktiv)</label><div class="switch disabled" title="Demnächst"><i></i></div></div>
+
+      <div class="row">
+        <label>Schriftart</label>
+        <select id="sel-font" class="select">
+          <option value="Arial">Arial</option>
+          <option value="Aptos">Aptos</option>
+          <option value="Times New Roman">Times New Roman</option>
+          <option value="Index">Index</option>
+        </select>
+      </div>
+      <div class="row">
+        <label>Schriftgröße</label>
+        <select id="sel-font-size" class="select">
+          <option value="11">11</option>
+          <option value="12">12</option>
+          <option value="13">13</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="group">
+      <div class="row">
+        <label>Fachmodus (Kürzel)</label>
+        <select id="sel-domain" class="select">
+          <option value="">— Kein spezieller Modus —</option>
+          <option value="AEVO">AEVO</option>
+          <option value="VWL">VWL</option>
+          <option value="FASTLANE">FASTLANE</option>
+          <option value="URTEILE">Urteile</option>
+          <option value="PERSONAL">Personal & Kommunikation</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="group">
+      <div class="row" style="align-items:flex-start">
+        <div>
+          <div><strong>Chatverlauf</strong></div>
+          <div class="muted">Nur lokal gespeichert. Du kannst ihn löschen oder exportieren.</div>
+        </div>
+        <div style="display:flex;gap:0.75rem">
+          <button class="btn" id="btn-export-all">Gesamt-Export (.txt)</button>
+          <button class="btn" id="btn-clear-all">Alle löschen</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card-f">
+      <button class="btn" id="s-close">Schließen</button>
+      <button class="btn primary" id="s-save">Speichern</button>
+    </div>
+  </div>
+</div>
+
+<div class="top">
+  <div class="brand">Linda</div>
+
+  <div class="top-actions">
+    <button class="mini-btn" id="mob-top-new" title="Neuer Chat">Neu</button>
+    <button class="mini-btn" id="mob-top-sessions" title="Verläufe">Verläufe</button>
+  </div>
+
+  <div class="grow"></div>
+  <div id="domain-badge" class="badge" style="display:none">📘 Fachmodus: —</div>
+
+  <button class="icon-btn" id="btn-settings" aria-label="Einstellungen öffnen">
+    <svg class="sliders" viewBox="0 0 24 24" fill="none" stroke="var(--brand)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <line x1="4" y1="6" x2="20" y2="6"></line>
+      <line x1="4" y1="12" x2="20" y2="12"></line>
+      <line x1="4" y1="18" x2="20" y2="18"></line>
+      <circle cx="9" cy="6" r="2"></circle>
+      <circle cx="15" cy="12" r="2"></circle>
+      <circle cx="7" cy="18" r="2"></circle>
+    </svg>
+  </button>
+</div>
+
+<div class="container">
+  <aside class="sidebar">
+    <div class="panel avatar">
+      <img src="https://ntc-bot1.netlify.app/Bildschirmfoto%202025-06-26%20um%2021.09.25.png" alt="Linda"/>
+      <div class="name">Linda</div>
+    </div>
+
+    <div class="panel sessions">
+      <div class="head">
+        <div style="font-weight:600">Verläufe</div>
+        <button id="btn-new" class="sm-btn">Neu</button>
+      </div>
+      <div id="sess-list" class="list"></div>
+    </div>
+    <div class="footer">
+      <p>&copy; 2025 Linda Assistent. <br><a href="" target="_blank">Made with love in Oldenburg</a></p>
+    </div>
+  </aside>
+
+  <section class="chat">
+    <div id="log" class="log"></div>
+    <div style="position:relative">
+      <div class="composer">
+        <input id="in" class="in" placeholder="Deine Frage …"/>
+        <button id="send" class="send">Senden</button>
+      </div>
+    </div>
+  </section>
+</div>
+
+<script id="linda-context-addon">
+(function(){
+  if (localStorage.getItem('linda.addon.disabled') === '1') { console.info('[linda-addon] disabled'); return; }
+
+  const MAX_CONTEXT_CHARS = 2500;
+
+  function getFachmodus() {
+    const sel = document.getElementById('sel-domain');
+    if (sel && sel.value) return sel.value;
+    return '';
+  }
+
+  function buildCompressedContext() {
+    let rawSessions = null, sessions = [], activeId = null, session = null;
+    try { rawSessions = localStorage.getItem('linda.sessions'); sessions = rawSessions ? JSON.parse(rawSessions) : []; } catch {}
+    try { activeId = localStorage.getItem('linda.activeId'); } catch {}
+    if (activeId) session = sessions.find(s=>s.id===activeId);
+    if (!session && sessions && sessions.length) session = sessions[0];
+
+    if (!session || !Array.isArray(session.messages)) return '';
+
+    let context = '';
+    let currentLen = 0;
+    const msgs = session.messages;
+    for (let i = msgs.length - 1; i >= 0; i--) {
+      const m = msgs[i];
+      const txt = (m.role==='user'?'User: ':'Linda: ') + (m.content||'') + "\n";
+      if (currentLen + txt.length > MAX_CONTEXT_CHARS) break;
+      context = txt + context;
+      currentLen += txt.length;
+    }
+    return context;
+  }
+
+  const _origFetch = window.fetch.bind(window);
+  window.fetch = async function(url, options = {}) {
+    if (options.signal) { /* no-op, fetch handles it */ }
+
+    try {
+      const method = ((options && options.method) || "GET").toUpperCase();
+      const isPost = method === "POST";
+      const headers = options && options.headers ? options.headers : {};
+      const contentType = (headers["Content-Type"] || headers["content-type"] || "").toLowerCase();
+      const isJson = contentType.includes("application/json") || (typeof options.body === "string" && options.body.trim().startsWith("{"));
+
+      if (isPost && isJson && typeof options.body === "string") {
+        try {
+          const body = JSON.parse(options.body);
+          const hasMessageLike = (typeof body.message === "string") || (typeof body.question === "string");
+          if (body && typeof body === "object" && hasMessageLike && !("context" in body)) {
+            const context = buildCompressedContext();
+            const fachmodus = getFachmodus();
+            const augmented = { ...body, context, fachmodus, user: body.user || "Dozent" };
+            options.body = JSON.stringify(augmented);
+          }
+        } catch (err) {
+          console.warn('[linda-addon] could not parse JSON body, skipping augmentation', err);
+        }
+      }
+    } catch (err) {
+      console.warn('[linda-addon] wrapper error, calling original fetch', err);
+    }
+    return _origFetch(url, options);
+  };
+})();
+</script>
+
+<script>
+(function(){
+  document.addEventListener('contextmenu', e => e.preventDefault());
+  document.addEventListener('copy', e => e.preventDefault());
+  document.addEventListener('cut', e => e.preventDefault());
+  document.addEventListener('paste', e => e.preventDefault());
+  document.addEventListener('selectstart', e => e.preventDefault());
+
+  const uniqueToken = 'Linda-v28.0-Sec-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+  const IS_MOBILE = /Mobi|Android|iPhone/i.test(navigator.userAgent || '');
+
+  const $=id=>document.getElementById(id);
+  const LS={get(k,d){try{return JSON.parse(localStorage.getItem(k))??d}catch{return d}},set(k,v){localStorage.setItem(k,JSON.stringify(v))},del(k){localStorage.removeItem(k)}};
+
+  const S=LS.get('linda.settings',{theme:'light',gender:false,greet:true,domain:'',font:'Arial',fontSize:'12'});
+  let Sessions=LS.get('linda.sessions',[]);
+  let activeId=LS.get('linda.activeId',null);
+
+  let abortCtrl = null;
+
+  const md=(txt)=>{
+    try {
+      const raw = marked.parse(txt);
+      return DOMPurify.sanitize(raw);
+    } catch { return txt; }
+  };
+
+  const show=m=>m.style.display='flex', hide=m=>m.style.display='none';
+  const uid=()=> 's_'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+
+  function saveAll(){ LS.set('linda.settings',S); LS.set('linda.sessions',Sessions); LS.set('linda.activeId',activeId); }
+
+  function applyTheme(){
+    if(S.theme==='system'){
+      const m=window.matchMedia('(prefers-color-scheme: dark)');
+      document.body.classList.toggle('dark',m.matches);
+      m.onchange=()=>document.body.classList.toggle('dark',m.matches);
+    }else{
+      document.body.classList.toggle('dark',S.theme==='dark');
+    }
+    document.querySelectorAll('#chip-theme .chip').forEach(c=>c.classList.toggle('active',c.dataset.val===S.theme));
+  }
+
+  function applyTypography(){
+    const fontMap={
+      'Arial': 'Arial, Helvetica, sans-serif',
+      'Aptos': '"Aptos", "Segoe UI", sans-serif',
+      'Times New Roman': '"Times New Roman", Times, serif',
+      'Index': '"Index", "Inter", system-ui, sans-serif'
+    };
+    const fontVal=fontMap[S.font] || fontMap['Arial'];
+    document.documentElement.style.setProperty('--font-body', fontVal);
+
+    const sizeVal = parseInt(S.fontSize,10);
+    const safeSize = isNaN(sizeVal) ? 12 : Math.min(14, Math.max(11, sizeVal));
+    document.documentElement.style.setProperty('--font-size', safeSize + 'px');
+
+    const fontSelect=$('sel-font');
+    const sizeSelect=$('sel-font-size');
+    if(fontSelect) fontSelect.value=S.font;
+    if(sizeSelect) sizeSelect.value=String(safeSize);
+  }
+
+  function ensureFirstSession(){
+    if(!Sessions.length){
+      const id=uid();
+      Sessions=[{id,name:'Neuer Chat',ts:Date.now(),messages:[]}];
+      activeId=id; Sessions[0].id=id; saveAll();
+    }
+    if(!activeId || !Sessions.find(s=>s.id===activeId)){ activeId=Sessions[0].id; saveAll(); }
+  }
+
+  function active(){ return Sessions.find(s=>s.id===activeId); }
+  function setActive(id){ activeId=id; saveAll(); renderSessions(); renderMobileSessions(); renderChat(); setBadge(); }
+  function addSession(){
+    const id=uid();
+    Sessions.unshift({id,name:'Neuer Chat',ts:Date.now(),messages:[]});
+    setActive(id);
+  }
+
+  function renameSession(id){
+    const s=Sessions.find(x=>x.id===id); if(!s) return;
+    const nn=prompt('Neuer Name für Verlauf:', s.name||''); if(nn!==null){ s.name=nn.trim()||s.name; saveAll(); renderSessions(); renderMobileSessions(); }
+  }
+  function deleteSession(id){
+    if(!confirm('Diesen Verlauf wirklich löschen?')) return;
+    Sessions=Sessions.filter(x=>x.id!==id);
+    if(!Sessions.length){ addSession(); } else if(activeId===id){ activeId=Sessions[0].id; }
+    saveAll(); renderSessions(); renderMobileSessions(); renderChat(); setBadge();
+  }
+  function exportSession(id){
+    const s=Sessions.find(x=>x.id===id); if(!s) return;
+    const text=s.messages.map(m=>(m.role==='user'?'Du: ':'Linda: ')+m.content).join('\n\n');
+    const blob=new Blob([text],{type:'text/plain'}); const a=document.createElement('a');
+    a.href=URL.createObjectURL(blob); a.download=(s.name||'linda_chat')+'.txt'; a.click(); URL.revokeObjectURL(a.href);
+  }
+
+  function visibleSessions(){ return Sessions.slice(0,4); }
+
+  function renderSessionListGeneric(containerId, isMobile) {
+    const el = $(containerId);
+    if (!el) return;
+    const prefix = isMobile ? 'ms-' : 's-';
+
+    el.innerHTML = visibleSessions().map(s=>`
+      <div class="sess ${s.id===activeId?'active':''}" data-id="${s.id}">
+        <div class="ttl">${s.name||'Chat'}<div class="muted" style="font-size:.85rem">${new Date(s.ts).toLocaleDateString()}</div></div>
+        <div class="rowbtns">
+          <button class="sm-btn ${prefix}rename" title="Umbenennen">✎</button>
+          <button class="sm-btn ${prefix}export" title="Exportieren">⤓</button>
+          <button class="sm-btn ${prefix}del" title="Löschen">🗑</button>
+        </div>
+      </div>
+    `).join('');
+
+    el.querySelectorAll('.sess').forEach(n=>{
+        n.onclick=(e)=>{
+            if(e.target.closest('.rowbtns')) return;
+            setActive(n.dataset.id);
+            if(isMobile) hide($('m-sessions'));
+        };
+    });
+
+    el.querySelectorAll('.'+prefix+'rename').forEach(b=>b.onclick=(e)=>{e.stopPropagation(); renameSession(b.closest('.sess').dataset.id);});
+    el.querySelectorAll('.'+prefix+'export').forEach(b=>b.onclick=(e)=>{e.stopPropagation(); exportSession(b.closest('.sess').dataset.id);});
+    el.querySelectorAll('.'+prefix+'del').forEach(b=>b.onclick=(e)=>{e.stopPropagation(); deleteSession(b.closest('.sess').dataset.id);});
+  }
+
+  function renderSessions(){ renderSessionListGeneric('sess-list', false); }
+  function renderMobileSessions(){ renderSessionListGeneric('mob-sess-list', true); }
+
+  function getLastUserQuestion(){
+    const s = active();
+    if(!s || !Array.isArray(s.messages)) return '';
+    for(let i=s.messages.length-1;i>=0;i--){
+      if(s.messages[i].role==='user' && s.messages[i].content) return s.messages[i].content;
+    }
+    return '';
+  }
+
+  function styleSourcesInBubble(bubbleEl){
+    const mdEl = bubbleEl.querySelector('.md');
+    if(!mdEl) return;
+
+    const headings = Array.from(mdEl.querySelectorAll('h1,h2,h3'));
+    const h = headings.find(x => /quellenhinweise|quellenangaben|quellen/i.test((x.textContent||'').trim()));
+    if(!h) return;
+
+    let n = h.nextElementSibling;
+    while(n && n.tagName && !/UL|OL/i.test(n.tagName)) n = n.nextElementSibling;
+
+    if(n && /UL|OL/i.test(n.tagName)){
+      const wrap = document.createElement('div');
+      wrap.className = 'sources';
+      const title = document.createElement('div');
+      wrap.appendChild(title);
+      title.className = 'src-title';
+      title.textContent = 'Quellen';
+
+      const ul = document.createElement('ul');
+      Array.from(n.querySelectorAll('li')).forEach(li=>{
+        const item = document.createElement('li');
+        item.textContent = (li.textContent||'').trim();
+        if(item.textContent) ul.appendChild(item);
+      });
+      wrap.appendChild(ul);
+
+      n.replaceWith(wrap);
+      h.remove();
+    }
+  }
+
+  function copyText(text, btn){
+    if(!text) return;
+    const original = btn ? btn.innerHTML : '';
+    navigator.clipboard.writeText(text).then(()=>{
+      if(btn){ btn.innerHTML = '<span>✔</span><span>kopiert</span>'; setTimeout(()=>btn.innerHTML=original, 1200); }
+    }).catch(()=>{
+      if(btn){ btn.innerHTML = '<span>!</span><span>Fehler</span>'; setTimeout(()=>btn.innerHTML=original, 1500); }
+    });
+  }
+
+  function buildSharePayload(answerText){
+    const q = getLastUserQuestion();
+    const a = answerText || '';
+    const payload = `Frage:\n${q}\n\nAntwort:\n${a}\n`;
+    return { q, a, payload };
+  }
+
+  function shareAnswer(answerText){
+    const { payload } = buildSharePayload(answerText);
+    const title = 'Linda – Frage & Antwort';
+
+    if (navigator.share) {
+      navigator.share({ title, text: payload }).catch(()=>{});
+      return;
+    }
+    const subject = encodeURIComponent(title);
+    const body = encodeURIComponent(payload);
+    window.location.href = `mailto:?subject=${subject}&body=${body}`;
+  }
+
+  function downloadAnswerPdf(answerText){
+    const { q } = buildSharePayload(answerText);
+    const now = new Date();
+    const dt = now.toLocaleDateString('de-DE') + ', ' + now.toLocaleTimeString('de-DE', {hour:'2-digit', minute:'2-digit'}) + ' Uhr';
+    const disclaimer = "Disclaimer: KI-Antworten können unvollständig oder fehlerhaft sein. Bitte diese Auskunft eigenständig überprüfen.";
+    const w = window.open('', '_blank', 'width=1000,height=1100');
+    if (!w) return;
+    const esc = (s)=>String(s||'').replace(/</g,'&lt;');
+    w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Linda – Ausdruck</title>
+      <style>
+        @font-face { font-family: Aptos; src: local("Aptos"); }
+        html, body { height: 100%; }
+        body { font-family: Aptos, "Segoe UI", Arial, sans-serif; margin: 0; color: #111; }
+        .page { padding: 80px 28px 70px 28px; box-sizing: border-box; }
+        .header { position: fixed; top: 0; left: 0; right: 0; height: 60px; display: flex; align-items: center; justify-content: center; border-bottom: 1px solid #e5e5e5; background: #fff; font-weight: 800; letter-spacing: 0.08em; color: #004481; font-size: 12pt; text-transform: uppercase; }
+        .footer { position: fixed; bottom: 0; left: 0; right: 0; height: 54px; border-top: 1px solid #e5e5e5; background: #fff; display: flex; align-items: center; justify-content: space-between; padding: 0 18px; box-sizing: border-box; font-size: 9.5pt; color: #555; gap: 12px; }
+        .footer .disc { flex: 1; text-align: center; color: #666; }
+        .footer .left { min-width: 220px; }
+        .footer .right { min-width: 140px; text-align: right; }
+        .pageno::after { content: counter(page); }
+        .pagebox { counter-reset: page; }
+        .qbox { border: 1px solid #cfe4ff; background: #eaf3ff; padding: 14px 16px; border-radius: 10px; margin: 0 0 14px 0; }
+        .qbox .t { font-weight: 800; color: #004481; margin-bottom: 6px; }
+        .answer { white-space: pre-wrap; border: 1px solid #eee; padding: 14px 16px; border-radius: 10px; background: #fff; line-height: 1.55; font-size: 11.5pt; }
+        @media print { @page { margin: 0; } body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
+      </style>
+    </head><body class="pagebox">
+      <div class="header">KI-LINDA</div>
+      <div class="footer">
+        <div class="left">${esc(dt)}</div>
+        <div class="disc">${esc(disclaimer)}</div>
+        <div class="right">Seite <span class="pageno"></span></div>
+      </div>
+      <div class="page">
+        <div class="qbox"><div class="t">Frage</div><div>${esc(q)}</div></div>
+        <div class="answer">${esc(answerText||'')}</div>
+      </div>
+    </body></html>`);
+    w.document.close(); w.focus(); w.print();
+  }
+
+  function buildChatTxt(){
+    const s = active();
+    if(!s || !Array.isArray(s.messages)) return '';
+    const header = `Linda Chat Export\nDatum: ${new Date().toLocaleString('de-DE')}\n\n`;
+    const body = s.messages.map(m => (m.role==='user' ? 'Du: ' : 'Linda: ') + (m.content||'')).join('\n\n');
+    return header + body + '\n';
+  }
+
+  async function openFeedbackMail(){
+    const to = 'KI-TEST@GMX.COM';
+    const subject = 'Feedback Linda';
+    const intro = `Gebe hier bitte Dein Feedback ein:\n\n(Als Anhang wird Dein Chat mitgeschickt, nur wenn Du einverstanden bist.)`;
+    const txt = buildChatTxt();
+    const filename = 'linda-chat.txt';
+    const file = new File([txt], filename, { type: 'text/plain' });
+
+    const canShareFile = !!(navigator.share && navigator.canShare && navigator.canShare({ files: [file] }));
+
+    if (canShareFile) {
+      try {
+        await navigator.share({ title: subject, text: intro, files: [file] });
+      } catch(err) {
+        console.log('Teilen abgebrochen oder fehlgeschlagen.');
+      }
+      return;
+    }
+
+    try {
+      const blob = new Blob([txt], { type: 'text/plain' });
+      const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = filename;
+      document.body.appendChild(a); a.click(); URL.revokeObjectURL(a.href); a.remove();
+    } catch(_) {}
+
+    const mailto = `mailto:${encodeURIComponent(to)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(intro)}`;
+    window.location.href = mailto;
+  }
+
+  function addMsg(role,content){
+    const d=document.createElement('div');
+    d.className='bubble'+(role==='user'?' me':'');
+    d.dataset.role = role;
+
+    if (role === 'assistant') {
+      d.innerHTML =
+        '<div class="bubble-header">' +
+          '<button type="button" class="copy-btn" title="Frage + Antwort kopieren"><span>📋</span><span>kopieren</span></button>' +
+          '<button type="button" class="share-btn" title="Teilen (WhatsApp/Mail)"><span>↗</span><span>teilen</span></button>' +
+          '<button type="button" class="pdf-btn" title="Als PDF drucken"><span>🖨</span><span>PDF</span></button>' +
+          '<button type="button" class="fb-down-btn" title="Feedback (Daumen runter)"><span>👎</span><span>Feedback</span></button>' +
+        '</div>' +
+        '<div class="md">'+md(content)+'</div>';
+    } else {
+      d.innerHTML='<div class="md">'+md(content)+'</div>';
+    }
+
+    const log = $('log');
+    const isAtBottom = Math.abs(log.scrollHeight - log.clientHeight - log.scrollTop) < 150;
+
+    log.appendChild(d);
+
+    if (role === 'user' || isAtBottom) {
+      log.scrollTop = log.scrollHeight;
+    }
+
+    if (role === 'assistant') {
+      const copyBtn = d.querySelector('.copy-btn');
+      const shareBtn = d.querySelector('.share-btn');
+      const pdfBtn = d.querySelector('.pdf-btn');
+      const fbBtn = d.querySelector('.fb-down-btn');
+      const mdEl = d.querySelector('.md');
+
+      styleSourcesInBubble(d);
+
+      const answerText = (mdEl?.innerText || '').trim();
+
+      if (copyBtn && navigator.clipboard && navigator.clipboard.writeText) {
+        copyBtn.addEventListener('click', () => {
+          const { payload } = buildSharePayload(answerText);
+          copyText(payload, copyBtn);
+        });
+      }
+      if (shareBtn) shareBtn.addEventListener('click', () => shareAnswer(answerText));
+      if (pdfBtn) pdfBtn.addEventListener('click', () => downloadAnswerPdf(answerText));
+      if (fbBtn) fbBtn.addEventListener('click', () => { feedbackPayloadTxt = buildChatTxt(); show($('m-feedback')); });
+    }
+  }
+
+  function renderChat(){
+      $('log').innerHTML='';
+      const s=active();
+      if(!s) return;
+      s.messages.forEach(m=>addMsg(m.role,m.content));
+  }
+
+  function push(role,content){ const s=active(); s.messages.push({role,content}); s.ts=Date.now(); saveAll(); }
+
+  function setBadge(){
+    const b=$('domain-badge');
+    if(S.domain){
+      b.style.display='inline-flex';
+      const gClass = S.gender ? 'gender-icon on' : 'gender-icon off';
+      const gTitle = S.gender ? 'Gendern: AN' : 'Gendern: AUS';
+      b.innerHTML = `📘 Fachmodus: ${S.domain} <span class="${gClass}" title="${gTitle}">⚥</span>`;
+    } else {
+      b.style.display='none';
+    }
+  }
+
+  function buildHistoryArray() {
+    const s = active();
+    if (!s || !Array.isArray(s.messages)) return [];
+    const msgs = s.messages.slice(-3);
+    return msgs.map(m => ({ role: m.role, content: m.content }));
+  }
+
+  const LOCAL_HISTORY_MAX = 100;
+  function getLocalHistory(){ try { return JSON.parse(localStorage.getItem('chatHistory')) || []; } catch { return []; } }
+  function saveLocalHistory(list){ localStorage.setItem('chatHistory', JSON.stringify(list.slice(-LOCAL_HISTORY_MAX))); }
+  function appendLocalHistoryUser(text){
+    if (!text) return;
+    const hist = getLocalHistory();
+    hist.push({ user: text, bot: '' });
+    saveLocalHistory(hist);
+  }
+  function updateLastHistoryBot(text){
+    const hist = getLocalHistory();
+    if (hist.length) {
+      hist[hist.length-1].bot = text;
+      saveLocalHistory(hist);
+    }
+  }
+
+  async function send(){
+    const sendBtn = $('send');
+    const inp = $('in');
+
+    if(abortCtrl) {
+        abortCtrl.abort();
+        abortCtrl = null;
+        sendBtn.innerText = 'Senden';
+        sendBtn.classList.remove('stop-mode');
+        const s = active();
+        if(s.messages.length > 0 && s.messages[s.messages.length-1].content.includes('⏳')) {
+             s.messages[s.messages.length-1].content = '🛑 Generierung abgebrochen.';
+             saveAll();
+             renderChat();
+        }
+        return;
+    }
+
+    const q=inp.value.trim(); if(!q) return;
+    inp.value='';
+
+    sendBtn.innerText = '■ Stopp';
+    sendBtn.classList.add('stop-mode');
+
+    appendLocalHistoryUser(q);
+
+    push('user',q); addMsg('user',q);
+    push('assistant','⏳ Einen Moment …'); addMsg('assistant','⏳ Einen Moment …');
+
+    abortCtrl = new AbortController();
+
+    try{
+      const historyArray = buildHistoryArray();
+      const payload={
+        question: q,
+        fachmodus: S.domain || '',
+        token: uniqueToken,
+        history: historyArray
+      };
+
+      const r = await fetch('/api/bot',{
+          method:'POST',
+          headers:{'Content-Type':'application/json'},
+          body:JSON.stringify(payload),
+          signal: abortCtrl.signal
+      });
+
+      const text = await r.text();
+      const out = (text && text.trim().toLowerCase()!=='accepted') ? text : 'Ich habe deine Frage erhalten – bitte erneut senden, falls nichts erscheint.';
+
+      const s = active();
+      s.messages[s.messages.length-1] = {role:'assistant',content:out};
+      saveAll();
+      updateLastHistoryBot(out);
+
+      const log = $('log');
+      if(log.lastChild) log.removeChild(log.lastChild);
+      addMsg('assistant', out);
+
+    }catch(e){
+      if(e.name === 'AbortError') {
+         console.log('Fetch aborted');
+      } else {
+         const s=active(); s.messages[s.messages.length-1]={role:'assistant',content:'Es gab ein Verbindungsproblem. Bitte noch einmal senden.'}; saveAll();
+         const log = $('log'); if(log.lastChild) log.removeChild(log.lastChild);
+         addMsg('assistant', 'Es gab ein Verbindungsproblem.');
+         updateLastHistoryBot('ERROR: Verbindung');
+      }
+    }finally{
+      sendBtn.innerText = 'Senden';
+      sendBtn.classList.remove('stop-mode');
+      abortCtrl = null;
+      $('in').focus();
+    }
+  }
+
+  $('send').onclick=send;
+  $('in').addEventListener('keydown',e=>{ if(e.key==='Enter'&&!e.shiftKey){ e.preventDefault(); send(); }});
+
+  $('p-accept').onclick=()=>{hide($('m-privacy'));show($('m-usage'))};
+  $('p-decline').onclick=()=>location.reload();
+  $('u-accept').onclick=()=>{hide($('m-usage'));
+    const s=active();
+    if(S.greet && s.messages.length===0){
+      push('assistant','**Willkommen!** Nutze mich für AEVO, VWL, FASTLANE, Urteile sowie Personal- und Kommunikationsthemen. Öffne *Einstellungen* (Fachmodus-Kürzel).');
+      addMsg('assistant','**Willkommen!** Nutze mich für AEVO, VWL, FASTLANE, Urteile sowie Personal- und Kommunikationsthemen. Öffne *Einstellungen* (Fachmodus-Kürzel).');
+    }
+  };
+
+  $('fb-cancel').onclick=()=>hide($('m-feedback'));
+  $('fb-continue').onclick=async()=>{ hide($('m-feedback')); await openFeedbackMail(); };
+
+  applyTheme();
+  applyTypography();
+
+  const sw=(el,val)=>{el.classList.toggle('on',val)};
+  sw($('sw-gender'),S.gender);
+  $('sw-gender').onclick=()=>{S.gender=!S.gender; sw($('sw-gender'),S.gender); saveAll(); setBadge();};
+
+  sw($('sw-greet'),S.greet);
+  $('sw-greet').onclick=()=>{S.greet=!S.greet; sw($('sw-greet'),S.greet); saveAll();};
+
+  document.querySelectorAll('#chip-theme .chip').forEach(c=>c.onclick=()=>{S.theme=c.dataset.val; saveAll(); applyTheme();});
+
+  $('sel-domain').value=S.domain||'';
+  $('sel-font').value=S.font||'Arial';
+  $('sel-font-size').value=String(S.fontSize||'12');
+
+  $('s-save').onclick=()=>{
+    S.domain=$('sel-domain').value;
+    S.font=$('sel-font').value;
+    S.fontSize=$('sel-font-size').value;
+    saveAll();
+    setBadge();
+    applyTypography();
+    hide($('m-settings'));
+  };
+  $('s-close').onclick=()=>hide($('m-settings'));
+  $('sel-font').onchange=()=>{S.font=$('sel-font').value; saveAll(); applyTypography();};
+  $('sel-font-size').onchange=()=>{S.fontSize=$('sel-font-size').value; saveAll(); applyTypography();};
+
+  function exportAll(){
+    const all=Sessions.map(s=>`# ${s.name||'Chat'} (${new Date(s.ts).toLocaleString()})\n\n`+s.messages.map(m=>(m.role==='user'?'Du: ':'Linda: ')+m.content).join('\n\n')).join('\n\n---\n\n');
+    const blob=new Blob([all],{type:'text/plain'}); const a=document.createElement('a');
+    a.href=URL.createObjectURL(blob); a.download='linda_all_chats.txt'; a.click(); URL.revokeObjectURL(a.href);
+  }
+  function clearAll(){
+    if(confirm('Wirklich alle Verläufe löschen?')){ Sessions=[]; addSession(); saveAll(); renderSessions(); renderMobileSessions(); renderChat(); setBadge(); }
+  }
+  $('btn-export-all').onclick=exportAll;
+  $('btn-clear-all').onclick=clearAll;
+
+  $('btn-new').onclick=addSession;
+
+  $('mob-top-new').onclick=addSession;
+  $('mob-top-sessions').onclick=()=>{ renderMobileSessions(); show($('m-sessions')); };
+  $('mob-sess-close').onclick=()=>hide($('m-sessions'));
+  $('mob-new').onclick=()=>{ addSession(); hide($('m-sessions')); };
+  $('mob-export-all').onclick=exportAll;
+  $('mob-clear-all').onclick=clearAll;
+
+  $('btn-settings').onclick=()=>{ show($('m-settings')); };
+
+  ensureFirstSession();
+  setBadge();
+  renderSessions();
+  renderMobileSessions();
+  renderChat();
+
+})();
+</script>
+
+</body>
+</html>
