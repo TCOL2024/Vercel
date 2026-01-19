@@ -179,14 +179,15 @@ function isLeakAttempt(text) {
 
   if (needles.some(n => t.includes(n))) return true;
 
-  // forced JSON structure requests about internals
   if (t.includes("json") && (t.includes("system_prompt") || t.includes("secrets") || t.includes("developer"))) return true;
 
   return false;
 }
 
 /**
- * Response Sanitizer: entfernt Quellenblöcke/IDs/Zitiermarker/JSON-Leaks.
+ * Antwortanzeige: NICHT abschneiden, Quellen/URLs nicht entfernen.
+ * - Wenn Make JSON liefert: robust JSON.parse und "answer" extrahieren.
+ * - Zitiermarker wie 【...】 entfernen wir optional, aber lassen Inhalte/Quellen stehen.
  */
 function sanitizeReply(text) {
   let out = String(text || "").trim();
@@ -205,62 +206,161 @@ function sanitizeReply(text) {
         "";
       if (answer) out = String(answer);
     } catch {
-      // fallback: keep as text and sanitize below
+      // keep as-is if not valid JSON
     }
   }
 
-  // remove potential leaked fields
-  out = out.replace(/"system_prompt"\s*:\s*"[\s\S]*?"\s*,?/gi, "");
-  out = out.replace(/"secrets"\s*:\s*"[\s\S]*?"\s*,?/gi, "");
-
-  // remove citation markers
+  // Optional: Entferne nur diese Tool-Zitiermarker, OHNE Quellenblöcke zu löschen
   out = out.replace(/【[^】]{1,200}】/g, "");
-
-  // remove pure URL source lines
-  out = out.replace(/^\s*-\s*https?:\/\/\S+.*$/gmi, "");
 
   // cleanup
   out = out.replace(/\n{3,}/g, "\n\n").trim();
   return out;
 }
 
-/**
- * Optional Fast-Lane – nur wenn fm_user=FASTLANE (nicht automatisch AEVO)
- */
-function tryFastLaneAnswer(question) {
-  const t = (question || "").trim().toLowerCase();
-  const isDef = t.length <= 240 && (
-    t.startsWith("was ist") ||
-    t.includes("was bedeutet") ||
-    t.includes("definition") ||
-    t.includes("kurz erkl")
-  );
-  if (!isDef) return null;
-
-  if (t.includes("fachliche eignung")) {
-    return [
-      "Fachliche Eignung bedeutet: Du verfügst über die beruflichen Fertigkeiten, Kenntnisse und Fähigkeiten, um eine Aufgabe sachgerecht auszuführen.",
-      "Im Ausbildungskontext wird häufig zusätzlich die Abgrenzung zur persönlichen Eignung geprüft.",
-      "Möchtest du eine kurze Merkliste (Unterschied fachlich vs. persönlich)?"
-    ].join("\n\n");
-  }
-
-  return null;
-}
-
 function normalizeFm(value) {
   const v = (value == null) ? "" : String(value).trim();
   if (!v) return "";
   const u = v.toUpperCase();
+  // Linda HTML soll: AEVO, VWL, PERSONAL, "" (kein Modus)
+  if (["AEVO", "VWL", "PERSONAL"].includes(u)) return u;
+  return u;
+}
 
-  // erlaubte Kürzel
-  if (["AEVO", "VWL", "FASTLANE", "URTEILE", "PERSONAL"].includes(u)) return u;
+/**
+ * VECTOR=YES Trigger (deine Liste + abgeleitete Begriffe)
+ * Wir prüfen question + history (letzte Messages) zusammen.
+ */
+function detectVectorYes(question, history) {
+  const hay = [
+    question || "",
+    ...(Array.isArray(history) ? history.map(m => m?.content || "") : [])
+  ].join(" ").toLowerCase();
 
-  // tolerante Eingaben
-  if (u === "URTEIL" || u === "URTEILE ") return "URTEILE";
-  if (u === "HR") return "PERSONAL";
+  // Harte Trigger-Wörter/Phrasen
+  const phrases = [
+    // von dir
+    "mehr details",
+    "urteile",
+    "kündigung",
+    "arbeitszeit",
+    "berufsschule",
+    "verstehe ich nicht",
+    "erkläre genau",
+    "europäische zentralbank",
+    "ezb",
+    "inflation",
+    "rechenweg",
+    "erkläre genauer",
+    "erkläre besser",
+    "abmahnung",
+    "ermahnung",
+    "schwierigkeit",
+    "probleme",
+    "prüfung",
+    "prüfungsfrage",
+    "beschwerde",
+    "ich fühle mich unsicher",
 
-  return u; // not blocking unknown, but keep uppercased
+    // abgeleitet/ähnlich
+    "ausführlicher",
+    "detaillierter",
+    "genauer",
+    "vertiefung",
+    "vertiefen",
+    "schritt für schritt",
+    "schritt-für-schritt",
+    "nochmal erklären",
+    "bitte erklären",
+    "erläutere",
+    "erläuterung",
+    "unklar",
+    "verwirrend",
+    "wie meinst du das",
+    "was heißt das",
+    "begründung",
+    "belege",
+    "quelle",
+    "quellen",
+    "rechtsgrundlage",
+    "gesetzlich",
+
+    // Recht/Norm/Urteil-Anmutung
+    "§",
+    "art.",
+    "abs.",
+    "satz",
+    "nr.",
+    "aktenzeichen",
+    "az.",
+    "urteil",
+    "beschluss",
+    "rechtsprechung",
+    "bag",
+    "bgh",
+    "bverfg",
+    "lag",
+    "olg",
+    "ovg",
+
+    // Ausbildungskonflikte
+    "probezeit",
+    "fristlos",
+    "außerordentlich",
+    "ordentlich",
+    "freistellung",
+    "blockunterricht",
+    "fehlzeit",
+    "abmahnen",
+    "verwarnung",
+    "pflichtverletzung",
+
+    // VWL
+    "geldpolitik",
+    "leitzins",
+    "verbraucherpreisindex",
+    "vpi",
+    "kaufkraft",
+    "deflation",
+    "preisniveau",
+    "formel",
+    "beispielrechnung",
+    "berechnung",
+    "herleitung",
+    "prozentrechnung"
+  ];
+
+  // Schnelle Treffer (inkl. § als Zeichen)
+  for (const p of phrases) {
+    if (p === "§") {
+      if (hay.includes("§")) return true;
+      continue;
+    }
+    if (hay.includes(p)) return true;
+  }
+
+  // Zusätzlich: wenn typische Struktur für Normen/Urteile vorkommt
+  if (/(^|\s)(§|art\.)\s*\d+/i.test(hay)) return true;
+
+  return false;
+}
+
+/**
+ * Optional: need ableiten (für Router einfacher)
+ */
+function detectNeed(question, history, vectorYes) {
+  if (vectorYes) return "VECTOR";
+
+  const q = (question || "").trim().toLowerCase();
+  const isDef = q.length <= 220 && (
+    q.startsWith("was ist") ||
+    q.includes("was bedeutet") ||
+    q.includes("definition") ||
+    q.includes("kurz erklär")
+  );
+
+  if (isDef) return "FAST";
+  return "DEFAULT";
 }
 
 export default async function handler(req, res) {
@@ -300,31 +400,29 @@ export default async function handler(req, res) {
     return sendJson(res, 400, { error: "Ungültiges JSON" });
   }
 
-  // --- incoming fields (new HTML) ---
   const questionRaw = typeof body.question === "string" ? body.question : "";
   let question = stripLeadingFillers(questionRaw);
 
-  // history from HTML (already last 3) but we sanitize anyway
   let history = normalizeHistory(body.history, 4);
 
-  // short replies become actionable
+  // Kurzantworten sinnvoll erweitern
   question = expandShortReply(question, history);
 
-  // dedupe
+  // Dedupe
   history = dedupeHistoryAgainstQuestion(history, question);
 
-  // fm (new: fm_user), keep backward compatibility: fachmodus
+  // fm_user (neu) oder fachmodus (alt)
   const fm_user = normalizeFm(body.fm_user || body.fachmodus || "");
 
-  // token/context pass-through (optional)
+  // token/context optional durchreichen
   const token = (body.token == null) ? "" : String(body.token).slice(0, 200);
-  const context = (body.context == null) ? "" : String(body.context).slice(0, 4000);
+  const context = (body.context == null) ? "" : String(body.context).slice(0, 5000);
 
   // Limits
   if (!question) return sendJson(res, 400, { error: "question fehlt" });
   if (question.length > 2000) return sendJson(res, 413, { error: "question zu lang (max 2000 Zeichen)" });
 
-  // HARD BLOCK: Leak/Injection -> NICHT an Make weitergeben
+  // HARD BLOCK: Leak/Injection -> NICHT an Make
   const leak = isLeakAttempt(question) || (Array.isArray(history) && history.some(m => isLeakAttempt(m.content)));
   if (leak) {
     res.statusCode = 200;
@@ -335,15 +433,9 @@ export default async function handler(req, res) {
     );
   }
 
-  // Optional Fastlane ONLY when user selected FASTLANE
-  if (fm_user === "FASTLANE") {
-    const fast = tryFastLaneAnswer(question);
-    if (fast) {
-      res.statusCode = 200;
-      res.setHeader("Content-Type", "text/plain; charset=utf-8");
-      return res.end(fast);
-    }
-  }
+  // VECTOR Entscheidung (deine Trigger + abgeleitet)
+  const vector_yes = detectVectorYes(question, history);
+  const need = detectNeed(question, history, vector_yes);
 
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 45000);
@@ -364,7 +456,9 @@ export default async function handler(req, res) {
         question,
         history,
         meta: {
-          fm_user,      // <- wichtig: eigenes Feld
+          fm_user,        // AEVO | VWL | PERSONAL | ""
+          vector_yes,     // true/false
+          need,           // VECTOR | FAST | DEFAULT
           token,
           context
         }
@@ -384,6 +478,7 @@ export default async function handler(req, res) {
       });
     }
 
+    // NICHT abschneiden, Quellen nicht entfernen
     text = sanitizeReply(text);
 
     res.statusCode = 200;
