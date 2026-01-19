@@ -4,7 +4,6 @@ function readRawBody(req, limitBytes = 32 * 1024) {
   return new Promise((resolve, reject) => {
     let size = 0;
     let data = "";
-
     req.on("data", (chunk) => {
       size += chunk.length;
       if (size > limitBytes) {
@@ -16,7 +15,6 @@ function readRawBody(req, limitBytes = 32 * 1024) {
       }
       data += chunk.toString("utf8");
     });
-
     req.on("end", () => resolve(data));
     req.on("error", reject);
   });
@@ -48,15 +46,12 @@ function allowSameOrigin(req) {
 function stripLeadingFillers(text) {
   if (!text) return "";
   let t = String(text).trim();
-
   t = t.replace(
     /^(?:(?:hallo|hi|hey|moin|guten\s+morgen|guten\s+tag|guten\s+abend)\b[\s,!.-]*)(?:linda\b[\s,!.-]*)?/i,
     ""
   ).trim();
-
   t = t.replace(/^(ich\s+m(?:ö|oe)chte|ich\s+will)\s+(bitte\s+)?/i, "").trim();
   t = t.replace(/^(kannst\s+du|könntest\s+du)\s+(bitte\s+)?/i, "").trim();
-
   t = t.replace(/\s{2,}/g, " ").trim();
   return t;
 }
@@ -65,12 +60,11 @@ function isPlaceholderAssistantMessage(content) {
   if (!content) return false;
   const c = content.trim().toLowerCase();
   return (
-    c === "einen moment bitte" ||
-    c.startsWith("einen moment bitte") ||
+    c.includes("⏳") ||
+    c.includes("einen moment") ||
     c.includes("bitte warten") ||
     c.includes("lade") ||
-    c.includes("thinking") ||
-    c.includes("⏳")
+    c.includes("thinking")
   );
 }
 
@@ -85,7 +79,6 @@ function normalizeHistory(history, maxItems = 4) {
   if (!Array.isArray(history)) return [];
   const last = history.slice(-maxItems);
   const cleaned = [];
-
   for (const h of last) {
     const role = (h && typeof h.role === "string") ? h.role.slice(0, 20) : "user";
     let raw = (h && typeof h.content === "string") ? h.content : "";
@@ -117,81 +110,35 @@ function expandShortReply(question, history) {
   if (!lastAssistant) return q;
 
   if (isShortAffirmation(q)) {
-    return `Ja. Bitte knüpfe an deine letzte Frage/Handlungsaufforderung an und führe den nächsten Schritt aus.`;
+    return `Ja. Bitte knüpfe an die letzte Frage/Handlungsaufforderung an und führe den nächsten Schritt aus.`;
   }
   if (isShortNegation(q)) {
-    return `Nein. Bitte knüpfe an deine letzte Frage/Handlungsaufforderung an und schlage eine Alternative vor.`;
+    return `Nein. Bitte knüpfe an die letzte Frage/Handlungsaufforderung an und schlage eine Alternative vor.`;
   }
   return q;
 }
 
-// --- Dedupe ---
-function canonicalize(s) {
-  return (s || "")
-    .toLowerCase()
-    .replace(/\s+/g, " ")
-    .replace(/[“”„"']/g, "")
-    .replace(/[^\p{L}\p{N}\s?.!,:-]/gu, "")
-    .trim();
-}
-
-function dedupeHistoryAgainstQuestion(history, question) {
-  if (!Array.isArray(history) || history.length === 0) return history;
-  const qCore = canonicalize(question);
-  if (!qCore) return history;
-
-  // last
-  const lastIdx = history.length - 1;
-  const last = history[lastIdx];
-  if (last && last.role === "user") {
-    const hCore = canonicalize(last.content || "");
-    if (hCore && (hCore === qCore || hCore.includes(qCore) || qCore.includes(hCore))) {
-      return history.slice(0, lastIdx);
-    }
-  }
-  // first
-  const first = history[0];
-  if (first && first.role === "user") {
-    const hCore = canonicalize(first.content || "");
-    if (hCore && (hCore === qCore || hCore.includes(qCore) || qCore.includes(hCore))) {
-      return history.slice(1);
-    }
-  }
-  return history;
-}
-
-/**
- * Prompt-Injection / Prompt-Leak Heuristik
- * -> wenn true: wir schicken NICHTS an Make, sondern antworten serverseitig.
- */
+// ---------- Leak/Injection (nur aktuelle Frage prüfen) ----------
 function isLeakAttempt(text) {
   const t = (text || "").toLowerCase();
-
   const needles = [
     "system prompt", "systemprompt", "system_prompt", "developer", "[system]", "[developer]",
     "hidden instruction", "versteckte anweisung", "interne anweisung", "interne anweisungen",
-    "prompt ausgeben", "zeige den prompt", "zeige deinen prompt",
-    "secrets", "\"secrets\"", "api key", "apikey", "token", "access token",
-    "thread id", "thread_id", "vector store", "vectorstore", "file_search", "tools", "log", "logs", "payload",
-    "debug", "audit",
-    "\"system_prompt\":", "\"secrets\":"
+    "zeige den prompt", "zeige deinen prompt", "prompt ausgeben",
+    "api key", "apikey", "access token",
+    "thread id", "thread_id", "vector store", "vectorstore", "file_search", "tools", "logs", "payload",
+    "\"system_prompt\":", "\"secrets\":", "secrets"
   ];
-
   if (needles.some(n => t.includes(n))) return true;
-
   if (t.includes("json") && (t.includes("system_prompt") || t.includes("secrets") || t.includes("developer"))) return true;
-
   return false;
 }
 
-/**
- * Antwortanzeige: NICHT abschneiden, Quellen/URLs nicht entfernen.
- * - Wenn Make JSON liefert: robust JSON.parse und "answer" extrahieren.
- * - Zitiermarker wie 【...】 entfernen wir optional, aber lassen Inhalte/Quellen stehen.
- */
+// ---------- Antwort: NICHT nach Quellen abschneiden ----------
 function sanitizeReply(text) {
   let out = String(text || "").trim();
 
+  // Wenn Make JSON liefert: robust parse und "answer" nehmen (ohne Trunkierung)
   const looksJson =
     (out.startsWith("{") && out.endsWith("}")) ||
     (out.startsWith("[") && out.endsWith("]"));
@@ -206,42 +153,51 @@ function sanitizeReply(text) {
         "";
       if (answer) out = String(answer);
     } catch {
-      // keep as-is if not valid JSON
+      // keep out as-is
     }
   }
 
-  // Optional: Entferne nur diese Tool-Zitiermarker, OHNE Quellenblöcke zu löschen
+  // Entferne nur Tool-Zitiermarker (keine Quellenzeilen/URLs löschen!)
   out = out.replace(/【[^】]{1,200}】/g, "");
 
-  // cleanup
   out = out.replace(/\n{3,}/g, "\n\n").trim();
   return out;
 }
 
+// ---------- FM normalize ----------
 function normalizeFm(value) {
   const v = (value == null) ? "" : String(value).trim();
   if (!v) return "";
   const u = v.toUpperCase();
-  // Linda HTML soll: AEVO, VWL, PERSONAL, "" (kein Modus)
   if (["AEVO", "VWL", "PERSONAL"].includes(u)) return u;
-  return u;
+  return ""; // alles andere: wie "kein Modus"
 }
 
-/**
- * VECTOR=YES Trigger (deine Liste + abgeleitete Begriffe)
- * Wir prüfen question + history (letzte Messages) zusammen.
- */
-function detectVectorYes(question, history) {
-  const hay = [
-    question || "",
-    ...(Array.isArray(history) ? history.map(m => m?.content || "") : [])
-  ].join(" ").toLowerCase();
+// ---------- Vector decision (NUR User-Inhalte; KEINE Assistant-Texte) ----------
+function getUserTextForVectorDecision(question, history) {
+  const parts = [];
+  const q = (question || "").trim();
+  if (q) parts.push(q);
 
-  // Harte Trigger-Wörter/Phrasen
-  const phrases = [
+  // Nur USER-Messages aus History berücksichtigen (keine Assistant-Self-Triggers)
+  if (Array.isArray(history)) {
+    for (const m of history) {
+      if (m && m.role === "user" && typeof m.content === "string" && m.content.trim()) {
+        parts.push(m.content.trim());
+      }
+    }
+  }
+  return parts.join(" \n");
+}
+
+// Deine Trigger + abgeleitete Begriffe (wie vereinbart)
+function detectVectorYes(question, history) {
+  const hay = getUserTextForVectorDecision(question, history).toLowerCase();
+
+  const triggers = [
     // von dir
     "mehr details",
-    "urteile",
+    "urteil", "urteile",
     "kündigung",
     "arbeitszeit",
     "berufsschule",
@@ -269,7 +225,6 @@ function detectVectorYes(question, history) {
     "vertiefung",
     "vertiefen",
     "schritt für schritt",
-    "schritt-für-schritt",
     "nochmal erklären",
     "bitte erklären",
     "erläutere",
@@ -285,7 +240,7 @@ function detectVectorYes(question, history) {
     "rechtsgrundlage",
     "gesetzlich",
 
-    // Recht/Norm/Urteil-Anmutung
+    // Recht/Norm/Urteil
     "§",
     "art.",
     "abs.",
@@ -293,7 +248,6 @@ function detectVectorYes(question, history) {
     "nr.",
     "aktenzeichen",
     "az.",
-    "urteil",
     "beschluss",
     "rechtsprechung",
     "bag",
@@ -330,27 +284,21 @@ function detectVectorYes(question, history) {
     "prozentrechnung"
   ];
 
-  // Schnelle Treffer (inkl. § als Zeichen)
-  for (const p of phrases) {
-    if (p === "§") {
+  // Spezial: Normmuster
+  if (/(^|\s)(§|art\.)\s*\d+/i.test(hay)) return true;
+
+  for (const t of triggers) {
+    if (t === "§") {
       if (hay.includes("§")) return true;
       continue;
     }
-    if (hay.includes(p)) return true;
+    if (hay.includes(t)) return true;
   }
-
-  // Zusätzlich: wenn typische Struktur für Normen/Urteile vorkommt
-  if (/(^|\s)(§|art\.)\s*\d+/i.test(hay)) return true;
-
   return false;
 }
 
-/**
- * Optional: need ableiten (für Router einfacher)
- */
-function detectNeed(question, history, vectorYes) {
+function detectNeed(vectorYes, question) {
   if (vectorYes) return "VECTOR";
-
   const q = (question || "").trim().toLowerCase();
   const isDef = q.length <= 220 && (
     q.startsWith("was ist") ||
@@ -358,11 +306,11 @@ function detectNeed(question, history, vectorYes) {
     q.includes("definition") ||
     q.includes("kurz erklär")
   );
-
   if (isDef) return "FAST";
   return "DEFAULT";
 }
 
+// -------------------- Handler --------------------
 export default async function handler(req, res) {
   if (req.method !== "POST") {
     res.setHeader("Allow", "POST");
@@ -404,27 +352,13 @@ export default async function handler(req, res) {
   let question = stripLeadingFillers(questionRaw);
 
   let history = normalizeHistory(body.history, 4);
-
-  // Kurzantworten sinnvoll erweitern
   question = expandShortReply(question, history);
 
-  // Dedupe
-  history = dedupeHistoryAgainstQuestion(history, question);
-
-  // fm_user (neu) oder fachmodus (alt)
-  const fm_user = normalizeFm(body.fm_user || body.fachmodus || "");
-
-  // token/context optional durchreichen
-  const token = (body.token == null) ? "" : String(body.token).slice(0, 200);
-  const context = (body.context == null) ? "" : String(body.context).slice(0, 5000);
-
-  // Limits
   if (!question) return sendJson(res, 400, { error: "question fehlt" });
   if (question.length > 2000) return sendJson(res, 413, { error: "question zu lang (max 2000 Zeichen)" });
 
-  // HARD BLOCK: Leak/Injection -> NICHT an Make
-  const leak = isLeakAttempt(question) || (Array.isArray(history) && history.some(m => isLeakAttempt(m.content)));
-  if (leak) {
+  // Leak/Injection: NUR aktuelle Frage prüfen
+  if (isLeakAttempt(question)) {
     res.statusCode = 200;
     res.setHeader("Content-Type", "text/plain; charset=utf-8");
     return res.end(
@@ -433,9 +367,16 @@ export default async function handler(req, res) {
     );
   }
 
-  // VECTOR Entscheidung (deine Trigger + abgeleitet)
+  // FM (neu) oder fachmodus (alt)
+  const fm_user = normalizeFm(body.fm_user || body.fachmodus || "");
+
+  // optional pass-through
+  const token = (body.token == null) ? "" : String(body.token).slice(0, 200);
+  const context = (body.context == null) ? "" : String(body.context).slice(0, 5000);
+
+  // Vector decision: nur User-Inhalte
   const vector_yes = detectVectorYes(question, history);
-  const need = detectNeed(question, history, vector_yes);
+  const need = detectNeed(vector_yes, question);
 
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 45000);
@@ -456,9 +397,9 @@ export default async function handler(req, res) {
         question,
         history,
         meta: {
-          fm_user,        // AEVO | VWL | PERSONAL | ""
-          vector_yes,     // true/false
-          need,           // VECTOR | FAST | DEFAULT
+          fm_user,       // AEVO | VWL | PERSONAL | ""
+          vector_yes,    // true/false
+          need,          // VECTOR | FAST | DEFAULT
           token,
           context
         }
@@ -478,7 +419,6 @@ export default async function handler(req, res) {
       });
     }
 
-    // NICHT abschneiden, Quellen nicht entfernen
     text = sanitizeReply(text);
 
     res.statusCode = 200;
