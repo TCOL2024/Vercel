@@ -1,0 +1,849 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+<title>Linda – Lernassistentin</title>
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.8/purify.min.js"></script>
+
+<style>
+  :root {
+    /* Farben */
+    --blue-main: #004481;
+    --blue-light: #e6f0fa;
+    --blue-soft: #f0f8ff;
+    --text-main: #222;
+    --text-muted: #666;
+    --white: #fff;
+    --danger: #dc3545;
+    
+    /* Mobile (SEHR GROSS - Optimiert für Augen) */
+    --font-mobile: 22px;
+    --line-mobile: 1.5;
+    --bubble-pad: 18px;
+    --btn-size: 54px; /* Größere Buttons zum Tippen */
+    
+    /* Desktop (Kompakt) */
+    --font-desktop: 12px;
+    --line-desktop: 1.3;
+  }
+
+  /* --- Media Queries --- */
+  @media (min-width: 769px) {
+    :root {
+      --font-size: var(--font-desktop);
+      --line-height: var(--line-desktop);
+      --bubble-pad: 12px;
+    }
+  }
+  @media (max-width: 768px) {
+    :root {
+      --font-size: var(--font-mobile);
+      --line-height: var(--line-mobile);
+    }
+  }
+
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    font-size: var(--font-size);
+    line-height: var(--line-height);
+    color: var(--text-main);
+    background: #f4f7fa;
+    height: 100vh;
+    overflow: hidden;
+    display: flex;
+    justify-content: center;
+  }
+
+  /* Desktop Container */
+  @media (min-width: 769px) {
+    body { background: #d0d7e0; align-items: center; }
+    #app {
+      width: 900px;
+      height: 94vh;
+      border-radius: 16px;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.15);
+      overflow: hidden;
+    }
+  }
+
+  #app {
+    width: 100%;
+    height: 100%;
+    background: var(--white);
+    display: flex;
+    flex-direction: column;
+    position: relative;
+  }
+
+  /* --- HEADER --- */
+  header {
+    height: 70px; /* Etwas höher für Mobile */
+    background: var(--white);
+    border-bottom: 1px solid #eaeaea;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 16px;
+    flex-shrink: 0;
+    z-index: 10;
+  }
+
+  .brand-area { display: flex; align-items: center; gap: 10px; }
+  .brand { font-weight: 800; font-size: 1.3em; color: var(--blue-main); }
+  
+  .badge {
+    background: var(--blue-light);
+    color: var(--blue-main);
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 0.75em;
+    font-weight: 700;
+    border: 1px solid #d0e4f5;
+    display: none;
+  }
+  .badge.visible { display: inline-block; }
+
+  .header-btns { display: flex; gap: 8px; }
+  .btn-icon {
+    background: none; border: 1px solid #eaeaea;
+    width: var(--btn-size); height: var(--btn-size);
+    border-radius: 12px;
+    font-size: 1.4em; cursor: pointer; color: var(--blue-main);
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.2s;
+  }
+  .btn-icon:hover { background: var(--blue-soft); border-color: var(--blue-main); }
+  
+  .btn-new {
+    background: var(--blue-main); color: white; border: none;
+    width: auto; padding: 0 20px; font-weight: 800; font-size: 1.1em;
+    height: var(--btn-size); border-radius: 14px;
+  }
+  .btn-new:hover { background: #003366; }
+  .btn-icon.stop { background: var(--danger); color: white; border-color: var(--danger); }
+
+  /* --- CHAT LOG --- */
+  #chat-log {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px 16px;
+    background: #fafcfd;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  @media (min-width: 769px) {
+    #chat-log { padding: 24px 32px; gap: 10px; }
+  }
+
+  /* --- BUBBLES --- */
+  .msg-row { display: flex; width: 100%; animation: fadeIn 0.3s ease; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+  .msg-wrapper { max-width: 90%; display: flex; flex-direction: column; gap: 8px; }
+
+  /* User: Right */
+  .msg-row.user { justify-content: flex-end; }
+  .msg-row.user .msg-wrapper { align-items: flex-end; }
+  .bubble.user {
+    background: var(--blue-main);
+    color: white;
+    padding: var(--bubble-pad);
+    border-radius: 18px 18px 4px 18px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    font-weight: 500;
+  }
+
+  /* Bot: Left */
+  .msg-row.bot { justify-content: flex-start; }
+  .msg-row.bot .msg-wrapper { align-items: flex-start; }
+  .bubble.bot {
+    background: var(--white);
+    border: 1px solid #e0e6ed;
+    padding: var(--bubble-pad);
+    border-radius: 18px 18px 18px 4px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+    color: var(--text-main);
+  }
+
+  /* Content Styling */
+  .md h4 { margin: 0 0 8px 0; color: var(--blue-main); font-weight: 800; font-size: 1.1em; }
+  .md p { margin: 0 0 8px 0; }
+  .md ul, .md ol { margin: 4px 0 8px 20px; padding: 0; }
+  .md li { margin-bottom: 4px; }
+  .md strong { color: var(--blue-main); font-weight: 800; }
+  .md code { background: #f1f3f5; padding: 2px 6px; border-radius: 4px; font-family: Consolas, monospace; color: #c7254e; font-size: 0.9em; }
+  .md pre { background: #f4f4f4; padding: 10px; border-radius: 8px; overflow-x: auto; margin: 8px 0; border: 1px solid #e0e0e0; }
+  
+  /* Tables */
+  .table-wrapper { overflow-x: auto; margin: 8px 0; border-radius: 8px; border: 1px solid #e0e6ed; }
+  .md table { border-collapse: collapse; width: 100%; min-width: 350px; font-size: 0.9em; }
+  .md th, .md td { border: 1px solid #e0e6ed; padding: 8px 10px; text-align: left; }
+  .md th { background: var(--blue-soft); color: var(--blue-main); font-weight: 700; }
+
+  /* Sources */
+  .source-box { margin-top: 8px; padding: 10px; background: var(--blue-soft); border-radius: 8px; border-left: 4px solid var(--blue-main); }
+  .source-box strong { display: block; margin-bottom: 6px; color: var(--blue-main); }
+  .source-list { margin: 0; padding-left: 18px; color: #444; }
+  .source-list li { margin-bottom: 4px; }
+
+  /* --- ACTIONS (Unter dem Text) --- */
+  .msg-actions {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    justify-content: flex-end; /* Icons rechtsbündig */
+  }
+  .action-btn {
+    font-size: 0.85em; /* Etwas größer für Mobile */
+    padding: 6px 12px;
+    border-radius: 12px;
+    border: 1px solid #ddd;
+    background: white;
+    cursor: pointer;
+    color: #555;
+    transition: 0.2s;
+  }
+  .action-btn:hover { border-color: var(--blue-main); color: var(--blue-main); background: var(--blue-soft); }
+
+  /* --- INPUT AREA --- */
+  .input-area {
+    padding: 16px;
+    background: white;
+    border-top: 1px solid #eaeaea;
+    display: flex;
+    gap: 12px;
+    align-items: flex-end;
+    position: relative;
+  }
+  
+  .input-wrapper { flex: 1; position: relative; }
+  
+  textarea {
+    width: 100%;
+    min-height: 60px; /* Höher für Mobile */
+    max-height: 150px;
+    padding: 14px 16px;
+    border-radius: 16px;
+    border: 2px solid #eaeaea;
+    font-size: 1em;
+    font-family: inherit;
+    resize: none;
+    outline: none;
+    transition: 0.2s;
+    background: #fcfcfc;
+  }
+  textarea:focus { border-color: var(--blue-main); box-shadow: 0 0 0 4px var(--blue-soft); background: white; }
+
+  /* Snippet Popup */
+  #snippet-popup {
+    position: absolute;
+    bottom: 70px;
+    left: 0; right: 0;
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 10px;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+    max-height: 200px;
+    overflow-y: auto;
+    display: none;
+    z-index: 20;
+  }
+  #snippet-popup.active { display: block; }
+  .snippet-item { padding: 12px; border-bottom: 1px solid #f5f5f5; cursor: pointer; font-size: 0.95em; }
+  .snippet-item:hover { background: var(--blue-soft); color: var(--blue-main); }
+
+  /* --- MODALS --- */
+  .modal-overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.5);
+    backdrop-filter: blur(3px);
+    display: flex; justify-content: center; align-items: center;
+    z-index: 100;
+    opacity: 0; pointer-events: none; transition: opacity 0.2s;
+  }
+  .modal-overlay.open { opacity: 1; pointer-events: all; }
+  
+  .modal {
+    background: white;
+    width: 92%; max-width: 520px;
+    border-radius: 16px;
+    padding: 24px;
+    box-shadow: 0 25px 60px rgba(0,0,0,0.3);
+    max-height: 90vh; overflow-y: auto;
+    transform: scale(0.95); transition: transform 0.2s;
+  }
+  .modal-overlay.open .modal { transform: scale(1); }
+
+  .modal h3 { margin: 0 0 16px 0; color: var(--blue-main); font-size: 1.6em; }
+  .modal p { color: #555; margin-bottom: 12px; }
+  .modal ul { margin: 0 0 16px 20px; color: #555; }
+  .modal li { margin-bottom: 6px; }
+  .modal a { color: var(--blue-main); font-weight: 700; text-decoration: none; }
+
+  .form-group { margin-bottom: 16px; }
+  .form-group label { display: block; margin-bottom: 8px; font-weight: 700; color: #333; font-size: 0.95em; }
+  .form-group input, .form-group select {
+    width: 100%; padding: 14px; border-radius: 12px; border: 2px solid #e0e0e0; font-size: 1em;
+  }
+  .form-group input:focus, .form-group select:focus { border-color: var(--blue-main); outline: none; }
+
+  .btn-row { display: flex; gap: 12px; margin-top: 24px; }
+  .btn { flex: 1; padding: 14px; border-radius: 12px; border: none; font-weight: 800; cursor: pointer; font-size: 1em; }
+  .btn-primary { background: var(--blue-main); color: white; }
+  .btn-secondary { background: #f0f0f0; color: #333; }
+  .btn-danger { background: #fff0f0; color: #d32f2f; border: 1px solid #ffcdd2; }
+
+  .item-list { margin: 10px 0; border: 1px solid #eee; border-radius: 8px; overflow: hidden; }
+  .item-list div { padding: 12px; border-bottom: 1px solid #eee; cursor: pointer; display: flex; justify-content: space-between; }
+  .item-list div:last-child { border-bottom: none; }
+  .item-list div:hover { background: var(--blue-soft); }
+  .item-list div.active { background: var(--blue-light); font-weight: bold; color: var(--blue-main); }
+
+  /* Loading */
+  .loading { display: flex; gap: 8px; height: 20px; align-items: center; }
+  .loading span {
+    width: 10px; height: 10px; background: var(--blue-main); border-radius: 50%;
+    animation: bounce 1.4s infinite ease-in-out;
+  }
+  .loading span:nth-child(2) { animation-delay: 0.2s; }
+  .loading span:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes bounce {
+    0%, 80%, 100% { transform: scale(0.6); opacity: 0.5; }
+    40% { transform: scale(1.3); opacity: 1; }
+  }
+</style>
+</head>
+
+<body>
+
+<div id="app">
+  <!-- Header -->
+  <header>
+    <div class="brand-area">
+      <div class="logo">Linda</div>
+      <div id="domain-badge" class="badge">Modus</div>
+    </div>
+    <div class="header-btns">
+      <button class="btn-icon btn-new" onclick="app.logic.newChat()" title="Neuer Chat">+</button>
+      <button class="btn-icon" onclick="app.ui.openModal('modal-sessions')" title="Verlauf">☰</button>
+      <button class="btn-icon" onclick="app.ui.openModal('modal-settings')" title="Einstellungen">⚙</button>
+    </div>
+  </header>
+
+  <!-- Chat Log -->
+  <div id="chat-log"></div>
+
+  <!-- Input Area -->
+  <div class="input-area">
+    <div class="input-wrapper">
+      <div id="snippet-popup"></div>
+      <textarea id="chat-input" placeholder="Schreibe deine Frage..." rows="1"></textarea>
+    </div>
+    <button id="send-btn" class="btn-icon btn-primary">➤</button>
+  </div>
+</div>
+
+<!-- MODALS -->
+
+<!-- Privacy (Sicherheitshinweis) -->
+<div id="modal-privacy" class="modal-overlay open">
+  <div class="modal">
+    <h3>Datenschutz & Sicherheit</h3>
+    <p>Willkommen bei Linda. Bevor wir starten:</p>
+    <ul>
+      <li>Deine Anfragen gehen an <a href="https://openai.com/policies/privacy-policy" target="_blank">OpenAI</a> & <a href="https://www.make.com/en/privacy-policy" target="_blank">Make.com</a>.</li>
+      <li><strong>Keine persönlichen Daten</strong> (Name, Adresse, etc.) eingeben!</li>
+      <li>Verlauf wird <strong>lokal</strong> gespeichert.</li>
+    </ul>
+    <div class="btn-row">
+      <button class="btn btn-secondary" onclick="location.reload()">Ablehnen</button>
+      <button class="btn btn-primary" onclick="app.logic.startApp()">Akzeptieren & Start</button>
+    </div>
+  </div>
+</div>
+
+<!-- Settings -->
+<div id="modal-settings" class="modal-overlay">
+  <div class="modal">
+    <h3>Einstellungen</h3>
+    
+    <div class="form-group">
+      <label>Dein Name (für den Verlauf)</label>
+      <input type="text" id="inp-name" placeholder="z.B. Max">
+    </div>
+
+    <div class="form-group">
+      <label>Fachmodus</label>
+      <select id="inp-domain">
+        <option value="">Standard (Kein Modus)</option>
+        <option value="AEVO">Ausbilder (AEVO)</option>
+        <option value="VWL">VWL / Betriebswirtschaft</option>
+        <option value="PERSONAL">Personalwesen</option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label>Snippets verwalten</label>
+      <div style="display:flex; gap:8px; margin-bottom:8px;">
+        <input type="text" id="inp-snippet" placeholder="Neuen Text hinzufügen...">
+        <button class="btn btn-primary" style="flex:0 0 50px;" onclick="app.logic.addSnippet()">+</button>
+      </div>
+      <div id="snippet-list-container" style="display:flex; flex-wrap:wrap; gap:6px;"></div>
+      <small style="color:#888;">Im Chat "/tippen" zum Auswählen.</small>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn btn-secondary" onclick="app.ui.closeModals()">Abbrechen</button>
+      <button class="btn btn-primary" onclick="app.logic.saveSettings()">Speichern</button>
+    </div>
+  </div>
+</div>
+
+<!-- Sessions -->
+<div id="modal-sessions" class="modal-overlay">
+  <div class="modal">
+    <h3>Verlauf</h3>
+    <div id="session-list" class="item-list"></div>
+    <div class="btn-row">
+      <button class="btn btn-danger" onclick="app.logic.clearAll()">Alle löschen</button>
+      <button class="btn btn-secondary" onclick="app.ui.closeModals()">Schließen</button>
+    </div>
+  </div>
+</div>
+
+<!-- Feedback -->
+<div id="modal-feedback" class="modal-overlay">
+  <div class="modal">
+    <h3>Feedback</h3>
+    <p>Möchtest du Feedback geben? Dein E-Mail-Programm wird geöffnet.</p>
+    <div class="btn-row">
+      <button class="btn btn-secondary" onclick="app.ui.closeModals()">Nein</button>
+      <button class="btn btn-primary" onclick="app.logic.openFeedback()">Ja</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const app = {
+  state: { settings: { name: '', domain: '', snippets: [] }, sessions: [], activeId: null },
+  
+  utils: {
+    uid: () => 's_' + Date.now().toString(36) + Math.random().toString(36).slice(2,6),
+    save: () => localStorage.setItem('linda_data', JSON.stringify(app.state)),
+    load: () => {
+      const d = localStorage.getItem('linda_data');
+      if (d) app.state = JSON.parse(d);
+      if (!app.state.sessions) app.state.sessions = [];
+    }
+  },
+
+  ui: {
+    log: document.getElementById('chat-log'),
+    input: document.getElementById('chat-input'),
+    sendBtn: document.getElementById('send-btn'),
+    
+    openModal: (id) => {
+      document.querySelectorAll('.modal-overlay').forEach(m => m.classList.remove('open'));
+      const el = document.getElementById(id);
+      if (el) {
+        el.classList.add('open');
+        if (id === 'modal-settings') {
+          app.ui.renderSnippetList();
+          document.getElementById('inp-name').value = app.state.settings.name || '';
+          document.getElementById('inp-domain').value = app.state.settings.domain || '';
+        }
+        if (id === 'modal-sessions') app.ui.renderSessionList();
+      }
+    },
+    
+    closeModals: () => document.querySelectorAll('.modal-overlay').forEach(m => m.classList.remove('open')),
+
+    renderSessionList: () => {
+      const div = document.getElementById('session-list');
+      if (!app.state.sessions.length) { div.innerHTML = '<div style="padding:15px; color:#888;">Keine Verläufe.</div>'; return; }
+      
+      div.innerHTML = app.state.sessions.map(s => `
+        <div onclick="app.logic.switchSession('${s.id}')" class="${s.id === app.state.activeId ? 'active' : ''}">
+          <span>${s.name || 'Neuer Chat'}</span>
+          <span style="font-size:0.8em; color:#888;">${new Date(s.ts).toLocaleDateString()}</span>
+        </div>
+      `).join('');
+    },
+
+    renderSnippetList: () => {
+      const container = document.getElementById('snippet-list-container');
+      const s = app.state.settings.snippets;
+      if (!s.length) { container.innerHTML = '<span style="color:#888;">Keine Snippets.</span>'; return; }
+      
+      container.innerHTML = s.map((txt, i) => `
+        <span style="background:#f0f0f0; padding:4px 8px; border-radius:12px; font-size:0.85em; display:flex; align-items:center; gap:5px;">
+          ${txt} <span style="cursor:pointer; color:#d32f2f;" onclick="app.logic.removeSnippet(${i})">×</span>
+        </span>
+      `).join('');
+    },
+
+    showSnippetPopup: (items) => {
+      const pop = document.getElementById('snippet-popup');
+      if (!items.length) { pop.classList.remove('active'); return; }
+      pop.innerHTML = items.map(i => `<div class="snippet-item" onclick="app.logic.insertSnippet('${i.replace(/'/g, "\\'")}')">${i}</div>`).join('');
+      pop.classList.add('active');
+    },
+
+    createBubble: (role, content) => {
+      const wrapper = document.createElement('div');
+      wrapper.className = `msg-row ${role}`;
+      
+      if (role === 'user') {
+        wrapper.innerHTML = `
+          <div class="msg-wrapper">
+            <div class="bubble user"><div class="md">${content}</div></div>
+          </div>
+        `;
+      } else {
+        // Parse MD
+        let html = marked.parse(content.replace(/\$(.*?)\$/g, '**$1**'));
+        html = DOMPurify.sanitize(html, {
+          ALLOWED_TAGS: ['p','br','strong','em','ul','ol','li','h1','h2','h3','h4','pre','code','blockquote','table','thead','tbody','tr','th','td'],
+          ALLOWED_ATTR: ['class']
+        });
+        html = `<h4>Linda</h4>` + html;
+
+        wrapper.innerHTML = `
+          <div class="msg-wrapper">
+            <div class="bubble bot"><div class="md">${html}</div></div>
+            <div class="msg-actions">
+              <button class="action-btn" onclick="app.logic.copyBubble(this)">📋 Kopieren</button>
+              <button class="action-btn" onclick="app.logic.shareBubble(this)">↗ Teilen</button>
+              <button class="action-btn" onclick="app.logic.pdfBubble(this)">🖨 PDF</button>
+              <button class="action-btn" onclick="app.ui.openModal('modal-feedback')">👎 Feedback</button>
+            </div>
+          </div>
+        `;
+      }
+      return wrapper;
+    },
+
+    scrollToBottom: () => {
+      app.ui.log.scrollTop = app.ui.log.scrollHeight;
+    }
+  },
+
+  logic: {
+    startApp: () => {
+      app.ui.closeModals();
+      if (app.state.sessions.length === 0) {
+        app.logic.newChat(); // Creates first session
+      }
+    },
+
+    newChat: () => {
+      const id = app.utils.uid();
+      app.state.sessions.unshift({ id, name: 'Neuer Chat', ts: Date.now(), messages: [] });
+      app.state.activeId = id;
+      app.utils.save();
+      app.ui.log.innerHTML = ''; 
+      app.ui.closeModals();
+      
+      // HIER IST DIE Begrüßung (a)
+      app.logic.sendSystemMessage(
+        "Herzlich willkommen! Ich bin Linda, deine persönliche Lernassistentin.\n\n" +
+        "Ich helfe dir gerne bei Fragen zu **Ausbildung (AEVO)**, **BWL/VWL** oder **Personalwesen**.\n\n" +
+        "Tippe einfach deine Frage ein. Wähle in den **Einstellungen (⚙)** einen Fachmodus für genauere Antworten."
+      );
+    },
+
+    switchSession: (id) => {
+      app.state.activeId = id;
+      app.utils.save();
+      app.ui.closeModals();
+      app.ui.log.innerHTML = '';
+      
+      const s = app.state.sessions.find(x => x.id === id);
+      if (s) {
+        s.messages.forEach(m => {
+          const bubble = app.ui.createBubble(m.role, m.content);
+          app.ui.log.appendChild(bubble);
+          if (m.role === 'assistant') app.logic.postProcessBubble(bubble);
+        });
+        app.ui.scrollToBottom();
+      }
+    },
+
+    sendSystemMessage: (text) => {
+      const s = app.state.sessions.find(x => x.id === app.state.activeId);
+      if (s) {
+        s.messages.push({ role: 'assistant', content: text });
+        app.utils.save();
+        const bubble = app.ui.createBubble('assistant', text);
+        app.ui.log.appendChild(bubble);
+        app.logic.postProcessBubble(bubble);
+        app.ui.scrollToBottom();
+      }
+    },
+
+    postProcessBubble: (bubble) => {
+      const md = bubble.querySelector('.md');
+      if (!md) return;
+
+      // Sources
+      const heads = md.querySelectorAll('h1,h2,h3');
+      let srcHead = Array.from(heads).find(h => /quellen/i.test(h.textContent));
+      if (srcHead) {
+        let ul = srcHead.nextElementSibling;
+        while (ul && ul.tagName !== 'UL') ul = ul.nextElementSibling;
+        if (ul) {
+          const box = document.createElement('div');
+          box.className = 'source-box';
+          box.innerHTML = `<strong>Quellen</strong>`;
+          const list = document.createElement('ul');
+          list.className = 'source-list';
+          list.innerHTML = ul.innerHTML;
+          box.appendChild(list);
+          srcHead.replaceWith(box);
+          ul.remove();
+        }
+      }
+
+      // Tables
+      md.querySelectorAll('table').forEach(t => {
+        const w = document.createElement('div');
+        w.className = 'table-wrapper';
+        t.parentNode.insertBefore(w, t);
+        w.appendChild(t);
+      });
+    },
+
+    saveSettings: () => {
+      app.state.settings.name = document.getElementById('inp-name').value.trim();
+      app.state.settings.domain = document.getElementById('inp-domain').value;
+      app.utils.save();
+      
+      const badge = document.getElementById('domain-badge');
+      if (app.state.settings.domain) {
+        badge.textContent = app.state.settings.domain;
+        badge.classList.add('visible');
+      } else {
+        badge.classList.remove('visible');
+      }
+      
+      app.ui.closeModals();
+    },
+
+    addSnippet: () => {
+      const val = document.getElementById('inp-snippet').value.trim();
+      if (val) {
+        app.state.settings.snippets.push(val);
+        document.getElementById('inp-snippet').value = '';
+        app.utils.save();
+        app.ui.renderSnippetList();
+      }
+    },
+
+    removeSnippet: (idx) => {
+      app.state.settings.snippets.splice(idx, 1);
+      app.utils.save();
+      app.ui.renderSnippetList();
+    },
+
+    insertSnippet: (txt) => {
+      app.ui.input.value = txt;
+      document.getElementById('snippet-popup').classList.remove('active');
+      app.ui.input.focus();
+    },
+
+    sendMessage: () => {
+      const txt = app.ui.input.value.trim();
+      if (!txt) return;
+      const s = app.state.sessions.find(x => x.id === app.state.activeId);
+      if (!s) return;
+
+      // User Msg
+      const displayName = app.state.settings.name ? `${app.state.settings.name}: ` : '';
+      const fullMsg = displayName + txt;
+      s.messages.push({ role: 'user', content: fullMsg });
+      app.utils.save();
+      
+      const userBubble = app.ui.createBubble('user', fullMsg);
+      app.ui.log.appendChild(userBubble);
+      app.ui.scrollToBottom();
+
+      // Loading
+      const loadingWrapper = document.createElement('div');
+      loadingWrapper.className = 'msg-row bot';
+      loadingWrapper.innerHTML = `
+        <div class="msg-wrapper">
+          <div class="bubble bot">
+            <div class="loading"><span></span><span></span><span></span></div>
+          </div>
+        </div>
+      `;
+      app.ui.log.appendChild(loadingWrapper);
+      app.ui.scrollToBottom();
+
+      // API
+      app.ui.sendBtn.classList.add('stop');
+      app.ui.input.disabled = true;
+
+      const history = s.messages.slice(-3).filter(m => !m.content.includes('Herzlich willkommen')).map(m => ({ role: m.role, content: m.content }));
+
+      fetch('/api/bot', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          question: txt,
+          fachmodus: app.state.settings.domain || '',
+          history: history
+        })
+      })
+      .then(r => r.text())
+      .then(resp => {
+        loadingWrapper.remove();
+        s.messages.push({ role: 'assistant', content: resp });
+        app.utils.save();
+        
+        const botBubble = app.ui.createBubble('assistant', resp);
+        app.ui.log.appendChild(botBubble);
+        app.logic.postProcessBubble(botBubble);
+        app.ui.scrollToBottom();
+      })
+      .catch(err => {
+        loadingWrapper.remove();
+        const errBubble = app.ui.createBubble('assistant', '❌ Verbindungsfehler. Bitte versuche es erneut.');
+        app.ui.log.appendChild(errBubble);
+        app.ui.scrollToBottom();
+      })
+      .finally(() => {
+        app.ui.sendBtn.classList.remove('stop');
+        app.ui.input.disabled = false;
+        app.ui.input.value = '';
+        app.ui.input.style.height = 'auto';
+        app.ui.input.focus();
+      });
+    },
+
+    getBubbleContent: (btn) => {
+      const row = btn.closest('.msg-row');
+      const wrapper = btn.closest('.msg-wrapper');
+      const idx = Array.from(app.ui.log.children).indexOf(row);
+      const s = app.state.sessions.find(x => x.id === app.state.activeId);
+      
+      let q = '';
+      for (let i = idx - 1; i >= 0; i--) {
+        const prev = app.ui.log.children[i];
+        if (prev.classList.contains('user')) {
+          q = prev.querySelector('.md').innerText;
+          break;
+        }
+      }
+      const a = wrapper.querySelector('.md').innerText;
+      return { q, a };
+    },
+
+    copyBubble: (btn) => {
+      const { q, a } = app.logic.getBubbleContent(btn);
+      navigator.clipboard.writeText(`Frage: ${q}\n\nAntwort: ${a}`).then(() => alert('Kopiert!'));
+    },
+
+    shareBubble: (btn) => {
+      const { q, a } = app.logic.getBubbleContent(btn);
+      if (navigator.share) navigator.share({ text: `Frage: ${q}\n\nAntwort: ${a}` });
+      else window.location.href = `mailto:?subject=Linda&body=${encodeURIComponent(`Frage: ${q}\n\nAntwort: ${a}`)}`;
+    },
+
+    pdfBubble: (btn) => {
+      const { q, a } = app.logic.getBubbleContent(btn);
+      const now = new Date();
+      const d = now.toLocaleDateString('de-DE');
+      const t = now.toLocaleTimeString('de-DE', {hour:'2-digit', minute:'2-digit'});
+      
+      const win = window.open('', '_blank');
+      win.document.write(`
+        <html><head><title>Ausdruck</title>
+        <style>
+          @page { margin: 15mm; }
+          body { font-family: Arial; font-size: 13pt; line-height: 1.5; color: #222; }
+          h1 { color: #004481; border-bottom: 2px solid #004481; padding-bottom: 10px; }
+          .meta { background: #f0f8ff; padding: 15px; border-radius: 8px; margin-bottom: 20px; }
+          table { width: 100%; border-collapse: collapse; margin: 15px 0; font-size: 11pt; }
+          th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+          th { background: #f0f0f0; }
+          .disclaimer { margin-top: 40px; padding-top: 15px; border-top: 1px solid #ddd; font-size: 11pt; color: #666; }
+        </style>
+        </head><body>
+          <h1>Linda Assistentin</h1>
+          <div class="meta"><strong>${d} ${t}</strong><br>${q}</div>
+          <div>${a}</div>
+          <div class="disclaimer">
+            <strong>Hinweis:</strong> Antwort von KI generiert. Bitte auf Richtigkeit prüfen. Keine rechtliche Beratung.
+          </div>
+        </body></html>
+      `);
+      win.document.close();
+      win.print();
+    },
+
+    clearAll: () => {
+      if (!confirm('Alle Verläufe löschen?')) return;
+      app.state.sessions = [];
+      app.utils.save();
+      app.ui.closeModals();
+      app.ui.log.innerHTML = '';
+    },
+
+    openFeedback: () => {
+      const s = app.state.sessions.find(x => x.id === app.state.activeId);
+      let body = "Mein Feedback zu Linda:%0D%0A%0D%0A";
+      if (s) {
+        s.messages.forEach(m => {
+          body += (m.role === 'user' ? 'Ich: ' : 'Linda: ') + (m.content.replace(/\n/g, '%0D%0A') + '%0D%0A');
+        });
+      }
+      window.location.href = `mailto:KI-TEST@GMX.COM?subject=Feedback&body=${body}`;
+    }
+  }
+};
+
+window.onload = () => {
+  app.utils.load();
+  
+  if (app.state.settings.domain) {
+    const b = document.getElementById('domain-badge');
+    b.textContent = app.state.settings.domain;
+    b.classList.add('visible');
+  }
+
+  // Input Handling
+  const inp = document.getElementById('chat-input');
+  inp.addEventListener('input', function() {
+    this.style.height = 'auto';
+    this.style.height = (this.scrollHeight) + 'px';
+    
+    const val = this.value;
+    if (val.startsWith('/')) {
+      const query = val.substring(1).toLowerCase();
+      const matches = app.state.settings.snippets.filter(s => s.toLowerCase().includes(query));
+      app.ui.showSnippetPopup(matches);
+    } else {
+      document.getElementById('snippet-popup').classList.remove('active');
+    }
+  });
+
+  inp.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      app.logic.sendMessage();
+    }
+  });
+
+  document.getElementById('send-btn').addEventListener('click', app.logic.sendMessage);
+};
+</script>
+</body>
+</html>
