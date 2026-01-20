@@ -1,0 +1,797 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no"/>
+<title>Linda – Lernassistentin</title>
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.8/purify.min.js"></script>
+
+<style>
+  :root {
+    /* Allianz-ähnliche Farbpalette */
+    --c-blue-50: #f0f8ff;
+    --c-blue-100: #e6f0fa;
+    --c-blue-600: #004481;
+    --c-blue-700: #003366;
+    --c-accent: #0071ce; /* Link/Button Farbe */
+    
+    /* Desktop Schrift (c) Arial 11pt */
+    --font-desktop: 11px;
+    --font-desktop-line: 1.25; /* (b) Kompakter */
+    
+    /* Mobile Schrift (e) Größer */
+    --font-mobile: 18px;
+    --font-mobile-line: 1.35;
+    
+    /* Basiseinstellungen */
+    --bg: #ffffff;
+    --bg-chat: #f9fbfd; /* Sehr helles Blau-Grau */
+    --text-main: #222;
+    --text-muted: #555;
+    
+    --radius: 8px;
+    --shadow: 0 2px 6px rgba(0, 68, 129, 0.08);
+    
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  
+  /* Base Styles */
+  body { 
+    margin: 0; 
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica', 'Arial', sans-serif;
+    background: var(--bg-chat); 
+    color: var(--text-main); 
+    height: 100dvh; 
+    overflow: hidden;
+  }
+
+  /* Desktop Override (c) */
+  @media (min-width: 769px) {
+    body { font-size: var(--font-desktop); line-height: var(--font-desktop-line); }
+    /* Desktop-Container */
+    .app-container { max-width: 900px; margin: 0 auto; height: 100%; display: flex; flex-direction: column; background: var(--bg); box-shadow: 0 0 20px rgba(0,0,0,0.05); }
+    .chat-scroll { padding: 20px 40px; }
+  }
+
+  /* Mobile Override (e) */
+  @media (max-width: 768px) {
+    body { font-size: var(--font-mobile); line-height: var(--font-mobile-line); }
+    .app-container { height: 100%; display: flex; flex-direction: column; }
+    .chat-scroll { padding: 16px 12px 80px 12px; }
+  }
+
+  /* Layout Wrapper (um Mobile/Desktop Konditionierung oben zu nutzen) */
+  #app { display: contents; } 
+
+  /* Header */
+  .header {
+    background: var(--bg);
+    border-bottom: 1px solid #e0e0e0;
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    z-index: 10;
+  }
+  .brand { font-weight: 700; color: var(--c-blue-600); letter-spacing: -0.02em; }
+  
+  .domain-badge {
+    display: none;
+    background: var(--c-blue-50);
+    color: var(--c-blue-600);
+    padding: 4px 10px;
+    border-radius: 99px;
+    font-weight: 600;
+    font-size: 0.9em;
+    border: 1px solid var(--c-blue-100);
+    cursor: pointer;
+  }
+  .domain-badge.active { display: inline-block; }
+
+  .top-actions button {
+    background: none; border: none; margin-left: 8px; cursor: pointer; opacity: 0.7; padding: 6px;
+  }
+  .top-actions button:hover { opacity: 1; color: var(--c-accent); }
+
+  /* Chat Area */
+  .chat-scroll {
+    flex: 1;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    display: flex;
+    flex-direction: column;
+    gap: 8px; /* (b) Sehr enge Abstände */
+    background: var(--bg-chat);
+  }
+
+  /* Messages */
+  .message { display: flex; flex-direction: column; animation: fadeIn 0.2s ease; }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+  /* Bubbles */
+  .bubble {
+    max-width: 92%;
+    padding: 10px 14px;
+    border-radius: 12px;
+    word-wrap: break-word;
+    white-space: pre-wrap;
+    /* (b) Sehr kompakte Abstände innerhalb */
+    line-height: 1.3; 
+    font-size: 1em; /* Erbt von Body */
+  }
+
+  /* User Bubble (Links, Blau/Weiß) */
+  .bubble.user {
+    align-self: flex-end;
+    background: var(--c-blue-600);
+    color: white;
+    border-bottom-right-radius: 2px;
+  }
+
+  /* Bot Bubble (Rechts, Weiß mit blauem Rand) */
+  .bubble.assistant {
+    align-self: flex-start;
+    background: #ffffff;
+    border: 1px solid var(--c-blue-100);
+    border-bottom-left-radius: 2px;
+    box-shadow: var(--shadow);
+  }
+
+  /* Content Styling */
+  .md p { margin: 0 0 6px 0; }
+  .md ul, .md ol { margin: 4px 0 4px 18px; padding: 0; }
+  .md li { margin-bottom: 2px; }
+  .md h4 { margin: 0 0 6px 0; color: var(--c-blue-600); font-weight: 700; font-size: 1.1em; }
+  .md strong { color: var(--c-blue-600); }
+  .md em { font-style: normal; background: #fff8db; padding: 0 2px; }
+  
+  /* Code & Pre */
+  .md code { background: #f4f4f4; padding: 2px 4px; border-radius: 4px; font-family: Consolas, monospace; font-size: 0.95em; }
+  .md pre { background: #f4f4f4; padding: 8px; border-radius: 6px; overflow-x: auto; margin: 6px 0; border: 1px solid #e0e0e0; }
+  
+  /* Tables (Mobile scrollable, Desktop normal) */
+  .table-wrapper { overflow-x: auto; margin: 6px 0; border-radius: 6px; border: 1px solid var(--c-blue-100); }
+  .md table { border-collapse: collapse; width: 100%; font-size: 0.95em; min-width: 400px; }
+  .md th, .md td { border: 1px solid var(--c-blue-100); padding: 6px 8px; text-align: left; }
+  .md th { background: var(--c-blue-50); color: var(--c-blue-600); font-weight: 600; }
+
+  /* Sources */
+  .sources { margin-top: 8px; padding: 8px; border-radius: 6px; background: var(--c-blue-50); border: 1px solid var(--c-blue-100); }
+  .sources .src-title { font-weight: 700; color: var(--c-blue-600); margin-bottom: 4px; font-size: 0.95em; }
+  .sources ul { margin: 0; padding: 0 0 0 16px; list-style: disc; }
+  .sources li { margin: 2px 0; }
+
+  /* Actions below bubble */
+  .actions { display: flex; gap: 6px; margin-top: 4px; justify-content: flex-end; opacity: 0.6; }
+  .actions button {
+    background: none; border: 1px solid transparent; padding: 2px 6px; font-size: 0.85em;
+    border-radius: 12px; cursor: pointer; color: var(--text-muted);
+  }
+  .actions button:hover { background: #f0f0f0; color: var(--c-blue-600); border-color: #ddd; }
+
+  /* Composer */
+  .composer {
+    background: var(--bg);
+    border-top: 1px solid #e0e0e0;
+    padding: 12px 16px max(12px, var(--safe-bottom)) 16px;
+    display: flex;
+    gap: 12px;
+    align-items: flex-end;
+  }
+  .input-wrapper { flex: 1; position: relative; }
+  #in {
+    width: 100%;
+    border: 1px solid #d0d0d0;
+    border-radius: 8px;
+    padding: 10px 12px;
+    font-size: 1em; /* Erbt size */
+    font-family: inherit;
+    resize: none;
+    outline: none;
+    background: #fcfcfc;
+    min-height: 42px;
+    max-height: 120px;
+  }
+  #in:focus { border-color: var(--c-accent); background: white; box-shadow: 0 0 0 2px var(--c-blue-50); }
+  
+  .btn-send {
+    background: var(--c-accent);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 0 16px;
+    height: 42px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .btn-send:hover { background: var(--c-blue-600); }
+  .btn-send.stop { background: var(--danger); }
+
+  /* Snippet Dropdown */
+  .snippet-popup {
+    position: absolute; bottom: 100%; left: 0; width: 100%;
+    background: white; border: 1px solid #e0e0e0; border-radius: 8px;
+    margin-bottom: 4px; display: none; z-index: 20;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    max-height: 150px; overflow-y: auto;
+  }
+  .snippet-popup.active { display: block; }
+  .snippet-item { padding: 8px 12px; cursor: pointer; border-bottom: 1px solid #f5f5f5; font-size: 0.95em; }
+  .snippet-item:hover { background: var(--c-blue-50); color: var(--c-blue-700); }
+
+  /* Modals */
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.4); backdrop-filter: blur(2px);
+    display: none; align-items: center; justify-content: center; z-index: 100;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: white; width: 90%; max-width: 500px; border-radius: 12px;
+    padding: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); max-height: 90vh; overflow-y: auto;
+  }
+  .modal h3 { margin-top: 0; color: var(--c-blue-700); }
+  .modal-actions { display: flex; gap: 10px; margin-top: 20px; justify-content: flex-end; }
+  .btn { padding: 10px 16px; border-radius: 6px; border: 1px solid #ccc; background: white; cursor: pointer; font-weight: 600; }
+  .btn-primary { background: var(--c-accent); color: white; border-color: var(--c-accent); }
+  .btn-danger { background: #fff0f0; border-color: #ffcccc; color: #cc0000; }
+  
+  .form-row { margin-bottom: 12px; }
+  .form-row label { display: block; margin-bottom: 4px; font-weight: 600; color: #555; }
+  .form-row input, .form-row select { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 1em; }
+
+  /* Loading Animation */
+  .loading { display: flex; gap: 4px; align-items: center; height: 18px; }
+  .loading span {
+    width: 6px; height: 6px; background: var(--c-blue-600); border-radius: 50%;
+    animation: bounce 1.4s infinite ease-in-out;
+  }
+  .loading span:nth-child(2) { animation-delay: 0.2s; }
+  .loading span:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes bounce {
+    0%, 80%, 100% { transform: translateY(0); opacity: 0.4; }
+    40% { transform: translateY(-4px); opacity: 1; }
+  }
+</style>
+</head>
+
+<body>
+<!-- App Wrapper (für Media Queries oben) -->
+<div class="app-container">
+  
+  <!-- Header -->
+  <div class="header">
+    <div class="brand">Linda Assistentin</div>
+    <div class="domain-badge" id="domain-badge" title="Aktiver Fachmodus">Modus</div>
+    <div class="top-actions">
+      <button onclick="app.ui.showNewChat()" title="Neuer Chat">+</button>
+      <button onclick="app.ui.showSessions()" title="Verläufe">☰</button>
+      <button onclick="app.ui.showSettings()" title="Einstellungen">⚙</button>
+    </div>
+  </div>
+
+  <!-- Chat Log -->
+  <div id="log" class="chat-scroll"></div>
+
+  <!-- Input Area -->
+  <div class="composer">
+    <div class="input-wrapper">
+      <div id="snippet-popup" class="snippet-popup"></div>
+      <textarea id="in" placeholder="Deine Nachricht..." rows="1"></textarea>
+    </div>
+    <button id="btn-send" class="btn-send">Senden</button>
+  </div>
+
+</div>
+
+<!-- MODALS -->
+
+<!-- Privacy -->
+<div id="modal-privacy" class="modal-overlay open">
+  <div class="modal">
+    <h3>Datenschutzhinweis</h3>
+    <p>Wir freuen uns, dass du Linda nutzen möchtest. Bitte beachte:</p>
+    <ul>
+      <li>Deine Anfragen werden an <strong>OpenAI</strong> (USA) und <strong>Make.com</strong> (EU) übermittelt.</li>
+      <li>Bitte gib <strong>keine personenbezogenen Daten</strong> ein.</li>
+      <li>Links: <a href="https://openai.com/policies/privacy-policy" target="_blank">OpenAI Privacy</a> | <a href="https://www.make.com/en/privacy-policy" target="_blank">Make Privacy</a></li>
+    </ul>
+    <p><small>Der Chatverlauf wird lokal in deinem Browser gespeichert.</small></p>
+    <div class="modal-actions">
+      <button class="btn" onclick="location.reload()">Ablehnen</button>
+      <button class="btn btn-primary" onclick="app.logic.acceptPrivacy()">Zustimmen & Start</button>
+    </div>
+  </div>
+</div>
+
+<!-- Settings -->
+<div id="modal-settings" class="modal-overlay">
+  <div class="modal">
+    <h3>Einstellungen</h3>
+    <div class="form-row">
+      <label>Dein Name (für Chat-Verlauf)</label>
+      <input type="text" id="inp-username" placeholder="z.B. Max Mustermann">
+    </div>
+    <div class="form-row">
+      <label>Fachmodus</label>
+      <select id="inp-domain">
+        <option value="">Standard (Kein Modus)</option>
+        <option value="AEVO">AEVO (Ausbilder)</option>
+        <option value="VWL">VWL (Betriebswirtschaft)</option>
+        <option value="PERSONAL">Personal / HR</option>
+      </select>
+    </div>
+    
+    <div class="form-row">
+      <label>Snippets verwalten</label>
+      <div style="display: flex; gap: 8px; margin-bottom: 8px;">
+        <input type="text" id="inp-new-snippet" placeholder="Neuen Text eingeben...">
+        <button class="btn" onclick="app.logic.addSnippet()">+</button>
+      </div>
+      <div id="snippet-list" style="display: flex; flex-wrap: wrap; gap: 6px;"></div>
+      <small><i>Tipp: Im Chat "/" tippen zum Auswählen.</i></small>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn" onclick="app.ui.closeModals()">Abbrechen</button>
+      <button class="btn btn-primary" onclick="app.logic.saveSettings()">Speichern</button>
+    </div>
+  </div>
+</div>
+
+<!-- Sessions -->
+<div id="modal-sessions" class="modal-overlay">
+  <div class="modal">
+    <h3>Verlauf</h3>
+    <div id="session-list" style="margin-bottom: 15px;"></div>
+    <div class="modal-actions">
+      <button class="btn btn-danger" onclick="app.logic.clearAll()">Alle löschen</button>
+      <button class="btn" onclick="app.ui.closeModals()">Schließen</button>
+    </div>
+  </div>
+</div>
+
+<!-- Feedback -->
+<div id="modal-feedback" class="modal-overlay">
+  <div class="modal">
+    <h3>Feedback</h3>
+    <p>Möchtest du Feedback geben? Das öffnet dein E-Mail-Programm.</p>
+    <div class="modal-actions">
+      <button class="btn" onclick="app.ui.closeModals()">Nein</button>
+      <button class="btn btn-primary" onclick="app.logic.openFeedback()">Ja, Email öffnen</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// APP CORE
+const app = {
+  state: {
+    settings: { userName: '', domain: '', snippets: [] },
+    sessions: [],
+    activeId: null
+  },
+
+  utils: {
+    uid: () => 's_' + Date.now().toString(36) + Math.random().toString(36).slice(2,6),
+    save: () => {
+      localStorage.setItem('linda_settings', JSON.stringify(app.state.settings));
+      localStorage.setItem('linda_sessions', JSON.stringify(app.state.sessions));
+      localStorage.setItem('linda_activeId', app.state.activeId);
+    },
+    load: () => {
+      const s = localStorage.getItem('linda_settings');
+      const ss = localStorage.getItem('linda_sessions');
+      const act = localStorage.getItem('linda_activeId');
+      if (s) app.state.settings = JSON.parse(s);
+      if (ss) app.state.sessions = JSON.parse(ss);
+      if (act) app.state.activeId = act;
+    }
+  },
+
+  ui: {
+    log: document.getElementById('log'),
+    
+    showToast: (msg) => {
+      // Einfacher Toast
+      const t = document.createElement('div');
+      t.textContent = msg;
+      t.style.cssText = "position:fixed; top:20px; left:50%; transform:translateX(-50%); background:#333; color:white; padding:8px 16px; border-radius:20px; z-index:200; font-size:0.9em;";
+      document.body.appendChild(t);
+      setTimeout(() => t.remove(), 2000);
+    },
+
+    showNewChat: () => {
+      const id = app.utils.uid();
+      app.state.sessions.unshift({ id, name: 'Neuer Chat', ts: Date.now(), messages: [] });
+      app.state.activeId = id;
+      app.utils.save();
+      app.ui.renderSessionsList(); // Update list in background
+      app.ui.renderChat();
+      app.ui.showToast("Neuer Chat gestartet");
+    },
+
+    renderChat: () => {
+      const s = app.state.sessions.find(x => x.id === app.state.activeId);
+      if (!s) return;
+      
+      app.ui.log.innerHTML = '';
+      s.messages.forEach(m => app.ui.addMessage(m.role, m.content));
+    },
+
+    addMessage: (role, content, isUpdate = false) => {
+      const div = document.createElement('div');
+      div.className = `message`;
+      div.dataset.role = role;
+      
+      let html = '';
+      
+      if (role === 'assistant') {
+        // Parse MD
+        let text = content.replace(/\$(.*?)\$/g, '**$1**'); // Bold fix
+        let parsed = marked.parse(text);
+        let safe = DOMPurify.sanitize(parsed, {
+          ALLOWED_TAGS: ['p','br','strong','em','ul','ol','li','h1','h2','h3','h4','pre','code','blockquote','table','thead','tbody','tr','th','td','div','span'],
+          ALLOWED_ATTR: ['class']
+        });
+
+        html = `
+          <div class="bubble assistant">
+            <div class="md">
+              <h4>Linda</h4>
+              ${safe}
+            </div>
+          </div>
+          <div class="actions">
+            <button onclick="app.logic.copyText(this)">📋</button>
+            <button onclick="app.logic.shareText(this)">↗</button>
+            <button onclick="app.logic.exportPDF(this)">🖨</button>
+            <button onclick="document.getElementById('modal-feedback').classList.add('open')">👎</button>
+          </div>
+        `;
+      } else {
+        html = `<div class="bubble user"><div class="md">${content}</div></div>`;
+      }
+
+      div.innerHTML = html;
+      
+      if (isUpdate) {
+        app.ui.log.lastElementChild.replaceWith(div);
+      } else {
+        app.ui.log.appendChild(div);
+        // Post-process for tables etc
+        if (role === 'assistant') {
+          const mdDiv = div.querySelector('.md');
+          // Find Sources
+          const heads = Array.from(mdDiv.querySelectorAll('h1,h2,h3'));
+          const h = heads.find(x => /quellen/i.test(x.textContent));
+          if (h) {
+             let ul = h.nextElementSibling;
+             while(ul && ul.tagName !== 'UL') ul = ul.nextElementSibling;
+             if (ul) {
+               const sDiv = document.createElement('div');
+               sDiv.className = 'sources';
+               sDiv.innerHTML = `<div class="src-title">Quellen</div>`;
+               sDiv.appendChild(ul.cloneNode(true));
+               h.replaceWith(sDiv);
+               ul.remove();
+             }
+          }
+          // Wrap Tables
+          mdDiv.querySelectorAll('table').forEach(t => {
+            if(!t.parentNode.classList.contains('table-wrapper')) {
+              const w = document.createElement('div'); w.className = 'table-wrapper';
+              t.parentNode.insertBefore(w, t); w.appendChild(t);
+            }
+          });
+        }
+      }
+
+      // Scroll to bottom
+      app.ui.log.scrollTop = app.ui.log.scrollHeight;
+    },
+
+    showSettings: () => {
+      document.getElementById('inp-username').value = app.state.settings.userName || '';
+      document.getElementById('inp-domain').value = app.state.settings.domain || '';
+      app.ui.renderSnippetList();
+      document.getElementById('modal-settings').classList.add('open');
+    },
+
+    renderSnippetList: () => {
+      const div = document.getElementById('snippet-list');
+      if (!app.state.settings.snippets.length) {
+        div.innerHTML = '<span style="color:#888;">Keine Snippets.</span>';
+        return;
+      }
+      div.innerHTML = app.state.settings.snippets.map((s, i) => 
+        `<span class="chip" style="background:#f0f0f0; padding:4px 8px; border-radius:4px; font-size:0.9em;">
+          ${s} <span style="cursor:pointer; color:red; margin-left:4px;" onclick="app.logic.deleteSnippet(${i})">×</span>
+        </span>`
+      ).join('');
+    },
+
+    showSessions: () => {
+      app.ui.renderSessionsList();
+      document.getElementById('modal-sessions').classList.add('open');
+    },
+
+    renderSessionsList: () => {
+      const div = document.getElementById('session-list');
+      if (!app.state.sessions.length) {
+        div.innerHTML = 'Keine Verläufe.';
+        return;
+      }
+      div.innerHTML = app.state.sessions.map(s => 
+        `<div style="padding:8px; border-bottom:1px solid #eee; cursor:pointer; ${s.id === app.state.activeId ? 'background:#e6f0fa; font-weight:bold;' : ''}" onclick="app.logic.switchSession('${s.id}')">
+          <div>${s.name || 'Chat'}</div>
+          <small style="color:#888;">${new Date(s.ts).toLocaleString()}</small>
+        </div>`
+      ).join('');
+    },
+
+    closeModals: () => {
+      document.querySelectorAll('.modal-overlay').forEach(m => m.classList.remove('open'));
+    },
+
+    showSnippetPopup: (items) => {
+      const pop = document.getElementById('snippet-popup');
+      if (!items.length) { pop.classList.remove('active'); return; }
+      pop.innerHTML = items.map(i => `<div class="snippet-item" onclick="app.logic.insertSnippet('${i.replace(/'/g, "\\'")}')">${i}</div>`).join('');
+      pop.classList.add('active');
+    },
+    
+    hideSnippetPopup: () => {
+      document.getElementById('snippet-popup').classList.remove('active');
+    }
+  },
+
+  logic: {
+    acceptPrivacy: () => {
+      document.getElementById('modal-privacy').classList.remove('open');
+      if (app.state.sessions.length === 0) {
+        app.ui.showNewChat();
+        app.logic.addSystemMessage("Herzlich willkommen bei Linda! Ich bin deine persönliche Lernassistentin. Du kannst mich für Fragen zu VWL, AEVO oder Personal nutzen. Wähle einfach einen Fachmodus in den Einstellungen oder starte direkt mit einer Frage. Ich bin bereit!");
+      }
+    },
+
+    addSystemMessage: (text) => {
+      const s = app.state.sessions.find(x => x.id === app.state.activeId);
+      if (!s) return;
+      s.messages.push({ role: 'assistant', content: text });
+      app.utils.save();
+      app.ui.addMessage('assistant', text);
+    },
+
+    saveSettings: () => {
+      app.state.settings.userName = document.getElementById('inp-username').value.trim();
+      app.state.settings.domain = document.getElementById('inp-domain').value;
+      app.utils.save();
+      
+      const badge = document.getElementById('domain-badge');
+      if (app.state.settings.domain) {
+        badge.textContent = app.state.settings.domain;
+        badge.classList.add('active');
+      } else {
+        badge.classList.remove('active');
+      }
+      
+      app.ui.closeModals();
+    },
+
+    addSnippet: () => {
+      const val = document.getElementById('inp-new-snippet').value.trim();
+      if (val) {
+        app.state.settings.snippets.push(val);
+        document.getElementById('inp-new-snippet').value = '';
+        app.utils.save();
+        app.ui.renderSnippetList();
+      }
+    },
+
+    deleteSnippet: (idx) => {
+      app.state.settings.snippets.splice(idx, 1);
+      app.utils.save();
+      app.ui.renderSnippetList();
+    },
+
+    switchSession: (id) => {
+      app.state.activeId = id;
+      app.utils.save();
+      app.ui.closeModals();
+      app.ui.renderChat();
+    },
+
+    clearAll: () => {
+      if (!confirm('Alle Verläufe löschen?')) return;
+      app.state.sessions = [];
+      app.utils.save();
+      app.ui.showSessions(); // Refresh list
+      app.ui.renderChat();
+    },
+
+    getBubbleContent: (btn) => {
+      const msg = btn.closest('.message');
+      const md = msg.querySelector('.md');
+      const qIdx = Array.from(app.ui.log.children).indexOf(msg);
+      const s = app.state.sessions.find(x => x.id === app.state.activeId);
+      
+      // Find last user message before this one
+      let q = '';
+      for(let i=qIdx-1; i>=0; i--) {
+        const m = app.ui.log.children[i];
+        if (m.dataset.role === 'user') {
+          q = m.innerText;
+          break;
+        }
+      }
+      return { q, a: md ? md.innerText : '' };
+    },
+
+    copyText: (btn) => {
+      const { q, a } = app.logic.getBubbleContent(btn);
+      navigator.clipboard.writeText(`Frage: ${q}\n\nAntwort: ${a}`).then(() => app.ui.showToast('Kopiert!'));
+    },
+
+    shareText: (btn) => {
+      const { q, a } = app.logic.getBubbleContent(btn);
+      const txt = `Frage: ${q}\n\nAntwort: ${a}`;
+      if (navigator.share) navigator.share({ title: 'Linda', text: txt });
+      else window.location.href = `mailto:?subject=Linda&body=${encodeURIComponent(txt)}`;
+    },
+
+    exportPDF: (btn) => {
+      const { q, a } = app.logic.getBubbleContent(btn);
+      const now = new Date();
+      const d = now.toLocaleDateString('de-DE');
+      const t = now.toLocaleTimeString('de-DE', {hour:'2-digit', minute:'2-digit'});
+      
+      const win = window.open('', '_blank');
+      win.document.write(`
+        <html><head><title>Ausdruck</title>
+        <style>
+          @page { margin: 15mm; }
+          body { font-family: Arial; font-size: 11pt; line-height: 1.4; color: #222; }
+          h3 { color: #004481; border-bottom: 2px solid #004481; padding-bottom: 5px; }
+          .box { background: #f0f8ff; padding: 10px; border-radius: 5px; margin-bottom: 15px; }
+          table { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 10pt; }
+          th, td { border: 1px solid #ccc; padding: 6px; text-align: left; }
+          th { background: #f0f0f0; }
+          .disclaimer { margin-top: 30px; padding-top: 10px; border-top: 1px solid #ddd; font-size: 9pt; color: #666; }
+        </style>
+        </head><body>
+          <h3>Linda Assistentin - Ausdruck</h3>
+          <div class="box"><strong>${d} ${t}</strong><br>${q}</div>
+          <div class="content">${a}</div>
+          <div class="disclaimer">
+            <strong>Hinweis:</strong> KI-Inhalte können fehlerhaft sein. Bitte selbst prüfen. Keine rechtliche Beratung.<br>
+            Generiert am ${d} um ${t} Uhr.
+          </div>
+        </body></html>
+      `);
+      win.document.close();
+      win.print();
+    },
+
+    openFeedback: () => {
+      const s = app.state.sessions.find(x => x.id === app.state.activeId);
+      let body = "Mein Feedback zu Linda:%0D%0A%0D%0A";
+      if (s) {
+        body += "--- Chat Verlauf ---%0D%0A";
+        s.messages.forEach(m => {
+          const sender = m.role === 'user' ? 'Ich:' : 'Linda:';
+          body += `${sender} ${m.content.replace(/\n/g, '%0D%0A')}%0D%0A`;
+        });
+      }
+      window.location.href = `mailto:KI-TEST@GMX.COM?subject=Feedback&body=${body}`;
+    },
+
+    insertSnippet: (text) => {
+      const inp = document.getElementById('in');
+      inp.value = text;
+      app.ui.hideSnippetPopup();
+      inp.focus();
+    }
+  }
+};
+
+// EVENT LISTENERS
+window.onload = () => {
+  app.utils.load();
+  
+  // Init UI State
+  if (app.state.settings.domain) {
+    document.getElementById('domain-badge').textContent = app.state.settings.domain;
+    document.getElementById('domain-badge').classList.add('active');
+  }
+
+  // Send Button
+  document.getElementById('btn-send').addEventListener('click', () => {
+    const inp = document.getElementById('in');
+    const txt = inp.value.trim();
+    if (!txt) return;
+    
+    // Add User Message
+    const prefix = app.state.settings.userName ? `${app.state.settings.userName}: ` : '';
+    const userDisplay = prefix + txt;
+    
+    const s = app.state.sessions.find(x => x.id === app.state.activeId);
+    if (s) {
+      s.messages.push({ role: 'user', content: userDisplay });
+      app.utils.save();
+      app.ui.addMessage('user', userDisplay);
+      
+      // Loading
+      s.messages.push({ role: 'assistant', content: '<div class="loading"><span></span><span></span><span></span></div>' });
+      app.utils.save();
+      app.ui.addMessage('assistant', '<div class="loading"><span></span><span></span><span></span></div>');
+      
+      // API Call Logic
+      const sendBtn = document.getElementById('btn-send');
+      sendBtn.disabled = true;
+      sendBtn.textContent = '...';
+      
+      // Filter Welcome Message from History sent to API
+      const history = s.messages.slice(-3).filter(m => !m.content.includes('Herzlich willkommen')).map(m => ({ role: m.role, content: m.content }));
+
+      fetch('/api/bot', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          question: txt, // Send raw question
+          fachmodus: app.state.settings.domain || '',
+          history: history
+        })
+      })
+      .then(r => r.text())
+      .then(txt => {
+        // Remove loading, replace with response
+        s.messages[s.messages.length - 1] = { role: 'assistant', content: txt };
+        app.utils.save();
+        app.ui.renderChat();
+      })
+      .catch(err => {
+        s.messages[s.messages.length - 1] = { role: 'assistant', content: 'Fehler beim Verbinden.' };
+        app.utils.save();
+        app.ui.renderChat();
+      })
+      .finally(() => {
+        sendBtn.disabled = false;
+        sendBtn.textContent = 'Senden';
+        inp.value = '';
+        inp.style.height = 'auto';
+      });
+    }
+  });
+
+  // Input Handling (Auto-resize & Snippets)
+  const inp = document.getElementById('in');
+  inp.addEventListener('input', function() {
+    this.style.height = 'auto';
+    this.style.height = (this.scrollHeight) + 'px';
+    
+    // Snippet Logic
+    const val = this.value;
+    if (val.startsWith('/')) {
+      const query = val.substring(1).toLowerCase();
+      const matches = app.state.settings.snippets.filter(s => s.toLowerCase().includes(query));
+      app.ui.showSnippetPopup(matches);
+    } else {
+      app.ui.hideSnippetPopup();
+    }
+  });
+  
+  inp.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      document.getElementById('btn-send').click();
+    }
+  });
+};
+</script>
+</body>
+</html>
