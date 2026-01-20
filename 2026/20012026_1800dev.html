@@ -334,8 +334,15 @@
     flex-direction: column;
   }
 
-  .text-area {
+  .text-area-container {
     flex: 1;
+    min-height: 200px;
+    margin-bottom: 16px;
+  }
+
+  .text-area {
+    width: 100%;
+    height: 100%;
     border: 1px solid var(--apple-border);
     border-radius: var(--apple-radius);
     padding: 14px 18px;
@@ -346,13 +353,19 @@
     line-height: 1.5;
     outline: none;
     transition: var(--apple-transition);
-    margin-bottom: 16px;
-    min-height: 200px;
+    -webkit-user-select: text !important;
+    user-select: text !important;
+    cursor: text !important;
   }
 
   .text-area:focus {
     border-color: var(--apple-blue);
     box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.1);
+  }
+
+  .text-area::placeholder {
+    color: var(--apple-secondary);
+    opacity: 1;
   }
 
   .transform-controls {
@@ -406,11 +419,19 @@
     transition: var(--apple-transition);
     min-height: 48px;
     resize: none;
+    -webkit-user-select: text !important;
+    user-select: text !important;
+    cursor: text !important;
   }
 
   .text-input:focus {
     border-color: var(--apple-blue);
     box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.1);
+  }
+
+  .text-input::placeholder {
+    color: var(--apple-secondary);
+    opacity: 1;
   }
 
   .send-button {
@@ -742,6 +763,7 @@
               placeholder="Nachricht eingeben..."
               rows="1"
               aria-label="Nachricht eingeben"
+              spellcheck="true"
             ></textarea>
             <button class="send-button" id="send-button" aria-label="Senden">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -754,12 +776,15 @@
 
       <!-- Transform Content -->
       <div class="transform-content" id="transform-content">
-        <textarea
-          class="text-area"
-          id="transform-input"
-          placeholder="Gib hier deinen Text ein..."
-          aria-label="Text für Transformation eingeben"
-        ></textarea>
+        <div class="text-area-container">
+          <textarea
+            class="text-area"
+            id="transform-input"
+            placeholder="Gib hier deinen Text ein..."
+            aria-label="Text für Transformation eingeben"
+            spellcheck="true"
+          ></textarea>
+        </div>
         <div class="transform-controls">
           <select id="style-select" class="select-style" aria-label="Schreibstil auswählen">
             <option value="">Schreibstil wählen</option>
@@ -775,16 +800,19 @@
             class="text-input"
             placeholder="Zusätzliche Anweisungen"
             aria-label="Zusätzliche Anweisungen für Transformation"
+            spellcheck="true"
           >
           <button class="modal-button primary" id="transform-btn">Text anpassen</button>
         </div>
-        <textarea
-          class="text-area"
-          id="transform-output"
-          placeholder="Hier erscheint dein angepasster Text..."
-          aria-label="Transformierter Text"
-          readonly
-        ></textarea>
+        <div class="text-area-container">
+          <textarea
+            class="text-area"
+            id="transform-output"
+            placeholder="Hier erscheint dein angepasster Text..."
+            aria-label="Transformierter Text"
+            readonly
+          ></textarea>
+        </div>
       </div>
     </div>
   </main>
@@ -1071,11 +1099,13 @@
 
       if (!inputText) {
         alert('Bitte gib einen Text ein.');
+        elements.transformInput.focus();
         return;
       }
 
       if (!style) {
         alert('Bitte wähle einen Schreibstil.');
+        elements.styleSelect.focus();
         return;
       }
 
@@ -1086,22 +1116,25 @@
       setTimeout(() => {
         let transformedText = inputText;
 
-        // Simple style transformations
+        // Enhanced style transformations
         switch(style) {
           case 'formal':
-            transformedText = `Sehr geehrte Damen und Herren,\n\n${inputText}\n\nMit freundlichen Grüßen`;
+            transformedText = `Sehr geehrte Damen und Herren,\n\n${inputText.replace(/\n/g, '\n\n')}\n\nMit freundlichen Grüßen`;
             break;
           case 'casual':
-            transformedText = `Hey!\n\n${inputText}\n\nLG`;
+            transformedText = `Hey!\n\n${inputText.replace(/\n/g, '\n\n')}\n\nLG`;
             break;
           case 'professional':
-            transformedText = `Guten Tag,\n\n${inputText}\n\nVielen Dank für Ihre Aufmerksamkeit.`;
+            transformedText = `Guten Tag,\n\n${inputText.replace(/\n/g, '\n\n')}\n\nVielen Dank für Ihre Aufmerksamkeit.`;
             break;
           case 'simple':
-            transformedText = inputText.replace(/[\.,;:!?]/g, '').toLowerCase();
+            transformedText = inputText
+              .replace(/[\.,;:!?]/g, '')
+              .replace(/\n/g, ' ')
+              .toLowerCase();
             break;
           case 'creative':
-            transformedText = `🌟 ${inputText} 🌟\n\nKreativ transformiert!`;
+            transformedText = `🌟 ${inputText.replace(/\n/g, '\n\n')} 🌟\n\nKreativ transformiert!`;
             break;
         }
 
@@ -1112,6 +1145,12 @@
         elements.transformOutput.value = transformedText;
         elements.transformBtn.disabled = false;
         elements.transformBtn.textContent = 'Text anpassen';
+
+        // Auto-resize output textarea
+        autoResizeTextarea({ target: elements.transformOutput });
+
+        // Focus on output for better UX
+        elements.transformOutput.focus();
       }, 1000);
     }
 
