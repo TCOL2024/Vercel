@@ -2,6 +2,7 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8"/>
+<!-- WICHTIG: Für Mobile Optimierung, kein Zoom erlauben -->
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
 <title>Linda – Lernassistentin</title>
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
@@ -11,23 +12,27 @@
   :root {
     /* Farben */
     --blue-main: #004481;
+    --blue-dark: #002a52;
     --blue-light: #e6f0fa;
     --blue-soft: #f0f8ff;
     --text-main: #222;
     --text-muted: #666;
     --white: #fff;
     --danger: #dc3545;
-    --bg-dark: #1a202c; /* Hintergrund für Disclaimer */
     
-    /* SCHRIFTGRÖSSEN */
-    --font-desktop: 13px; /* Kompakt für Desktop */
-    --line-desktop: 1.4;
+    /* Desktop (Kompakt) */
+    --font-desktop: 12px;
+    --line-desktop: 1.3;
     
-    /* Mobile: GRÖSSERE SCHRIFT */
-    --font-mobile: 18px; 
+    /* Mobile (GROSS & LESEN) */
+    --font-mobile: 19px; 
     --line-mobile: 1.6;
-    --bubble-pad: 12px;
+    --bubble-pad: 14px;
     --btn-size: 46px;
+    
+    /* Disclaimer Farbschema (Versicherungs-Style) */
+    --disclaimer-bg: #f8fbff;
+    --disclaimer-border: #d0e0f0;
   }
 
   /* --- Media Queries --- */
@@ -90,7 +95,7 @@
     justify-content: space-between;
     padding: 0 16px;
     flex-shrink: 0;
-    z-index: 20; /* Über dem Chat */
+    z-index: 20;
   }
 
   .brand-area { display: flex; align-items: center; gap: 10px; }
@@ -104,7 +109,7 @@
     font-size: 0.75em;
     font-weight: 700;
     border: 1px solid #d0e4f5;
-    display: inline-block; /* Immer sichtbar */
+    display: inline-block;
     white-space: nowrap;
   }
 
@@ -124,10 +129,12 @@
     width: auto; padding: 0 16px; font-weight: 800; font-size: 1em;
     height: var(--btn-size); border-radius: 14px;
   }
-  .btn-new:hover { background: #003366; }
+  .btn-new:hover { background: var(--blue-dark); }
   .btn-icon.stop { background: var(--danger); color: white; border-color: var(--danger); }
 
   /* --- CHAT LOG --- */
+  /* Desktop: Padding unten für Input */
+  /* Mobile: Input ist fixiert, Log nutzt verfügbaren Raum */
   #chat-log {
     flex: 1;
     overflow-y: auto;
@@ -137,12 +144,16 @@
     flex-direction: column;
     gap: 14px;
     -webkit-overflow-scrolling: touch;
-    /* WICHTIG: Platz am unteren Rand für die fixierte Input-Area (Desktop) */
+    /* Platz für fixierte Input-Bar auf Desktop */
     padding-bottom: 120px; 
   }
 
   @media (min-width: 769px) {
     #chat-log { padding: 24px 32px; gap: 10px; padding-bottom: 140px; }
+  }
+  /* Mobile: Weniger Padding unten, da Input fixiert ist */
+  @media (max-width: 768px) {
+    #chat-log { padding: 16px; padding-bottom: 80px; } 
   }
 
   /* --- BUBBLES --- */
@@ -216,7 +227,7 @@
   .action-btn:hover { border-color: var(--blue-main); color: var(--blue-main); background: var(--blue-soft); }
 
   /* --- INPUT AREA --- */
-  /* Desktop: Normaler Block */
+  /* Desktop: Standard Block Layout */
   .input-area {
     padding: 16px;
     background: white;
@@ -227,7 +238,7 @@
     position: relative;
   }
 
-  /* Mobile: FIXIERT am unteren Rand, damit es immer sichtbar ist */
+  /* Mobile: FIXIERTE Position am unteren Rand (Messenger-Style) */
   @media (max-width: 768px) {
     .input-area {
       position: fixed;
@@ -236,13 +247,11 @@
       right: 0;
       z-index: 50;
       border-top: 1px solid #eaeaea;
-      box-shadow: 0 -5px 15px rgba(0,0,0,0.08);
-      padding-bottom: 10px; /* Safe Area für iPhones */
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(10px); /* Moderner Look */
+      box-shadow: 0 -4px 20px rgba(0,0,0,0.05);
+      padding-bottom: 10px; /* Safe Area für iPhone Home Indicator */
       padding-top: 10px;
-    }
-    /* Chat-Log anpassen damit Input nicht überdeckt */
-    #chat-log {
-      padding-bottom: 100px; 
     }
   }
   
@@ -255,7 +264,7 @@
     padding: 12px 14px;
     border-radius: 16px;
     border: 2px solid #eaeaea;
-    font-size: 1em; /* Erbt den Root Font Size (Mobile 18px) */
+    font-size: 1em; /* Erbt den Root Font Size */
     font-family: inherit;
     resize: none;
     outline: none;
@@ -305,37 +314,115 @@
   }
   .modal-overlay.open .modal { transform: scale(1); }
 
-  /* Spezielles Styling für den Disclaimer (Dark Mode) */
+  /* --- DISCLAIMER DESIGN (Allianz-Style) --- */
+  /* Dies ist ein minimalistisches Design, inspiriert von großen Finanzdienstleistern */
   .modal-overlay.dark {
-    background: var(--bg-dark);
+    background: #f4f7fa; /* Heller Hintergrund */
+    padding: 10px;
   }
-  .modal.dark {
-    background: #2d3748;
-    color: #e2e8f0;
-    border: 1px solid #4a5568;
+  .modal.disclaimer-modal {
+    border: none;
+    box-shadow: none;
+    padding: 0;
+    background: transparent;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    max-width: 600px;
   }
-  .modal.dark h3 { color: #63b3ed; }
-  .modal.dark p, .modal.dark li { color: #cbd5e0; }
-  .modal.dark .btn-secondary { background: #4a5568; color: white; border: none; }
-  .modal.dark .btn-primary { background: #3182ce; color: white; border: none; }
-  
-  /* Checkbox Styling */
-  .consent-group {
-    margin: 20px 0;
-    padding: 15px;
-    background: rgba(255,255,255,0.05);
-    border-radius: 8px;
-    border: 1px solid #4a5568;
-  }
-  .consent-row {
-    display: flex; align-items: flex-start; gap: 10px; margin-bottom: 12px; cursor: pointer;
-  }
-  .consent-row input { margin-top: 4px; transform: scale(1.2); }
-  .consent-row label { font-weight: 600; cursor: pointer; }
 
-  .modal h3 { margin: 0 0 16px 0; font-size: 1.6em; }
-  .modal p { margin-bottom: 12px; }
-  .modal ul { margin: 0 0 16px 20px; }
+  .disclaimer-content {
+    background: white;
+    border-radius: 12px;
+    padding: 30px;
+    border-top: 6px solid var(--blue-main);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+  }
+
+  .disclaimer-header {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 20px;
+  }
+  
+  .disclaimer-icon {
+    width: 50px; height: 50px;
+    background: var(--blue-main);
+    color: white;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 24px;
+    font-weight: bold;
+  }
+
+  .disclaimer-title {
+    font-size: 1.8em;
+    font-weight: 700;
+    color: var(--blue-main);
+    margin: 0;
+  }
+
+  .disclaimer-text {
+    color: #4a5568;
+    margin-bottom: 25px;
+    font-size: 1em;
+  }
+
+  .disclaimer-list {
+    background: var(--disclaimer-bg);
+    border: 1px solid var(--disclaimer-border);
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 25px;
+  }
+  
+  .disclaimer-list h4 {
+    margin: 0 0 10px 0;
+    color: var(--blue-dark);
+    font-size: 1.1em;
+  }
+  
+  .disclaimer-list ul {
+    margin: 0; padding-left: 20px; color: #555;
+  }
+  .disclaimer-list li { margin-bottom: 8px; line-height: 1.5; }
+
+  /* Checkbox Styling */
+  .consent-group { margin-bottom: 20px; }
+  .consent-row {
+    display: flex; align-items: flex-start; gap: 12px; margin-bottom: 12px; cursor: pointer;
+    padding: 10px; border-radius: 6px; transition: background 0.2s;
+  }
+  .consent-row:hover { background: #f7fafc; }
+  .consent-row input { margin-top: 4px; transform: scale(1.2); accent-color: var(--blue-main); }
+  .consent-row label { font-weight: 600; cursor: pointer; color: #2d3748; }
+  
+  .btn-start-wrapper {
+    margin-top: auto;
+    padding-top: 20px;
+    border-top: 1px solid #eaeaea;
+  }
+
+  .btn-start {
+    width: 100%;
+    background: var(--blue-main);
+    color: white;
+    border: none;
+    padding: 16px;
+    border-radius: 8px;
+    font-size: 1.1em;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .btn-start:hover:not(:disabled) { background: var(--blue-dark); }
+  .btn-start:disabled { background: #cbd5e0; cursor: not-allowed; }
+
+  /* --- MODALS (Settings, Sessions) --- */
+  .modal h3 { margin: 0 0 16px 0; font-size: 1.6em; color: var(--blue-main); }
+  .modal p { color: #555; margin-bottom: 12px; }
+  .modal ul { margin: 0 0 16px 20px; color: #555; }
   .modal li { margin-bottom: 6px; }
   .modal a { color: var(--blue-main); font-weight: 700; text-decoration: none; }
 
@@ -351,7 +438,6 @@
   .btn-primary { background: var(--blue-main); color: white; }
   .btn-secondary { background: #f0f0f0; color: #333; }
   .btn-danger { background: #fff0f0; color: #d32f2f; border: 1px solid #ffcdd2; }
-  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
   .item-list { margin: 10px 0; border: 1px solid #eee; border-radius: 8px; overflow: hidden; }
   .item-list div { padding: 12px; border-bottom: 1px solid #eee; cursor: pointer; display: flex; justify-content: space-between; }
@@ -393,7 +479,7 @@
   <!-- Chat Log -->
   <div id="chat-log"></div>
 
-  <!-- Input Area -->
+  <!-- Input Area (Fixiert auf Mobile) -->
   <div class="input-area">
     <div class="input-wrapper">
       <div id="snippet-popup"></div>
@@ -405,27 +491,50 @@
 
 <!-- MODALS -->
 
-<!-- Disclaimer (DATENSCHUTZ - SICHTBAR ZUERST) -->
+<!-- Disclaimer (Versicherungs-Style Design) -->
 <div id="modal-disclaimer" class="modal-overlay open dark">
-  <div class="modal dark">
-    <h3>⚠️ Wichtige Information</h3>
-    <p>Bevor du Linda verwendest, beachte bitte:</p>
-    
-    <div class="consent-group">
-      <div class="consent-row">
-        <input type="checkbox" id="consent-data">
-        <label for="consent-data">Ich verstehe, dass <strong>keine vertraulichen Daten</strong> (z.B. Kontoauszüge, Passwörter, medizinische Daten) eingegeben werden dürfen.</label>
+  <div class="modal disclaimer-modal">
+    <div class="disclaimer-content">
+      <div class="disclaimer-header">
+        <div class="disclaimer-icon">i</div>
+        <h3 class="disclaimer-title">Wichtige Hinweise</h3>
       </div>
-      <div class="consent-row">
-        <input type="checkbox" id="consent-forward">
-        <label for="consent-forward">Ich stimme zu, dass meine Anfragen an <strong>OpenAI</strong>, <strong>Make.com</strong> und <strong>Anthropic (Claude)</strong> zur Verarbeitung übermittelt werden.</label>
+      
+      <div class="disclaimer-text">
+        Wir nehmen den Schutz deiner Daten sehr ernst. Bitte nimm dir einen Moment Zeit, um die folgenden Bedingungen zu lesen, bevor du den Assistenten verwendest.
       </div>
-    </div>
 
-    <p style="font-size: 0.9em; color: #a0aec0;">Deine Verläufe werden lokal in deinem Browser gespeichert.</p>
+      <div class="disclaimer-list">
+        <h4>Datenverarbeitung</h4>
+        <ul>
+          <li>Deine Eingaben werden an externe KI-Dienstleister übermittelt.</li>
+          <li>Bitte gib <strong>niemals vertrauliche Daten</strong> ein (z.B. Kontoauszüge, Passwörter, Gesundheitsdaten, persönliche Dokumente).</li>
+        </ul>
+      </div>
 
-    <div class="btn-row">
-      <button id="btn-start-disclaimer" class="btn btn-primary" disabled onclick="app.logic.startApp()">Starten & Akzeptieren</button>
+      <div class="disclaimer-list">
+        <h4>Empfänger der Daten</h4>
+        <ul>
+          <li>OpenAI (USA)</li>
+          <li>Make.com (Datenverarbeitung)</li>
+          <li>Anthropic (USA)</li>
+        </ul>
+      </div>
+
+      <div class="consent-group">
+        <div class="consent-row">
+          <input type="checkbox" id="consent-data">
+          <label for="consent-data">Ich bestätige, dass ich <strong>keine vertraulichen personenbezogenen Daten</strong> in diesen Chat eingeben werde.</label>
+        </div>
+        <div class="consent-row">
+          <input type="checkbox" id="consent-forward">
+          <label for="consent-forward">Ich bin damit einverstanden, dass meine Anfragen zur Verarbeitung an die oben genannten Anbieter übermittelt werden.</label>
+        </div>
+      </div>
+
+      <div class="btn-start-wrapper">
+        <button id="btn-start-disclaimer" class="btn-start" disabled onclick="app.logic.startApp()">Akzeptieren & Starten</button>
+      </div>
     </div>
   </div>
 </div>
@@ -611,12 +720,10 @@ const app = {
       
       app.ui.closeModals();
       
-      // WICHTIG: Immer einen neuen Chat starten, wenn Start gedrückt wird
-      // (Oder falls schon einer existiert, lade ihn, aber Sicherheitshalber neu)
+      // Garantiert neue Begrüßung
       if (app.state.sessions.length === 0) {
         app.logic.newChat();
       } else {
-        // Wir löschen alten Inhalt und starten frisch, um Begrüßung zu garantieren
         app.logic.newChat();
       }
     },
@@ -629,14 +736,14 @@ const app = {
       app.ui.log.innerHTML = ''; 
       app.ui.closeModals();
       
-      // Begrüßung (Sofort sichtbar)
+      // Begrüßung
       const welcomeText = "Herzlich willkommen! Ich bin Linda, deine persönliche Lernassistentin.\n\n" +
         "Ich helfe dir gerne bei Fragen zu **Ausbildung (AEVO)**, **BWL/VWL** oder **Personalwesen**.\n\n" +
         "Tippe einfach deine Frage ein. Wähle in den **Einstellungen (⚙)** einen Fachmodus für genauere Antworten.";
         
       app.logic.sendSystemMessage(welcomeText);
 
-      // Mobile: Fokus auf Input setzen (öffnet Tastatur)
+      // Mobile: Tastatur fokussieren
       setTimeout(() => app.ui.input.focus(), 100);
     },
 
@@ -897,7 +1004,7 @@ window.onload = () => {
   const b = document.getElementById('domain-badge');
   b.textContent = app.state.settings.domain || 'Standard';
 
-  // Disclaimer Checkbox Listener (Button aktivieren wenn beide angekreuzt)
+  // Disclaimer Checkbox Listener
   const check1 = document.getElementById('consent-data');
   const check2 = document.getElementById('consent-forward');
   const btnStart = document.getElementById('btn-start-disclaimer');
