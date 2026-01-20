@@ -17,16 +17,17 @@
     --text-muted: #666;
     --white: #fff;
     --danger: #dc3545;
+    --bg-dark: #1a202c; /* Hintergrund für Disclaimer */
     
-    /* Desktop (Kompakt) */
-    --font-desktop: 12px;
-    --line-desktop: 1.3;
+    /* SCHRIFTGRÖSSEN */
+    --font-desktop: 13px; /* Kompakt für Desktop */
+    --line-desktop: 1.4;
     
-    /* Mobile (GRÖSSER) - Optimiert für Lesbarkeit */
-    --font-mobile: 16px; 
-    --line-mobile: 1.5;
+    /* Mobile: GRÖSSERE SCHRIFT */
+    --font-mobile: 18px; 
+    --line-mobile: 1.6;
     --bubble-pad: 12px;
-    --btn-size: 44px;
+    --btn-size: 46px;
   }
 
   /* --- Media Queries --- */
@@ -34,16 +35,12 @@
     :root {
       --font-size: var(--font-desktop);
       --line-height: var(--line-desktop);
-      --bubble-pad: 12px;
-      --btn-size: 40px;
     }
   }
   @media (max-width: 768px) {
     :root {
       --font-size: var(--font-mobile);
       --line-height: var(--line-mobile);
-      --bubble-pad: 14px;
-      --btn-size: 50px;
     }
   }
 
@@ -85,7 +82,7 @@
 
   /* --- HEADER --- */
   header {
-    height: 70px;
+    height: 60px;
     background: var(--white);
     border-bottom: 1px solid #eaeaea;
     display: flex;
@@ -93,24 +90,22 @@
     justify-content: space-between;
     padding: 0 16px;
     flex-shrink: 0;
-    z-index: 10;
-    position: relative;
+    z-index: 20; /* Über dem Chat */
   }
 
   .brand-area { display: flex; align-items: center; gap: 10px; }
-  .brand { font-weight: 800; font-size: 1.3em; color: var(--blue-main); }
+  .brand { font-weight: 800; font-size: 1.2em; color: var(--blue-main); }
   
   .badge {
     background: var(--blue-light);
     color: var(--blue-main);
-    padding: 6px 12px; /* Etwas größerer Abstand */
+    padding: 4px 10px;
     border-radius: 12px;
-    font-size: 0.85em;
+    font-size: 0.75em;
     font-weight: 700;
     border: 1px solid #d0e4f5;
+    display: inline-block; /* Immer sichtbar */
     white-space: nowrap;
-    /* WICHTIG: Immer sichtbar, auch wenn kein Modus gesetzt ist (zeigt dann "Standard") */
-    display: inline-block; 
   }
 
   .header-btns { display: flex; gap: 8px; }
@@ -118,7 +113,7 @@
     background: none; border: 1px solid #eaeaea;
     width: var(--btn-size); height: var(--btn-size);
     border-radius: 12px;
-    font-size: 1.4em; cursor: pointer; color: var(--blue-main);
+    font-size: 1.2em; cursor: pointer; color: var(--blue-main);
     display: flex; align-items: center; justify-content: center;
     transition: all 0.2s;
   }
@@ -126,7 +121,7 @@
   
   .btn-new {
     background: var(--blue-main); color: white; border: none;
-    width: auto; padding: 0 16px; font-weight: 800; font-size: 1.1em;
+    width: auto; padding: 0 16px; font-weight: 800; font-size: 1em;
     height: var(--btn-size); border-radius: 14px;
   }
   .btn-new:hover { background: #003366; }
@@ -136,13 +131,13 @@
   #chat-log {
     flex: 1;
     overflow-y: auto;
-    padding: 20px 16px;
+    padding: 16px;
     background: #fafcfd;
     display: flex;
     flex-direction: column;
     gap: 14px;
     -webkit-overflow-scrolling: touch;
-    /* Sicherstellen, dass unten genug Platz für die Input-Area ist (Desktop) */
+    /* WICHTIG: Platz am unteren Rand für die fixierte Input-Area (Desktop) */
     padding-bottom: 120px; 
   }
 
@@ -221,7 +216,7 @@
   .action-btn:hover { border-color: var(--blue-main); color: var(--blue-main); background: var(--blue-soft); }
 
   /* --- INPUT AREA --- */
-  /* Desktop Standard (Block Element) */
+  /* Desktop: Normaler Block */
   .input-area {
     padding: 16px;
     background: white;
@@ -232,23 +227,22 @@
     position: relative;
   }
 
-  /* Mobile Anpassung: Fixiert am unteren Rand für maximale Sichtbarkeit */
+  /* Mobile: FIXIERT am unteren Rand, damit es immer sichtbar ist */
   @media (max-width: 768px) {
     .input-area {
       position: fixed;
       bottom: 0;
       left: 0;
       right: 0;
-      z-index: 100;
+      z-index: 50;
       border-top: 1px solid #eaeaea;
-      box-shadow: 0 -5px 20px rgba(0,0,0,0.05);
-      /* Padding muss angepasst werden, damit nichts überlappt */
-      padding-bottom: 10px;
+      box-shadow: 0 -5px 15px rgba(0,0,0,0.08);
+      padding-bottom: 10px; /* Safe Area für iPhones */
       padding-top: 10px;
     }
-    /* Den Chat-Log anpassen, damit er nicht von der fixierten Input-Area verdeckt wird */
+    /* Chat-Log anpassen damit Input nicht überdeckt */
     #chat-log {
-      padding-bottom: 140px; 
+      padding-bottom: 100px; 
     }
   }
   
@@ -261,7 +255,7 @@
     padding: 12px 14px;
     border-radius: 16px;
     border: 2px solid #eaeaea;
-    font-size: 1em; /* Erbt von Body (Mobile: 16px) */
+    font-size: 1em; /* Erbt den Root Font Size (Mobile 18px) */
     font-family: inherit;
     resize: none;
     outline: none;
@@ -291,28 +285,57 @@
   /* --- MODALS --- */
   .modal-overlay {
     position: fixed; inset: 0;
-    background: rgba(0,0,0,0.5);
-    backdrop-filter: blur(3px);
+    background: rgba(0,0,0,0.6);
+    backdrop-filter: blur(5px);
     display: flex; justify-content: center; align-items: center;
     z-index: 1000;
-    opacity: 0; pointer-events: none; transition: opacity 0.2s;
+    opacity: 0; pointer-events: none; transition: opacity 0.3s;
+    padding: 20px;
   }
   .modal-overlay.open { opacity: 1; pointer-events: all; }
   
   .modal {
     background: white;
-    width: 92%; max-width: 520px;
+    width: 100%; max-width: 520px;
     border-radius: 16px;
     padding: 24px;
-    box-shadow: 0 25px 60px rgba(0,0,0,0.3);
+    box-shadow: 0 25px 60px rgba(0,0,0,0.4);
     max-height: 90vh; overflow-y: auto;
     transform: scale(0.95); transition: transform 0.2s;
   }
   .modal-overlay.open .modal { transform: scale(1); }
 
-  .modal h3 { margin: 0 0 16px 0; color: var(--blue-main); font-size: 1.6em; }
-  .modal p { color: #555; margin-bottom: 12px; }
-  .modal ul { margin: 0 0 16px 20px; color: #555; }
+  /* Spezielles Styling für den Disclaimer (Dark Mode) */
+  .modal-overlay.dark {
+    background: var(--bg-dark);
+  }
+  .modal.dark {
+    background: #2d3748;
+    color: #e2e8f0;
+    border: 1px solid #4a5568;
+  }
+  .modal.dark h3 { color: #63b3ed; }
+  .modal.dark p, .modal.dark li { color: #cbd5e0; }
+  .modal.dark .btn-secondary { background: #4a5568; color: white; border: none; }
+  .modal.dark .btn-primary { background: #3182ce; color: white; border: none; }
+  
+  /* Checkbox Styling */
+  .consent-group {
+    margin: 20px 0;
+    padding: 15px;
+    background: rgba(255,255,255,0.05);
+    border-radius: 8px;
+    border: 1px solid #4a5568;
+  }
+  .consent-row {
+    display: flex; align-items: flex-start; gap: 10px; margin-bottom: 12px; cursor: pointer;
+  }
+  .consent-row input { margin-top: 4px; transform: scale(1.2); }
+  .consent-row label { font-weight: 600; cursor: pointer; }
+
+  .modal h3 { margin: 0 0 16px 0; font-size: 1.6em; }
+  .modal p { margin-bottom: 12px; }
+  .modal ul { margin: 0 0 16px 20px; }
   .modal li { margin-bottom: 6px; }
   .modal a { color: var(--blue-main); font-weight: 700; text-decoration: none; }
 
@@ -328,6 +351,7 @@
   .btn-primary { background: var(--blue-main); color: white; }
   .btn-secondary { background: #f0f0f0; color: #333; }
   .btn-danger { background: #fff0f0; color: #d32f2f; border: 1px solid #ffcdd2; }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
   .item-list { margin: 10px 0; border: 1px solid #eee; border-radius: 8px; overflow: hidden; }
   .item-list div { padding: 12px; border-bottom: 1px solid #eee; cursor: pointer; display: flex; justify-content: space-between; }
@@ -357,7 +381,6 @@
   <header>
     <div class="brand-area">
       <div class="logo">Linda</div>
-      <!-- WICHTIG: Immer angezeigt, kein display:none Standard -->
       <div id="domain-badge" class="badge">Standard</div>
     </div>
     <div class="header-btns">
@@ -382,19 +405,27 @@
 
 <!-- MODALS -->
 
-<!-- Privacy (Sicherheitshinweis) -->
-<div id="modal-privacy" class="modal-overlay open">
-  <div class="modal">
-    <h3>Datenschutz & Sicherheit</h3>
-    <p>Willkommen bei Linda. Bevor wir starten:</p>
-    <ul>
-      <li>Deine Anfragen gehen an <a href="https://openai.com/policies/privacy-policy" target="_blank">OpenAI</a> & <a href="https://www.make.com/en/privacy-policy" target="_blank">Make.com</a>.</li>
-      <li><strong>Keine persönlichen Daten</strong> (Name, Adresse, etc.) eingeben!</li>
-      <li>Verlauf wird <strong>lokal</strong> gespeichert.</li>
-    </ul>
+<!-- Disclaimer (DATENSCHUTZ - SICHTBAR ZUERST) -->
+<div id="modal-disclaimer" class="modal-overlay open dark">
+  <div class="modal dark">
+    <h3>⚠️ Wichtige Information</h3>
+    <p>Bevor du Linda verwendest, beachte bitte:</p>
+    
+    <div class="consent-group">
+      <div class="consent-row">
+        <input type="checkbox" id="consent-data">
+        <label for="consent-data">Ich verstehe, dass <strong>keine vertraulichen Daten</strong> (z.B. Kontoauszüge, Passwörter, medizinische Daten) eingegeben werden dürfen.</label>
+      </div>
+      <div class="consent-row">
+        <input type="checkbox" id="consent-forward">
+        <label for="consent-forward">Ich stimme zu, dass meine Anfragen an <strong>OpenAI</strong>, <strong>Make.com</strong> und <strong>Anthropic (Claude)</strong> zur Verarbeitung übermittelt werden.</label>
+      </div>
+    </div>
+
+    <p style="font-size: 0.9em; color: #a0aec0;">Deine Verläufe werden lokal in deinem Browser gespeichert.</p>
+
     <div class="btn-row">
-      <button class="btn btn-secondary" onclick="location.reload()">Ablehnen</button>
-      <button class="btn btn-primary" onclick="app.logic.startApp()">Akzeptieren & Start</button>
+      <button id="btn-start-disclaimer" class="btn btn-primary" disabled onclick="app.logic.startApp()">Starten & Akzeptieren</button>
     </div>
   </div>
 </div>
@@ -462,7 +493,7 @@
 
 <script>
 const app = {
-  state: { settings: { name: '', domain: '', snippets: [] }, sessions: [], activeId: null },
+  state: { settings: { name: '', domain: '', snippets: [] }, sessions: [], activeId: null, consentGiven: false },
   
   utils: {
     uid: () => 's_' + Date.now().toString(36) + Math.random().toString(36).slice(2,6),
@@ -543,8 +574,6 @@ const app = {
           ALLOWED_TAGS: ['p','br','strong','em','ul','ol','li','h1','h2','h3','h4','pre','code','blockquote','table','thead','tbody','tr','th','td'],
           ALLOWED_ATTR: ['class']
         });
-        // Füge keinen Titel hinzu, wenn es die Begrüßung ist (oder generell, für Platz)
-        ///html = `<h4>Linda</h4>` + html; 
 
         wrapper.innerHTML = `
           <div class="msg-wrapper">
@@ -568,13 +597,27 @@ const app = {
 
   logic: {
     startApp: () => {
+      // Prüfen ob Consent gegeben ist
+      const c1 = document.getElementById('consent-data').checked;
+      const c2 = document.getElementById('consent-forward').checked;
+      
+      if (!c1 || !c2) {
+        alert("Bitte beide Zustimmungen ankreuzen.");
+        return;
+      }
+
+      app.state.consentGiven = true;
+      app.utils.save();
+      
       app.ui.closeModals();
-      // WICHTIG: Begrüßung anzeigen, egal ob Sitzungen existieren
+      
+      // WICHTIG: Immer einen neuen Chat starten, wenn Start gedrückt wird
+      // (Oder falls schon einer existiert, lade ihn, aber Sicherheitshalber neu)
       if (app.state.sessions.length === 0) {
-        app.logic.newChat(); 
+        app.logic.newChat();
       } else {
-        // Wenn Sessions existieren, lade die aktive oder die erste
-        app.logic.switchSession(app.state.activeId || app.state.sessions[0].id);
+        // Wir löschen alten Inhalt und starten frisch, um Begrüßung zu garantieren
+        app.logic.newChat();
       }
     },
 
@@ -586,12 +629,15 @@ const app = {
       app.ui.log.innerHTML = ''; 
       app.ui.closeModals();
       
-      // Begrüßung (wird auch im gespeicherten Chat-Verlauf gespeichert)
-      app.logic.sendSystemMessage(
-        "Herzlich willkommen! Ich bin Linda, deine persönliche Lernassistentin.\n\n" +
+      // Begrüßung (Sofort sichtbar)
+      const welcomeText = "Herzlich willkommen! Ich bin Linda, deine persönliche Lernassistentin.\n\n" +
         "Ich helfe dir gerne bei Fragen zu **Ausbildung (AEVO)**, **BWL/VWL** oder **Personalwesen**.\n\n" +
-        "Tippe einfach deine Frage ein. Wähle in den **Einstellungen (⚙)** einen Fachmodus für genauere Antworten."
-      );
+        "Tippe einfach deine Frage ein. Wähle in den **Einstellungen (⚙)** einen Fachmodus für genauere Antworten.";
+        
+      app.logic.sendSystemMessage(welcomeText);
+
+      // Mobile: Fokus auf Input setzen (öffnet Tastatur)
+      setTimeout(() => app.ui.input.focus(), 100);
     },
 
     switchSession: (id) => {
@@ -661,7 +707,6 @@ const app = {
       app.utils.save();
       
       const badge = document.getElementById('domain-badge');
-      // WICHTIG: Immer Text setzen, nie verstecken
       if (app.state.settings.domain) {
         badge.textContent = app.state.settings.domain;
       } else {
@@ -848,9 +893,24 @@ const app = {
 window.onload = () => {
   app.utils.load();
   
-  // Badge initialisieren (immer sichtbar)
+  // Badge initialisieren
   const b = document.getElementById('domain-badge');
   b.textContent = app.state.settings.domain || 'Standard';
+
+  // Disclaimer Checkbox Listener (Button aktivieren wenn beide angekreuzt)
+  const check1 = document.getElementById('consent-data');
+  const check2 = document.getElementById('consent-forward');
+  const btnStart = document.getElementById('btn-start-disclaimer');
+
+  const toggleBtn = () => {
+    if (check1.checked && check2.checked) {
+      btnStart.disabled = false;
+    } else {
+      btnStart.disabled = true;
+    }
+  };
+  check1.addEventListener('change', toggleBtn);
+  check2.addEventListener('change', toggleBtn);
 
   // Input Handling
   const inp = document.getElementById('chat-input');
