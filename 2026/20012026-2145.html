@@ -3,65 +3,63 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
-<title>Linda – Lernassistentin Preview-Version 2026.01</title>
+<title>Linda – Lernassistentin</title>
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.8/purify.min.js"></script>
 
 <style>
-  /* --- BASE VARIABLES --- */
   :root {
+    /* Farben (Allianz-Style) */
     --blue-main: #004481;
     --blue-light: #e6f0fa;
     --blue-soft: #f0f8ff;
-    --text-dark: #222222;
-    --text-muted: #666666;
-    --white: #ffffff;
-    --radius: 12px;
-    --shadow: 0 4px 12px rgba(0, 68, 129, 0.1);
+    --text-main: #222;
+    --text-muted: #666;
+    --white: #fff;
+    --danger: #dc3545;
     
-    /* Mobile Default (Groß & Deutlich) */
-    --font-size: 19px;
-    --line-height: 1.45;
-    --bubble-padding: 14px;
-    --header-height: 60px;
+    /* Mobile (D) - SEHR GROSS */
+    --font-mobile: 21px;
+    --line-mobile: 1.4;
+    --bubble-pad: 16px;
+    
+    /* Desktop (Kompakt) */
+    --font-desktop: 12px;
+    --line-desktop: 1.25;
+    --bubble-pad: 10px;
   }
 
-  /* --- DESKTOP OVERRIDE (Kompakt & Breiter) --- */
+  /* --- Desktop Override --- */
   @media (min-width: 769px) {
     :root {
-      --font-size: 12px;    /* (Desktop 12px) */
-      --line-height: 1.3;   /* Sehr kompakt */
-      --bubble-padding: 10px;
-      --header-height: 50px;
+      --font-size: var(--font-desktop);
+      --line-height: var(--line-desktop);
     }
   }
 
-  /* --- RESET & LAYOUT --- */
+  /* --- Mobile Default --- */
+  @media (max-width: 768px) {
+    :root {
+      --font-size: var(--font-mobile); /* Riesig auf Mobile */
+      --line-height: var(--line-mobile);
+    }
+  }
+
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-  
   body {
     margin: 0;
-    padding: 0;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     font-size: var(--font-size);
     line-height: var(--line-height);
-    color: var(--text-dark);
-    background: #f5f7fa;
+    color: var(--text-main);
+    background: #f4f7fa;
     height: 100vh;
     overflow: hidden;
     display: flex;
     justify-content: center;
   }
 
-  /* Desktop: Zentrierter Container mit Schatten */
-  @media (min-width: 769px) {
-    body {
-      background: #e0e5ec;
-      align-items: center;
-    }
-  }
-
-  /* --- MAIN APP CONTAINER --- */
+  /* Layout Container */
   #app {
     width: 100%;
     height: 100%;
@@ -72,18 +70,19 @@
   }
 
   @media (min-width: 769px) {
+    body { background: #d0d7e0; align-items: center; }
     #app {
-      width: 900px; /* Breiter auf Desktop */
-      height: 95vh;
+      width: 900px;
+      height: 94vh;
       border-radius: 16px;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+      box-shadow: 0 20px 50px rgba(0,0,0,0.15);
       overflow: hidden;
     }
   }
 
   /* --- HEADER --- */
   header {
-    height: var(--header-height);
+    height: 60px;
     background: var(--white);
     border-bottom: 1px solid #eaeaea;
     display: flex;
@@ -94,296 +93,229 @@
     z-index: 10;
   }
 
-  .header-left { display: flex; align-items: center; gap: 10px; }
-  .logo { font-weight: 700; color: var(--blue-main); font-size: 1.2em; }
+  .brand-area { display: flex; align-items: center; gap: 10px; }
+  .brand { font-weight: 800; font-size: 1.2em; color: var(--blue-main); letter-spacing: -0.5px; }
   
   .badge {
     background: var(--blue-light);
     color: var(--blue-main);
-    padding: 3px 8px;
-    border-radius: 10px;
-    font-size: 0.75em;
-    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 0.8em;
+    font-weight: 700;
+    border: 1px solid #d0e4f5;
+    text-transform: uppercase;
     display: none;
   }
-  .badge.visible { display: inline-block; }
+  .badge.visible { display: block; }
 
-  .header-actions { display: flex; gap: 8px; }
-  .icon-btn {
-    background: none; border: none; font-size: 1.2em; cursor: pointer;
-    padding: 8px; border-radius: 8px; color: #555;
+  .header-btns { display: flex; gap: 8px; }
+  .btn-icon {
+    background: none; border: 1px solid #eaeaea;
+    width: 40px; height: 40px; border-radius: 10px;
+    font-size: 1.1em; cursor: pointer; color: var(--blue-main);
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.2s;
   }
-  .icon-btn:hover { background: var(--blue-soft); color: var(--blue-main); }
+  .btn-icon:hover { background: var(--blue-soft); border-color: var(--blue-main); }
+  .btn-primary {
+    background: var(--blue-main); color: white; border: none;
+    padding: 0 16px; font-weight: 600; width: auto;
+  }
+  .btn-primary:hover { background: #003366; }
+  .btn-icon.stop { background: var(--danger); color: white; border-color: var(--danger); }
 
-  /* --- CHAT AREA --- */
+  /* --- CHAT LOG --- */
   #chat-log {
     flex: 1;
     overflow-y: auto;
     padding: 16px;
+    background: #fafcfd;
     display: flex;
     flex-direction: column;
     gap: 12px;
-    background: #fafcfd;
     -webkit-overflow-scrolling: touch;
   }
 
-  /* Desktop: Padding anpassen */
   @media (min-width: 769px) {
-    #chat-log { padding: 20px 30px; gap: 10px; }
+    #chat-log { padding: 24px 32px; gap: 10px; }
   }
 
   /* --- BUBBLES --- */
-  .msg-row {
-    display: flex;
-    width: 100%;
-    opacity: 0;
-    animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
-  }
+  .msg-row { display: flex; width: 100%; animation: fadeIn 0.3s ease; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-  @keyframes popIn {
-    from { opacity: 0; transform: translateY(10px) scale(0.95); }
-    to { opacity: 1; transform: translateY(0) scale(1); }
-  }
+  .msg-wrapper { max-width: 85%; display: flex; flex-direction: column; gap: 4px; }
 
-  .bubble {
-    max-width: 85%;
-    padding: var(--bubble-padding);
-    border-radius: 18px;
-    position: relative;
-    word-wrap: break-word;
-    white-space: pre-wrap;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.05);
-  }
-
-  /* User (Rechts, Blau) */
+  /* User: Right */
   .msg-row.user { justify-content: flex-end; }
+  .msg-row.user .msg-wrapper { align-items: flex-end; }
   .bubble.user {
     background: var(--blue-main);
-    color: var(--white);
-    border-bottom-right-radius: 4px;
+    color: white;
+    padding: var(--bubble-pad);
+    border-radius: 18px 18px 4px 18px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
   }
 
-  /* Bot (Links, Weiß) */
+  /* Bot: Left */
   .msg-row.bot { justify-content: flex-start; }
+  .msg-row.bot .msg-wrapper { align-items: flex-start; }
   .bubble.bot {
     background: var(--white);
     border: 1px solid #e0e6ed;
-    border-bottom-left-radius: 4px;
-    border-top-left-radius: 4px;
-    color: var(--text-dark);
+    padding: var(--bubble-pad);
+    border-radius: 18px 18px 18px 4px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+    color: var(--text-main);
   }
 
-  /* --- MESSAGE CONTENT (Markdown Styles) --- */
-  .md h4 {
-    margin: 0 0 8px 0;
-    color: var(--blue-main);
-    font-weight: 700;
-    font-size: 1.1em;
-    letter-spacing: -0.01em;
-  }
-
+  /* Content Styling */
+  .md h4 { margin: 0 0 8px 0; color: var(--blue-main); font-weight: 700; font-size: 1.1em; }
   .md p { margin: 0 0 8px 0; }
   .md ul, .md ol { margin: 4px 0 8px 20px; padding: 0; }
   .md li { margin-bottom: 4px; }
+  .md strong { color: var(--blue-main); font-weight: 800; }
+  .md code { background: #f1f3f5; padding: 2px 6px; border-radius: 4px; font-family: Consolas, monospace; color: #c7254e; font-size: 0.9em; }
+  .md pre { background: #f4f4f4; padding: 10px; border-radius: 8px; overflow-x: auto; margin: 8px 0; border: 1px solid #e0e0e0; }
   
-  .md strong { color: var(--blue-main); font-weight: 700; }
-  .md em { font-style: normal; background: #fff9db; padding: 0 3px; border-radius: 3px; }
-  
-  .md code {
-    background: #f1f3f5;
-    padding: 2px 5px;
-    border-radius: 4px;
-    font-family: 'SF Mono', Consolas, monospace;
-    font-size: 0.95em;
-    color: #c7254e;
-  }
-  
-  .md pre {
-    background: #f1f3f5;
-    padding: 10px;
-    border-radius: 8px;
-    overflow-x: auto;
-    margin: 8px 0;
-    border: 1px solid #e1e4e8;
-  }
-
   /* Tables */
-  .table-wrapper { overflow-x: auto; margin: 8px 0; border-radius: 8px; border: 1px solid #e1e4e8; }
-  .md table { border-collapse: collapse; width: 100%; min-width: 350px; }
-  .md th, .md td { border: 1px solid #e1e4e8; padding: 6px 8px; text-align: left; }
-  .md th { background: var(--blue-soft); color: var(--blue-main); font-weight: 600; }
+  .table-wrapper { overflow-x: auto; margin: 8px 0; border-radius: 8px; border: 1px solid #e0e6ed; }
+  .md table { border-collapse: collapse; width: 100%; min-width: 350px; font-size: 0.9em; }
+  .md th, .md td { border: 1px solid #e0e6ed; padding: 8px 10px; text-align: left; }
+  .md th { background: var(--blue-soft); color: var(--blue-main); font-weight: 700; }
 
   /* Sources */
-  .source-box {
-    margin-top: 10px;
-    padding: 10px;
-    background: var(--blue-soft);
-    border-radius: 8px;
-    border-left: 3px solid var(--blue-main);
-  }
-  .source-box strong { display: block; margin-bottom: 5px; color: var(--blue-main); font-size: 0.95em; }
-  .source-list { margin: 0; padding-left: 16px; }
-  .source-list li { margin-bottom: 3px; color: #444; }
+  .source-box { margin-top: 8px; padding: 10px; background: var(--blue-soft); border-radius: 8px; border-left: 4px solid var(--blue-main); }
+  .source-box strong { display: block; margin-bottom: 6px; color: var(--blue-main); }
+  .source-list { margin: 0; padding-left: 18px; color: #444; }
+  .source-list li { margin-bottom: 4px; }
 
-  /* Actions */
+  /* --- ACTIONS (Unter dem Text) --- */
   .msg-actions {
     display: flex;
-    justify-content: flex-end;
     gap: 6px;
     margin-top: 6px;
-    opacity: 0.7;
+    flex-wrap: wrap;
+    justify-content: flex-end; /* Icons rechtsbündig unter Text */
   }
-  .action-chip {
+  .action-btn {
     font-size: 0.75em;
-    padding: 3px 8px;
-    border: 1px solid #ddd;
+    padding: 4px 10px;
     border-radius: 12px;
+    border: 1px solid #ddd;
     background: white;
     cursor: pointer;
+    color: #555;
     transition: 0.2s;
   }
-  .action-chip:hover { border-color: var(--blue-main); color: var(--blue-main); background: var(--blue-soft); }
+  .action-btn:hover { border-color: var(--blue-main); color: var(--blue-main); background: var(--blue-soft); }
 
   /* --- INPUT AREA --- */
   .input-area {
     padding: 12px 16px;
-    background: var(--white);
+    background: white;
     border-top: 1px solid #eaeaea;
     display: flex;
     gap: 10px;
     align-items: flex-end;
     position: relative;
   }
-
-  .input-wrapper {
-    flex: 1;
-    position: relative;
-  }
-
+  
+  .input-wrapper { flex: 1; position: relative; }
+  
   textarea {
     width: 100%;
-    min-height: 44px;
-    max-height: 120px;
-    padding: 10px 14px;
-    border-radius: 22px;
-    border: 1px solid #dcdcdc;
+    min-height: 50px;
+    max-height: 150px;
+    padding: 12px 16px;
+    border-radius: 14px;
+    border: 2px solid #eaeaea;
+    font-size: 1em;
     font-family: inherit;
-    font-size: 1em; /* Erbt Größe */
     resize: none;
     outline: none;
-    transition: border-color 0.2s;
+    transition: 0.2s;
     background: #fcfcfc;
   }
-  
-  textarea:focus {
-    border-color: var(--blue-main);
-    box-shadow: 0 0 0 3px var(--blue-soft);
-    background: white;
-  }
-
-  .send-btn {
-    background: var(--blue-main);
-    color: white;
-    border: none;
-    width: 44px;
-    height: 44px;
-    border-radius: 50%;
-    font-size: 1.2em;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-    transition: transform 0.1s, background 0.2s;
-  }
-  
-  .send-btn:hover { background: #003366; }
-  .send-btn:active { transform: scale(0.95); }
-  .send-btn.stop { background: #dc3545; }
+  textarea:focus { border-color: var(--blue-main); box-shadow: 0 0 0 4px var(--blue-soft); background: white; }
 
   /* Snippet Popup */
   #snippet-popup {
     position: absolute;
-    bottom: 55px;
-    left: 0;
-    right: 0;
+    bottom: 60px;
+    left: 0; right: 0;
     background: white;
     border: 1px solid #ddd;
     border-radius: 10px;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-    max-height: 150px;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+    max-height: 200px;
     overflow-y: auto;
     display: none;
-    z-index: 50;
+    z-index: 20;
   }
   #snippet-popup.active { display: block; }
-  .snippet-item { padding: 10px; border-bottom: 1px solid #f0f0f0; cursor: pointer; }
-  .snippet-item:hover { background: var(--blue-soft); }
+  .snippet-item { padding: 12px; border-bottom: 1px solid #f5f5f5; cursor: pointer; font-size: 0.95em; }
+  .snippet-item:hover { background: var(--blue-soft); color: var(--blue-main); }
 
   /* --- MODALS --- */
   .modal-overlay {
-    position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-    background: rgba(0,0,0,0.4);
-    backdrop-filter: blur(2px);
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.5);
+    backdrop-filter: blur(3px);
     display: flex; justify-content: center; align-items: center;
     z-index: 100;
     opacity: 0; pointer-events: none; transition: opacity 0.2s;
   }
   .modal-overlay.open { opacity: 1; pointer-events: all; }
-
+  
   .modal {
     background: white;
-    width: 92%;
-    max-width: 500px;
+    width: 92%; max-width: 520px;
     border-radius: 16px;
     padding: 24px;
-    box-shadow: 0 20px 50px rgba(0,0,0,0.2);
-    max-height: 90vh;
-    overflow-y: auto;
-    transform: translateY(20px);
-    transition: transform 0.2s;
+    box-shadow: 0 25px 60px rgba(0,0,0,0.3);
+    max-height: 90vh; overflow-y: auto;
+    transform: scale(0.95); transition: transform 0.2s;
   }
-  .modal-overlay.open .modal { transform: translateY(0); }
+  .modal-overlay.open .modal { transform: scale(1); }
 
   .modal h3 { margin: 0 0 16px 0; color: var(--blue-main); font-size: 1.4em; }
   .modal p { color: #555; margin-bottom: 12px; }
-  .modal ul { margin: 0 0 15px 20px; color: #555; }
+  .modal ul { margin: 0 0 16px 20px; color: #555; }
   .modal li { margin-bottom: 6px; }
-  .modal a { color: var(--blue-main); text-decoration: none; font-weight: 600; }
+  .modal a { color: var(--blue-main); font-weight: 700; text-decoration: none; }
 
   .form-group { margin-bottom: 14px; }
-  .form-group label { display: block; margin-bottom: 6px; font-weight: 600; color: #333; font-size: 0.9em; }
+  .form-group label { display: block; margin-bottom: 6px; font-weight: 700; color: #333; }
   .form-group input, .form-group select {
-    width: 100%; padding: 10px 12px; border-radius: 8px; border: 1px solid #ddd; font-size: 1em;
+    width: 100%; padding: 12px; border-radius: 10px; border: 2px solid #e0e0e0; font-size: 1em;
   }
+  .form-group input:focus, .form-group select:focus { border-color: var(--blue-main); outline: none; }
 
   .btn-row { display: flex; gap: 10px; margin-top: 20px; }
-  .btn { flex: 1; padding: 12px; border-radius: 10px; border: none; font-weight: 600; cursor: pointer; font-size: 1em; }
+  .btn { flex: 1; padding: 12px; border-radius: 10px; border: none; font-weight: 700; cursor: pointer; font-size: 1em; }
   .btn-primary { background: var(--blue-main); color: white; }
   .btn-secondary { background: #f0f0f0; color: #333; }
   .btn-danger { background: #fff0f0; color: #d32f2f; border: 1px solid #ffcdd2; }
 
-  /* List styles for Modals */
   .item-list { margin: 10px 0; border: 1px solid #eee; border-radius: 8px; overflow: hidden; }
-  .item-list div {
-    padding: 12px; border-bottom: 1px solid #eee; cursor: pointer;
-    display: flex; justify-content: space-between; align-items: center;
-  }
+  .item-list div { padding: 12px; border-bottom: 1px solid #eee; cursor: pointer; display: flex; justify-content: space-between; }
   .item-list div:last-child { border-bottom: none; }
   .item-list div:hover { background: var(--blue-soft); }
   .item-list div.active { background: var(--blue-light); font-weight: bold; color: var(--blue-main); }
 
-  /* --- LOADING ANIMATION --- */
-  .loading { display: flex; gap: 4px; height: 16px; align-items: center; }
+  /* Loading */
+  .loading { display: flex; gap: 6px; height: 16px; align-items: center; }
   .loading span {
-    width: 6px; height: 6px; background: var(--blue-main); border-radius: 50%;
+    width: 8px; height: 8px; background: var(--blue-main); border-radius: 50%;
     animation: bounce 1.4s infinite ease-in-out;
   }
   .loading span:nth-child(2) { animation-delay: 0.2s; }
   .loading span:nth-child(3) { animation-delay: 0.4s; }
   @keyframes bounce {
     0%, 80%, 100% { transform: scale(0.6); opacity: 0.5; }
-    40% { transform: scale(1.2); opacity: 1; }
+    40% { transform: scale(1.3); opacity: 1; }
   }
 </style>
 </head>
@@ -393,13 +325,14 @@
 <div id="app">
   <!-- Header -->
   <header>
-    <div class="header-left">
+    <div class="brand-area">
       <div class="logo">Linda</div>
-      <div id="domain-badge" class="badge"></div>
+      <div id="domain-badge" class="badge">Modus</div>
     </div>
-    <div class="header-actions">
-      <button class="icon-btn" onclick="app.ui.openModal('modal-sessions')" title="Verlauf">☰</button>
-      <button class="icon-btn" onclick="app.ui.openModal('modal-settings')" title="Einstellungen">⚙</button>
+    <div class="header-btns">
+      <button class="btn-icon btn-primary" onclick="app.logic.newChat()" title="Neuer Chat">+</button>
+      <button class="btn-icon" onclick="app.ui.openModal('modal-sessions')" title="Verlauf">☰</button>
+      <button class="btn-icon" onclick="app.ui.openModal('modal-settings')" title="Einstellungen">⚙</button>
     </div>
   </header>
 
@@ -412,7 +345,7 @@
       <div id="snippet-popup"></div>
       <textarea id="chat-input" placeholder="Schreibe deine Frage..." rows="1"></textarea>
     </div>
-    <button id="send-btn" class="send-btn">➤</button>
+    <button id="send-btn" class="btn-icon btn-primary">➤</button>
   </div>
 </div>
 
@@ -421,17 +354,17 @@
 <!-- Privacy -->
 <div id="modal-privacy" class="modal-overlay open">
   <div class="modal">
-    <h3>Hinweis zur Nutzung</h3>
-    <p>Willkommen bei Linda, deiner persönlichen Lernassistentin.</p>
-    <p>Bevor wir starten, beachte bitte folgende Hinweise:</p>
+    <h3>Willkommen bei Linda</h3>
+    <p>Ich bin deine persönliche Lernassistentin für <strong>Ausbildung, BWL & Personalwesen</strong>.</p>
+    <p>Wichtige Hinweise zur Nutzung:</p>
     <ul>
-      <li>Deine Anfragen werden an <a href="https://openai.com/policies/privacy-policy" target="_blank">OpenAI</a> und <a href="https://www.make.com/en/privacy-policy" target="_blank">Make.com</a> übermittelt.</li>
-      <li>Bitte gib <strong>niemals persönliche Daten</strong> (Name, Adresse, Passwörter) ein.</li>
-      <li>Der Verlauf wird <strong>nur lokal</strong> in deinem Browser gespeichert.</li>
+      <li>Deine Daten werden an <a href="https://openai.com/policies/privacy-policy" target="_blank">OpenAI</a> und <a href="https://www.make.com/en/privacy-policy" target="_blank">Make</a> übermittelt.</li>
+      <li><strong>Keine sensiblen Daten</strong> eingeben!</li>
+      <li>Der Chatverlauf bleibt <strong>lokal</strong> auf deinem Gerät.</li>
     </ul>
     <div class="btn-row">
       <button class="btn btn-secondary" onclick="location.reload()">Ablehnen</button>
-      <button class="btn btn-primary" onclick="app.logic.startApp()">Akzeptieren & Starten</button>
+      <button class="btn btn-primary" onclick="app.logic.startApp()">Akzeptieren & Start</button>
     </div>
   </div>
 </div>
@@ -442,17 +375,17 @@
     <h3>Einstellungen</h3>
     
     <div class="form-group">
-      <label>Dein Name</label>
-      <input type="text" id="inp-name" placeholder="Max M.">
+      <label>Dein Name (für den Verlauf)</label>
+      <input type="text" id="inp-name" placeholder="z.B. Max Mustermann">
     </div>
 
     <div class="form-group">
-      <label>Fachmodus</label>
+      <label>Fachmodus aktivieren</label>
       <select id="inp-domain">
-        <option value="">Kein Modus</option>
+        <option value="">— Kein Modus —</option>
         <option value="AEVO">Ausbilder (AEVO)</option>
-        <option value="VWL">VWL / BWL</option>
-        <option value="PERSONAL">Personalwesen</option>
+        <option value="VWL">VWL / Betriebswirtschaft</option>
+        <option value="PERSONAL">Personalwesen / HR</option>
       </select>
     </div>
 
@@ -462,7 +395,7 @@
         <input type="text" id="inp-snippet" placeholder="Text hinzufügen...">
         <button class="btn btn-primary" style="flex:0 0 50px;" onclick="app.logic.addSnippet()">+</button>
       </div>
-      <div id="snippet-list-container" style="display:flex; flex-wrap:wrap; gap:5px;"></div>
+      <div id="snippet-list-container" style="display:flex; flex-wrap:wrap; gap:6px;"></div>
       <small style="color:#888;">Im Chat "/tippen" zum Auswählen.</small>
     </div>
 
@@ -488,11 +421,11 @@
 <!-- Feedback -->
 <div id="modal-feedback" class="modal-overlay">
   <div class="modal">
-    <h3>Feedback senden</h3>
+    <h3>Feedback</h3>
     <p>Möchtest du Feedback geben? Dein E-Mail-Programm wird geöffnet.</p>
     <div class="btn-row">
       <button class="btn btn-secondary" onclick="app.ui.closeModals()">Nein</button>
-      <button class="btn btn-primary" onclick="app.logic.openFeedback()">Ja</button>
+      <button class="btn btn-primary" onclick="app.logic.openFeedback()">Ja, E-Mail öffnen</button>
     </div>
   </div>
 </div>
@@ -503,13 +436,11 @@ const app = {
   
   utils: {
     uid: () => 's_' + Date.now().toString(36) + Math.random().toString(36).slice(2,6),
-    save: () => {
-      localStorage.setItem('linda_data', JSON.stringify(app.state));
-    },
+    save: () => localStorage.setItem('linda_data', JSON.stringify(app.state)),
     load: () => {
       const d = localStorage.getItem('linda_data');
       if (d) app.state = JSON.parse(d);
-      if (!app.state.sessions.length) app.state.sessions = [];
+      if (!app.state.sessions) app.state.sessions = [];
     }
   },
 
@@ -525,12 +456,14 @@ const app = {
         el.classList.add('open');
         if (id === 'modal-settings') app.ui.renderSnippetList();
         if (id === 'modal-sessions') app.ui.renderSessionList();
+        if (id === 'modal-settings') {
+          document.getElementById('inp-name').value = app.state.settings.name || '';
+          document.getElementById('inp-domain').value = app.state.settings.domain || '';
+        }
       }
     },
     
-    closeModals: () => {
-      document.querySelectorAll('.modal-overlay').forEach(m => m.classList.remove('open'));
-    },
+    closeModals: () => document.querySelectorAll('.modal-overlay').forEach(m => m.classList.remove('open')),
 
     renderSessionList: () => {
       const div = document.getElementById('session-list');
@@ -556,100 +489,49 @@ const app = {
       `).join('');
     },
 
-    scrollToBottom: () => {
-      app.ui.log.scrollTop = app.ui.log.scrollHeight;
+    showSnippetPopup: (items) => {
+      const pop = document.getElementById('snippet-popup');
+      if (!items.length) { pop.classList.remove('active'); return; }
+      pop.innerHTML = items.map(i => `<div class="snippet-item" onclick="app.logic.insertSnippet('${i.replace(/'/g, "\\'")}')">${i}</div>`).join('');
+      pop.classList.add('active');
     },
 
     createBubble: (role, content) => {
       const wrapper = document.createElement('div');
-      wrapper.className = `msg-row ${role === 'user' ? 'user' : 'bot'}`;
+      wrapper.className = `msg-row ${role}`;
       
       if (role === 'user') {
-        wrapper.innerHTML = `<div class="bubble user"><div class="md">${content}</div></div>`;
+        wrapper.innerHTML = `
+          <div class="msg-wrapper">
+            <div class="bubble user"><div class="md">${content}</div></div>
+          </div>
+        `;
       } else {
-        // Process Markdown & Sanitize
+        // Parse MD
         let html = marked.parse(content.replace(/\$(.*?)\$/g, '**$1**'));
         html = DOMPurify.sanitize(html, {
-          ALLOWED_TAGS: ['p','br','strong','em','ul','ol','li','h1','h2','h3','h4','pre','code','blockquote','table','thead','tbody','tr','th','td','div'],
+          ALLOWED_TAGS: ['p','br','strong','em','ul','ol','li','h1','h2','h3','h4','pre','code','blockquote','table','thead','tbody','tr','th','td'],
           ALLOWED_ATTR: ['class']
         });
-
-        // Add Linda Header
         html = `<h4>Linda</h4>` + html;
 
         wrapper.innerHTML = `
-          <div class="bubble bot">
-            <div class="md">${html}</div>
-          </div>
-          <div class="msg-actions">
-            <span class="action-chip" onclick="app.logic.copyBubble(this)">Kopieren</span>
-            <span class="action-chip" onclick="app.logic.shareBubble(this)">Teilen</span>
-            <span class="action-chip" onclick="app.logic.pdfBubble(this)">PDF</span>
-            <span class="action-chip" onclick="app.ui.openModal('modal-feedback')">Feedback</span>
+          <div class="msg-wrapper">
+            <div class="bubble bot"><div class="md">${html}</div></div>
+            <div class="msg-actions">
+              <button class="action-btn" onclick="app.logic.copyBubble(this)">📋 Kopieren</button>
+              <button class="action-btn" onclick="app.logic.shareBubble(this)">↗ Teilen</button>
+              <button class="action-btn" onclick="app.logic.pdfBubble(this)">🖨 PDF</button>
+              <button class="action-btn" onclick="app.ui.openModal('modal-feedback')">👎 Feedback</button>
+            </div>
           </div>
         `;
       }
       return wrapper;
     },
 
-    addMessageToLog: (role, content, append = true) => {
-      const bubble = app.ui.createBubble(role, content);
-      app.ui.log.appendChild(bubble);
-      
-      // Post-Processing for Bot
-      if (role === 'assistant') {
-        const md = bubble.querySelector('.md');
-        
-        // Sources
-        const heads = md.querySelectorAll('h1,h2,h3');
-        let srcHead = Array.from(heads).find(h => /quellen/i.test(h.textContent));
-        if (srcHead) {
-          let ul = srcHead.nextElementSibling;
-          while (ul && ul.tagName !== 'UL') ul = ul.nextElementSibling;
-          if (ul) {
-            const box = document.createElement('div');
-            box.className = 'source-box';
-            box.innerHTML = `<strong>Quellen</strong>`;
-            const list = document.createElement('ul');
-            list.className = 'source-list';
-            list.innerHTML = ul.innerHTML;
-            box.appendChild(list);
-            srcHead.replaceWith(box);
-            ul.remove();
-          }
-        }
-
-        // Tables
-        md.querySelectorAll('table').forEach(t => {
-          const w = document.createElement('div');
-          w.className = 'table-wrapper';
-          t.parentNode.insertBefore(w, t);
-          w.appendChild(t);
-        });
-      }
-
-      if (append) app.ui.scrollToBottom();
-      return bubble;
-    },
-
-    showLoading: () => {
-      const div = document.createElement('div');
-      div.className = 'msg-row bot';
-      div.innerHTML = `
-        <div class="bubble bot" style="min-width: 60px;">
-          <div class="loading"><span></span><span></span><span></span></div>
-        </div>
-      `;
-      app.ui.log.appendChild(div);
-      app.ui.scrollToBottom();
-      return div;
-    },
-
-    showSnippetPopup: (items) => {
-      const pop = document.getElementById('snippet-popup');
-      if (!items.length) { pop.classList.remove('active'); return; }
-      pop.innerHTML = items.map(i => `<div class="snippet-item" onclick="app.logic.insertSnippet('${i.replace(/'/g, "\\'")}')">${i}</div>`).join('');
-      pop.classList.add('active');
+    scrollToBottom: () => {
+      app.ui.log.scrollTop = app.ui.log.scrollHeight;
     }
   },
 
@@ -658,12 +540,10 @@ const app = {
       app.ui.closeModals();
       if (app.state.sessions.length === 0) {
         app.logic.newChat();
-        // Schöne Begrüßung
         app.logic.sendSystemMessage(
-          "Herzlich willkommen! Ich bin Linda, deine persönliche Lernassistentin. " +
-          "Ich helfe dir gerne bei Fragen zu BWL, VWL, AEVO oder im Personalwesen.\n\n" +
-          "Du kannst in den **Einstellungen** (⚙) einen Fachmodus aktivieren oder einfach hier direkt starten. " +
-          "Wie kann ich dir heute helfen?"
+          "Herzlich willkommen! Ich bin Linda, deine persönliche Lernassistentin.\n\n" +
+          "Ich helfe dir gerne bei Fragen zu **Ausbildung (AEVO)**, **BWL/VWL** oder **Personalwesen**.\n\n" +
+          "Tippe einfach deine Frage ein oder wähle einen Fachmodus über das **⚙** Symbol."
         );
       }
     },
@@ -673,8 +553,8 @@ const app = {
       app.state.sessions.unshift({ id, name: 'Neuer Chat', ts: Date.now(), messages: [] });
       app.state.activeId = id;
       app.utils.save();
-      app.ui.log.innerHTML = ''; // Clear UI
-      app.ui.renderSessionList();
+      app.ui.log.innerHTML = ''; 
+      app.ui.openModal(''); // Close any open modals
     },
 
     switchSession: (id) => {
@@ -685,16 +565,15 @@ const app = {
       
       const s = app.state.sessions.find(x => x.id === id);
       if (s) {
-        s.messages.forEach(m => app.ui.addMessageToLog(m.role, m.content));
+        s.messages.forEach(m => {
+          const bubble = app.ui.createBubble(m.role, m.content);
+          app.ui.log.appendChild(bubble);
+          
+          // Post process Bot messages
+          if (m.role === 'assistant') app.logic.postProcessBubble(bubble);
+        });
+        app.ui.scrollToBottom();
       }
-    },
-
-    clearAll: () => {
-      if (!confirm('Wirklich alle Verläufe löschen?')) return;
-      app.state.sessions = [];
-      app.utils.save();
-      app.ui.closeModals();
-      app.ui.log.innerHTML = '';
     },
 
     sendSystemMessage: (text) => {
@@ -702,8 +581,43 @@ const app = {
       if (s) {
         s.messages.push({ role: 'assistant', content: text });
         app.utils.save();
-        app.ui.addMessageToLog('assistant', text);
+        const bubble = app.ui.createBubble('assistant', text);
+        app.ui.log.appendChild(bubble);
+        app.logic.postProcessBubble(bubble);
+        app.ui.scrollToBottom();
       }
+    },
+
+    postProcessBubble: (bubble) => {
+      const md = bubble.querySelector('.md');
+      if (!md) return;
+
+      // Sources
+      const heads = md.querySelectorAll('h1,h2,h3');
+      let srcHead = Array.from(heads).find(h => /quellen/i.test(h.textContent));
+      if (srcHead) {
+        let ul = srcHead.nextElementSibling;
+        while (ul && ul.tagName !== 'UL') ul = ul.nextElementSibling;
+        if (ul) {
+          const box = document.createElement('div');
+          box.className = 'source-box';
+          box.innerHTML = `<strong>Quellen</strong>`;
+          const list = document.createElement('ul');
+          list.className = 'source-list';
+          list.innerHTML = ul.innerHTML;
+          box.appendChild(list);
+          srcHead.replaceWith(box);
+          ul.remove();
+        }
+      }
+
+      // Tables
+      md.querySelectorAll('table').forEach(t => {
+        const w = document.createElement('div');
+        w.className = 'table-wrapper';
+        t.parentNode.insertBefore(w, t);
+        w.appendChild(t);
+      });
     },
 
     saveSettings: () => {
@@ -711,7 +625,6 @@ const app = {
       app.state.settings.domain = document.getElementById('inp-domain').value;
       app.utils.save();
       
-      // Update Badge
       const badge = document.getElementById('domain-badge');
       if (app.state.settings.domain) {
         badge.textContent = app.state.settings.domain;
@@ -748,47 +661,63 @@ const app = {
     sendMessage: () => {
       const txt = app.ui.input.value.trim();
       if (!txt) return;
-
       const s = app.state.sessions.find(x => x.id === app.state.activeId);
       if (!s) return;
 
-      // 1. User Message
+      // User Msg
       const displayName = app.state.settings.name ? `${app.state.settings.name}: ` : '';
       const fullMsg = displayName + txt;
-      
       s.messages.push({ role: 'user', content: fullMsg });
       app.utils.save();
-      app.ui.addMessageToLog('user', fullMsg);
       
-      // 2. Loading
-      const loadingEl = app.ui.showLoading();
+      const userBubble = app.ui.createBubble('user', fullMsg);
+      app.ui.log.appendChild(userBubble);
+      app.ui.scrollToBottom();
 
-      // 3. API Call
-      // Filter system messages from history
-      const history = s.messages.slice(-3).filter(m => !m.content.includes('Herzlich willkommen')).map(m => ({ role: m.role, content: m.content }));
+      // Loading
+      const loadingWrapper = document.createElement('div');
+      loadingWrapper.className = 'msg-row bot';
+      loadingWrapper.innerHTML = `
+        <div class="msg-wrapper">
+          <div class="bubble bot">
+            <div class="loading"><span></span><span></span><span></span></div>
+          </div>
+        </div>
+      `;
+      app.ui.log.appendChild(loadingWrapper);
+      app.ui.scrollToBottom();
 
+      // API
       app.ui.sendBtn.classList.add('stop');
       app.ui.input.disabled = true;
+
+      const history = s.messages.slice(-3).filter(m => !m.content.includes('Herzlich willkommen')).map(m => ({ role: m.role, content: m.content }));
 
       fetch('/api/bot', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          question: txt, // Reine Frage ohne User-Name
+          question: txt,
           fachmodus: app.state.settings.domain || '',
           history: history
         })
       })
       .then(r => r.text())
       .then(resp => {
-        loadingEl.remove();
+        loadingWrapper.remove();
         s.messages.push({ role: 'assistant', content: resp });
         app.utils.save();
-        app.ui.addMessageToLog('assistant', resp);
+        
+        const botBubble = app.ui.createBubble('assistant', resp);
+        app.ui.log.appendChild(botBubble);
+        app.logic.postProcessBubble(botBubble);
+        app.ui.scrollToBottom();
       })
       .catch(err => {
-        loadingEl.remove();
-        app.ui.addMessageToLog('assistant', '❌ Verbindungsfehler. Bitte versuche es erneut.');
+        loadingWrapper.remove();
+        const errBubble = app.ui.createBubble('assistant', '❌ Verbindungsfehler. Bitte versuche es erneut.');
+        app.ui.log.appendChild(errBubble);
+        app.ui.scrollToBottom();
       })
       .finally(() => {
         app.ui.sendBtn.classList.remove('stop');
@@ -799,9 +728,9 @@ const app = {
       });
     },
 
-    // Helper for Action Buttons
-    getBubbleContent: (el) => {
-      const row = el.closest('.msg-row');
+    getBubbleContent: (btn) => {
+      const row = btn.closest('.msg-row');
+      const wrapper = btn.closest('.msg-wrapper');
       const idx = Array.from(app.ui.log.children).indexOf(row);
       const s = app.state.sessions.find(x => x.id === app.state.activeId);
       
@@ -813,8 +742,7 @@ const app = {
           break;
         }
       }
-      
-      const a = row.querySelector('.md').innerText;
+      const a = wrapper.querySelector('.md').innerText;
       return { q, a };
     },
 
@@ -825,11 +753,8 @@ const app = {
 
     shareBubble: (btn) => {
       const { q, a } = app.logic.getBubbleContent(btn);
-      if (navigator.share) {
-        navigator.share({ title: 'Linda Chat', text: `Frage: ${q}\n\nAntwort: ${a}` });
-      } else {
-        window.location.href = `mailto:?subject=Linda&body=${encodeURIComponent(`Frage: ${q}\n\nAntwort: ${a}`)}`;
-      }
+      if (navigator.share) navigator.share({ text: `Frage: ${q}\n\nAntwort: ${a}` });
+      else window.location.href = `mailto:?subject=Linda&body=${encodeURIComponent(`Frage: ${q}\n\nAntwort: ${a}`)}`;
     },
 
     pdfBubble: (btn) => {
@@ -843,25 +768,33 @@ const app = {
         <html><head><title>Ausdruck</title>
         <style>
           @page { margin: 15mm; }
-          body { font-family: Arial; font-size: 12pt; line-height: 1.5; color: #222; }
+          body { font-family: Arial; font-size: 13pt; line-height: 1.5; color: #222; }
           h1 { color: #004481; border-bottom: 2px solid #004481; padding-bottom: 10px; }
           .meta { background: #f0f8ff; padding: 15px; border-radius: 8px; margin-bottom: 20px; }
           table { width: 100%; border-collapse: collapse; margin: 15px 0; font-size: 11pt; }
           th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
           th { background: #f0f0f0; }
-          .disclaimer { margin-top: 40px; padding-top: 15px; border-top: 1px solid #ddd; font-size: 10pt; color: #666; }
+          .disclaimer { margin-top: 40px; padding-top: 15px; border-top: 1px solid #ddd; font-size: 11pt; color: #666; }
         </style>
         </head><body>
           <h1>Linda Assistentin</h1>
           <div class="meta"><strong>${d} ${t}</strong><br>${q}</div>
           <div>${a}</div>
           <div class="disclaimer">
-            <strong>Hinweis:</strong> Diese Antwort wurde von einer KI generiert und kann Fehler enthalten. Bitte prüfen Sie die Inhalte selbst. Keine rechtliche Verbindlichkeit.
+            <strong>Hinweis:</strong> Antwort von KI generiert. Bitte auf Richtigkeit prüfen. Keine rechtliche Beratung.
           </div>
         </body></html>
       `);
       win.document.close();
       win.print();
+    },
+
+    clearAll: () => {
+      if (!confirm('Alle Verläufe löschen?')) return;
+      app.state.sessions = [];
+      app.utils.save();
+      app.ui.closeModals();
+      app.ui.log.innerHTML = '';
     },
 
     openFeedback: () => {
@@ -877,27 +810,21 @@ const app = {
   }
 };
 
-// Initialization
 window.onload = () => {
   app.utils.load();
   
-  // Populate settings inputs
-  if (app.state.settings.name) document.getElementById('inp-name').value = app.state.settings.name;
-  if (app.state.settings.domain) document.getElementById('inp-domain').value = app.state.settings.domain;
-  
-  // Badge
   if (app.state.settings.domain) {
-    document.getElementById('domain-badge').textContent = app.state.settings.domain;
-    document.getElementById('domain-badge').classList.add('visible');
+    const b = document.getElementById('domain-badge');
+    b.textContent = app.state.settings.domain;
+    b.classList.add('visible');
   }
 
-  // Input Events
+  // Input Handling
   const inp = document.getElementById('chat-input');
   inp.addEventListener('input', function() {
     this.style.height = 'auto';
     this.style.height = (this.scrollHeight) + 'px';
-
-    // Snippet Logic
+    
     const val = this.value;
     if (val.startsWith('/')) {
       const query = val.substring(1).toLowerCase();
@@ -916,12 +843,6 @@ window.onload = () => {
   });
 
   document.getElementById('send-btn').addEventListener('click', app.logic.sendMessage);
-
-  // If data exists and accepted, load last session
-  if (app.state.sessions.length > 0 && document.getElementById('modal-privacy').classList.contains('open') === false) {
-    // Logic to load current session handled by switching
-    if (app.state.activeId) app.logic.switchSession(app.state.activeId);
-  }
 };
 </script>
 </body>
