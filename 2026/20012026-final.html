@@ -18,15 +18,15 @@
     --white: #fff;
     --danger: #dc3545;
     
-    /* Mobile (SEHR GROSS - Optimiert für Augen) */
-    --font-mobile: 22px;
-    --line-mobile: 1.5;
-    --bubble-pad: 18px;
-    --btn-size: 54px; /* Größere Buttons zum Tippen */
-    
     /* Desktop (Kompakt) */
     --font-desktop: 12px;
     --line-desktop: 1.3;
+    
+    /* Mobile (GRÖSSER) - Optimiert für Lesbarkeit */
+    --font-mobile: 16px; 
+    --line-mobile: 1.5;
+    --bubble-pad: 12px;
+    --btn-size: 44px;
   }
 
   /* --- Media Queries --- */
@@ -35,12 +35,15 @@
       --font-size: var(--font-desktop);
       --line-height: var(--line-desktop);
       --bubble-pad: 12px;
+      --btn-size: 40px;
     }
   }
   @media (max-width: 768px) {
     :root {
       --font-size: var(--font-mobile);
       --line-height: var(--line-mobile);
+      --bubble-pad: 14px;
+      --btn-size: 50px;
     }
   }
 
@@ -67,6 +70,7 @@
       border-radius: 16px;
       box-shadow: 0 20px 50px rgba(0,0,0,0.15);
       overflow: hidden;
+      position: relative;
     }
   }
 
@@ -81,7 +85,7 @@
 
   /* --- HEADER --- */
   header {
-    height: 70px; /* Etwas höher für Mobile */
+    height: 70px;
     background: var(--white);
     border-bottom: 1px solid #eaeaea;
     display: flex;
@@ -90,6 +94,7 @@
     padding: 0 16px;
     flex-shrink: 0;
     z-index: 10;
+    position: relative;
   }
 
   .brand-area { display: flex; align-items: center; gap: 10px; }
@@ -98,14 +103,15 @@
   .badge {
     background: var(--blue-light);
     color: var(--blue-main);
-    padding: 4px 10px;
+    padding: 6px 12px; /* Etwas größerer Abstand */
     border-radius: 12px;
-    font-size: 0.75em;
+    font-size: 0.85em;
     font-weight: 700;
     border: 1px solid #d0e4f5;
-    display: none;
+    white-space: nowrap;
+    /* WICHTIG: Immer sichtbar, auch wenn kein Modus gesetzt ist (zeigt dann "Standard") */
+    display: inline-block; 
   }
-  .badge.visible { display: inline-block; }
 
   .header-btns { display: flex; gap: 8px; }
   .btn-icon {
@@ -120,7 +126,7 @@
   
   .btn-new {
     background: var(--blue-main); color: white; border: none;
-    width: auto; padding: 0 20px; font-weight: 800; font-size: 1.1em;
+    width: auto; padding: 0 16px; font-weight: 800; font-size: 1.1em;
     height: var(--btn-size); border-radius: 14px;
   }
   .btn-new:hover { background: #003366; }
@@ -136,10 +142,12 @@
     flex-direction: column;
     gap: 14px;
     -webkit-overflow-scrolling: touch;
+    /* Sicherstellen, dass unten genug Platz für die Input-Area ist (Desktop) */
+    padding-bottom: 120px; 
   }
 
   @media (min-width: 769px) {
-    #chat-log { padding: 24px 32px; gap: 10px; }
+    #chat-log { padding: 24px 32px; gap: 10px; padding-bottom: 140px; }
   }
 
   /* --- BUBBLES --- */
@@ -198,10 +206,10 @@
     display: flex;
     gap: 6px;
     flex-wrap: wrap;
-    justify-content: flex-end; /* Icons rechtsbündig */
+    justify-content: flex-end;
   }
   .action-btn {
-    font-size: 0.85em; /* Etwas größer für Mobile */
+    font-size: 0.85em;
     padding: 6px 12px;
     border-radius: 12px;
     border: 1px solid #ddd;
@@ -213,6 +221,7 @@
   .action-btn:hover { border-color: var(--blue-main); color: var(--blue-main); background: var(--blue-soft); }
 
   /* --- INPUT AREA --- */
+  /* Desktop Standard (Block Element) */
   .input-area {
     padding: 16px;
     background: white;
@@ -222,17 +231,37 @@
     align-items: flex-end;
     position: relative;
   }
+
+  /* Mobile Anpassung: Fixiert am unteren Rand für maximale Sichtbarkeit */
+  @media (max-width: 768px) {
+    .input-area {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      z-index: 100;
+      border-top: 1px solid #eaeaea;
+      box-shadow: 0 -5px 20px rgba(0,0,0,0.05);
+      /* Padding muss angepasst werden, damit nichts überlappt */
+      padding-bottom: 10px;
+      padding-top: 10px;
+    }
+    /* Den Chat-Log anpassen, damit er nicht von der fixierten Input-Area verdeckt wird */
+    #chat-log {
+      padding-bottom: 140px; 
+    }
+  }
   
   .input-wrapper { flex: 1; position: relative; }
   
   textarea {
     width: 100%;
-    min-height: 60px; /* Höher für Mobile */
+    min-height: 50px;
     max-height: 150px;
-    padding: 14px 16px;
+    padding: 12px 14px;
     border-radius: 16px;
     border: 2px solid #eaeaea;
-    font-size: 1em;
+    font-size: 1em; /* Erbt von Body (Mobile: 16px) */
     font-family: inherit;
     resize: none;
     outline: none;
@@ -265,7 +294,7 @@
     background: rgba(0,0,0,0.5);
     backdrop-filter: blur(3px);
     display: flex; justify-content: center; align-items: center;
-    z-index: 100;
+    z-index: 1000;
     opacity: 0; pointer-events: none; transition: opacity 0.2s;
   }
   .modal-overlay.open { opacity: 1; pointer-events: all; }
@@ -328,7 +357,8 @@
   <header>
     <div class="brand-area">
       <div class="logo">Linda</div>
-      <div id="domain-badge" class="badge">Modus</div>
+      <!-- WICHTIG: Immer angezeigt, kein display:none Standard -->
+      <div id="domain-badge" class="badge">Standard</div>
     </div>
     <div class="header-btns">
       <button class="btn-icon btn-new" onclick="app.logic.newChat()" title="Neuer Chat">+</button>
@@ -513,7 +543,8 @@ const app = {
           ALLOWED_TAGS: ['p','br','strong','em','ul','ol','li','h1','h2','h3','h4','pre','code','blockquote','table','thead','tbody','tr','th','td'],
           ALLOWED_ATTR: ['class']
         });
-        html = `<h4>Linda</h4>` + html;
+        // Füge keinen Titel hinzu, wenn es die Begrüßung ist (oder generell, für Platz)
+        ///html = `<h4>Linda</h4>` + html; 
 
         wrapper.innerHTML = `
           <div class="msg-wrapper">
@@ -538,8 +569,12 @@ const app = {
   logic: {
     startApp: () => {
       app.ui.closeModals();
+      // WICHTIG: Begrüßung anzeigen, egal ob Sitzungen existieren
       if (app.state.sessions.length === 0) {
-        app.logic.newChat(); // Creates first session
+        app.logic.newChat(); 
+      } else {
+        // Wenn Sessions existieren, lade die aktive oder die erste
+        app.logic.switchSession(app.state.activeId || app.state.sessions[0].id);
       }
     },
 
@@ -551,7 +586,7 @@ const app = {
       app.ui.log.innerHTML = ''; 
       app.ui.closeModals();
       
-      // HIER IST DIE Begrüßung (a)
+      // Begrüßung (wird auch im gespeicherten Chat-Verlauf gespeichert)
       app.logic.sendSystemMessage(
         "Herzlich willkommen! Ich bin Linda, deine persönliche Lernassistentin.\n\n" +
         "Ich helfe dir gerne bei Fragen zu **Ausbildung (AEVO)**, **BWL/VWL** oder **Personalwesen**.\n\n" +
@@ -626,11 +661,11 @@ const app = {
       app.utils.save();
       
       const badge = document.getElementById('domain-badge');
+      // WICHTIG: Immer Text setzen, nie verstecken
       if (app.state.settings.domain) {
         badge.textContent = app.state.settings.domain;
-        badge.classList.add('visible');
       } else {
-        badge.classList.remove('visible');
+        badge.textContent = 'Standard';
       }
       
       app.ui.closeModals();
@@ -813,11 +848,9 @@ const app = {
 window.onload = () => {
   app.utils.load();
   
-  if (app.state.settings.domain) {
-    const b = document.getElementById('domain-badge');
-    b.textContent = app.state.settings.domain;
-    b.classList.add('visible');
-  }
+  // Badge initialisieren (immer sichtbar)
+  const b = document.getElementById('domain-badge');
+  b.textContent = app.state.settings.domain || 'Standard';
 
   // Input Handling
   const inp = document.getElementById('chat-input');
