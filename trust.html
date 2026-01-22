@@ -1,0 +1,818 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Linda Privacy Portal – Anfrage einreichen</title>
+
+  <style>
+    :root{
+      --bg:#f6f7fb;
+      --card:#ffffff;
+      --text:#0b1220;
+      --muted:#5b6577;
+      --line:#e6e9f2;
+      --accent:#2346e4;
+      --accent2:#132a8a;
+      --ok:#0f7b3a;
+      --warn:#a66a00;
+      --bad:#b42318;
+      --shadow: 0 10px 30px rgba(10, 20, 40, .08);
+      --radius: 16px;
+      --radius2: 12px;
+      --touch: 46px;
+      --font: system-ui, -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    }
+
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family:var(--font);
+      background:linear-gradient(180deg, #eef1ff 0%, var(--bg) 38%, var(--bg) 100%);
+      color:var(--text);
+    }
+    a{color:var(--accent); text-decoration:none}
+    a:hover{text-decoration:underline}
+    .wrap{
+      max-width: 980px;
+      margin: 0 auto;
+      padding: 24px 18px 56px;
+    }
+    header{
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap: 16px;
+      margin: 8px 0 18px;
+    }
+    .brand{
+      display:flex;
+      gap:12px;
+      align-items:center;
+    }
+    .logo{
+      width:44px; height:44px;
+      border-radius: 14px;
+      background: radial-gradient(circle at 30% 30%, #5f7dff, var(--accent));
+      box-shadow: 0 8px 20px rgba(35,70,228,.18);
+      position:relative;
+      flex:0 0 auto;
+    }
+    .logo:after{
+      content:"";
+      position:absolute;
+      inset: 10px 12px 12px 10px;
+      border-radius: 10px;
+      border: 1.5px solid rgba(255,255,255,.65);
+    }
+    .title h1{
+      margin:0;
+      font-size: 20px;
+      letter-spacing:.2px;
+    }
+    .title p{
+      margin:4px 0 0;
+      color:var(--muted);
+      font-size: 14px;
+      line-height: 1.4;
+      max-width: 600px;
+    }
+    .pill{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding: 10px 12px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.7);
+      border: 1px solid rgba(230,233,242,.9);
+      box-shadow: 0 6px 18px rgba(10,20,40,.06);
+      color: var(--muted);
+      font-size: 13px;
+      white-space:nowrap;
+      height: 40px;
+    }
+    .pill b{color:var(--text); font-weight:600}
+    .grid{
+      display:grid;
+      grid-template-columns: 1.1fr .9fr;
+      gap: 16px;
+      align-items:start;
+    }
+    @media (max-width: 900px){
+      .grid{grid-template-columns: 1fr}
+      header{flex-direction:column; align-items:flex-start}
+      .pill{width:100%; justify-content:space-between}
+    }
+
+    .card{
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 18px;
+    }
+    .card h2{
+      margin: 0 0 10px;
+      font-size: 16px;
+      letter-spacing: .2px;
+    }
+    .card .sub{
+      margin: 0 0 14px;
+      color: var(--muted);
+      font-size: 13.5px;
+      line-height: 1.45;
+    }
+    .divider{
+      height:1px; background: var(--line); margin: 14px 0;
+    }
+
+    .row{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    @media (max-width: 620px){
+      .row{grid-template-columns: 1fr}
+    }
+    label{
+      display:block;
+      font-size: 13px;
+      color: var(--muted);
+      margin: 0 0 6px;
+    }
+    input, select, textarea{
+      width:100%;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 12px 12px;
+      font-size: 15px;
+      outline: none;
+      background: #fff;
+    }
+    textarea{min-height: 120px; resize: vertical}
+    input:focus, select:focus, textarea:focus{
+      border-color: rgba(35,70,228,.35);
+      box-shadow: 0 0 0 4px rgba(35,70,228,.10);
+    }
+    .hint{
+      margin-top: 6px;
+      font-size: 12.5px;
+      color: var(--muted);
+    }
+
+    .reqtypes{
+      display:grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+      margin: 10px 0 2px;
+    }
+    @media (max-width: 620px){
+      .reqtypes{grid-template-columns: 1fr}
+    }
+    .tile{
+      border:1px solid var(--line);
+      border-radius: 14px;
+      padding: 12px;
+      cursor:pointer;
+      background: #fff;
+      transition: transform .06s ease, border-color .12s ease, box-shadow .12s ease;
+      min-height: 74px;
+      display:flex;
+      gap: 10px;
+      align-items:flex-start;
+    }
+    .tile:hover{
+      transform: translateY(-1px);
+      border-color: rgba(35,70,228,.28);
+      box-shadow: 0 10px 24px rgba(10,20,40,.06);
+    }
+    .tile input{width:auto; margin-top:2px}
+    .tile .t{
+      display:flex; flex-direction:column; gap:3px;
+    }
+    .tile .t b{font-size: 14px}
+    .tile .t span{font-size: 12.5px; color: var(--muted); line-height:1.35}
+
+    .actions{
+      display:flex;
+      gap: 10px;
+      flex-wrap:wrap;
+      margin-top: 14px;
+    }
+    .btn{
+      height: var(--touch);
+      border-radius: 12px;
+      border: 1px solid var(--line);
+      padding: 0 14px;
+      background: #fff;
+      cursor:pointer;
+      font-size: 14px;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      gap: 10px;
+      min-width: 140px;
+      user-select:none;
+    }
+    .btn.primary{
+      background: linear-gradient(180deg, #2c55ff, var(--accent));
+      border-color: rgba(35,70,228,.25);
+      color: #fff;
+      font-weight: 600;
+    }
+    .btn.primary:hover{background: linear-gradient(180deg, #2248f5, var(--accent2))}
+    .btn:disabled{opacity:.55; cursor:not-allowed}
+    .btn.ghost{background: transparent}
+
+    .badge{
+      display:inline-flex;
+      align-items:center;
+      height: 28px;
+      padding: 0 10px;
+      border-radius: 999px;
+      font-size: 12.5px;
+      border: 1px solid var(--line);
+      color: var(--muted);
+      background: rgba(246,247,251,.6);
+      gap:8px;
+    }
+    .status{
+      border-radius: 14px;
+      border: 1px solid var(--line);
+      padding: 12px;
+      background: rgba(246,247,251,.6);
+    }
+    .status.ok{border-color: rgba(15,123,58,.25); background: rgba(15,123,58,.06)}
+    .status.warn{border-color: rgba(166,106,0,.25); background: rgba(166,106,0,.06)}
+    .status.bad{border-color: rgba(180,35,24,.25); background: rgba(180,35,24,.06)}
+    .status p{margin: 0; font-size: 13.5px; line-height:1.4; color: var(--muted)}
+    .status strong{color: var(--text)}
+
+    .small{
+      font-size: 12.5px;
+      color: var(--muted);
+      line-height: 1.45;
+    }
+    .kvs{
+      display:grid;
+      grid-template-columns: 1fr;
+      gap: 8px;
+      margin-top: 10px;
+    }
+    .kv{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap: 10px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 10px 12px;
+      background:#fff;
+      font-size: 13.5px;
+    }
+    .kv span{color: var(--muted)}
+    .mono{font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace}
+    footer{
+      margin-top: 16px;
+      color: var(--muted);
+      font-size: 12.5px;
+      line-height: 1.45;
+    }
+    .checkline{
+      display:flex;
+      gap: 10px;
+      align-items:flex-start;
+      margin-top: 10px;
+    }
+    .checkline input{width:auto; margin-top: 2px}
+  </style>
+</head>
+
+<body>
+  <div class="wrap">
+    <header>
+      <div class="brand">
+        <div class="logo" aria-hidden="true"></div>
+        <div class="title">
+          <h1>Linda Privacy Portal</h1>
+          <p>Reiche hier Datenschutz-Anfragen ein (z. B. Auskunft, Löschung, Berichtigung). Du erhältst eine Ticket-ID zur Nachverfolgung.</p>
+        </div>
+      </div>
+
+      <div class="pill" title="Konfiguration">
+        <span>Backend:</span>
+        <b id="pillBackend" class="mono">nicht gesetzt</b>
+      </div>
+    </header>
+
+    <div class="grid">
+      <!-- LEFT: REQUEST FORM -->
+      <section class="card" aria-label="Anfrage einreichen">
+        <h2>Anfrage einreichen</h2>
+        <p class="sub">Wähle den Anfragetyp und fülle das Formular aus. Pflichtfelder sind markiert.</p>
+
+        <div class="divider"></div>
+
+        <label>1) Anfragetyp <span aria-hidden="true" style="color:var(--bad)">*</span></label>
+        <div class="reqtypes" id="reqTypes">
+          <label class="tile" for="rt_access">
+            <input type="radio" name="requestType" id="rt_access" value="access" />
+            <div class="t"><b>Auskunft / Kopie (Art. 15)</b><span>Welche Daten sind gespeichert? Kopie / Datenexport.</span></div>
+          </label>
+
+          <label class="tile" for="rt_delete">
+            <input type="radio" name="requestType" id="rt_delete" value="deletion" />
+            <div class="t"><b>Löschung (Art. 17)</b><span>Bitte um Löschung personenbezogener Daten, soweit zulässig.</span></div>
+          </label>
+
+          <label class="tile" for="rt_rectify">
+            <input type="radio" name="requestType" id="rt_rectify" value="rectification" />
+            <div class="t"><b>Berichtigung (Art. 16)</b><span>Korrektur unrichtiger oder unvollständiger Daten.</span></div>
+          </label>
+
+          <label class="tile" for="rt_object">
+            <input type="radio" name="requestType" id="rt_object" value="objection" />
+            <div class="t"><b>Widerspruch (Art. 21)</b><span>Widerspruch gegen Verarbeitung, z. B. Direktwerbung.</span></div>
+          </label>
+
+          <label class="tile" for="rt_port">
+            <input type="radio" name="requestType" id="rt_port" value="portability" />
+            <div class="t"><b>Datenübertragbarkeit (Art. 20)</b><span>Daten in strukturiertem, gängigen Format.</span></div>
+          </label>
+
+          <label class="tile" for="rt_restrict">
+            <input type="radio" name="requestType" id="rt_restrict" value="restriction" />
+            <div class="t"><b>Einschränkung (Art. 18)</b><span>Temporäre Einschränkung der Verarbeitung.</span></div>
+          </label>
+        </div>
+        <div class="hint" id="typeHint">Tipp: Bei „Auskunft“ beschreibe kurz, welche Systeme/Services betroffen sind.</div>
+
+        <div class="divider"></div>
+
+        <div class="row">
+          <div>
+            <label for="fullName">Vor- und Nachname <span aria-hidden="true" style="color:var(--bad)">*</span></label>
+            <input id="fullName" autocomplete="name" placeholder="z. B. Jens Noormann" />
+          </div>
+          <div>
+            <label for="email">E-Mail <span aria-hidden="true" style="color:var(--bad)">*</span></label>
+            <input id="email" type="email" autocomplete="email" placeholder="name@domain.de" />
+          </div>
+        </div>
+
+        <div class="row" style="margin-top:12px">
+          <div>
+            <label for="relation">Bezug zur Anfrage</label>
+            <select id="relation">
+              <option value="user">Ich bin Nutzer/Kunde</option>
+              <option value="employee">Ich bin Mitarbeitender/Bewerber</option>
+              <option value="partner">Ich bin Partner/Dienstleister</option>
+              <option value="other">Sonstiges</option>
+            </select>
+          </div>
+          <div>
+            <label for="country">Land (optional)</label>
+            <input id="country" autocomplete="country-name" placeholder="z. B. Deutschland" />
+          </div>
+        </div>
+
+        <div style="margin-top:12px">
+          <label for="identifier">Kundennummer / Nutzer-ID (optional)</label>
+          <input id="identifier" class="mono" placeholder="z. B. Vertragsnummer, User-ID" />
+          <div class="hint">Hilft bei der Zuordnung. Bitte keine sensiblen Daten wie PINs/Passwörter eingeben.</div>
+        </div>
+
+        <div style="margin-top:12px">
+          <label for="details">2) Beschreibung der Anfrage <span aria-hidden="true" style="color:var(--bad)">*</span></label>
+          <textarea id="details" placeholder="Beschreibe kurz dein Anliegen. Bei Auskunft: Welche Datenkategorien / Services / Zeiträume?"></textarea>
+          <div class="hint">Je konkreter, desto schneller kann die Anfrage bearbeitet werden.</div>
+        </div>
+
+        <div style="margin-top:12px">
+          <label for="files">3) Nachweise / Dokumente (optional)</label>
+          <input id="files" type="file" multiple />
+          <div class="hint">Optional. Für Identitätsprüfung reicht oft ein geschwärztes Dokument (nur Name + Foto sichtbar). Keine unnötigen Daten hochladen.</div>
+        </div>
+
+        <div class="checkline">
+          <input type="checkbox" id="consent" />
+          <label for="consent" style="margin:0">
+            Ich bestätige, dass die Angaben korrekt sind und dass meine Anfrage zur Bearbeitung verarbeitet werden darf.
+            <span class="hint">(Rechtsgrundlage typischerweise Art. 6 Abs. 1 lit. c / lit. f DSGVO; je nach Fall auch Art. 6 Abs. 1 lit. a.)</span>
+          </label>
+        </div>
+
+        <div class="actions">
+          <button class="btn primary" id="submitBtn">Anfrage senden</button>
+          <button class="btn ghost" id="saveDraftBtn" type="button">Entwurf speichern</button>
+          <button class="btn" id="clearBtn" type="button">Zurücksetzen</button>
+        </div>
+
+        <div style="margin-top:12px" id="submitResult"></div>
+
+        <footer>
+          Hinweis: Dies ist ein Anfrage-Portal. Bitte sende hierüber keine Passwörter, TANs oder Zahlungsdaten.
+          Wenn du deine Anfrage schriftlich stellen möchtest, kannst du auch per E-Mail/Brief ein Auskunftsersuchen nach Art. 15 DSGVO einreichen.
+        </footer>
+      </section>
+
+      <!-- RIGHT: STATUS + INFO -->
+      <aside class="card" aria-label="Status und Informationen">
+        <h2>Status & Nachverfolgung</h2>
+        <p class="sub">Wenn du bereits eine Ticket-ID erhalten hast, kannst du hier den Status abfragen (sofern dein Backend diesen Endpunkt bereitstellt).</p>
+
+        <div class="status" id="statusBox">
+          <p><strong>Status:</strong> <span id="statusText">Bereit.</span></p>
+        </div>
+
+        <div class="divider"></div>
+
+        <label for="ticketId">Ticket-ID</label>
+        <input id="ticketId" class="mono" placeholder="z. B. LINDA-20260122-AB12CD" />
+        <div class="actions">
+          <button class="btn" id="lookupBtn" type="button">Status abfragen</button>
+          <button class="btn ghost" id="copyLastBtn" type="button">Letzte Ticket-ID kopieren</button>
+        </div>
+
+        <div class="divider"></div>
+
+        <h2>Was passiert nach dem Absenden?</h2>
+        <div class="kvs">
+          <div class="kv"><span>1) Eingangsbestätigung</span><b>Ticket-ID</b></div>
+          <div class="kv"><span>2) Prüfung & ggf. Rückfragen</span><b>Identität</b></div>
+          <div class="kv"><span>3) Bearbeitung</span><b>innerhalb 1 Monat</b></div>
+          <div class="kv"><span>4) Antwort / Datenkopie</span><b>digital / sicher</b></div>
+        </div>
+
+        <div class="divider"></div>
+
+        <h2>Datenschutz-Kurzinfo</h2>
+        <p class="small">
+          Zweck: Bearbeitung deiner Anfrage zu Betroffenenrechten (DSGVO).<br/>
+          Datentypen: Kontaktdaten, Anfrageinhalt, ggf. Nachweise.<br/>
+          Empfänger: Zuständige Stelle / Support / Datenschutzteam; ggf. Auftragsverarbeiter (Hosting/IT).<br/>
+          Speicherdauer: So lange wie für Bearbeitung und Nachweise erforderlich.<br/>
+        </p>
+
+        <p class="small">
+          <span class="badge">Tipp</span>
+          Für „Auskunft“: nenne Systeme/Services (z. B. „Linda“, „Newsletter“, „Konto“) und Zeiträume.
+        </p>
+      </aside>
+    </div>
+  </div>
+
+  <script>
+    /********************************************************************
+     * KONFIGURATION
+     * Setze hier dein Backend:
+     * - Wenn du über Vercel proxyst: https://deine-vercel-app.vercel.app/api/privacy
+     * - Wenn du direkt Make Webhook nutzt: https://hook.eu1.make.com/...
+     ********************************************************************/
+    const API_ENDPOINT = ""; // <-- HIER EINTRAGEN
+
+    // Optional: Endpunkte (wenn dein Backend getrennte Routen anbietet)
+    const ENDPOINT_SUBMIT = API_ENDPOINT ? (API_ENDPOINT + "/submit") : "";
+    const ENDPOINT_LOOKUP = API_ENDPOINT ? (API_ENDPOINT + "/status") : "";
+
+    // UX
+    const pillBackend = document.getElementById("pillBackend");
+    pillBackend.textContent = API_ENDPOINT ? API_ENDPOINT.replace(/^https?:\/\//, "") : "nicht gesetzt";
+
+    // Elements
+    const submitBtn = document.getElementById("submitBtn");
+    const saveDraftBtn = document.getElementById("saveDraftBtn");
+    const clearBtn = document.getElementById("clearBtn");
+    const submitResult = document.getElementById("submitResult");
+
+    const fullName = document.getElementById("fullName");
+    const email = document.getElementById("email");
+    const relation = document.getElementById("relation");
+    const country = document.getElementById("country");
+    const identifier = document.getElementById("identifier");
+    const details = document.getElementById("details");
+    const files = document.getElementById("files");
+    const consent = document.getElementById("consent");
+
+    const ticketIdInput = document.getElementById("ticketId");
+    const lookupBtn = document.getElementById("lookupBtn");
+    const copyLastBtn = document.getElementById("copyLastBtn");
+
+    const statusBox = document.getElementById("statusBox");
+    const statusText = document.getElementById("statusText");
+
+    // Helpers
+    function setStatus(kind, text){
+      statusBox.classList.remove("ok","warn","bad");
+      if (kind) statusBox.classList.add(kind);
+      statusText.textContent = text;
+    }
+
+    function generateTicketId(){
+      // LINDA-YYYYMMDD-XXXXXX
+      const d = new Date();
+      const y = d.getFullYear();
+      const m = String(d.getMonth()+1).padStart(2,"0");
+      const da = String(d.getDate()).padStart(2,"0");
+      const rand = crypto.getRandomValues(new Uint8Array(4));
+      const hex = Array.from(rand).map(b => b.toString(16).padStart(2,"0")).join("").toUpperCase();
+      return `LINDA-${y}${m}${da}-${hex}`;
+    }
+
+    function getSelectedRequestType(){
+      const r = document.querySelector('input[name="requestType"]:checked');
+      return r ? r.value : "";
+    }
+
+    function validateEmail(v){
+      return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
+    }
+
+    function escapeHtml(str){
+      return String(str).replace(/[&<>"']/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s]));
+    }
+
+    function renderResult(kind, title, body, ticketId){
+      const color = kind === "ok" ? "var(--ok)" : kind === "warn" ? "var(--warn)" : "var(--bad)";
+      const bg = kind === "ok" ? "rgba(15,123,58,.06)" : kind === "warn" ? "rgba(166,106,0,.06)" : "rgba(180,35,24,.06)";
+      const border = kind === "ok" ? "rgba(15,123,58,.25)" : kind === "warn" ? "rgba(166,106,0,.25)" : "rgba(180,35,24,.25)";
+
+      submitResult.innerHTML = `
+        <div style="border:1px solid ${border}; background:${bg}; border-radius:14px; padding:12px;">
+          <div style="display:flex; justify-content:space-between; gap:10px; align-items:flex-start;">
+            <div>
+              <div style="font-weight:700; color:${color}; margin-bottom:4px;">${escapeHtml(title)}</div>
+              <div style="color:var(--muted); font-size:13.5px; line-height:1.45;">${escapeHtml(body)}</div>
+            </div>
+            ${ticketId ? `<span class="badge mono" title="Ticket-ID">${escapeHtml(ticketId)}</span>` : ``}
+          </div>
+        </div>
+      `;
+    }
+
+    async function toBase64(file){
+      return new Promise((resolve, reject)=>{
+        const reader = new FileReader();
+        reader.onload = () => resolve(String(reader.result).split(",")[1] || "");
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+    }
+
+    function saveDraft(){
+      const draft = {
+        requestType: getSelectedRequestType(),
+        fullName: fullName.value.trim(),
+        email: email.value.trim(),
+        relation: relation.value,
+        country: country.value.trim(),
+        identifier: identifier.value.trim(),
+        details: details.value.trim(),
+        consent: consent.checked,
+        savedAt: new Date().toISOString()
+      };
+      localStorage.setItem("linda_privacy_draft_v1", JSON.stringify(draft));
+      setStatus("ok","Entwurf lokal gespeichert.");
+      renderResult("ok","Entwurf gespeichert","Der Entwurf wurde im Browser gespeichert (localStorage).", "");
+    }
+
+    function loadDraft(){
+      const raw = localStorage.getItem("linda_privacy_draft_v1");
+      if(!raw) return;
+      try{
+        const d = JSON.parse(raw);
+        if(d.requestType){
+          const el = document.querySelector(`input[name="requestType"][value="${d.requestType}"]`);
+          if(el) el.checked = true;
+        }
+        fullName.value = d.fullName || "";
+        email.value = d.email || "";
+        relation.value = d.relation || "user";
+        country.value = d.country || "";
+        identifier.value = d.identifier || "";
+        details.value = d.details || "";
+        consent.checked = !!d.consent;
+        setStatus("ok","Entwurf geladen.");
+      }catch(e){}
+    }
+
+    function clearAll(){
+      document.querySelectorAll('input[name="requestType"]').forEach(x=>x.checked=false);
+      fullName.value = "";
+      email.value = "";
+      relation.value = "user";
+      country.value = "";
+      identifier.value = "";
+      details.value = "";
+      files.value = "";
+      consent.checked = false;
+      submitResult.innerHTML = "";
+      setStatus("", "Bereit.");
+    }
+
+    // Load draft on start
+    loadDraft();
+
+    // Button bindings
+    saveDraftBtn.addEventListener("click", saveDraft);
+    clearBtn.addEventListener("click", clearAll);
+
+    copyLastBtn.addEventListener("click", async ()=>{
+      const last = localStorage.getItem("linda_privacy_last_ticket_v1") || "";
+      if(!last){
+        setStatus("warn","Keine Ticket-ID gespeichert.");
+        return;
+      }
+      try{
+        await navigator.clipboard.writeText(last);
+        setStatus("ok","Ticket-ID kopiert.");
+      }catch(e){
+        setStatus("warn","Kopieren nicht möglich – bitte manuell markieren.");
+      }
+      ticketIdInput.value = last;
+    });
+
+    lookupBtn.addEventListener("click", async ()=>{
+      const tid = ticketIdInput.value.trim();
+      if(!tid){
+        setStatus("warn","Bitte Ticket-ID eingeben.");
+        return;
+      }
+      if(!API_ENDPOINT){
+        setStatus("warn","Backend nicht konfiguriert. Setze API_ENDPOINT im HTML.");
+        return;
+      }
+
+      // Wenn dein Backend keine /status Route hat, kannst du ENDPOINT_LOOKUP einfach auf API_ENDPOINT setzen
+      const url = ENDPOINT_LOOKUP || API_ENDPOINT;
+
+      setStatus("", "Status wird abgefragt …");
+      try{
+        const res = await fetch(url, {
+          method: "POST",
+          headers: {"Content-Type":"application/json"},
+          body: JSON.stringify({ action: "status", ticket_id: tid })
+        });
+
+        const text = await res.text();
+        let data;
+        try{ data = JSON.parse(text); }catch(_){ data = { raw: text }; }
+
+        if(!res.ok){
+          setStatus("bad","Status nicht abrufbar.");
+          renderResult("bad","Status nicht abrufbar", (data && data.error) ? data.error : `HTTP ${res.status}`, tid);
+          return;
+        }
+
+        // Erwartetes Schema (Beispiel):
+        // { ok:true, ticket_id:"...", status:"received|in_review|needs_info|completed", message:"..." }
+        const s = (data && (data.status || data.state)) || "unknown";
+        const msg = (data && data.message) || "Status empfangen.";
+        const pretty =
+          s === "received" ? ["ok","Eingegangen"] :
+          s === "in_review" ? ["warn","In Bearbeitung"] :
+          s === "needs_info" ? ["warn","Rückfrage erforderlich"] :
+          s === "completed" ? ["ok","Abgeschlossen"] :
+          s === "rejected" ? ["bad","Abgelehnt"] :
+          ["warn","Unbekannt"];
+
+        setStatus(pretty[0], `Status: ${pretty[1]}`);
+        renderResult(pretty[0], "Status", msg, tid);
+
+      }catch(e){
+        setStatus("bad","Netzwerkfehler.");
+        renderResult("bad","Netzwerkfehler","Bitte später erneut versuchen oder Support kontaktieren.", tid);
+      }
+    });
+
+    submitBtn.addEventListener("click", async ()=>{
+      // Basic validation
+      const rt = getSelectedRequestType();
+      const nameVal = fullName.value.trim();
+      const emailVal = email.value.trim();
+      const detailsVal = details.value.trim();
+
+      if(!rt){
+        setStatus("warn","Bitte Anfragetyp auswählen.");
+        renderResult("warn","Fehlende Angabe","Bitte wähle zuerst einen Anfragetyp.", "");
+        return;
+      }
+      if(!nameVal){
+        setStatus("warn","Name fehlt.");
+        renderResult("warn","Fehlende Angabe","Bitte gib deinen Namen an.", "");
+        return;
+      }
+      if(!emailVal || !validateEmail(emailVal)){
+        setStatus("warn","E-Mail ungültig.");
+        renderResult("warn","Fehlende Angabe","Bitte gib eine gültige E-Mail-Adresse an.", "");
+        return;
+      }
+      if(!detailsVal){
+        setStatus("warn","Beschreibung fehlt.");
+        renderResult("warn","Fehlende Angabe","Bitte beschreibe deine Anfrage.", "");
+        return;
+      }
+      if(!consent.checked){
+        setStatus("warn","Bestätigung erforderlich.");
+        renderResult("warn","Bestätigung fehlt","Bitte bestätige die Verarbeitung zur Bearbeitung der Anfrage.", "");
+        return;
+      }
+      if(!API_ENDPOINT){
+        setStatus("warn","Backend nicht konfiguriert.");
+        renderResult("warn","Backend fehlt","Bitte setze API_ENDPOINT im HTML (Vercel-Proxy oder Make Webhook).", "");
+        return;
+      }
+
+      submitBtn.disabled = true;
+      setStatus("", "Anfrage wird gesendet …");
+
+      const ticketId = generateTicketId();
+
+      // Build payload
+      const payload = {
+        action: "submit",
+        ticket_id: ticketId,
+        request_type: rt,
+        requester: {
+          full_name: nameVal,
+          email: emailVal,
+          relation: relation.value,
+          country: country.value.trim() || null,
+          identifier: identifier.value.trim() || null
+        },
+        details: detailsVal,
+        meta: {
+          submitted_at: new Date().toISOString(),
+          user_agent: navigator.userAgent
+        },
+        attachments: []
+      };
+
+      // Attachments (base64) – optional
+      try{
+        const fileList = files.files ? Array.from(files.files) : [];
+        for(const f of fileList){
+          // Guardrails: limit size to keep payload small (you can raise, but Make/Vercel limits exist)
+          const maxBytes = 2 * 1024 * 1024; // 2MB per file (client-side)
+          if(f.size > maxBytes){
+            payload.attachments.push({
+              name: f.name,
+              type: f.type || "application/octet-stream",
+              size: f.size,
+              skipped: true,
+              reason: "FILE_TOO_LARGE_CLIENT_LIMIT_2MB"
+            });
+            continue;
+          }
+          const b64 = await toBase64(f);
+          payload.attachments.push({
+            name: f.name,
+            type: f.type || "application/octet-stream",
+            size: f.size,
+            base64: b64
+          });
+        }
+      }catch(e){
+        // Do not fail submission on file conversion
+        payload.attachments.push({ skipped: true, reason: "ATTACHMENT_CONVERSION_FAILED" });
+      }
+
+      // Submit
+      const url = ENDPOINT_SUBMIT || API_ENDPOINT;
+
+      try{
+        const res = await fetch(url, {
+          method: "POST",
+          headers: {"Content-Type":"application/json"},
+          body: JSON.stringify(payload)
+        });
+
+        const text = await res.text();
+        let data;
+        try{ data = JSON.parse(text); }catch(_){ data = { raw: text }; }
+
+        if(!res.ok){
+          setStatus("bad","Senden fehlgeschlagen.");
+          renderResult("bad","Senden fehlgeschlagen", (data && data.error) ? data.error : `HTTP ${res.status}`, ticketId);
+          submitBtn.disabled = false;
+          return;
+        }
+
+        // Save last ticket
+        localStorage.setItem("linda_privacy_last_ticket_v1", ticketId);
+        ticketIdInput.value = ticketId;
+
+        const msg = (data && (data.message || data.ok_message)) || "Deine Anfrage wurde übermittelt. Wir melden uns ggf. mit Rückfragen.";
+        setStatus("ok","Anfrage gesendet.");
+        renderResult("ok","Anfrage gesendet", msg, ticketId);
+
+      }catch(e){
+        setStatus("bad","Netzwerkfehler.");
+        renderResult("bad","Netzwerkfehler","Bitte später erneut versuchen. Falls es wiederholt fehlschlägt, nutze einen alternativen Kontaktweg.", ticketId);
+      }finally{
+        submitBtn.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>
