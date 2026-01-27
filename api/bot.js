@@ -1,4 +1,4 @@
-Version 27.01.2026
+// Version 27.01.2026
 
 
 // /api/bot.js  (Vercel Serverless Function, ohne Next.js)
