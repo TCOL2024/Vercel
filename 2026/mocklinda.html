@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Linda Mock - ILIAS Integration Demo</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: #f4f7fa;
+    color: #222;
+    padding: 20px;
+    max-width: 800px;
+    margin: 0 auto;
+  }
+  
+  .demo-container {
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    overflow: hidden;
+    margin-bottom: 30px;
+  }
+  
+  .header {
+    background: #004481;
+    color: white;
+    padding: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  
+  .logo { font-weight: 800; font-size: 1.5em; }
+  .badge {
+    background: #e6f0fa;
+    color: #004481;
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: 0.85em;
+    font-weight: 700;
+  }
+  
+  .chat-area {
+    padding: 20px;
+    min-height: 400px;
+    max-height: 500px;
+    overflow-y: auto;
+    border-bottom: 1px solid #eaeaea;
+  }
+  
+  .message {
+    margin-bottom: 15px;
+    display: flex;
+  }
+  
+  .message.user {
+    justify-content: flex-end;
+  }
+  
+  .message.bot {
+    justify-content: flex-start;
+  }
+  
+  .bubble {
+    max-width: 70%;
+    padding: 12px 16px;
+    border-radius: 18px;
+    line-height: 1.4;
+  }
+  
+  .user .bubble {
+    background: #004481;
+    color: white;
+    border-radius: 18px 18px 4px 18px;
+  }
+  
+  .bot .bubble {
+    background: #f0f8ff;
+    border: 1px solid #e0e6ed;
+    border-radius: 18px 18px 18px 4px;
+  }
+  
+  .input-area {
+    padding: 20px;
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    background: white;
+  }
+  
+  .input-wrapper {
+    flex: 1;
+    display: flex;
+    gap: 10px;
+    align-items: center;
+  }
+  
+  textarea {
+    flex: 1;
+    padding: 12px 16px;
+    border: 2px solid #eaeaea;
+    border-radius: 16px;
+    font-family: inherit;
+    font-size: 1em;
+    resize: none;
+    min-height: 50px;
+    max-height: 100px;
+  }
+  
+  textarea:focus {
+    outline: none;
+    border-color: #004481;
+  }
+  
+  /* ILIAS Toggle */
+  .ilias-toggle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-right: 10px;
+  }
+  
+  .toggle-label {
+    font-size: 0.9em;
+    color: #666;
+    white-space: nowrap;
+  }
+  
+  .toggle-switch {
+    position: relative;
+    width: 50px;
+    height: 26px;
+  }
+  
+  .toggle-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+  }
+  
+  .toggle-slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #ccc;
+    transition: .4s;
+    border-radius: 34px;
+  }
+  
+  .toggle-slider:before {
+    position: absolute;
+    content: "";
+    height: 18px;
+    width: 18px;
+    left: 4px;
+    bottom: 4px;
+    background-color: white;
+    transition: .4s;
+    border-radius: 50%;
+  }
+  
+  input:checked + .toggle-slider {
+    background-color: #004481;
+  }
+  
+  input:checked + .toggle-slider:before {
+    transform: translateX(24px);
+  }
+  
+  /* Buttons */
+  .btn {
+    padding: 12px 20px;
+    border: none;
+    border-radius: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    font-size: 1em;
+    transition: all 0.2s;
+  }
+  
+  .btn-primary {
+    background: #004481;
+    color: white;
+  }
+  
+  .btn-primary:hover {
+    background: #002a52;
+  }
+  
+  .btn-secondary {
+    background: #f0f0f0;
+    color: #333;
+  }
+  
+  .btn-secondary:hover {
+    background: #e0e0e0;
+  }
+  
+  .btn-ilias {
+    background: #2e7d32;
+    color: white;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  
+  .btn-ilias:hover {
+    background: #1b5e20;
+  }
+  
+  .btn-ilias:disabled {
+    background: #ccc;
+    cursor: not-allowed;
+  }
+  
+  /* ILIAS Popup */
+  .ilias-popup {
+    position: absolute;
+    bottom: 80px;
+    left: 20px;
+    right: 20px;
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+    padding: 20px;
+    z-index: 100;
+    display: none;
+  }
+  
+  .ilias-popup.active {
+    display: block;
+  }
+  
+  .ilias-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #eee;
+  }
+  
+  .ilias-title {
+    font-weight: 700;
+    color: #004481;
+    font-size: 1.1em;
+  }
+  
+  .close-btn {
+    background: none;
+    border: none;
+    font-size: 1.5em;
+    cursor: pointer;
+    color: #666;
+  }
+  
+  .ilias-results {
+    max-height: 300px;
+    overflow-y: auto;
+  }
+  
+  .ilias-item {
+    padding: 12px;
+    border: 1px solid #eaeaea;
+    border-radius: 8px;
+    margin-bottom: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  
+  .ilias-item:hover {
+    background: #f9f9f9;
+  }
+  
+  .ilias-info {
+    flex: 1;
+  }
+  
+  .ilias-keyword {
+    display: inline-block;
+    background: #e6f0fa;
+    color: #004481;
+    padding: 3px 8px;
+    border-radius: 12px;
+    font-size: 0.8em;
+    font-weight: 700;
+    margin-right: 8px;
+  }
+  
+  .ilias-link {
+    color: #2e7d32;
+    font-weight: 700;
+    text-decoration: none;
+    font-size: 0.95em;
+  }
+  
+  .ilias-link:hover {
+    text-decoration: underline;
+  }
+  
+  .open-btn {
+    background: #2e7d32;
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 0.85em;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  
+  .open-btn:hover {
+    background: #1b5e20;
+  }
+  
+  .no-results {
+    text-align: center;
+    color: #666;
+    padding: 20px;
+  }
+  
+  .mock-note {
+    background: #fff3cd;
+    border: 1px solid #ffeaa7;
+    border-radius: 8px;
+    padding: 15px;
+    margin-top: 20px;
+    font-size: 0.9em;
+    color: #856404;
+  }
+  
+  .note-title {
+    font-weight: 700;
+    margin-bottom: 5px;
+  }
+  
+  .mock-controls {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+    justify-content: center;
+  }
+  
+  @media (max-width: 600px) {
+    body { padding: 10px; }
+    .input-area { flex-wrap: wrap; }
+    .ilias-toggle { order: 1; width: 100%; margin: 10px 0; }
+    .btn-ilias { order: 2; }
+    .btn-primary { order: 3; }
+    .bubble { max-width: 85%; }
+  }
+</style>
+</head>
+<body>
+
+<div class="demo-container">
+  <!-- Header -->
+  <div class="header">
+    <div class="logo">Linda Mock Demo</div>
+    <div class="badge">ILIAS Integration</div>
+  </div>
+  
+  <!-- Chat Area -->
+  <div class="chat-area" id="chat-log">
+    <!-- Messages will appear here -->
+  </div>
+  
+  <!-- Input Area -->
+  <div class="input-area">
+    <div class="input-wrapper">
+      <textarea id="chat-input" placeholder="Stelle eine Frage zu AEVO, VWL oder Personal..." rows="1"></textarea>
+    </div>
+    
+    <!-- ILIAS Toggle -->
+    <div class="ilias-toggle">
+      <span class="toggle-label">ILIAS</span>
+      <label class="toggle-switch">
+        <input type="checkbox" id="ilias-toggle">
+        <span class="toggle-slider"></span>
+      </label>
+    </div>
+    
+    <button id="ilias-btn" class="btn btn-ilias" disabled>
+      <span>🔍 ILIAS</span>
+    </button>
+    
+    <button id="send-btn" class="btn btn-primary">➤ Senden</button>
+  </div>
+  
+  <!-- ILIAS Popup -->
+  <div class="ilias-popup" id="ilias-popup">
+    <div class="ilias-header">
+      <div class="ilias-title">ILIAS Ressourcen</div>
+      <button class="close-btn" onclick="closeILIASPopup()">×</button>
+    </div>
+    <div class="ilias-results" id="ilias-results">
+      <!-- Results will appear here -->
+    </div>
+  </div>
+</div>
+
+<!-- Demo Notes -->
+<div class="mock-note">
+  <div class="note-title">Demo Hinweise:</div>
+  <p>Dies ist ein Mock-Up der ILIAS-Integration. Funktionalität:</p>
+  <ul style="margin: 10px 0 10px 20px;">
+    <li><strong>Schieberegler "ILIAS"</strong>: Aktiviert/Deaktiviert die ILIAS-Suche</li>
+    <li><strong>Button "🔍 ILIAS"</strong>: Sucht nach Keywords in der Frage</li>
+    <li><strong>Simulierte Keywords</strong>: BBiG, JArbSchG, Arbeitszeit, Maximalprinzip, Minimalprinzip</li>
+    <li><strong>KI-Antworten</strong>: Generiert automatisch Antworten mit ILIAS-Hinweis</li>
+  </ul>
+  <p><em>Alle Links öffnen sich in neuem Tab (Simulation)</em></p>
+</div>
+
+<div class="mock-controls">
+  <button class="btn btn-secondary" onclick="resetDemo()">Demo zurücksetzen</button>
+  <button class="btn btn-secondary" onclick="prefillExample('AEVO')">AEVO Beispiel</button>
+  <button class="btn btn-secondary" onclick="prefillExample('VWL')">VWL Beispiel</button>
+</div>
+
+<script>
+// ILIAS Mock Data
+const ILIAS_MOCK_DATA = {
+  'BBiG': [
+    { title: 'Berufsbildungsgesetz Volltext', url: 'https://example-ilias.de/goto.php?target=file_123', type: 'PDF', course: 'AEVO Grundlagen' },
+    { title: 'BBiG Übersicht (Folien)', url: 'https://example-ilias.de/goto.php?target=file_456', type: 'Präsentation', course: 'AEVO Recht' },
+    { title: 'BBiG Prüfungsfragen', url: 'https://example-ilias.de/goto.php?target=file_789', type: 'Test', course: 'AEVO Prüfungsvorbereitung' }
+  ],
+  'JArbSchG': [
+    { title: 'Jugendarbeitsschutzgesetz Text', url: 'https://example-ilias.de/goto.php?target=file_111', type: 'PDF', course: 'AEVO Recht' },
+    { title: 'JArbSchG Checkliste', url: 'https://example-ilias.de/goto.php?target=file_222', type: 'Checkliste', course: 'AEVO Praxis' }
+  ],
+  'Arbeitszeit': [
+    { title: 'Arbeitszeitgesetz (ArbZG)', url: 'https://example-ilias.de/goto.php?target=file_333', type: 'PDF', course: 'Personalrecht' },
+    { title: 'Arbeitszeitberechnung Excel', url: 'https://example-ilias.de/goto.php?target=file_444', type: 'Excel', course: 'Personal Praxis' },
+    { title: 'Arbeitszeitmodelle Übersicht', url: 'https://example-ilias.de/goto.php?target=file_555', type: 'Präsentation', course: 'Personalwesen' }
+  ],
+  'Maximalprinzip': [
+    { title: 'Ökonomische Prinzipien', url: 'https://example-ilias.de/goto.php?target=file_666', type: 'PDF', course: 'VWL Grundlagen' },
+    { title: 'Maximalprinzip vs. Minimalprinzip', url: 'https://example-ilias.de/goto.php?target=file_777', type: 'Video', course: 'VWL Mikroökonomie' }
+  ],
+  'Minimalprinzip': [
+    { title: 'Ökonomische Prinzipien', url: 'https://example-ilias.de/goto.php?target=file_666', type: 'PDF', course: 'VWL Grundlagen' },
+    { title: 'Wirtschaftlichkeitsrechnung', url: 'https://example-ilias.de/goto.php?target=file_888', type: 'PDF', course: 'BWL Controlling' }
+  ]
+};
+
+// KI Antworten Mock
+const BOT_RESPONSES = {
+  'AEVO': [
+    "Das Berufsbildungsgesetz (BBiG) regelt in Deutschland die Berufsausbildung. Wichtige Punkte sind die duale Ausbildung, die Probezeit von 1-4 Monaten und die Verpflichtung zur Führung eines Ausbildungsnachweises.\n\n**ILIAS Hinweis:** Zu diesem Thema finden Sie relevante Materialien in unserem Lernmanagementsystem.",
+    "Das Jugendarbeitsschutzgesetz (JArbSchG) schützt Jugendliche unter 18 Jahren. Wichtige Regelungen: max. 8 Stunden tägliche Arbeitszeit, 5-Tage-Woche, besonderer Schutz vor gefährlichen Arbeiten.\n\n**ILIAS Hinweis:** Gesetzestexte und Checklisten stehen in ILIAS zur Verfügung.",
+    "Die Arbeitszeit für volljährige Auszubildende ist im Arbeitszeitgesetz geregelt: max. 8 Stunden täglich, 48 Stunden wöchentlich, Mindestpausen von 30 Minuten bei 6-9 Stunden Arbeit.\n\n**ILIAS Hinweis:** Arbeitszeitberechnungen und Vorlagen finden Sie in ILIAS."
+  ],
+  'VWL': [
+    "Das **Maximalprinzip** (auch Outputprinzip) besagt: Mit gegebenen Mitteln einen maximalen Ertrag erzielen. Beispiel: Mit einem Budget von 1000€ möglichst viele Werbeimpressionen generieren.\n\n**ILIAS Hinweis:** Vertiefende Materialien zu ökonomischen Prinzipien in ILIAS.",
+    "Das **Minimalprinzip** (auch Inputprinzip) bedeutet: Ein vorgegebenes Ziel mit minimalem Mitteleinsatz erreichen. Beispiel: Eine bestimmte Verkaufszahl mit möglichst geringen Marketingkosten erreichen.\n\n**ILIAS Hinweis:** Wirtschaftlichkeitsberechnungen und Beispiele in ILIAS."
+  ],
+  'default': [
+    "Ich helfe Ihnen gerne bei Ihrer Frage. Bitte stellen Sie eine konkrete Frage zu AEVO, VWL oder Personalthemen.\n\n**ILIAS Hinweis:** Unser Lernmanagementsystem enthält viele zusätzliche Ressourcen zu diesen Themen."
+  ]
+};
+
+// App State
+const state = {
+  iliasEnabled: false,
+  messages: []
+};
+
+// DOM Elements
+const chatInput = document.getElementById('chat-input');
+const chatLog = document.getElementById('chat-log');
+const sendBtn = document.getElementById('send-btn');
+const iliasBtn = document.getElementById('ilias-btn');
+const iliasToggle = document.getElementById('ilias-toggle');
+const iliasPopup = document.getElementById('ilias-popup');
+const iliasResults = document.getElementById('ilias-results');
+
+// Initialize
+function init() {
+  // Add welcome message
+  addMessage('bot', '👋 Willkommen zur Linda Mock Demo! Diese Simulation zeigt die ILIAS-Integration.\n\nAktivieren Sie den ILIAS-Schieberegler und fragen Sie nach Themen wie BBiG, Arbeitszeit oder Maximalprinzip.');
+  
+  // Event Listeners
+  sendBtn.addEventListener('click', sendMessage);
+  chatInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage();
+    }
+  });
+  
+  iliasToggle.addEventListener('change', (e) => {
+    state.iliasEnabled = e.target.checked;
+    iliasBtn.disabled = !state.iliasEnabled;
+    updateILIASButton();
+  });
+  
+  iliasBtn.addEventListener('click', searchILIAS);
+  
+  // Auto-resize textarea
+  chatInput.addEventListener('input', function() {
+    this.style.height = 'auto';
+    this.style.height = (this.scrollHeight) + 'px';
+  });
+}
+
+// Add message to chat
+function addMessage(role, text) {
+  const messageDiv = document.createElement('div');
+  messageDiv.className = `message ${role}`;
+  
+  const bubbleDiv = document.createElement('div');
+  bubbleDiv.className = 'bubble';
+  bubbleDiv.textContent = text;
+  
+  messageDiv.appendChild(bubbleDiv);
+  chatLog.appendChild(messageDiv);
+  
+  // Scroll to bottom
+  chatLog.scrollTop = chatLog.scrollHeight;
+  
+  // Store message
+  state.messages.push({ role, text });
+}
+
+// Simulate KI response
+function getBotResponse(question) {
+  question = question.toLowerCase();
+  
+  // Determine domain based on keywords
+  let domain = 'default';
+  if (question.includes('bbig') || question.includes('aevo') || question.includes('jarb')) {
+    domain = 'AEVO';
+  } else if (question.includes('maximal') || question.includes('minimal') || question.includes('vwl')) {
+    domain = 'VWL';
+  }
+  
+  // Get random response from domain
+  const responses = BOT_RESPONSES[domain] || BOT_RESPONSES.default;
+  const randomIndex = Math.floor(Math.random() * responses.length);
+  
+  return responses[randomIndex];
+}
+
+// Search for ILIAS resources
+function searchILIAS() {
+  const question = chatInput.value.trim();
+  if (!question) {
+    alert('Bitte geben Sie zuerst eine Frage ein.');
+    return;
+  }
+  
+  if (!state.iliasEnabled) {
+    alert('Bitte aktivieren Sie zuerst den ILIAS-Schieberegler.');
+    return;
+  }
+  
+  const foundKeywords = [];
+  const foundResources = [];
+  
+  // Check each keyword
+  Object.keys(ILIAS_MOCK_DATA).forEach(keyword => {
+    if (question.toLowerCase().includes(keyword.toLowerCase())) {
+      foundKeywords.push(keyword);
+      ILIAS_MOCK_DATA[keyword].forEach(resource => {
+        foundResources.push({ ...resource, keyword });
+      });
+    }
+  });
+  
+  // Display results
+  displayILIASResults(foundResources, foundKeywords);
+}
+
+// Display ILIAS results in popup
+function displayILIASResults(resources, keywords) {
+  if (resources.length === 0) {
+    iliasResults.innerHTML = `
+      <div class="no-results">
+        <p>Keine ILIAS-Ressourcen für Ihre Frage gefunden.</p>
+        <p style="margin-top: 10px; font-size: 0.9em;">
+          Probieren Sie Begriffe wie: BBiG, JArbSchG, Arbeitszeit, Maximalprinzip, Minimalprinzip
+        </p>
+      </div>
+    `;
+  } else {
+    let html = '';
+    resources.forEach(resource => {
+      html += `
+        <div class="ilias-item">
+          <div class="ilias-info">
+            <span class="ilias-keyword">${resource.keyword}</span>
+            <div style="margin-top: 5px;">
+              <a href="${resource.url}" target="_blank" class="ilias-link">${resource.title}</a>
+            </div>
+            <div style="font-size: 0.85em; color: #666; margin-top: 3px;">
+              ${resource.type} • ${resource.course}
+            </div>
+          </div>
+          <button class="open-btn" onclick="window.open('${resource.url}', '_blank')">Öffnen</button>
+        </div>
+      `;
+    });
+    
+    // Add summary
+    html = `
+      <div style="margin-bottom: 15px; font-size: 0.95em; color: #666;">
+        Gefundene Keywords: <strong>${keywords.join(', ')}</strong> 
+        (${resources.length} Ressource${resources.length > 1 ? 'n' : ''})
+      </div>
+      ${html}
+    `;
+    
+    iliasResults.innerHTML = html;
+  }
+  
+  // Show popup
+  iliasPopup.classList.add('active');
+}
+
+// Close ILIAS popup
+function closeILIASPopup() {
+  iliasPopup.classList.remove('active');
+}
+
+// Update ILIAS button state
+function updateILIASButton() {
+  if (state.iliasEnabled) {
+    iliasBtn.innerHTML = '<span>🔍 ILIAS Suche</span>';
+    iliasBtn.title = 'Nach ILIAS-Ressourcen suchen';
+  } else {
+    iliasBtn.innerHTML = '<span>🔒 ILIAS</span>';
+    iliasBtn.title = 'ILIAS-Funktion ist deaktiviert';
+  }
+}
+
+// Send message
+function sendMessage() {
+  const question = chatInput.value.trim();
+  if (!question) return;
+  
+  // Add user message
+  addMessage('user', question);
+  
+  // Clear input
+  chatInput.value = '';
+  chatInput.style.height = 'auto';
+  
+  // Simulate typing delay
+  setTimeout(() => {
+    const response = getBotResponse(question);
+    addMessage('bot', response);
+  }, 500);
+}
+
+// Demo control functions
+function resetDemo() {
+  chatLog.innerHTML = '';
+  chatInput.value = '';
+  iliasToggle.checked = false;
+  state.iliasEnabled = false;
+  iliasBtn.disabled = true;
+  closeILIASPopup();
+  updateILIASButton();
+  init(); // Re-add welcome message
+}
+
+function prefillExample(type) {
+  resetDemo();
+  
+  let exampleQuestion = '';
+  let exampleResponse = '';
+  
+  if (type === 'AEVO') {
+    exampleQuestion = 'Was regelt das BBiG für Auszubildende?';
+    exampleResponse = 'Das Berufsbildungsgesetz (BBiG) regelt in Deutschland die Berufsausbildung. Es enthält Vorschriften zu Ausbildungsvertrag, Probezeit, Vergütung und Prüfungen. Wichtig: Schriftlicher Vertrag, angemessene Vergütung, Freistellung für Berufsschule.\n\n**ILIAS Hinweis:** Gesetzestexte und Ausbildungsvertrag-Muster finden Sie in ILIAS.';
+  } else if (type === 'VWL') {
+    exampleQuestion = 'Erklären Sie das Maximalprinzip in der VWL';
+    exampleResponse = 'Das **Maximalprinzip** (Outputprinzip) ist eines der ökonomischen Prinzipien. Es besagt: Mit gegebenen Ressourcen (Input) einen maximalen Nutzen (Output) erzielen. Beispiel: Ein Unternehmen möchte mit einem Marketingbudget von 10.000€ möglichst viele Neukunden gewinnen.\n\n**ILIAS Hinweis:** Vertiefende Materialien und Berechnungsbeispiele in ILIAS.';
+  }
+  
+  chatInput.value = exampleQuestion;
+  iliasToggle.checked = true;
+  state.iliasEnabled = true;
+  iliasBtn.disabled = false;
+  updateILIASButton();
+  
+  // Trigger ILIAS search
+  searchILIAS();
+  
+  // Show response
+  setTimeout(() => {
+    addMessage('user', exampleQuestion);
+    setTimeout(() => {
+      addMessage('bot', exampleResponse);
+    }, 500);
+  }, 100);
+}
+
+// Initialize on load
+window.onload = init;
+
+// Close popup when clicking outside
+document.addEventListener('click', (e) => {
+  if (!iliasPopup.contains(e.target) && !iliasBtn.contains(e.target)) {
+    closeILIASPopup();
+  }
+});
+</script>
+</body>
+</html>
