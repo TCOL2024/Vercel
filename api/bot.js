@@ -1,6 +1,3 @@
-// Version 27.01.2026
-
-
 // /api/bot.js  (Vercel Serverless Function, ohne Next.js)
 
 function readRawBody(req, limitBytes = 32 * 1024) {
