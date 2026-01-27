@@ -1,172 +1,146 @@
-// prompts.js - Alle KI-Prompts für Linda Lernassistentin
+// prompts.js - KI-Prompts für Linda (Frontend-Version)
+// Wird in HTML eingebunden: <script src="prompts.js"></script>
 
 const LindaPrompts = {
-  // ==================== CHAT-PROMPTS ====================
-  getChatPrompt: (question, fachmodus, history = []) => {
-    const domainContext = {
-      '': 'Antworte als freundliche Lernassistentin.',
-      'AEVO': `Du bist ein AEVO-Experte (Ausbildereignungsverordnung). 
-      Antworte präzise mit Bezug zu:
-      - Berufsbildungsgesetz (BBiG)
-      - Ausbilder-Eignungsverordnung
-      - IHK-Prüfungsanforderungen
-      - Praktischen Ausbildungssituationen`,
-      
-      'VWL': `Du bist ein Wirtschaftswissenschaftler.
-      Antworte mit Bezug zu:
-      - Volkswirtschaftlichen Grundlagen
-      - Betriebswirtschaftlichen Konzepten
-      - Aktuellen Wirtschaftsdaten
-      - Prüfungsrelevanten Modellen`,
-      
-      'PERSONAL': `Du bist Personalexperte.
-      Antworte mit Bezug zu:
-      - Arbeitsrecht
-      - Personalprozessen
-      - HR-Instrumenten
-      - Aktueller Rechtsprechung`
+  VERSION: '1.0',
+  
+  // ==================== CHAT-PROMPT GENERATOR ====================
+  getChatPrompt: function(question, fachmodus = '', history = []) {
+    const baseContext = {
+      role: "system",
+      content: `Du bist Linda, eine freundliche Lernassistentin für berufliche Bildung.`
     };
     
-    const context = domainContext[fachmodus] || domainContext[''];
+    const domainContexts = {
+      'AEVO': `Du bist AEVO-Experte. Antworte präzise mit Bezug zu:
+• Berufsbildungsgesetz (BBiG) 
+• Ausbilder-Eignungsverordnung (AEVO)
+• IHK-Prüfungsanforderungen
+• Praktischen Ausbildungssituationen
+
+Struktur:
+1. Direkte Antwort
+2. Erklärung in einfacher Sprache  
+3. Praxisbeispiel (wenn passend)
+4. Wichtige Hinweise`,
+      
+      'VWL': `Du bist Wirtschaftsexperte. Antworte mit Bezug zu:
+• Volkswirtschaftlichen Grundlagen
+• Betriebswirtschaftlichen Konzepten
+• Aktuellen Wirtschaftsdaten
+• Prüfungsrelevanten Modellen
+
+Struktur:
+1. Klare Definition/Erklärung
+2. Grafische Veranschaulichung (wenn möglich)
+3. Praktische Anwendung
+4. Quellen/Weiterführendes`,
+      
+      'PERSONAL': `Du bist Personalexperte. Antworte mit Bezug zu:
+• Arbeitsrecht
+• Personalprozessen  
+• HR-Instrumenten
+• Aktueller Rechtsprechung
+
+Struktur:
+1. Rechtliche Einordnung
+2. Prozessbeschreibung
+3. Checkliste/Formulare
+4. Fallbeispiel`
+    };
     
-    return `${context}
-
-AUFBAU DEINER ANTWORT:
-1. Kurze, direkte Antwort auf die Frage
-2. Erklärung in einfacher Sprache
-3. Praktische Beispiele (falls relevant)
-4. Wichtige zu beachtende Punkte
-5. QUellen/Literaturhinweise (falls vorhanden)
-
-${history.length > 0 ? 'Vorheriger Kontext:\n' + history.map(h => `${h.role}: ${h.content}`).join('\n') + '\n\n' : ''}
-AKTUELLE FRAGE: ${question}
-
-ANTWORT:`;
+    let context = baseContext.content;
+    if (domainContexts[fachmodus]) {
+      context = domainContexts[fachmodus];
+    }
+    
+    // History für Token-Sparsamkeit vorbereiten
+    const limitedHistory = history.slice(-2).map(h => ({
+      role: h.role === 'user' ? 'user' : 'assistant',
+      content: this._truncate(h.content, 300)
+    }));
+    
+    return {
+      system: context,
+      messages: [
+        ...limitedHistory,
+        { role: "user", content: this._truncate(question, 1500) }
+      ]
+    };
   },
-
-  // ==================== LERNKARTEN-PROMPTS ====================
-  getFlashcardsPrompt: (question, answer, domain) => {
-    const domainTemplates = {
+  
+  // ==================== LERNKARTEN-PROMPT (HAUPT) ====================
+  getFlashcardsPrompt: function(question, answer, domain = '') {
+    // Maximal 1900 Zeichen für API-Limit
+    const safeQuestion = this._truncate(question, 250);
+    const safeAnswer = this._truncate(answer, 1400);
+    
+    const domainConfigs = {
       'AEVO': {
-        categories: ['Rechtliche Grundlagen', 'Ausbildungsmethodik', 'Prüfungsvorbereitung', 'Praxisbeispiele'],
-        focus: 'Gesetze, Verordnungen, Handlungsanleitungen, IHK-Anforderungen'
+        focus: 'Gesetze, Verordnungen, Handlungsanleitungen, IHK-Anforderungen',
+        categories: ['Recht', 'Methodik', 'Prüfung', 'Praxis']
       },
       'VWL': {
-        categories: ['Theorien & Modelle', 'Wirtschaftsbegriffe', 'Berechnungen', 'Zusammenhänge'],
-        focus: 'Definitionen, Formeln, Grafiken, aktuelle Daten'
+        focus: 'Definitionen, Formeln, Modelle, Zusammenhänge',
+        categories: ['Theorie', 'Berechnung', 'Analyse', 'Anwendung']
       },
       'PERSONAL': {
-        categories: ['Arbeitsrecht', 'Personalprozesse', 'Kommunikation', 'Dokumentation'],
-        focus: 'Gesetze, Checklisten, Formulare, Fallbeispiele'
+        focus: 'Arbeitsrecht, Prozesse, Dokumente, Kommunikation',
+        categories: ['Recht', 'Verfahren', 'Instrumente', 'Fälle']
       },
       '': {
-        categories: ['Kernkonzepte', 'Definitionen', 'Anwendungen', 'Beispiele'],
-        focus: 'Wesentliche Inhalte, prüfungsrelevante Punkte'
+        focus: 'Kernkonzepte, Definitionen, Anwendungen',
+        categories: ['Konzepte', 'Definitionen', 'Beispiele', 'Praxistipps']
       }
     };
     
-    const template = domainTemplates[domain] || domainTemplates[''];
+    const config = domainConfigs[domain] || domainConfigs[''];
     
-    return `DU BIST EIN EXPERTE FÜR LERNKARTEN-ERSTELLUNG FACHBEREICH: ${domain || 'Allgemein'}
+    return `EXPERTE LERNKARTEN-ERSTELLUNG für ${domain || 'Allgemein'}
 
-AUFGABE: Erstelle 8 hochwertige Lernkarten aus folgender Frage und Antwort.
+AUFGABE: Erstelle 8 hochwertige Lernkarten.
 
-QUALITÄTSANFORDERUNGEN:
-1. Jede Karte muss EIN abgeschlossenes Lernziel enthalten
-2. FRONT: Maximal 12 Wörter (klare Frage oder zentraler Begriff)
-3. BACK: Maximal 40 Wörter (präzise, prüfungsrelevante Erklärung)
-4. Vermeide Wiederholungen zwischen Karten
-5. Nutze Fachsprache korrekt
-6. Strukturiere komplexe Inhalte in verdaubare Häppchen
+QUALITÄTSKRITERIEN:
+✓ Jede Karte = 1 Lernziel (abgeschlossen)
+✓ FRONT: Max. 10 Wörter (klare Frage/Begriff)
+✓ BACK: Max. 30 Wörter (präzise, prüfungsrelevant)
+✓ Keine Wiederholungen zwischen Karten
+✓ Korrekte Fachsprache
+✓ In verdaubare Häppchen strukturiert
 
-FACHSPEZIFISCHE FOKUSPUNKTE für ${domain}:
-- ${template.focus}
+FACHFOKUS: ${config.focus}
+KATEGORIEN: ${config.categories.join(', ')}
 
-KATEGORIEN für die Karten:
-${template.categories.map(cat => `- ${cat}`).join('\n')}
-
-FORMAT: Gib AUSSCHLIESSLICH dieses JSON zurück (KEIN Markdown, KEIN zusätzlicher Text):
+FORMAT: NUR dieses JSON (KEIN Markdown):
 
 {
-  "deck_title": "Kurzer, prägnanter Titel (max. 6 Wörter)",
+  "deck_title": "Kurztitel (max. 5 Wörter)",
   "cards": [
     {
-      "front": "Hier die Vorderseite",
-      "back": "Hier die präzise Rückseite",
+      "front": "...",
+      "back": "...", 
       "tag": "${domain || 'Standard'}",
       "level": 1,
-      "category": "Eine der oben genannten Kategorien"
+      "category": "${config.categories[0]}"
     }
   ]
 }
 
 EINGABE:
-FRAGE: ${question}
+FRAGE: ${safeQuestion}
 
-ANTWORT: ${answer}
----ENDE DER EINGABE---
-Gib NUR das JSON-Objekt zurück:`;
+ANTWORT: ${safeAnswer}
+
+Gib NUR das JSON zurück:`;
   },
-
-  // ==================== QUALITÄTS-CHECK PROMPT ====================
-  getQualityCheckPrompt: (deckJson, domain) => {
-    return `QUALITÄTSKONTROLLE FÜR LERNKARTEN (${domain})
-
-Überprüfe diese Lernkarten auf:
-1. FACHLICHE RICHTIGKEIT - Stimmen alle Aussagen?
-2. KLARHEIT - Sind Formulierungen verständlich?
-3. VOLLSTÄNDIGKEIT - Fehlen wichtige Aspekte?
-4. PRÜFUNGSRELEVANZ - Sind die Inhalte prüfungsrelevant?
-5. REDUNDANZEN - Gibt es Wiederholungen?
-
-Gib für jede Karte eine Bewertung (1-5 Sterne) und ggf. Verbesserungsvorschläge.
-
-Zu prüfendes Deck: ${JSON.stringify(deckJson, null, 2)}
-
-Format der Rückmeldung:
-{
-  "overall_score": 0-100,
-  "card_feedback": [
-    {
-      "card_index": 0,
-      "score": 1-5,
-      "suggestion": "Verbesserungsvorschlag"
-    }
-  ],
-  "general_suggestions": ["Allgemeine Verbesserungen"]
-}`;
-  },
-
-  // ==================== FEHLER-KORREKTUR PROMPT ====================
-  getCorrectionPrompt: (incorrectCard, userCorrection, domain) => {
-    return `FEHLERKORREKTUR FÜR LERNKARTE (${domain})
-
-Eine Lernkarte wurde als fehlerhaft gemeldet.
-
-ORIGINAL-KARTE:
-Front: "${incorrectCard.front}"
-Back: "${incorrectCard.back}"
-
-VORGESCHLAGENE KORREKTUR VOM USER:
-"${userCorrection}"
-
-BITTE:
-1. Überprüfe die fachliche Richtigkeit beider Versionen
-2. Erstelle eine verbesserte, korrekte Version
-3. Halte die Karte kurz und prägnant
-
-Gib die korrigierte Karte in diesem Format zurück:
-{
-  "corrected_front": "Korrekte Vorderseite",
-  "corrected_back": "Korrekte Rückseite",
-  "explanation": "Kurze Erklärung der Korrektur"
-}`;
-  },
-
-  // ==================== KURZ-CHECK FÜR API-LIMIT ====================
-  getCompactFlashcardsPrompt: (question, answer, domain) => {
-    // Minimal-Version für 2000-Zeichen-Limit
-    return `Erstelle 8 Lernkarten als JSON:
+  
+  // ==================== KOMPAKT-VERSION (für lange Antworten) ====================
+  getCompactFlashcardsPrompt: function(question, answer, domain = '') {
+    // Super-kompakt für sehr lange Antworten
+    const safeQuestion = this._truncate(question, 150);
+    const safeAnswer = this._truncate(answer, 800);
+    
+    return `Erstelle 6-8 Lernkarten als reines JSON:
 {
   "deck_title": "Kurztitel",
   "cards": [
@@ -174,47 +148,72 @@ Gib die korrigierte Karte in diesem Format zurück:
   ]
 }
 
-Frage: ${question.substring(0, 300)}
-Antwort: ${answer.substring(0, 1000)}`;
-  },
+Frage: ${safeQuestion}
+Antwort: ${safeAnswer}
+Domain: ${domain || 'Allgemein'}
 
+Wichtig: 
+- Front: maximal 8 Wörter
+- Back: maximal 25 Wörter  
+- Korrekte Fachinhalte
+- Prüfungsrelevanz
+
+NUR JSON zurückgeben:`;
+  },
+  
   // ==================== HELPER FUNCTIONS ====================
-  truncateForAPI: (text, maxLength = 1900) => {
+  _truncate: function(text, maxLength) {
     if (!text || text.length <= maxLength) return text;
-    return text.substring(0, maxLength - 3) + '...';
-  },
-
-  prepareForAPI: (promptType, data, options = {}) => {
-    const { maxLength = 1900, domain = '' } = options;
+    // Versuche bei Satzende zu kürzen
+    const truncated = text.substring(0, maxLength);
+    const lastPeriod = truncated.lastIndexOf('.');
+    const lastSpace = truncated.lastIndexOf(' ');
     
+    if (lastPeriod > maxLength * 0.8) {
+      return truncated.substring(0, lastPeriod + 1);
+    } else if (lastSpace > maxLength * 0.9) {
+      return truncated.substring(0, lastSpace) + '...';
+    }
+    return truncated.substring(0, maxLength - 3) + '...';
+  },
+  
+  estimateTokens: function(text) {
+    // Grobe Schätzung: 1 Token ≈ 4 Zeichen für Deutsch
+    return Math.ceil((text || '').length / 4);
+  },
+  
+  prepareFlashcardsAPIRequest: function(userQuestion, botAnswer, domain = '') {
+    const totalLength = (userQuestion + botAnswer).length;
+    
+    // Wähle Prompt basierend auf Länge
     let prompt;
-    switch(promptType) {
-      case 'chat':
-        prompt = this.getChatPrompt(data.question, domain, data.history);
-        break;
-      case 'flashcards':
-        prompt = this.getFlashcardsPrompt(
-          data.question.substring(0, 300),
-          data.answer.substring(0, 1500),
-          domain
-        );
-        break;
-      case 'flashcards_compact':
-        prompt = this.getCompactFlashcardsPrompt(
-          data.question.substring(0, 200),
-          data.answer.substring(0, 800),
-          domain
-        );
-        break;
-      default:
-        throw new Error(`Unknown prompt type: ${promptType}`);
+    if (totalLength > 2000) {
+      prompt = this.getCompactFlashcardsPrompt(userQuestion, botAnswer, domain);
+    } else {
+      prompt = this.getFlashcardsPrompt(userQuestion, botAnswer, domain);
     }
     
-    return this.truncateForAPI(prompt, maxLength);
+    // Sicherstellen, dass wir unter 1900 Zeichen bleiben
+    const finalPrompt = this._truncate(prompt, 1900);
+    
+    return {
+      question: finalPrompt,
+      fachmodus: domain,
+      history: []  // Keine History für Karten-Erstellung
+    };
+  },
+  
+  // ==================== DEBUG / INFO ====================
+  getStats: function() {
+    return {
+      version: this.VERSION,
+      domains: ['AEVO', 'VWL', 'PERSONAL', ''],
+      features: ['chat', 'flashcards', 'compact_flashcards']
+    };
   }
 };
 
-// Export für Browser (ohne Module System)
+// Global verfügbar machen
 if (typeof window !== 'undefined') {
   window.LindaPrompts = LindaPrompts;
 }
