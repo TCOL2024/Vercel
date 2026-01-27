@@ -1,0 +1,2349 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+<title>Linda – Lernassistentin</title>
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.8/purify.min.js"></script>
+<!-- FSRS4JS für Spaced Repetition -->
+<script src="https://cdn.jsdelivr.net/npm/fsrs4js@1.3.2/dist/fsrs.min.js"></script>
+
+<style>
+  :root {
+    /* Farben */
+    --blue-main: #004481;
+    --blue-dark: #002a52;
+    --blue-light: #e6f0fa;
+    --blue-soft: #f0f8ff;
+    --text-main: #222;
+    --text-muted: #666;
+    --white: #fff;
+    --danger: #dc3545;
+    --success: #28a745;
+    --warning: #ffc107;
+
+    /* Desktop (Kompakt) */
+    --font-desktop: 12px;
+    --line-desktop: 1.3;
+
+    /* Mobile (GROSS & OPTIMIERT) */
+    --font-mobile: 18px;
+    --line-mobile: 1.6;
+    --bubble-pad: 14px;
+    --btn-size: 46px;
+
+    /* Mobile Input Spezifisch */
+    --mobile-input-height: 65px; /* Größere Mindesthöhe */
+  }
+
+  /* --- Media Queries --- */
+  @media (min-width: 769px) {
+    :root {
+      --font-size: var(--font-desktop);
+      --line-height: var(--line-desktop);
+    }
+  }
+  @media (max-width: 768px) {
+    :root {
+      --font-size: var(--font-mobile);
+      --line-height: var(--line-mobile);
+    }
+  }
+
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    font-size: var(--font-size);
+    line-height: var(--line-height);
+    color: var(--text-main);
+    background: #f4f7fa;
+    height: 100vh;
+    height: 100dvh;
+    overflow: hidden;
+    display: flex;
+    justify-content: center;
+  }
+
+  /* Desktop Container */
+  @media (min-width: 769px) {
+    body { background: #d0d7e0; align-items: center; }
+    #app {
+      width: 900px;
+      height: 94vh;
+      border-radius: 16px;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.15);
+      overflow: hidden;
+      position: relative;
+    }
+  }
+
+  #app {
+    width: 100%;
+    height: 100%;
+    background: var(--white);
+    display: flex;
+    flex-direction: column;
+    position: relative;
+  }
+
+  /* --- HEADER --- */
+  header {
+    height: 60px;
+    background: var(--white);
+    border-bottom: 1px solid #eaeaea;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 16px;
+    flex-shrink: 0;
+    z-index: 20;
+  }
+
+  .brand-area { display: flex; align-items: center; gap: 10px; }
+  .logo { font-weight: 800; font-size: 1.2em; color: var(--blue-main); }
+  .badge {
+    background: var(--blue-light);
+    color: var(--blue-main);
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 0.75em;
+    font-weight: 700;
+    border: 1px solid #d0e4f5;
+    display: inline-block;
+    white-space: nowrap;
+  }
+
+  .header-btns { display: flex; gap: 8px; }
+  .btn-icon {
+    background: none; border: 1px solid #eaeaea;
+    width: var(--btn-size); height: var(--btn-size);
+    border-radius: 12px;
+    font-size: 1.2em; cursor: pointer; color: var(--blue-main);
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.2s;
+  }
+  .btn-icon:hover { background: var(--blue-soft); border-color: var(--blue-main); }
+
+  .btn-new {
+    background: var(--blue-main); color: white; border: none;
+    width: auto; padding: 0 16px; font-weight: 800; font-size: 1em;
+    height: var(--btn-size); border-radius: 14px;
+  }
+  .btn-new:hover { background: var(--blue-dark); }
+  .btn-icon.stop { background: var(--danger); color: white; border-color: var(--danger); }
+
+  /* --- CHAT LOG --- */
+  #chat-log {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px;
+    background: #fafcfd;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 120px;
+  }
+
+  @media (min-width: 769px) {
+    #chat-log { padding: 24px 32px; gap: 10px; padding-bottom: 140px; }
+  }
+  @media (max-width: 768px) {
+    #chat-log { padding: 16px; padding-bottom: 90px; }
+  }
+
+  /* --- BUBBLES --- */
+  .msg-row { display: flex; width: 100%; animation: fadeIn 0.3s ease; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+  .msg-wrapper { max-width: 90%; display: flex; flex-direction: column; gap: 8px; }
+
+  /* User: Right */
+  .msg-row.user { justify-content: flex-end; }
+  .msg-row.user .msg-wrapper { align-items: flex-end; }
+  .bubble.user {
+    background: var(--blue-main);
+    color: white;
+    padding: var(--bubble-pad);
+    border-radius: 18px 18px 4px 18px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    font-weight: 500;
+  }
+
+  /* Bot: Left */
+  .msg-row.bot { justify-content: flex-start; }
+  .msg-row.bot .msg-wrapper { align-items: flex-start; }
+  .bubble.bot {
+    background: var(--white);
+    border: 1px solid #e0e6ed;
+    padding: var(--bubble-pad);
+    border-radius: 18px 18px 18px 4px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+    color: var(--text-main);
+  }
+
+  /* Content Styling */
+  .md h4 { margin: 0 0 8px 0; color: var(--blue-main); font-weight: 800; font-size: 1.1em; }
+  .md p { margin: 0 0 8px 0; }
+  .md ul, .md ol { margin: 4px 0 8px 20px; padding: 0; }
+  .md li { margin-bottom: 4px; }
+  .md strong { color: var(--blue-main); font-weight: 800; }
+  .md code { background: #f1f3f5; padding: 2px 6px; border-radius: 4px; font-family: Consolas, monospace; color: #c7254e; font-size: 0.9em; }
+  .md pre { background: #f4f4f4; padding: 10px; border-radius: 8px; overflow-x: auto; margin: 8px 0; border: 1px solid #e0e0e0; }
+
+  /* Tables */
+  .table-wrapper { overflow-x: auto; margin: 8px 0; border-radius: 8px; border: 1px solid #e0e6ed; }
+  .md table { border-collapse: collapse; width: 100%; min-width: 350px; font-size: 0.9em; }
+  .md th, .md td { border: 1px solid #e0e6ed; padding: 8px 10px; text-align: left; }
+  .md th { background: var(--blue-soft); color: var(--blue-main); font-weight: 700; }
+
+  /* Sources */
+  .source-box { margin-top: 8px; padding: 10px; background: var(--blue-soft); border-radius: 8px; border-left: 4px solid var(--blue-main); }
+  .source-box strong { display: block; margin-bottom: 6px; color: var(--blue-main); }
+  .source-list { margin: 0; padding-left: 18px; color: #444; }
+  .source-list li { margin-bottom: 4px; }
+
+  /* --- ACTIONS (Unter dem Text) --- */
+  .msg-actions {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+  .action-btn {
+    font-size: 0.85em;
+    padding: 6px 12px;
+    border-radius: 12px;
+    border: 1px solid #ddd;
+    background: white;
+    cursor: pointer;
+    color: #555;
+    transition: 0.2s;
+  }
+  .action-btn:hover { border-color: var(--blue-main); color: var(--blue-main); background: var(--blue-soft); }
+  .action-btn.primary {
+    border-color: #cfe2f3;
+    background: var(--blue-soft);
+    color: var(--blue-main);
+    font-weight: 800;
+  }
+
+  /* --- INPUT AREA --- */
+  .input-area {
+    padding: 16px;
+    background: white;
+    border-top: 1px solid #eaeaea;
+    display: flex;
+    gap: 12px;
+    align-items: flex-end;
+    position: relative;
+  }
+
+  @media (max-width: 768px) {
+    .input-area {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      z-index: 50;
+      border-top: 1px solid #eaeaea;
+      background: rgba(255, 255, 255, 0.98);
+      backdrop-filter: blur(10px);
+      box-shadow: 0 -5px 20px rgba(0,0,0,0.06);
+      padding: 16px;
+      padding-bottom: calc(16px + env(safe-area-inset-bottom));
+      display: flex;
+      align-items: flex-end;
+      gap: 10px;
+    }
+  }
+
+  .input-wrapper { flex: 1; position: relative; }
+
+  textarea {
+    width: 100%;
+    min-height: 50px;
+    max-height: 150px;
+    padding: 12px 14px;
+    border-radius: 16px;
+    border: 2px solid #eaeaea;
+    font-size: 1em;
+    font-family: inherit;
+    resize: none;
+    outline: none;
+    transition: 0.2s;
+    background: #fcfcfc;
+  }
+
+  @media (max-width: 768px) {
+    textarea {
+      min-height: var(--mobile-input-height);
+      font-size: 1.1em;
+      padding: 14px 16px;
+      border-radius: 20px;
+    }
+  }
+
+  textarea:focus { border-color: var(--blue-main); box-shadow: 0 0 0 4px var(--blue-soft); background: white; }
+
+  #send-btn {
+    background: var(--blue-main); color: white; border: none;
+    width: var(--btn-size); height: var(--btn-size);
+    border-radius: 14px; font-size: 1.2em; cursor: pointer;
+    flex-shrink: 0;
+  }
+  #send-btn:hover { background: var(--blue-dark); }
+  #send-btn.stop { background: var(--danger); }
+
+  @media (max-width: 768px) {
+    #send-btn {
+      width: 54px;
+      height: 54px;
+      border-radius: 50%;
+      font-size: 1.4em;
+      flex-shrink: 0;
+    }
+  }
+
+  /* Snippet Popup */
+  #snippet-popup {
+    position: absolute;
+    bottom: calc(100% + 8px);
+    left: 0; right: 0;
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 10px;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+    max-height: 200px;
+    overflow-y: auto;
+    display: none;
+    z-index: 20;
+  }
+  #snippet-popup.active { display: block; }
+  .snippet-item { padding: 12px; border-bottom: 1px solid #f5f5f5; cursor: pointer; font-size: 0.95em; }
+  .snippet-item:hover { background: var(--blue-soft); color: var(--blue-main); }
+
+  /* --- MODALS --- */
+  .modal-overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.6);
+    backdrop-filter: blur(5px);
+    display: flex; justify-content: center; align-items: center;
+    z-index: 1000;
+    opacity: 0; pointer-events: none; transition: opacity 0.3s;
+    padding: 20px;
+  }
+  .modal-overlay.open { opacity: 1; pointer-events: all; }
+
+  .modal {
+    background: white;
+    width: 100%; max-width: 520px;
+    border-radius: 16px;
+    padding: 24px;
+    box-shadow: 0 25px 60px rgba(0,0,0,0.4);
+    max-height: 90vh; overflow-y: auto;
+    transform: scale(0.95); transition: transform 0.2s;
+  }
+  .modal-overlay.open .modal { transform: scale(1); }
+
+  /* --- DISCLAIMER DESIGN --- */
+  .modal-overlay.dark { background: #f4f7fa; padding: 10px; }
+  .modal.disclaimer-modal {
+    border: none; box-shadow: none; padding: 0; background: transparent;
+    display: flex; flex-direction: column; height: 100%; max-width: 600px;
+  }
+
+  .disclaimer-content {
+    background: white;
+    border-radius: 12px;
+    padding: 30px;
+    border-top: 6px solid var(--blue-main);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+  }
+
+  .disclaimer-header { display: flex; align-items: center; gap: 15px; margin-bottom: 20px; }
+  .disclaimer-icon {
+    width: 50px; height: 50px;
+    background: var(--blue-main);
+    color: white;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 24px; font-weight: bold;
+  }
+
+  .disclaimer-title { font-size: 1.8em; font-weight: 700; color: var(--blue-main); margin: 0; }
+  .disclaimer-text { color: #4a5568; margin-bottom: 25px; font-size: 1em; }
+
+  .disclaimer-list {
+    background: var(--blue-light);
+    border: 1px solid var(--blue-main);
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 25px;
+  }
+
+  .disclaimer-list h4 { margin: 0 0 10px 0; color: var(--blue-dark); font-size: 1.1em; }
+  .disclaimer-list ul { margin: 0; padding-left: 20px; color: #333; }
+  .disclaimer-list li { margin-bottom: 8px; line-height: 1.5; }
+
+  .consent-group { margin-bottom: 20px; }
+  .consent-row {
+    display: flex; align-items: flex-start; gap: 12px; margin-bottom: 12px; cursor: pointer;
+    padding: 10px; border-radius: 6px; transition: background 0.2s;
+  }
+  .consent-row:hover { background: #f7fafc; }
+  .consent-row input { margin-top: 4px; transform: scale(1.2); accent-color: var(--blue-main); }
+  .consent-row label { font-weight: 600; cursor: pointer; color: #2d3748; }
+
+  .btn-start-wrapper { margin-top: auto; padding-top: 20px; border-top: 1px solid #eaeaea; }
+  .btn-start {
+    width: 100%;
+    background: var(--blue-main);
+    color: white;
+    border: none;
+    padding: 16px;
+    border-radius: 8px;
+    font-size: 1.1em;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .btn-start:hover:not(:disabled) { background: var(--blue-dark); }
+  .btn-start:disabled { background: #cbd5e0; cursor: not-allowed; }
+
+  /* --- MODALS (Settings, Sessions) --- */
+  .modal h3 { margin: 0 0 16px 0; font-size: 1.6em; color: var(--blue-main); }
+  .modal p { color: #555; margin-bottom: 12px; }
+  .modal ul { margin: 0 0 16px 20px; color: #555; }
+  .modal li { margin-bottom: 6px; }
+  .modal a { color: var(--blue-main); font-weight: 700; text-decoration: none; }
+
+  .form-group { margin-bottom: 16px; }
+  .form-group label { display: block; margin-bottom: 8px; font-weight: 700; color: #333; font-size: 0.95em; }
+  .form-group input, .form-group select {
+    width: 100%; padding: 14px; border-radius: 12px; border: 2px solid #e0e0e0; font-size: 1em;
+  }
+  .form-group input:focus, .form-group select:focus { border-color: var(--blue-main); outline: none; }
+
+  .btn-row { display: flex; gap: 12px; margin-top: 24px; }
+  .btn { flex: 1; padding: 14px; border-radius: 12px; border: none; font-weight: 800; cursor: pointer; font-size: 1em; }
+  .btn-primary { background: var(--blue-main); color: white; }
+  .btn-secondary { background: #f0f0f0; color: #333; }
+  .btn-danger { background: #fff0f0; color: #d32f2f; border: 1px solid #ffcdd2; }
+
+  .item-list { margin: 10px 0; border: 1px solid #eee; border-radius: 8px; overflow: hidden; }
+  .item-list div { padding: 12px; border-bottom: 1px solid #eee; cursor: pointer; display: flex; justify-content: space-between; gap: 10px; }
+  .item-list div:last-child { border-bottom: none; }
+  .item-list div:hover { background: var(--blue-soft); }
+  .item-list div.active { background: var(--blue-light); font-weight: bold; color: var(--blue-main); }
+
+  /* Loading */
+  .loading { display: flex; gap: 8px; height: 20px; align-items: center; }
+  .loading span {
+    width: 10px; height: 10px; background: var(--blue-main); border-radius: 50%;
+    animation: bounce 1.4s infinite ease-in-out;
+  }
+  .loading span:nth-child(2) { animation-delay: 0.2s; }
+  .loading span:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes bounce {
+    0%, 80%, 100% { transform: scale(0.6); opacity: 0.5; }
+    40% { transform: scale(1.3); opacity: 1; }
+  }
+
+  /* --- FLASHCARDS UI --- */
+  .modal.cards-modal { max-width: 820px; }
+  .cards-topbar {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 14px;
+  }
+  .cards-topbar .left { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    border-radius: 999px;
+    border: 1px solid #e0e6ed;
+    background: #fff;
+    color: #333;
+    font-weight: 800;
+    font-size: 0.9em;
+  }
+  .pill small { font-weight: 700; color: #666; }
+  .mini {
+    border: 1px solid #e0e6ed;
+    background: #fff;
+    border-radius: 12px;
+    padding: 10px 12px;
+    font-weight: 800;
+    cursor: pointer;
+  }
+  .mini:hover { background: var(--blue-soft); border-color: var(--blue-main); color: var(--blue-main); }
+
+  .cards-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+  @media (max-width: 768px) {
+    .cards-grid { grid-template-columns: 1fr; }
+  }
+
+  .card {
+    border: 1px solid #e0e6ed;
+    border-radius: 16px;
+    background: #fff;
+    overflow: hidden;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+  }
+  .card-head {
+    padding: 12px 14px;
+    background: var(--blue-soft);
+    border-bottom: 1px solid #e0e6ed;
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    align-items: center;
+  }
+  .tag {
+    font-size: 0.8em;
+    font-weight: 900;
+    color: var(--blue-main);
+    background: #fff;
+    border: 1px solid #d0e4f5;
+    padding: 4px 10px;
+    border-radius: 999px;
+    white-space: nowrap;
+  }
+  .lvl { font-size: 0.85em; font-weight: 800; color: #444; }
+
+  .flip-wrap { perspective: 1200px; }
+  .flip {
+    position: relative;
+    width: 100%;
+    min-height: 190px;
+    transform-style: preserve-3d;
+    transition: transform 0.5s ease;
+  }
+  .flip.is-flipped { transform: rotateY(180deg); }
+
+  .face {
+    position: absolute;
+    inset: 0;
+    backface-visibility: hidden;
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    justify-content: space-between;
+  }
+  .front { background: #fff; }
+  .back  { background: #fff; transform: rotateY(180deg); }
+
+  .face .label { font-size: 0.85em; font-weight: 900; color: #666; }
+  .face .text  { font-size: 1.05em; font-weight: 700; color: #222; }
+  .face .text small { font-weight: 700; color: #666; }
+
+  .card-actions {
+    display: flex;
+    gap: 8px;
+    padding: 12px 14px;
+    border-top: 1px solid #e0e6ed;
+    background: #fff;
+    flex-wrap: wrap;
+  }
+  .card-actions button {
+    flex: 1;
+    min-width: 120px;
+    border: 1px solid #e0e6ed;
+    border-radius: 12px;
+    padding: 10px 12px;
+    background: #fff;
+    font-weight: 900;
+    cursor: pointer;
+  }
+  .card-actions button:hover { background: var(--blue-soft); border-color: var(--blue-main); color: var(--blue-main); }
+  .card-actions .primary { background: var(--blue-main); color: #fff; border-color: var(--blue-main); }
+  .card-actions .primary:hover { background: var(--blue-dark); border-color: var(--blue-dark); color: #fff; }
+
+  .cards-empty {
+    padding: 14px;
+    border: 1px dashed #cfd8e3;
+    border-radius: 16px;
+    background: #fff;
+    color: #666;
+  }
+
+  .subtle-note {
+    font-size: 0.9em;
+    color: #666;
+    margin-top: 10px;
+  }
+
+  /* Review */
+  .review-box {
+    border: 1px solid #e0e6ed;
+    border-radius: 16px;
+    padding: 14px;
+    background: #fff;
+    margin: 12px 0;
+  }
+  .review-q { font-weight: 900; color: #222; font-size: 1.05em; margin-bottom: 10px; }
+  .review-a { color: #333; display: none; margin-bottom: 12px; }
+  .review-a.show { display: block; }
+  .review-btns { display: flex; gap: 10px; flex-wrap: wrap; }
+  .review-btns button { flex: 1; min-width: 110px; }
+
+  /* FSRS-specific styles */
+  .fsrs-stats {
+    display: flex;
+    gap: 8px;
+    font-size: 0.8em;
+    color: #666;
+    margin-top: 4px;
+  }
+  .fsrs-badge {
+    background: #e9f7ef;
+    color: #155724;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 0.75em;
+    font-weight: 700;
+  }
+  .fsrs-badge.medium {
+    background: #fff3cd;
+    color: #856404;
+  }
+  .fsrs-badge.hard {
+    background: #f8d7da;
+    color: #721c24;
+  }
+
+  /* Mobile Touch Improvements */
+  @media (max-width: 768px) {
+    .msg-actions {
+      gap: 4px;
+      justify-content: flex-start;
+    }
+    .action-btn {
+      padding: 8px 10px;
+      font-size: 0.8em;
+      flex: 1;
+      min-width: 0;
+      text-align: center;
+    }
+    
+    /* Safe area for iPhone notches */
+    .input-area {
+      padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+    }
+    
+    /* Better touch targets */
+    .header-btns .btn-icon {
+      width: 44px;
+      height: 44px;
+    }
+    
+    /* Prevent zoom on input focus */
+    textarea, input, select {
+      font-size: 16px;
+    }
+  }
+
+  /* FSRS Info Panel */
+  .fsrs-info {
+    background: var(--blue-soft);
+    border: 1px solid #d0e4f5;
+    border-radius: 12px;
+    padding: 12px;
+    margin-bottom: 16px;
+  }
+  .fsrs-info h4 {
+    margin: 0 0 8px 0;
+    color: var(--blue-main);
+    font-size: 1em;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .fsrs-info-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    font-size: 0.85em;
+  }
+  .fsrs-stat {
+    text-align: center;
+    padding: 6px;
+    background: white;
+    border-radius: 6px;
+    border: 1px solid #e0e6ed;
+  }
+  .fsrs-stat .value {
+    font-weight: 900;
+    font-size: 1.1em;
+    color: var(--blue-main);
+  }
+  .fsrs-stat .label {
+    color: #666;
+    font-size: 0.75em;
+  }
+
+</style>
+</head>
+
+<body>
+
+<div id="app">
+  <!-- Header -->
+  <header>
+    <div class="brand-area">
+      <div class="logo">Linda</div>
+      <div id="domain-badge" class="badge">Standard</div>
+    </div>
+    <div class="header-btns">
+      <button class="btn-icon btn-new" onclick="app.logic.newChat()" title="Neuer Chat">+</button>
+      <button class="btn-icon" onclick="app.ui.openModal('modal-sessions')" title="Verlauf">☰</button>
+      <button class="btn-icon" onclick="app.ui.openCardsLibrary()" title="Lernkarten">🃏</button>
+      <button class="btn-icon" onclick="app.ui.openModal('modal-settings')" title="Einstellungen">⚙</button>
+    </div>
+  </header>
+
+  <!-- Chat Log -->
+  <div id="chat-log"></div>
+
+  <!-- Input Area (Fixiert auf Mobile) -->
+  <div class="input-area">
+    <div class="input-wrapper">
+      <div id="snippet-popup"></div>
+      <textarea id="chat-input" placeholder="Schreibe deine Frage..." rows="1"></textarea>
+    </div>
+    <button id="send-btn" class="btn-icon btn-primary">➤</button>
+  </div>
+</div>
+
+<!-- MODALS -->
+
+<!-- Disclaimer -->
+<div id="modal-disclaimer" class="modal-overlay open dark">
+  <div class="modal disclaimer-modal">
+    <div class="disclaimer-content">
+      <div class="disclaimer-header">
+        <div class="disclaimer-icon">i</div>
+        <h3 class="disclaimer-title">Wichtige Hinweise</h3>
+      </div>
+
+      <div class="disclaimer-text">
+        Wir nehmen den Schutz deiner Daten sehr ernst. Bitte nimm dir einen Moment Zeit, um die folgenden Bedingungen zu lesen, bevor du den Assistenten verwendest.
+      </div>
+
+      <div class="disclaimer-list">
+        <h4>Datenverarbeitung</h4>
+        <ul>
+          <li>Deine Eingaben werden an externe KI-Dienstleister übermittelt.</li>
+          <li>Bitte gib <strong>niemals vertrauliche Daten</strong> ein (z.B. Kontoauszüge, Passwörter, Gesundheitsdaten, persönliche Dokumente, Namen und Vornamen, Anschriften, Kreditkartennummer, Mobilrufnummern, ...).</li>
+        </ul>
+      </div>
+
+      <div class="disclaimer-list">
+        <h4>Empfänger der Daten</h4>
+        <ul>
+          <li>OpenAI.com (USA)</li>
+          <li>Make.com (EU (Datenverarbeitung))</li>
+          <li>Anthropic.com (USA)</li>
+        </ul>
+      </div>
+
+      <div class="consent-group">
+        <div class="consent-row">
+          <input type="checkbox" id="consent-data">
+          <label for="consent-data">Ich bestätige, dass ich <strong>keine vertraulichen personenbezogenen Daten</strong> in diesen Chat eingeben werde.</label>
+        </div>
+        <div class="consent-row">
+          <input type="checkbox" id="consent-forward">
+          <label for="consent-forward">Ich bin damit einverstanden, dass meine Anfragen zur Verarbeitung an die oben genannten Anbieter übermittelt werden. Weitere Informationen zu EU AI Act findest Du hier: https://artificialintelligenceact.eu .</label>
+        </div>
+      </div>
+
+      <div class="btn-start-wrapper">
+        <button id="btn-start-disclaimer" class="btn-start" disabled onclick="app.logic.startApp()">Akzeptieren & Starten</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Settings -->
+<div id="modal-settings" class="modal-overlay">
+  <div class="modal">
+    <h3>Einstellungen</h3>
+
+    <div class="form-group">
+      <label>Dein Name (für den Verlauf)</label>
+      <input type="text" id="inp-name" placeholder="z.B. Max">
+    </div>
+
+    <div class="form-group">
+      <label>Fachmodus</label>
+      <select id="inp-domain">
+        <option value="">Standard (Kein Modus)</option>
+        <option value="AEVO">Ausbilder (AEVO)</option>
+        <option value="VWL">VWL / Betriebswirtschaft</option>
+        <option value="PERSONAL">Personalwesen</option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label>Snippets verwalten</label>
+      <div style="display:flex; gap:8px; margin-bottom:8px;">
+        <input type="text" id="inp-snippet" placeholder="Neuen Text hinzufügen...">
+        <button class="btn btn-primary" style="flex:0 0 50px;" onclick="app.logic.addSnippet()">+</button>
+      </div>
+      <div id="snippet-list-container" style="display:flex; flex-wrap:wrap; gap:6px;"></div>
+      <small style="color:#888;">Im Chat "/tippen" zum Auswählen.</small>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn btn-secondary" onclick="app.ui.closeModals()">Abbrechen</button>
+      <button class="btn btn-primary" onclick="app.logic.saveSettings()">Speichern</button>
+    </div>
+  </div>
+</div>
+
+<!-- Sessions -->
+<div id="modal-sessions" class="modal-overlay">
+  <div class="modal">
+    <h3>Verlauf</h3>
+    <div id="session-list" class="item-list"></div>
+    <div class="subtle-note">Hinweis: Es werden maximal 4 Verläufe angezeigt (Performance).</div>
+    <div class="btn-row">
+      <button class="btn btn-danger" onclick="app.logic.clearAll()">Alle löschen</button>
+      <button class="btn btn-secondary" onclick="app.ui.closeModals()">Schließen</button>
+    </div>
+  </div>
+</div>
+
+<!-- Feedback -->
+<div id="modal-feedback" class="modal-overlay">
+  <div class="modal">
+    <h3>Feedback</h3>
+    <p>Möchtest du Feedback geben? Dein E-Mail-Programm wird geöffnet.</p>
+    <div class="btn-row">
+      <button class="btn btn-secondary" onclick="app.ui.closeModals()">Nein</button>
+      <button class="btn btn-primary" onclick="app.logic.openFeedback()">Ja</button>
+    </div>
+  </div>
+</div>
+
+<!-- Flashcards -->
+<div id="modal-cards" class="modal-overlay">
+  <div class="modal cards-modal">
+    <h3 style="margin-bottom:10px;">Lernkarten</h3>
+
+    <div class="cards-topbar">
+      <div class="left">
+        <span class="pill">🃏 Deck: <span id="cards-deck-title">—</span></span>
+        <span class="pill"><small>Karten:</small> <span id="cards-count">0</span></span>
+        <span class="pill"><small>FSRS:</small> <span id="fsrs-stats">—</span></span>
+        <button class="mini" onclick="app.logic.copyDeckJSON()">📋 Deck kopieren</button>
+        <button class="mini" onclick="app.logic.startReview()">🧠 Abfragen</button>
+      </div>
+      <div class="right" style="display:flex; gap:10px;">
+        <button class="mini" onclick="app.logic.deleteActiveDeck()">🗑 Deck löschen</button>
+        <button class="mini" onclick="app.ui.closeModals()">Schließen</button>
+      </div>
+    </div>
+
+    <!-- FSRS Info Panel -->
+    <div id="fsrs-info-panel" class="fsrs-info" style="display:none;">
+      <h4>📊 FSRS4JS – Wissenschaftliche Spaced Repetition</h4>
+      <div class="fsrs-info-grid">
+        <div class="fsrs-stat">
+          <div class="value" id="fsrs-stability">0.0</div>
+          <div class="label">Stabilität</div>
+        </div>
+        <div class="fsrs-stat">
+          <div class="value" id="fsrs-difficulty">0.0</div>
+          <div class="label">Schwierigkeit</div>
+        </div>
+        <div class="fsrs-stat">
+          <div class="value" id="fsrs-retention">90%</div>
+          <div class="label">Erinnerungsziel</div>
+        </div>
+      </div>
+      <div style="margin-top:8px; font-size:0.8em; color:#666;">
+        <small>FSRS passt die Intervalle automatisch an deine Gedächtnisleistung an.</small>
+      </div>
+    </div>
+
+    <div id="review-area" style="display:none;"></div>
+
+    <div id="cards-grid" class="cards-grid"></div>
+
+    <div class="subtle-note">
+      Tipp: Du kannst Lernkarten unter jeder Bot-Antwort erstellen (Button „🃏 Lernkarten"). Ohne Upload, aus dem aktuellen Inhalt.
+      <div class="fsrs-badge" style="margin-top:8px; display:inline-block;">🔬 FSRS4JS aktiviert</div>
+    </div>
+  </div>
+</div>
+
+<script>
+const app = {
+  state: {
+    settings: { name: '', domain: '', snippets: [] },
+    sessions: [],
+    activeId: null,
+    consentGiven: false,
+    cards: {
+      activeDeckId: null,
+      globalDecks: []
+    },
+    // FSRS Scheduler
+    fsrsScheduler: null
+  },
+
+  utils: {
+    uid: () => 's_' + Date.now().toString(36) + Math.random().toString(36).slice(2,6),
+    duid: () => 'd_' + Date.now().toString(36) + Math.random().toString(36).slice(2,6),
+    save: () => {
+      try {
+        localStorage.setItem('linda_data', JSON.stringify(app.state));
+      } catch (e) {
+        console.error('Speichern fehlgeschlagen:', e);
+      }
+    },
+    load: () => {
+      try {
+        const d = localStorage.getItem('linda_data');
+        if (d) {
+          app.state = JSON.parse(d);
+        }
+      } catch (e) {
+        console.error('Laden fehlgeschlagen, nehme Standard:', e);
+        app.state = { 
+          settings: { name: '', domain: '', snippets: [] }, 
+          sessions: [], 
+          activeId: null, 
+          consentGiven: false, 
+          cards: { activeDeckId: null, globalDecks: [] },
+          fsrsScheduler: null
+        };
+      }
+      
+      if (!app.state.settings) app.state.settings = { name: '', domain: '', snippets: [] };
+      if (!app.state.sessions) app.state.sessions = [];
+      if (!app.state.cards) app.state.cards = { activeDeckId: null, globalDecks: [] };
+      if (!app.state.cards.globalDecks) app.state.cards.globalDecks = [];
+      
+      // Migration: alte Decks aus Sessions in globalDecks migrieren
+      let hasMigrated = false;
+      app.state.sessions.forEach(s => {
+        if (s.decks && s.decks.length > 0) {
+          s.decks.forEach(deck => {
+            const exists = app.state.cards.globalDecks.some(gd => gd.id === deck.id);
+            if (!exists) {
+              deck.sourceSessionId = s.id;
+              deck.sourceSessionName = s.name || 'Unbekannte Session';
+              deck.createdFrom = 'migration';
+              app.state.cards.globalDecks.push(deck);
+              hasMigrated = true;
+            }
+          });
+        }
+      });
+      
+      if (hasMigrated) {
+        app.utils.save();
+      }
+      
+      // FSRS Scheduler initialisieren
+      app.logic.initFSRS();
+    },
+    safeJsonParse: (text) => {
+      const cleaned = text
+        .replace(/```json/gi, '```')
+        .replace(/```/g, '')
+        .trim();
+
+      try { return JSON.parse(cleaned); } catch (e) {}
+
+      const m = cleaned.match(/\{[\s\S]*\}/);
+      if (m) {
+        try { return JSON.parse(m[0]); } catch (e2) {}
+      }
+      return null;
+    },
+    now: () => Date.now(),
+    truncateForApi: (text, maxChars = 1900) => {
+      if (!text || text.length <= maxChars) return text;
+      return text.substring(0, maxChars - 3) + '...';
+    },
+    saveGlobalDeck: (deck) => {
+      if (!deck || !deck.id) return;
+      
+      const existingIndex = app.state.cards.globalDecks.findIndex(d => d.id === deck.id);
+      
+      if (existingIndex >= 0) {
+        app.state.cards.globalDecks[existingIndex] = deck;
+      } else {
+        app.state.cards.globalDecks.unshift(deck);
+      }
+      
+      app.utils.save();
+    },
+    getGlobalDecks: () => {
+      return app.state.cards.globalDecks || [];
+    },
+    deleteGlobalDeck: (deckId) => {
+      if (!deckId) return false;
+      
+      const newDecks = app.state.cards.globalDecks.filter(d => d.id !== deckId);
+      app.state.cards.globalDecks = newDecks;
+      
+      if (app.state.cards.activeDeckId === deckId) {
+        app.state.cards.activeDeckId = newDecks.length > 0 ? newDecks[0].id : null;
+      }
+      
+      app.utils.save();
+      return true;
+    }
+  },
+
+  ui: {
+    log: document.getElementById('chat-log'),
+    input: document.getElementById('chat-input'),
+    sendBtn: document.getElementById('send-btn'),
+
+    openModal: (id) => {
+      document.querySelectorAll('.modal-overlay').forEach(m => m.classList.remove('open'));
+      const el = document.getElementById(id);
+      if (el) {
+        el.classList.add('open');
+        if (id === 'modal-settings') {
+          app.ui.renderSnippetList();
+          document.getElementById('inp-name').value = app.state.settings.name || '';
+          document.getElementById('inp-domain').value = app.state.settings.domain || '';
+        }
+        if (id === 'modal-sessions') app.ui.renderSessionList();
+        if (id === 'modal-cards') {
+          app.ui.renderCardsModal();
+          app.ui.updateFSRSStats();
+        }
+      }
+    },
+
+    closeModals: () => document.querySelectorAll('.modal-overlay').forEach(m => m.classList.remove('open')),
+
+    renderSessionList: () => {
+      const div = document.getElementById('session-list');
+      const shown = (app.state.sessions || []).slice(0, 4);
+      if (!shown.length) { div.innerHTML = '<div style="padding:15px; color:#888;">Keine Verläufe.</div>'; return; }
+
+      div.innerHTML = shown.map(s => `
+        <div onclick="app.logic.switchSession('${s.id}')" class="${s.id === app.state.activeId ? 'active' : ''}">
+          <span style="flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${s.name || 'Neuer Chat'}</span>
+          <span style="font-size:0.8em; color:#888; white-space:nowrap;">${new Date(s.ts).toLocaleDateString()}</span>
+        </div>
+      `).join('');
+    },
+
+    renderSnippetList: () => {
+      const container = document.getElementById('snippet-list-container');
+      const s = app.state.settings.snippets;
+      if (!s || !s.length) { container.innerHTML = '<span style="color:#888;">Keine Snippets.</span>'; return; }
+
+      container.innerHTML = s.map((txt, i) => `
+        <span style="background:#f0f0f0; padding:4px 8px; border-radius:12px; font-size:0.85em; display:flex; align-items:center; gap:5px;">
+          ${txt} <span style="cursor:pointer; color:#d32f2f;" onclick="app.logic.removeSnippet(${i})">×</span>
+        </span>
+      `).join('');
+    },
+
+    showSnippetPopup: (items) => {
+      const pop = document.getElementById('snippet-popup');
+      if (!items || !items.length) { pop.classList.remove('active'); return; }
+      pop.innerHTML = items.map(i => `<div class="snippet-item" onclick="app.logic.insertSnippet('${i.replace(/'/g, "\\'")}')">${i}</div>`).join('');
+      pop.classList.add('active');
+    },
+
+    createBubble: (role, content) => {
+      const wrapper = document.createElement('div');
+      wrapper.className = `msg-row ${role}`;
+
+      if (role === 'user') {
+        wrapper.innerHTML = `
+          <div class="msg-wrapper">
+            <div class="bubble user"><div class="md">${content.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</div></div>
+          </div>
+        `;
+      } else {
+        let html = marked.parse(content.replace(/\$(.*?)\$/g, '**$1**'));
+        html = DOMPurify.sanitize(html, {
+          ALLOWED_TAGS: ['p','br','strong','em','ul','ol','li','h1','h2','h3','h4','pre','code','blockquote','table','thead','tbody','tr','th','td'],
+          ALLOWED_ATTR: ['class']
+        });
+
+        wrapper.innerHTML = `
+          <div class="msg-wrapper">
+            <div class="bubble bot"><div class="md">${html}</div></div>
+            <div class="msg-actions">
+              <button class="action-btn primary" onclick="app.logic.makeCardsFromThisAnswer(this)">🃏 Lernkarten</button>
+              <button class="action-btn" onclick="app.logic.copyBubble(this)">📋 Kopieren</button>
+              <button class="action-btn" onclick="app.logic.shareBubble(this)">↗ Teilen</button>
+              <button class="action-btn" onclick="app.logic.pdfBubble(this)">🖨 PDF</button>
+              <button class="action-btn" onclick="app.ui.openModal('modal-feedback')">👎 Feedback</button>
+            </div>
+          </div>
+        `;
+      }
+      return wrapper;
+    },
+
+    scrollToBottom: () => { 
+      setTimeout(() => {
+        app.ui.log.scrollTop = app.ui.log.scrollHeight;
+      }, 100);
+    },
+
+    openCardsLibrary: () => {
+      if (!app.state.consentGiven) {
+        alert('Bitte zuerst die Hinweise akzeptieren.');
+        app.ui.openModal('modal-disclaimer');
+        return;
+      }
+      
+      const globalDecks = app.utils.getGlobalDecks();
+      if (globalDecks.length > 0 && !app.state.cards.activeDeckId) {
+        app.state.cards.activeDeckId = globalDecks[0].id;
+        app.utils.save();
+      }
+      app.ui.openModal('modal-cards');
+    },
+
+    renderCardsModal: () => {
+      const grid = document.getElementById('cards-grid');
+      const title = document.getElementById('cards-deck-title');
+      const count = document.getElementById('cards-count');
+      const reviewArea = document.getElementById('review-area');
+      const fsrsInfoPanel = document.getElementById('fsrs-info-panel');
+
+      reviewArea.style.display = 'none';
+      reviewArea.innerHTML = '';
+
+      const deck = app.logic.getActiveDeck();
+      
+      if (!deck) {
+        title.textContent = '—';
+        count.textContent = '0';
+        fsrsInfoPanel.style.display = 'none';
+        grid.innerHTML = `
+          <div class="cards-empty">
+            Noch keine Lernkarten. Öffne eine Bot-Antwort und klicke dort auf <strong>🃏 Lernkarten</strong>.
+            <div class="subtle-note" style="margin-top:10px;">
+              Erstellte Lernkarten bleiben erhalten, auch wenn du einen neuen Chat startest.
+              <div class="fsrs-badge" style="margin-top:8px;">🔬 FSRS4JS bereit</div>
+            </div>
+          </div>
+        `;
+        return;
+      }
+
+      title.textContent = deck.title || 'Lernkarten';
+      count.textContent = (deck.cards || []).length;
+      fsrsInfoPanel.style.display = 'block';
+
+      if (!deck.cards || !deck.cards.length) {
+        grid.innerHTML = `<div class="cards-empty">Dieses Deck enthält keine Karten.</div>`;
+        return;
+      }
+
+      // Berechne FSRS-Statistiken für dieses Deck
+      const fsrsStats = app.logic.calculateDeckStats(deck);
+      document.getElementById('fsrs-stats').textContent = `${fsrsStats.dueCount}/${deck.cards.length} fällig`;
+
+      grid.innerHTML = deck.cards.map((c, idx) => {
+        const tag = (c.tag || app.state.settings.domain || 'Standard');
+        const front = (c.front || '').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+        const back  = (c.back  || '').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+        
+        // FSRS Statistiken
+        const stability = c.stability ? c.stability.toFixed(1) : '0.0';
+        const difficulty = c.difficulty ? (c.difficulty * 100).toFixed(0) : '50';
+        const nextReview = c.due ? new Date(c.due).toLocaleDateString('de-DE', { 
+          day: '2-digit', 
+          month: '2-digit'
+        }) : 'Heute';
+        
+        // Bestimme Schwierigkeits-Badge
+        let difficultyBadge = '';
+        if (c.difficulty) {
+          if (c.difficulty < 0.3) {
+            difficultyBadge = '<span class="fsrs-badge">Einfach</span>';
+          } else if (c.difficulty < 0.7) {
+            difficultyBadge = '<span class="fsrs-badge medium">Mittel</span>';
+          } else {
+            difficultyBadge = '<span class="fsrs-badge hard">Schwer</span>';
+          }
+        }
+
+        return `
+          <div class="card">
+            <div class="card-head">
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <span class="tag">${tag}</span>
+                ${difficultyBadge}
+              </div>
+              <div style="font-size: 0.8em; color: #666;">
+                ${nextReview}
+              </div>
+            </div>
+
+            <div class="flip-wrap">
+              <div class="flip" id="flip_${deck.id}_${idx}">
+                <div class="face front">
+                  <div>
+                    <div class="label">Vorderseite</div>
+                    <div class="text">${front}</div>
+                  </div>
+                  <div class="fsrs-stats">
+                    <small>Stabilität: ${stability}</small>
+                    <small>Schwierigkeit: ${difficulty}%</small>
+                    <small>Wiederholungen: ${c.reps || 0}</small>
+                  </div>
+                </div>
+                <div class="face back">
+                  <div>
+                    <div class="label">Rückseite</div>
+                    <div class="text">${back}</div>
+                  </div>
+                  <div class="fsrs-stats">
+                    <small>Nächste Prüfung: ${nextReview}</small>
+                    <small>Intervall: ${c.scheduled_days || 0} Tage</small>
+                    <small>Status: ${c.state || 'Neu'}</small>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="card-actions">
+              <button onclick="app.logic.flipCard('${deck.id}', ${idx})">🔄 Umdrehen</button>
+              <button onclick="app.logic.copyCard('${deck.id}', ${idx})">📋 Kopieren</button>
+              <button class="primary" style="background:#f8d7da; color:#721c24;" onclick="app.logic.scheduleCard('${deck.id}', ${idx}, 'again')">❌ Vergessen</button>
+              <button class="primary" style="background:#fff3cd; color:#856404;" onclick="app.logic.scheduleCard('${deck.id}', ${idx}, 'hard')">Schwer</button>
+              <button class="primary" style="background:#d1ecf1; color:#0c5460;" onclick="app.logic.scheduleCard('${deck.id}', ${idx}, 'good')">Gut</button>
+              <button class="primary" style="background:#d4edda; color:#155724;" onclick="app.logic.scheduleCard('${deck.id}', ${idx}, 'easy')">Leicht</button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    },
+    
+    updateFSRSStats: () => {
+      const deck = app.logic.getActiveDeck();
+      if (!deck || !deck.cards) return;
+      
+      const stats = app.logic.calculateDeckStats(deck);
+      
+      document.getElementById('fsrs-stability').textContent = stats.avgStability.toFixed(1);
+      document.getElementById('fsrs-difficulty').textContent = stats.avgDifficulty.toFixed(1);
+      document.getElementById('fsrs-retention').textContent = `${Math.round(stats.retention * 100)}%`;
+    }
+  },
+
+  logic: {
+    getActiveSession: () => app.state.sessions.find(x => x.id === app.state.activeId),
+
+    getActiveDeck: () => {
+      if (!app.state.cards.activeDeckId) {
+        const globalDecks = app.utils.getGlobalDecks();
+        return globalDecks.length > 0 ? globalDecks[0] : null;
+      }
+      return app.utils.getGlobalDecks().find(d => d.id === app.state.cards.activeDeckId) || null;
+    },
+    
+    // FSRS4JS Integration
+    initFSRS: () => {
+      if (!window.FSRS) {
+        console.warn('FSRS4JS Bibliothek nicht geladen');
+        return null;
+      }
+      
+      try {
+        // Optimierte Parameter für Lernkarten
+        const params = {
+          request_retention: 0.9,    // 90% Erinnerungsziel
+          maximum_interval: 36500,   // Maximal 100 Jahre
+          enable_fuzz: true,         // Zufällige Variation der Intervalle
+          w: [
+            0.4, 0.6, 2.4, 5.8, 4.93, 0.94, 0.86, 0.01,
+            1.49, 0.14, 0.94, 2.18, 0.05, 0.34, 1.26, 0.29,
+            2.61, 0.0, 0.0, 0.0
+          ]
+        };
+        
+        app.state.fsrsScheduler = new FSRS(params);
+        console.log('FSRS4JS Scheduler initialisiert');
+        return app.state.fsrsScheduler;
+      } catch (error) {
+        console.error('FSRS Initialisierung fehlgeschlagen:', error);
+        return null;
+      }
+    },
+    
+    // FSRS Rating Konstanten
+    fsrsRatings: {
+      AGAIN: 1,
+      HARD: 2,
+      GOOD: 3,
+      EASY: 4
+    },
+    
+    // Berechne Deck-Statistiken
+    calculateDeckStats: (deck) => {
+      if (!deck || !deck.cards || !deck.cards.length) {
+        return { avgStability: 0, avgDifficulty: 0, dueCount: 0, retention: 0.9 };
+      }
+      
+      let totalStability = 0;
+      let totalDifficulty = 0;
+      let dueCount = 0;
+      const now = new Date();
+      
+      deck.cards.forEach(card => {
+        if (card.stability) totalStability += card.stability;
+        if (card.difficulty) totalDifficulty += card.difficulty;
+        
+        if (card.due && new Date(card.due) <= now) {
+          dueCount++;
+        }
+      });
+      
+      return {
+        avgStability: totalStability / deck.cards.length,
+        avgDifficulty: totalDifficulty / deck.cards.length,
+        dueCount: dueCount,
+        retention: 0.9 // Voreinstellung
+      };
+    },
+
+    startApp: () => {
+      const c1 = document.getElementById('consent-data').checked;
+      const c2 = document.getElementById('consent-forward').checked;
+
+      if (!c1 || !c2) {
+        alert("Bitte beide Zustimmungen ankreuzen.");
+        return;
+      }
+
+      app.state.consentGiven = true;
+      app.utils.save();
+
+      app.ui.closeModals();
+
+      setTimeout(() => {
+        app.ui.input.focus();
+      }, 300);
+
+      if (app.state.sessions.length === 0) app.logic.newChat();
+    },
+
+    newChat: () => {
+      const id = app.utils.uid();
+      app.state.sessions.unshift({ id, name: 'Neuer Chat', ts: Date.now(), messages: [], decks: [] });
+      app.state.activeId = id;
+      app.utils.save();
+      app.ui.log.innerHTML = '';
+      app.ui.closeModals();
+
+      const welcomeText = "Herzlich willkommen! Ich bin Linda, deine persönliche Lernassistentin.\n\n" +
+        "Ich helfe dir gerne bei Fragen zu **Ausbildung (AEVO)**, **BWL/VWL** oder **Personalwesen**.\n\n" +
+        "Tippe einfach deine Frage ein. Wähle in den **Einstellungen (⚙)** einen Fachmodus für genauere Antworten.\n\n" +
+        "Neu: Du kannst unter jeder Antwort **🃏 Lernkarten** erstellen. Diese bleiben gespeichert, auch in neuen Chats!\n\n" +
+        "🎯 **FSRS4JS aktiviert**: Deine Lernkarten verwenden nun den wissenschaftlichen Spaced Repetition Algorithmus!";
+
+      app.logic.sendSystemMessage(welcomeText);
+      
+      setTimeout(() => {
+        app.ui.input.focus();
+        app.ui.scrollToBottom();
+      }, 500);
+    },
+
+    switchSession: (id) => {
+      app.state.activeId = id;
+      app.utils.save();
+      app.ui.closeModals();
+      app.ui.log.innerHTML = '';
+
+      const s = app.state.sessions.find(x => x.id === id);
+      if (s) {
+        s.messages.forEach(m => {
+          const bubble = app.ui.createBubble(m.role, m.content);
+          app.ui.log.appendChild(bubble);
+          if (m.role === 'assistant') app.logic.postProcessBubble(bubble);
+        });
+        app.ui.scrollToBottom();
+      }
+      
+      setTimeout(() => {
+        app.ui.input.focus();
+      }, 300);
+    },
+
+    sendSystemMessage: (text) => {
+      const s = app.logic.getActiveSession();
+      if (s) {
+        s.messages.push({ role: 'assistant', content: text });
+        app.utils.save();
+        const bubble = app.ui.createBubble('assistant', text);
+        app.ui.log.appendChild(bubble);
+        app.logic.postProcessBubble(bubble);
+        app.ui.scrollToBottom();
+      }
+    },
+
+    postProcessBubble: (bubble) => {
+      const md = bubble.querySelector('.md');
+      if (!md) return;
+
+      const heads = md.querySelectorAll('h1,h2,h3');
+      let srcHead = Array.from(heads).find(h => /quellen/i.test(h.textContent));
+      if (srcHead) {
+        let ul = srcHead.nextElementSibling;
+        while (ul && ul.tagName !== 'UL') ul = ul.nextElementSibling;
+        if (ul) {
+          const box = document.createElement('div');
+          box.className = 'source-box';
+          box.innerHTML = `<strong>Quellen</strong>`;
+          const list = document.createElement('ul');
+          list.className = 'source-list';
+          list.innerHTML = ul.innerHTML;
+          box.appendChild(list);
+          srcHead.replaceWith(box);
+          ul.remove();
+        }
+      }
+
+      md.querySelectorAll('table').forEach(t => {
+        const w = document.createElement('div');
+        w.className = 'table-wrapper';
+        t.parentNode.insertBefore(w, t);
+        w.appendChild(t);
+      });
+    },
+
+    saveSettings: () => {
+      app.state.settings.name = document.getElementById('inp-name').value.trim();
+      app.state.settings.domain = document.getElementById('inp-domain').value;
+      app.utils.save();
+
+      const badge = document.getElementById('domain-badge');
+      badge.textContent = app.state.settings.domain || 'Standard';
+
+      app.ui.closeModals();
+      
+      setTimeout(() => {
+        app.ui.input.focus();
+      }, 300);
+    },
+
+    addSnippet: () => {
+      const val = document.getElementById('inp-snippet').value.trim();
+      if (val) {
+        if (!app.state.settings.snippets) app.state.settings.snippets = [];
+        app.state.settings.snippets.push(val);
+        document.getElementById('inp-snippet').value = '';
+        app.utils.save();
+        app.ui.renderSnippetList();
+      }
+    },
+
+    removeSnippet: (idx) => {
+      if (app.state.settings.snippets && app.state.settings.snippets[idx]) {
+        app.state.settings.snippets.splice(idx, 1);
+        app.utils.save();
+        app.ui.renderSnippetList();
+      }
+    },
+
+    insertSnippet: (txt) => {
+      app.ui.input.value = txt;
+      document.getElementById('snippet-popup').classList.remove('active');
+      app.ui.input.focus();
+      app.ui.input.style.height = 'auto';
+      app.ui.input.style.height = app.ui.input.scrollHeight + 'px';
+    },
+
+    sendMessage: () => {
+      if (!app.state.consentGiven) {
+        alert('Bitte zuerst die Hinweise akzeptieren.');
+        app.ui.openModal('modal-disclaimer');
+        return;
+      }
+
+      const txt = app.ui.input.value.trim();
+      if (!txt) return;
+
+      const s = app.logic.getActiveSession();
+      if (!s) return;
+
+      const displayName = app.state.settings.name ? `${app.state.settings.name}: ` : '';
+      const fullMsg = displayName + txt;
+      s.messages.push({ role: 'user', content: fullMsg });
+      app.utils.save();
+
+      const userBubble = app.ui.createBubble('user', fullMsg);
+      app.ui.log.appendChild(userBubble);
+      app.ui.scrollToBottom();
+
+      const loadingWrapper = document.createElement('div');
+      loadingWrapper.className = 'msg-row bot';
+      loadingWrapper.innerHTML = `
+        <div class="msg-wrapper">
+          <div class="bubble bot">
+            <div class="loading"><span></span><span></span><span></span></div>
+          </div>
+        </div>
+      `;
+      app.ui.log.appendChild(loadingWrapper);
+      app.ui.scrollToBottom();
+
+      app.ui.sendBtn.classList.add('stop');
+      app.ui.sendBtn.textContent = '■';
+      app.ui.input.disabled = true;
+
+      const history = s.messages
+        .slice(-3)
+        .filter(m => !m.content.includes('Herzlich willkommen'))
+        .map(m => ({ 
+          role: m.role, 
+          content: app.utils.truncateForApi(m.content, 500)
+        }));
+
+      const truncatedQuestion = app.utils.truncateForApi(txt, 1500);
+      
+      fetch('/api/bot', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          question: truncatedQuestion,
+          fachmodus: app.state.settings.domain || '',
+          history: history
+        })
+      })
+      .then(r => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        return r.text();
+      })
+      .then(resp => {
+        loadingWrapper.remove();
+        s.messages.push({ role: 'assistant', content: resp });
+        app.utils.save();
+
+        const botBubble = app.ui.createBubble('assistant', resp);
+        app.ui.log.appendChild(botBubble);
+        app.logic.postProcessBubble(botBubble);
+        app.ui.scrollToBottom();
+      })
+      .catch((err) => {
+        console.error('API Error:', err);
+        loadingWrapper.remove();
+        const errBubble = app.ui.createBubble('assistant', '❌ Verbindungsfehler. Bitte versuche es erneut.');
+        app.ui.log.appendChild(errBubble);
+        app.ui.scrollToBottom();
+      })
+      .finally(() => {
+        app.ui.sendBtn.classList.remove('stop');
+        app.ui.sendBtn.textContent = '➤';
+        app.ui.input.disabled = false;
+        app.ui.input.value = '';
+        app.ui.input.style.height = 'auto';
+        app.ui.input.focus();
+        document.getElementById('snippet-popup').classList.remove('active');
+      });
+    },
+
+    getBubbleContent: (btn) => {
+      const row = btn.closest('.msg-row');
+      const wrapper = btn.closest('.msg-wrapper');
+      const idx = Array.from(app.ui.log.children).indexOf(row);
+      const s = app.logic.getActiveSession();
+
+      let q = '';
+      for (let i = idx - 1; i >= 0; i--) {
+        const prev = app.ui.log.children[i];
+        if (prev.classList.contains('user')) {
+          q = prev.querySelector('.md').innerText;
+          break;
+        }
+      }
+      const a = wrapper.querySelector('.md').innerText;
+      return { q, a, session: s };
+    },
+
+    copyBubble: (btn) => {
+      const { q, a } = app.logic.getBubbleContent(btn);
+      navigator.clipboard.writeText(`Frage: ${q}\n\nAntwort: ${a}`).then(() => {
+        if (window.innerWidth <= 768) {
+          const originalText = btn.textContent;
+          btn.textContent = '✓ Kopiert';
+          setTimeout(() => {
+            btn.textContent = originalText;
+          }, 1500);
+        } else {
+          alert('Kopiert!');
+        }
+      });
+    },
+
+    shareBubble: (btn) => {
+      const { q, a } = app.logic.getBubbleContent(btn);
+      const shareText = `Frage: ${q}\n\nAntwort: ${a}`;
+      
+      if (navigator.share && window.innerWidth <= 768) {
+        navigator.share({
+          title: 'Linda Chat',
+          text: shareText,
+          url: window.location.href
+        }).catch(() => {
+          window.location.href = `mailto:?subject=Linda Chat&body=${encodeURIComponent(shareText)}`;
+        });
+      } else {
+        window.location.href = `mailto:?subject=Linda Chat&body=${encodeURIComponent(shareText)}`;
+      }
+    },
+
+    // --- FLASHCARDS mit FSRS4JS ---
+    makeCardsFromThisAnswer: (btn) => {
+      if (!app.state.consentGiven) {
+        alert('Bitte zuerst die Hinweise akzeptieren.');
+        app.ui.openModal('modal-disclaimer');
+        return;
+      }
+
+      const { q, a, session } = app.logic.getBubbleContent(btn);
+      if (!session) return;
+
+      const truncatedAnswer = app.utils.truncateForApi(a, 1500);
+      const truncatedQuestion = app.utils.truncateForApi(q, 300);
+      
+      const domain = app.state.settings.domain || 'Standard';
+      const prompt =
+`Erstelle Lernkarten aus der folgenden Frage+Antwort.
+
+Fachmodus: ${domain}
+
+REGELN (wichtig):
+- Erstelle genau 8 Karten (nicht 12).
+- 1 Karte = 1 Lernziel.
+- Vorderseite (front): kurze Frage ODER Begriff.
+- Rückseite (back): präzise Erklärung, maximal 50 Wörter, prüfungstauglich.
+- Nutze klare Sprache, keine langen Einleitungen.
+- Gib das Ergebnis ausschließlich als JSON im folgenden Format zurück (kein Markdown, keine Erklärtexte):
+
+{
+  "deck_title": "…",
+  "cards": [
+    { "front": "…", "back": "…", "tag": "${domain}", "level": 1 }
+  ]
+}
+
+INPUT:
+FRAGE: ${truncatedQuestion}
+
+ANTWORT: ${truncatedAnswer}
+`;
+
+      app.state.cards.activeDeckId = null;
+      app.utils.save();
+      app.ui.openModal('modal-cards');
+
+      const grid = document.getElementById('cards-grid');
+      document.getElementById('cards-deck-title').textContent = 'Erstelle...';
+      document.getElementById('cards-count').textContent = '—';
+      grid.innerHTML = `
+        <div class="cards-empty">
+          <div style="display:flex; align-items:center; gap:10px;">
+            <div class="loading"><span></span><span></span><span></span></div>
+            <div><strong>Lernkarten werden erstellt…</strong><br><span style="color:#666;">Mit FSRS4JS Spaced Repetition</span></div>
+          </div>
+        </div>
+      `;
+
+      const truncatedPrompt = app.utils.truncateForApi(prompt, 1900);
+      
+      fetch('/api/bot', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          question: truncatedPrompt,
+          fachmodus: domain,
+          history: []
+        })
+      })
+      .then(r => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        return r.text();
+      })
+      .then(resp => {
+        const parsed = app.utils.safeJsonParse(resp);
+        if (!parsed || !parsed.cards || !Array.isArray(parsed.cards)) {
+          document.getElementById('cards-deck-title').textContent = 'Fehler';
+          document.getElementById('cards-count').textContent = '0';
+          grid.innerHTML = `
+            <div class="cards-empty">
+              <strong>Die Antwort war kein gültiges Karten-JSON.</strong>
+              <div class="subtle-note">Tipp: In /api/bot sicherstellen, dass JSON-Ausgabe nicht durch Markdown umschlossen wird.</div>
+              <pre style="white-space:pre-wrap; border:1px solid #e0e6ed; padding:10px; border-radius:12px; overflow:auto; max-height:260px;">${resp.substring(0, 500).replace(/</g,'&lt;').replace(/>/g,'&gt;')}</pre>
+            </div>
+          `;
+          return;
+        }
+
+        const deckId = app.utils.duid();
+        const deck = {
+          id: deckId,
+          title: (parsed.deck_title || `Lernkarten – ${new Date().toLocaleDateString()}`),
+          ts: Date.now(),
+          source: { 
+            q: truncatedQuestion, 
+            domain,
+            sessionId: session.id,
+            sessionName: session.name || 'Neuer Chat'
+          },
+          cards: parsed.cards.slice(0, 8).map(c => ({
+            front: (c.front || '').toString().trim(),
+            back: (c.back || '').toString().trim(),
+            tag: (c.tag || domain || 'Standard'),
+            level: Number(c.level || 2),
+            // FSRS4JS Parameter
+            due: new Date().toISOString(),
+            stability: 0,
+            difficulty: 0.5, // Mittelwert starten
+            elapsed_days: 0,
+            scheduled_days: 0,
+            reps: 0,
+            lapses: 0,
+            state: 'New',
+            // Für Kompatibilität
+            ease: 2.5,
+            intervalDays: 0,
+            last_review: null,
+            next_review: new Date().toISOString()
+          }))
+        };
+
+        app.utils.saveGlobalDeck(deck);
+        
+        session.decks = session.decks || [];
+        session.decks.unshift(deck);
+        
+        app.state.cards.activeDeckId = deckId;
+        app.utils.save();
+
+        app.ui.renderCardsModal();
+        app.ui.updateFSRSStats();
+      })
+      .catch((err) => {
+        console.error('Card generation error:', err);
+        document.getElementById('cards-deck-title').textContent = 'Fehler';
+        document.getElementById('cards-count').textContent = '0';
+        grid.innerHTML = `<div class="cards-empty">❌ Verbindungsfehler beim Erstellen der Lernkarten.</div>`;
+      });
+    },
+
+    flipCard: (deckId, idx) => {
+      const el = document.getElementById(`flip_${deckId}_${idx}`);
+      if (el) el.classList.toggle('is-flipped');
+    },
+
+    copyCard: (deckId, idx) => {
+      const deck = app.utils.getGlobalDecks().find(d => d.id === deckId);
+      if (!deck || !deck.cards || !deck.cards[idx]) return;
+      const c = deck.cards[idx];
+      navigator.clipboard.writeText(`Vorderseite: ${c.front}\n\nRückseite: ${c.back}`).then(() => {
+        if (window.innerWidth <= 768) {
+          const cards = document.querySelectorAll('.card-actions button');
+          const buttonIndex = Array.from(cards).findIndex(btn => 
+            btn.onclick && btn.onclick.toString().includes(`flipCard('${deckId}', ${idx})`)
+          );
+          if (buttonIndex !== -1 && cards[buttonIndex + 1]) {
+            const original = cards[buttonIndex + 1].textContent;
+            cards[buttonIndex + 1].textContent = '✓ Kopiert';
+            setTimeout(() => {
+              cards[buttonIndex + 1].textContent = original;
+            }, 1500);
+          }
+        } else {
+          alert('Karte kopiert!');
+        }
+      });
+    },
+
+    copyDeckJSON: () => {
+      const deck = app.logic.getActiveDeck();
+      if (!deck) return alert('Kein Deck aktiv.');
+      const out = {
+        deck_title: deck.title,
+        cards: deck.cards.map(c => ({ 
+          front: c.front, 
+          back: c.back, 
+          tag: c.tag, 
+          level: c.level,
+          stability: c.stability,
+          difficulty: c.difficulty,
+          reps: c.reps,
+          lapses: c.lapses
+        }))
+      };
+      navigator.clipboard.writeText(JSON.stringify(out, null, 2)).then(() => {
+        if (window.innerWidth <= 768) {
+          const btn = document.querySelector('.mini[onclick*="copyDeckJSON"]');
+          if (btn) {
+            const original = btn.textContent;
+            btn.textContent = '✓ Kopiert';
+            setTimeout(() => {
+              btn.textContent = original;
+            }, 2000);
+          }
+        } else {
+          alert('Deck (JSON) kopiert!');
+        }
+      });
+    },
+
+    deleteActiveDeck: () => {
+      const deck = app.logic.getActiveDeck();
+      if (!deck) return;
+      
+      const isMobile = window.innerWidth <= 768;
+      const confirmMsg = isMobile 
+        ? 'Deck löschen?' 
+        : 'Dieses Deck wirklich löschen? (Wird dauerhaft gelöscht!)';
+      
+      if (!confirm(confirmMsg)) return;
+
+      const success = app.utils.deleteGlobalDeck(deck.id);
+      
+      if (success) {
+        app.state.sessions.forEach(s => {
+          if (s.decks) {
+            s.decks = s.decks.filter(d => d.id !== deck.id);
+          }
+        });
+        
+        app.utils.save();
+        app.ui.renderCardsModal();
+      }
+    },
+
+    // --- FSRS4JS Spaced Repetition ---
+    scheduleCard: (deckId, idx, rating) => {
+      const deck = app.utils.getGlobalDecks().find(d => d.id === deckId);
+      if (!deck || !deck.cards || !deck.cards[idx]) return;
+
+      const c = deck.cards[idx];
+      const now = new Date();
+      
+      // Verwende FSRS4JS wenn verfügbar
+      if (app.state.fsrsScheduler && c.state) {
+        try {
+          // Konvertiere Bewertung zu FSRS-Rating
+          let fsrsRating;
+          switch(rating.toLowerCase()) {
+            case 'again': fsrsRating = app.logic.fsrsRatings.AGAIN; break;
+            case 'hard': fsrsRating = app.logic.fsrsRatings.HARD; break;
+            case 'good': fsrsRating = app.logic.fsrsRatings.GOOD; break;
+            case 'easy': fsrsRating = app.logic.fsrsRatings.EASY; break;
+            default: fsrsRating = app.logic.fsrsRatings.GOOD;
+          }
+          
+          // Erstelle Card-Objekt für FSRS
+          const card = {
+            due: new Date(c.due || now),
+            stability: c.stability || 0,
+            difficulty: c.difficulty || 0.5,
+            elapsed_days: c.elapsed_days || 0,
+            scheduled_days: c.scheduled_days || 0,
+            reps: c.reps || 0,
+            lapses: c.lapses || 0,
+            state: c.state || 'New'
+          };
+          
+          // FSRS: Berechne nächste Wiederholung
+          const result = app.state.fsrsScheduler.next(card, now, fsrsRating);
+          const scheduled = result.card;
+          
+          // Aktualisiere Karte mit FSRS-Daten
+          c.due = scheduled.due.toISOString();
+          c.stability = scheduled.stability;
+          c.difficulty = scheduled.difficulty;
+          c.elapsed_days = scheduled.elapsed_days;
+          c.scheduled_days = scheduled.scheduled_days;
+          c.reps = scheduled.reps;
+          c.lapses = scheduled.lapses;
+          c.state = scheduled.state;
+          
+          // Für Kompatibilität
+          c.intervalDays = scheduled.scheduled_days;
+          c.ease = Math.max(1.3, Math.min(2.7, c.stability / 10));
+          c.next_review = scheduled.due.toISOString();
+          c.last_review = now.toISOString();
+          
+          console.log(`FSRS: Karte "${c.front.substring(0,30)}..." bewertet als ${rating}`);
+          console.log(`  Neue Stabilität: ${c.stability.toFixed(2)}`);
+          console.log(`  Neue Schwierigkeit: ${(c.difficulty * 100).toFixed(0)}%`);
+          console.log(`  Nächstes Intervall: ${c.scheduled_days} Tage`);
+          
+        } catch (error) {
+          console.error('FSRS Berechnung fehlgeschlagen:', error);
+          app.logic.fallbackSchedule(c, rating);
+        }
+      } else {
+        // Fallback wenn FSRS nicht verfügbar
+        app.logic.fallbackSchedule(c, rating);
+      }
+      
+      // Speichere aktualisiertes Deck
+      app.utils.saveGlobalDeck(deck);
+      
+      // Aktualisiere UI
+      app.ui.updateFSRSStats();
+      
+      // Mobile-freundliche Rückmeldung
+      if (window.innerWidth <= 768) {
+        const buttons = document.querySelectorAll('.card-actions .primary');
+        const allButtons = Array.from(buttons);
+        const startIndex = idx * 4; // 4 Buttons pro Karte
+        for (let i = 0; i < 4; i++) {
+          const btn = allButtons[startIndex + i];
+          if (btn) {
+            const ratingMap = ['again', 'hard', 'good', 'easy'];
+            if (ratingMap[i] === rating.toLowerCase()) {
+              const original = btn.textContent;
+              btn.textContent = '✓ ' + original;
+              setTimeout(() => {
+                btn.textContent = original;
+              }, 1000);
+              break;
+            }
+          }
+        }
+      }
+    },
+
+    // Fallback-Logik
+    fallbackSchedule: (card, rating) => {
+      const now = Date.now();
+      
+      const baseDays = {
+        'again': 0.1,   // 2.4 Stunden
+        'hard': 1,      // 1 Tag
+        'good': 3,      // 3 Tage
+        'easy': 7       // 1 Woche
+      };
+      
+      const base = baseDays[rating.toLowerCase()] || 3;
+      const easeAdjust = {
+        'again': -0.3,
+        'hard': -0.1,
+        'good': 0.0,
+        'easy': +0.2
+      }[rating.toLowerCase()] || 0.0;
+
+      card.ease = Math.max(1.3, Math.min(2.7, (card.ease || 2.0) + easeAdjust));
+      const nextDays = Math.max(0.1, base * card.ease);
+
+      card.intervalDays = nextDays;
+      card.due = new Date(now + nextDays * 24 * 60 * 60 * 1000).toISOString();
+      card.last_review = new Date(now).toISOString();
+      card.next_review = card.due;
+      card.reps = (card.reps || 0) + 1;
+      if (rating === 'again') card.lapses = (card.lapses || 0) + 1;
+    },
+
+    startReview: () => {
+      const deck = app.logic.getActiveDeck();
+      if (!deck || !deck.cards || !deck.cards.length) {
+        if (window.innerWidth <= 768) {
+          alert('Keine Karten');
+        } else {
+          alert('Kein Deck/Karten vorhanden.');
+        }
+        return;
+      }
+
+      const now = new Date();
+      const due = deck.cards
+        .map((c, i) => ({ c, i }))
+        .filter(x => {
+          if (!x.c.due) return true;
+          return new Date(x.c.due) <= now;
+        })
+        .slice(0, 10);
+
+      const reviewArea = document.getElementById('review-area');
+      reviewArea.style.display = 'block';
+
+      if (!due.length) {
+        reviewArea.innerHTML = `
+          <div class="review-box">
+            <div class="review-q">✅ Keine fälligen Karten</div>
+            <div style="color:#666;">FSRS: Alle Karten sind aktuell gelernt. Markiere Karten als „Mittel/Leicht/Schwer", um Fälligkeiten zu erzeugen.</div>
+          </div>
+        `;
+        return;
+      }
+
+      let pos = 0;
+
+      const render = () => {
+        const item = due[pos];
+        const stability = item.c.stability ? item.c.stability.toFixed(1) : '0.0';
+        const difficulty = item.c.difficulty ? (item.c.difficulty * 100).toFixed(0) : '50';
+        
+        reviewArea.innerHTML = `
+          <div class="review-box">
+            <div class="pill" style="margin-bottom:10px;">
+              🧠 Abfrage <small>${pos+1}/${due.length}</small>
+              <small style="margin-left:10px; color:#666;">FSRS: S${stability}/D${difficulty}%</small>
+            </div>
+            <div class="review-q">${item.c.front}</div>
+            <div id="review-a" class="review-a">${item.c.back}</div>
+            <div class="review-btns">
+              <button class="mini" onclick="app.logic.toggleReviewAnswer()">Antwort anzeigen</button>
+              <button class="mini" style="background:#f8d7da; color:#721c24;" onclick="app.logic.rateReview('${deck.id}', 'again')">❌ Vergessen</button>
+              <button class="mini" style="background:#fff3cd; color:#856404;" onclick="app.logic.rateReview('${deck.id}', 'hard')">Schwer</button>
+              <button class="mini" style="background:#d1ecf1; color:#0c5460;" onclick="app.logic.rateReview('${deck.id}', 'good')">Gut</button>
+              <button class="mini" style="background:#d4edda; color:#155724;" onclick="app.logic.rateReview('${deck.id}', 'easy')">Leicht</button>
+            </div>
+            <div style="margin-top:10px; font-size:0.9em; color:#666;">
+              <small>FSRS4JS: Passt die Intervalle wissenschaftlich an deine Gedächtnisleistung an.</small>
+            </div>
+          </div>
+        `;
+      };
+
+      app.logic._review = { due, pos, deckId: deck.id };
+      render();
+    },
+
+    toggleReviewAnswer: () => {
+      const el = document.getElementById('review-a');
+      if (!el) return;
+      el.classList.toggle('show');
+    },
+
+    rateReview: (deckId, rating) => {
+      const r = app.logic._review;
+      if (!r) return;
+      const deck = app.utils.getGlobalDecks().find(d => d.id === deckId);
+      if (!deck) return;
+
+      const item = r.due[r.pos];
+      if (!item) return;
+
+      // Bewerte mit FSRS
+      app.logic.scheduleCard(deckId, item.i, rating);
+
+      // Weiter zur nächsten Karte
+      r.pos++;
+      if (r.pos >= r.due.length) {
+        document.getElementById('review-area').innerHTML = `
+          <div class="review-box">
+            <div class="review-q">✅ Fertig</div>
+            <div style="color:#666;">Du hast ${r.due.length} Karten mit FSRS wiederholt.</div>
+            <button class="mini" onclick="app.logic.startReview()" style="margin-top:10px;">Weitere Karten prüfen</button>
+          </div>
+        `;
+        app.logic._review = null;
+        app.ui.updateFSRSStats();
+        return;
+      }
+      render();
+    },
+
+    // --- PDF / Feedback / Clear ---
+    pdfBubble: (btn) => {
+      const wrapper = btn.closest('.msg-wrapper');
+      const bubble = wrapper.querySelector('.bubble.bot');
+      if (!bubble) return;
+
+      const htmlContent = bubble.innerHTML;
+      const now = new Date();
+      const d = now.toLocaleDateString('de-DE');
+      const t = now.toLocaleTimeString('de-DE', {hour:'2-digit', minute:'2-digit'});
+
+      const win = window.open('', '_blank');
+      win.document.write(`
+        <html>
+        <head>
+          <title>Chat-Ausdruck</title>
+          <style>
+            @page { margin: 20mm; }
+            body {
+              font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+              font-size: 14px;
+              line-height: 1.5;
+              color: #222;
+              background: white;
+            }
+            .pdf-header { border-bottom: 2px solid #004481; padding-bottom: 15px; margin-bottom: 25px; }
+            .pdf-title { color: #004481; font-weight: 800; font-size: 24px; margin: 0; }
+            .pdf-meta { font-size: 12px; color: #666; margin-top: 5px; }
+            .chat-container { max-width: 100%; }
+            .msg-row { display: flex; width: 100%; margin-bottom: 20px; }
+            .msg-wrapper { max-width: 90%; display: flex; flex-direction: column; gap: 8px; }
+            .msg-row.user { justify-content: flex-end; }
+            .msg-row.user .msg-wrapper { align-items: flex-end; }
+            .bubble.user {
+              background: #004481; color: white; padding: 14px;
+              border-radius: 18px 18px 4px 18px; font-weight: 500;
+            }
+            .msg-row.bot { justify-content: flex-start; }
+            .msg-row.bot .msg-wrapper { align-items: flex-start; }
+            .bubble.bot {
+              background: #fff; border: 1px solid #e0e6ed; padding: 14px;
+              border-radius: 18px 18px 18px 4px; color: #222;
+            }
+            .md h4 { margin: 0 0 8px 0; color: #004481; font-weight: 800; font-size: 1.2em; }
+            .md p { margin: 0 0 10px 0; }
+            .md ul, .md ol { margin: 5px 0 15px 20px; padding: 0; }
+            .md li { margin-bottom: 5px; }
+            .md strong { color: #004481; font-weight: 800; }
+            .md code { background: #f1f3f5; padding: 2px 6px; border-radius: 4px; font-family: Consolas, monospace; color: #c7254e; }
+            .md pre { background: #f4f4f4; padding: 10px; border-radius: 8px; overflow-x: auto; margin: 10px 0; border: 1px solid #e0e0e0; }
+            .table-wrapper { overflow-x: auto; margin: 10px 0; border-radius: 8px; border: 1px solid #e0e6ed; }
+            .md table { border-collapse: collapse; width: 100%; min-width: 350px; font-size: 13px; }
+            .md th, .md td { border: 1px solid #e0e6ed; padding: 8px 10px; text-align: left; }
+            .md th { background: #f0f8ff; color: #004481; font-weight: 700; }
+            .source-box { margin-top: 10px; padding: 10px; background: #f0f8ff; border-radius: 8px; border-left: 4px solid #004481; }
+            .source-box strong { display: block; margin-bottom: 6px; color: #004481; }
+            .source-list { margin: 0; padding-left: 18px; color: #444; }
+            .source-list li { margin-bottom: 4px; }
+            .pdf-footer {
+              margin-top: 40px; padding-top: 15px; border-top: 1px solid #ddd;
+              font-size: 11px; color: #666; text-align: center;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="pdf-header">
+            <div class="pdf-title">Linda Assistentin</div>
+            <div class="pdf-meta">Erstellt: ${d} um ${t}</div>
+          </div>
+
+          <div class="chat-container">
+             <div class="msg-row user">
+                <div class="msg-wrapper">
+                   <div class="bubble user">
+                      <div class="md">${document.querySelector('.msg-row.user:last-child .md') ? document.querySelector('.msg-row.user:last-child .md').innerHTML : ''}</div>
+                   </div>
+                </div>
+             </div>
+             <div class="msg-row bot">
+                <div class="msg-wrapper">
+                   <div class="bubble bot">
+                      <div class="md">${htmlContent}</div>
+                   </div>
+                </div>
+             </div>
+          </div>
+
+          <div class="pdf-footer">
+            Hinweis: Antwort von KI generiert. Bitte auf Richtigkeit prüfen. Keine rechtliche Beratung.
+          </div>
+        </body>
+        </html>
+      `);
+      win.document.close();
+      setTimeout(() => { win.focus(); win.print(); }, 500);
+    },
+
+    clearAll: () => {
+      const isMobile = window.innerWidth <= 768;
+      const confirmMsg = isMobile ? 'ALLE Chats UND Lernkarten löschen?' : 'ALLE Verläufe UND Lernkarten wirklich löschen? (Das kann nicht rückgängig gemacht werden!)';
+      
+      if (!confirm(confirmMsg)) return;
+      
+      app.state.sessions = [];
+      app.state.activeId = null;
+      app.state.cards.activeDeckId = null;
+      app.state.cards.globalDecks = [];
+      app.utils.save();
+      app.ui.closeModals();
+      app.ui.log.innerHTML = '';
+      app.logic.newChat();
+    },
+
+    openFeedback: () => {
+      const s = app.logic.getActiveSession();
+      let body = "Mein Feedback zu Linda:%0D%0A%0D%0A";
+      if (s) {
+        s.messages.forEach(m => {
+          body += (m.role === 'user' ? 'Ich: ' : 'Linda: ') + (m.content.replace(/\n/g, '%0D%0A') + '%0D%0A');
+        });
+      }
+      window.location.href = `mailto:KI-TEST@GMX.COM?subject=Feedback&body=${body}`;
+    }
+  }
+};
+
+window.onload = () => {
+  app.utils.load();
+
+  const badge = document.getElementById('domain-badge');
+  badge.textContent = app.state.settings.domain || 'Standard';
+
+  if (app.state.consentGiven) {
+    document.getElementById('modal-disclaimer').classList.remove('open');
+  }
+
+  const check1 = document.getElementById('consent-data');
+  const check2 = document.getElementById('consent-forward');
+  const btnStart = document.getElementById('btn-start-disclaimer');
+
+  const toggleBtn = () => { btnStart.disabled = !(check1.checked && check2.checked); };
+  check1.addEventListener('change', toggleBtn);
+  check2.addEventListener('change', toggleBtn);
+
+  // Input Handling
+  const inp = document.getElementById('chat-input');
+  inp.addEventListener('input', function() {
+    this.style.height = 'auto';
+    this.style.height = Math.min(this.scrollHeight, 150) + 'px';
+
+    const val = this.value;
+    if (val.startsWith('/')) {
+      const query = val.substring(1).toLowerCase();
+      const matches = (app.state.settings.snippets || []).filter(s => s && s.toLowerCase().includes(query));
+      app.ui.showSnippetPopup(matches);
+    } else {
+      document.getElementById('snippet-popup').classList.remove('active');
+    }
+  });
+
+  // Enter zum Senden (ohne Shift)
+  inp.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      app.logic.sendMessage();
+    }
+  });
+
+  // Mobile: Touch-Events optimieren
+  inp.addEventListener('touchstart', (e) => {
+    e.stopPropagation();
+  }, { passive: true });
+
+  // Send Button
+  document.getElementById('send-btn').addEventListener('click', app.logic.sendMessage);
+  
+  // Mobile: Touch-Event für Send Button
+  document.getElementById('send-btn').addEventListener('touchstart', (e) => {
+    e.preventDefault();
+    app.logic.sendMessage();
+  }, { passive: false });
+
+  // Klick außerhalb schließt Snippet-Popup
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('#snippet-popup') && !e.target.closest('.input-wrapper')) {
+      document.getElementById('snippet-popup').classList.remove('active');
+    }
+  });
+
+  // Mobile: Swipe-Gesten für Navigation (optional)
+  let touchStartX = 0;
+  let touchStartY = 0;
+  
+  document.addEventListener('touchstart', (e) => {
+    touchStartX = e.touches[0].clientX;
+    touchStartY = e.touches[0].clientY;
+  }, { passive: true });
+  
+  document.addEventListener('touchend', (e) => {
+    if (!touchStartX) return;
+    
+    const touchEndX = e.changedTouches[0].clientX;
+    const touchEndY = e.changedTouches[0].clientY;
+    
+    const diffX = touchStartX - touchEndX;
+    const diffY = touchStartY - touchEndY;
+    
+    if (Math.abs(diffX) > Math.abs(diffY) && Math.abs(diffX) > 50) {
+      if (diffX > 0) {
+        // Swipe nach links: nichts tun
+      } else {
+        // Swipe nach rechts: Modals schließen
+        app.ui.closeModals();
+      }
+    }
+    
+    touchStartX = 0;
+    touchStartY = 0;
+  }, { passive: true });
+
+  // Start: falls noch kein Chat existiert, lege einen an (aber nur nach Consent)
+  if (app.state.consentGiven && (!app.state.sessions || app.state.sessions.length === 0)) {
+    setTimeout(() => {
+      app.logic.newChat();
+    }, 300);
+  } else if (app.state.sessions.length > 0 && app.state.activeId) {
+    // Lade aktive Session
+    const s = app.state.sessions.find(x => x.id === app.state.activeId);
+    if (s) {
+      s.messages.forEach(m => {
+        const bubble = app.ui.createBubble(m.role, m.content);
+        app.ui.log.appendChild(bubble);
+        if (m.role === 'assistant') app.logic.postProcessBubble(bubble);
+      });
+      app.ui.scrollToBottom();
+    }
+  }
+
+  // Mobile: Verhindere Zoom bei Doppeltap
+  let lastTouchEnd = 0;
+  document.addEventListener('touchend', (e) => {
+    const now = Date.now();
+    if (now - lastTouchEnd <= 300) {
+      e.preventDefault();
+    }
+    lastTouchEnd = now;
+  }, { passive: false });
+
+  // Fokus auf Input setzen (wenn nicht auf Mobile oder kein Keyboard geöffnet)
+  if (window.innerWidth > 768) {
+    setTimeout(() => {
+      if (document.activeElement !== inp) {
+        inp.focus();
+      }
+    }, 1000);
+  }
+};
+
+// Mobile: Behandle PWA-Installation
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+});
+
+// Handle offline/online Status
+window.addEventListener('online', () => {
+  console.log('Online');
+});
+
+window.addEventListener('offline', () => {
+  const s = app.logic.getActiveSession();
+  if (s) {
+    const errBubble = app.ui.createBubble('assistant', '⚠️ Du bist offline. Einige Funktionen sind nicht verfügbar.');
+    app.ui.log.appendChild(errBubble);
+    app.ui.scrollToBottom();
+  }
+});
+</script>
+</body>
+</html>
