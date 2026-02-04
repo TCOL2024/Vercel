@@ -1,0 +1,355 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>SprachKi – DeepL Übersetzung + GPT Rewrite</title>
+
+  <style>
+    :root{
+      --bg:#0b1220;
+      --text:#e8eefc;
+      --muted:#93a4c7;
+      --line:rgba(255,255,255,.12);
+      --accent:#4aa3ff;
+      --ok:#57d39c;
+      --danger:#ff5a6a;
+      --radius:16px;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;font-family:var(--sans);background:var(--bg);color:var(--text)}
+    .wrap{max-width:1100px;margin:0 auto;padding:24px}
+    header{display:flex;justify-content:space-between;gap:16px;margin-bottom:16px}
+    h1{font-size:18px;margin:0}
+    .sub{font-size:13px;color:var(--muted);line-height:1.4}
+    .status{
+      font-size:12px;padding:6px 10px;border-radius:999px;border:1px solid var(--line);
+      background:rgba(255,255,255,.04);max-width:520px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis
+    }
+    .status.ok{color:var(--ok);border-color:rgba(87,211,156,.4)}
+    .status.err{color:var(--danger);border-color:rgba(255,90,106,.4)}
+    .bar{
+      display:flex;gap:10px;flex-wrap:wrap;align-items:center;
+      padding:12px;border-radius:var(--radius);background:rgba(255,255,255,.04);border:1px solid var(--line)
+    }
+    select,button{
+      font:inherit;color:var(--text);background:rgba(255,255,255,.06);
+      border:1px solid var(--line);border-radius:12px;padding:10px 12px
+    }
+    button{cursor:pointer;background:linear-gradient(180deg, rgba(74,163,255,.25), rgba(74,163,255,.1));border-color:rgba(74,163,255,.35)}
+    button:disabled{opacity:.5;cursor:not-allowed}
+    .hint{font-size:12px;color:var(--muted)}
+    .grid{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:14px;
+      margin-top:14px;
+    }
+    .grid3{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:14px;
+      margin-top:14px;
+    }
+    .card{
+      display:flex;flex-direction:column;min-height:320px;
+      background:rgba(255,255,255,.04);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden
+    }
+    .card h2{
+      margin:0;padding:12px 14px;font-size:13px;border-bottom:1px solid var(--line);
+      display:flex;justify-content:space-between;align-items:center;gap:10px
+    }
+    textarea{
+      flex:1;width:100%;border:0;outline:none;resize:none;padding:14px;background:transparent;color:var(--text);
+      font-size:14px;line-height:1.5
+    }
+    .footer{
+      padding:10px 14px;border-top:1px solid var(--line);font-size:12px;color:var(--muted);
+      display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap
+    }
+    .copyBtn{
+      border:1px solid var(--line);background:rgba(255,255,255,.06);border-radius:8px;padding:4px 8px;cursor:pointer;font-size:14px
+    }
+    .ghost{
+      background:transparent;border-color:rgba(255,255,255,.18)
+    }
+    .pill{
+      font-size:11px;
+      border:1px solid var(--line);
+      background:rgba(255,255,255,.04);
+      padding:4px 8px;border-radius:999px;color:var(--muted)
+    }
+    @media(max-width:980px){
+      .grid{grid-template-columns:1fr}
+      .grid3{grid-template-columns:1fr}
+      .status{max-width:100%}
+    }
+  </style>
+</head>
+
+<body>
+<div class="wrap">
+
+  <header>
+    <div>
+      <h1>SprachKi – DeepL Übersetzung + GPT Rewrite</h1>
+      <div class="sub">
+        1) Übersetzen via DeepL (<code>/api/translate</code>)<br/>
+        2) Umformulieren via OpenAI GPT-4.1 (<code>/api/rewrite</code>) – dein eigenes „Write“.
+      </div>
+    </div>
+    <div class="status" id="status">Bereit</div>
+  </header>
+
+  <!-- DeepL Bar -->
+  <div class="bar">
+    <span class="pill">DeepL</span>
+    <label class="hint">
+      Zielsprache:
+      <select id="targetLang">
+        <option value="DE">Deutsch</option>
+        <option value="EN-GB">Englisch (UK)</option>
+        <option value="EN-US">Englisch (US)</option>
+        <option value="FR">Französisch</option>
+        <option value="ES">Spanisch</option>
+        <option value="IT">Italienisch</option>
+        <option value="NL">Niederländisch</option>
+        <option value="PL">Polnisch</option>
+      </select>
+    </label>
+    <button id="runTranslateBtn">Übersetzen</button>
+    <span class="hint">Endpoint: <code>/api/translate</code></span>
+  </div>
+
+  <!-- DeepL Grid -->
+  <div class="grid">
+    <section class="card">
+      <h2>
+        <span>Eingabetext (DeepL)</span>
+        <span id="countTranslate">0 / 1000</span>
+      </h2>
+      <textarea id="inputTranslate" placeholder="Text hier einfügen … (max. 1000 Zeichen)"></textarea>
+      <div class="footer">
+        <span>Maximal 1000 Zeichen.</span>
+        <button class="ghost" id="clearTranslateBtn">Leeren</button>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>
+        <span>Übersetzung</span>
+        <span style="display:flex;gap:10px;align-items:center">
+          <span id="latencyTranslate">—</span>
+          <button id="copyTranslateBtn" class="copyBtn" title="Übersetzung kopieren">📋</button>
+        </span>
+      </h2>
+      <textarea id="outputTranslate" readonly placeholder="Übersetzter Text …"></textarea>
+      <div class="footer">
+        <span>DeepL-Ergebnis</span>
+        <button class="ghost" id="toRewriteBtn" disabled>→ In GPT-Rewrite übernehmen</button>
+      </div>
+    </section>
+  </div>
+
+  <!-- GPT Rewrite Bar -->
+  <div class="bar" style="margin-top:14px;">
+    <span class="pill">GPT-4.1</span>
+
+    <label class="hint">
+      Stil:
+      <select id="rewriteStyle">
+        <option value="neutral" selected>Neutral / klar</option>
+        <option value="freundlich">Freundlich</option>
+        <option value="formell">Formell</option>
+        <option value="kurz">Kürzer</option>
+        <option value="besser">Besser formuliert</option>
+      </select>
+    </label>
+
+    <button id="runRewriteBtn">Umformulieren</button>
+    <span class="hint">Endpoint: <code>/api/rewrite</code></span>
+  </div>
+
+  <!-- GPT Rewrite Grid -->
+  <div class="grid3">
+    <section class="card">
+      <h2>
+        <span>Eingabetext (GPT)</span>
+        <span id="countRewrite">0 / 1000</span>
+      </h2>
+      <textarea id="inputRewrite" placeholder="Text für GPT-Umformulierung … (max. 1000 Zeichen)"></textarea>
+      <div class="footer">
+        <span>Maximal 1000 Zeichen.</span>
+        <button class="ghost" id="clearRewriteBtn">Leeren</button>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>
+        <span>Umformuliert</span>
+        <span style="display:flex;gap:10px;align-items:center">
+          <span id="latencyRewrite">—</span>
+          <button id="copyRewriteBtn" class="copyBtn" title="Umformulierung kopieren">📋</button>
+        </span>
+      </h2>
+      <textarea id="outputRewrite" readonly placeholder="GPT-Umformulierung …"></textarea>
+      <div class="footer">
+        <span>OpenAI-Ergebnis</span>
+        <span class="hint">Tipp: Stil oben wählen</span>
+      </div>
+    </section>
+  </div>
+
+</div>
+
+<script>
+  const MAX = 1000;
+  const statusEl = document.getElementById("status");
+
+  function setStatus(text, kind="") {
+    statusEl.textContent = text;
+    statusEl.className = "status" + (kind ? (" " + kind) : "");
+  }
+
+  async function copyToClipboard(text, btn) {
+    if (!text) return;
+    try {
+      await navigator.clipboard.writeText(text);
+      const old = btn.textContent;
+      btn.textContent = "✅";
+      setTimeout(() => btn.textContent = old, 1200);
+    } catch {
+      setStatus("Kopieren nicht möglich", "err");
+    }
+  }
+
+  // ---------- DeepL ----------
+  const inputTranslate = document.getElementById("inputTranslate");
+  const outputTranslate = document.getElementById("outputTranslate");
+  const countTranslate = document.getElementById("countTranslate");
+  const latencyTranslate = document.getElementById("latencyTranslate");
+  const runTranslateBtn = document.getElementById("runTranslateBtn");
+  const clearTranslateBtn = document.getElementById("clearTranslateBtn");
+  const copyTranslateBtn = document.getElementById("copyTranslateBtn");
+  const toRewriteBtn = document.getElementById("toRewriteBtn");
+
+  function clampCount(el, countEl) {
+    if (el.value.length > MAX) el.value = el.value.slice(0, MAX);
+    countEl.textContent = el.value.length + " / " + MAX;
+  }
+  inputTranslate.addEventListener("input", () => clampCount(inputTranslate, countTranslate));
+  clampCount(inputTranslate, countTranslate);
+
+  clearTranslateBtn.onclick = () => {
+    inputTranslate.value = "";
+    clampCount(inputTranslate, countTranslate);
+    inputTranslate.focus();
+  };
+
+  copyTranslateBtn.onclick = () => copyToClipboard(outputTranslate.value, copyTranslateBtn);
+
+  runTranslateBtn.onclick = async () => {
+    const text = inputTranslate.value.trim();
+    if (!text) return setStatus("Bitte DeepL-Text eingeben", "err");
+
+    runTranslateBtn.disabled = true;
+    toRewriteBtn.disabled = true;
+    outputTranslate.value = "";
+    latencyTranslate.textContent = "—";
+    setStatus("Übersetze (DeepL) …");
+
+    const t0 = performance.now();
+    try {
+      const res = await fetch("/api/translate", {
+        method:"POST",
+        headers:{ "Content-Type":"application/json" },
+        body: JSON.stringify({
+          text,
+          target_lang: document.getElementById("targetLang").value
+        })
+      });
+
+      const data = await res.json().catch(() => ({}));
+      latencyTranslate.textContent = Math.round(performance.now() - t0) + " ms";
+
+      if (!res.ok) throw new Error(data.error || "Serverfehler (DeepL)");
+
+      outputTranslate.value = data.result || "";
+      toRewriteBtn.disabled = !outputTranslate.value;
+      setStatus("DeepL fertig", "ok");
+      setTimeout(() => setStatus("Bereit"), 800);
+    } catch (e) {
+      setStatus("Fehler: " + (e.message || "unbekannt"), "err");
+    } finally {
+      runTranslateBtn.disabled = false;
+    }
+  };
+
+  // ---------- GPT Rewrite ----------
+  const inputRewrite = document.getElementById("inputRewrite");
+  const outputRewrite = document.getElementById("outputRewrite");
+  const countRewrite = document.getElementById("countRewrite");
+  const latencyRewrite = document.getElementById("latencyRewrite");
+  const runRewriteBtn = document.getElementById("runRewriteBtn");
+  const clearRewriteBtn = document.getElementById("clearRewriteBtn");
+  const copyRewriteBtn = document.getElementById("copyRewriteBtn");
+
+  inputRewrite.addEventListener("input", () => clampCount(inputRewrite, countRewrite));
+  clampCount(inputRewrite, countRewrite);
+
+  clearRewriteBtn.onclick = () => {
+    inputRewrite.value = "";
+    clampCount(inputRewrite, countRewrite);
+    inputRewrite.focus();
+  };
+
+  copyRewriteBtn.onclick = () => copyToClipboard(outputRewrite.value, copyRewriteBtn);
+
+  toRewriteBtn.onclick = () => {
+    inputRewrite.value = outputTranslate.value.slice(0, MAX);
+    clampCount(inputRewrite, countRewrite);
+    inputRewrite.focus();
+    setStatus("Übersetzung übernommen", "ok");
+    setTimeout(() => setStatus("Bereit"), 800);
+  };
+
+  runRewriteBtn.onclick = async () => {
+    const text = inputRewrite.value.trim();
+    if (!text) return setStatus("Bitte GPT-Text eingeben", "err");
+
+    runRewriteBtn.disabled = true;
+    outputRewrite.value = "";
+    latencyRewrite.textContent = "—";
+    setStatus("Umformuliere (GPT-4.1) …");
+
+    const t0 = performance.now();
+    try {
+      const res = await fetch("/api/rewrite", {
+        method:"POST",
+        headers:{ "Content-Type":"application/json" },
+        body: JSON.stringify({
+          text,
+          style: document.getElementById("rewriteStyle").value
+        })
+      });
+
+      const data = await res.json().catch(() => ({}));
+      latencyRewrite.textContent = Math.round(performance.now() - t0) + " ms";
+
+      if (!res.ok) throw new Error(data.error || "Serverfehler (OpenAI)");
+
+      outputRewrite.value = data.result || "";
+      setStatus("GPT fertig", "ok");
+      setTimeout(() => setStatus("Bereit"), 800);
+    } catch (e) {
+      setStatus("Fehler: " + (e.message || "unbekannt"), "err");
+    } finally {
+      runRewriteBtn.disabled = false;
+    }
+  };
+</script>
+
+</body>
+</html>
