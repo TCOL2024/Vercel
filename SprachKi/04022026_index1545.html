@@ -3,302 +3,282 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>DeepL Text-Optimierer (max. 1000 Zeichen)</title>
+  <title>SprachKi – Textübersetzung (DeepL)</title>
+
   <style>
     :root{
-      --bg:#0b1220; --card:#121a2b; --muted:#93a4c7; --text:#e8eefc;
-      --line:rgba(255,255,255,.10); --accent:#4aa3ff; --danger:#ff5a6a;
+      --bg:#0b1220;
+      --card:#121a2b;
+      --text:#e8eefc;
+      --muted:#93a4c7;
+      --line:rgba(255,255,255,.12);
+      --accent:#4aa3ff;
       --ok:#57d39c;
+      --danger:#ff5a6a;
       --radius:16px;
-      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-      --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial;
     }
+
     *{box-sizing:border-box}
+
     body{
-      margin:0; font-family:var(--sans); background:radial-gradient(1200px 600px at 15% 10%, rgba(74,163,255,.15), transparent 60%),
-      radial-gradient(900px 500px at 80% 30%, rgba(87,211,156,.10), transparent 55%),
-      var(--bg);
+      margin:0;
+      font-family:var(--sans);
+      background:var(--bg);
       color:var(--text);
     }
-    .wrap{max-width:1100px; margin:0 auto; padding:24px;}
-    header{display:flex; gap:14px; align-items:flex-start; justify-content:space-between; margin-bottom:16px;}
-    h1{font-size:18px; margin:0; letter-spacing:.2px;}
-    .sub{color:var(--muted); font-size:13px; margin-top:6px; line-height:1.35}
-    .bar{
-      display:flex; gap:10px; align-items:center; flex-wrap:wrap;
-      background:rgba(255,255,255,.04); border:1px solid var(--line);
-      padding:12px; border-radius:var(--radius);
+
+    .wrap{max-width:1100px;margin:0 auto;padding:24px}
+
+    header{
+      display:flex;
+      justify-content:space-between;
+      gap:16px;
+      margin-bottom:16px;
     }
-    select, button{
-      font:inherit; color:var(--text);
+
+    h1{font-size:18px;margin:0}
+    .sub{font-size:13px;color:var(--muted);line-height:1.4}
+
+    .status{
+      font-size:12px;
+      padding:6px 10px;
+      border-radius:999px;
+      border:1px solid var(--line);
+      background:rgba(255,255,255,.04);
+      max-width:520px;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+    .status.ok{color:var(--ok);border-color:rgba(87,211,156,.4)}
+    .status.err{color:var(--danger);border-color:rgba(255,90,106,.4)}
+
+    .bar{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      align-items:center;
+      padding:12px;
+      border-radius:var(--radius);
+      background:rgba(255,255,255,.04);
+      border:1px solid var(--line);
+    }
+
+    select,button{
+      font:inherit;
+      color:var(--text);
       background:rgba(255,255,255,.06);
       border:1px solid var(--line);
       border-radius:12px;
       padding:10px 12px;
-      outline:none;
     }
-    select{min-width:190px}
+
     button{
       cursor:pointer;
-      background:linear-gradient(180deg, rgba(74,163,255,.25), rgba(74,163,255,.10));
+      background:linear-gradient(180deg, rgba(74,163,255,.25), rgba(74,163,255,.1));
       border-color:rgba(74,163,255,.35);
     }
-    button:disabled{opacity:.55; cursor:not-allowed}
-    .hint{font-size:12px; color:var(--muted)}
-    .status{font-size:12px; padding:6px 10px; border-radius:999px; border:1px solid var(--line); background:rgba(255,255,255,.04)}
-    .status.ok{border-color:rgba(87,211,156,.35); color:var(--ok)}
-    .status.err{border-color:rgba(255,90,106,.35); color:var(--danger)}
-    .grid{display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-top:14px;}
+    button:disabled{opacity:.5;cursor:not-allowed}
+
+    .hint{font-size:12px;color:var(--muted)}
+
+    .grid{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:14px;
+      margin-top:14px;
+    }
+
     .card{
+      display:flex;
+      flex-direction:column;
+      min-height:360px;
       background:rgba(255,255,255,.04);
       border:1px solid var(--line);
       border-radius:var(--radius);
       overflow:hidden;
-      display:flex; flex-direction:column;
-      min-height:380px;
     }
+
     .card h2{
-      margin:0; font-size:13px; font-weight:600;
+      margin:0;
       padding:12px 14px;
+      font-size:13px;
       border-bottom:1px solid var(--line);
-      color:rgba(232,238,252,.92);
-      display:flex; align-items:center; justify-content:space-between; gap:10px;
+      display:flex;
+      justify-content:space-between;
     }
-    .count{font-family:var(--mono); font-size:12px; color:var(--muted)}
+
     textarea{
-      width:100%;
       flex:1;
-      resize:none;
-      padding:14px;
+      width:100%;
       border:0;
       outline:none;
-      color:var(--text);
+      resize:none;
+      padding:14px;
       background:transparent;
+      color:var(--text);
       font-size:14px;
       line-height:1.5;
     }
+
     .footer{
       padding:10px 14px;
       border-top:1px solid var(--line);
-      display:flex; justify-content:space-between; align-items:center; gap:10px;
-      color:var(--muted); font-size:12px;
+      font-size:12px;
+      color:var(--muted);
+      display:flex;
+      justify-content:space-between;
     }
-    .actions{display:flex; gap:10px; flex-wrap:wrap}
-    .ghost{
-      background:transparent;
-      border-color:rgba(255,255,255,.16);
+
+    .panel{
+      margin-top:14px;
+      padding:12px 14px;
+      border-radius:var(--radius);
+      border:1px dashed rgba(255,255,255,.25);
+      background:rgba(255,255,255,.03);
+      font-size:12px;
+      line-height:1.45;
+      color:var(--muted);
+      display:none;
     }
-    .danger{
-      border-color:rgba(255,90,106,.35);
-      background:linear-gradient(180deg, rgba(255,90,106,.18), rgba(255,90,106,.08));
-    }
-    @media (max-width: 900px){
+
+    @media(max-width:900px){
       .grid{grid-template-columns:1fr}
-      .card{min-height:320px}
     }
   </style>
 </head>
+
 <body>
-  <div class="wrap">
-    <header>
-      <div>
-        <h1>DeepL Text-Optimierer</h1>
-        <div class="sub">
-          Links Text einfügen (max. <b>1000 Zeichen</b>), rechts kommt die optimierte Version zurück.<br/>
-          Das HTML ruft <code>/api/translate</code> auf (Proxy nötig – Key bleibt serverseitig).
-        </div>
+<div class="wrap">
+
+  <header>
+    <div>
+      <h1>SprachKi – Textübersetzung</h1>
+      <div class="sub">
+        Text einfügen (max. <b>1000 Zeichen</b>) → DeepL-Übersetzung.<br>
+        Technisch: Aufruf von <code>/api/translate</code> (Vercel).
       </div>
-      <div class="status" id="status">Bereit</div>
-    </header>
-
-    <div class="bar">
-      <label class="hint">
-        Ziel:
-        <select id="targetLang">
-          <option value="DE" selected>Deutsch (DE)</option>
-          <option value="EN-GB">Englisch (UK)</option>
-          <option value="EN-US">Englisch (US)</option>
-          <option value="FR">Französisch</option>
-          <option value="ES">Spanisch</option>
-          <option value="IT">Italienisch</option>
-          <option value="NL">Niederländisch</option>
-          <option value="PL">Polnisch</option>
-        </select>
-      </label>
-
-      <label class="hint">
-        Ton:
-        <select id="formality">
-          <option value="">Auto</option>
-          <option value="more">Formeller</option>
-          <option value="less">Lockerer</option>
-        </select>
-      </label>
-
-      <label class="hint">
-        Modus:
-        <select id="mode">
-          <option value="improve" selected>Optimieren (Stil/Fluss)</option>
-          <option value="translate">Übersetzen</option>
-        </select>
-      </label>
-
-      <button id="runBtn">Senden</button>
-      <button class="ghost" id="copyOutBtn" disabled>Output kopieren</button>
-      <span class="hint" id="smallHint">Endpoint: <code>/api/translate</code></span>
     </div>
+    <div class="status" id="status">Bereit</div>
+  </header>
 
-    <div class="grid">
-      <section class="card">
-        <h2>
-          <span>Eingabe</span>
-          <span class="count"><span id="charCount">0</span>/1000</span>
-        </h2>
-        <textarea id="input" placeholder="Text hier einfügen … (max. 1000 Zeichen)"></textarea>
-        <div class="footer">
-          <span id="limitMsg">Maximal 1000 Zeichen.</span>
-          <div class="actions">
-            <button class="ghost" id="clearBtn">Leeren</button>
-          </div>
-        </div>
-      </section>
+  <div class="bar">
+    <label class="hint">
+      Zielsprache:
+      <select id="targetLang">
+        <option value="DE">Deutsch</option>
+        <option value="EN-GB">Englisch (UK)</option>
+        <option value="EN-US">Englisch (US)</option>
+        <option value="FR">Französisch</option>
+        <option value="ES">Spanisch</option>
+        <option value="IT">Italienisch</option>
+        <option value="NL">Niederländisch</option>
+        <option value="PL">Polnisch</option>
+      </select>
+    </label>
 
-      <section class="card">
-        <h2>
-          <span>DeepL Output</span>
-          <span class="count" id="latency">—</span>
-        </h2>
-        <textarea id="output" readonly placeholder="Hier erscheint die optimierte Version …"></textarea>
-        <div class="footer">
-          <span class="hint">Tipp: Output kopieren oder erneut senden.</span>
-          <div class="actions">
-            <button class="ghost" id="swapBtn" disabled>Output → Input</button>
-          </div>
-        </div>
-      </section>
-    </div>
+    <button id="runBtn">Übersetzen</button>
+    <span class="hint">Endpoint: <code>/api/translate</code></span>
   </div>
 
-  <script>
-    const MAX = 1000;
+  <div class="panel" id="helpPanel"></div>
 
-    const elInput = document.getElementById("input");
-    const elOutput = document.getElementById("output");
-    const elCount = document.getElementById("charCount");
-    const elLimitMsg = document.getElementById("limitMsg");
-    const elStatus = document.getElementById("status");
-    const elRun = document.getElementById("runBtn");
-    const elCopyOut = document.getElementById("copyOutBtn");
-    const elSwap = document.getElementById("swapBtn");
-    const elClear = document.getElementById("clearBtn");
-    const elLatency = document.getElementById("latency");
+  <div class="grid">
+    <section class="card">
+      <h2>
+        <span>Eingabetext</span>
+        <span id="count">0 / 1000</span>
+      </h2>
+      <textarea id="input" placeholder="Text hier einfügen …"></textarea>
+      <div class="footer">Maximal 1000 Zeichen.</div>
+    </section>
 
-    const elTargetLang = document.getElementById("targetLang");
-    const elFormality = document.getElementById("formality");
-    const elMode = document.getElementById("mode");
+    <section class="card">
+      <h2>
+        <span>Übersetzung</span>
+        <span id="latency">—</span>
+      </h2>
+      <textarea id="output" readonly placeholder="Übersetzter Text …"></textarea>
+      <div class="footer">DeepL-Ergebnis</div>
+    </section>
+  </div>
 
-    function setStatus(text, kind = "") {
-      elStatus.textContent = text;
-      elStatus.className = "status" + (kind ? " " + kind : "");
-    }
+</div>
 
-    function clampInput() {
-      let v = elInput.value || "";
-      if (v.length > MAX) {
-        elInput.value = v.slice(0, MAX);
-        elLimitMsg.textContent = "Max erreicht – Text wurde gekürzt.";
-        elLimitMsg.style.color = "var(--danger)";
-      } else {
-        elLimitMsg.textContent = "Maximal 1000 Zeichen.";
-        elLimitMsg.style.color = "var(--muted)";
-      }
-      elCount.textContent = elInput.value.length;
-    }
+<script>
+const MAX = 1000;
+const input = document.getElementById("input");
+const output = document.getElementById("output");
+const count = document.getElementById("count");
+const status = document.getElementById("status");
+const help = document.getElementById("helpPanel");
+const latency = document.getElementById("latency");
 
-    elInput.addEventListener("input", clampInput);
-    clampInput();
+input.addEventListener("input", () => {
+  if(input.value.length > MAX){
+    input.value = input.value.slice(0, MAX);
+  }
+  count.textContent = input.value.length + " / " + MAX;
+});
 
-    elClear.addEventListener("click", () => {
-      elInput.value = "";
-      clampInput();
-      elInput.focus();
-    });
+document.getElementById("runBtn").onclick = async () => {
+  const text = input.value.trim();
+  if(!text){
+    status.textContent = "Bitte Text eingeben";
+    status.className = "status err";
+    return;
+  }
 
-    elCopyOut.addEventListener("click", async () => {
-      try {
-        await navigator.clipboard.writeText(elOutput.value || "");
-        setStatus("Output kopiert", "ok");
-        setTimeout(() => setStatus("Bereit"), 1200);
-      } catch {
-        setStatus("Kopieren nicht möglich", "err");
-      }
-    });
+  status.textContent = "Übersetze …";
+  status.className = "status";
 
-    elSwap.addEventListener("click", () => {
-      elInput.value = (elOutput.value || "").slice(0, MAX);
-      clampInput();
-      elOutput.value = "";
-      elCopyOut.disabled = true;
-      elSwap.disabled = true;
-      elLatency.textContent = "—";
-      setStatus("Output in Input übernommen", "ok");
-      setTimeout(() => setStatus("Bereit"), 1200);
-    });
+  help.style.display = "none";
+  output.value = "";
 
-    async function callProxy(text) {
-      const payload = {
+  const t0 = performance.now();
+
+  try{
+    const res = await fetch("/api/translate", {
+      method:"POST",
+      headers:{ "Content-Type":"application/json" },
+      body:JSON.stringify({
         text,
-        mode: elMode.value,             // "improve" | "translate"
-        target_lang: elTargetLang.value,
-        formality: elFormality.value || undefined
-      };
+        target_lang: document.getElementById("targetLang").value
+      })
+    });
 
-      const t0 = performance.now();
-      const res = await fetch("/api/translate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
-      });
-      const t1 = performance.now();
-      elLatency.textContent = Math.round(t1 - t0) + " ms";
+    const data = await res.json();
+    latency.textContent = Math.round(performance.now() - t0) + " ms";
 
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        const msg = data?.error || ("HTTP " + res.status);
-        throw new Error(msg);
+    if(!res.ok){
+      if(data.error?.includes("missing DEEPL_API_KEY")){
+        help.innerHTML = `
+          <b>Server nicht konfiguriert</b><br>
+          In Vercel ist die Environment Variable <code>DEEPL_API_KEY</code> nicht gesetzt.<br><br>
+          <b>Lösung:</b>
+          <ol>
+            <li>Vercel → Project → Settings → Environment Variables</li>
+            <li><code>DEEPL_API_KEY</code> anlegen</li>
+            <li>Redeploy durchführen</li>
+          </ol>
+        `;
+        help.style.display = "block";
       }
-      return data;
+      throw new Error(data.error || "Serverfehler");
     }
 
-    elRun.addEventListener("click", async () => {
-      const text = (elInput.value || "").trim();
-      if (!text) {
-        setStatus("Bitte Text einfügen", "err");
-        elInput.focus();
-        return;
-      }
-      if (text.length > MAX) clampInput();
+    output.value = data.result || "";
+    status.textContent = "Fertig";
+    status.className = "status ok";
 
-      elRun.disabled = true;
-      setStatus("Sende an DeepL …");
-      elOutput.value = "";
-      elCopyOut.disabled = true;
-      elSwap.disabled = true;
+  }catch(e){
+    status.textContent = "Fehler: " + e.message;
+    status.className = "status err";
+  }
+};
+</script>
 
-      try {
-        const data = await callProxy(text);
-        const out = (data?.result || "").toString();
-        elOutput.value = out;
-        elCopyOut.disabled = !out;
-        elSwap.disabled = !out;
-        setStatus("Fertig", "ok");
-        setTimeout(() => setStatus("Bereit"), 1200);
-      } catch (e) {
-        setStatus("Fehler: " + (e?.message || "unbekannt"), "err");
-      } finally {
-        elRun.disabled = false;
-      }
-    });
-  </script>
 </body>
 </html>
