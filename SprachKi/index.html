@@ -507,4 +507,41 @@
     runRewriteBtn.disabled = true;
     copyRewriteBtn.disabled = true;
     outputRewrite.value = "";
-    latencyRewrite2.textContent = "
+    latencyRewrite2.textContent = "—";
+    setStatus("Sende …");
+
+    const t0 = performance.now();
+    try {
+      const res = await fetch("/api/rewrite", {
+        method: "POST",
+        headers: { "Content-Type":"application/json" },
+        body: JSON.stringify({
+          text,
+          style: document.getElementById("rewriteStyle").value
+        })
+      });
+
+      const data = await res.json().catch(() => ({}));
+      const ms = Math.round(performance.now() - t0);
+      latencyRewrite2.textContent = ms + " ms";
+
+      if (!res.ok) throw new Error(data.error || "Serverfehler");
+
+      outputRewrite.value = (data.result || "");
+      const hasOut = !!outputRewrite.value.trim();
+      copyRewriteBtn.disabled = !hasOut;
+
+      setStatus("Fertig", "ok");
+      setTimeout(() => setStatus("Bereit"), 900);
+    } catch (e) {
+      setStatus("Fehler: " + (e.message || "unbekannt"), "err");
+    } finally {
+      runRewriteBtn.disabled = false;
+    }
+  });
+
+  // Initial state
+  setStatus("Bereit");
+</script>
+</body>
+</html>
