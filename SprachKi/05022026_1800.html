@@ -1,0 +1,699 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>SprachKi</title>
+
+  <style>
+    :root{
+      --bg:#f6f8fb;
+      --panel:#ffffff;
+      --text:#0b1324;
+      --muted:#5b6b86;
+
+      --line:#dbe6f7;
+      --line-strong:#8cb3ff;
+
+      --accent:#1e4fd6;
+      --accent-ink:#0d2b7a;
+      --accent-soft:#eaf1ff;
+
+      --ok:#0f766e;
+      --danger:#b91c1c;
+
+      --shadow: 0 14px 40px rgba(8, 23, 56, 0.08);
+      --shadow-soft: 0 8px 22px rgba(8, 23, 56, 0.06);
+      --radius:18px;
+
+      --sans: "Manrope", "Segoe UI", Roboto, Helvetica, Arial, system-ui, -apple-system;
+
+      --tap: 52px;
+      --pad: 14px;
+      --font: 16.5px;
+      --font-small: 13.5px;
+      --lh: 1.6;
+    }
+
+    *{ box-sizing:border-box; }
+
+    body{
+      margin:0;
+      font-family:var(--sans);
+      font-size:var(--font);
+      line-height:var(--lh);
+      color:var(--text);
+      background:
+        radial-gradient(900px 560px at 10% -8%, rgba(30,79,214,.12), transparent 62%),
+        radial-gradient(820px 420px at 92% 12%, rgba(30,79,214,.10), transparent 58%),
+        var(--bg);
+    }
+
+    .wrap{
+      max-width:1040px;
+      margin:0 auto;
+      padding:14px;
+      padding-top: calc(14px + env(safe-area-inset-top));
+      padding-bottom: calc(18px + env(safe-area-inset-bottom));
+    }
+
+    header{
+      display:flex;
+      justify-content:space-between;
+      align-items:flex-start;
+      gap:12px;
+      margin-bottom:14px;
+    }
+
+    .brand{ display:flex; align-items:center; gap:12px; }
+    .logo{
+      width:42px;height:42px;border-radius:14px;
+      background: linear-gradient(180deg, rgba(30,79,214,.22), rgba(30,79,214,.06));
+      border:1px solid var(--line);
+      display:grid; place-items:center;
+      box-shadow: var(--shadow-soft);
+      color:var(--accent);
+      font-weight:900;
+      user-select:none;
+      flex:0 0 auto;
+    }
+
+    h1{ font-size:19px; margin:0; letter-spacing:.2px; }
+    .sub{ font-size:var(--font-small); color:var(--muted); margin-top:3px; }
+
+    .status{
+      font-size:12.5px;
+      padding:10px 12px;
+      border-radius:999px;
+      border:1px solid var(--line);
+      background:rgba(255,255,255,.96);
+      color:var(--muted);
+      max-width: 62vw;
+      white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+      min-height: var(--tap);
+      display:flex;
+      align-items:center;
+      box-shadow: var(--shadow-soft);
+    }
+    .status.ok{ border-color:rgba(15,118,110,.25); color:var(--ok); background:rgba(15,118,110,.08); }
+    .status.err{ border-color:rgba(185,28,28,.25); color:var(--danger); background:rgba(185,28,28,.08); }
+
+    .acc{
+      border:1px solid var(--line);
+      border-radius:var(--radius);
+      background:var(--panel);
+      box-shadow:var(--shadow);
+      overflow:hidden;
+      margin-bottom:14px;
+    }
+
+    .acc summary{
+      list-style:none;
+      cursor:pointer;
+      padding:14px 16px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      background: linear-gradient(180deg, rgba(234,242,255,.9), rgba(255,255,255,.85));
+      border-bottom:1px solid var(--line);
+      user-select:none;
+      min-height: calc(var(--tap) + 2px);
+    }
+    .acc summary::-webkit-details-marker{ display:none; }
+
+    .accTitle{ display:flex; flex-direction:column; gap:3px; }
+    .accTitle b{ font-size:15px; }
+    .accTitle span{ font-size:13px; color:var(--muted); }
+
+    .chev{
+      width:42px;height:42px;border-radius:14px;
+      border:1px solid var(--line);
+      background:#fff;
+      display:grid;place-items:center;
+      color:var(--accent);
+      font-weight:900;
+      flex:0 0 auto;
+      transition: transform .12s ease;
+    }
+    .acc[open] .chev{ transform: rotate(180deg); }
+    .acc[open] summary{ border-bottom-color: var(--line-strong); }
+
+    .panel{
+      padding:12px;
+      background:rgba(255,255,255,.9);
+    }
+
+    .grid{
+      display:grid;
+      grid-template-columns: 1fr;
+      gap:12px;
+    }
+
+    .card{
+      border:1px solid var(--line);
+      border-radius:16px;
+      background:#fff;
+      overflow:hidden;
+      display:flex;
+      flex-direction:column;
+      min-height: 300px;
+      box-shadow: var(--shadow-soft);
+    }
+
+    .cardHead{
+      padding:10px 12px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      background:rgba(234,242,255,.55);
+      border-bottom:1px solid var(--line);
+      min-height: var(--tap);
+    }
+
+    .label{ font-weight:900; font-size:14px; color:var(--accent-ink); }
+    .meta{ font-size:12.5px; color:var(--muted); display:flex; align-items:center; gap:8px; }
+    .meta code{ font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size:12px; }
+
+    textarea{
+      width:100%;
+      flex:1;
+      border:0;
+      outline:none;
+      resize:none;
+      padding:14px 12px;
+      font-size:16.5px;
+      line-height:1.6;
+      color:var(--text);
+      background:#fff;
+    }
+    textarea::placeholder{ color:#8aa0c0; }
+
+    .foot{
+      border-top:1px solid var(--line);
+      padding:10px 12px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      flex-wrap:wrap;
+      background:rgba(255,255,255,.92);
+      font-size:12.5px;
+      color:var(--muted);
+    }
+
+    .hint{ display:flex; align-items:center; gap:8px; }
+    .dot{
+      width:10px;height:10px;border-radius:99px;
+      background:var(--accent-soft);
+      border:1px solid var(--line);
+    }
+
+    .btnRow{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+
+    button, select{
+      font:inherit;
+      border-radius:12px;
+      border:1px solid var(--line);
+      background:#fff;
+      color:var(--text);
+      padding:12px 14px;
+      min-height: var(--tap);
+      box-shadow: 0 6px 16px rgba(13, 35, 92, 0.06);
+    }
+
+    select{
+      min-width: 220px;
+      max-width: 100%;
+    }
+
+    button{
+      cursor:pointer;
+      border-color: rgba(30,79,214,.25);
+      background: linear-gradient(180deg, rgba(30,79,214,.18), rgba(30,79,214,.06));
+      color: var(--accent);
+      font-weight:900;
+    }
+    button:hover{ border-color: rgba(30,79,214,.45); }
+    button:disabled{ opacity:.55; cursor:not-allowed; }
+
+    .ghost{
+      border-color: var(--line);
+      background:#fff;
+      color: var(--muted);
+      font-weight:900;
+    }
+
+    .iconBtn{
+      border:1px solid var(--line);
+      background:#fff;
+      color:var(--accent);
+      font-weight:900;
+      padding:12px 14px;
+      min-height: var(--tap);
+    }
+
+    .rightTools{
+      display:flex;
+      gap:10px;
+      align-items:center;
+      flex-wrap:wrap;
+      justify-content:flex-end;
+    }
+
+    @media (min-width: 980px){
+      .wrap{ padding:22px; }
+      h1{ font-size:21px; }
+      .grid{ grid-template-columns: 1fr 1fr; }
+      .card{ min-height: 360px; }
+      textarea{ font-size:16px; }
+      select{ min-width: 250px; }
+    }
+
+    @media (max-width: 380px){
+      :root{ --font: 16px; }
+      select{ min-width: 180px; }
+      .status{ max-width: 100%; }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="wrap">
+    <header>
+      <div class="brand">
+        <div class="logo">S</div>
+        <div>
+          <h1>SprachKi</h1>
+          <div class="sub">Links Eingabe – rechts Ergebnis. Alles kopierbar.</div>
+        </div>
+      </div>
+      <div class="status" id="status">Bereit</div>
+    </header>
+
+    <details class="acc" id="acc-rewrite">
+      <summary>
+        <div class="accTitle">
+          <b>Sprach-KI</b>
+          <span>Text verbessern oder als Vorbereitungsaufgabe umwandeln.</span>
+        </div>
+        <div class="chev">⌄</div>
+      </summary>
+
+      <div class="panel">
+        <div class="grid">
+          <div class="card">
+            <div class="cardHead">
+              <div class="label">Aufgabe / Text</div>
+              <div class="meta"><span id="cnt-rewrite">0</span>/1000</div>
+            </div>
+            <textarea id="in-rewrite" placeholder="Text einfügen … (max. 1000 Zeichen)"></textarea>
+            <div class="foot">
+              <div class="hint"><span class="dot"></span><span>Max. 1000 Zeichen</span></div>
+              <div class="btnRow">
+                <select id="style-rewrite" aria-label="Modus">
+                  <option value="neutral" selected>Neutral / klar</option>
+                  <option value="freundlich">Freundlich</option>
+                  <option value="formell">Formell</option>
+                  <option value="kurz">Kürzer</option>
+                  <option value="besser">Besser formuliert</option>
+                  <option value="vorbereitungsaufgabe">Vorbereitungsaufgabe</option>
+                </select>
+                <button id="send-rewrite" type="button">Senden</button>
+                <button id="clear-rewrite" class="ghost" type="button">Leeren</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="cardHead">
+              <div class="label">Ergebnis</div>
+              <div class="rightTools">
+                <div class="meta"><span id="ms-rewrite">—</span></div>
+                <button id="copy-rewrite" class="iconBtn" type="button" title="Kopieren" disabled>⧉</button>
+                <button id="toin-rewrite" class="ghost" type="button" title="In Eingabe übernehmen" disabled>In Eingabe</button>
+              </div>
+            </div>
+            <textarea id="out-rewrite" readonly placeholder="Hier erscheint das Ergebnis …"></textarea>
+            <div class="foot">
+              <div class="hint"><span class="dot"></span><span>Kopieren mit ⧉</span></div>
+              <span></span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </details>
+
+    <details class="acc" id="acc-translate">
+      <summary>
+        <div class="accTitle">
+          <b>Übersetzer</b>
+          <span>Text übersetzen – Ziel wählen, Ergebnis kopieren.</span>
+        </div>
+        <div class="chev">⌄</div>
+      </summary>
+
+      <div class="panel">
+        <div class="grid">
+          <div class="card">
+            <div class="cardHead">
+              <div class="label">Frage / Text</div>
+              <div class="meta"><span id="cnt-translate">0</span>/1000</div>
+            </div>
+            <textarea id="in-translate" placeholder="Text einfügen … (max. 1000 Zeichen)"></textarea>
+            <div class="foot">
+              <div class="hint"><span class="dot"></span><span>Max. 1000 Zeichen</span></div>
+              <div class="btnRow">
+                <select id="lang-translate" aria-label="Zielsprache">
+                  <option value="DE">Deutsch</option>
+                  <option value="EN-GB">Englisch (UK)</option>
+                  <option value="EN-US">Englisch (US)</option>
+                  <option value="FR">Französisch</option>
+                  <option value="ES">Spanisch</option>
+                  <option value="IT">Italienisch</option>
+                  <option value="NL">Niederländisch</option>
+                  <option value="PL">Polnisch</option>
+                </select>
+                <button id="send-translate" type="button">Senden</button>
+                <button id="clear-translate" class="ghost" type="button">Leeren</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="cardHead">
+              <div class="label">Ergebnis</div>
+              <div class="rightTools">
+                <div class="meta"><span id="ms-translate">—</span></div>
+                <button id="copy-translate" class="iconBtn" type="button" title="Kopieren" disabled>⧉</button>
+                <button id="toin-translate" class="ghost" type="button" title="In Eingabe übernehmen" disabled>In Eingabe</button>
+                <button id="to-rewrite" class="ghost" type="button" title="In Sprach-KI übernehmen" disabled>→ Sprach-KI</button>
+              </div>
+            </div>
+            <textarea id="out-translate" readonly placeholder="Hier erscheint das Ergebnis …"></textarea>
+            <div class="foot">
+              <div class="hint"><span class="dot"></span><span>Kopieren mit ⧉</span></div>
+              <span></span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </details>
+
+    <details class="acc" id="acc-ask">
+      <summary>
+        <div class="accTitle">
+          <b>Allgemeine Wissensfragen</b>
+          <span>Frage stellen – Antwort erhalten – kopieren.</span>
+        </div>
+        <div class="chev">⌄</div>
+      </summary>
+
+      <div class="panel">
+        <div class="grid">
+          <div class="card">
+            <div class="cardHead">
+              <div class="label">Frage</div>
+              <div class="meta"><span id="cnt-ask">0</span>/1000</div>
+            </div>
+            <textarea id="in-ask" placeholder="Frage eingeben … (max. 1000 Zeichen)"></textarea>
+            <div class="foot">
+              <div class="hint"><span class="dot"></span><span>Max. 1000 Zeichen</span></div>
+              <div class="btnRow">
+                <button id="send-ask" type="button">Senden</button>
+                <button id="clear-ask" class="ghost" type="button">Leeren</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="cardHead">
+              <div class="label">Antwort</div>
+              <div class="rightTools">
+                <div class="meta"><span id="ms-ask">—</span></div>
+                <button id="copy-ask" class="iconBtn" type="button" title="Kopieren" disabled>⧉</button>
+                <button id="toin-ask" class="ghost" type="button" title="In Eingabe übernehmen" disabled>In Eingabe</button>
+              </div>
+            </div>
+            <textarea id="out-ask" readonly placeholder="Hier erscheint die Antwort …"></textarea>
+            <div class="foot">
+              <div class="hint"><span class="dot"></span><span>Kopieren mit ⧉</span></div>
+              <span></span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </details>
+  </div>
+
+<script>
+  const MAX = 1000;
+  const statusEl = document.getElementById("status");
+
+  function setStatus(text, kind="") {
+    statusEl.textContent = text;
+    statusEl.className = "status" + (kind ? (" " + kind) : "");
+  }
+
+  function clampAndCount(textarea, countEl) {
+    if (textarea.value.length > MAX) textarea.value = textarea.value.slice(0, MAX);
+    countEl.textContent = String(textarea.value.length);
+  }
+
+  function enable(btn, on=true){ btn.disabled = !on; }
+
+  async function copyText(text, btn) {
+    if (!text) return;
+    try {
+      await navigator.clipboard.writeText(text);
+      const old = btn.textContent;
+      btn.textContent = "✓";
+      setStatus("Kopiert", "ok");
+      setTimeout(() => { btn.textContent = old; setStatus("Bereit"); }, 900);
+    } catch {
+      setStatus("Kopieren nicht möglich", "err");
+    }
+  }
+
+  function putInto(text, textarea, countEl) {
+    textarea.value = (text || "").slice(0, MAX);
+    clampAndCount(textarea, countEl);
+    textarea.focus();
+  }
+
+  async function postJSON(url, payload) {
+    const res = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type":"application/json" },
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || "Serverfehler");
+    return data;
+  }
+
+  function formatClarification(questions, hint) {
+    const lines = [];
+    lines.push("Hinweis:");
+    lines.push(hint || "Bitte kurz beantworten. Danach erneut senden.");
+    lines.push("");
+    lines.push("Rückfragen:");
+    (questions || []).forEach((q, i) => lines.push(`${i+1}) ${q}`));
+    lines.push("");
+    lines.push("So kannst du antworten (Beispiel):");
+    lines.push("Zielgruppe: …");
+    lines.push("Schwerpunkt: …");
+    lines.push("Kontext/Branche: …");
+    lines.push("Form: …");
+    return lines.join("\n");
+  }
+
+  const accRewrite = document.getElementById("acc-rewrite");
+  const inRewrite = document.getElementById("in-rewrite");
+  const outRewrite = document.getElementById("out-rewrite");
+  const cntRewrite = document.getElementById("cnt-rewrite");
+  const msRewrite = document.getElementById("ms-rewrite");
+  const styleRewrite = document.getElementById("style-rewrite");
+  const sendRewrite = document.getElementById("send-rewrite");
+  const clearRewrite = document.getElementById("clear-rewrite");
+  const copyRewrite = document.getElementById("copy-rewrite");
+  const toinRewrite = document.getElementById("toin-rewrite");
+
+  inRewrite.addEventListener("input", () => clampAndCount(inRewrite, cntRewrite));
+  clampAndCount(inRewrite, cntRewrite);
+
+  clearRewrite.onclick = () => {
+    inRewrite.value = "";
+    clampAndCount(inRewrite, cntRewrite);
+    inRewrite.focus();
+  };
+
+  copyRewrite.onclick = () => copyText(outRewrite.value, copyRewrite);
+  toinRewrite.onclick = () => putInto(outRewrite.value, inRewrite, cntRewrite);
+
+  sendRewrite.onclick = async () => {
+    const text = inRewrite.value.trim();
+    if (!text) return setStatus("Bitte Text eingeben", "err");
+
+    sendRewrite.disabled = true;
+    enable(copyRewrite, false);
+    enable(toinRewrite, false);
+    outRewrite.value = "";
+    msRewrite.textContent = "—";
+    setStatus("Sende …");
+
+    const t0 = performance.now();
+    try {
+      const data = await postJSON("/api/rewrite", {
+        text,
+        style: styleRewrite.value
+      });
+
+      msRewrite.textContent = Math.round(performance.now() - t0) + " ms";
+
+      if (data && data.type === "clarification") {
+        outRewrite.value = formatClarification(data.questions, data.hint);
+        enable(copyRewrite, true);
+        enable(toinRewrite, true);
+        setStatus("Bitte kurz ergänzen", "ok");
+      } else {
+        const result = (data && (data.result || data.output || data.text)) || "";
+        outRewrite.value = result;
+        const ok = !!outRewrite.value.trim();
+        enable(copyRewrite, ok);
+        enable(toinRewrite, ok);
+        setStatus("Fertig", "ok");
+      }
+
+      setTimeout(() => setStatus("Bereit"), 1200);
+    } catch (e) {
+      setStatus("Fehler: " + (e.message || "unbekannt"), "err");
+    } finally {
+      sendRewrite.disabled = false;
+    }
+  };
+
+  const accTranslate = document.getElementById("acc-translate");
+  const inTranslate = document.getElementById("in-translate");
+  const outTranslate = document.getElementById("out-translate");
+  const cntTranslate = document.getElementById("cnt-translate");
+  const msTranslate = document.getElementById("ms-translate");
+  const langTranslate = document.getElementById("lang-translate");
+  const sendTranslate = document.getElementById("send-translate");
+  const clearTranslate = document.getElementById("clear-translate");
+  const copyTranslate = document.getElementById("copy-translate");
+  const toinTranslate = document.getElementById("toin-translate");
+  const toRewrite = document.getElementById("to-rewrite");
+
+  inTranslate.addEventListener("input", () => clampAndCount(inTranslate, cntTranslate));
+  clampAndCount(inTranslate, cntTranslate);
+
+  clearTranslate.onclick = () => {
+    inTranslate.value = "";
+    clampAndCount(inTranslate, cntTranslate);
+    inTranslate.focus();
+  };
+
+  copyTranslate.onclick = () => copyText(outTranslate.value, copyTranslate);
+  toinTranslate.onclick = () => putInto(outTranslate.value, inTranslate, cntTranslate);
+
+  toRewrite.onclick = () => {
+    putInto(outTranslate.value, inRewrite, cntRewrite);
+    accRewrite.open = true;
+    inRewrite.focus();
+    setStatus("Übernommen", "ok");
+    setTimeout(() => setStatus("Bereit"), 1000);
+  };
+
+  sendTranslate.onclick = async () => {
+    const text = inTranslate.value.trim();
+    if (!text) return setStatus("Bitte Text eingeben", "err");
+
+    sendTranslate.disabled = true;
+    enable(copyTranslate, false);
+    enable(toinTranslate, false);
+    enable(toRewrite, false);
+    outTranslate.value = "";
+    msTranslate.textContent = "—";
+    setStatus("Sende …");
+
+    const t0 = performance.now();
+    try {
+      const data = await postJSON("/api/translate", {
+        text,
+        target_lang: langTranslate.value
+      });
+
+      msTranslate.textContent = Math.round(performance.now() - t0) + " ms";
+      outTranslate.value = (data.result || "");
+      const ok = !!outTranslate.value.trim();
+      enable(copyTranslate, ok);
+      enable(toinTranslate, ok);
+      enable(toRewrite, ok);
+
+      setStatus("Fertig", "ok");
+      setTimeout(() => setStatus("Bereit"), 1200);
+    } catch (e) {
+      setStatus("Fehler: " + (e.message || "unbekannt"), "err");
+    } finally {
+      sendTranslate.disabled = false;
+    }
+  };
+
+  const accAsk = document.getElementById("acc-ask");
+  const inAsk = document.getElementById("in-ask");
+  const outAsk = document.getElementById("out-ask");
+  const cntAsk = document.getElementById("cnt-ask");
+  const msAsk = document.getElementById("ms-ask");
+  const sendAsk = document.getElementById("send-ask");
+  const clearAsk = document.getElementById("clear-ask");
+  const copyAsk = document.getElementById("copy-ask");
+  const toinAsk = document.getElementById("toin-ask");
+
+  inAsk.addEventListener("input", () => clampAndCount(inAsk, cntAsk));
+  clampAndCount(inAsk, cntAsk);
+
+  clearAsk.onclick = () => {
+    inAsk.value = "";
+    clampAndCount(inAsk, cntAsk);
+    inAsk.focus();
+  };
+
+  copyAsk.onclick = () => copyText(outAsk.value, copyAsk);
+  toinAsk.onclick = () => putInto(outAsk.value, inAsk, cntAsk);
+
+  sendAsk.onclick = async () => {
+    const question = inAsk.value.trim();
+    if (!question) return setStatus("Bitte Frage eingeben", "err");
+
+    sendAsk.disabled = true;
+    enable(copyAsk, false);
+    enable(toinAsk, false);
+    outAsk.value = "";
+    msAsk.textContent = "—";
+    setStatus("Sende …");
+
+    const t0 = performance.now();
+    try {
+      const data = await postJSON("/api/ask", { question });
+
+      msAsk.textContent = Math.round(performance.now() - t0) + " ms";
+      outAsk.value = (data.result || "");
+      const ok = !!outAsk.value.trim();
+      enable(copyAsk, ok);
+      enable(toinAsk, ok);
+
+      setStatus("Fertig", "ok");
+      setTimeout(() => setStatus("Bereit"), 1200);
+    } catch (e) {
+      setStatus("Fehler: " + (e.message || "unbekannt"), "err");
+    } finally {
+      sendAsk.disabled = false;
+    }
+  };
+
+  setStatus("Bereit");
+</script>
+</body>
+</html>
