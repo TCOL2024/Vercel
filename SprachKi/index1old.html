@@ -1,0 +1,547 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>SprachKi – Textwerkzeug</title>
+
+  <style>
+    :root{
+      --bg:#ffffff;
+      --card:#ffffff;
+      --text:#0f172a;
+      --muted:#475569;
+      --line:#cfe3ff;
+      --line-strong:#89b6ff;
+      --accent:#1d4ed8;
+      --accent-soft:#eaf2ff;
+      --ok:#0f766e;
+      --danger:#b91c1c;
+      --shadow: 0 10px 30px rgba(2, 6, 23, 0.06);
+      --radius:16px;
+      --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    }
+
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family:var(--sans);
+      background:
+        radial-gradient(900px 500px at 20% -10%, rgba(29,78,216,.10), transparent 60%),
+        radial-gradient(700px 400px at 90% 10%, rgba(29,78,216,.08), transparent 55%),
+        var(--bg);
+      color:var(--text);
+    }
+
+    .wrap{max-width:1120px;margin:0 auto;padding:24px}
+    header{
+      display:flex;justify-content:space-between;align-items:flex-start;gap:16px;
+      margin-bottom:18px;
+    }
+
+    .brand{
+      display:flex;align-items:center;gap:10px;
+    }
+    .logo{
+      width:34px;height:34px;border-radius:12px;
+      background: linear-gradient(180deg, rgba(29,78,216,.18), rgba(29,78,216,.06));
+      border:1px solid var(--line);
+      display:grid;place-items:center;
+      box-shadow: 0 6px 18px rgba(29,78,216,.12);
+      color:var(--accent);
+      font-weight:800;
+    }
+    h1{font-size:18px;margin:0;letter-spacing:.2px}
+    .sub{font-size:13px;color:var(--muted);line-height:1.45;margin-top:4px}
+
+    .status{
+      font-size:12px;
+      padding:7px 10px;
+      border-radius:999px;
+      border:1px solid var(--line);
+      background:rgba(255,255,255,.7);
+      color:var(--muted);
+      max-width:520px;
+      white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+    }
+    .status.ok{border-color:rgba(15,118,110,.25); color:var(--ok); background:rgba(15,118,110,.06)}
+    .status.err{border-color:rgba(185,28,28,.25); color:var(--danger); background:rgba(185,28,28,.06)}
+
+    .tabs{
+      display:flex;gap:8px;flex-wrap:wrap;
+      padding:6px;
+      border:1px solid var(--line);
+      border-radius:999px;
+      background:rgba(255,255,255,.65);
+      width: fit-content;
+    }
+    .tab{
+      border:0;
+      background:transparent;
+      padding:8px 12px;
+      border-radius:999px;
+      color:var(--muted);
+      cursor:pointer;
+      font-size:13px;
+    }
+    .tab.active{
+      background: linear-gradient(180deg, rgba(29,78,216,.16), rgba(29,78,216,.08));
+      border:1px solid rgba(29,78,216,.20);
+      color:var(--accent);
+    }
+
+    .panel{
+      margin-top:14px;
+      border:1px solid var(--line);
+      border-radius:var(--radius);
+      background:rgba(255,255,255,.78);
+      box-shadow: var(--shadow);
+      overflow:hidden;
+    }
+
+    .panelHead{
+      display:flex;justify-content:space-between;align-items:center;gap:10px;
+      padding:14px 16px;
+      border-bottom:1px solid var(--line);
+      background: linear-gradient(180deg, rgba(234,242,255,.85), rgba(255,255,255,.70));
+    }
+    .panelTitle{
+      font-weight:700;
+      font-size:14px;
+      color:var(--text);
+    }
+    .panelDesc{
+      font-size:12px;
+      color:var(--muted);
+      margin-top:3px;
+    }
+    .tools{
+      display:flex;gap:10px;align-items:center;flex-wrap:wrap;
+    }
+
+    select, button{
+      font:inherit;
+      border-radius:12px;
+      border:1px solid var(--line);
+      background: #fff;
+      color:var(--text);
+      padding:10px 12px;
+      outline:none;
+    }
+    select{min-width:200px}
+    button{
+      cursor:pointer;
+      border-color: rgba(29,78,216,.28);
+      background: linear-gradient(180deg, rgba(29,78,216,.12), rgba(29,78,216,.06));
+      color: var(--accent);
+      font-weight:600;
+    }
+    button:hover{border-color: rgba(29,78,216,.38)}
+    button:disabled{opacity:.55;cursor:not-allowed}
+    .ghost{
+      border-color: var(--line);
+      background: #fff;
+      color: var(--muted);
+      font-weight:600;
+    }
+
+    .grid{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:14px;
+      padding:14px;
+      background: rgba(255,255,255,.65);
+    }
+
+    .card{
+      border:1px solid var(--line);
+      border-radius:14px;
+      overflow:hidden;
+      background: #fff;
+      display:flex;
+      flex-direction:column;
+      min-height:340px;
+    }
+    .cardHead{
+      display:flex;justify-content:space-between;align-items:center;gap:10px;
+      padding:12px 12px;
+      border-bottom:1px solid var(--line);
+      background: rgba(234,242,255,.45);
+    }
+    .cardLabel{
+      font-size:13px;
+      font-weight:700;
+      color:var(--text);
+    }
+    .meta{
+      display:flex;gap:8px;align-items:center;
+      font-family: var(--mono);
+      font-size:12px;
+      color: var(--muted);
+    }
+    .iconBtn{
+      border:1px solid var(--line);
+      background:#fff;
+      border-radius:10px;
+      padding:6px 9px;
+      cursor:pointer;
+      color: var(--accent);
+      font-weight:700;
+      line-height:1;
+    }
+    .iconBtn:disabled{opacity:.5;cursor:not-allowed;color:var(--muted)}
+    textarea{
+      flex:1;
+      width:100%;
+      border:0;
+      outline:none;
+      resize:none;
+      padding:14px 12px;
+      font-size:14px;
+      line-height:1.55;
+      color: var(--text);
+      background:#fff;
+    }
+    textarea::placeholder{color:#94a3b8}
+    .cardFoot{
+      padding:10px 12px;
+      border-top:1px solid var(--line);
+      display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;
+      font-size:12px;color:var(--muted);
+      background: rgba(255,255,255,.7);
+    }
+    .hint{
+      display:flex;gap:8px;align-items:center;
+    }
+    .dot{
+      width:8px;height:8px;border-radius:99px;background: var(--accent-soft); border:1px solid var(--line);
+    }
+
+    .divider{
+      height:1px;background: var(--line);
+    }
+
+    @media (max-width: 980px){
+      header{flex-direction:column}
+      .grid{grid-template-columns:1fr}
+      select{min-width:160px}
+      .status{max-width:100%}
+    }
+  </style>
+</head>
+
+<body>
+  <div class="wrap">
+    <header>
+      <div>
+        <div class="brand">
+          <div class="logo">S</div>
+          <div>
+            <h1>SprachKi</h1>
+            <div class="sub">Übersetzen und Umformulieren – schnell, klar, kopierbereit.</div>
+          </div>
+        </div>
+        <div style="margin-top:12px;">
+          <div class="tabs" role="tablist" aria-label="Werkzeuge">
+            <button class="tab active" id="tabTranslate" type="button">Übersetzen</button>
+            <button class="tab" id="tabRewrite" type="button">Umformulieren</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="status" id="status">Bereit</div>
+    </header>
+
+    <!-- PANEL: TRANSLATE -->
+    <section class="panel" id="panelTranslate">
+      <div class="panelHead">
+        <div>
+          <div class="panelTitle">Übersetzen</div>
+          <div class="panelDesc">Text einfügen, Ziel auswählen, Ergebnis kopieren.</div>
+        </div>
+        <div class="tools">
+          <select id="targetLang" aria-label="Zielsprache">
+            <option value="DE">Deutsch</option>
+            <option value="EN-GB">Englisch (UK)</option>
+            <option value="EN-US">Englisch (US)</option>
+            <option value="FR">Französisch</option>
+            <option value="ES">Spanisch</option>
+            <option value="IT">Italienisch</option>
+            <option value="NL">Niederländisch</option>
+            <option value="PL">Polnisch</option>
+          </select>
+          <button id="runTranslateBtn" type="button">Senden</button>
+          <button class="ghost" id="clearTranslateBtn" type="button">Leeren</button>
+        </div>
+      </div>
+
+      <div class="grid">
+        <div class="card">
+          <div class="cardHead">
+            <div class="cardLabel">Eingabe</div>
+            <div class="meta"><span id="countTranslate">0</span>/1000</div>
+          </div>
+          <textarea id="inputTranslate" placeholder="Text einfügen … (max. 1000 Zeichen)"></textarea>
+          <div class="cardFoot">
+            <div class="hint"><span class="dot"></span><span>Max. 1000 Zeichen</span></div>
+            <span id="latencyTranslate"> </span>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="cardHead">
+            <div class="cardLabel">Ergebnis</div>
+            <div class="meta">
+              <span id="latencyTranslate2">—</span>
+              <button class="iconBtn" id="copyTranslateBtn" type="button" title="Ergebnis kopieren" disabled>⧉</button>
+            </div>
+          </div>
+          <textarea id="outputTranslate" readonly placeholder="Hier erscheint das Ergebnis …"></textarea>
+          <div class="cardFoot">
+            <div class="hint"><span class="dot"></span><span>Kopieren mit ⧉</span></div>
+            <button class="ghost" id="toRewriteBtn" type="button" disabled>Ergebnis übernehmen</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- PANEL: REWRITE -->
+    <section class="panel" id="panelRewrite" style="display:none;">
+      <div class="panelHead">
+        <div>
+          <div class="panelTitle">Umformulieren</div>
+          <div class="panelDesc">Stil wählen, Text umformulieren, Ergebnis kopieren.</div>
+        </div>
+        <div class="tools">
+          <select id="rewriteStyle" aria-label="Stil">
+            <option value="neutral" selected>Neutral / klar</option>
+            <option value="freundlich">Freundlich</option>
+            <option value="formell">Formell</option>
+            <option value="kurz">Kürzer</option>
+            <option value="besser">Besser formuliert</option>
+          </select>
+          <button id="runRewriteBtn" type="button">Senden</button>
+          <button class="ghost" id="clearRewriteBtn" type="button">Leeren</button>
+        </div>
+      </div>
+
+      <div class="grid">
+        <div class="card">
+          <div class="cardHead">
+            <div class="cardLabel">Eingabe</div>
+            <div class="meta"><span id="countRewrite">0</span>/1000</div>
+          </div>
+          <textarea id="inputRewrite" placeholder="Text einfügen … (max. 1000 Zeichen)"></textarea>
+          <div class="cardFoot">
+            <div class="hint"><span class="dot"></span><span>Max. 1000 Zeichen</span></div>
+            <span id="latencyRewrite"> </span>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="cardHead">
+            <div class="cardLabel">Ergebnis</div>
+            <div class="meta">
+              <span id="latencyRewrite2">—</span>
+              <button class="iconBtn" id="copyRewriteBtn" type="button" title="Ergebnis kopieren" disabled>⧉</button>
+            </div>
+          </div>
+          <textarea id="outputRewrite" readonly placeholder="Hier erscheint das Ergebnis …"></textarea>
+          <div class="cardFoot">
+            <div class="hint"><span class="dot"></span><span>Kopieren mit ⧉</span></div>
+            <span></span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </div>
+
+<script>
+  const MAX = 1000;
+
+  const statusEl = document.getElementById("status");
+  function setStatus(text, kind="") {
+    statusEl.textContent = text;
+    statusEl.className = "status" + (kind ? (" " + kind) : "");
+  }
+
+  function clampAndCount(textarea, countEl) {
+    if (textarea.value.length > MAX) textarea.value = textarea.value.slice(0, MAX);
+    countEl.textContent = String(textarea.value.length);
+  }
+
+  async function copyText(text, btn) {
+    if (!text) return;
+    try {
+      await navigator.clipboard.writeText(text);
+      const old = btn.textContent;
+      btn.textContent = "✓";
+      btn.disabled = false;
+      setStatus("Kopiert", "ok");
+      setTimeout(() => { btn.textContent = old; setStatus("Bereit"); }, 900);
+    } catch {
+      setStatus("Kopieren nicht möglich", "err");
+    }
+  }
+
+  // Tabs
+  const tabTranslate = document.getElementById("tabTranslate");
+  const tabRewrite = document.getElementById("tabRewrite");
+  const panelTranslate = document.getElementById("panelTranslate");
+  const panelRewrite = document.getElementById("panelRewrite");
+
+  function showTranslate() {
+    panelTranslate.style.display = "";
+    panelRewrite.style.display = "none";
+    tabTranslate.classList.add("active");
+    tabRewrite.classList.remove("active");
+  }
+  function showRewrite() {
+    panelTranslate.style.display = "none";
+    panelRewrite.style.display = "";
+    tabRewrite.classList.add("active");
+    tabTranslate.classList.remove("active");
+  }
+  tabTranslate.addEventListener("click", showTranslate);
+  tabRewrite.addEventListener("click", showRewrite);
+
+  // Translate elements
+  const inputTranslate = document.getElementById("inputTranslate");
+  const outputTranslate = document.getElementById("outputTranslate");
+  const countTranslate = document.getElementById("countTranslate");
+  const runTranslateBtn = document.getElementById("runTranslateBtn");
+  const clearTranslateBtn = document.getElementById("clearTranslateBtn");
+  const copyTranslateBtn = document.getElementById("copyTranslateBtn");
+  const toRewriteBtn = document.getElementById("toRewriteBtn");
+  const latencyTranslate2 = document.getElementById("latencyTranslate2");
+
+  inputTranslate.addEventListener("input", () => clampAndCount(inputTranslate, countTranslate));
+  clampAndCount(inputTranslate, countTranslate);
+
+  clearTranslateBtn.addEventListener("click", () => {
+    inputTranslate.value = "";
+    clampAndCount(inputTranslate, countTranslate);
+    inputTranslate.focus();
+  });
+
+  copyTranslateBtn.addEventListener("click", () => copyText(outputTranslate.value, copyTranslateBtn));
+
+  runTranslateBtn.addEventListener("click", async () => {
+    const text = inputTranslate.value.trim();
+    if (!text) return setStatus("Bitte Text eingeben", "err");
+
+    runTranslateBtn.disabled = true;
+    copyTranslateBtn.disabled = true;
+    toRewriteBtn.disabled = true;
+    outputTranslate.value = "";
+    latencyTranslate2.textContent = "—";
+    setStatus("Sende …");
+
+    const t0 = performance.now();
+    try {
+      const res = await fetch("/api/translate", {
+        method: "POST",
+        headers: { "Content-Type":"application/json" },
+        body: JSON.stringify({
+          text,
+          target_lang: document.getElementById("targetLang").value
+        })
+      });
+
+      const data = await res.json().catch(() => ({}));
+      const ms = Math.round(performance.now() - t0);
+      latencyTranslate2.textContent = ms + " ms";
+
+      if (!res.ok) throw new Error(data.error || "Serverfehler");
+
+      outputTranslate.value = (data.result || "");
+      const hasOut = !!outputTranslate.value.trim();
+      copyTranslateBtn.disabled = !hasOut;
+      toRewriteBtn.disabled = !hasOut;
+
+      setStatus("Fertig", "ok");
+      setTimeout(() => setStatus("Bereit"), 900);
+    } catch (e) {
+      setStatus("Fehler: " + (e.message || "unbekannt"), "err");
+    } finally {
+      runTranslateBtn.disabled = false;
+    }
+  });
+
+  // Rewrite elements
+  const inputRewrite = document.getElementById("inputRewrite");
+  const outputRewrite = document.getElementById("outputRewrite");
+  const countRewrite = document.getElementById("countRewrite");
+  const runRewriteBtn = document.getElementById("runRewriteBtn");
+  const clearRewriteBtn = document.getElementById("clearRewriteBtn");
+  const copyRewriteBtn = document.getElementById("copyRewriteBtn");
+  const latencyRewrite2 = document.getElementById("latencyRewrite2");
+
+  inputRewrite.addEventListener("input", () => clampAndCount(inputRewrite, countRewrite));
+  clampAndCount(inputRewrite, countRewrite);
+
+  clearRewriteBtn.addEventListener("click", () => {
+    inputRewrite.value = "";
+    clampAndCount(inputRewrite, countRewrite);
+    inputRewrite.focus();
+  });
+
+  copyRewriteBtn.addEventListener("click", () => copyText(outputRewrite.value, copyRewriteBtn));
+
+  toRewriteBtn.addEventListener("click", () => {
+    inputRewrite.value = outputTranslate.value.slice(0, MAX);
+    clampAndCount(inputRewrite, countRewrite);
+    outputRewrite.value = "";
+    copyRewriteBtn.disabled = true;
+    showRewrite();
+    setStatus("Übernommen", "ok");
+    setTimeout(() => setStatus("Bereit"), 900);
+  });
+
+  runRewriteBtn.addEventListener("click", async () => {
+    const text = inputRewrite.value.trim();
+    if (!text) return setStatus("Bitte Text eingeben", "err");
+
+    runRewriteBtn.disabled = true;
+    copyRewriteBtn.disabled = true;
+    outputRewrite.value = "";
+    latencyRewrite2.textContent = "—";
+    setStatus("Sende …");
+
+    const t0 = performance.now();
+    try {
+      const res = await fetch("/api/rewrite", {
+        method: "POST",
+        headers: { "Content-Type":"application/json" },
+        body: JSON.stringify({
+          text,
+          style: document.getElementById("rewriteStyle").value
+        })
+      });
+
+      const data = await res.json().catch(() => ({}));
+      const ms = Math.round(performance.now() - t0);
+      latencyRewrite2.textContent = ms + " ms";
+
+      if (!res.ok) throw new Error(data.error || "Serverfehler");
+
+      outputRewrite.value = (data.result || "");
+      const hasOut = !!outputRewrite.value.trim();
+      copyRewriteBtn.disabled = !hasOut;
+
+      setStatus("Fertig", "ok");
+      setTimeout(() => setStatus("Bereit"), 900);
+    } catch (e) {
+      setStatus("Fehler: " + (e.message || "unbekannt"), "err");
+    } finally {
+      runRewriteBtn.disabled = false;
+    }
+  });
+
+  // Initial state
+  setStatus("Bereit");
+</script>
+</body>
+</html>
