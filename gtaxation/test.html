@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Beleg-Maske Steuererklärung</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --blue-900: #002a5c;
+      --blue-800: #003b82;
+      --blue-700: #0052b8;
+      --blue-100: #e7effa;
+      --grey-900: #1a1f2b;
+      --grey-700: #374151;
+      --grey-500: #6b7280;
+      --grey-200: #e5e7eb;
+      --grey-100: #f3f4f6;
+      --white: #ffffff;
+      --green: #1d9b67;
+      --orange: #d97706;
+      --red: #b42318;
+      --shadow: 0 16px 32px rgba(0, 42, 92, 0.12);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: "Inter", system-ui, sans-serif;
+      background: linear-gradient(180deg, #f6f9ff 0%, #eef3fb 100%);
+      color: var(--grey-900);
+      min-height: 100vh;
+    }
+
+    .page {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 32px 24px 64px;
+    }
+
+    header {
+      background: var(--blue-900);
+      color: var(--white);
+      padding: 28px 32px;
+      border-radius: 20px;
+      box-shadow: var(--shadow);
+    }
+
+    header h1 {
+      font-size: 1.8rem;
+      font-weight: 700;
+    }
+
+    header p {
+      margin-top: 8px;
+      color: rgba(255, 255, 255, 0.85);
+      font-size: 0.98rem;
+    }
+
+    .layout {
+      margin-top: 24px;
+      display: grid;
+      grid-template-columns: minmax(0, 2.1fr) minmax(0, 1.2fr);
+      gap: 24px;
+    }
+
+    .card {
+      background: var(--white);
+      border-radius: 20px;
+      padding: 24px;
+      box-shadow: 0 8px 24px rgba(0, 42, 92, 0.08);
+      border: 1px solid var(--grey-200);
+    }
+
+    .card h2 {
+      font-size: 1.2rem;
+      margin-bottom: 16px;
+      color: var(--blue-900);
+    }
+
+    .year-tabs {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 16px;
+    }
+
+    .year-tabs button {
+      border: 1px solid var(--blue-700);
+      background: var(--white);
+      color: var(--blue-700);
+      padding: 8px 16px;
+      border-radius: 999px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .year-tabs button.active {
+      background: var(--blue-700);
+      color: var(--white);
+      box-shadow: 0 8px 16px rgba(0, 82, 184, 0.3);
+    }
+
+    .year-tabs button.add-year {
+      border-style: dashed;
+      color: var(--blue-800);
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+
+    label {
+      display: block;
+      font-weight: 600;
+      margin-bottom: 6px;
+      color: var(--grey-700);
+    }
+
+    input,
+    select,
+    textarea {
+      width: 100%;
+      padding: 10px 12px;
+      border-radius: 12px;
+      border: 1px solid var(--grey-200);
+      font-size: 0.95rem;
+      font-family: inherit;
+      background: var(--white);
+    }
+
+    textarea {
+      min-height: 120px;
+      resize: vertical;
+    }
+
+    .actions {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      padding: 10px 18px;
+      border-radius: 999px;
+      border: none;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .btn.primary {
+      background: var(--blue-700);
+      color: var(--white);
+    }
+
+    .btn.secondary {
+      background: var(--blue-100);
+      color: var(--blue-900);
+      border: 1px solid var(--blue-700);
+    }
+
+    .btn.ghost {
+      background: transparent;
+      color: var(--grey-700);
+      border: 1px solid var(--grey-200);
+    }
+
+    .table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 16px;
+    }
+
+    .table th,
+    .table td {
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--grey-200);
+      text-align: left;
+      vertical-align: top;
+      font-size: 0.9rem;
+    }
+
+    .table th {
+      color: var(--grey-500);
+      font-weight: 600;
+      text-transform: uppercase;
+      font-size: 0.75rem;
+      letter-spacing: 0.03em;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      background: var(--grey-100);
+      color: var(--grey-700);
+    }
+
+    .pill.approved {
+      background: rgba(29, 155, 103, 0.12);
+      color: var(--green);
+    }
+
+    .pill.pending {
+      background: rgba(217, 119, 6, 0.12);
+      color: var(--orange);
+    }
+
+    .pill.rejected {
+      background: rgba(180, 35, 24, 0.12);
+      color: var(--red);
+    }
+
+    .suggestion-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .suggestion-card {
+      border-radius: 16px;
+      border: 1px solid var(--grey-200);
+      padding: 12px;
+      display: grid;
+      gap: 10px;
+      background: var(--white);
+    }
+
+    .suggestion-meta {
+      display: grid;
+      grid-template-columns: 1.2fr 1fr;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .suggestion-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .muted {
+      color: var(--grey-500);
+      font-size: 0.85rem;
+    }
+
+    .notice {
+      margin-top: 16px;
+      background: var(--blue-100);
+      border-radius: 12px;
+      padding: 12px 14px;
+      font-size: 0.85rem;
+      color: var(--blue-900);
+    }
+
+    @media (max-width: 960px) {
+      .layout {
+        grid-template-columns: 1fr;
+      }
+      header {
+        border-radius: 16px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <header>
+      <h1>Belege in Sekunden erfassen</h1>
+      <p>Strukturierte Maske zur schnellen Zuordnung von Belegen und Kontobewegungen für die Jahre 2023–2026 (erweiterbar).</p>
+    </header>
+
+    <div class="layout">
+      <section class="card">
+        <h2>Belege erfassen</h2>
+        <div class="year-tabs" id="yearTabs"></div>
+
+        <form id="receiptForm">
+          <div class="form-grid">
+            <div>
+              <label for="receiptDate">Belegdatum</label>
+              <input type="date" id="receiptDate" required />
+            </div>
+            <div>
+              <label for="receiptCategory">Zuordnung</label>
+              <select id="receiptCategory" required></select>
+            </div>
+            <div>
+              <label for="receiptAmount">Betrag (optional)</label>
+              <input type="number" id="receiptAmount" placeholder="0,00" step="0.01" />
+            </div>
+            <div>
+              <label for="receiptYear">Jahr</label>
+              <input type="text" id="receiptYear" readonly />
+            </div>
+          </div>
+          <div>
+            <label for="receiptNotes">Bemerkungen</label>
+            <textarea id="receiptNotes" placeholder="z. B. Rechnung, Projekt, Zahlungsempfänger"></textarea>
+          </div>
+          <div class="actions" style="margin-top:16px;">
+            <button class="btn primary" type="submit">Beleg hinzufügen</button>
+            <button class="btn ghost" type="button" id="clearForm">Eingaben löschen</button>
+          </div>
+        </form>
+
+        <table class="table" aria-label="Belegliste">
+          <thead>
+            <tr>
+              <th>Datum</th>
+              <th>Kategorie</th>
+              <th>Betrag</th>
+              <th>Bemerkung</th>
+            </tr>
+          </thead>
+          <tbody id="receiptTable"></tbody>
+        </table>
+      </section>
+
+      <aside class="card">
+        <h2>Kontobewegungen einfügen</h2>
+        <p class="muted">Füge mehrere Zeilen ein. Die Maske schlägt Kategorien vor, die du freigeben, löschen oder anpassen kannst.</p>
+        <div style="margin-top:12px;">
+          <label for="transactionInput">Kontobewegungen</label>
+          <textarea id="transactionInput" placeholder="z. B. 12.02.2024 Miete Objekt A 1.250,00&#10;15.02.2024 Versicherung Gebäude"></textarea>
+        </div>
+        <div class="actions" style="margin-top:12px;">
+          <button class="btn secondary" id="analyzeTransactions" type="button">Vorschläge erstellen</button>
+          <button class="btn ghost" id="clearTransactions" type="button">Feld leeren</button>
+        </div>
+
+        <div style="margin-top:20px;">
+          <h2>Vorschläge</h2>
+          <div class="suggestion-list" id="suggestionList"></div>
+          <div class="notice">Hinweis: Vorschläge basieren auf Schlüsselwörtern und sollten vor dem Speichern geprüft werden.</div>
+        </div>
+      </aside>
+    </div>
+  </div>
+
+  <script>
+    const categories = [
+      "Vermietung Objekt A",
+      "Vermietung Objekt B",
+      "Vermietung Objekt C",
+      "Allgemeine Vermietungskosten",
+      "Privatausgaben",
+      "Freiberufliche Tätigkeit",
+      "Haushaltsnahe Dienstleistungen",
+      "Versicherungen",
+      "Sonstiges (Prüfen)"
+    ];
+
+    const yearTabs = document.getElementById("yearTabs");
+    const receiptCategory = document.getElementById("receiptCategory");
+    const receiptYear = document.getElementById("receiptYear");
+    const receiptForm = document.getElementById("receiptForm");
+    const receiptTable = document.getElementById("receiptTable");
+    const clearForm = document.getElementById("clearForm");
+    const suggestionList = document.getElementById("suggestionList");
+
+    const state = {
+      years: {},
+      currentYear: null,
+      suggestions: []
+    };
+
+    function initCategories() {
+      receiptCategory.innerHTML = "";
+      categories.forEach((cat) => {
+        const option = document.createElement("option");
+        option.value = cat;
+        option.textContent = cat;
+        receiptCategory.appendChild(option);
+      });
+    }
+
+    function addYear(year) {
+      if (state.years[year]) {
+        setCurrentYear(year);
+        return;
+      }
+      state.years[year] = [];
+      const button = document.createElement("button");
+      button.type = "button";
+      button.textContent = year;
+      button.dataset.year = year;
+      button.addEventListener("click", () => setCurrentYear(year));
+      yearTabs.insertBefore(button, yearTabs.querySelector(".add-year"));
+      setCurrentYear(year);
+    }
+
+    function setCurrentYear(year) {
+      state.currentYear = year;
+      receiptYear.value = year;
+      [...yearTabs.querySelectorAll("button")].forEach((btn) => {
+        btn.classList.toggle("active", btn.dataset.year === year);
+      });
+      renderReceipts();
+    }
+
+    function renderReceipts() {
+      receiptTable.innerHTML = "";
+      const receipts = state.years[state.currentYear] || [];
+      receipts.forEach((item) => {
+        const row = document.createElement("tr");
+        row.innerHTML = `
+          <td>${item.date}</td>
+          <td>${item.category}</td>
+          <td>${item.amount || "-"}</td>
+          <td>${item.notes || "-"}</td>
+        `;
+        receiptTable.appendChild(row);
+      });
+    }
+
+    receiptForm.addEventListener("submit", (event) => {
+      event.preventDefault();
+      if (!state.currentYear) return;
+      const newReceipt = {
+        date: document.getElementById("receiptDate").value,
+        category: receiptCategory.value,
+        amount: document.getElementById("receiptAmount").value,
+        notes: document.getElementById("receiptNotes").value
+      };
+      state.years[state.currentYear].push(newReceipt);
+      receiptForm.reset();
+      receiptYear.value = state.currentYear;
+      renderReceipts();
+    });
+
+    clearForm.addEventListener("click", () => {
+      receiptForm.reset();
+      receiptYear.value = state.currentYear || "";
+    });
+
+    function guessCategory(text) {
+      const lower = text.toLowerCase();
+      if (lower.includes("objekt a") || lower.includes("miete a")) return "Vermietung Objekt A";
+      if (lower.includes("objekt b") || lower.includes("miete b")) return "Vermietung Objekt B";
+      if (lower.includes("objekt c") || lower.includes("miete c")) return "Vermietung Objekt C";
+      if (lower.includes("versicherung") || lower.includes("police")) return "Versicherungen";
+      if (lower.includes("handwerker") || lower.includes("reinigung") || lower.includes("garten")) return "Haushaltsnahe Dienstleistungen";
+      if (lower.includes("freiberuf") || lower.includes("honorar") || lower.includes("kunde")) return "Freiberufliche Tätigkeit";
+      if (lower.includes("privat") || lower.includes("einkauf")) return "Privatausgaben";
+      if (lower.includes("miete") || lower.includes("vermietung")) return "Allgemeine Vermietungskosten";
+      return "Sonstiges (Prüfen)";
+    }
+
+    function renderSuggestions() {
+      suggestionList.innerHTML = "";
+      if (state.suggestions.length === 0) {
+        suggestionList.innerHTML = "<p class=\"muted\">Noch keine Vorschläge vorhanden.</p>";
+        return;
+      }
+
+      state.suggestions.forEach((suggestion) => {
+        const card = document.createElement("div");
+        card.className = "suggestion-card";
+
+        const statusClass = suggestion.status === "approved" ? "approved" : suggestion.status === "rejected" ? "rejected" : "pending";
+        card.innerHTML = `
+          <div><strong>Bewegung</strong><br /><span class="muted">${suggestion.text}</span></div>
+          <div class="suggestion-meta">
+            <div>
+              <label>Kategorie</label>
+              <select data-id="${suggestion.id}" class="suggestion-category">
+                ${categories.map((cat) => `<option value="${cat}" ${cat === suggestion.category ? "selected" : ""}>${cat}</option>`).join("")}
+              </select>
+            </div>
+            <div>
+              <label>Status</label>
+              <span class="pill ${statusClass}">${suggestion.statusLabel}</span>
+            </div>
+          </div>
+          <div>
+            <label>Bemerkungen</label>
+            <input type="text" value="${suggestion.notes}" data-id="${suggestion.id}" class="suggestion-notes" />
+          </div>
+          <div class="suggestion-actions">
+            <button class="btn primary" data-action="approve" data-id="${suggestion.id}" type="button">Freigeben</button>
+            <button class="btn ghost" data-action="edit" data-id="${suggestion.id}" type="button">Ändern</button>
+            <button class="btn ghost" data-action="delete" data-id="${suggestion.id}" type="button">Löschen</button>
+          </div>
+        `;
+        suggestionList.appendChild(card);
+      });
+    }
+
+    document.getElementById("analyzeTransactions").addEventListener("click", () => {
+      const raw = document.getElementById("transactionInput").value.trim();
+      if (!raw) return;
+      const lines = raw.split("\n").map((line) => line.trim()).filter(Boolean);
+      state.suggestions = lines.map((line, index) => ({
+        id: `${Date.now()}-${index}`,
+        text: line,
+        category: guessCategory(line),
+        notes: "",
+        status: "pending",
+        statusLabel: "Prüfen"
+      }));
+      renderSuggestions();
+    });
+
+    document.getElementById("clearTransactions").addEventListener("click", () => {
+      document.getElementById("transactionInput").value = "";
+      state.suggestions = [];
+      renderSuggestions();
+    });
+
+    suggestionList.addEventListener("change", (event) => {
+      const id = event.target.dataset.id;
+      if (!id) return;
+      const suggestion = state.suggestions.find((item) => item.id === id);
+      if (!suggestion) return;
+      if (event.target.classList.contains("suggestion-category")) {
+        suggestion.category = event.target.value;
+      }
+      if (event.target.classList.contains("suggestion-notes")) {
+        suggestion.notes = event.target.value;
+      }
+    });
+
+    suggestionList.addEventListener("click", (event) => {
+      const action = event.target.dataset.action;
+      const id = event.target.dataset.id;
+      if (!action || !id) return;
+      const suggestionIndex = state.suggestions.findIndex((item) => item.id === id);
+      if (suggestionIndex < 0) return;
+      if (action === "delete") {
+        state.suggestions.splice(suggestionIndex, 1);
+      } else if (action === "approve") {
+        state.suggestions[suggestionIndex].status = "approved";
+        state.suggestions[suggestionIndex].statusLabel = "Freigegeben";
+      } else if (action === "edit") {
+        state.suggestions[suggestionIndex].status = "pending";
+        state.suggestions[suggestionIndex].statusLabel = "Zur Prüfung";
+      }
+      renderSuggestions();
+    });
+
+    function init() {
+      initCategories();
+      const addButton = document.createElement("button");
+      addButton.type = "button";
+      addButton.className = "add-year";
+      addButton.textContent = "+ Jahr hinzufügen";
+      addButton.addEventListener("click", () => {
+        const newYear = prompt("Bitte Jahr hinzufügen (z. B. 2027):");
+        if (!newYear) return;
+        if (!/^[0-9]{4}$/.test(newYear)) {
+          alert("Bitte ein vierstelliges Jahr eingeben.");
+          return;
+        }
+        addYear(newYear);
+      });
+      yearTabs.appendChild(addButton);
+      ["2023", "2024", "2025", "2026"].forEach(addYear);
+      renderSuggestions();
+    }
+
+    init();
+  </script>
+</body>
+</html>
