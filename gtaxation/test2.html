@@ -1,0 +1,751 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Beleg-Maske Steuererklärung</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --sap-shell: #354a5f;
+      --sap-shell-dark: #2f3c4f;
+      --sap-shell-light: #415b76;
+      --sap-accent: #0a6ed1;
+      --sap-accent-hover: #0854a0;
+      --sap-surface: #ffffff;
+      --sap-surface-alt: #f5f6f7;
+      --sap-border: #dfe3e8;
+      --sap-border-strong: #b8c2cc;
+      --sap-text: #1b1f23;
+      --sap-text-muted: #5b6b7a;
+      --sap-success: #107e3e;
+      --sap-warning: #b34c00;
+      --sap-error: #bb0000;
+      --sap-shadow: 0 10px 24px rgba(0, 0, 0, 0.08);
+      --sap-radius: 10px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: "72", "72full", "Inter", system-ui, sans-serif;
+      background: var(--sap-surface-alt);
+      color: var(--sap-text);
+      min-height: 100vh;
+    }
+
+    .shellbar {
+      background: var(--sap-shell);
+      color: #fff;
+      padding: 16px 28px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: var(--sap-shadow);
+    }
+
+    .shellbar-title {
+      font-size: 1.1rem;
+      font-weight: 600;
+      letter-spacing: 0.01em;
+    }
+
+    .shellbar-actions {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      font-size: 0.9rem;
+    }
+
+    .shell-pill {
+      background: var(--sap-shell-light);
+      padding: 6px 12px;
+      border-radius: 999px;
+      font-weight: 600;
+    }
+
+    .page {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 24px 24px 64px;
+    }
+
+    .object-header {
+      background: var(--sap-surface);
+      border-radius: var(--sap-radius);
+      border: 1px solid var(--sap-border);
+      padding: 20px 24px;
+      display: grid;
+      gap: 6px;
+      box-shadow: var(--sap-shadow);
+    }
+
+    .object-header h1 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--sap-shell-dark);
+    }
+
+    .object-header p {
+      color: var(--sap-text-muted);
+      font-size: 0.95rem;
+    }
+
+    .layout {
+      margin-top: 20px;
+      display: grid;
+      grid-template-columns: minmax(0, 2.2fr) minmax(0, 1fr);
+      gap: 20px;
+    }
+
+    .card {
+      background: var(--sap-surface);
+      border-radius: var(--sap-radius);
+      border: 1px solid var(--sap-border);
+      padding: 20px;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.06);
+    }
+
+    .card h2 {
+      font-size: 1.05rem;
+      font-weight: 600;
+      color: var(--sap-shell-dark);
+      margin-bottom: 12px;
+    }
+
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+      margin-bottom: 14px;
+    }
+
+    .year-tabs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .year-tabs button {
+      border: 1px solid var(--sap-border-strong);
+      background: #fff;
+      color: var(--sap-shell-dark);
+      padding: 6px 14px;
+      border-radius: 6px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: border 0.2s ease, color 0.2s ease, background 0.2s ease;
+    }
+
+    .year-tabs button.active {
+      background: var(--sap-accent);
+      border-color: var(--sap-accent);
+      color: #fff;
+    }
+
+    .year-tabs button.add-year {
+      border-style: dashed;
+      color: var(--sap-accent);
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+      gap: 14px;
+    }
+
+    label {
+      display: block;
+      font-weight: 600;
+      margin-bottom: 6px;
+      color: var(--sap-text-muted);
+      font-size: 0.85rem;
+    }
+
+    input,
+    select,
+    textarea {
+      width: 100%;
+      padding: 10px 12px;
+      border-radius: 6px;
+      border: 1px solid var(--sap-border);
+      font-size: 0.95rem;
+      font-family: inherit;
+      background: #fff;
+      transition: border 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    input:focus,
+    select:focus,
+    textarea:focus {
+      border-color: var(--sap-accent);
+      box-shadow: 0 0 0 2px rgba(10, 110, 209, 0.15);
+      outline: none;
+    }
+
+    textarea {
+      min-height: 110px;
+      resize: vertical;
+    }
+
+    .actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      padding: 9px 16px;
+      border-radius: 6px;
+      border: 1px solid transparent;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s ease, color 0.2s ease, border 0.2s ease;
+      font-size: 0.9rem;
+    }
+
+    .btn.primary {
+      background: var(--sap-accent);
+      color: #fff;
+    }
+
+    .btn.primary:hover {
+      background: var(--sap-accent-hover);
+    }
+
+    .btn.secondary {
+      background: #f7faff;
+      color: var(--sap-accent);
+      border-color: var(--sap-accent);
+    }
+
+    .btn.secondary:hover {
+      background: #eaf2fc;
+    }
+
+    .btn.ghost {
+      background: transparent;
+      color: var(--sap-text-muted);
+      border-color: var(--sap-border);
+    }
+
+    .table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 14px;
+    }
+
+    .table th,
+    .table td {
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--sap-border);
+      text-align: left;
+      vertical-align: top;
+      font-size: 0.88rem;
+    }
+
+    .table th {
+      color: var(--sap-text-muted);
+      font-weight: 600;
+      text-transform: uppercase;
+      font-size: 0.7rem;
+      letter-spacing: 0.04em;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      background: #eef2f6;
+      color: var(--sap-text-muted);
+    }
+
+    .pill.approved {
+      background: rgba(16, 126, 62, 0.12);
+      color: var(--sap-success);
+    }
+
+    .pill.pending {
+      background: rgba(179, 76, 0, 0.12);
+      color: var(--sap-warning);
+    }
+
+    .pill.rejected {
+      background: rgba(187, 0, 0, 0.12);
+      color: var(--sap-error);
+    }
+
+    .suggestion-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .suggestion-card {
+      border-radius: 8px;
+      border: 1px solid var(--sap-border);
+      padding: 12px;
+      display: grid;
+      gap: 10px;
+      background: #fff;
+    }
+
+    .suggestion-meta {
+      display: grid;
+      grid-template-columns: 1.2fr 1fr;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .suggestion-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .muted {
+      color: var(--sap-text-muted);
+      font-size: 0.85rem;
+    }
+
+    .notice {
+      margin-top: 14px;
+      background: #f0f6fc;
+      border-radius: 8px;
+      padding: 12px 14px;
+      font-size: 0.85rem;
+      color: var(--sap-shell-dark);
+      border: 1px solid #d8e6f7;
+    }
+
+    @media (max-width: 980px) {
+      .layout {
+        grid-template-columns: 1fr;
+      }
+      .shellbar {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header class="shellbar">
+    <div class="shellbar-title">Beleg-Maske Steuererklärung</div>
+    <div class="shellbar-actions">
+      <span class="shell-pill">Buchungsperiode 2023–2026</span>
+      <span>Mandant: 100 / Buchungskreis: 1710</span>
+    </div>
+  </header>
+
+  <div class="page">
+    <section class="object-header">
+      <h1>Belege erfassen &amp; Kontobewegungen prüfen</h1>
+      <p>Fiori-nahe Oberfläche zur strukturierten Zuordnung von Belegen und Kontobewegungen inklusive Prüfung, Freigabe und Export.</p>
+    </section>
+
+    <div class="layout">
+      <section class="card">
+        <div class="toolbar">
+          <h2>Belegerfassung</h2>
+          <div class="actions" style="margin-left:auto;">
+            <button class="btn secondary" type="button" id="exportReceipts">Belege als XLS exportieren</button>
+          </div>
+        </div>
+
+        <div class="year-tabs" id="yearTabs"></div>
+
+        <form id="receiptForm">
+          <div class="form-grid">
+            <div>
+              <label for="receiptDate">Belegdatum</label>
+              <input type="date" id="receiptDate" required />
+            </div>
+            <div>
+              <label for="receiptCategory">Zuordnung</label>
+              <select id="receiptCategory" required></select>
+            </div>
+            <div>
+              <label for="receiptAmount">Betrag (optional)</label>
+              <input type="number" id="receiptAmount" placeholder="0,00" step="0.01" />
+            </div>
+            <div>
+              <label for="receiptYear">Jahr</label>
+              <input type="text" id="receiptYear" readonly />
+            </div>
+          </div>
+          <div style="margin-top: 12px;">
+            <label for="receiptNotes">Bemerkungen</label>
+            <textarea id="receiptNotes" placeholder="z. B. Rechnung, Projekt, Zahlungsempfänger"></textarea>
+          </div>
+          <div class="actions" style="margin-top:16px;">
+            <button class="btn primary" type="submit">Beleg hinzufügen</button>
+            <button class="btn ghost" type="button" id="clearForm">Eingaben löschen</button>
+          </div>
+        </form>
+
+        <table class="table" aria-label="Belegliste">
+          <thead>
+            <tr>
+              <th>Datum</th>
+              <th>Kategorie</th>
+              <th>Betrag</th>
+              <th>Bemerkung</th>
+            </tr>
+          </thead>
+          <tbody id="receiptTable"></tbody>
+        </table>
+      </section>
+
+      <aside class="card">
+        <h2>Kontobewegungen einfügen</h2>
+        <p class="muted">Füge mehrere Zeilen ein. Daraus entstehen Buchungsvorschläge, die geprüft, angepasst und freigegeben werden können.</p>
+        <div style="margin-top:12px;">
+          <label for="transactionInput">Kontobewegungen</label>
+          <textarea id="transactionInput" placeholder="z. B. 12.02.2024 Miete Objekt A 1.250,00&#10;15.02.2024 Versicherung Gebäude"></textarea>
+        </div>
+        <div class="actions" style="margin-top:12px;">
+          <button class="btn secondary" id="analyzeTransactions" type="button">Buchungsvorschläge erstellen</button>
+          <button class="btn ghost" id="clearTransactions" type="button">Feld leeren</button>
+        </div>
+
+        <div style="margin-top:20px;">
+          <h2>Vorschläge</h2>
+          <div class="suggestion-list" id="suggestionList"></div>
+          <div class="notice">Hinweis: Vorschläge basieren auf Schlüsselwörtern und sollten vor dem Speichern geprüft werden.</div>
+        </div>
+      </aside>
+    </div>
+  </div>
+
+  <script>
+    const categories = [
+      "Vermietung Objekt A",
+      "Vermietung Objekt B",
+      "Vermietung Objekt C",
+      "Allgemeine Vermietungskosten",
+      "Privatausgaben",
+      "Freiberufliche Tätigkeit",
+      "Haushaltsnahe Dienstleistungen",
+      "Versicherungen",
+      "Sonstiges (Prüfen)"
+    ];
+
+    const yearTabs = document.getElementById("yearTabs");
+    const receiptCategory = document.getElementById("receiptCategory");
+    const receiptYear = document.getElementById("receiptYear");
+    const receiptForm = document.getElementById("receiptForm");
+    const receiptTable = document.getElementById("receiptTable");
+    const clearForm = document.getElementById("clearForm");
+    const exportReceipts = document.getElementById("exportReceipts");
+    const suggestionList = document.getElementById("suggestionList");
+
+    const state = {
+      years: {},
+      currentYear: null,
+      suggestions: []
+    };
+
+    function initCategories() {
+      receiptCategory.innerHTML = "";
+      categories.forEach((cat) => {
+        const option = document.createElement("option");
+        option.value = cat;
+        option.textContent = cat;
+        receiptCategory.appendChild(option);
+      });
+    }
+
+    function addYear(year) {
+      if (state.years[year]) {
+        setCurrentYear(year);
+        return;
+      }
+      state.years[year] = [];
+      const button = document.createElement("button");
+      button.type = "button";
+      button.textContent = year;
+      button.dataset.year = year;
+      button.addEventListener("click", () => setCurrentYear(year));
+      yearTabs.insertBefore(button, yearTabs.querySelector(".add-year"));
+      setCurrentYear(year);
+    }
+
+    function ensureYear(year) {
+      if (state.years[year]) return;
+      state.years[year] = [];
+      const button = document.createElement("button");
+      button.type = "button";
+      button.textContent = year;
+      button.dataset.year = year;
+      button.addEventListener("click", () => setCurrentYear(year));
+      yearTabs.insertBefore(button, yearTabs.querySelector(".add-year"));
+    }
+
+    function setCurrentYear(year) {
+      state.currentYear = year;
+      receiptYear.value = year;
+      [...yearTabs.querySelectorAll("button")].forEach((btn) => {
+        btn.classList.toggle("active", btn.dataset.year === year);
+      });
+      renderReceipts();
+    }
+
+    function renderReceipts() {
+      receiptTable.innerHTML = "";
+      const receipts = state.years[state.currentYear] || [];
+      receipts.forEach((item) => {
+        const row = document.createElement("tr");
+        row.innerHTML = `
+          <td>${item.date}</td>
+          <td>${item.category}</td>
+          <td>${item.amount || "-"}</td>
+          <td>${item.notes || "-"}</td>
+        `;
+        receiptTable.appendChild(row);
+      });
+    }
+
+    receiptForm.addEventListener("submit", (event) => {
+      event.preventDefault();
+      if (!state.currentYear) return;
+      const newReceipt = {
+        date: document.getElementById("receiptDate").value,
+        category: receiptCategory.value,
+        amount: document.getElementById("receiptAmount").value,
+        notes: document.getElementById("receiptNotes").value
+      };
+      state.years[state.currentYear].push(newReceipt);
+      receiptForm.reset();
+      receiptYear.value = state.currentYear;
+      renderReceipts();
+    });
+
+    clearForm.addEventListener("click", () => {
+      receiptForm.reset();
+      receiptYear.value = state.currentYear || "";
+    });
+
+    function escapeHtml(value) {
+      return String(value ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll("\"", "&quot;");
+    }
+
+    function buildReceiptRows() {
+      const rows = [["Jahr", "Belegdatum", "Kategorie", "Betrag", "Bemerkungen"]];
+      Object.entries(state.years).forEach(([year, receipts]) => {
+        receipts.forEach((item) => {
+          rows.push([
+            escapeHtml(year),
+            escapeHtml(item.date),
+            escapeHtml(item.category),
+            escapeHtml(item.amount || ""),
+            escapeHtml(item.notes || "")
+          ]);
+        });
+      });
+      return rows;
+    }
+
+    function downloadXls(rows) {
+      const header = "<table><tr>" + rows[0].map((cell) => `<th>${cell}</th>`).join("") + "</tr>";
+      const body = rows.slice(1).map((row) => `<tr>${row.map((cell) => `<td>${cell}</td>`).join("")}</tr>`).join("");
+      const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"></head><body>${header}${body}</table></body></html>`;
+      const blob = new Blob([html], { type: "application/vnd.ms-excel" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "belege-export.xls";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    }
+
+    exportReceipts.addEventListener("click", () => {
+      const rows = buildReceiptRows();
+      if (rows.length === 1) {
+        alert("Es wurden noch keine Belege erfasst.");
+        return;
+      }
+      downloadXls(rows);
+    });
+
+    function guessCategory(text) {
+      const lower = text.toLowerCase();
+      if (lower.includes("objekt a") || lower.includes("miete a")) return "Vermietung Objekt A";
+      if (lower.includes("objekt b") || lower.includes("miete b")) return "Vermietung Objekt B";
+      if (lower.includes("objekt c") || lower.includes("miete c")) return "Vermietung Objekt C";
+      if (lower.includes("versicherung") || lower.includes("police")) return "Versicherungen";
+      if (lower.includes("handwerker") || lower.includes("reinigung") || lower.includes("garten")) return "Haushaltsnahe Dienstleistungen";
+      if (lower.includes("freiberuf") || lower.includes("honorar") || lower.includes("kunde")) return "Freiberufliche Tätigkeit";
+      if (lower.includes("privat") || lower.includes("einkauf")) return "Privatausgaben";
+      if (lower.includes("miete") || lower.includes("vermietung")) return "Allgemeine Vermietungskosten";
+      return "Sonstiges (Prüfen)";
+    }
+
+    function parseDateFromText(text) {
+      const match = text.match(/(\d{1,2})\.(\d{1,2})\.(\d{4})/);
+      if (!match) return null;
+      const [_, day, month, year] = match;
+      return `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`;
+    }
+
+    function parseAmountFromText(text) {
+      const match = text.match(/(-?\d{1,3}(?:[.\s]\d{3})*(?:,\d{2})|-?\d+(?:\.\d{2})?)/);
+      if (!match) return "";
+      const raw = match[0].replace(/\s/g, "");
+      if (raw.includes(",")) {
+        return raw.replace(/\./g, "").replace(",", ".");
+      }
+      return raw;
+    }
+
+    function renderSuggestions() {
+      suggestionList.innerHTML = "";
+      if (state.suggestions.length === 0) {
+        suggestionList.innerHTML = "<p class=\"muted\">Noch keine Vorschläge vorhanden.</p>";
+        return;
+      }
+
+      state.suggestions.forEach((suggestion) => {
+        const card = document.createElement("div");
+        card.className = "suggestion-card";
+
+        const statusClass = suggestion.status === "approved" ? "approved" : suggestion.status === "rejected" ? "rejected" : "pending";
+        card.innerHTML = `
+          <div><strong>Bewegung</strong><br /><span class="muted">${suggestion.text}</span></div>
+          <div class="suggestion-meta">
+            <div>
+              <label>Kategorie</label>
+              <select data-id="${suggestion.id}" class="suggestion-category">
+                ${categories.map((cat) => `<option value="${cat}" ${cat === suggestion.category ? "selected" : ""}>${cat}</option>`).join("")}
+              </select>
+            </div>
+            <div>
+              <label>Status</label>
+              <span class="pill ${statusClass}">${suggestion.statusLabel}</span>
+            </div>
+          </div>
+          <div>
+            <label>Bemerkungen</label>
+            <input type="text" value="${suggestion.notes}" data-id="${suggestion.id}" class="suggestion-notes" />
+          </div>
+          <div class="suggestion-actions">
+            <button class="btn primary" data-action="approve" data-id="${suggestion.id}" type="button">Freigeben</button>
+            <button class="btn ghost" data-action="edit" data-id="${suggestion.id}" type="button">Ändern</button>
+            <button class="btn ghost" data-action="delete" data-id="${suggestion.id}" type="button">Löschen</button>
+          </div>
+        `;
+        suggestionList.appendChild(card);
+      });
+    }
+
+    document.getElementById("analyzeTransactions").addEventListener("click", () => {
+      const raw = document.getElementById("transactionInput").value.trim();
+      if (!raw) return;
+      const lines = raw.split("\n").map((line) => line.trim()).filter(Boolean);
+      state.suggestions = lines.map((line, index) => ({
+        id: `${Date.now()}-${index}`,
+        text: line,
+        category: guessCategory(line),
+        notes: "",
+        date: parseDateFromText(line),
+        amount: parseAmountFromText(line),
+        status: "pending",
+        statusLabel: "Prüfen"
+      }));
+      renderSuggestions();
+    });
+
+    document.getElementById("clearTransactions").addEventListener("click", () => {
+      document.getElementById("transactionInput").value = "";
+      state.suggestions = [];
+      renderSuggestions();
+    });
+
+    suggestionList.addEventListener("change", (event) => {
+      const id = event.target.dataset.id;
+      if (!id) return;
+      const suggestion = state.suggestions.find((item) => item.id === id);
+      if (!suggestion) return;
+      if (event.target.classList.contains("suggestion-category")) {
+        suggestion.category = event.target.value;
+      }
+      if (event.target.classList.contains("suggestion-notes")) {
+        suggestion.notes = event.target.value;
+      }
+    });
+
+    suggestionList.addEventListener("click", (event) => {
+      const action = event.target.dataset.action;
+      const id = event.target.dataset.id;
+      if (!action || !id) return;
+      const suggestionIndex = state.suggestions.findIndex((item) => item.id === id);
+      if (suggestionIndex < 0) return;
+      if (action === "delete") {
+        state.suggestions.splice(suggestionIndex, 1);
+      } else if (action === "approve") {
+        const suggestion = state.suggestions[suggestionIndex];
+        const receiptDate = suggestion.date || "";
+        const receiptYearValue = receiptDate ? receiptDate.slice(0, 4) : state.currentYear;
+        if (receiptYearValue && !state.years[receiptYearValue]) {
+          ensureYear(receiptYearValue);
+        }
+        if (receiptYearValue) {
+          state.years[receiptYearValue].push({
+            date: receiptDate || new Date().toISOString().slice(0, 10),
+            category: suggestion.category,
+            amount: suggestion.amount,
+            notes: suggestion.notes || suggestion.text
+          });
+        }
+        suggestion.status = "approved";
+        suggestion.statusLabel = "Freigegeben";
+        if (receiptYearValue === state.currentYear) {
+          renderReceipts();
+        }
+      } else if (action === "edit") {
+        state.suggestions[suggestionIndex].status = "pending";
+        state.suggestions[suggestionIndex].statusLabel = "Zur Prüfung";
+      }
+      renderSuggestions();
+    });
+
+    function init() {
+      initCategories();
+      const addButton = document.createElement("button");
+      addButton.type = "button";
+      addButton.className = "add-year";
+      addButton.textContent = "+ Jahr hinzufügen";
+      addButton.addEventListener("click", () => {
+        const newYear = prompt("Bitte Jahr hinzufügen (z. B. 2027):");
+        if (!newYear) return;
+        if (!/^[0-9]{4}$/.test(newYear)) {
+          alert("Bitte ein vierstelliges Jahr eingeben.");
+          return;
+        }
+        addYear(newYear);
+      });
+      yearTabs.appendChild(addButton);
+      ["2023", "2024", "2025", "2026"].forEach(addYear);
+      renderSuggestions();
+    }
+
+    init();
+  </script>
+</body>
+</html>
