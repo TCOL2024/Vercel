@@ -286,6 +286,9 @@
       <section class="card">
         <h2>Belege erfassen</h2>
         <div class="year-tabs" id="yearTabs"></div>
+        <div class="actions" style="margin-bottom:16px;">
+          <button class="btn secondary" type="button" id="exportReceipts">Belege als XLS exportieren</button>
+        </div>
 
         <form id="receiptForm">
           <div class="form-grid">
@@ -331,13 +334,13 @@
 
       <aside class="card">
         <h2>Kontobewegungen einfügen</h2>
-        <p class="muted">Füge mehrere Zeilen ein. Die Maske schlägt Kategorien vor, die du freigeben, löschen oder anpassen kannst.</p>
+        <p class="muted">Füge mehrere Zeilen ein. Daraus werden Buchungsvorschläge erstellt, die du prüfen, freigeben, ändern oder löschen kannst.</p>
         <div style="margin-top:12px;">
           <label for="transactionInput">Kontobewegungen</label>
           <textarea id="transactionInput" placeholder="z. B. 12.02.2024 Miete Objekt A 1.250,00&#10;15.02.2024 Versicherung Gebäude"></textarea>
         </div>
         <div class="actions" style="margin-top:12px;">
-          <button class="btn secondary" id="analyzeTransactions" type="button">Vorschläge erstellen</button>
+          <button class="btn secondary" id="analyzeTransactions" type="button">Buchungsvorschläge erstellen</button>
           <button class="btn ghost" id="clearTransactions" type="button">Feld leeren</button>
         </div>
 
@@ -369,6 +372,7 @@
     const receiptForm = document.getElementById("receiptForm");
     const receiptTable = document.getElementById("receiptTable");
     const clearForm = document.getElementById("clearForm");
+    const exportReceipts = document.getElementById("exportReceipts");
     const suggestionList = document.getElementById("suggestionList");
 
     const state = {
@@ -444,6 +448,54 @@
     clearForm.addEventListener("click", () => {
       receiptForm.reset();
       receiptYear.value = state.currentYear || "";
+    });
+
+    function escapeHtml(value) {
+      return String(value ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll("\"", "&quot;");
+    }
+
+    function buildReceiptRows() {
+      const rows = [["Jahr", "Belegdatum", "Kategorie", "Betrag", "Bemerkungen"]];
+      Object.entries(state.years).forEach(([year, receipts]) => {
+        receipts.forEach((item) => {
+          rows.push([
+            escapeHtml(year),
+            escapeHtml(item.date),
+            escapeHtml(item.category),
+            escapeHtml(item.amount || ""),
+            escapeHtml(item.notes || "")
+          ]);
+        });
+      });
+      return rows;
+    }
+
+    function downloadXls(rows) {
+      const header = "<table><tr>" + rows[0].map((cell) => `<th>${cell}</th>`).join("") + "</tr>";
+      const body = rows.slice(1).map((row) => `<tr>${row.map((cell) => `<td>${cell}</td>`).join("")}</tr>`).join("");
+      const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"></head><body>${header}${body}</table></body></html>`;
+      const blob = new Blob([html], { type: "application/vnd.ms-excel" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "belege-export.xls";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    }
+
+    exportReceipts.addEventListener("click", () => {
+      const rows = buildReceiptRows();
+      if (rows.length === 1) {
+        alert("Es wurden noch keine Belege erfasst.");
+        return;
+      }
+      downloadXls(rows);
     });
 
     function guessCategory(text) {
