@@ -1,0 +1,598 @@
+ (cd "$(git rev-parse --show-toplevel)" && git apply --3way <<'EOF' 
+diff --git a/index.html b/index.html
+index 6cee603863600483fbc480c2acac276c5bb157ba..85e2e83b7df23a8917926ba1263328e821379c1b 100644
+--- a/index.html
++++ b/index.html
+@@ -23,87 +23,124 @@
+     /* Modal-Overlay & Card */
+     .modal-overlay { position:fixed; inset:0; background:rgba(0,38,90,0.45); display:flex; align-items:center; justify-content:center; z-index:3000 }
+     .modal-card { background:#fff; border-radius:16px; width:90vw; max-width:500px; box-shadow:0 8px 32px rgba(0,70,160,0.13); border:1.5px solid #0059b3; overflow:hidden }
+     .modal-head { background:#0059b3; color:#fff; padding:20px 26px; display:flex; align-items:center; font-size:1.12rem; font-weight:600 }
+     .modal-head .fa-lock, .modal-head .fa-bullhorn { margin-right:12px; font-size:1.2rem }
+     .modal-content { padding:16px 22px; font-size:.9rem; line-height:1.4; color:#1c273a; max-height:60vh; overflow-y:auto }
+     .modal-content ul { margin:12px 0 0 18px }
+     .modal-content li { margin-bottom:.5rem }
+     .modal-footer { display:flex; justify-content:flex-end; gap:14px; padding:0 22px 18px }
+     .modal-btn { padding:10px 24px; border:none; border-radius:20px; font-size:1rem; font-weight:600; cursor:pointer; box-shadow:0 1px 5px rgba(0,89,179,0.06); transition:background .14s,color .12s }
+     .modal-btn.accept { background:#0059b3; color:#fff }
+     .modal-btn.accept:hover { background:#003974 }
+     .modal-btn.decline { background:#f3f4f6; color:#0059b3; border:1px solid #c7d5ea }
+     .modal-btn.decline:hover { background:#eaf1fa; color:#003974 }
+ 
+     /* Hauptinterface */
+     #mainContainer { display:none; width:100%; height:100% }
+     .container { display:flex; width:100%; height:100% }
+ 
+     /* Comic-Leiste */
+     .comic { flex:0 0 300px; background:#fff; display:flex; flex-direction:column; align-items:center; border-right:1px solid #e1e4e8; padding:1rem }
+     .comic img { width:100%; border-radius:.5rem }
+     .comic-name { margin-top:.5rem; font-family:'Segoe Script','Comic Sans MS',cursive; font-size:1.5rem; color:#333 }
+ 
+     /* Chat-Bereich */
+-    .chat-area { position:relative; flex:1; display:flex; flex-direction:column }
++    .chat-area { position:relative; flex:1; display:flex; flex-direction:column; min-width:0 }
+     .chat-area header { padding:1rem 1.5rem; font-size:1.25rem; font-weight:500; background:#fff; border-bottom:1px solid #e1e4e8 }
+     .chat-controls { position:absolute; top:1rem; right:1.5rem; display:flex; gap:.5rem; z-index:5 }
+     .control-btn { background:rgba(255,255,255,0.8); border:1px solid #e1e4e8; border-radius:.5rem; width:2.3rem; height:2.3rem; display:flex; align-items:center; justify-content:center; font-size:1.1rem; color:#57606a; cursor:pointer; transition:background .2s,color .2s }
+     .control-btn:hover { background:#fff; color:#24292e }
+ 
+     /* Chatfenster */
+     #chat { flex:1; overflow-y:auto; padding:1rem 1.5rem; display:flex; flex-direction:column; gap:1rem; background:#f7f7f8 }
+     .message { max-width:75%; padding:.75rem 1rem; border-radius:1rem; box-shadow:0 1px 2px rgba(0,0,0,0.1); line-height:1.5 }
+     .bot { align-self:flex-start; background:#fff; color:#24292e }
+     .user { align-self:flex-end; background:#0969da; color:#fff }
+ 
+     /* Inputbar */
+     .input-bar { display:flex; align-items:center; padding:.5rem 1rem calc(env(safe-area-inset-bottom)+.5rem); background:#fff; border-top:1px solid #e1e4e8 }
+     .input-bar button { background:none; border:none; font-size:1.5rem; cursor:pointer; color:#57606a; margin:0 .25rem; padding:.75rem }
+     .input-bar button:hover { color:#24292e }
+     #q { flex:1; border:none; outline:none; background:#f0f4f8; border-radius:.5rem; padding:1rem; margin:0 .5rem; font-size:1rem; line-height:1.4 }
+     .recording { color:#d00!important }
+ 
+     /* Sessions-Modal */
+     .session-item { display:flex; justify-content:space-between; padding:.5rem 0; border-bottom:1px solid #e3eefa; cursor:pointer }
+     .session-item:last-child { border:none }
+ 
++    /* Buchungs-Interface */
++    .banking-panel { background:#fff; border-bottom:1px solid #e1e4e8; padding:1.25rem 1.5rem 1.5rem; display:flex; flex-direction:column; gap:1rem }
++    .banking-panel h2 { font-size:1.15rem; margin-bottom:.25rem }
++    .banking-panel p { color:#57606a; font-size:.92rem }
++    .panel-header { display:flex; flex-wrap:wrap; justify-content:space-between; gap:1rem; align-items:center }
++    .panel-actions { display:flex; flex-wrap:wrap; gap:.5rem; align-items:center }
++    .panel-actions button, .panel-actions label { border:1px solid #d0d7de; background:#f6f8fa; color:#24292e; padding:.5rem .9rem; border-radius:.55rem; font-size:.9rem; cursor:pointer; font-weight:500 }
++    .panel-actions button.primary { background:#0969da; color:#fff; border-color:#0969da }
++    .file-btn input { display:none }
++    .panel-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(240px, 1fr)); gap:1rem }
++    .panel-card { border:1px solid #e1e4e8; border-radius:.75rem; padding:1rem; background:#f9fafb; display:flex; flex-direction:column; gap:.75rem }
++    .panel-card h3 { font-size:1rem }
++    .panel-card textarea { width:100%; min-height:140px; border:1px solid #d0d7de; border-radius:.5rem; padding:.75rem; font-family:'Inter',sans-serif; resize:vertical }
++    .panel-card .hint { font-size:.8rem; color:#57606a }
++    .panel-card button { align-self:flex-start; background:#0969da; color:#fff; border:none; padding:.5rem 1rem; border-radius:.45rem; cursor:pointer }
++    .summary-list { list-style:none; display:flex; flex-direction:column; gap:.5rem; margin:0; padding:0 }
++    .summary-item { display:flex; justify-content:space-between; font-size:.9rem }
++    .summary-item strong { color:#0969da }
++    .bulk-actions { display:flex; gap:.5rem; flex-wrap:wrap }
++    .bulk-actions button { border:1px solid #d0d7de; background:#fff; padding:.4rem .8rem; border-radius:.45rem; cursor:pointer; font-size:.85rem }
++    .table-wrapper { border:1px solid #e1e4e8; border-radius:.75rem; overflow:hidden }
++    .booking-table { width:100%; border-collapse:collapse; font-size:.9rem }
++    .booking-table th, .booking-table td { padding:.6rem .5rem; border-bottom:1px solid #e1e4e8; vertical-align:top }
++    .booking-table th { background:#f6f8fa; text-align:left; font-weight:600; font-size:.82rem; color:#57606a; text-transform:uppercase; letter-spacing:.03em }
++    .booking-table tr:last-child td { border-bottom:none }
++    .booking-table input, .booking-table select { width:100%; border:1px solid #d0d7de; border-radius:.4rem; padding:.35rem .45rem; font-size:.85rem; background:#fff }
++    .tag { display:inline-flex; align-items:center; gap:.35rem; padding:.15rem .55rem; border-radius:999px; font-size:.75rem; font-weight:600 }
++    .tag.good { background:#dafbe1; color:#116329 }
++    .tag.warn { background:#fff8c5; color:#9a6700 }
++    .tag.neutral { background:#eaeef2; color:#57606a }
++    .row-actions { display:flex; flex-direction:column; gap:.35rem }
++    .row-actions button { border:none; background:#f6f8fa; border-radius:.4rem; padding:.35rem .5rem; cursor:pointer; font-size:.75rem }
++    .approved { background:#e6ffed !important }
++
+     /* mobile adjustments */
+     @media (max-width: 768px) {
+       body { flex-direction: column; /* allow full page scroll */ overflow: auto; height: auto; }
+       html { height: auto; }
+       .container { flex-direction: column; }
+       .comic {
+         flex: 0 0 auto;
+         width: 100%;
+         border-right: none;
+         border-bottom: 1px solid #e1e4e8;
+       }
+       .chat-area { flex: 1; }
+       .modal-card { width: 95vw; }
+       .control-btn { width: 2rem; height: 2rem; font-size: 1rem; }
++      .banking-panel { padding:1rem; }
++      .panel-actions { width:100%; }
++      .booking-table th, .booking-table td { padding:.45rem .35rem; }
+       #chat { padding: 0.5rem 1rem; }
+       .message { max-width: 90%; padding: 0.5rem 0.75rem; }
+       .input-bar { padding: 0.25rem 0.5rem calc(env(safe-area-inset-bottom)+0.25rem); }
+       #q { padding: 0.75rem; font-size: 0.9rem; margin: 0 0.25rem; }
+     }
+   </style>
+ </head>
+ <body>
+   <!-- 1) Datenschutzhinweis -->
+   <div class="modal-overlay" id="privacy-modal">
+     <div class="modal-card">
+       <div class="modal-head"><i class="fa-solid fa-lock"></i>Datenschutzhinweis</div>
+       <div class="modal-content">
+         <p>Um diesen Chatbot nutzen zu können, ist deine Zustimmung zur Datenschutzerklärung erforderlich:</p>
+         <ul>
+           <li>Deine Eingaben werden an externe KI-Dienstleister (OpenAI, USA) und die Automatisierungsplattform (Make, EU) übermittelt.</li>
+           <li>Die übermittelten Daten werden für die Generierung von Antworten verarbeitet und können auf Servern außerhalb der EU gespeichert werden.</li>
+           <li>Bitte gib <strong>keine personenbezogenen oder sensiblen Daten</strong> ein!</li>
+           <li>Weitere Informationen: <a href="https://openai.com/policies/privacy-policy" target="_blank">OpenAI</a>, <a href="https://www.make.com/en/privacy-policy" target="_blank">Make.com</a>.</li>
+         </ul>
+       </div>
+       <div class="modal-footer">
+         <button class="modal-btn accept" id="acceptPrivacy">Zustimmen</button>
+         <button class="modal-btn decline" onclick="location.reload()">Ablehnen</button>
+       </div>
+@@ -140,96 +177,167 @@
+           <li><strong>Eigenverantwortung:</strong><br>
+             Sie nutzen den Bot auf eigene Verantwortung und bestätigen, dass Sie:
+             <ul>
+               <li>Die Grenzen des Systems verstehen</li>
+               <li>Alle Antworten kritisch hinterfragen</li>
+               <li>Bei wichtigen Entscheidungen zusätzliche Quellen konsultieren</li>
+             </ul>
+           </li>
+         </ul>
+       </div>
+       <div class="modal-footer">
+         <button class="modal-btn accept" id="acceptUsage">Zustimmen</button>
+         <button class="modal-btn decline" onclick="location.reload()">Ablehnen</button>
+       </div>
+     </div>
+   </div>
+ 
+   <!-- Hauptinterface -->
+   <div id="mainContainer">
+     <div class="container">
+       <div class="comic">
+         <img src="https://ntc-bot1.netlify.app/Bildschirmfoto%202025-06-26%20um%2021.09.25.png" alt="Linda"/>
+         <div class="comic-name">Linda</div>
+       </div>
+       <div class="chat-area">
+-        <header>Linda. Deine persönliche Assistentin im Bereich Personalmanagement.</header>
++        <header>Linda. Deine persönliche Assistentin für Buchungen & Projekte.</header>
+         <div class="chat-controls">
+           <button id="btnSessions" class="control-btn" title="Gespeicherte Chats"><i class="fa-solid fa-list"></i></button>
+           <button id="btnNew"      class="control-btn" title="Neuer Chat"><i class="fa-solid fa-plus"></i></button>
+           <button id="btnDel"      class="control-btn" title="Chat löschen"><i class="fa-solid fa-trash"></i></button>
+         </div>
++        <section class="banking-panel">
++          <div class="panel-header">
++            <div>
++              <h2>Kontoauszug-Import & Buchungsvorschläge</h2>
++              <p>Importieren Sie XLS/XLSX-Dateien oder fügen Sie kopierte Zeilen ein. Linda erstellt Vorschläge, die Sie vor dem Buchen prüfen, ändern oder löschen.</p>
++            </div>
++            <div class="panel-actions">
++              <label class="file-btn" for="xlsInput">XLS/XLSX wählen
++                <input type="file" id="xlsInput" accept=".xls,.xlsx"/>
++              </label>
++              <button id="parsePaste" class="primary">Aus Zwischenablage einfügen</button>
++              <button id="loadSample">Beispiel laden</button>
++            </div>
++          </div>
++          <div class="panel-grid">
++            <div class="panel-card">
++              <h3>Einfügen</h3>
++              <textarea id="pasteInput" placeholder="Tabellenzeilen aus dem Kontoauszug hier einfügen…"></textarea>
++              <div class="hint">Tipp: Spalten mit TAB trennen, Dezimaltrennzeichen wird erkannt.</div>
++              <button id="parseBtn">Buchungen analysieren</button>
++            </div>
++            <div class="panel-card">
++              <h3>Vorschlags-Übersicht</h3>
++              <ul class="summary-list" id="suggestionSummary"></ul>
++              <div class="bulk-actions">
++                <button id="approveAll">Alle freigeben</button>
++                <button id="clearAll">Alle zurücksetzen</button>
++              </div>
++            </div>
++          </div>
++          <div class="table-wrapper">
++            <table class="booking-table" id="bookingTable">
++              <thead>
++                <tr>
++                  <th>Status</th>
++                  <th>Buchungstag</th>
++                  <th>Valuta</th>
++                  <th>Buchungstext</th>
++                  <th>Betrag</th>
++                  <th>Kategorie</th>
++                  <th>Projekt</th>
++                  <th>Aktionen</th>
++                </tr>
++              </thead>
++              <tbody></tbody>
++            </table>
++          </div>
++        </section>
+         <div id="chat"></div>
+         <div class="input-bar">
+           <button id="tools-btn" title="Tools">⚙️</button>
+           <input  id="q" type="text" placeholder="Deine Frage…" autocomplete="off"/>
+           <button id="mic-btn" title="Sprich deine Frage ein">🎤</button>
+           <button id="send-btn" title="Senden">➤</button>
+         </div>
+       </div>
+     </div>
+   </div>
+ 
+   <!-- Sessions-Modal -->
+   <div class="modal-overlay" id="sessions-modal" style="display:none" onclick="if(event.target===this)hideSessionsModal()">
+     <div class="modal-card">
+       <div class="modal-head"><i class="fa-solid fa-list"></i>Gespeicherte Chats</div>
+       <div class="modal-content" id="sessions-list"></div>
+       <div class="modal-footer">
+         <button class="modal-btn accept" id="sessions-close">Schließen</button>
+       </div>
+     </div>
+   </div>
+ 
+   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
++  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+   <script>
+     // Elemente
+     const privacyModal   = document.getElementById('privacy-modal');
+     const usageModal     = document.getElementById('usage-modal');
+     const mainContainer  = document.getElementById('mainContainer');
+     const sessionsModal  = document.getElementById('sessions-modal');
+     const sessionsListEl = document.getElementById('sessions-list');
+     const chatEl         = document.getElementById('chat');
+ 
+     // Storage & Sessions
+     const STORAGE_KEY = 'chat-sessions';
+     let sessions = [], activeId = null;
+     const initialMsg = {
+       role:'assistant',
+-      content:'Hallo! Wie kann ich Sie im Bereich Personalmanagement, Ausbildung oder Prüfungsvorbereitung unterstützen?'
++      content:'Hallo! Wie kann ich Sie bei der Auswertung von Kontoauszügen oder bei Buchungsvorschlägen unterstützen?'
+     };
+ 
++    const sampleData = `Buchungstag\tValutadatum\tName Zahlungsbeteiligter\tIBAN Zahlungsbeteiligter\tBIC (SWIFT-Code) Zahlungsbeteiligter\tBuchungstext\tVerwendungszweck\tBetrag
++05.02.2026\t05.02.2026\tx\t\t\tDauerauftragsbelast\tRückzahlung wegen Vorauszahlungen Ende 2025 /*DA-10* IBAN: DE58280690520313507112 BIC: GENODEF1ORF\t-1791,12
++05.02.2026\t04.02.2026\tx\t\t\tÜberweisungsauftrag\tRücküberweisung Überzahlung Nebenkosten um 225,00 Euro SecureGo plus IBAN: DE94280690520313592600 BIC: GENODEF1ORF\t-225
++04.02.2026\t04.02.2026\tx\t\t\tÜberweisungsgutschr.\tMiete 450E , Nebenkosten 170E . 620 Februar Miete\t620
++04.02.2026\t04.02.2026\tx\t\t\tÜberweisungsauftrag\tGuthaben Nebenkosten-Abrechnung für das Jahr 2024. Rechnungsbetrag 2383,18 Euro, erhaltene Summe Nebenkosten in 2024: 2580,00 Euro. SecureGo plus IBAN: DE34285916540014701001 BIC: GENODEF1WRH\t-196,82
++04.02.2026\t04.02.2026\tx\t\t\tÜberweisungsauftrag\t018047592601A - 614115 018047592601B - 614115 018083572601A - 614115 0180835726018 - 614115 Objekt: Rhauderwieke 64 - Inhaber: Noormann Jens SecureGo plus IBAN: DE49285500000150435907 BIC: BRLADE21LER\t-186,96
++02.02.2026\t02.02.2026\tx\t\t\tDauerauftragsgutschr\t970,00 EURO ABTRAG + NEBENK OSTEN BUERGER/SANDSTRASSE\t1170
++02.02.2026\t02.02.2026\tx\t\t\tÜberweisungsgutschr.\tMiete und Nebenkosten RH64         Familie Skrypnyk\t1150
++02.02.2026\t02.02.2026\tx\t\t\tÜberweisungsgutschr.\tMiete Februar 2026\t730
++02.02.2026\t02.02.2026\tx\t\t\tBasislastschrift\t8/67 722 9373 50,00 EUR EREF: 01-02-26 KG8 67 722 9373 MREF: 200011276722 CRED: DE92ZZZ00000032166 IBAN: DE74600600000455500100 BIC: GENODESGXXX\t-50
++02.02.2026\t02.02.2026\tx\t\t\tBasislastschrift\tVORGANG - 588350914 TCHIBO MOBIL RUFNUMMER xxxxxxxx1920 EREF: ETD96031293V588350914 MREF: T04000030000000002985245 CRED: DE9700000000142462 IBAN: DE29700202700654186049 BIC: HYVEDEMMXXX\t-8,99
++02.02.2026\t02.02.2026\tx\t\t\tDauerauftragsgutschr\tMiete + Nebenkosten\t690
++02.02.2026\t02.02.2026\tx\t\t\tDauerauftragsgutschr\tMiete u.NK\t660
++02.02.2026\t02.02.2026\tx\t\t\tDauerauftragsgutschr\tMiete Bürgerstrasse 88 26123 Oldenburg\t1655
++02.02.2026\t02.02.2026\tx\t\t\tDauerauftragsbelast\tInflationsruecklage /*DA-8* IBAN: DE17120300001052831813 BIC: BYLADEM1001\t-110
++02.02.2026\t02.02.2026\tx\t\t\tDauerauftragsbelast\tRuecklage Immo /*DA-7* IBAN: DE84500105175587114972 BIC: INGDDEFFXXX\t-300
++02.02.2026\t02.02.2026\tx\t\t\tDauerauftragsbelast\tGeringfügige Beschäftigung / 40,00 Sachkostenbezug /*DA-11* IBAN: DE46280690520313563200 BIC: GENODEF1ORF\t-643
++30.01.2026\t30.01.2026\tx\t\t\tDarlehenstilgung\tIBAN DE66280690520313507162RECHN.ZINS         102,86  TILG./ENTG.        997,14  TILGUNG PER    30.01.2026  NEUER SALDO     91.533,91S\t-1100
++30.01.2026\t30.01.2026\tx\t\t\tDarlehenstilgung\tIBAN DE93280690520313507161RECHN.ZINS         482,37  TILG./ENTG.        313,03  TILGUNG PER    30.01.2026  NEUER SALDO    143.535,03S\t-795,4
++30.01.2026\t30.01.2026\tx\t\t\tDarlehenstilgung\tIBAN DE23280690520313507160RECHN.ZINS         141,76  TILG./ENTG.        545,56  TILGUNG PER    30.01.2026  NEUER SALDO    115.252,09S\t-687,32
++30.01.2026\t31.01.2026\tx\t\t\tAbschluss\tAbschluss per 31.01.2026\t-6,75`;
++
+     function loadSessions(){
+       sessions = JSON.parse(localStorage.getItem(STORAGE_KEY))||[];
+     }
+     function saveSessions(){
+       localStorage.setItem(STORAGE_KEY, JSON.stringify(sessions));
+     }
+ 
+     function createSession(){
+       const id = Date.now().toString();
+       const session = { id, name:'', messages:[initialMsg] };
+       sessions.unshift(session);
+       activeId = id;
+       saveSessions();
+       return session;
+     }
+ 
+     function loadSession(id){
+       const s = sessions.find(x=>x.id===id);
+       if(!s) return;
+       activeId = id;
+       messages = s.messages.slice();
+       renderMessages();
+       hideSessionsModal();
+     }
+ 
+@@ -266,50 +374,293 @@
+         const div = document.createElement('div');
+         div.className = 'message '+(m.role==='assistant'?'bot':'user');
+         div.innerHTML = `<strong>${m.role==='assistant'?'Linda':'Du'}:</strong><br>${marked.parse(m.content)}`;
+         chatEl.appendChild(div);
+       }
+       chatEl.scrollTop = chatEl.scrollHeight;
+     }
+ 
+     function renderSessionList(){
+       sessionsListEl.innerHTML = sessions.map(s=>`
+         <div class="session-item" data-id="${s.id}">
+           <span>${s.name||'Chat'}</span>
+           <button class="del-session" data-id="${s.id}">🗑️</button>
+         </div>`).join('');
+       document.querySelectorAll('.session-item').forEach(el=>{
+         el.onclick = ()=> loadSession(el.dataset.id);
+       });
+       document.querySelectorAll('.del-session').forEach(btn=>{
+         btn.onclick = e=>{
+           e.stopPropagation();
+           deleteSession(btn.dataset.id);
+         };
+       });
+     }
+ 
++    // Buchungen-Interface
++    const pasteInput = document.getElementById('pasteInput');
++    const bookingTableBody = document.querySelector('#bookingTable tbody');
++    const summaryEl = document.getElementById('suggestionSummary');
++    const categoryOptions = [
++      'Mieteinnahmen',
++      'Nebenkosten',
++      'Rücklage',
++      'Darlehen',
++      'Versicherung/Telekom',
++      'Personal/Sachkosten',
++      'Sonstiges'
++    ];
++    const projectOptions = [
++      'Rhauderwieke 64',
++      'Bürgerstrasse 88',
++      'Sandstrasse',
++      'Allgemein',
++      'Unklar'
++    ];
++    let bookings = [];
++
++    function parseAmount(value){
++      if(value === null || value === undefined) return 0;
++      const normalized = value.toString().replace(/\./g,'').replace(',','.');
++      const amount = Number(normalized);
++      return Number.isNaN(amount) ? 0 : amount;
++    }
++
++    function currency(value){
++      return new Intl.NumberFormat('de-DE',{style:'currency',currency:'EUR'}).format(value);
++    }
++
++    function suggestForText(text, amount){
++      const haystack = text.toLowerCase();
++      const suggestions = [];
++      let category = 'Sonstiges';
++      let project = 'Unklar';
++      let confidence = 'neutral';
++
++      if(haystack.includes('miete')){
++        category = amount > 0 ? 'Mieteinnahmen' : 'Nebenkosten';
++        confidence = 'good';
++      }
++      if(haystack.includes('nebenkosten')){
++        category = 'Nebenkosten';
++        confidence = 'good';
++      }
++      if(haystack.includes('darlehen') || haystack.includes('tilgung')){
++        category = 'Darlehen';
++        confidence = 'good';
++      }
++      if(haystack.includes('ruecklage') || haystack.includes('rücklage') || haystack.includes('inflations')){
++        category = 'Rücklage';
++        confidence = 'good';
++      }
++      if(haystack.includes('tchibo') || haystack.includes('mobil')){
++        category = 'Versicherung/Telekom';
++        confidence = 'warn';
++      }
++      if(haystack.includes('beschäftigung') || haystack.includes('sachkosten')){
++        category = 'Personal/Sachkosten';
++        confidence = 'good';
++      }
++
++      if(haystack.includes('rhauderwieke') || haystack.includes('rh64')){
++        project = 'Rhauderwieke 64';
++      } else if(haystack.includes('bürger') || haystack.includes('buerger')){
++        project = 'Bürgerstrasse 88';
++      } else if(haystack.includes('sandstrasse')){
++        project = 'Sandstrasse';
++      } else if(category !== 'Sonstiges'){
++        project = 'Allgemein';
++      }
++
++      suggestions.push({category, project, confidence});
++      return suggestions[0];
++    }
++
++    function parseTabular(text){
++      const rows = text.split(/\r?\n/).map(r=>r.trim()).filter(Boolean);
++      if(!rows.length) return [];
++      const header = rows[0].toLowerCase();
++      const hasHeader = header.includes('buchungstag') && header.includes('betrag');
++      const dataRows = hasHeader ? rows.slice(1) : rows;
++      return dataRows.map(row=>{
++        const cols = row.split('\t');
++        return {
++          status:'pruefen',
++          buchungstag: cols[0] || '',
++          valuta: cols[1] || '',
++          text: `${cols[5] || ''} ${cols[6] || ''}`.trim(),
++          amount: parseAmount(cols[7]),
++          category: '',
++          project: '',
++          confidence: 'neutral'
++        };
++      });
++    }
++
++    function normalizeBookings(entries){
++      return entries.map(entry=>{
++        const suggestion = suggestForText(entry.text, entry.amount);
++        return {
++          ...entry,
++          category: entry.category || suggestion.category,
++          project: entry.project || suggestion.project,
++          confidence: suggestion.confidence,
++          approved: false
++        };
++      });
++    }
++
++    function renderSummary(){
++      const total = bookings.reduce((sum, b)=>sum + b.amount, 0);
++      const credits = bookings.filter(b=>b.amount > 0).reduce((sum, b)=>sum + b.amount, 0);
++      const debits = bookings.filter(b=>b.amount < 0).reduce((sum, b)=>sum + b.amount, 0);
++      const toCheck = bookings.filter(b=>!b.approved).length;
++      summaryEl.innerHTML = `
++        <li class="summary-item"><span>Gesamt</span><strong>${currency(total)}</strong></li>
++        <li class="summary-item"><span>Einnahmen</span><strong>${currency(credits)}</strong></li>
++        <li class="summary-item"><span>Ausgaben</span><strong>${currency(debits)}</strong></li>
++        <li class="summary-item"><span>Offen zur Freigabe</span><strong>${toCheck}</strong></li>
++      `;
++    }
++
++    function renderBookings(){
++      bookingTableBody.innerHTML = '';
++      bookings.forEach((booking, index)=>{
++        const row = document.createElement('tr');
++        if(booking.approved) row.classList.add('approved');
++        row.innerHTML = `
++          <td><span class="tag ${booking.confidence}">${booking.approved ? 'Freigegeben' : 'Prüfen'}</span></td>
++          <td><input data-field="buchungstag" data-index="${index}" value="${booking.buchungstag}"></td>
++          <td><input data-field="valuta" data-index="${index}" value="${booking.valuta}"></td>
++          <td><input data-field="text" data-index="${index}" value="${booking.text}"></td>
++          <td><input data-field="amount" data-index="${index}" value="${booking.amount.toString().replace('.',',')}"></td>
++          <td>
++            <select data-field="category" data-index="${index}">
++              ${categoryOptions.map(opt=>`<option value="${opt}" ${opt===booking.category?'selected':''}>${opt}</option>`).join('')}
++            </select>
++          </td>
++          <td>
++            <select data-field="project" data-index="${index}">
++              ${projectOptions.map(opt=>`<option value="${opt}" ${opt===booking.project?'selected':''}>${opt}</option>`).join('')}
++            </select>
++          </td>
++          <td class="row-actions">
++            <button data-action="toggle" data-index="${index}">${booking.approved ? 'Zurücksetzen' : 'Freigeben'}</button>
++            <button data-action="delete" data-index="${index}">Löschen</button>
++          </td>
++        `;
++        bookingTableBody.appendChild(row);
++      });
++      renderSummary();
++    }
++
++    function updateBooking(index, field, value){
++      const booking = bookings[index];
++      if(!booking) return;
++      if(field === 'amount'){
++        booking.amount = parseAmount(value);
++      } else {
++        booking[field] = value;
++      }
++      const suggestion = suggestForText(booking.text, booking.amount);
++      booking.confidence = suggestion.confidence;
++      renderSummary();
++    }
++
++    bookingTableBody.addEventListener('input', (event)=>{
++      const target = event.target;
++      if(!(target instanceof HTMLInputElement || target instanceof HTMLSelectElement)) return;
++      const index = Number(target.dataset.index);
++      const field = target.dataset.field;
++      updateBooking(index, field, target.value);
++    });
++
++    bookingTableBody.addEventListener('click', (event)=>{
++      const target = event.target;
++      if(!(target instanceof HTMLButtonElement)) return;
++      const index = Number(target.dataset.index);
++      if(target.dataset.action === 'toggle'){
++        bookings[index].approved = !bookings[index].approved;
++        renderBookings();
++      }
++      if(target.dataset.action === 'delete'){
++        bookings.splice(index, 1);
++        renderBookings();
++      }
++    });
++
++    document.getElementById('parseBtn').onclick = ()=>{
++      const entries = parseTabular(pasteInput.value);
++      bookings = normalizeBookings(entries);
++      renderBookings();
++    };
++
++    document.getElementById('loadSample').onclick = ()=>{
++      pasteInput.value = sampleData;
++      const entries = parseTabular(sampleData);
++      bookings = normalizeBookings(entries);
++      renderBookings();
++    };
++
++    document.getElementById('approveAll').onclick = ()=>{
++      bookings = bookings.map(b=>({ ...b, approved:true }));
++      renderBookings();
++    };
++
++    document.getElementById('clearAll').onclick = ()=>{
++      bookings = bookings.map(b=>({ ...b, approved:false }));
++      renderBookings();
++    };
++
++    document.getElementById('parsePaste').onclick = async ()=>{
++      if(navigator.clipboard && navigator.clipboard.readText){
++        const text = await navigator.clipboard.readText();
++        pasteInput.value = text;
++        const entries = parseTabular(text);
++        bookings = normalizeBookings(entries);
++        renderBookings();
++      }
++    };
++
++    document.getElementById('xlsInput').addEventListener('change', (event)=>{
++      const file = event.target.files[0];
++      if(!file) return;
++      const reader = new FileReader();
++      reader.onload = (e)=>{
++        const data = new Uint8Array(e.target.result);
++        const workbook = XLSX.read(data, { type: 'array' });
++        const sheet = workbook.Sheets[workbook.SheetNames[0]];
++        const rows = XLSX.utils.sheet_to_json(sheet, { header: 1 });
++        const tsv = rows.map(row=>row.join('\t')).join('\n');
++        pasteInput.value = tsv;
++        const entries = parseTabular(tsv);
++        bookings = normalizeBookings(entries);
++        renderBookings();
++      };
++      reader.readAsArrayBuffer(file);
++    });
++
+     // Modals-Steuerung
+     document.getElementById('acceptPrivacy').onclick = ()=>{
+       privacyModal.style.display = 'none';
+       usageModal.style.display   = 'flex';
+     };
+     document.getElementById('acceptUsage').onclick = ()=>{
+       usageModal.style.display    = 'none';
+       mainContainer.style.display = 'flex';
+       loadSessions();
+       if(!sessions.length){
+         const s = createSession();
+         messages = s.messages.slice();
+       } else {
+         activeId = sessions[0].id;
+         messages = sessions[0].messages.slice();
+       }
+       renderMessages();
+     };
+ 
+     function showSessionsModal(){
+       renderSessionList();
+       sessionsModal.style.display='flex';
+     }
+     function hideSessionsModal(){
+       sessionsModal.style.display='none';
+ 
+EOF
+)
