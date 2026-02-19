@@ -200,6 +200,11 @@
   .source-box strong { display: block; margin-bottom: 6px; color: var(--blue-main); }
   .source-list { margin: 0; padding-left: 18px; color: #444; }
   .source-list li { margin-bottom: 4px; }
+  .source-list a {
+    color: var(--blue-main);
+    text-decoration: underline;
+    word-break: break-word;
+  }
 
   /* --- ACTIONS (Unter dem Text) --- */
   .msg-actions {
@@ -996,8 +1001,8 @@ const app = {
       } else {
         let html = marked.parse(content.replace(/\$(.*?)\$/g, '**$1**'));
         html = DOMPurify.sanitize(html, {
-          ALLOWED_TAGS: ['p','br','strong','em','ul','ol','li','h1','h2','h3','h4','pre','code','blockquote','table','thead','tbody','tr','th','td'],
-          ALLOWED_ATTR: ['class']
+          ALLOWED_TAGS: ['p','br','strong','em','ul','ol','li','h1','h2','h3','h4','h5','pre','code','blockquote','table','thead','tbody','tr','th','td','a'],
+          ALLOWED_ATTR: ['class', 'href', 'target', 'rel']
         });
 
         wrapper.innerHTML = `
@@ -1213,7 +1218,7 @@ const app = {
       const md = bubble.querySelector('.md');
       if (!md) return;
 
-      const heads = md.querySelectorAll('h1,h2,h3');
+      const heads = md.querySelectorAll('h1,h2,h3,h4,h5');
       let srcHead = Array.from(heads).find(h => /quellen/i.test(h.textContent));
       if (srcHead) {
         let ul = srcHead.nextElementSibling;
@@ -1228,6 +1233,24 @@ const app = {
           box.appendChild(list);
           srcHead.replaceWith(box);
           ul.remove();
+        }
+      } else {
+        const paras = md.querySelectorAll('p');
+        const srcPara = Array.from(paras).find(p => /^quellen\s*:*/i.test(p.textContent.trim()));
+        if (srcPara) {
+          let ul = srcPara.nextElementSibling;
+          while (ul && ul.tagName !== 'UL') ul = ul.nextElementSibling;
+          if (ul) {
+            const box = document.createElement('div');
+            box.className = 'source-box';
+            box.innerHTML = `<strong>Quellen</strong>`;
+            const list = document.createElement('ul');
+            list.className = 'source-list';
+            list.innerHTML = ul.innerHTML;
+            box.appendChild(list);
+            srcPara.replaceWith(box);
+            ul.remove();
+          }
         }
       }
 
@@ -1722,27 +1745,30 @@ ANTWORT: ${truncatedAnswer}
         return;
       }
 
-      let pos = 0;
+      app.logic._review = { due, pos: 0, deckId: deck.id };
+      app.logic.renderReviewStep();
+    },
 
-      const render = () => {
-        const item = due[pos];
+    renderReviewStep: () => {
+      const r = app.logic._review;
+      if (!r) return;
+      const reviewArea = document.getElementById('review-area');
+      const item = r.due[r.pos];
+      if (!item) return;
+
         reviewArea.innerHTML = `
           <div class="review-box">
-            <div class="pill" style="margin-bottom:10px;">🧠 Abfrage <small>${pos+1}/${due.length}</small></div>
+            <div class="pill" style="margin-bottom:10px;">🧠 Abfrage <small>${r.pos+1}/${r.due.length}</small></div>
             <div class="review-q">${item.c.front}</div>
             <div id="review-a" class="review-a">${item.c.back}</div>
             <div class="review-btns">
               <button class="mini" onclick="app.logic.toggleReviewAnswer()">Antwort anzeigen</button>
-              <button class="mini" onclick="app.logic.rateReview('${deck.id}', 'hard')">Schwer</button>
-              <button class="mini" onclick="app.logic.rateReview('${deck.id}', 'mid')">Mittel</button>
-              <button class="mini" onclick="app.logic.rateReview('${deck.id}', 'easy')">Leicht</button>
+              <button class="mini" onclick="app.logic.rateReview('${r.deckId}', 'hard')">Schwer</button>
+              <button class="mini" onclick="app.logic.rateReview('${r.deckId}', 'mid')">Mittel</button>
+              <button class="mini" onclick="app.logic.rateReview('${r.deckId}', 'easy')">Leicht</button>
             </div>
           </div>
         `;
-      };
-
-      app.logic._review = { due, pos, deckId: deck.id };
-      render();
     },
 
     toggleReviewAnswer: () => {
@@ -1775,8 +1801,8 @@ ANTWORT: ${truncatedAnswer}
         app.logic._review = null;
         return;
       }
-      // neu rendern
-      app.logic.startReview();
+      // Nächste Karte rendern ohne Review-Queue zu resetten
+      app.logic.renderReviewStep();
     },
 
     // --- PDF / Feedback / Clear ---
