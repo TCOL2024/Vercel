@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"/>
 <title>Linda – Lernassistentin</title>
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.8/purify.min.js"></script>
@@ -19,13 +19,13 @@
     --white: #fff;
     --danger: #dc3545;
 
-    /* Desktop (Kompakt) */
-    --font-desktop: 12px;
-    --line-desktop: 1.3;
+    /* Mobile First */
+    --font-size: 18px;
+    --line-height: 1.6;
 
-    /* Mobile (GROSS & OPTIMIERT) */
-    --font-mobile: 18px;
-    --line-mobile: 1.6;
+    /* Desktop */
+    --font-desktop: 16px;
+    --line-desktop: 1.5;
     --bubble-pad: 14px;
     --btn-size: 46px;
 
@@ -33,17 +33,11 @@
     --mobile-input-height: 65px; /* Größere Mindesthöhe */
   }
 
-  /* --- Media Queries --- */
+  /* --- Media Queries (Mobile First) --- */
   @media (min-width: 769px) {
     :root {
       --font-size: var(--font-desktop);
       --line-height: var(--line-desktop);
-    }
-  }
-  @media (max-width: 768px) {
-    :root {
-      --font-size: var(--font-mobile);
-      --line-height: var(--line-mobile);
     }
   }
 
@@ -200,6 +194,17 @@
   .source-box strong { display: block; margin-bottom: 6px; color: var(--blue-main); }
   .source-list { margin: 0; padding-left: 18px; color: #444; }
   .source-list li { margin-bottom: 4px; }
+  .source-list a {
+    color: var(--blue-main);
+    text-decoration: underline;
+    word-break: break-word;
+  }
+  .source-missing {
+    margin-top: 8px;
+    font-size: 0.85em;
+    color: var(--text-muted);
+    font-style: italic;
+  }
 
   /* --- ACTIONS (Unter dem Text) --- */
   .msg-actions {
@@ -996,8 +1001,8 @@ const app = {
       } else {
         let html = marked.parse(content.replace(/\$(.*?)\$/g, '**$1**'));
         html = DOMPurify.sanitize(html, {
-          ALLOWED_TAGS: ['p','br','strong','em','ul','ol','li','h1','h2','h3','h4','pre','code','blockquote','table','thead','tbody','tr','th','td'],
-          ALLOWED_ATTR: ['class']
+          ALLOWED_TAGS: ['p','br','strong','em','ul','ol','li','h1','h2','h3','h4','h5','pre','code','blockquote','table','thead','tbody','tr','th','td','a'],
+          ALLOWED_ATTR: ['class', 'href', 'target', 'rel']
         });
 
         wrapper.innerHTML = `
@@ -1209,11 +1214,37 @@ const app = {
       }
     },
 
+    buildAnswerPrompt: (question) => {
+      const sourceRule = [
+        'Antwort-Regel:',
+        '- Antworte klar und strukturiert auf Deutsch.',
+        '- Schließe die Antwort immer mit einer Überschrift "Quellen" ab.',
+        '- Liste darunter 2-5 belastbare Quellen als Stichpunkte.',
+        '- Wenn keine konkrete Quelle sicher verfügbar ist, schreibe unter "Quellen" genau: "- Keine verlässliche Quelle gefunden."'
+      ].join('\n');
+
+      return `${question}\n\n${sourceRule}`;
+    },
+
+    isSystemLikeAnswer: (text) => {
+      const t = (text || '').toLowerCase();
+      return t.includes('herzlich willkommen') || t.includes('verbindungsfehler') || t.includes('du bist offline');
+    },
+
+    ensureSourceHint: (md) => {
+      if (!md || md.querySelector('.source-box')) return;
+      const hint = document.createElement('div');
+      hint.className = 'source-missing';
+      hint.textContent = 'Hinweis: Diese Antwort enthält keine angegebenen Quellen.';
+      md.appendChild(hint);
+    },
+
     postProcessBubble: (bubble) => {
       const md = bubble.querySelector('.md');
       if (!md) return;
+      if (app.logic.isSystemLikeAnswer(md.innerText)) return;
 
-      const heads = md.querySelectorAll('h1,h2,h3');
+      const heads = md.querySelectorAll('h1,h2,h3,h4,h5');
       let srcHead = Array.from(heads).find(h => /quellen/i.test(h.textContent));
       if (srcHead) {
         let ul = srcHead.nextElementSibling;
@@ -1229,7 +1260,27 @@ const app = {
           srcHead.replaceWith(box);
           ul.remove();
         }
+      } else {
+        const paras = md.querySelectorAll('p');
+        const srcPara = Array.from(paras).find(p => /^quellen\s*:*/i.test(p.textContent.trim()));
+        if (srcPara) {
+          let ul = srcPara.nextElementSibling;
+          while (ul && ul.tagName !== 'UL') ul = ul.nextElementSibling;
+          if (ul) {
+            const box = document.createElement('div');
+            box.className = 'source-box';
+            box.innerHTML = `<strong>Quellen</strong>`;
+            const list = document.createElement('ul');
+            list.className = 'source-list';
+            list.innerHTML = ul.innerHTML;
+            box.appendChild(list);
+            srcPara.replaceWith(box);
+            ul.remove();
+          }
+        }
       }
+
+      app.logic.ensureSourceHint(md);
 
       md.querySelectorAll('table').forEach(t => {
         const w = document.createElement('div');
@@ -1330,14 +1381,15 @@ const app = {
           content: app.utils.truncateForApi(m.content, 500) // Jede Nachricht kürzen
         }));
 
-      // Frage kürzen auf unter 2000 Zeichen
-      const truncatedQuestion = app.utils.truncateForApi(txt, 1500);
+      // Frage kürzen und mit Quellen-Regel anreichern
+      const truncatedQuestion = app.utils.truncateForApi(txt, 1200);
+      const enrichedQuestion = app.utils.truncateForApi(app.logic.buildAnswerPrompt(truncatedQuestion), 1900);
       
       fetch('/api/bot', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          question: truncatedQuestion,
+          question: enrichedQuestion,
           fachmodus: app.state.settings.domain || '',
           history: history
         })
@@ -1722,27 +1774,30 @@ ANTWORT: ${truncatedAnswer}
         return;
       }
 
-      let pos = 0;
+      app.logic._review = { due, pos: 0, deckId: deck.id };
+      app.logic.renderReviewStep();
+    },
 
-      const render = () => {
-        const item = due[pos];
+    renderReviewStep: () => {
+      const r = app.logic._review;
+      if (!r) return;
+      const reviewArea = document.getElementById('review-area');
+      const item = r.due[r.pos];
+      if (!item) return;
+
         reviewArea.innerHTML = `
           <div class="review-box">
-            <div class="pill" style="margin-bottom:10px;">🧠 Abfrage <small>${pos+1}/${due.length}</small></div>
+            <div class="pill" style="margin-bottom:10px;">🧠 Abfrage <small>${r.pos+1}/${r.due.length}</small></div>
             <div class="review-q">${item.c.front}</div>
             <div id="review-a" class="review-a">${item.c.back}</div>
             <div class="review-btns">
               <button class="mini" onclick="app.logic.toggleReviewAnswer()">Antwort anzeigen</button>
-              <button class="mini" onclick="app.logic.rateReview('${deck.id}', 'hard')">Schwer</button>
-              <button class="mini" onclick="app.logic.rateReview('${deck.id}', 'mid')">Mittel</button>
-              <button class="mini" onclick="app.logic.rateReview('${deck.id}', 'easy')">Leicht</button>
+              <button class="mini" onclick="app.logic.rateReview('${r.deckId}', 'hard')">Schwer</button>
+              <button class="mini" onclick="app.logic.rateReview('${r.deckId}', 'mid')">Mittel</button>
+              <button class="mini" onclick="app.logic.rateReview('${r.deckId}', 'easy')">Leicht</button>
             </div>
           </div>
         `;
-      };
-
-      app.logic._review = { due, pos, deckId: deck.id };
-      render();
     },
 
     toggleReviewAnswer: () => {
@@ -1775,8 +1830,8 @@ ANTWORT: ${truncatedAnswer}
         app.logic._review = null;
         return;
       }
-      // neu rendern
-      app.logic.startReview();
+      // Nächste Karte rendern ohne Review-Queue zu resetten
+      app.logic.renderReviewStep();
     },
 
     // --- PDF / Feedback / Clear ---
