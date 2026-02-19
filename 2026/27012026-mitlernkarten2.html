@@ -205,6 +205,12 @@
     color: var(--text-muted);
     font-style: italic;
   }
+  .connection-hint {
+    margin-top: 8px;
+    color: #b23a48;
+    font-size: 0.9em;
+    font-weight: 700;
+  }
 
   /* --- ACTIONS (Unter dem Text) --- */
   .msg-actions {
@@ -603,6 +609,24 @@
 
   /* Mobile Touch Improvements */
   @media (max-width: 768px) {
+    header {
+      height: auto;
+      min-height: 60px;
+      padding: 8px 10px;
+      align-items: center;
+      gap: 8px;
+    }
+    .brand-area { min-width: 0; }
+    .logo { font-size: 1.1em; }
+    .header-btns {
+      gap: 6px;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      padding-bottom: 2px;
+    }
+    .btn-new { padding: 0 12px; }
+    .msg-wrapper { max-width: 100%; }
+    .bubble.user, .bubble.bot { width: 100%; }
     .msg-actions {
       gap: 4px;
       justify-content: flex-start;
@@ -812,6 +836,8 @@ const app = {
     sessions: [],
     activeId: null,
     consentGiven: false,
+    isSending: false,
+    lastQuestion: '',
     cards: {
       activeDeckId: null,
       // NEU: Globale Decks-Speicherung (unabhängig von Session)
@@ -1228,7 +1254,7 @@ const app = {
 
     isSystemLikeAnswer: (text) => {
       const t = (text || '').toLowerCase();
-      return t.includes('herzlich willkommen') || t.includes('verbindungsfehler') || t.includes('du bist offline');
+      return t.includes('herzlich willkommen') || t.includes('verbindungsfehler') || t.includes('du bist offline') || t.includes('anfrage hat zu lange') || t.includes('offline. bitte prüfe');
     },
 
     ensureSourceHint: (md) => {
@@ -1341,11 +1367,16 @@ const app = {
         return;
       }
 
+      if (app.state.isSending) return;
+
       const txt = app.ui.input.value.trim();
       if (!txt) return;
 
       const s = app.logic.getActiveSession();
       if (!s) return;
+
+      app.state.isSending = true;
+      app.state.lastQuestion = txt;
 
       const displayName = app.state.settings.name ? `${app.state.settings.name}: ` : '';
       const fullMsg = displayName + txt;
@@ -1385,6 +1416,10 @@ const app = {
       const truncatedQuestion = app.utils.truncateForApi(txt, 1200);
       const enrichedQuestion = app.utils.truncateForApi(app.logic.buildAnswerPrompt(truncatedQuestion), 1900);
       
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 25000);
+      let wasSuccessful = false;
+
       fetch('/api/bot', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -1392,13 +1427,15 @@ const app = {
           question: enrichedQuestion,
           fachmodus: app.state.settings.domain || '',
           history: history
-        })
+        }),
+        signal: controller.signal
       })
       .then(r => {
         if (!r.ok) throw new Error(`HTTP ${r.status}`);
         return r.text();
       })
       .then(resp => {
+        wasSuccessful = true;
         loadingWrapper.remove();
         s.messages.push({ role: 'assistant', content: resp });
         app.utils.save();
@@ -1411,16 +1448,32 @@ const app = {
       .catch((err) => {
         console.error('API Error:', err);
         loadingWrapper.remove();
-        const errBubble = app.ui.createBubble('assistant', '❌ Verbindungsfehler. Bitte versuche es erneut.');
+
+        const offline = !navigator.onLine;
+        const timeout = err && err.name === 'AbortError';
+        let msg = '❌ Verbindungsfehler. Bitte versuche es erneut.';
+        if (offline) msg = '⚠️ Du bist offline. Bitte prüfe deine Verbindung und sende erneut.';
+        else if (timeout) msg = '⚠️ Die Anfrage hat zu lange gedauert. Bitte erneut senden.';
+
+        const errBubble = app.ui.createBubble('assistant', `${msg}\n\n**Tipp:** Deine Eingabe bleibt im Feld, du kannst direkt erneut senden.`);
         app.ui.log.appendChild(errBubble);
         app.ui.scrollToBottom();
       })
       .finally(() => {
+        clearTimeout(timeoutId);
         app.ui.sendBtn.classList.remove('stop');
         app.ui.sendBtn.textContent = '➤';
         app.ui.input.disabled = false;
-        app.ui.input.value = '';
+        app.state.isSending = false;
+
+        if (wasSuccessful) {
+          app.ui.input.value = '';
+        } else {
+          app.ui.input.value = app.state.lastQuestion || app.ui.input.value;
+        }
+
         app.ui.input.style.height = 'auto';
+        app.ui.input.style.height = Math.min(app.ui.input.scrollHeight, 150) + 'px';
         app.ui.input.focus();
         // Snippet Popup schließen
         document.getElementById('snippet-popup').classList.remove('active');
@@ -2009,14 +2062,11 @@ window.onload = () => {
     e.stopPropagation();
   }, { passive: true });
 
-  // Send Button
-  document.getElementById('send-btn').addEventListener('click', app.logic.sendMessage);
-  
-  // Mobile: Touch-Event für Send Button
-  document.getElementById('send-btn').addEventListener('touchstart', (e) => {
+  // Send Button (einheitlich für Desktop + Mobile, ohne Doppelauslösung)
+  document.getElementById('send-btn').addEventListener('pointerup', (e) => {
     e.preventDefault();
     app.logic.sendMessage();
-  }, { passive: false });
+  });
 
   // Klick außerhalb schließt Snippet-Popup
   document.addEventListener('click', (e) => {
