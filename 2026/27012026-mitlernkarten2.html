@@ -1490,7 +1490,11 @@ const app = {
         if (wasSuccessful) {
           app.ui.input.value = '';
         } else {
-          app.ui.input.value = app.state.lastQuestion || app.ui.input.value;
+          // Only restore the last question if the input is still empty,
+          // so we don't overwrite any new text the user may have typed.
+          if (!app.ui.input.value) {
+            app.ui.input.value = app.state.lastQuestion || '';
+          }
         }
 
         app.ui.input.style.height = 'auto';
