@@ -36,10 +36,24 @@ function allowSameOrigin(req) {
   const origin = req.headers.origin || "";
   const referer = req.headers.referer || "";
   const host = req.headers.host || "";
-  const expected = host ? `https://${host}` : "";
+  const proto = req.headers["x-forwarded-proto"] || "";
 
-  if (origin && origin === expected) return true;
-  if (!origin && referer && expected && referer.startsWith(expected)) return true;
+  // Falls kein Origin/Referer vorhanden ist (z.B. manche WebViews), nicht hart blockieren.
+  if (!origin && !referer) return true;
+  if (!host) return false;
+
+  const allowed = new Set([`https://${host}`, `http://${host}`]);
+  if (proto) allowed.add(`${proto}://${host}`);
+
+  const parseOrigin = (value) => {
+    try { return new URL(value).origin; } catch { return ""; }
+  };
+
+  const reqOrigin = origin ? parseOrigin(origin) : "";
+  const refOrigin = referer ? parseOrigin(referer) : "";
+
+  if (reqOrigin && allowed.has(reqOrigin)) return true;
+  if (!reqOrigin && refOrigin && allowed.has(refOrigin)) return true;
   return false;
 }
 
@@ -153,6 +167,19 @@ function isLeakAttempt(text) {
 }
 
 // ---------- Antwort: NICHT nach Quellen abschneiden ----------
+
+function looksLikeSecurityHallucination(text) {
+  const v = String(text || "").toLowerCase();
+  const markers = [
+    "entdeckte prompt injection",
+    "offizielles sicherheitsprotokoll",
+    "systemsteuerungsprotokolle",
+    "forens",
+    "n-dex",
+    "automatischer forens"
+  ];
+  return markers.filter((m) => v.includes(m)).length >= 2;
+}
 function sanitizeReply(text) {
   let out = String(text || "").trim();
 
@@ -190,6 +217,7 @@ function sanitizeReply(text) {
   lines = lines.filter((ln) => !ROUTER_LINE_RE.test(ln));
   out = lines.join("\n").trim();
 
+
   // 4) Falls der Output nur Meta erklärt: neutraler Hinweis statt Meta-Text
   const looksLikeMetaExplanation =
     /erkl[aä]rung und bedeutung/i.test(out) ||
@@ -203,8 +231,15 @@ function sanitizeReply(text) {
     );
   }
 
-  // 5) Aufräumen
+  // 5) Offensichtliche Security-Halluzinationen abfangen
+  if (looksLikeSecurityHallucination(out)) {
+    return "Ich kann dir helfen. Formuliere bitte deine fachliche Frage normal (z. B. AEVO/VWL/Personal), dann antworte ich direkt mit einer klaren Erklärung.";
+  }
+
+  // 6) Aufräumen
   out = out.replace(/\n{3,}/g, "\n\n").trim();
+
+
   return out;
 }
 

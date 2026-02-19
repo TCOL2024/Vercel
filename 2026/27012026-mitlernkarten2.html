@@ -1240,18 +1240,6 @@ const app = {
       }
     },
 
-    buildAnswerPrompt: (question) => {
-      const sourceRule = [
-        'Antwort-Regel:',
-        '- Antworte klar und strukturiert auf Deutsch.',
-        '- Schließe die Antwort immer mit einer Überschrift "Quellen" ab.',
-        '- Liste darunter 2-5 belastbare Quellen als Stichpunkte.',
-        '- Wenn keine konkrete Quelle sicher verfügbar ist, schreibe unter "Quellen" genau: "- Keine verlässliche Quelle gefunden."'
-      ].join('\n');
-
-      return `${question}\n\n${sourceRule}`;
-    },
-
     isSystemLikeAnswer: (text) => {
       const t = (text || '').toLowerCase();
       return t.includes('herzlich willkommen') || t.includes('verbindungsfehler') || t.includes('du bist offline') || t.includes('anfrage hat zu lange') || t.includes('offline. bitte prüfe');
@@ -1261,7 +1249,7 @@ const app = {
       if (!md || md.querySelector('.source-box')) return;
       const hint = document.createElement('div');
       hint.className = 'source-missing';
-      hint.textContent = 'Tipp: Frage nach Quellen für weitere Informationen.';
+      hint.textContent = 'Hinweis: Diese Antwort enthält keine angegebenen Quellen.';
       md.appendChild(hint);
     },
 
@@ -1412,33 +1400,12 @@ const app = {
           content: app.utils.truncateForApi(m.content, 500) // Jede Nachricht kürzen
         }));
 
-      // Frage kürzen und mit Quellen-Regel anreichern
+      // Frage kürzen (keine zusätzlichen Instruktionsblöcke, um Security-False-Positives zu vermeiden)
       const truncatedQuestion = app.utils.truncateForApi(txt, 1200);
-      const enrichedQuestion = app.utils.truncateForApi(app.logic.buildAnswerPrompt(truncatedQuestion), 1900);
+      const enrichedQuestion = truncatedQuestion;
       
-      // AbortController und Timeout im State speichern, damit z.B. der Stop-Button abbrechen kann
-      if (app.state.abortTimeoutId) {
-        clearTimeout(app.state.abortTimeoutId);
-        app.state.abortTimeoutId = null;
-      }
-      if (app.state.abortController) {
-        try {
-          app.state.abortController.abort();
-        } catch (e) {
-          // bereits abgebrochen oder ungültig – ignorieren
-        }
-        app.state.abortController = null;
-      }
-
       const controller = new AbortController();
-      app.state.abortController = controller;
-
-      const timeoutId = setTimeout(() => {
-        controller.abort();
-        app.state.abortController = null;
-        app.state.abortTimeoutId = null;
-      }, 25000);
-      app.state.abortTimeoutId = timeoutId;
+      const timeoutId = setTimeout(() => controller.abort(), 25000);
       let wasSuccessful = false;
 
       fetch('/api/bot', {
@@ -1451,8 +1418,17 @@ const app = {
         }),
         signal: controller.signal
       })
-      .then(r => {
-        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      .then(async (r) => {
+        if (!r.ok) {
+          let detail = '';
+          try {
+            const data = await r.json();
+            detail = data?.error ? `: ${data.error}` : '';
+          } catch (_) {
+            // ignore json parse error and keep status only
+          }
+          throw new Error(`HTTP ${r.status}${detail}`);
+        }
         return r.text();
       })
       .then(resp => {
@@ -1475,6 +1451,7 @@ const app = {
         let msg = '❌ Verbindungsfehler. Bitte versuche es erneut.';
         if (offline) msg = '⚠️ Du bist offline. Bitte prüfe deine Verbindung und sende erneut.';
         else if (timeout) msg = '⚠️ Die Anfrage hat zu lange gedauert. Bitte erneut senden.';
+        else if (err?.message) msg = `❌ Verbindungsfehler (${err.message}).`;
 
         const errBubble = app.ui.createBubble('assistant', `${msg}\n\n**Tipp:** Deine Eingabe bleibt im Feld, du kannst direkt erneut senden.`);
         app.ui.log.appendChild(errBubble);
@@ -1490,11 +1467,7 @@ const app = {
         if (wasSuccessful) {
           app.ui.input.value = '';
         } else {
-          // Only restore the last question if the input is still empty,
-          // so we don't overwrite any new text the user may have typed.
-          if (!app.ui.input.value) {
-            app.ui.input.value = app.state.lastQuestion || '';
-          }
+          app.ui.input.value = app.state.lastQuestion || app.ui.input.value;
         }
 
         app.ui.input.style.height = 'auto';
@@ -1631,8 +1604,17 @@ ANTWORT: ${truncatedAnswer}
           history: []
         })
       })
-      .then(r => {
-        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      .then(async (r) => {
+        if (!r.ok) {
+          let detail = '';
+          try {
+            const data = await r.json();
+            detail = data?.error ? `: ${data.error}` : '';
+          } catch (_) {
+            // ignore json parse error and keep status only
+          }
+          throw new Error(`HTTP ${r.status}${detail}`);
+        }
         return r.text();
       })
       .then(resp => {
