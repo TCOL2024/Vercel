@@ -848,6 +848,7 @@ const app = {
   utils: {
     uid: () => 's_' + Date.now().toString(36) + Math.random().toString(36).slice(2,6),
     duid: () => 'd_' + Date.now().toString(36) + Math.random().toString(36).slice(2,6),
+    escapeHtml: (str) => String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'),
     save: () => {
       try {
         localStorage.setItem('linda_data', JSON.stringify(app.state));
@@ -1028,7 +1029,9 @@ const app = {
         let html = marked.parse(content.replace(/\$(.*?)\$/g, '**$1**'));
         html = DOMPurify.sanitize(html, {
           ALLOWED_TAGS: ['p','br','strong','em','ul','ol','li','h1','h2','h3','h4','h5','pre','code','blockquote','table','thead','tbody','tr','th','td','a'],
-          ALLOWED_ATTR: ['class', 'href', 'target', 'rel']
+          ALLOWED_ATTR: ['class', 'href', 'target', 'rel'],
+          // Only allow http/https links to prevent javascript: and other dangerous protocols
+          ALLOWED_URI_REGEXP: /^https?:\/\//i
         });
 
         wrapper.innerHTML = `
@@ -1051,6 +1054,12 @@ const app = {
       setTimeout(() => {
         app.ui.log.scrollTop = app.ui.log.scrollHeight;
       }, 100);
+    },
+
+    adjustInputHeight: () => {
+      const MAX_INPUT_HEIGHT = 150;
+      app.ui.input.style.height = 'auto';
+      app.ui.input.style.height = Math.min(app.ui.input.scrollHeight, MAX_INPUT_HEIGHT) + 'px';
     },
 
     openCardsLibrary: () => {
@@ -1412,9 +1421,12 @@ const app = {
           content: app.utils.truncateForApi(m.content, 500) // Jede Nachricht kürzen
         }));
 
-      // Frage kürzen und mit Quellen-Regel anreichern
-      const truncatedQuestion = app.utils.truncateForApi(txt, 1200);
-      const enrichedQuestion = app.utils.truncateForApi(app.logic.buildAnswerPrompt(truncatedQuestion), 1900);
+      // Trunkierungs-Limits: Frage auf 1600 Zeichen begrenzen, damit die ca. 250-Zeichen Quellen-Regel
+      // im angereicherten Prompt (max. 1900 Zeichen) immer vollständig enthalten ist.
+      const QUESTION_TRUNCATION_LIMIT = 1600;
+      const ENRICHED_TRUNCATION_LIMIT = 1900;
+      const truncatedQuestion = app.utils.truncateForApi(txt, QUESTION_TRUNCATION_LIMIT);
+      const enrichedQuestion = app.utils.truncateForApi(app.logic.buildAnswerPrompt(truncatedQuestion), ENRICHED_TRUNCATION_LIMIT);
       
       // AbortController und Timeout im State speichern, damit z.B. der Stop-Button abbrechen kann
       if (app.state.abortTimeoutId) {
@@ -1433,11 +1445,13 @@ const app = {
       const controller = new AbortController();
       app.state.abortController = controller;
 
+      // Konfigurierbare Timeout-Dauer für API-Anfragen (25s = erwartete Antwortzeit + Puffer)
+      const API_REQUEST_TIMEOUT_MS = 25000;
       const timeoutId = setTimeout(() => {
         controller.abort();
         app.state.abortController = null;
         app.state.abortTimeoutId = null;
-      }, 25000);
+      }, API_REQUEST_TIMEOUT_MS);
       app.state.abortTimeoutId = timeoutId;
       let wasSuccessful = false;
 
@@ -1497,8 +1511,7 @@ const app = {
           }
         }
 
-        app.ui.input.style.height = 'auto';
-        app.ui.input.style.height = Math.min(app.ui.input.scrollHeight, 150) + 'px';
+        app.ui.adjustInputHeight();
         app.ui.input.focus();
         // Snippet Popup schließen
         document.getElementById('snippet-popup').classList.remove('active');
@@ -1866,8 +1879,8 @@ ANTWORT: ${truncatedAnswer}
         reviewArea.innerHTML = `
           <div class="review-box">
             <div class="pill" style="margin-bottom:10px;">🧠 Abfrage <small>${r.pos+1}/${r.due.length}</small></div>
-            <div class="review-q">${item.c.front}</div>
-            <div id="review-a" class="review-a">${item.c.back}</div>
+            <div class="review-q">${app.utils.escapeHtml(item.c.front)}</div>
+            <div id="review-a" class="review-a">${app.utils.escapeHtml(item.c.back)}</div>
             <div class="review-btns">
               <button class="mini" onclick="app.logic.toggleReviewAnswer()">Antwort anzeigen</button>
               <button class="mini" onclick="app.logic.rateReview('${r.deckId}', 'hard')">Schwer</button>
@@ -2042,6 +2055,14 @@ ANTWORT: ${truncatedAnswer}
 window.onload = () => {
   app.utils.load();
 
+  // Register DOMPurify hook once: enforce rel="noopener noreferrer" on all links to prevent reverse tabnabbing
+  DOMPurify.addHook('afterSanitizeAttributes', (node) => {
+    if (node.tagName === 'A') {
+      node.setAttribute('rel', 'noopener noreferrer');
+      if (!node.getAttribute('target')) node.setAttribute('target', '_blank');
+    }
+  });
+
   const badge = document.getElementById('domain-badge');
   badge.textContent = app.state.settings.domain || 'Standard';
 
@@ -2061,8 +2082,7 @@ window.onload = () => {
   // Input Handling
   const inp = document.getElementById('chat-input');
   inp.addEventListener('input', function() {
-    this.style.height = 'auto';
-    this.style.height = Math.min(this.scrollHeight, 150) + 'px';
+    app.ui.adjustInputHeight();
 
     const val = this.value;
     if (val.startsWith('/')) {
@@ -2088,8 +2108,7 @@ window.onload = () => {
   }, { passive: true });
 
   // Send Button (einheitlich für Desktop + Mobile, ohne Doppelauslösung)
-  document.getElementById('send-btn').addEventListener('pointerup', (e) => {
-    e.preventDefault();
+  document.getElementById('send-btn').addEventListener('click', (e) => {
     app.logic.sendMessage();
   });
 
