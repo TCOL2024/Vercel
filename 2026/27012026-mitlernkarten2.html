@@ -1416,8 +1416,29 @@ const app = {
       const truncatedQuestion = app.utils.truncateForApi(txt, 1200);
       const enrichedQuestion = app.utils.truncateForApi(app.logic.buildAnswerPrompt(truncatedQuestion), 1900);
       
+      // AbortController und Timeout im State speichern, damit z.B. der Stop-Button abbrechen kann
+      if (app.state.abortTimeoutId) {
+        clearTimeout(app.state.abortTimeoutId);
+        app.state.abortTimeoutId = null;
+      }
+      if (app.state.abortController) {
+        try {
+          app.state.abortController.abort();
+        } catch (e) {
+          // bereits abgebrochen oder ungültig – ignorieren
+        }
+        app.state.abortController = null;
+      }
+
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 25000);
+      app.state.abortController = controller;
+
+      const timeoutId = setTimeout(() => {
+        controller.abort();
+        app.state.abortController = null;
+        app.state.abortTimeoutId = null;
+      }, 25000);
+      app.state.abortTimeoutId = timeoutId;
       let wasSuccessful = false;
 
       fetch('/api/bot', {
