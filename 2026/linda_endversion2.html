@@ -1351,8 +1351,8 @@
 (() => {
   'use strict';
 
-  const API_ENDPOINT = window.LINDA_API_ENDPOINT || '/api/bot';
   const DEEPSEEK_API_ENDPOINT = window.LINDA_DEEPSEEK_ENDPOINT || '/api/deepseek';
+  const API_ENDPOINT = window.LINDA_API_ENDPOINT || DEEPSEEK_API_ENDPOINT;
   const BBIG_PDF_PATH = 'https://vercel-kappa-seven-33.vercel.app/2026/document/BBIG_V20022026.pdf';
   const DIRECTORY_LINKS_PATH = './directory_links.json';
   const DIRECTORY_KEYWORD_MATCHING_ENABLED = false;
@@ -2549,12 +2549,57 @@
       },
 
       requestAnswer: async (endpoint, payload, signal) => {
-        const res = await fetch(endpoint, {
+        const safeQuestion = String(
+          payload?.question ||
+          app.state?.lastQuestion ||
+          ''
+        ).trim();
+        const safePayload = {
+          ...(payload && typeof payload === 'object' ? payload : {}),
+          question: app.utils.truncate(safeQuestion, 1300)
+        };
+        safePayload.prompt = safePayload.question;
+        safePayload.input = safePayload.question;
+        safePayload.text = safePayload.question;
+        if (!safePayload.question) {
+          throw new Error('Frage ist leer');
+        }
+
+        let res = await fetch(endpoint, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
+          body: JSON.stringify(safePayload),
           signal
         });
+
+        if (!res.ok) {
+          let detail = '';
+          let errText = '';
+          try {
+            const err = await res.json();
+            detail = err?.error ? `: ${err.error}` : '';
+            errText = String(err?.error || err?.detail || '').toLowerCase();
+          } catch (_) {}
+
+          const missingQuestionError =
+            res.status === 400 &&
+            (errText.includes('question') || detail.toLowerCase().includes('question'));
+
+          if (missingQuestionError) {
+            const retryPayload = {
+              question: safePayload.question,
+              fachmodus: String(safePayload.fachmodus || ''),
+              history: Array.isArray(safePayload.history) ? safePayload.history : [],
+              routing: safePayload.routing || {}
+            };
+            res = await fetch(endpoint, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(retryPayload),
+              signal
+            });
+          }
+        }
 
         if (!res.ok) {
           let detail = '';
