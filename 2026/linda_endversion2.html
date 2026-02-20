@@ -725,7 +725,7 @@
     min-height: 190px;
   }
 
-  .flash button {
+  .flash-toggle {
     width: 100%;
     min-height: 190px;
     border: none;
@@ -733,6 +733,7 @@
     padding: 0;
     text-align: left;
     cursor: pointer;
+    display: block;
   }
 
   .flash-inner {
@@ -799,6 +800,46 @@
     color: #415b79;
   }
 
+  .mode-card {
+    border: 1px solid #cfe0f7;
+    background: #f6fbff;
+    border-radius: 14px;
+    padding: 12px;
+  }
+
+  .mode-card h4 {
+    margin: 0 0 8px;
+    color: #0e4f9f;
+    font-size: 1rem;
+  }
+
+  .mode-card p {
+    margin: 0 0 10px;
+    color: #3a5575;
+    font-size: 0.92rem;
+  }
+
+  .mode-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .mode-btn {
+    border: 1px solid #b8d2f1;
+    background: #fff;
+    color: #124c95;
+    border-radius: 10px;
+    padding: 9px 8px;
+    font-weight: 800;
+    font-size: 0.84rem;
+    cursor: pointer;
+  }
+
+  .mode-btn:hover {
+    background: #ecf5ff;
+  }
+
   @keyframes fade-in {
     from { opacity: 0; transform: translateY(6px); }
     to { opacity: 1; transform: translateY(0); }
@@ -813,6 +854,22 @@
     :root {
       --header-h: 64px;
       --input-h: 98px;
+    }
+
+    html, body {
+      font-size: 18px;
+    }
+
+    .bubble {
+      font-size: 1.06rem;
+      line-height: 1.62;
+      padding: 14px 16px;
+    }
+
+    #chat-input {
+      font-size: 18px;
+      min-height: 64px;
+      line-height: 1.5;
     }
 
     .grid.cols-2 {
@@ -848,6 +905,54 @@
     .cards-top {
       backdrop-filter: none;
     }
+
+    .mode-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  body.mobile-fallback .logo-sub {
+    display: none;
+  }
+
+  body.mobile-fallback .source-chip {
+    font-size: 0.84rem;
+    padding: 8px 12px;
+  }
+
+  #selection-menu {
+    position: fixed;
+    z-index: 1300;
+    background: #ffffff;
+    border: 1px solid #cddcf2;
+    border-radius: 12px;
+    box-shadow: 0 14px 30px rgba(8, 26, 53, 0.18);
+    padding: 8px;
+    min-width: 230px;
+    display: none;
+  }
+
+  #selection-menu.active {
+    display: block;
+  }
+
+  #selection-menu .title {
+    font-size: 0.74rem;
+    color: #4f6280;
+    margin-bottom: 6px;
+  }
+
+  #selection-menu .sel-btn {
+    width: 100%;
+    border: 1px solid #b7cff0;
+    background: #f1f8ff;
+    color: #0a4d99;
+    border-radius: 10px;
+    padding: 9px 10px;
+    font-weight: 800;
+    font-size: 0.83rem;
+    cursor: pointer;
+    text-align: left;
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -942,6 +1047,28 @@
     </div>
 
     <div class="section" style="margin-top:10px;">
+      <h4>Prompting-Vorschläge</h4>
+      <p class="mini">Optional zuschaltbar. Vorschläge werden lokal erzeugt und nicht als feste Prompt-Vorgabe an den Bot gesendet.</p>
+      <div class="toggle-row" style="margin-top:8px;">
+        <label for="inp-prompting-enabled">Vorschläge aktivieren</label>
+        <input id="inp-prompting-enabled" type="checkbox">
+      </div>
+      <div class="field" style="margin-top:8px;">
+        <label for="inp-prompting-json">Vorschlags-JSON</label>
+        <textarea id="inp-prompting-json" rows="8" style="width:100%; border:2px solid #d9e3f2; border-radius:10px; padding:10px 11px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.82rem;"></textarea>
+      </div>
+    </div>
+
+    <div class="section" style="margin-top:10px;">
+      <h4>Lernkarten Webhook (Auswahl)</h4>
+      <p class="mini">Definiert, wie markierte Antwortbereiche an den Webhook für Lernkarten übergeben werden.</p>
+      <div class="field" style="margin-top:8px;">
+        <label for="inp-cards-webhook-json">Webhook-JSON</label>
+        <textarea id="inp-cards-webhook-json" rows="7" style="width:100%; border:2px solid #d9e3f2; border-radius:10px; padding:10px 11px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.82rem;"></textarea>
+      </div>
+    </div>
+
+    <div class="section" style="margin-top:10px;">
       <h4>Snippets</h4>
       <div style="display:flex; gap:8px;">
         <input id="inp-snippet" type="text" placeholder="Snippet hinzufügen" style="flex:1; border:2px solid #d9e3f2; border-radius:10px; padding:10px 11px;">
@@ -981,14 +1108,22 @@
   </div>
 </div>
 
+<div id="selection-menu" role="menu" aria-label="Auswahlmenü">
+  <div class="title">Markierter Bereich erkannt</div>
+  <button id="selection-cards-btn" class="sel-btn" type="button">Lernkarten über Webhook erstellen</button>
+</div>
+
 <script>
 (() => {
   'use strict';
 
   const API_ENDPOINT = window.LINDA_API_ENDPOINT || '/api/bot';
   const STORAGE_KEY = 'linda3_state';
+  const REQUEST_MEMORY_KEY = 'linda3_request_memory';
   const CARDS_KEY = 'linda3_cards';
+  const CARDS_STATS_KEY = 'linda3_cards_stats';
   const APP_VERSION = 3;
+  const REQUEST_MEMORY_VERSION = 1;
 
   const SOURCE_DEFS = [
     { key: 'llm', label: 'Basiswissen', default: true },
@@ -997,14 +1132,50 @@
     { key: 'ilias', label: 'Kursraum (ILIAS)', default: false }
   ];
 
+  const DEFAULT_PROMPTING_JSON = {
+    inlineExpansions: [
+      { pattern: "der\\s+auszu$", replacement: "der Auszubildende " },
+      { pattern: "die\\s+auszu$", replacement: "die Auszubildende " }
+    ],
+    quickSuggestions: [
+      "Formuliere die Antwort bitte in einfacher Sprache.",
+      "Nenne bitte ein kurzes Praxisbeispiel zur Situation."
+    ],
+    modeCards: [
+      { key: "AEVO", label: "AEVO", hint: "Ausbilder-Themen" },
+      { key: "VWL", label: "VWL/BWL", hint: "Wirtschaftsbezug" },
+      { key: "PERSONAL", label: "Personal", hint: "Personalwesen" }
+    ]
+  };
+
+  const DEFAULT_CARDS_WEBHOOK_JSON = {
+    enabled: true,
+    route: "flashcards.selection.v1",
+    minSelectionChars: 24,
+    targetCount: 8,
+    requireConfirmation: true,
+    adaptive: true
+  };
+
+  const DEFAULT_REQUEST_MEMORY = {
+    version: REQUEST_MEMORY_VERSION,
+    maxEntries: 120,
+    updatedAt: null,
+    entries: []
+  };
+
   const DEFAULT_STATE = {
     version: APP_VERSION,
     consentGiven: false,
     isSending: false,
+    welcomeShown: false,
     lastQuestion: '',
+    requestMemory: structuredClone(DEFAULT_REQUEST_MEMORY),
     activeId: null,
     requestController: null,
-      settings: {
+    isCardsRequestRunning: false,
+    selectionDraft: null,
+    settings: {
         name: '',
         domain: '',
         snippets: [],
@@ -1015,9 +1186,51 @@
       ilias: {
         enabled: false,
         courseId: ''
-      }
+      },
+      prompting: {
+        enabled: false,
+        config: DEFAULT_PROMPTING_JSON
+      },
+      cardsWebhook: DEFAULT_CARDS_WEBHOOK_JSON
     },
-    sessions: []
+    cards: {
+      lastDeckTitle: ''
+    },
+    telemetry: {
+      firstSelectionHintShown: false
+    }
+  };
+
+  const hashCardId = (q, a) => {
+    try {
+      return btoa(unescape(encodeURIComponent(`${q}|${a}`))).slice(0, 24);
+    } catch (_) {
+      return String(`${q}|${a}`).slice(0, 24);
+    }
+  };
+
+  const normalizeWebhookCards = (items) => {
+    if (!Array.isArray(items)) return [];
+    return items
+      .map((it) => {
+        if (!it || typeof it !== 'object') return null;
+        const q = String(it.question || it.front || '').trim();
+        const a = String(it.answer || it.back || '').trim();
+        if (!q || !a) return null;
+        return { question: q, answer: a, id: hashCardId(q, a), adaptive: { ease: 2, reps: 0, dueAt: 0 } };
+      })
+      .filter(Boolean);
+  };
+
+  const parseCardsWebhookResponse = (rawText) => {
+    const parsed = parseJSON(rawText, null);
+    if (!parsed) return null;
+    if (Array.isArray(parsed)) return { deckTitle: 'Lernkarten', cards: normalizeWebhookCards(parsed) };
+    if (typeof parsed !== 'object') return null;
+    return {
+      deckTitle: String(parsed.deckTitle || parsed.title || 'Lernkarten').trim(),
+      cards: normalizeWebhookCards(parsed.cards || parsed.items || [])
+    }
   };
 
   const parseJSON = (raw, fallback) => {
@@ -1039,33 +1252,73 @@
         if (!text || text.length <= max) return text;
         return text.slice(0, Math.max(0, max - 3)) + '...';
       },
+      normalizeQuestion: (text) => {
+        return String(text || '')
+          .toLowerCase()
+          .replace(/[^a-z0-9äöüß\s]/gi, ' ')
+          .replace(/\s+/g, ' ')
+          .trim();
+      },
+      questionTokens: (text) => {
+        return app.utils.normalizeQuestion(text)
+          .split(' ')
+          .filter((t) => t.length >= 3)
+          .slice(0, 20);
+      },
       save: () => {
+        const requestMemory = app.state.requestMemory || structuredClone(DEFAULT_REQUEST_MEMORY);
         const clone = {
           ...app.state,
           requestController: null,
-          isSending: false
+          isSending: false,
+          requestMemory: undefined
         };
         try {
           localStorage.setItem(STORAGE_KEY, JSON.stringify(clone));
+          localStorage.setItem(REQUEST_MEMORY_KEY, JSON.stringify(requestMemory));
         } catch (e) {
           console.error('save failed', e);
         }
       },
       load: () => {
         const raw = localStorage.getItem(STORAGE_KEY);
-        if (!raw) return;
+        const memoryRaw = localStorage.getItem(REQUEST_MEMORY_KEY);
+        const memoryParsed = memoryRaw ? parseJSON(memoryRaw, null) : null;
+        if (!raw) {
+          if (memoryParsed && typeof memoryParsed === 'object') {
+            app.state.requestMemory = {
+              ...structuredClone(DEFAULT_REQUEST_MEMORY),
+              ...memoryParsed
+            };
+            app.state.requestMemory.maxEntries = Math.max(30, Number(app.state.requestMemory.maxEntries) || 120);
+            if (!Array.isArray(app.state.requestMemory.entries)) app.state.requestMemory.entries = [];
+          }
+          return;
+        }
         const parsed = parseJSON(raw, null);
         if (!parsed || typeof parsed !== 'object') return;
 
         app.state = {
           ...structuredClone(DEFAULT_STATE),
           ...parsed,
+          requestMemory: {
+            ...structuredClone(DEFAULT_REQUEST_MEMORY),
+            ...(memoryParsed || parsed.requestMemory || {})
+          },
           settings: {
             ...structuredClone(DEFAULT_STATE.settings),
             ...(parsed.settings || {}),
             ilias: {
               ...structuredClone(DEFAULT_STATE.settings.ilias),
               ...((parsed.settings && parsed.settings.ilias) || {})
+            },
+            prompting: {
+              ...structuredClone(DEFAULT_STATE.settings.prompting),
+              ...((parsed.settings && parsed.settings.prompting) || {})
+            },
+            cardsWebhook: {
+              ...structuredClone(DEFAULT_STATE.settings.cardsWebhook),
+              ...((parsed.settings && parsed.settings.cardsWebhook) || {})
             },
             sources: {
               ...structuredClone(DEFAULT_STATE.settings.sources),
@@ -1078,6 +1331,8 @@
         app.state.version = APP_VERSION;
         app.state.isSending = false;
         app.state.requestController = null;
+        app.state.requestMemory.maxEntries = Math.max(30, Number(app.state.requestMemory.maxEntries) || 120);
+        if (!Array.isArray(app.state.requestMemory.entries)) app.state.requestMemory.entries = [];
         if (String(app.state.settings.domain || '').toUpperCase() === 'IT') {
           app.state.settings.domain = '';
         }
@@ -1093,6 +1348,7 @@
             if (msg.role !== 'assistant') return;
             const txt = String(msg.content || '');
             if (/willkommen bei\s*\*?\*?linda3/i.test(txt)) msg.content = newWelcome;
+            if (/willkommen bei\s*\*?\*?linda/i.test(txt)) app.state.welcomeShown = true;
           });
         });
       },
@@ -1123,7 +1379,16 @@
           sources: Array.isArray(parsed.sources) ? parsed.sources : []
         };
       },
-      nowStamp: () => new Date().toLocaleString('de-DE')
+      nowStamp: () => new Date().toLocaleString('de-DE'),
+      getPromptingConfig: () => {
+        const cfg = app.state.settings.prompting?.config;
+        if (!cfg || typeof cfg !== 'object') return structuredClone(DEFAULT_PROMPTING_JSON);
+        return {
+          ...structuredClone(DEFAULT_PROMPTING_JSON),
+          ...cfg
+        };
+      },
+      isMobileClient: () => /iphone|ipad|ipod|android|mobile/i.test(navigator.userAgent || '')
     },
 
     ui: {
@@ -1153,6 +1418,17 @@
         const { settings } = app.state;
         document.getElementById('inp-name').value = settings.name || '';
         document.getElementById('inp-domain').value = settings.domain || '';
+        document.getElementById('inp-prompting-enabled').checked = Boolean(settings.prompting && settings.prompting.enabled);
+        document.getElementById('inp-prompting-json').value = JSON.stringify(
+          app.utils.getPromptingConfig(),
+          null,
+          2
+        );
+        document.getElementById('inp-cards-webhook-json').value = JSON.stringify(
+          app.state.settings.cardsWebhook || DEFAULT_CARDS_WEBHOOK_JSON,
+          null,
+          2
+        );
       },
 
       renderSourceToolbar: () => {
@@ -1218,7 +1494,17 @@
           return;
         }
         pop.innerHTML = items
-          .map((item) => `<div class="snippet-item" data-snippet="${encodeURIComponent(item)}">${app.utils.safeText(item)}</div>`)
+          .map((item) => {
+            const entry = (typeof item === 'string')
+              ? { label: item, value: item }
+              : { label: item.label || item.value || '', value: item.value || '', kind: item.kind || '' };
+            return `
+              <div class="snippet-item" data-snippet="${encodeURIComponent(entry.value)}">
+                <div>${app.utils.safeText(entry.label)}</div>
+                ${entry.kind ? `<div class="mini" style="margin-top:3px;">${app.utils.safeText(entry.kind)}</div>` : ''}
+              </div>
+            `;
+          })
           .join('');
         pop.classList.add('active');
       },
@@ -1293,6 +1579,43 @@
         row.className = 'msg-row assistant';
         row.innerHTML = '<div class="msg-wrap"><div class="bubble assistant"><div class="loading"><span></span><span></span><span></span></div></div></div>';
         return row;
+      },
+
+      hideSelectionMenu: () => {
+        const menu = document.getElementById('selection-menu');
+        menu.classList.remove('active');
+      },
+
+      showSelectionMenu: (x, y) => {
+        const menu = document.getElementById('selection-menu');
+        const vw = window.innerWidth;
+        const vh = window.innerHeight;
+        const left = Math.min(Math.max(8, x), vw - 250);
+        const top = Math.min(Math.max(8, y), vh - 80);
+        menu.style.left = `${left}px`;
+        menu.style.top = `${top}px`;
+        menu.classList.add('active');
+      },
+
+      renderModeCards: () => {
+        const cfg = app.utils.getPromptingConfig();
+        const cards = Array.isArray(cfg.modeCards) ? cfg.modeCards : [];
+        if (!cards.length) return null;
+
+        const row = document.createElement('div');
+        row.className = 'msg-row assistant mode-card-row';
+        row.innerHTML = `
+          <div class="msg-wrap">
+            <div class="mode-card">
+              <h4>Fachmodus auswählen</h4>
+              <p>Du hast noch keinen Fachmodus gewählt. Tippe auf eine Karte, um den Chat direkt anzupassen.</p>
+              <div class="mode-grid">
+                ${cards.map((c) => `<button class="mode-btn" data-set-domain="${app.utils.safeText(c.key)}">${app.utils.safeText(c.label)}${c.hint ? ` - ${app.utils.safeText(c.hint)}` : ''}</button>`).join('')}
+              </div>
+            </div>
+          </div>
+        `;
+        return row;
       }
     },
 
@@ -1341,12 +1664,17 @@
         app.utils.save();
         app.ui.closeModals();
 
-        app.logic.sendSystemMessage(
-          'Willkommen bei **LINDA**.\n\n' +
-          'Ich unterstütze dich bei **AEVO**, **BWL/VWL** und **Personalwesen**.\n' +
-          'Lernkarten werden aus den **Inhalten der Antwort** erstellt.\n' +
-          'ILIAS kann bei Bedarf über den Schalter **Kursraum (ILIAS)** aktiviert werden.'
-        );
+        if (!app.state.welcomeShown) {
+          app.logic.sendSystemMessage(
+            'Willkommen bei **LINDA**.\n\n' +
+            'Ich unterstütze dich bei **AEVO**, **BWL/VWL** und **Personalwesen**.\n' +
+            'Lernkarten werden aus den **Inhalten der Antwort** erstellt.\n' +
+            'ILIAS kann bei Bedarf über den Schalter **Kursraum (ILIAS)** aktiviert werden.'
+          );
+          app.state.welcomeShown = true;
+          app.utils.save();
+        }
+        app.logic.maybeShowModeCards();
       },
 
       switchSession: (id) => {
@@ -1363,6 +1691,7 @@
           app.ui.log.appendChild(bubble);
         });
 
+        app.logic.maybeShowModeCards();
         app.ui.scrollBottom();
       },
 
@@ -1371,6 +1700,25 @@
         app.state.settings.domain = document.getElementById('inp-domain').value;
 
         app.state.settings.ilias.enabled = Boolean(app.state.settings.sources.ilias);
+        app.state.settings.prompting.enabled = document.getElementById('inp-prompting-enabled').checked;
+
+        try {
+          const rawCfg = document.getElementById('inp-prompting-json').value.trim();
+          const parsedCfg = rawCfg ? JSON.parse(rawCfg) : structuredClone(DEFAULT_PROMPTING_JSON);
+          app.state.settings.prompting.config = parsedCfg;
+        } catch (_) {
+          alert('Prompting-JSON ist ungültig. Bitte prüfen.');
+          return;
+        }
+
+        try {
+          const rawCardsCfg = document.getElementById('inp-cards-webhook-json').value.trim();
+          const parsedCardsCfg = rawCardsCfg ? JSON.parse(rawCardsCfg) : structuredClone(DEFAULT_CARDS_WEBHOOK_JSON);
+          app.state.settings.cardsWebhook = parsedCardsCfg;
+        } catch (_) {
+          alert('Lernkarten-Webhook-JSON ist ungültig. Bitte prüfen.');
+          return;
+        }
 
         document.querySelectorAll('[data-source-setting]').forEach((cb) => {
           const key = cb.getAttribute('data-source-setting');
@@ -1383,6 +1731,7 @@
         app.ui.updateDomainUI();
         app.ui.renderSourceToolbar();
         app.ui.closeModals();
+        app.logic.maybeShowModeCards();
       },
 
       addSnippet: () => {
@@ -1406,6 +1755,207 @@
         app.ui.input.dispatchEvent(new Event('input'));
         document.getElementById('snippet-popup').classList.remove('active');
         app.ui.input.focus();
+      },
+
+      rememberQuestion: (text) => {
+        const normalized = app.utils.normalizeQuestion(text);
+        if (normalized.length < 4) return;
+
+        const mem = app.state.requestMemory || (app.state.requestMemory = structuredClone(DEFAULT_REQUEST_MEMORY));
+        const entries = Array.isArray(mem.entries) ? mem.entries : [];
+        const now = app.utils.now();
+
+        const idx = entries.findIndex((e) => e && e.normalized === normalized);
+        if (idx >= 0) {
+          const prev = entries[idx];
+          entries[idx] = {
+            ...prev,
+            text: String(text || prev.text || '').trim() || prev.text,
+            count: Number(prev.count || 0) + 1,
+            lastUsed: now
+          };
+        } else {
+          entries.push({
+            text: String(text || '').trim(),
+            normalized,
+            count: 1,
+            lastUsed: now
+          });
+        }
+
+        entries.sort((a, b) => Number(b.lastUsed || 0) - Number(a.lastUsed || 0));
+        mem.entries = entries.slice(0, mem.maxEntries || 120);
+        mem.updatedAt = new Date(now).toISOString();
+      },
+
+      findQuestionSuggestions: (input, limit = 6) => {
+        const raw = String(input || '').trim();
+        if (raw.length < 3) return [];
+
+        const inputNorm = app.utils.normalizeQuestion(raw);
+        if (!inputNorm) return [];
+
+        const mem = app.state.requestMemory;
+        const entries = Array.isArray(mem?.entries) ? mem.entries : [];
+        if (!entries.length) return [];
+
+        const inputTokens = new Set(app.utils.questionTokens(inputNorm));
+        const scored = [];
+
+        entries.forEach((entry) => {
+          if (!entry || !entry.text || !entry.normalized) return;
+          let score = 0;
+          const text = String(entry.text);
+          const norm = String(entry.normalized);
+
+          if (norm === inputNorm) score += 100;
+          if (norm.includes(inputNorm) || inputNorm.includes(norm)) score += 45;
+          if (text.toLowerCase().includes(raw.toLowerCase())) score += 20;
+
+          const tokens = app.utils.questionTokens(norm);
+          if (inputTokens.size && tokens.length) {
+            const tokenSet = new Set(tokens);
+            let overlap = 0;
+            inputTokens.forEach((tok) => { if (tokenSet.has(tok)) overlap += 1; });
+            if (overlap > 0) {
+              const union = new Set([...inputTokens, ...tokenSet]).size || 1;
+              score += Math.round((overlap / union) * 30);
+            }
+          }
+
+          score += Math.min(Number(entry.count || 0), 10);
+          if (score > 0) scored.push({ text, score, lastUsed: Number(entry.lastUsed || 0) });
+        });
+
+        scored.sort((a, b) => (b.score - a.score) || (b.lastUsed - a.lastUsed));
+
+        const unique = [];
+        const seen = new Set();
+        scored.forEach((item) => {
+          const key = item.text.toLowerCase();
+          if (seen.has(key)) return;
+          seen.add(key);
+          unique.push(item.text);
+        });
+
+        return unique.slice(0, limit);
+      },
+
+      maybeShowModeCards: () => {
+        if (app.state.settings.domain) return;
+        const s = app.logic.activeSession();
+        if (!s) return;
+        const exists = app.ui.log.querySelector('.mode-card-row');
+        if (exists) return;
+        const row = app.ui.renderModeCards();
+        if (!row) return;
+        app.ui.log.appendChild(row);
+        app.ui.scrollBottom();
+      },
+
+      getPromptingSuggestions: (inputValue) => {
+        if (!app.state.settings.prompting?.enabled) return [];
+        const text = String(inputValue || '');
+        if (!text || text.startsWith('/')) return [];
+        const cfg = app.utils.getPromptingConfig();
+        const out = [];
+
+        (Array.isArray(cfg.inlineExpansions) ? cfg.inlineExpansions : []).forEach((rule) => {
+          try {
+            const re = new RegExp(String(rule.pattern || ''), 'i');
+            if (!re.test(text)) return;
+            const value = text.replace(re, String(rule.replacement || ''));
+            if (value !== text) out.push({ label: String(rule.replacement || value), value, kind: 'Prompting-Vorschlag' });
+          } catch (_) {}
+        });
+
+        if (out.length) return out.slice(0, 6);
+
+        if (text.length >= 6) {
+          (Array.isArray(cfg.quickSuggestions) ? cfg.quickSuggestions : []).forEach((s) => {
+            out.push({ label: s, value: `${text}\n\n${s}`, kind: 'Prompting-Vorschlag' });
+          });
+        }
+        return out.slice(0, 6);
+      },
+
+      openCardsTabWithPayload: (payload) => {
+        localStorage.setItem(CARDS_KEY, JSON.stringify(payload));
+        const target = `${window.location.pathname}?view=cards`;
+        const tab = window.open(target, '_blank', 'noopener');
+        if (!tab) alert('Popup blockiert. Bitte Popups erlauben, um Karten in neuem Tab zu öffnen.');
+      },
+
+      prepareSelectionDraftFromEvent: (evt) => {
+        const md = evt.target.closest('.msg-row.assistant .md');
+        if (!md) return false;
+        const sel = window.getSelection();
+        if (!sel || sel.rangeCount === 0) return false;
+        const txt = String(sel.toString() || '').trim();
+        const cfg = app.state.settings.cardsWebhook || DEFAULT_CARDS_WEBHOOK_JSON;
+        const minChars = Math.max(8, Number(cfg.minSelectionChars || 24));
+        if (!txt || txt.length < minChars) return false;
+        if (!md.contains(sel.anchorNode) || !md.contains(sel.focusNode)) return false;
+        app.state.selectionDraft = { text: txt, ts: app.utils.now() };
+        return true;
+      },
+
+      requestCardsFromSelection: async () => {
+        const draft = app.state.selectionDraft;
+        if (!draft || !draft.text) return;
+        const cfg = app.state.settings.cardsWebhook || DEFAULT_CARDS_WEBHOOK_JSON;
+        if (!cfg.enabled) {
+          alert('Lernkarten-Webhook ist deaktiviert (Einstellungen).');
+          return;
+        }
+        if (app.state.isCardsRequestRunning) return;
+        if (cfg.requireConfirmation && !confirm('Für den markierten Bereich Lernkarten über den Webhook erstellen?')) return;
+
+        app.state.isCardsRequestRunning = true;
+        app.ui.hideSelectionMenu();
+
+        try {
+          const res = await fetch(API_ENDPOINT, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              task: 'flashcards_selection',
+              route: String(cfg.route || 'flashcards.selection.v1'),
+              selectionText: draft.text,
+              fachmodus: app.state.settings.domain || '',
+              history: [],
+              cardsConfig: {
+                targetCount: Number(cfg.targetCount || 8),
+                adaptive: Boolean(cfg.adaptive)
+              }
+            })
+          });
+
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          const raw = await res.text();
+          const parsed = parseCardsWebhookResponse(raw);
+          let cards = parsed?.cards || [];
+          if (!cards.length) {
+            cards = app.logic.buildFlashcardsFromText(draft.text).map((c) => ({
+              ...c,
+              id: hashCardId(c.question, c.answer),
+              adaptive: { ease: 2, reps: 0, dueAt: 0 }
+            }));
+          }
+
+          app.logic.openCardsTabWithPayload({
+            cards: cards.slice(0, Number(cfg.targetCount || 8)),
+            generatedAt: app.utils.nowStamp(),
+            sourceLength: draft.text.length,
+            adaptive: Boolean(cfg.adaptive),
+            deckTitle: parsed?.deckTitle || 'Lernkarten aus Auswahl',
+            sourceType: 'selection-webhook'
+          });
+        } catch (e) {
+          alert(`Lernkarten-Webhook Fehler: ${e.message || 'unbekannt'}`);
+        } finally {
+          app.state.isCardsRequestRunning = false;
+        }
       },
 
       sanitizeSourceList: (items) => {
@@ -1480,6 +2030,7 @@
         }
 
         app.state.lastQuestion = text;
+        app.logic.rememberQuestion(text);
 
         const displayText = app.state.settings.name
           ? `${app.state.settings.name}: ${text}`
@@ -1541,6 +2092,15 @@
           loading.remove();
           s.messages.push({ role: 'assistant', content: parsed.answer, sources: parsed.sources });
           app.ui.log.appendChild(app.ui.createBubble('assistant', parsed.answer, parsed.sources));
+          if (!app.state.telemetry.firstSelectionHintShown) {
+            app.ui.log.appendChild(
+              app.ui.createBubble(
+                'assistant',
+                'Tipp: Du kannst Text in meiner Antwort markieren und per Rechtsklick direkt Lernkarten über den Webhook erstellen.'
+              )
+            );
+            app.state.telemetry.firstSelectionHintShown = true;
+          }
           app.utils.save();
           app.ui.scrollBottom();
         } catch (err) {
@@ -1745,11 +2305,30 @@
           return msg ? msg.content : '';
         })();
 
-        const cards = app.logic.buildFlashcardsFromText(text);
+        const baseCards = app.logic.buildFlashcardsFromText(text);
+        const stats = parseJSON(localStorage.getItem(CARDS_STATS_KEY) || '{}', {});
+        const cardId = (c) => btoa(unescape(encodeURIComponent(`${c.question}|${c.answer}`))).slice(0, 24);
+        const cards = baseCards
+          .map((c) => {
+            const id = cardId(c);
+            const st = stats[id] || {};
+            return {
+              ...c,
+              id,
+              adaptive: {
+                ease: Number(st.ease || 2),
+                reps: Number(st.reps || 0),
+                dueAt: Number(st.dueAt || 0)
+              }
+            };
+          })
+          .sort((a, b) => a.adaptive.dueAt - b.adaptive.dueAt);
+
         const payload = {
           cards,
           generatedAt: app.utils.nowStamp(),
-          sourceLength: String(text || '').length
+          sourceLength: String(text || '').length,
+          adaptive: true
         };
 
         localStorage.setItem(CARDS_KEY, JSON.stringify(payload));
@@ -1786,13 +2365,15 @@
     const root = document.body;
     const payload = parseJSON(localStorage.getItem(CARDS_KEY) || '{}', {});
     const cards = Array.isArray(payload.cards) ? payload.cards : [];
+    const stats = parseJSON(localStorage.getItem(CARDS_STATS_KEY) || '{}', {});
+    const now = Date.now();
 
     root.innerHTML = `
       <div class="cards-layout">
         <div class="cards-top">
           <div>
             <h1 class="cards-title">LINDA3 Lernkarten</h1>
-            <p class="cards-sub">Generiert: ${app.utils.safeText(payload.generatedAt || 'unbekannt')} • Karten: ${cards.length}</p>
+            <p class="cards-sub">Generiert: ${app.utils.safeText(payload.generatedAt || 'unbekannt')} • Karten: ${cards.length} • Adaptiv: ${payload.adaptive ? 'an' : 'aus'}</p>
           </div>
           <button class="btn-icon" onclick="window.close()">Schließen</button>
         </div>
@@ -1808,7 +2389,7 @@
 
     body.innerHTML = cards.map((card, idx) => `
       <article class="flash" data-card="${idx}">
-        <button type="button" aria-label="Karte ${idx + 1} umdrehen">
+        <div role="button" tabindex="0" aria-label="Karte ${idx + 1} umdrehen" class="flash-toggle">
           <div class="flash-inner">
             <div class="flash-face front">
               <p class="flash-kicker">Frage</p>
@@ -1818,20 +2399,65 @@
             <div class="flash-face back">
               <p class="flash-kicker">Antwort</p>
               <p>${app.utils.safeText(card.answer)}</p>
+              <p style="margin-top:8px; font-size:0.78rem; color:#31567f;">
+                Status: ${((stats[card.id]?.dueAt || card.adaptive?.dueAt || 0) <= now) ? 'fällig' : 'geplant'} • Wiederholungen: ${Number(stats[card.id]?.reps || card.adaptive?.reps || 0)}
+              </p>
             </div>
           </div>
-        </button>
+        </div>
+        <div style="display:flex; gap:6px; margin-top:8px; flex-wrap:wrap;">
+          <button type="button" class="btn-icon" style="height:34px; min-width:90px;" data-rate="hard" data-card-id="${card.id}">Schwer</button>
+          <button type="button" class="btn-icon" style="height:34px; min-width:90px;" data-rate="mid" data-card-id="${card.id}">Mittel</button>
+          <button type="button" class="btn-icon btn-primary" style="height:34px; min-width:90px;" data-rate="easy" data-card-id="${card.id}">Leicht</button>
+        </div>
       </article>
     `).join('');
 
     body.addEventListener('click', (e) => {
+      const rateBtn = e.target.closest('[data-rate][data-card-id]');
+      if (rateBtn) {
+        e.preventDefault();
+        e.stopPropagation();
+        const id = rateBtn.getAttribute('data-card-id');
+        const rate = rateBtn.getAttribute('data-rate');
+        const prev = stats[id] || { ease: 2, reps: 0, dueAt: 0 };
+        const nextEase = Math.max(1.3, Math.min(2.8, prev.ease + (rate === 'easy' ? 0.2 : rate === 'hard' ? -0.2 : 0)));
+        const baseHours = rate === 'easy' ? 72 : rate === 'mid' ? 24 : 8;
+        stats[id] = {
+          ease: nextEase,
+          reps: Number(prev.reps || 0) + 1,
+          dueAt: Date.now() + Math.round(baseHours * nextEase) * 3600000
+        };
+        localStorage.setItem(CARDS_STATS_KEY, JSON.stringify(stats));
+        rateBtn.textContent = 'Gespeichert';
+        setTimeout(() => {
+          if (rate === 'easy') rateBtn.textContent = 'Leicht';
+          if (rate === 'mid') rateBtn.textContent = 'Mittel';
+          if (rate === 'hard') rateBtn.textContent = 'Schwer';
+        }, 900);
+        return;
+      }
       const card = e.target.closest('.flash');
+      if (!card) return;
+      card.classList.toggle('flipped');
+    });
+
+    body.addEventListener('keydown', (e) => {
+      const toggle = e.target.closest('.flash-toggle');
+      if (!toggle) return;
+      if (e.key !== 'Enter' && e.key !== ' ') return;
+      e.preventDefault();
+      const card = toggle.closest('.flash');
       if (!card) return;
       card.classList.toggle('flipped');
     });
   };
 
   const initMainApp = () => {
+    if (app.utils.isMobileClient()) {
+      document.body.classList.add('mobile-fallback');
+    }
+
     app.utils.load();
     app.ui.updateDomainUI();
     app.ui.renderSourceToolbar();
@@ -1856,10 +2482,18 @@
         const q = val.slice(1).toLowerCase();
         const matches = (app.state.settings.snippets || [])
           .filter((s) => s.toLowerCase().includes(q))
-          .slice(0, 12);
+          .slice(0, 12)
+          .map((s) => ({ label: s, value: s, kind: 'Snippet' }));
         app.ui.showSnippetPopup(matches);
       } else {
-        document.getElementById('snippet-popup').classList.remove('active');
+        const memorySuggestions = app.logic.findQuestionSuggestions(val, 6)
+          .map((s) => ({ label: s, value: s, kind: 'Aehnliche Frage aus Verlauf' }));
+        const promptSuggestions = app.logic.getPromptingSuggestions(val);
+        const allSuggestions = [...memorySuggestions, ...promptSuggestions]
+          .filter((item, idx, arr) => arr.findIndex((x) => x.value === item.value) === idx)
+          .slice(0, 8);
+        if (allSuggestions.length) app.ui.showSnippetPopup(allSuggestions);
+        else document.getElementById('snippet-popup').classList.remove('active');
       }
     });
 
@@ -1923,6 +2557,18 @@
     });
 
     app.ui.log.addEventListener('click', (e) => {
+      const modeBtn = e.target.closest('[data-set-domain]');
+      if (modeBtn) {
+        const mode = modeBtn.getAttribute('data-set-domain') || '';
+        app.state.settings.domain = mode;
+        app.utils.save();
+        app.ui.updateDomainUI();
+        app.ui.log.querySelectorAll('.mode-card-row').forEach((el) => el.remove());
+        app.ui.log.appendChild(app.ui.createBubble('assistant', `Fachmodus wurde auf **${mode}** gesetzt.`));
+        app.ui.scrollBottom();
+        return;
+      }
+
       const btn = e.target.closest('[data-action]');
       if (!btn) return;
       const action = btn.getAttribute('data-action');
@@ -1936,9 +2582,29 @@
       if (action === 'feedback') app.ui.openModal('modal-feedback');
     });
 
+    app.ui.log.addEventListener('contextmenu', (e) => {
+      if (!app.logic.prepareSelectionDraftFromEvent(e)) return;
+      e.preventDefault();
+      app.ui.showSelectionMenu(e.clientX + 6, e.clientY + 6);
+    });
+
+    app.ui.log.addEventListener('mouseup', (e) => {
+      if (!app.logic.prepareSelectionDraftFromEvent(e)) return;
+      if (app.utils.isMobileClient()) {
+        app.ui.showSelectionMenu(e.clientX + 6, e.clientY + 6);
+      }
+    });
+
+    document.getElementById('selection-cards-btn').addEventListener('click', () => {
+      app.logic.requestCardsFromSelection();
+    });
+
     document.addEventListener('click', (e) => {
       if (!e.target.closest('#snippet-popup') && !e.target.closest('.input-wrap')) {
         document.getElementById('snippet-popup').classList.remove('active');
+      }
+      if (!e.target.closest('#selection-menu')) {
+        app.ui.hideSelectionMenu();
       }
       if (e.target.classList.contains('modal-overlay')) app.ui.closeModals();
     });
