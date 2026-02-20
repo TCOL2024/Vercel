@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Directory Links Editor</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=Manrope:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #f1f5f1;
+      --bg-2: #e7efe7;
+      --card: #ffffff;
+      --ink: #14211b;
+      --ink-soft: #3f5549;
+      --line: #c8d7cb;
+      --brand: #1f7a4d;
+      --brand-2: #2f9f67;
+      --warn: #9f2f4d;
+      --mono: #1a2b20;
+      --shadow: 0 16px 40px rgba(14, 40, 25, 0.12);
+      --radius-lg: 18px;
+      --radius-md: 12px;
+      --radius-sm: 9px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(1000px 500px at 110% -20%, #d9efd9 0%, transparent 52%),
+        radial-gradient(800px 450px at -20% 110%, #d2e3f8 0%, transparent 56%),
+        linear-gradient(180deg, var(--bg) 0%, var(--bg-2) 100%);
+      min-height: 100vh;
+      padding: 18px;
+    }
+
+    .app {
+      max-width: 1240px;
+      margin: 0 auto;
+      background: rgba(255, 255, 255, 0.72);
+      border: 1px solid #d3dfd5;
+      backdrop-filter: blur(6px);
+      border-radius: 24px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .header {
+      padding: 18px;
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
+      justify-content: space-between;
+      background: linear-gradient(130deg, #f9fffa 0%, #eef7f0 100%);
+    }
+
+    h1 {
+      margin: 0;
+      font-family: 'Chakra Petch', sans-serif;
+      letter-spacing: 0.02em;
+      font-size: clamp(1.3rem, 2.4vw, 1.8rem);
+      color: #1a6040;
+    }
+
+    .subtitle {
+      margin: 4px 0 0;
+      color: var(--ink-soft);
+      font-size: 0.95rem;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 1.3fr 1fr;
+      gap: 0;
+    }
+
+    @media (max-width: 980px) {
+      body { padding: 10px; }
+      .layout { grid-template-columns: 1fr; }
+    }
+
+    .panel {
+      padding: 16px;
+      border-right: 1px solid var(--line);
+    }
+
+    .panel:last-child {
+      border-right: none;
+      border-top: 1px solid var(--line);
+    }
+
+    @media (min-width: 981px) {
+      .panel:last-child {
+        border-top: none;
+      }
+    }
+
+    .meta {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .field.full {
+      grid-column: 1 / -1;
+    }
+
+    label {
+      font-size: 0.78rem;
+      font-weight: 800;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+      color: #234f38;
+    }
+
+    input,
+    textarea {
+      width: 100%;
+      border: 1px solid var(--line);
+      background: #fff;
+      color: var(--ink);
+      border-radius: var(--radius-sm);
+      padding: 10px 11px;
+      font: inherit;
+      outline: none;
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 72px;
+    }
+
+    input:focus,
+    textarea:focus {
+      border-color: #78b194;
+      box-shadow: 0 0 0 4px rgba(48, 126, 83, 0.12);
+    }
+
+    .entries {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-top: 12px;
+    }
+
+    .entry {
+      border: 1px solid #cad8cd;
+      background: #fff;
+      border-radius: var(--radius-md);
+      padding: 12px;
+    }
+
+    .entry-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .entry-title {
+      margin: 0;
+      font-size: 0.96rem;
+      color: #1d4e35;
+      font-weight: 800;
+    }
+
+    .entry-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .entry-grid .full {
+      grid-column: 1 / -1;
+    }
+
+    @media (max-width: 760px) {
+      .meta,
+      .entry-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      font-size: 0.86rem;
+      font-weight: 700;
+      color: #28553d;
+    }
+
+    .toggle input {
+      width: auto;
+      margin: 0;
+      accent-color: var(--brand);
+    }
+
+    .btn-row,
+    .entry-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .btn {
+      border: 1px solid var(--line);
+      background: #fff;
+      color: #1e3f2d;
+      border-radius: 999px;
+      padding: 9px 13px;
+      font-weight: 800;
+      font-size: 0.86rem;
+      cursor: pointer;
+    }
+
+    .btn:hover {
+      border-color: #84b89d;
+      background: #f1fbf4;
+    }
+
+    .btn.primary {
+      background: linear-gradient(140deg, var(--brand) 0%, var(--brand-2) 100%);
+      color: #fff;
+      border: none;
+    }
+
+    .btn.warn {
+      border-color: #e1b6c2;
+      color: #7b1f37;
+      background: #fff6f8;
+    }
+
+    .status {
+      margin-top: 8px;
+      min-height: 20px;
+      color: #214a35;
+      font-size: 0.84rem;
+      font-weight: 700;
+    }
+
+    .status.error {
+      color: #8f223f;
+    }
+
+    .json-preview {
+      width: 100%;
+      min-height: 75vh;
+      border-radius: var(--radius-md);
+      border: 1px solid #b9cabe;
+      background: #15231a;
+      color: #dcf0df;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      line-height: 1.45;
+      font-size: 0.83rem;
+      padding: 12px;
+      resize: vertical;
+    }
+
+    .aside-head {
+      margin: 0 0 9px;
+      font-size: 1rem;
+      color: #1d4b36;
+      font-weight: 900;
+    }
+
+    .aside-copy {
+      margin: 0 0 12px;
+      color: var(--ink-soft);
+      font-size: 0.9rem;
+    }
+
+    .help {
+      margin-top: 12px;
+      padding: 10px;
+      border: 1px dashed #a6bfae;
+      border-radius: var(--radius-sm);
+      background: #f7fbf8;
+      font-size: 0.82rem;
+      color: #355444;
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <header class="header">
+      <div>
+        <h1>Directory Links Editor</h1>
+        <p class="subtitle">Erfassen, per KI ergänzen und als <code>directory_links.json</code> exportieren.</p>
+      </div>
+      <div class="btn-row">
+        <button class="btn" id="loadDefaultBtn">Bestehende JSON laden</button>
+        <button class="btn" id="addEntryBtn">+ Eintrag</button>
+        <button class="btn primary" id="downloadBtn">JSON herunterladen</button>
+      </div>
+    </header>
+
+    <section class="layout">
+      <section class="panel">
+        <div class="meta">
+          <div class="field">
+            <label for="version">Version</label>
+            <input id="version" value="1.0" />
+          </div>
+          <div class="field full">
+            <label for="description">Beschreibung</label>
+            <textarea id="description">Pflegeliste fuer Dozenten: links + keyword-tags fuer Lernverzeichnis</textarea>
+          </div>
+        </div>
+
+        <div class="entries" id="entries"></div>
+
+        <p class="status" id="status"></p>
+
+        <div class="help">
+          KI-Hilfe: Beim jeweiligen Eintrag auf <strong>KI-Vorschlag</strong> klicken. Grundlage sind URL + optionaler Kontexttext.
+        </div>
+      </section>
+
+      <aside class="panel">
+        <h2 class="aside-head">JSON Vorschau</h2>
+        <p class="aside-copy">Die Vorschau aktualisiert sich live und kann direkt kopiert oder heruntergeladen werden.</p>
+        <div class="btn-row" style="margin-bottom: 10px;">
+          <button class="btn" id="copyBtn">JSON kopieren</button>
+          <button class="btn warn" id="resetBtn">Zuruecksetzen</button>
+        </div>
+        <textarea class="json-preview" id="jsonPreview" spellcheck="false"></textarea>
+      </aside>
+    </section>
+  </main>
+
+  <script>
+    const initialModel = {
+      version: '1.0',
+      description: 'Pflegeliste fuer Dozenten: links + keyword-tags fuer Lernverzeichnis',
+      entries: [
+        {
+          title: '',
+          url: '',
+          note: '',
+          enabled: true,
+          keywords: []
+        }
+      ]
+    };
+
+    let model = structuredClone(initialModel);
+    const entriesEl = document.getElementById('entries');
+    const versionEl = document.getElementById('version');
+    const descriptionEl = document.getElementById('description');
+    const previewEl = document.getElementById('jsonPreview');
+    const statusEl = document.getElementById('status');
+
+    const setStatus = (msg, isError = false) => {
+      statusEl.textContent = msg;
+      statusEl.classList.toggle('error', Boolean(isError));
+    };
+
+    const parseKeywords = (raw) => {
+      return String(raw || '')
+        .split(',')
+        .map((k) => k.trim())
+        .filter(Boolean);
+    };
+
+    const toPayload = () => ({
+      version: String(model.version || '').trim() || '1.0',
+      description: String(model.description || '').trim(),
+      entries: model.entries.map((e) => ({
+        title: String(e.title || '').trim(),
+        url: String(e.url || '').trim(),
+        note: String(e.note || '').trim(),
+        enabled: Boolean(e.enabled),
+        keywords: Array.isArray(e.keywords) ? e.keywords.map((k) => String(k).trim()).filter(Boolean) : []
+      }))
+    });
+
+    const refreshPreview = () => {
+      try {
+        previewEl.value = JSON.stringify(toPayload(), null, 2);
+      } catch (err) {
+        setStatus(`Vorschau konnte nicht aktualisiert werden: ${err.message}`, true);
+      }
+    };
+
+    const removeEntry = (index) => {
+      model.entries.splice(index, 1);
+      if (!model.entries.length) {
+        model.entries.push({ title: '', url: '', note: '', enabled: true, keywords: [] });
+      }
+      render();
+    };
+
+    const createEntryCard = (entry, index) => {
+      const wrapper = document.createElement('article');
+      wrapper.className = 'entry';
+      wrapper.innerHTML = `
+        <div class="entry-top">
+          <h3 class="entry-title">Eintrag ${index + 1}</h3>
+          <label class="toggle"><input type="checkbox" data-k="enabled" ${entry.enabled ? 'checked' : ''}> Aktiv</label>
+        </div>
+
+        <div class="entry-grid">
+          <div class="field full">
+            <label>Titel</label>
+            <input data-k="title" value="${escapeHtml(entry.title)}" placeholder="z. B. BBiG Volltext (PDF)" />
+          </div>
+
+          <div class="field full">
+            <label>URL</label>
+            <input data-k="url" value="${escapeHtml(entry.url)}" placeholder="https://..." />
+          </div>
+
+          <div class="field full">
+            <label>Notiz</label>
+            <textarea data-k="note" placeholder="Kontext zum Link">${escapeHtml(entry.note)}</textarea>
+          </div>
+
+          <div class="field full">
+            <label>Keywords (Komma getrennt)</label>
+            <input data-k="keywords" value="${escapeHtml((entry.keywords || []).join(', '))}" placeholder="bbig, ausbildung, aevo" />
+          </div>
+
+          <div class="field full">
+            <label>Kontext fuer KI-Vorschlag (optional)</label>
+            <textarea data-k="aiContext" placeholder="z. B. Thema des Dokuments, Zielgruppe, Lernziel">${escapeHtml(entry.aiContext || '')}</textarea>
+          </div>
+        </div>
+
+        <div class="entry-actions" style="margin-top:10px;">
+          <button class="btn" data-action="ai">KI-Vorschlag</button>
+          <button class="btn warn" data-action="delete">Loeschen</button>
+        </div>
+      `;
+
+      wrapper.querySelectorAll('[data-k]').forEach((input) => {
+        input.addEventListener('input', (event) => {
+          const key = event.target.getAttribute('data-k');
+          if (key === 'enabled') {
+            entry.enabled = event.target.checked;
+          } else if (key === 'keywords') {
+            entry.keywords = parseKeywords(event.target.value);
+          } else {
+            entry[key] = event.target.value;
+          }
+          refreshPreview();
+        });
+
+        if (input.type === 'checkbox') {
+          input.addEventListener('change', (event) => {
+            entry.enabled = event.target.checked;
+            refreshPreview();
+          });
+        }
+      });
+
+      wrapper.querySelector('[data-action="delete"]').addEventListener('click', () => removeEntry(index));
+      wrapper.querySelector('[data-action="ai"]').addEventListener('click', () => runAiSuggest(entry));
+
+      return wrapper;
+    };
+
+    const render = () => {
+      versionEl.value = model.version;
+      descriptionEl.value = model.description;
+      entriesEl.innerHTML = '';
+      model.entries.forEach((entry, index) => entriesEl.appendChild(createEntryCard(entry, index)));
+      refreshPreview();
+    };
+
+    const applyAiResult = (entry, suggestion) => {
+      if (suggestion.title) entry.title = suggestion.title;
+      if (suggestion.note) entry.note = suggestion.note;
+      if (Array.isArray(suggestion.keywords)) {
+        entry.keywords = suggestion.keywords.map((k) => String(k).trim()).filter(Boolean);
+      }
+    };
+
+    const extractJsonObject = (text) => {
+      const raw = String(text || '').trim();
+      if (!raw) return null;
+
+      try {
+        return JSON.parse(raw);
+      } catch (_) {}
+
+      const codeBlockMatch = raw.match(/```json\s*([\s\S]*?)```/i) || raw.match(/```\s*([\s\S]*?)```/i);
+      if (codeBlockMatch) {
+        try {
+          return JSON.parse(codeBlockMatch[1]);
+        } catch (_) {}
+      }
+
+      const start = raw.indexOf('{');
+      const end = raw.lastIndexOf('}');
+      if (start >= 0 && end > start) {
+        const slice = raw.slice(start, end + 1);
+        try {
+          return JSON.parse(slice);
+        } catch (_) {
+          return null;
+        }
+      }
+      return null;
+    };
+
+    const runAiSuggest = async (entry) => {
+      if (!entry.url.trim()) {
+        setStatus('Bitte zuerst eine URL eintragen, damit die KI arbeiten kann.', true);
+        return;
+      }
+
+      const question = [
+        'Erzeuge fuer einen directory_links.json Eintrag Vorschlaege als JSON.',
+        'Gib ausschliesslich ein JSON-Objekt ohne Erklaerung zurueck.',
+        'Schema: {"title":"...","note":"...","keywords":["...","..."]}.',
+        'Keywords kurz, max 6 Begriffe, kleingeschrieben, ohne Duplikate.',
+        `URL: ${entry.url}`,
+        entry.aiContext ? `Kontext: ${entry.aiContext}` : '',
+        entry.title ? `Aktueller Titel: ${entry.title}` : '',
+        entry.note ? `Aktuelle Notiz: ${entry.note}` : ''
+      ].filter(Boolean).join('\n');
+
+      setStatus('KI-Vorschlag wird erzeugt ...');
+
+      try {
+        const response = await fetch('/api/deepseek', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            question,
+            fachmodus: 'Datenpflege Lernverzeichnis',
+            routing: { preferred_model: 'deepseek-chat' }
+          })
+        });
+
+        if (!response.ok) {
+          const txt = await response.text();
+          throw new Error(`API Fehler ${response.status}: ${txt.slice(0, 180)}`);
+        }
+
+        const data = await response.json();
+        const parsed = extractJsonObject(data.answer || '');
+
+        if (!parsed) {
+          throw new Error('KI-Antwort konnte nicht als JSON interpretiert werden.');
+        }
+
+        applyAiResult(entry, parsed);
+        render();
+        setStatus('KI-Vorschlag uebernommen.');
+      } catch (err) {
+        setStatus(`KI-Vorschlag fehlgeschlagen: ${err.message}`, true);
+      }
+    };
+
+    const downloadJson = () => {
+      const blob = new Blob([JSON.stringify(toPayload(), null, 2)], { type: 'application/json' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'directory_links.json';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(a.href);
+      setStatus('Datei wurde als directory_links.json heruntergeladen.');
+    };
+
+    const loadExistingJson = async () => {
+      setStatus('Lade bestehende directory_links.json ...');
+      try {
+        const response = await fetch('./directory_links.json', { cache: 'no-store' });
+        if (!response.ok) {
+          throw new Error(`Datei nicht erreichbar (${response.status}).`);
+        }
+        const data = await response.json();
+        model = {
+          version: String(data.version || '1.0'),
+          description: String(data.description || ''),
+          entries: Array.isArray(data.entries) && data.entries.length
+            ? data.entries.map((e) => ({
+                title: String(e.title || ''),
+                url: String(e.url || ''),
+                note: String(e.note || ''),
+                enabled: Boolean(e.enabled),
+                keywords: Array.isArray(e.keywords) ? e.keywords.map((k) => String(k)) : [],
+                aiContext: ''
+              }))
+            : [{ title: '', url: '', note: '', enabled: true, keywords: [], aiContext: '' }]
+        };
+        render();
+        setStatus('Bestehende Datei geladen.');
+      } catch (err) {
+        setStatus(`Laden fehlgeschlagen: ${err.message}`, true);
+      }
+    };
+
+    const escapeHtml = (value) => {
+      return String(value || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    };
+
+    document.getElementById('addEntryBtn').addEventListener('click', () => {
+      model.entries.push({ title: '', url: '', note: '', enabled: true, keywords: [], aiContext: '' });
+      render();
+      setStatus('Neuer Eintrag hinzugefuegt.');
+    });
+
+    document.getElementById('downloadBtn').addEventListener('click', downloadJson);
+    document.getElementById('loadDefaultBtn').addEventListener('click', loadExistingJson);
+    document.getElementById('resetBtn').addEventListener('click', () => {
+      model = structuredClone(initialModel);
+      render();
+      setStatus('Formular zurueckgesetzt.');
+    });
+
+    versionEl.addEventListener('input', (e) => {
+      model.version = e.target.value;
+      refreshPreview();
+    });
+
+    descriptionEl.addEventListener('input', (e) => {
+      model.description = e.target.value;
+      refreshPreview();
+    });
+
+    document.getElementById('copyBtn').addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(previewEl.value);
+        setStatus('JSON in Zwischenablage kopiert.');
+      } catch (err) {
+        setStatus(`Kopieren fehlgeschlagen: ${err.message}`, true);
+      }
+    });
+
+    render();
+  </script>
+</body>
+</html>
