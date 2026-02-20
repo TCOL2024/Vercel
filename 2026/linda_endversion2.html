@@ -238,6 +238,23 @@
     color: #23466f;
   }
 
+  .directory-bar {
+    border-bottom: 1px solid #d9e4f5;
+    background: #f7fbff;
+    padding: 8px 12px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 0.85rem;
+    color: #23466f;
+  }
+
+  .directory-bar .label {
+    font-weight: 800;
+    color: #0d4c96;
+    white-space: nowrap;
+  }
+
   .compare-bar .label {
     font-weight: 800;
     color: #0d4c96;
@@ -436,6 +453,32 @@
     color: #697a91;
     font-size: 0.84rem;
     font-style: italic;
+  }
+
+  .keyword-panel {
+    margin-top: 8px;
+    border: 1px solid #79c57d;
+    border-radius: 11px;
+    overflow: hidden;
+    background: #f2fff3;
+  }
+
+  .keyword-head {
+    margin: 0;
+    padding: 8px 10px;
+    font-size: 0.78rem;
+    color: #1f6b2a;
+    border-bottom: 1px solid #b9e5bd;
+  }
+
+  .keyword-list {
+    margin: 0;
+    padding: 8px 10px 10px 24px;
+    font-size: 0.9rem;
+  }
+
+  .keyword-list a {
+    color: #1f6b2a;
   }
 
   .case-disclaimer {
@@ -1060,6 +1103,7 @@
   body.mobile-reader .source-toolbar,
   body.mobile-reader .fastmode-bar,
   body.mobile-reader .compare-bar,
+  body.mobile-reader .directory-bar,
   body.mobile-reader .msg-actions,
   body.mobile-reader .source-panel {
     display: none !important;
@@ -1186,6 +1230,18 @@
     <label class="fastmode-choice">
       <input id="compare-main-on" type="radio" name="compare-main" value="on">
       <span>Canvas Vergleich</span>
+    </label>
+  </div>
+
+  <div class="directory-bar">
+    <span class="label">Lernverzeichnis</span>
+    <label class="fastmode-choice">
+      <input id="directory-main-on" type="radio" name="directory-main" value="on">
+      <span>Ein</span>
+    </label>
+    <label class="fastmode-choice">
+      <input id="directory-main-off" type="radio" name="directory-main" value="off">
+      <span>Aus</span>
     </label>
   </div>
 
@@ -1324,7 +1380,7 @@
 
   const API_ENDPOINT = window.LINDA_API_ENDPOINT || '/api/bot';
   const DEEPSEEK_API_ENDPOINT = window.LINDA_DEEPSEEK_ENDPOINT || '/api/deepseek';
-  const BBIG_PDF_PATH = './docs/sources/BBIG_V20022026.pdf';
+  const BBIG_PDF_PATH = 'https://vercel-kappa-seven-33.vercel.app/2026/document/BBIG_V20022026.pdf';
   const STORAGE_KEY = 'linda3_state';
   const REQUEST_MEMORY_KEY = 'linda3_request_memory';
   const CARDS_KEY = 'linda3_cards';
@@ -1336,7 +1392,8 @@
     { key: 'llm', label: 'Basiswissen', default: true },
     { key: 'web', label: 'Aktuelle Informationen', default: true },
     { key: 'script', label: 'Ihre Unterlagen', default: true },
-    { key: 'ilias', label: 'Kursraum (ILIAS)', default: false }
+    { key: 'ilias', label: 'Kursraum (ILIAS)', default: false },
+    { key: 'directory', label: 'Lernverzeichnis', default: false }
   ];
 
   const DEFAULT_PROMPTING_JSON = {
@@ -1371,11 +1428,34 @@
     entries: []
   };
 
+  const DEFAULT_KEYWORD_LINKS = {
+    version: '1.0',
+    description: 'Lernverzeichnis fuer Schlagworte in Bot-Antworten',
+    fallback_message: 'Zu diesem Schlagwort habe ich aktuell keinen Link hinterlegt.',
+    keywords: {
+      'pruefungsordnung': [
+        {
+          title: 'Pruefungsordnung (BBiG) - Volltext (PDF)',
+          url: BBIG_PDF_PATH,
+          note: 'Offizielles Dokument'
+        }
+      ],
+      'prüfungsordnung': [
+        {
+          title: 'Pruefungsordnung (BBiG) - Volltext (PDF)',
+          url: BBIG_PDF_PATH,
+          note: 'Offizielles Dokument'
+        }
+      ]
+    }
+  };
+
   const MAKEFLOW_ONLY_SOURCES = {
     llm: false,
     web: false,
     script: true,
-    ilias: false
+    ilias: false,
+    directory: false
   };
 
   const DEFAULT_STATE = {
@@ -1420,6 +1500,7 @@
     cards: {
       lastDeckTitle: ''
     },
+    keywordLinks: structuredClone(DEFAULT_KEYWORD_LINKS),
     telemetry: {
       firstSelectionHintShown: false
     }
@@ -1492,6 +1573,17 @@
           .split(' ')
           .filter((t) => t.length >= 3)
           .slice(0, 20);
+      },
+      normalizeForKeyword: (text) => {
+        return String(text || '')
+          .toLowerCase()
+          .replace(/[ä]/g, 'ae')
+          .replace(/[ö]/g, 'oe')
+          .replace(/[ü]/g, 'ue')
+          .replace(/[ß]/g, 'ss')
+          .replace(/[^a-z0-9\s]/g, ' ')
+          .replace(/\s+/g, ' ')
+          .trim();
       },
       save: () => {
         const requestMemory = app.state.requestMemory || structuredClone(DEFAULT_REQUEST_MEMORY);
@@ -1573,6 +1665,9 @@
         app.state.requestController = null;
         app.state.requestMemory.maxEntries = Math.max(30, Number(app.state.requestMemory.maxEntries) || 120);
         if (!Array.isArray(app.state.requestMemory.entries)) app.state.requestMemory.entries = [];
+        if (!app.state.keywordLinks || typeof app.state.keywordLinks !== 'object') {
+          app.state.keywordLinks = structuredClone(DEFAULT_KEYWORD_LINKS);
+        }
         if (String(app.state.settings.domain || '').toUpperCase() === 'IT') {
           app.state.settings.domain = '';
         }
@@ -1693,6 +1788,14 @@
         const off = document.getElementById('compare-main-off');
         if (on) on.checked = compareEnabled;
         if (off) off.checked = !compareEnabled;
+      },
+
+      syncLearningDirectoryControls: () => {
+        const enabled = Boolean(app.state.settings.sources && app.state.settings.sources.directory);
+        const on = document.getElementById('directory-main-on');
+        const off = document.getElementById('directory-main-off');
+        if (on) on.checked = enabled;
+        if (off) off.checked = !enabled;
       },
 
       syncMobileReaderControls: () => {
@@ -1905,8 +2008,9 @@
         const activeCount = app.utils.activeSources().length;
         const isFast = Boolean(app.state.settings.fastMode && app.state.settings.fastMode.enabled);
         const isCompare = Boolean(app.state.settings.compareMode && app.state.settings.compareMode.enabled);
+        const hasDirectory = Boolean(app.state.settings.sources && app.state.settings.sources.directory);
         document.getElementById('domain-badge').textContent = isFast ? `${domain} ⚡` : domain;
-        document.getElementById('domain-summary').textContent = `Fachmodus: ${domain}${isFast ? ' • Schnellmodus aktiv' : ''}${isCompare ? ' • Vergleich aktiv' : ''} • Wissensbereiche: ${activeCount} aktiv`;
+        document.getElementById('domain-summary').textContent = `Fachmodus: ${domain}${isFast ? ' • Schnellmodus aktiv' : ''}${isCompare ? ' • Vergleich aktiv' : ''}${hasDirectory ? ' • Lernverzeichnis aktiv' : ''} • Wissensbereiche: ${activeCount} aktiv`;
       },
 
       loadingRow: () => {
@@ -1986,10 +2090,50 @@
         app.ui.syncMobileReaderControls();
         app.ui.syncFastModeControls();
         app.ui.syncCompareModeControls();
+        app.ui.syncLearningDirectoryControls();
         app.ui.renderSourceToolbar();
         app.ui.updateDomainUI();
         app.ui.applyMobileReaderClass();
         app.utils.save();
+      },
+
+      loadKeywordLinks: async () => {
+        try {
+          const res = await fetch('./keyword_links.json', { cache: 'no-store' });
+          if (!res.ok) return;
+          const parsed = await res.json();
+          if (parsed && typeof parsed === 'object' && parsed.keywords && typeof parsed.keywords === 'object') {
+            app.state.keywordLinks = parsed;
+          }
+        } catch (_) {}
+      },
+
+      findKeywordLinks: (text) => {
+        const enabled = Boolean(app.state.settings.sources && app.state.settings.sources.directory);
+        if (!enabled) return [];
+        const cfg = app.state.keywordLinks || {};
+        const keywordMap = (cfg.keywords && typeof cfg.keywords === 'object') ? cfg.keywords : {};
+        const rawText = app.utils.normalizeForKeyword(text);
+        if (!rawText) return [];
+
+        const links = [];
+        const seen = new Set();
+        Object.entries(keywordMap).forEach(([keyword, entries]) => {
+          const k = app.utils.normalizeForKeyword(keyword);
+          if (!k || !rawText.includes(k)) return;
+          (Array.isArray(entries) ? entries : []).forEach((entry) => {
+            if (!entry || typeof entry !== 'object') return;
+            const title = String(entry.title || entry.name || entry.url || '').trim();
+            const url = String(entry.url || '').trim();
+            const note = String(entry.note || '').trim();
+            if (!title || !url) return;
+            const key = `${title}|${url}`.toLowerCase();
+            if (seen.has(key)) return;
+            seen.add(key);
+            links.push({ title, url, note });
+          });
+        });
+        return links.slice(0, 8);
       },
 
       startApp: () => {
@@ -2104,6 +2248,7 @@
         app.utils.save();
         app.ui.updateDomainUI();
         app.ui.renderSourceToolbar();
+        app.ui.syncLearningDirectoryControls();
         app.ui.closeModals();
         app.logic.maybeShowModeCards();
       },
@@ -2530,29 +2675,51 @@
             });
           }
         }
-        if (!finalSources.length) {
+
+        if (finalSources.length) {
+          const panel = document.createElement('section');
+          panel.className = 'source-panel';
+          const title = document.createElement('h4');
+          title.className = 'source-head';
+          title.textContent = 'Quellen';
+          const ul = document.createElement('ul');
+          ul.className = 'source-list';
+          finalSources.forEach((s) => {
+            const li = document.createElement('li');
+            if (s.url) {
+              li.innerHTML = `<a href="${encodeURI(s.url)}">${app.utils.safeText(s.title)}</a>`;
+            } else {
+              li.textContent = s.title;
+            }
+            ul.appendChild(li);
+          });
+          panel.appendChild(title);
+          panel.appendChild(ul);
+          md.appendChild(panel);
+        }
+
+        const keywordLinks = app.logic.findKeywordLinks(md.innerText || '');
+        if (!keywordLinks.length) {
           return;
         }
 
-        const panel = document.createElement('section');
-        panel.className = 'source-panel';
-        const title = document.createElement('h4');
-        title.className = 'source-head';
-        title.textContent = 'Quellen';
-        const ul = document.createElement('ul');
-        ul.className = 'source-list';
-        finalSources.forEach((s) => {
+        const keywordPanel = document.createElement('section');
+        keywordPanel.className = 'keyword-panel';
+        const keywordTitle = document.createElement('h4');
+        keywordTitle.className = 'keyword-head';
+        keywordTitle.textContent = 'Lernverzeichnis';
+        const keywordList = document.createElement('ul');
+        keywordList.className = 'keyword-list';
+        keywordLinks.forEach((entry) => {
           const li = document.createElement('li');
-          if (s.url) {
-            li.innerHTML = `<a href="${encodeURI(s.url)}">${app.utils.safeText(s.title)}</a>`;
-          } else {
-            li.textContent = s.title;
-          }
-          ul.appendChild(li);
+          const noteText = entry.note ? ` - ${app.utils.safeText(entry.note)}` : '';
+          li.innerHTML = `<a href="${encodeURI(entry.url)}">${app.utils.safeText(entry.title)}</a>${noteText}`;
+          keywordList.appendChild(li);
         });
-        panel.appendChild(title);
-        panel.appendChild(ul);
-        md.appendChild(panel);
+        keywordPanel.appendChild(keywordTitle);
+        keywordPanel.appendChild(keywordList);
+        md.appendChild(keywordPanel);
+        app.utils.sanitizeLinks(md);
       },
 
       sendMessage: async () => {
@@ -3082,10 +3249,12 @@
     }
 
     app.utils.load();
+    app.logic.loadKeywordLinks();
     app.ui.updateDomainUI();
     app.ui.renderSourceToolbar();
     app.ui.syncFastModeControls();
     app.ui.syncCompareModeControls();
+    app.ui.syncLearningDirectoryControls();
     app.ui.syncMobileReaderControls();
     app.ui.applyMobileReaderClass();
     if (app.logic.isMobileReaderEnabled()) {
@@ -3187,6 +3356,19 @@
     if (compareMainOn) compareMainOn.addEventListener('change', syncCompareMode);
     if (compareMainOff) compareMainOff.addEventListener('change', syncCompareMode);
 
+    const directoryMainOn = document.getElementById('directory-main-on');
+    const directoryMainOff = document.getElementById('directory-main-off');
+    const syncLearningDirectory = () => {
+      const wantsOn = Boolean(directoryMainOn && directoryMainOn.checked);
+      app.state.settings.sources.directory = wantsOn;
+      app.utils.save();
+      app.ui.updateDomainUI();
+      app.ui.renderSourceToolbar();
+      app.ui.renderSourceToggleList();
+    };
+    if (directoryMainOn) directoryMainOn.addEventListener('change', syncLearningDirectory);
+    if (directoryMainOff) directoryMainOff.addEventListener('change', syncLearningDirectory);
+
     const mobileReaderOn = document.getElementById('mobile-reader-on');
     const mobileReaderOff = document.getElementById('mobile-reader-off');
     const syncMobileReader = () => {
@@ -3211,6 +3393,7 @@
       app.utils.save();
       app.ui.updateDomainUI();
       app.ui.renderSourceToolbar();
+      app.ui.syncLearningDirectoryControls();
     });
 
     document.getElementById('source-toggle-list').addEventListener('change', (e) => {
@@ -3219,6 +3402,7 @@
       const key = cb.getAttribute('data-source-setting');
       app.state.settings.sources[key] = cb.checked;
       if (key === 'ilias') app.state.settings.ilias.enabled = cb.checked;
+      if (key === 'directory') app.ui.syncLearningDirectoryControls();
     });
 
     document.getElementById('snippet-list-container').addEventListener('click', (e) => {
