@@ -1047,6 +1047,15 @@
     </div>
 
     <div class="section" style="margin-top:10px;">
+      <h4>Schnellmodus</h4>
+      <p class="mini">Wenn aktiv, wird beim Backend ein schneller Modellpfad angefragt (z.B. DeepSeek via Vercel-Variable).</p>
+      <div class="toggle-row" style="margin-top:8px;">
+        <label for="inp-fastmode-enabled">Schnellmodus aktivieren</label>
+        <input id="inp-fastmode-enabled" type="checkbox">
+      </div>
+    </div>
+
+    <div class="section" style="margin-top:10px;">
       <h4>Prompting-Vorschläge</h4>
       <p class="mini">Optional zuschaltbar. Vorschläge werden lokal erzeugt und nicht als feste Prompt-Vorgabe an den Bot gesendet.</p>
       <div class="toggle-row" style="margin-top:8px;">
@@ -1150,7 +1159,7 @@
 
   const DEFAULT_CARDS_WEBHOOK_JSON = {
     enabled: true,
-    route: "flashcards.selection.v1",
+    endpointPath: "/api/bot",
     minSelectionChars: 24,
     targetCount: 8,
     requireConfirmation: true,
@@ -1186,6 +1195,9 @@
       ilias: {
         enabled: false,
         courseId: ''
+      },
+      fastMode: {
+        enabled: false
       },
       prompting: {
         enabled: false,
@@ -1223,7 +1235,11 @@
   };
 
   const parseCardsWebhookResponse = (rawText) => {
-    const parsed = parseJSON(rawText, null);
+    const clean = String(rawText || '')
+      .replace(/```json/gi, '```')
+      .replace(/```/g, '')
+      .trim();
+    const parsed = parseJSON(clean, null) || parseJSON((clean.match(/\{[\s\S]*\}/) || [])[0], null);
     if (!parsed) return null;
     if (Array.isArray(parsed)) return { deckTitle: 'Lernkarten', cards: normalizeWebhookCards(parsed) };
     if (typeof parsed !== 'object') return null;
@@ -1312,6 +1328,10 @@
               ...structuredClone(DEFAULT_STATE.settings.ilias),
               ...((parsed.settings && parsed.settings.ilias) || {})
             },
+            fastMode: {
+              ...structuredClone(DEFAULT_STATE.settings.fastMode),
+              ...((parsed.settings && parsed.settings.fastMode) || {})
+            },
             prompting: {
               ...structuredClone(DEFAULT_STATE.settings.prompting),
               ...((parsed.settings && parsed.settings.prompting) || {})
@@ -1374,9 +1394,17 @@
         const parsed = parseJSON(rawText, null);
         if (!parsed) return { answer: rawText, sources: [] };
         if (typeof parsed === 'string') return { answer: parsed, sources: [] };
+        const altSources =
+          parsed.sources ||
+          parsed.quellen ||
+          parsed.references ||
+          parsed.citations ||
+          parsed.links ||
+          (parsed.metadata && parsed.metadata.sources) ||
+          [];
         return {
           answer: String(parsed.answer || parsed.response || parsed.text || parsed.output || rawText),
-          sources: Array.isArray(parsed.sources) ? parsed.sources : []
+          sources: Array.isArray(altSources) ? altSources : []
         };
       },
       nowStamp: () => new Date().toLocaleString('de-DE'),
@@ -1418,6 +1446,7 @@
         const { settings } = app.state;
         document.getElementById('inp-name').value = settings.name || '';
         document.getElementById('inp-domain').value = settings.domain || '';
+        document.getElementById('inp-fastmode-enabled').checked = Boolean(settings.fastMode && settings.fastMode.enabled);
         document.getElementById('inp-prompting-enabled').checked = Boolean(settings.prompting && settings.prompting.enabled);
         document.getElementById('inp-prompting-json').value = JSON.stringify(
           app.utils.getPromptingConfig(),
@@ -1570,8 +1599,9 @@
       updateDomainUI: () => {
         const domain = app.state.settings.domain || 'Standard';
         const activeCount = app.utils.activeSources().length;
-        document.getElementById('domain-badge').textContent = domain;
-        document.getElementById('domain-summary').textContent = `Fachmodus: ${domain} • Wissensbereiche: ${activeCount} aktiv`;
+        const isFast = Boolean(app.state.settings.fastMode && app.state.settings.fastMode.enabled);
+        document.getElementById('domain-badge').textContent = isFast ? `${domain} ⚡` : domain;
+        document.getElementById('domain-summary').textContent = `Fachmodus: ${domain}${isFast ? ' • Schnellmodus aktiv' : ''} • Wissensbereiche: ${activeCount} aktiv`;
       },
 
       loadingRow: () => {
@@ -1698,6 +1728,7 @@
       saveSettings: () => {
         app.state.settings.name = document.getElementById('inp-name').value.trim();
         app.state.settings.domain = document.getElementById('inp-domain').value;
+        app.state.settings.fastMode.enabled = document.getElementById('inp-fastmode-enabled').checked;
 
         app.state.settings.ilias.enabled = Boolean(app.state.settings.sources.ilias);
         app.state.settings.prompting.enabled = document.getElementById('inp-prompting-enabled').checked;
@@ -1900,6 +1931,101 @@
         return true;
       },
 
+      resolveSafeCardsEndpoint: () => {
+        const cfg = app.state.settings.cardsWebhook || DEFAULT_CARDS_WEBHOOK_JSON;
+        const raw = String(cfg.endpointPath || API_ENDPOINT || '/api/bot').trim();
+        if (!raw) return '/api/bot';
+        if (raw.startsWith('/')) {
+          if (!raw.startsWith('/api/')) return '/api/bot';
+          return raw;
+        }
+        try {
+          const u = new URL(raw, window.location.origin);
+          if (u.origin !== window.location.origin) return '/api/bot';
+          if (!u.pathname.startsWith('/api/')) return '/api/bot';
+          return `${u.pathname}${u.search}`;
+        } catch (_) {
+          return '/api/bot';
+        }
+      },
+
+      sanitizeCardsInputText: (text, maxLen = 1400) => {
+        return String(text || '')
+          .replace(/\r/g, ' ')
+          .replace(/[^\S\n]+/g, ' ')
+          .replace(/\n{3,}/g, '\n\n')
+          .trim()
+          .slice(0, maxLen);
+      },
+
+      buildCardsWebhookQuestion: (text, targetCount, domain) => {
+        const safeText = app.logic.sanitizeCardsInputText(text, 1400);
+        return (
+          `Erstelle aus dem folgenden Inhalt genau ${targetCount} hochwertige Lernkarten. ` +
+          'Antwort ausschließlich als JSON ohne Markdown.\n\n' +
+          'Format:\n' +
+          '{"deckTitle":"...","cards":[{"question":"...","answer":"..."}]}\n\n' +
+          'Regeln:\n' +
+          '- Nur fachlich relevante Inhalte.\n' +
+          '- Keine Meta-Hinweise, keine UI-Texte.\n' +
+          '- Kurz, präzise, prüfungsorientiert.\n\n' +
+          `Fachmodus: ${domain || 'Standard'}\n\n` +
+          `Inhalt:\n${safeText}`
+        );
+      },
+
+      requestCardsViaWebhook: async (rawText, sourceType = 'manual') => {
+        const cfg = app.state.settings.cardsWebhook || DEFAULT_CARDS_WEBHOOK_JSON;
+        const domain = app.state.settings.domain || '';
+        const targetCount = Math.max(3, Math.min(24, Number(cfg.targetCount || 8)));
+        const endpoint = app.logic.resolveSafeCardsEndpoint();
+        const question = app.logic.buildCardsWebhookQuestion(rawText, targetCount, domain);
+
+        const res = await fetch(endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            question: app.utils.truncate(question, 2400),
+            fachmodus: domain,
+            schnellmodus: Boolean(app.state.settings.fastMode && app.state.settings.fastMode.enabled),
+            routing: {
+              preferred_model: (app.state.settings.fastMode && app.state.settings.fastMode.enabled) ? 'Linda3Schnellmodus' : 'default'
+            },
+            history: []
+          })
+        });
+
+        if (!res.ok) {
+          let detail = '';
+          try {
+            const err = await res.json();
+            detail = err?.error ? `: ${err.error}` : '';
+          } catch (_) {}
+          throw new Error(`HTTP ${res.status}${detail}`);
+        }
+
+        const raw = await res.text();
+        const parsed = parseCardsWebhookResponse(raw);
+        const cards = (parsed?.cards || []).slice(0, targetCount);
+        if (!cards.length) {
+          const fallbackCards = app.logic.buildFlashcardsFromText(rawText).map((c) => ({
+            ...c,
+            id: hashCardId(c.question, c.answer),
+            adaptive: { ease: 2, reps: 0, dueAt: 0 }
+          }));
+          return {
+            deckTitle: 'Lernkarten',
+            cards: fallbackCards.slice(0, targetCount),
+            sourceType: `${sourceType}-local-fallback`
+          };
+        }
+        return {
+          deckTitle: parsed?.deckTitle || 'Lernkarten',
+          cards,
+          sourceType: `${sourceType}-webhook`
+        };
+      },
+
       requestCardsFromSelection: async () => {
         const draft = app.state.selectionDraft;
         if (!draft || !draft.text) return;
@@ -1915,41 +2041,17 @@
         app.ui.hideSelectionMenu();
 
         try {
-          const res = await fetch(API_ENDPOINT, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              task: 'flashcards_selection',
-              route: String(cfg.route || 'flashcards.selection.v1'),
-              selectionText: draft.text,
-              fachmodus: app.state.settings.domain || '',
-              history: [],
-              cardsConfig: {
-                targetCount: Number(cfg.targetCount || 8),
-                adaptive: Boolean(cfg.adaptive)
-              }
-            })
-          });
-
-          if (!res.ok) throw new Error(`HTTP ${res.status}`);
-          const raw = await res.text();
-          const parsed = parseCardsWebhookResponse(raw);
-          let cards = parsed?.cards || [];
-          if (!cards.length) {
-            cards = app.logic.buildFlashcardsFromText(draft.text).map((c) => ({
-              ...c,
-              id: hashCardId(c.question, c.answer),
-              adaptive: { ease: 2, reps: 0, dueAt: 0 }
-            }));
-          }
+          const result = await app.logic.requestCardsViaWebhook(draft.text, 'selection');
+          const cards = result.cards || [];
+          const targetCount = Math.max(3, Math.min(24, Number(cfg.targetCount || 8)));
 
           app.logic.openCardsTabWithPayload({
-            cards: cards.slice(0, Number(cfg.targetCount || 8)),
+            cards: cards.slice(0, targetCount),
             generatedAt: app.utils.nowStamp(),
             sourceLength: draft.text.length,
             adaptive: Boolean(cfg.adaptive),
-            deckTitle: parsed?.deckTitle || 'Lernkarten aus Auswahl',
-            sourceType: 'selection-webhook'
+            deckTitle: result.deckTitle || 'Lernkarten aus Auswahl',
+            sourceType: result.sourceType || 'selection-webhook'
           });
         } catch (e) {
           alert(`Lernkarten-Webhook Fehler: ${e.message || 'unbekannt'}`);
@@ -1972,6 +2074,64 @@
           .slice(0, 10);
       },
 
+      extractSourcesFromRenderedMarkdown: (md) => {
+        if (!md) return [];
+        const found = [];
+        const pushUrl = (urlText) => {
+          const url = String(urlText || '').trim();
+          if (!/^https?:\/\//i.test(url)) return;
+          found.push({ title: url, url });
+        };
+
+        md.querySelectorAll('a[href]').forEach((a) => {
+          const href = String(a.getAttribute('href') || '').trim();
+          if (!/^https?:\/\//i.test(href)) return;
+          found.push({ title: (a.textContent || href).trim(), url: href });
+        });
+
+        const nodes = md.querySelectorAll('h1,h2,h3,h4,h5,p,strong');
+        let sourceAnchor = null;
+        nodes.forEach((n) => {
+          if (sourceAnchor) return;
+          if (/^quellen?\s*:?\s*$/i.test((n.textContent || '').trim())) sourceAnchor = n;
+        });
+
+        if (sourceAnchor) {
+          let cur = sourceAnchor.nextElementSibling;
+          let hops = 0;
+          while (cur && hops < 5) {
+            if (cur.tagName === 'UL' || cur.tagName === 'OL') {
+              cur.querySelectorAll('a[href]').forEach((a) => {
+                const href = String(a.getAttribute('href') || '').trim();
+                if (/^https?:\/\//i.test(href)) found.push({ title: (a.textContent || href).trim(), url: href });
+              });
+              cur.querySelectorAll('li').forEach((li) => {
+                const text = (li.textContent || '').trim();
+                const m = text.match(/https?:\/\/\S+/gi) || [];
+                m.forEach(pushUrl);
+              });
+              break;
+            }
+            const text = (cur.textContent || '').trim();
+            const urls = text.match(/https?:\/\/\S+/gi) || [];
+            urls.forEach(pushUrl);
+            if (urls.length) break;
+            cur = cur.nextElementSibling;
+            hops += 1;
+          }
+        }
+
+        const unique = [];
+        const seen = new Set();
+        found.forEach((s) => {
+          const key = `${s.title}|${s.url}`.toLowerCase();
+          if (seen.has(key)) return;
+          seen.add(key);
+          unique.push(s);
+        });
+        return unique.slice(0, 10);
+      },
+
       decorateBubble: (md, sources) => {
         md.querySelectorAll('table').forEach((table) => {
           const wrap = document.createElement('div');
@@ -1981,7 +2141,9 @@
         });
 
         const sourceList = app.logic.sanitizeSourceList(sources);
-        if (!sourceList.length) {
+        const fallbackSources = sourceList.length ? [] : app.logic.extractSourcesFromRenderedMarkdown(md);
+        const finalSources = sourceList.length ? sourceList : fallbackSources;
+        if (!finalSources.length) {
           return;
         }
 
@@ -1992,7 +2154,7 @@
         title.textContent = 'Quellen';
         const ul = document.createElement('ul');
         ul.className = 'source-list';
-        sourceList.forEach((s) => {
+        finalSources.forEach((s) => {
           const li = document.createElement('li');
           if (/^https?:\/\//i.test(s.url)) {
             li.innerHTML = `<a href="${encodeURI(s.url)}">${app.utils.safeText(s.title)}</a>`;
@@ -2055,8 +2217,12 @@
           const payload = {
             question: app.utils.truncate(text, 1300),
             fachmodus: app.state.settings.domain || '',
+            schnellmodus: Boolean(app.state.settings.fastMode && app.state.settings.fastMode.enabled),
             history: app.utils.chatContext(s),
             sources: app.state.settings.sources,
+            routing: {
+              preferred_model: (app.state.settings.fastMode && app.state.settings.fastMode.enabled) ? 'Linda3Schnellmodus' : 'default'
+            },
             ilias: {
               enabled: Boolean(app.state.settings.ilias.enabled && app.state.settings.sources.ilias),
               mode: 'manual-links',
@@ -2577,7 +2743,20 @@
       if (action === 'pdf') app.logic.pdfBubble(btn);
       if (action === 'cards') {
         const text = btn.closest('.msg-wrap')?.querySelector('.md')?.innerText || '';
-        app.logic.openFlashcardsTab(text);
+        app.logic.requestCardsViaWebhook(text, 'bubble')
+          .then((result) => {
+            app.logic.openCardsTabWithPayload({
+              cards: result.cards || [],
+              generatedAt: app.utils.nowStamp(),
+              sourceLength: String(text || '').length,
+              adaptive: Boolean(app.state.settings.cardsWebhook?.adaptive),
+              deckTitle: result.deckTitle || 'Lernkarten',
+              sourceType: result.sourceType || 'bubble-webhook'
+            });
+          })
+          .catch((e) => {
+            alert(`Lernkarten-Webhook Fehler: ${e.message || 'unbekannt'}`);
+          });
       }
       if (action === 'feedback') app.ui.openModal('modal-feedback');
     });
