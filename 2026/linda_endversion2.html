@@ -203,19 +203,30 @@
     min-height: 48px;
   }
 
-  .fastmode-bar {
+  .smart-controls-bar {
     border-top: 1px solid #d9e4f5;
     border-bottom: 1px solid #d9e4f5;
     background: #f7fbff;
     padding: 8px 12px;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    font-size: 0.85rem;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+    font-size: 0.84rem;
     color: #23466f;
   }
 
-  .fastmode-bar .label {
+  .smart-control {
+    border: 1px solid #d6e4f8;
+    border-radius: 11px;
+    background: #fff;
+    padding: 8px 9px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .smart-control .label {
     font-weight: 800;
     color: #0d4c96;
     white-space: nowrap;
@@ -225,40 +236,6 @@
     display: inline-flex;
     align-items: center;
     gap: 6px;
-  }
-
-  .compare-bar {
-    border-bottom: 1px solid #d9e4f5;
-    background: #f7fbff;
-    padding: 8px 12px;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    font-size: 0.85rem;
-    color: #23466f;
-  }
-
-  .directory-bar {
-    border-bottom: 1px solid #d9e4f5;
-    background: #f7fbff;
-    padding: 8px 12px;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    font-size: 0.85rem;
-    color: #23466f;
-  }
-
-  .directory-bar .label {
-    font-weight: 800;
-    color: #0d4c96;
-    white-space: nowrap;
-  }
-
-  .compare-bar .label {
-    font-weight: 800;
-    color: #0d4c96;
-    white-space: nowrap;
   }
 
   .compare-canvas {
@@ -1062,18 +1039,16 @@
       grid-template-columns: 1fr;
     }
 
-    .fastmode-bar {
+    .smart-controls-bar {
+      grid-template-columns: 1fr;
       font-size: 0.92rem;
       padding: 10px 12px;
       gap: 10px;
-      flex-wrap: wrap;
     }
 
-    .compare-bar {
-      font-size: 0.92rem;
-      padding: 10px 12px;
+    .smart-control {
+      padding: 10px 10px;
       gap: 10px;
-      flex-wrap: wrap;
     }
 
     .compare-canvas {
@@ -1101,9 +1076,7 @@
   body.mobile-reader #domain-badge,
   body.mobile-reader .header-actions,
   body.mobile-reader .source-toolbar,
-  body.mobile-reader .fastmode-bar,
-  body.mobile-reader .compare-bar,
-  body.mobile-reader .directory-bar,
+  body.mobile-reader .smart-controls-bar,
   body.mobile-reader .msg-actions,
   body.mobile-reader .source-panel {
     display: none !important;
@@ -1209,40 +1182,40 @@
 
   <div id="chat-log"></div>
 
-  <div class="fastmode-bar">
-    <span class="label">Schnellmodus</span>
-    <label class="fastmode-choice">
-      <input id="fastmode-main-on" type="radio" name="fastmode-main" value="on">
-      <span>Ein</span>
-    </label>
-    <label class="fastmode-choice">
-      <input id="fastmode-main-off" type="radio" name="fastmode-main" value="off">
-      <span>Aus</span>
-    </label>
-  </div>
-
-  <div class="compare-bar">
-    <span class="label">Antwortmodus</span>
-    <label class="fastmode-choice">
-      <input id="compare-main-off" type="radio" name="compare-main" value="off">
-      <span>Standard</span>
-    </label>
-    <label class="fastmode-choice">
-      <input id="compare-main-on" type="radio" name="compare-main" value="on">
-      <span>Canvas Vergleich</span>
-    </label>
-  </div>
-
-  <div class="directory-bar">
-    <span class="label">Lernverzeichnis</span>
-    <label class="fastmode-choice">
-      <input id="directory-main-on" type="radio" name="directory-main" value="on">
-      <span>Ein</span>
-    </label>
-    <label class="fastmode-choice">
-      <input id="directory-main-off" type="radio" name="directory-main" value="off">
-      <span>Aus</span>
-    </label>
+  <div class="smart-controls-bar" aria-label="Smart Schalter">
+    <div class="smart-control">
+      <span class="label">Schnellmodus</span>
+      <label class="fastmode-choice">
+        <input id="fastmode-main-on" type="radio" name="fastmode-main" value="on">
+        <span>Ein</span>
+      </label>
+      <label class="fastmode-choice">
+        <input id="fastmode-main-off" type="radio" name="fastmode-main" value="off">
+        <span>Aus</span>
+      </label>
+    </div>
+    <div class="smart-control">
+      <span class="label">Antwortmodus</span>
+      <label class="fastmode-choice">
+        <input id="compare-main-off" type="radio" name="compare-main" value="off">
+        <span>Standard</span>
+      </label>
+      <label class="fastmode-choice">
+        <input id="compare-main-on" type="radio" name="compare-main" value="on">
+        <span>Canvas</span>
+      </label>
+    </div>
+    <div class="smart-control">
+      <span class="label">Lernverzeichnis (BETA)</span>
+      <label class="fastmode-choice">
+        <input id="directory-main-on" type="radio" name="directory-main" value="on">
+        <span>Ein</span>
+      </label>
+      <label class="fastmode-choice">
+        <input id="directory-main-off" type="radio" name="directory-main" value="off">
+        <span>Aus</span>
+      </label>
+    </div>
   </div>
 
   <div class="input-area">
@@ -1303,8 +1276,8 @@
     </div>
 
     <div class="section" style="margin-top:10px;">
-      <h4>ILIAS</h4>
-      <p class="mini">ILIAS wird nur per Schalter bei den Wissensquellen aktiviert. Keine Token-Eingabe im Frontend.</p>
+      <h4>ILIAS (BETA)</h4>
+      <p class="mini">ILIAS ist aktuell Beta und wird nur per Schalter bei den Wissensquellen aktiviert. Keine Token-Eingabe im Frontend.</p>
     </div>
 
     <div class="section" style="margin-top:10px;">
@@ -1381,6 +1354,8 @@
   const API_ENDPOINT = window.LINDA_API_ENDPOINT || '/api/bot';
   const DEEPSEEK_API_ENDPOINT = window.LINDA_DEEPSEEK_ENDPOINT || '/api/deepseek';
   const BBIG_PDF_PATH = 'https://vercel-kappa-seven-33.vercel.app/2026/document/BBIG_V20022026.pdf';
+  const DIRECTORY_LINKS_PATH = './directory_links.json';
+  const DIRECTORY_KEYWORD_MATCHING_ENABLED = false;
   const STORAGE_KEY = 'linda3_state';
   const REQUEST_MEMORY_KEY = 'linda3_request_memory';
   const CARDS_KEY = 'linda3_cards';
@@ -1392,8 +1367,8 @@
     { key: 'llm', label: 'Basiswissen', default: true },
     { key: 'web', label: 'Aktuelle Informationen', default: true },
     { key: 'script', label: 'Ihre Unterlagen', default: true },
-    { key: 'ilias', label: 'Kursraum (ILIAS)', default: false },
-    { key: 'directory', label: 'Lernverzeichnis', default: false }
+    { key: 'ilias', label: 'Kursraum (ILIAS) BETA', default: false },
+    { key: 'directory', label: 'Lernverzeichnis BETA', default: false }
   ];
 
   const DEFAULT_PROMPTING_JSON = {
@@ -1428,26 +1403,10 @@
     entries: []
   };
 
-  const DEFAULT_KEYWORD_LINKS = {
+  const DEFAULT_DIRECTORY_LINKS = {
     version: '1.0',
-    description: 'Lernverzeichnis fuer Schlagworte in Bot-Antworten',
-    fallback_message: 'Zu diesem Schlagwort habe ich aktuell keinen Link hinterlegt.',
-    keywords: {
-      'pruefungsordnung': [
-        {
-          title: 'Pruefungsordnung (BBiG) - Volltext (PDF)',
-          url: BBIG_PDF_PATH,
-          note: 'Offizielles Dokument'
-        }
-      ],
-      'prüfungsordnung': [
-        {
-          title: 'Pruefungsordnung (BBiG) - Volltext (PDF)',
-          url: BBIG_PDF_PATH,
-          note: 'Offizielles Dokument'
-        }
-      ]
-    }
+    description: 'Einfache Linkliste fuer Dozenten (Titel, URL, Keywords).',
+    entries: []
   };
 
   const MAKEFLOW_ONLY_SOURCES = {
@@ -1500,7 +1459,7 @@
     cards: {
       lastDeckTitle: ''
     },
-    keywordLinks: structuredClone(DEFAULT_KEYWORD_LINKS),
+    keywordLinks: structuredClone(DEFAULT_DIRECTORY_LINKS),
     telemetry: {
       firstSelectionHintShown: false
     }
@@ -1666,7 +1625,7 @@
         app.state.requestMemory.maxEntries = Math.max(30, Number(app.state.requestMemory.maxEntries) || 120);
         if (!Array.isArray(app.state.requestMemory.entries)) app.state.requestMemory.entries = [];
         if (!app.state.keywordLinks || typeof app.state.keywordLinks !== 'object') {
-          app.state.keywordLinks = structuredClone(DEFAULT_KEYWORD_LINKS);
+          app.state.keywordLinks = structuredClone(DEFAULT_DIRECTORY_LINKS);
         }
         if (String(app.state.settings.domain || '').toUpperCase() === 'IT') {
           app.state.settings.domain = '';
@@ -2010,7 +1969,7 @@
         const isCompare = Boolean(app.state.settings.compareMode && app.state.settings.compareMode.enabled);
         const hasDirectory = Boolean(app.state.settings.sources && app.state.settings.sources.directory);
         document.getElementById('domain-badge').textContent = isFast ? `${domain} ⚡` : domain;
-        document.getElementById('domain-summary').textContent = `Fachmodus: ${domain}${isFast ? ' • Schnellmodus aktiv' : ''}${isCompare ? ' • Vergleich aktiv' : ''}${hasDirectory ? ' • Lernverzeichnis aktiv' : ''} • Wissensbereiche: ${activeCount} aktiv`;
+        document.getElementById('domain-summary').textContent = `Fachmodus: ${domain}${isFast ? ' • Schnellmodus aktiv' : ''}${isCompare ? ' • Vergleich aktiv' : ''}${hasDirectory ? ' • Lernverzeichnis (Beta) aktiv' : ''} • Wissensbereiche: ${activeCount} aktiv`;
       },
 
       loadingRow: () => {
@@ -2099,39 +2058,102 @@
 
       loadKeywordLinks: async () => {
         try {
-          const res = await fetch('./keyword_links.json', { cache: 'no-store' });
+          const res = await fetch(DIRECTORY_LINKS_PATH, { cache: 'no-store' });
           if (!res.ok) return;
           const parsed = await res.json();
-          if (parsed && typeof parsed === 'object' && parsed.keywords && typeof parsed.keywords === 'object') {
-            app.state.keywordLinks = parsed;
+          if (!parsed || typeof parsed !== 'object') return;
+
+          const out = {
+            version: String(parsed.version || '1.0'),
+            description: String(parsed.description || ''),
+            entries: []
+          };
+
+          // New format: { entries: [{ title, url, keywords: [] }] }
+          if (Array.isArray(parsed.entries)) {
+            out.entries = parsed.entries
+              .map((entry) => {
+                if (!entry || typeof entry !== 'object') return null;
+                const title = String(entry.title || '').trim();
+                const url = String(entry.url || '').trim();
+                const note = String(entry.note || '').trim();
+                const enabled = entry.enabled !== false;
+                const keywords = (Array.isArray(entry.keywords) ? entry.keywords : [])
+                  .map((k) => app.utils.normalizeForKeyword(k))
+                  .filter(Boolean);
+                if (!title || !url || !keywords.length) return null;
+                return { title, url, note, enabled, keywords };
+              })
+              .filter(Boolean);
           }
+
+          // Legacy migration: { keywords: { "term": [ {title,url,note} ] } }
+          if (!out.entries.length && parsed.keywords && typeof parsed.keywords === 'object') {
+            const migrated = [];
+            Object.entries(parsed.keywords).forEach(([keyword, links]) => {
+              const normalizedKeyword = app.utils.normalizeForKeyword(keyword);
+              if (!normalizedKeyword) return;
+              (Array.isArray(links) ? links : []).forEach((item) => {
+                if (!item || typeof item !== 'object') return;
+                const title = String(item.title || item.name || '').trim();
+                const url = String(item.url || '').trim();
+                const note = String(item.note || '').trim();
+                if (!title || !url) return;
+                migrated.push({
+                  title,
+                  url,
+                  note,
+                  enabled: true,
+                  keywords: [normalizedKeyword]
+                });
+              });
+            });
+
+            const merged = new Map();
+            migrated.forEach((entry) => {
+              const key = `${entry.title}|${entry.url}`.toLowerCase();
+              const prev = merged.get(key);
+              if (!prev) {
+                merged.set(key, { ...entry });
+                return;
+              }
+              const kw = new Set([...(prev.keywords || []), ...(entry.keywords || [])]);
+              prev.keywords = Array.from(kw);
+            });
+            out.entries = Array.from(merged.values());
+          }
+
+          app.state.keywordLinks = out;
         } catch (_) {}
       },
 
       findKeywordLinks: (text) => {
+        if (!DIRECTORY_KEYWORD_MATCHING_ENABLED) return [];
         const enabled = Boolean(app.state.settings.sources && app.state.settings.sources.directory);
         if (!enabled) return [];
         const cfg = app.state.keywordLinks || {};
-        const keywordMap = (cfg.keywords && typeof cfg.keywords === 'object') ? cfg.keywords : {};
+        const entries = Array.isArray(cfg.entries) ? cfg.entries : [];
         const rawText = app.utils.normalizeForKeyword(text);
         if (!rawText) return [];
 
         const links = [];
         const seen = new Set();
-        Object.entries(keywordMap).forEach(([keyword, entries]) => {
-          const k = app.utils.normalizeForKeyword(keyword);
-          if (!k || !rawText.includes(k)) return;
-          (Array.isArray(entries) ? entries : []).forEach((entry) => {
-            if (!entry || typeof entry !== 'object') return;
-            const title = String(entry.title || entry.name || entry.url || '').trim();
-            const url = String(entry.url || '').trim();
-            const note = String(entry.note || '').trim();
-            if (!title || !url) return;
-            const key = `${title}|${url}`.toLowerCase();
-            if (seen.has(key)) return;
-            seen.add(key);
-            links.push({ title, url, note });
-          });
+        entries.forEach((entry) => {
+          if (!entry || entry.enabled === false) return;
+          const keywords = (Array.isArray(entry.keywords) ? entry.keywords : [])
+            .map((k) => app.utils.normalizeForKeyword(k))
+            .filter(Boolean);
+          if (!keywords.length) return;
+          const matched = keywords.some((k) => rawText.includes(k));
+          if (!matched) return;
+          const title = String(entry.title || '').trim();
+          const url = String(entry.url || '').trim();
+          const note = String(entry.note || '').trim();
+          if (!title || !url) return;
+          const key = `${title}|${url}`.toLowerCase();
+          if (seen.has(key)) return;
+          seen.add(key);
+          links.push({ title, url, note });
         });
         return links.slice(0, 8);
       },
