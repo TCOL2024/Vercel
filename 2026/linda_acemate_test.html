@@ -1,0 +1,782 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Linda Testlab - Study Feed</title>
+  <style>
+    :root {
+      --bg: #eef4fb;
+      --panel: #ffffff;
+      --text: #132238;
+      --muted: #5a6d86;
+      --brand: #0058b5;
+      --brand-2: #00a2b8;
+      --line: #d2dfef;
+      --ok: #0f9d58;
+      --warn: #cc7a00;
+      --danger: #cf2f45;
+      --radius: 16px;
+      --shadow: 0 12px 30px rgba(7, 24, 44, 0.12);
+    }
+
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      height: 100%;
+      background: radial-gradient(1200px 500px at 100% -10%, #dcebff 0%, transparent 50%), var(--bg);
+      color: var(--text);
+      font-family: "Manrope", "Segoe UI", sans-serif;
+      -webkit-text-size-adjust: 100%;
+      text-size-adjust: 100%;
+    }
+
+    .app {
+      max-width: 980px;
+      margin: 0 auto;
+      min-height: 100dvh;
+      padding: 14px;
+      display: grid;
+      grid-template-rows: auto auto 1fr auto;
+      gap: 10px;
+    }
+
+    .topbar, .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+
+    .topbar {
+      padding: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .brand {
+      font-weight: 900;
+      font-size: 1.2rem;
+      color: #0d468f;
+    }
+
+    .meta {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .pill {
+      border: 1px solid #bfd5ee;
+      border-radius: 999px;
+      padding: 7px 11px;
+      font-size: 0.82rem;
+      color: #214a78;
+      background: #f3f9ff;
+      font-weight: 700;
+    }
+
+    .tabs {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      padding: 8px;
+    }
+
+    .tab {
+      border: 1px solid var(--line);
+      background: #fff;
+      color: #244767;
+      border-radius: 12px;
+      padding: 10px 12px;
+      font-weight: 800;
+      cursor: pointer;
+      font-size: 0.9rem;
+    }
+
+    .tab.active {
+      background: linear-gradient(135deg, var(--brand) 0%, #1e7cd6 100%);
+      color: #fff;
+      border-color: transparent;
+    }
+
+    .panel {
+      padding: 12px;
+      overflow: hidden;
+    }
+
+    .section-title {
+      margin: 0 0 8px;
+      font-size: 1.02rem;
+      color: #0e4b95;
+    }
+
+    .mini {
+      font-size: 0.82rem;
+      color: var(--muted);
+    }
+
+    .grid {
+      display: grid;
+      gap: 10px;
+    }
+
+    .grid.cols {
+      grid-template-columns: 1fr 1fr;
+    }
+
+    textarea, input {
+      width: 100%;
+      border: 2px solid #d6e3f2;
+      border-radius: 12px;
+      padding: 10px 12px;
+      font: inherit;
+      color: inherit;
+      background: #fff;
+    }
+
+    textarea {
+      min-height: 108px;
+      resize: vertical;
+      line-height: 1.5;
+    }
+
+    .btn {
+      border: 1px solid #c5d9ef;
+      background: #fff;
+      color: #13477f;
+      border-radius: 12px;
+      padding: 10px 12px;
+      font-weight: 800;
+      cursor: pointer;
+      font-size: 0.9rem;
+    }
+
+    .btn.primary {
+      background: linear-gradient(135deg, var(--brand) 0%, #1b79d3 100%);
+      color: #fff;
+      border-color: transparent;
+    }
+
+    .btn.row {
+      width: 100%;
+    }
+
+    .actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+    .swipe-card {
+      border: 1px solid #d8e5f4;
+      border-radius: 16px;
+      background: linear-gradient(140deg, #fff 0%, #f3f9ff 100%);
+      padding: 14px;
+      min-height: 230px;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      gap: 8px;
+    }
+
+    .kicker {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      color: #45658a;
+      font-weight: 900;
+    }
+
+    .front {
+      font-size: 1.08rem;
+      font-weight: 800;
+      line-height: 1.45;
+    }
+
+    .back {
+      display: none;
+      color: #1d3f66;
+      line-height: 1.55;
+      font-size: 1rem;
+      white-space: pre-wrap;
+    }
+
+    .back.show { display: block; }
+
+    .swipe-actions {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+    }
+
+    .btn.again { border-color: #f1c3ca; color: #9a2334; background: #fff5f6; }
+    .btn.good { border-color: #bee2d0; color: #0d7f47; background: #f2fbf6; }
+    .btn.skip { border-color: #e2d6b8; color: #8f6a1a; background: #fff9ee; }
+
+    .quiz-item {
+      border: 1px solid #d7e4f3;
+      border-radius: 12px;
+      padding: 10px;
+      background: #fff;
+    }
+
+    .choice {
+      display: block;
+      border: 1px solid #d4e0f0;
+      border-radius: 10px;
+      padding: 9px;
+      margin-top: 6px;
+      cursor: pointer;
+      background: #f8fbff;
+    }
+
+    .choice.correct { border-color: #9fd7ba; background: #edf9f3; }
+    .choice.wrong { border-color: #f3bcc5; background: #fff2f4; }
+
+    .chat {
+      border: 1px solid #d7e4f2;
+      border-radius: 12px;
+      background: #f8fbff;
+      min-height: 180px;
+      max-height: 300px;
+      overflow: auto;
+      padding: 8px;
+      display: grid;
+      gap: 8px;
+    }
+
+    .bubble {
+      border-radius: 10px;
+      padding: 9px 10px;
+      font-size: 0.95rem;
+      line-height: 1.5;
+      white-space: pre-wrap;
+    }
+
+    .bubble.user { background: #0f5fb8; color: #fff; justify-self: end; max-width: 88%; }
+    .bubble.bot { background: #fff; border: 1px solid #d5e1f1; max-width: 92%; }
+
+    .progress-wrap {
+      border: 1px solid #d8e4f3;
+      border-radius: 12px;
+      padding: 10px;
+      background: #fff;
+      display: grid;
+      gap: 8px;
+    }
+
+    .meter {
+      height: 10px;
+      border-radius: 999px;
+      background: #e9f1fb;
+      overflow: hidden;
+    }
+
+    .meter > span {
+      display: block;
+      height: 100%;
+      background: linear-gradient(90deg, var(--brand-2), var(--brand));
+      width: 0%;
+      transition: width .2s ease;
+    }
+
+    .hidden { display: none !important; }
+
+    @media (max-width: 860px) {
+      .app { padding: 10px; }
+      .grid.cols { grid-template-columns: 1fr; }
+      html, body { font-size: 18px; }
+      .front { font-size: 1.12rem; }
+      .tab { font-size: 0.95rem; }
+      .btn { font-size: 0.95rem; }
+      textarea, input { font-size: 16px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header class="topbar">
+      <div class="brand">Linda Testlab - Study Feed</div>
+      <div class="meta">
+        <span class="pill" id="pill-streak">Streak: 0 Tage</span>
+        <span class="pill" id="pill-cards">Karten: 0</span>
+        <span class="pill" id="pill-mastery">Mastery: 0%</span>
+      </div>
+    </header>
+
+    <nav class="panel tabs" id="tabs">
+      <button class="tab active" data-tab="ingest">Inhalt</button>
+      <button class="tab" data-tab="learn">Swipe Lernen</button>
+      <button class="tab" data-tab="quiz">Quiz</button>
+      <button class="tab" data-tab="tutor">AI Tutor</button>
+      <button class="tab" data-tab="progress">Progress</button>
+    </nav>
+
+    <main class="panel">
+      <section id="view-ingest" class="view">
+        <h3 class="section-title">1) Lernstoff einfügen oder Link angeben</h3>
+        <p class="mini">Acemate-inspirierte Idee: aus einem Input sofort Flashcards + Quiz + Kurzsummary erzeugen.</p>
+        <div class="grid cols">
+          <div class="grid">
+            <textarea id="source-text" placeholder="Füge hier Notizen, Auszug aus Skript oder Lerntext ein..."></textarea>
+            <input id="source-link" placeholder="Optional: Link (PDF/Website/YouTube)" />
+            <div class="actions">
+              <button class="btn primary" id="btn-generate">Mit Linda generieren</button>
+              <button class="btn" id="btn-demo">Demo-Daten laden</button>
+            </div>
+          </div>
+          <div class="grid">
+            <div class="progress-wrap">
+              <strong>AI Output Snapshot</strong>
+              <div class="mini" id="summary-box">Noch kein Summary erzeugt.</div>
+            </div>
+            <div class="progress-wrap">
+              <strong>Quick Actions</strong>
+              <div class="actions">
+                <button class="btn" data-quick="explain">Erkläre einfacher</button>
+                <button class="btn" data-quick="exam">Prüfungsfragen</button>
+                <button class="btn" data-quick="mindmap">Mind-Map Outline</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="view-learn" class="view hidden">
+        <h3 class="section-title">2) Swipe-Lernen</h3>
+        <div class="swipe-card" id="swipe-card">
+          <div class="kicker" id="card-tag">Karte 0/0</div>
+          <div>
+            <div class="front" id="card-front">Noch keine Karten vorhanden.</div>
+            <div class="back" id="card-back"></div>
+          </div>
+          <div class="swipe-actions">
+            <button class="btn skip" id="btn-flip">Umdrehen</button>
+            <button class="btn again" id="btn-again">Nochmal</button>
+            <button class="btn good" id="btn-good">Sicher</button>
+          </div>
+        </div>
+      </section>
+
+      <section id="view-quiz" class="view hidden">
+        <h3 class="section-title">3) Quiz Modus</h3>
+        <div id="quiz-list" class="grid"></div>
+      </section>
+
+      <section id="view-tutor" class="view hidden">
+        <h3 class="section-title">4) AI Tutor</h3>
+        <div class="chat" id="chat"></div>
+        <div class="actions" style="margin-top:8px;">
+          <input id="chat-input" placeholder="Frage zum Lernstoff..." />
+          <button class="btn primary" id="chat-send">Senden</button>
+        </div>
+      </section>
+
+      <section id="view-progress" class="view hidden">
+        <h3 class="section-title">5) Progress & Mastery</h3>
+        <div class="grid cols">
+          <div class="progress-wrap">
+            <strong>Deck-Fortschritt</strong>
+            <div class="mini" id="progress-text">Noch keine Lerndaten.</div>
+            <div class="meter"><span id="progress-meter"></span></div>
+          </div>
+          <div class="progress-wrap">
+            <strong>Knowledge Focus</strong>
+            <div class="mini" id="focus-list">-</div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="panel" style="padding:10px;">
+      <div class="mini">Testversion inspiriert von Acemate-Konzepten: Swipe-Lernen, Tutor, Progress, Quiz-Flow.</div>
+    </footer>
+  </div>
+
+  <script>
+    const KEY = 'linda_acemate_test_state_v1';
+
+    const state = {
+      cards: [],
+      quiz: [],
+      summary: '',
+      focus: [],
+      current: 0,
+      flipped: false,
+      stats: {
+        streak: 0,
+        mastery: 0,
+        reviewed: 0,
+        confident: 0,
+        lastStudyDate: ''
+      },
+      history: []
+    };
+
+    const el = {
+      tabs: document.getElementById('tabs'),
+      views: {
+        ingest: document.getElementById('view-ingest'),
+        learn: document.getElementById('view-learn'),
+        quiz: document.getElementById('view-quiz'),
+        tutor: document.getElementById('view-tutor'),
+        progress: document.getElementById('view-progress')
+      },
+      sourceText: document.getElementById('source-text'),
+      sourceLink: document.getElementById('source-link'),
+      btnGenerate: document.getElementById('btn-generate'),
+      btnDemo: document.getElementById('btn-demo'),
+      summaryBox: document.getElementById('summary-box'),
+      cardTag: document.getElementById('card-tag'),
+      cardFront: document.getElementById('card-front'),
+      cardBack: document.getElementById('card-back'),
+      btnFlip: document.getElementById('btn-flip'),
+      btnAgain: document.getElementById('btn-again'),
+      btnGood: document.getElementById('btn-good'),
+      quizList: document.getElementById('quiz-list'),
+      chat: document.getElementById('chat'),
+      chatInput: document.getElementById('chat-input'),
+      chatSend: document.getElementById('chat-send'),
+      streak: document.getElementById('pill-streak'),
+      cards: document.getElementById('pill-cards'),
+      mastery: document.getElementById('pill-mastery'),
+      progressText: document.getElementById('progress-text'),
+      progressMeter: document.getElementById('progress-meter'),
+      focusList: document.getElementById('focus-list')
+    };
+
+    function save() {
+      localStorage.setItem(KEY, JSON.stringify(state));
+    }
+
+    function load() {
+      try {
+        const raw = localStorage.getItem(KEY);
+        if (!raw) return;
+        const parsed = JSON.parse(raw);
+        Object.assign(state, parsed);
+      } catch {}
+    }
+
+    function safeText(v) {
+      return String(v || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+
+    function updateStreak() {
+      const today = new Date().toISOString().slice(0, 10);
+      if (state.stats.lastStudyDate === today) return;
+
+      if (!state.stats.lastStudyDate) {
+        state.stats.streak = 1;
+      } else {
+        const prev = new Date(state.stats.lastStudyDate);
+        const now = new Date(today);
+        const diff = Math.round((now - prev) / 86400000);
+        state.stats.streak = diff === 1 ? state.stats.streak + 1 : 1;
+      }
+      state.stats.lastStudyDate = today;
+    }
+
+    function renderHeader() {
+      const mastery = Math.max(0, Math.min(100, Math.round(state.stats.mastery || 0)));
+      el.streak.textContent = `Streak: ${state.stats.streak || 0} Tage`;
+      el.cards.textContent = `Karten: ${state.cards.length || 0}`;
+      el.mastery.textContent = `Mastery: ${mastery}%`;
+    }
+
+    function computeMastery() {
+      if (!state.cards.length) {
+        state.stats.mastery = 0;
+        return;
+      }
+      const total = state.cards.reduce((sum, c) => sum + (Number(c.score) || 0), 0);
+      const max = state.cards.length * 5;
+      state.stats.mastery = Math.round((total / max) * 100);
+    }
+
+    function renderCard() {
+      const n = state.cards.length;
+      if (!n) {
+        el.cardTag.textContent = 'Karte 0/0';
+        el.cardFront.textContent = 'Noch keine Karten vorhanden.';
+        el.cardBack.textContent = '';
+        el.cardBack.classList.remove('show');
+        return;
+      }
+
+      if (state.current >= n) state.current = 0;
+      const c = state.cards[state.current];
+      el.cardTag.textContent = `Karte ${state.current + 1}/${n} - ${(c.tag || 'Standard')}`;
+      el.cardFront.textContent = c.front || '';
+      el.cardBack.textContent = c.back || '';
+      el.cardBack.classList.toggle('show', state.flipped);
+    }
+
+    function nextCard() {
+      if (!state.cards.length) return;
+      state.current = (state.current + 1) % state.cards.length;
+      state.flipped = false;
+      renderCard();
+    }
+
+    function scoreCard(delta) {
+      if (!state.cards.length) return;
+      const c = state.cards[state.current];
+      c.score = Math.max(0, Math.min(5, (Number(c.score) || 0) + delta));
+      state.stats.reviewed += 1;
+      if (delta > 0) state.stats.confident += 1;
+      computeMastery();
+      save();
+      renderAll();
+      nextCard();
+    }
+
+    function renderQuiz() {
+      if (!state.quiz.length) {
+        el.quizList.innerHTML = '<div class="mini">Noch kein Quiz erzeugt.</div>';
+        return;
+      }
+
+      el.quizList.innerHTML = state.quiz.map((q, i) => {
+        const opts = (q.options || []).map((o, idx) =>
+          `<button class="choice" data-q="${i}" data-o="${idx}">${safeText(o)}</button>`
+        ).join('');
+        return `<div class="quiz-item"><strong>${i + 1}. ${safeText(q.question)}</strong>${opts}</div>`;
+      }).join('');
+    }
+
+    function renderProgress() {
+      computeMastery();
+      const reviewed = Number(state.stats.reviewed || 0);
+      const confident = Number(state.stats.confident || 0);
+      const ratio = reviewed ? Math.round((confident / reviewed) * 100) : 0;
+      el.progressText.textContent = `Review-Sessions: ${reviewed} • Sichere Antworten: ${confident} (${ratio}%)`;
+      el.progressMeter.style.width = `${Math.max(0, Math.min(100, state.stats.mastery || 0))}%`;
+      el.focusList.textContent = state.focus.length ? state.focus.join(' • ') : 'Noch kein Fokus erkannt.';
+    }
+
+    function renderSummary() {
+      el.summaryBox.textContent = state.summary || 'Noch kein Summary erzeugt.';
+    }
+
+    function addChat(role, text) {
+      const div = document.createElement('div');
+      div.className = `bubble ${role}`;
+      div.textContent = text;
+      el.chat.appendChild(div);
+      el.chat.scrollTop = el.chat.scrollHeight;
+    }
+
+    async function callBot(payload) {
+      const res = await fetch('/api/bot', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      return await res.text();
+    }
+
+    function parseJSONFromText(raw) {
+      const clean = String(raw || '').replace(/```json/gi, '```').replace(/```/g, '').trim();
+      try { return JSON.parse(clean); } catch {}
+      const m = clean.match(/\{[\s\S]*\}/);
+      if (m) {
+        try { return JSON.parse(m[0]); } catch {}
+      }
+      return null;
+    }
+
+    async function generateStudyAssets() {
+      const sourceText = el.sourceText.value.trim();
+      const sourceLink = el.sourceLink.value.trim();
+      if (!sourceText && !sourceLink) {
+        alert('Bitte Text oder Link eingeben.');
+        return;
+      }
+
+      updateStreak();
+      renderHeader();
+
+      el.btnGenerate.disabled = true;
+      el.btnGenerate.textContent = 'Generiere...';
+
+      const prompt =
+`Erzeuge aus dem folgenden Lerninhalt ein JSON mit summary, focus, cards und quiz.
+Antwort NUR als JSON.
+
+Format:
+{
+  "summary": "...",
+  "focus": ["...", "..."],
+  "cards": [{"front":"...","back":"...","tag":"..."}],
+  "quiz": [{"question":"...","options":["A","B","C","D"],"correctIndex":0}]
+}
+
+Regeln:
+- cards: genau 10
+- quiz: genau 5
+- kurze präzise Antworten
+- keine Meta-Hinweise
+
+Link: ${sourceLink || '-'}
+
+Inhalt:
+${sourceText.slice(0, 5000)}`;
+
+      try {
+        const raw = await callBot({ question: prompt, fachmodus: '', history: [] });
+        const parsed = parseJSONFromText(raw);
+        if (!parsed) throw new Error('Kein gültiges JSON');
+
+        state.summary = String(parsed.summary || '').trim();
+        state.focus = Array.isArray(parsed.focus) ? parsed.focus.slice(0, 6).map(String) : [];
+
+        state.cards = Array.isArray(parsed.cards)
+          ? parsed.cards.slice(0, 30).map((c) => ({
+              front: String(c.front || '').trim(),
+              back: String(c.back || '').trim(),
+              tag: String(c.tag || 'Standard').trim(),
+              score: 0
+            })).filter((c) => c.front && c.back)
+          : [];
+
+        state.quiz = Array.isArray(parsed.quiz)
+          ? parsed.quiz.slice(0, 12).map((q) => ({
+              question: String(q.question || '').trim(),
+              options: Array.isArray(q.options) ? q.options.slice(0, 4).map((x) => String(x || '')) : [],
+              correctIndex: Number.isInteger(q.correctIndex) ? q.correctIndex : 0
+            })).filter((q) => q.question && q.options.length >= 2)
+          : [];
+
+        state.current = 0;
+        state.flipped = false;
+        save();
+        renderAll();
+      } catch (e) {
+        alert(`Generierung fehlgeschlagen: ${e.message || 'unbekannt'}`);
+      } finally {
+        el.btnGenerate.disabled = false;
+        el.btnGenerate.textContent = 'Mit Linda generieren';
+      }
+    }
+
+    async function askTutor() {
+      const q = el.chatInput.value.trim();
+      if (!q) return;
+      el.chatInput.value = '';
+      addChat('user', q);
+
+      try {
+        const raw = await callBot({
+          question: q,
+          fachmodus: '',
+          history: state.history.slice(-6)
+        });
+        addChat('bot', raw);
+        state.history.push({ role: 'user', content: q });
+        state.history.push({ role: 'assistant', content: raw });
+        state.history = state.history.slice(-20);
+        save();
+      } catch (e) {
+        addChat('bot', `Fehler: ${e.message || 'unbekannt'}`);
+      }
+    }
+
+    function switchTab(tab) {
+      [...el.tabs.querySelectorAll('.tab')].forEach((b) => b.classList.toggle('active', b.dataset.tab === tab));
+      Object.entries(el.views).forEach(([k, view]) => view.classList.toggle('hidden', k !== tab));
+    }
+
+    function renderAll() {
+      renderHeader();
+      renderSummary();
+      renderCard();
+      renderQuiz();
+      renderProgress();
+    }
+
+    function loadDemo() {
+      state.summary = 'Kurzsummary: Geldpolitik steuert über Leitzinsen Kreditkosten, Nachfrage und letztlich Inflation.';
+      state.focus = ['Leitzins', 'Transmission', 'Inflationserwartung', 'Reale Wirkung'];
+      state.cards = [
+        { front: 'Was ist der Leitzins?', back: 'Der von der Zentralbank festgelegte Zinssatz, der die Finanzierungskosten im Bankensystem steuert.', tag: 'VWL', score: 0 },
+        { front: 'Wie wirkt ein höherer Leitzins auf die Nachfrage?', back: 'Kredite werden teurer, Investitionen und Konsum sinken, dadurch sinkt der Preisdruck.', tag: 'VWL', score: 0 },
+        { front: 'Warum ist Erwartungsmanagement wichtig?', back: 'Inflationserwartungen beeinflussen Preis- und Lohnsetzung direkt und verstärken oder dämpfen Dynamiken.', tag: 'VWL', score: 0 }
+      ];
+      state.quiz = [
+        { question: 'Hauptziel restriktiver Geldpolitik?', options: ['Inflation senken', 'Staatsausgaben erhöhen', 'Export direkt steigern', 'Mehr Kredite vergeben'], correctIndex: 0 }
+      ];
+      save();
+      renderAll();
+    }
+
+    el.tabs.addEventListener('click', (e) => {
+      const btn = e.target.closest('.tab');
+      if (!btn) return;
+      switchTab(btn.dataset.tab);
+    });
+
+    el.btnGenerate.addEventListener('click', generateStudyAssets);
+    el.btnDemo.addEventListener('click', loadDemo);
+
+    el.btnFlip.addEventListener('click', () => {
+      state.flipped = !state.flipped;
+      renderCard();
+    });
+    el.btnAgain.addEventListener('click', () => scoreCard(-1));
+    el.btnGood.addEventListener('click', () => scoreCard(+1));
+
+    el.quizList.addEventListener('click', (e) => {
+      const choice = e.target.closest('.choice');
+      if (!choice) return;
+      const q = Number(choice.dataset.q);
+      const o = Number(choice.dataset.o);
+      const item = state.quiz[q];
+      if (!item) return;
+
+      const all = [...choice.parentElement.querySelectorAll('.choice')];
+      all.forEach((c, idx) => {
+        c.classList.remove('correct', 'wrong');
+        if (idx === item.correctIndex) c.classList.add('correct');
+      });
+      if (o !== item.correctIndex) choice.classList.add('wrong');
+    });
+
+    el.chatSend.addEventListener('click', askTutor);
+    el.chatInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        askTutor();
+      }
+    });
+
+    document.querySelectorAll('[data-quick]').forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        const t = btn.getAttribute('data-quick');
+        const txt = el.sourceText.value.trim();
+        if (!txt) {
+          alert('Bitte zuerst Lernstoff einfügen.');
+          return;
+        }
+        const map = {
+          explain: 'Erkläre den Lernstoff in sehr einfacher Sprache mit 5 Kernpunkten.',
+          exam: 'Erstelle 5 anspruchsvolle Prüfungsfragen mit kurzen Musterantworten.',
+          mindmap: 'Erzeuge eine Mind-Map als hierarchische Stichpunktliste.'
+        };
+
+        try {
+          const out = await callBot({ question: `${map[t]}\n\nInhalt:\n${txt.slice(0, 3000)}`, fachmodus: '', history: [] });
+          addChat('bot', out);
+          switchTab('tutor');
+        } catch (e) {
+          alert(`Fehler: ${e.message || 'unbekannt'}`);
+        }
+      });
+    });
+
+    load();
+    renderAll();
+  </script>
+</body>
+</html>
