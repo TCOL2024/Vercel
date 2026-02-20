@@ -21,14 +21,17 @@ module.exports = async (req, res) => {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const apiKey = process.env.DEEPSEEK_API_KEY;
+  const apiKey = process.env.Linda3Schnellmodus || process.env.DEEPSEEK_API_KEY;
   if (!apiKey) {
-    return res.status(500).json({ error: 'DEEPSEEK_API_KEY is missing' });
+    return res.status(500).json({
+      error: 'Linda3Schnellmodus is missing'
+    });
   }
 
   const body = req.body && typeof req.body === 'object' ? req.body : {};
   const question = String(body.question || '').trim();
   const history = Array.isArray(body.history) ? body.history : [];
+  const fachmodus = String(body.fachmodus || '').trim();
   const preferred = String(body?.routing?.preferred_model || '').toLowerCase();
   const model = preferred.includes('reason') ? 'deepseek-reasoner' : 'deepseek-chat';
 
@@ -52,8 +55,9 @@ module.exports = async (req, res) => {
       {
         role: 'system',
         content:
-          'Du bist LINDA Schnellmodus. Antworte klar, kurz und fachlich korrekt auf Deutsch.'
+          'Du bist LINDA Schnellmodus. Prüfe die Anfrage sehr genau, beantworte nur auf Basis der Anfrage und des Kontexts, und markiere Unsicherheiten klar. Antworte auf Deutsch, klar, strukturiert und fachlich korrekt.'
       },
+      ...(fachmodus ? [{ role: 'system', content: `Fachmodus: ${fachmodus}` }] : []),
       ...mappedHistory.slice(-8),
       { role: 'user', content: question }
     ]
@@ -107,4 +111,3 @@ module.exports = async (req, res) => {
     clearTimeout(timeout);
   }
 };
-
