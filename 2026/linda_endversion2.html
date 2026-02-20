@@ -895,7 +895,7 @@
     <ul>
       <li>KI-Dienste (z.B. OpenAI / Anthropic)</li>
       <li>Automations-Dienste (z.B. Make)</li>
-      <li>Optional ILIAS-Schnittstelle (falls aktiviert)</li>
+      <li>Optional ILIAS-Inhalte (manuell zuschaltbar)</li>
     </ul>
     <div class="check-row">
       <input type="checkbox" id="consent-data">
@@ -926,7 +926,6 @@
           <option value="AEVO">Ausbilder (AEVO)</option>
           <option value="VWL">VWL / Betriebswirtschaft</option>
           <option value="PERSONAL">Personalwesen</option>
-          <option value="IT">IT / Entwicklung</option>
         </select>
       </div>
     </div>
@@ -938,33 +937,8 @@
     </div>
 
     <div class="section" style="margin-top:10px;">
-      <h4>ILIAS Schnittstelle</h4>
-      <p class="mini">Für API-Gateways oder Webhooks. Angaben bleiben lokal gespeichert.</p>
-      <div class="grid cols-2" style="margin-top:8px;">
-        <div class="field">
-          <label for="inp-ilias-enabled">Aktiv</label>
-          <select id="inp-ilias-enabled">
-            <option value="false">Nein</option>
-            <option value="true">Ja</option>
-          </select>
-        </div>
-        <div class="field">
-          <label for="inp-ilias-course">Kurs-ID</label>
-          <input id="inp-ilias-course" type="text" placeholder="z.B. 2026-AEVO-01">
-        </div>
-      </div>
-      <div class="field" style="margin-top:8px;">
-        <label for="inp-ilias-endpoint">Endpoint URL</label>
-        <input id="inp-ilias-endpoint" type="url" placeholder="https://.../ilias-proxy">
-      </div>
-      <div class="field" style="margin-top:8px;">
-        <label for="inp-ilias-token">API Token (optional)</label>
-        <input id="inp-ilias-token" type="password" placeholder="Token">
-      </div>
-      <div class="btn-row">
-        <button class="btn cancel" onclick="app.logic.testIliasConnection()">ILIAS testen</button>
-      </div>
-      <p id="ilias-test-result" class="mini" style="margin-top:8px;"></p>
+      <h4>ILIAS</h4>
+      <p class="mini">ILIAS wird nur per Schalter bei den Wissensquellen aktiviert. Keine Token-Eingabe im Frontend.</p>
     </div>
 
     <div class="section" style="margin-top:10px;">
@@ -1030,18 +1004,16 @@
     lastQuestion: '',
     activeId: null,
     requestController: null,
-    settings: {
-      name: '',
-      domain: '',
-      snippets: [],
+      settings: {
+        name: '',
+        domain: '',
+        snippets: [],
       sources: SOURCE_DEFS.reduce((acc, s) => {
         acc[s.key] = s.default;
         return acc;
       }, {}),
       ilias: {
         enabled: false,
-        endpoint: '',
-        token: '',
         courseId: ''
       }
     },
@@ -1106,6 +1078,23 @@
         app.state.version = APP_VERSION;
         app.state.isSending = false;
         app.state.requestController = null;
+        if (String(app.state.settings.domain || '').toUpperCase() === 'IT') {
+          app.state.settings.domain = '';
+        }
+
+        const newWelcome =
+          'Willkommen bei **LINDA**.\n\n' +
+          'Ich unterstütze dich bei **AEVO**, **BWL/VWL** und **Personalwesen**.\n' +
+          'Lernkarten werden aus den **Inhalten der Antwort** erstellt.\n' +
+          'ILIAS kann bei Bedarf über den Schalter **Kursraum (ILIAS)** aktiviert werden.';
+
+        app.state.sessions.forEach((session) => {
+          (session.messages || []).forEach((msg) => {
+            if (msg.role !== 'assistant') return;
+            const txt = String(msg.content || '');
+            if (/willkommen bei\s*\*?\*?linda3/i.test(txt)) msg.content = newWelcome;
+          });
+        });
       },
       sanitizeLinks: (root) => {
         root.querySelectorAll('a').forEach((a) => {
@@ -1164,11 +1153,6 @@
         const { settings } = app.state;
         document.getElementById('inp-name').value = settings.name || '';
         document.getElementById('inp-domain').value = settings.domain || '';
-        document.getElementById('inp-ilias-enabled').value = String(Boolean(settings.ilias.enabled));
-        document.getElementById('inp-ilias-endpoint').value = settings.ilias.endpoint || '';
-        document.getElementById('inp-ilias-token').value = settings.ilias.token || '';
-        document.getElementById('inp-ilias-course').value = settings.ilias.courseId || '';
-        document.getElementById('ilias-test-result').textContent = '';
       },
 
       renderSourceToolbar: () => {
@@ -1358,10 +1342,10 @@
         app.ui.closeModals();
 
         app.logic.sendSystemMessage(
-          'Willkommen bei **LINDA3**.\n\n' +
-          '- Nutze die Schalter für Wissensbereiche direkt oben.\n' +
-          '- Öffne Lernkarten über `Karten` oder pro Antwort über `Karten`.\n' +
-          '- ILIAS kann in den Einstellungen aktiviert und je Anfrage zugeschaltet werden.'
+          'Willkommen bei **LINDA**.\n\n' +
+          'Ich unterstütze dich bei **AEVO**, **BWL/VWL** und **Personalwesen**.\n' +
+          'Lernkarten werden aus den **Inhalten der Antwort** erstellt.\n' +
+          'ILIAS kann bei Bedarf über den Schalter **Kursraum (ILIAS)** aktiviert werden.'
         );
       },
 
@@ -1386,17 +1370,14 @@
         app.state.settings.name = document.getElementById('inp-name').value.trim();
         app.state.settings.domain = document.getElementById('inp-domain').value;
 
-        app.state.settings.ilias.enabled = document.getElementById('inp-ilias-enabled').value === 'true';
-        app.state.settings.ilias.endpoint = document.getElementById('inp-ilias-endpoint').value.trim();
-        app.state.settings.ilias.token = document.getElementById('inp-ilias-token').value.trim();
-        app.state.settings.ilias.courseId = document.getElementById('inp-ilias-course').value.trim();
+        app.state.settings.ilias.enabled = Boolean(app.state.settings.sources.ilias);
 
         document.querySelectorAll('[data-source-setting]').forEach((cb) => {
           const key = cb.getAttribute('data-source-setting');
           app.state.settings.sources[key] = cb.checked;
         });
 
-        if (app.state.settings.ilias.enabled) app.state.settings.sources.ilias = true;
+        app.state.settings.ilias.enabled = Boolean(app.state.settings.sources.ilias);
 
         app.utils.save();
         app.ui.updateDomainUI();
@@ -1451,10 +1432,6 @@
 
         const sourceList = app.logic.sanitizeSourceList(sources);
         if (!sourceList.length) {
-          const miss = document.createElement('div');
-          miss.className = 'source-missing';
-          miss.textContent = 'Hinweis: Keine strukturierten Quellen übermittelt.';
-          md.appendChild(miss);
           return;
         }
 
@@ -1531,9 +1508,9 @@
             sources: app.state.settings.sources,
             ilias: {
               enabled: Boolean(app.state.settings.ilias.enabled && app.state.settings.sources.ilias),
-              endpoint: app.state.settings.ilias.endpoint || '',
-              token: app.state.settings.ilias.token || '',
-              courseId: app.state.settings.ilias.courseId || ''
+              mode: 'manual-links',
+              courseId: app.state.settings.ilias.courseId || '',
+              keywords: []
             },
             clientMeta: {
               app: 'LINDA3',
@@ -1665,13 +1642,19 @@
           .replace(/`{1,3}[^`]*`{1,3}/g, '')
           .replace(/\*\*|__/g, '')
           .replace(/\[(.*?)\]\((.*?)\)/g, '$1')
+          .replace(/^Frage:\s*/gim, '')
+          .replace(/^Anfrage:\s*/gim, '')
           .trim();
 
         const lines = clean
           .split('\n')
           .map((l) => l.trim())
           .filter(Boolean)
-          .filter((l) => !/^quellen?\s*:?\s*$/i.test(l));
+          .filter((l) => !/^quellen?\s*:?\s*$/i.test(l))
+          .filter((l) => !/^hinweis\s*:/i.test(l))
+          .filter((l) => !/^nutze die schalter/i.test(l))
+          .filter((l) => !/^öffne lernkarten/i.test(l))
+          .filter((l) => !/^ilias kann/i.test(l));
 
         const bullets = lines
           .filter((l) => /^[-*]|^\d+\./.test(l))
@@ -1793,33 +1776,6 @@
           });
         }
         window.location.href = `mailto:KI-TEST@GMX.COM?subject=Feedback LINDA3&body=${body}`;
-      },
-
-      testIliasConnection: async () => {
-        const result = document.getElementById('ilias-test-result');
-        const endpoint = document.getElementById('inp-ilias-endpoint').value.trim();
-        if (!endpoint) {
-          result.textContent = 'Bitte zuerst eine Endpoint URL eintragen.';
-          return;
-        }
-
-        result.textContent = 'Teste Verbindung...';
-
-        try {
-          const res = await fetch(endpoint, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              ...(document.getElementById('inp-ilias-token').value.trim() ? { 'Authorization': `Bearer ${document.getElementById('inp-ilias-token').value.trim()}` } : {})
-            },
-            body: JSON.stringify({ ping: 'linda3', ts: new Date().toISOString() })
-          });
-
-          if (!res.ok) throw new Error(`HTTP ${res.status}`);
-          result.textContent = 'Verbindung erfolgreich. Endpoint antwortet.';
-        } catch (e) {
-          result.textContent = `Test fehlgeschlagen: ${e.message || 'unbekannt'}`;
-        }
       }
     }
   };
@@ -1940,7 +1896,7 @@
       if (!cb) return;
       const key = cb.getAttribute('data-source-cb');
       app.state.settings.sources[key] = cb.checked;
-      if (key === 'ilias' && cb.checked) app.state.settings.ilias.enabled = true;
+      if (key === 'ilias') app.state.settings.ilias.enabled = cb.checked;
       app.utils.save();
       app.ui.updateDomainUI();
       app.ui.renderSourceToolbar();
@@ -1949,7 +1905,9 @@
     document.getElementById('source-toggle-list').addEventListener('change', (e) => {
       const cb = e.target.closest('[data-source-setting]');
       if (!cb) return;
-      app.state.settings.sources[cb.getAttribute('data-source-setting')] = cb.checked;
+      const key = cb.getAttribute('data-source-setting');
+      app.state.settings.sources[key] = cb.checked;
+      if (key === 'ilias') app.state.settings.ilias.enabled = cb.checked;
     });
 
     document.getElementById('snippet-list-container').addEventListener('click', (e) => {
