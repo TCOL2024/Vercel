@@ -368,6 +368,17 @@
     font-style: italic;
   }
 
+  .case-disclaimer {
+    margin-top: 10px;
+    border: 1px solid #f4c47f;
+    background: #fff7e9;
+    color: #6a3f00;
+    border-radius: 10px;
+    padding: 9px 10px;
+    font-size: 0.82rem;
+    line-height: 1.4;
+  }
+
   .msg-actions {
     margin-top: 6px;
     display: flex;
@@ -1598,10 +1609,16 @@
           ALLOWED_TAGS: ['p','br','strong','em','ul','ol','li','h1','h2','h3','h4','h5','pre','code','blockquote','table','thead','tbody','tr','th','td','a'],
           ALLOWED_ATTR: ['href','target','rel']
         });
+        const plainContent = String(content || '');
+        const hasJudgmentSignal =
+          /(?:\burteil(?:e|en)?\b|\bbeschluss(?:e|es|en)?\b|\baktenzeichen\b|\baz\.\s*[:\-]?)/i.test(plainContent);
+        const disclaimerHtml = hasJudgmentSignal
+          ? '<div class="case-disclaimer"><strong>Wichtiger Hinweis:</strong> Urteile (insbesondere Aktenzeichen und Inhalte) müssen immer zwingend im Original überprüft werden.</div>'
+          : '';
 
         row.innerHTML = `
           <div class="msg-wrap">
-            <div class="bubble assistant"><div class="md">${safe}</div></div>
+            <div class="bubble assistant"><div class="md">${safe}</div>${disclaimerHtml}</div>
             <div class="msg-actions">
               <button class="action-btn strong" data-action="copy">Kopieren</button>
               <button class="action-btn" data-action="share">Teilen</button>
