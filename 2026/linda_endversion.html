@@ -1,0 +1,1290 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Linda - Lernassistentin</title>
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.8/purify.min.js"></script>
+<style>
+  :root {
+    --blue-main: #004481;
+    --blue-dark: #002a52;
+    --blue-soft: #f0f8ff;
+    --blue-light: #e6f0fa;
+    --text-main: #1f2937;
+    --text-muted: #6b7280;
+    --white: #ffffff;
+    --danger: #dc3545;
+    --bg: #f5f8fc;
+    --border: #e5e7eb;
+    --shadow: 0 8px 24px rgba(17, 24, 39, 0.08);
+    --radius: 14px;
+    --font-size: 16px;
+    --line-height: 1.55;
+    --header-h: 60px;
+    --input-h: 76px;
+  }
+
+  * {
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  html,
+  body {
+    margin: 0;
+    height: 100%;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    color: var(--text-main);
+    background: var(--bg);
+    font-size: var(--font-size);
+    line-height: var(--line-height);
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+    overscroll-behavior-y: contain;
+  }
+
+  body {
+    display: flex;
+    justify-content: center;
+  }
+
+  #app {
+    width: 100%;
+    height: 100dvh;
+    background: var(--white);
+    display: grid;
+    grid-template-rows: var(--header-h) 1fr auto;
+    position: relative;
+  }
+
+  @media (min-width: 900px) {
+    body {
+      align-items: center;
+      background: #d9e2ef;
+      padding: 20px;
+    }
+    #app {
+      max-width: 980px;
+      height: 94vh;
+      border-radius: 18px;
+      overflow: hidden;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.14);
+    }
+  }
+
+  header {
+    border-bottom: 1px solid var(--border);
+    background: var(--white);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 12px;
+    min-height: var(--header-h);
+    z-index: 5;
+  }
+
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+  }
+
+  .logo {
+    font-size: 1.2rem;
+    font-weight: 800;
+    color: var(--blue-main);
+  }
+
+  .badge {
+    border: 1px solid #c7d9ea;
+    background: var(--blue-light);
+    color: var(--blue-main);
+    font-size: 0.75rem;
+    font-weight: 700;
+    border-radius: 999px;
+    padding: 4px 10px;
+    white-space: nowrap;
+  }
+
+  .header-btns {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    overflow-x: auto;
+  }
+
+  .btn-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    background: #fff;
+    color: var(--blue-main);
+    font-weight: 700;
+    font-size: 1rem;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .btn-icon:hover {
+    background: var(--blue-soft);
+    border-color: #bfd9f0;
+  }
+
+  .btn-new {
+    width: auto;
+    min-width: 44px;
+    padding: 0 14px;
+    background: var(--blue-main);
+    color: white;
+    border: none;
+  }
+
+  .btn-new:hover {
+    background: var(--blue-dark);
+  }
+
+  #chat-log {
+    overflow-y: auto;
+    background: #f8fbfe;
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding-bottom: calc(var(--input-h) + 18px + var(--kb, 0px));
+  }
+
+  @media (min-width: 900px) {
+    #chat-log {
+      padding: 22px 28px;
+      gap: 12px;
+    }
+  }
+
+  .msg-row {
+    display: flex;
+    width: 100%;
+  }
+
+  .msg-row.user {
+    justify-content: flex-end;
+  }
+
+  .msg-row.bot {
+    justify-content: flex-start;
+  }
+
+  .msg-wrapper {
+    width: min(92%, 760px);
+  }
+
+  .bubble {
+    border-radius: 16px;
+    padding: 12px 14px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    word-break: break-word;
+  }
+
+  .bubble.user {
+    background: var(--blue-main);
+    color: #fff;
+    border-radius: 16px 16px 6px 16px;
+  }
+
+  .bubble.bot {
+    background: #fff;
+    border: 1px solid #dde5ee;
+    border-radius: 16px 16px 16px 6px;
+  }
+
+  .md h1,
+  .md h2,
+  .md h3,
+  .md h4 {
+    margin: 0 0 8px;
+    color: var(--blue-main);
+  }
+
+  .md p {
+    margin: 0 0 8px;
+  }
+
+  .md ul,
+  .md ol {
+    margin: 0 0 8px 18px;
+    padding: 0;
+  }
+
+  .md li {
+    margin-bottom: 4px;
+  }
+
+  .md pre {
+    margin: 8px 0;
+    overflow: auto;
+    background: #f4f7fb;
+    border: 1px solid #e1e7f0;
+    border-radius: 10px;
+    padding: 10px;
+  }
+
+  .md code {
+    background: #eef3f9;
+    border-radius: 4px;
+    padding: 2px 5px;
+  }
+
+  .table-wrapper {
+    overflow-x: auto;
+    border: 1px solid #dbe4ee;
+    border-radius: 10px;
+    margin-top: 8px;
+  }
+
+  .md table {
+    border-collapse: collapse;
+    width: 100%;
+    min-width: 360px;
+  }
+
+  .md th,
+  .md td {
+    border: 1px solid #dbe4ee;
+    padding: 8px;
+    text-align: left;
+  }
+
+  .md th {
+    background: #eff7ff;
+  }
+
+  .source-box {
+    margin-top: 8px;
+    border-left: 4px solid var(--blue-main);
+    background: #f0f7ff;
+    border-radius: 8px;
+    padding: 10px;
+  }
+
+  .source-missing {
+    margin-top: 8px;
+    font-size: 0.85em;
+    color: var(--text-muted);
+    font-style: italic;
+  }
+
+  .msg-actions {
+    margin-top: 6px;
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+
+  .action-btn {
+    border: 1px solid #d9dee6;
+    border-radius: 999px;
+    background: #fff;
+    color: #4b5563;
+    padding: 7px 12px;
+    font-size: 0.85rem;
+    cursor: pointer;
+  }
+
+  .action-btn.primary {
+    background: var(--blue-soft);
+    border-color: #c5daef;
+    color: var(--blue-main);
+    font-weight: 700;
+  }
+
+  .input-area {
+    position: sticky;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.98);
+    border-top: 1px solid var(--border);
+    backdrop-filter: saturate(1.1) blur(5px);
+    display: flex;
+    gap: 10px;
+    align-items: flex-end;
+    padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
+    min-height: var(--input-h);
+    z-index: 6;
+  }
+
+  .input-wrapper {
+    flex: 1;
+    position: relative;
+  }
+
+  textarea {
+    width: 100%;
+    min-height: 50px;
+    max-height: 180px;
+    border: 2px solid #e3e7ed;
+    border-radius: 14px;
+    padding: 12px 14px;
+    resize: none;
+    outline: none;
+    font-family: inherit;
+    font-size: 16px;
+    background: #fcfdff;
+  }
+
+  textarea:focus {
+    border-color: var(--blue-main);
+    box-shadow: 0 0 0 3px #e7f2ff;
+    background: #fff;
+  }
+
+  #send-btn {
+    background: var(--blue-main);
+    color: #fff;
+    border: none;
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    font-size: 1.1rem;
+    flex-shrink: 0;
+  }
+
+  #send-btn.stop {
+    background: var(--danger);
+  }
+
+  #snippet-popup {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: calc(100% + 8px);
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    box-shadow: var(--shadow);
+    max-height: 220px;
+    overflow-y: auto;
+    display: none;
+    z-index: 30;
+  }
+
+  #snippet-popup.active {
+    display: block;
+  }
+
+  .snippet-item {
+    border-bottom: 1px solid #f0f2f5;
+    padding: 10px 12px;
+    cursor: pointer;
+    font-size: 0.95rem;
+  }
+
+  .snippet-item:last-child {
+    border-bottom: none;
+  }
+
+  .snippet-item:hover {
+    background: var(--blue-soft);
+  }
+
+  .loading {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 16px;
+  }
+
+  .loading span {
+    width: 8px;
+    height: 8px;
+    border-radius: 999px;
+    background: var(--blue-main);
+    animation: pulse 1s infinite ease-in-out;
+  }
+
+  .loading span:nth-child(2) {
+    animation-delay: 0.15s;
+  }
+
+  .loading span:nth-child(3) {
+    animation-delay: 0.3s;
+  }
+
+  @keyframes pulse {
+    0%,
+    100% {
+      opacity: 0.4;
+      transform: scale(0.8);
+    }
+    50% {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 16px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s;
+    z-index: 100;
+  }
+
+  .modal-overlay.open {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .modal {
+    width: 100%;
+    max-width: 560px;
+    background: #fff;
+    border-radius: 14px;
+    padding: 20px;
+    max-height: 90vh;
+    overflow: auto;
+    box-shadow: 0 18px 50px rgba(0, 0, 0, 0.2);
+  }
+
+  .modal h3 {
+    margin: 0 0 14px;
+    color: var(--blue-main);
+  }
+
+  .form-group {
+    margin-bottom: 14px;
+  }
+
+  .form-group label {
+    display: block;
+    margin-bottom: 6px;
+    font-weight: 700;
+  }
+
+  .form-group input,
+  .form-group select {
+    width: 100%;
+    border: 2px solid #e1e5eb;
+    border-radius: 10px;
+    padding: 10px 12px;
+    font-size: 16px;
+  }
+
+  .btn-row {
+    display: flex;
+    gap: 10px;
+    margin-top: 16px;
+  }
+
+  .btn {
+    flex: 1;
+    border: none;
+    border-radius: 10px;
+    padding: 12px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .btn-primary {
+    background: var(--blue-main);
+    color: #fff;
+  }
+
+  .btn-secondary {
+    background: #edf1f7;
+    color: #111827;
+  }
+
+  .btn-danger {
+    background: #fff3f2;
+    color: #b42318;
+    border: 1px solid #ffddd9;
+  }
+
+  .item-list {
+    border: 1px solid #e6e9ef;
+    border-radius: 10px;
+    overflow: hidden;
+  }
+
+  .item-list div {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 10px 12px;
+    border-bottom: 1px solid #eef1f6;
+    cursor: pointer;
+  }
+
+  .item-list div:last-child {
+    border-bottom: none;
+  }
+
+  .item-list div.active {
+    background: var(--blue-light);
+    color: var(--blue-main);
+    font-weight: 700;
+  }
+
+  .dark {
+    background: #f4f7fb;
+  }
+
+  .disclaimer-wrap {
+    background: #fff;
+    border-top: 5px solid var(--blue-main);
+    border-radius: 12px;
+    padding: 20px;
+  }
+
+  .check-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    margin-bottom: 8px;
+  }
+
+  .check-row input {
+    margin-top: 4px;
+    transform: scale(1.1);
+    accent-color: var(--blue-main);
+  }
+
+  .subtle-note {
+    font-size: 0.88rem;
+    color: var(--text-muted);
+  }
+
+  @media (max-width: 768px) {
+    :root {
+      --font-size: 17px;
+      --line-height: 1.6;
+      --input-h: 84px;
+    }
+
+    .msg-wrapper {
+      width: 100%;
+    }
+
+    .action-btn {
+      flex: 1;
+      min-width: 0;
+      text-align: center;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * {
+      animation: none !important;
+      transition: none !important;
+      scroll-behavior: auto !important;
+    }
+  }
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <div class="brand">
+      <div class="logo">Linda</div>
+      <div id="domain-badge" class="badge">Standard</div>
+    </div>
+    <div class="header-btns">
+      <button class="btn-icon btn-new" onclick="app.logic.newChat()" title="Neuer Chat">+</button>
+      <button class="btn-icon" onclick="app.ui.openModal('modal-sessions')" title="Verlauf">☰</button>
+      <button class="btn-icon" onclick="app.ui.openModal('modal-settings')" title="Einstellungen">⚙</button>
+    </div>
+  </header>
+
+  <div id="chat-log"></div>
+
+  <div class="input-area">
+    <div class="input-wrapper">
+      <div id="snippet-popup"></div>
+      <textarea id="chat-input" rows="1" placeholder="Schreibe deine Frage..."></textarea>
+    </div>
+    <button id="send-btn" aria-label="Senden">➤</button>
+  </div>
+</div>
+
+<div id="modal-disclaimer" class="modal-overlay open dark">
+  <div class="modal disclaimer-wrap">
+    <h3>Wichtige Hinweise</h3>
+    <p>Bitte gib keine vertraulichen personenbezogenen Daten ein. Anfragen werden zur Verarbeitung an externe Anbieter übermittelt.</p>
+    <ul>
+      <li>OpenAI.com (USA)</li>
+      <li>Make.com (EU)</li>
+      <li>Anthropic.com (USA)</li>
+    </ul>
+
+    <div class="check-row">
+      <input type="checkbox" id="consent-data" />
+      <label for="consent-data">Ich gebe keine vertraulichen personenbezogenen Daten ein.</label>
+    </div>
+
+    <div class="check-row">
+      <input type="checkbox" id="consent-forward" />
+      <label for="consent-forward">Ich bin mit der Übermittlung an die genannten Anbieter einverstanden.</label>
+    </div>
+
+    <div class="btn-row">
+      <button id="btn-start-disclaimer" class="btn btn-primary" disabled onclick="app.logic.startApp()">Akzeptieren & Starten</button>
+    </div>
+  </div>
+</div>
+
+<div id="modal-settings" class="modal-overlay">
+  <div class="modal">
+    <h3>Einstellungen</h3>
+
+    <div class="form-group">
+      <label for="inp-name">Dein Name (optional)</label>
+      <input id="inp-name" type="text" placeholder="z.B. Max" />
+    </div>
+
+    <div class="form-group">
+      <label for="inp-domain">Fachmodus</label>
+      <select id="inp-domain">
+        <option value="">Standard</option>
+        <option value="AEVO">Ausbilder (AEVO)</option>
+        <option value="VWL">VWL / Betriebswirtschaft</option>
+        <option value="PERSONAL">Personalwesen</option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label for="inp-snippet">Snippets verwalten</label>
+      <div style="display:flex; gap:8px; margin-bottom:8px;">
+        <input id="inp-snippet" type="text" placeholder="Neuen Text hinzufügen..." />
+        <button class="btn btn-primary" style="flex:0 0 52px;" onclick="app.logic.addSnippet()">+</button>
+      </div>
+      <div id="snippet-list-container" style="display:flex; flex-wrap:wrap; gap:6px;"></div>
+      <div class="subtle-note">Im Chat mit "/" starten, um Snippets vorzuschlagen.</div>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn btn-secondary" onclick="app.ui.closeModals()">Abbrechen</button>
+      <button class="btn btn-primary" onclick="app.logic.saveSettings()">Speichern</button>
+    </div>
+  </div>
+</div>
+
+<div id="modal-sessions" class="modal-overlay">
+  <div class="modal">
+    <h3>Verlauf</h3>
+    <div id="session-list" class="item-list"></div>
+    <div class="subtle-note" style="margin-top:8px;">Es werden maximal 4 Verläufe angezeigt (Performance).</div>
+    <div class="btn-row">
+      <button class="btn btn-danger" onclick="app.logic.clearAll()">Alle löschen</button>
+      <button class="btn btn-secondary" onclick="app.ui.closeModals()">Schließen</button>
+    </div>
+  </div>
+</div>
+
+<div id="modal-feedback" class="modal-overlay">
+  <div class="modal">
+    <h3>Feedback</h3>
+    <p>Möchtest du Feedback senden? Dein E-Mail-Programm wird geöffnet.</p>
+    <div class="btn-row">
+      <button class="btn btn-secondary" onclick="app.ui.closeModals()">Nein</button>
+      <button class="btn btn-primary" onclick="app.logic.openFeedback()">Ja</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const API_ENDPOINT = window.LINDA_API_ENDPOINT || '/api/bot';
+
+const app = {
+  state: {
+    settings: { name: '', domain: '', snippets: [] },
+    sessions: [],
+    activeId: null,
+    consentGiven: false,
+    isSending: false,
+    lastQuestion: '',
+    requestController: null
+  },
+
+  utils: {
+    uid: () => 's_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7),
+    now: () => Date.now(),
+    truncateForApi: (text, maxChars = 1900) => {
+      if (!text || text.length <= maxChars) return text;
+      return text.slice(0, maxChars - 3) + '...';
+    },
+    save: () => {
+      try {
+        localStorage.setItem('linda_data', JSON.stringify(app.state));
+      } catch (e) {
+        console.error('Save error', e);
+      }
+    },
+    load: () => {
+      try {
+        const raw = localStorage.getItem('linda_data');
+        if (!raw) return;
+        const data = JSON.parse(raw);
+        app.state = {
+          ...app.state,
+          ...data,
+          settings: {
+            ...app.state.settings,
+            ...(data.settings || {})
+          },
+          sessions: Array.isArray(data.sessions) ? data.sessions : []
+        };
+      } catch (e) {
+        console.error('Load error', e);
+      }
+    },
+    sanitizeLinkTargets: (root) => {
+      root.querySelectorAll('a').forEach((a) => {
+        const href = (a.getAttribute('href') || '').trim();
+        if (!/^https?:\/\//i.test(href)) a.removeAttribute('href');
+        a.setAttribute('target', '_blank');
+        a.setAttribute('rel', 'noopener noreferrer nofollow');
+      });
+    }
+  },
+
+  ui: {
+    log: document.getElementById('chat-log'),
+    input: document.getElementById('chat-input'),
+    sendBtn: document.getElementById('send-btn'),
+
+    openModal: (id) => {
+      document.querySelectorAll('.modal-overlay').forEach((m) => m.classList.remove('open'));
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.classList.add('open');
+
+      if (id === 'modal-settings') {
+        document.getElementById('inp-name').value = app.state.settings.name || '';
+        document.getElementById('inp-domain').value = app.state.settings.domain || '';
+        app.ui.renderSnippetList();
+      }
+
+      if (id === 'modal-sessions') app.ui.renderSessionList();
+    },
+
+    closeModals: () => {
+      document.querySelectorAll('.modal-overlay').forEach((m) => m.classList.remove('open'));
+    },
+
+    renderSessionList: () => {
+      const list = document.getElementById('session-list');
+      const shown = (app.state.sessions || []).slice(0, 4);
+      if (!shown.length) {
+        list.innerHTML = '<div style="padding:12px;color:#6b7280;">Keine Verläufe.</div>';
+        return;
+      }
+
+      list.innerHTML = shown.map((s) => `
+        <div onclick="app.logic.switchSession('${s.id}')" class="${s.id === app.state.activeId ? 'active' : ''}">
+          <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${(s.name || 'Neuer Chat').replace(/</g, '&lt;')}</span>
+          <span class="subtle-note">${new Date(s.ts).toLocaleDateString('de-DE')}</span>
+        </div>
+      `).join('');
+    },
+
+    renderSnippetList: () => {
+      const container = document.getElementById('snippet-list-container');
+      const arr = app.state.settings.snippets || [];
+      if (!arr.length) {
+        container.innerHTML = '<span class="subtle-note">Keine Snippets.</span>';
+        return;
+      }
+
+      container.innerHTML = arr.map((txt, i) => `
+        <span style="display:inline-flex;align-items:center;gap:6px;background:#f3f6fa;border:1px solid #e5e7eb;padding:4px 8px;border-radius:999px;font-size:0.85rem;">
+          ${txt.replace(/</g, '&lt;')}
+          <button onclick="app.logic.removeSnippet(${i})" style="border:none;background:none;color:#b42318;cursor:pointer;padding:0;">x</button>
+        </span>
+      `).join('');
+    },
+
+    showSnippetPopup: (items) => {
+      const pop = document.getElementById('snippet-popup');
+      if (!items.length) {
+        pop.classList.remove('active');
+        pop.innerHTML = '';
+        return;
+      }
+
+      pop.innerHTML = items
+        .map((item) => `<div class="snippet-item" data-snippet="${encodeURIComponent(item)}">${item.replace(/</g, '&lt;')}</div>`)
+        .join('');
+      pop.classList.add('active');
+    },
+
+    createBubble: (role, content) => {
+      const row = document.createElement('div');
+      row.className = `msg-row ${role === 'user' ? 'user' : 'bot'}`;
+
+      if (role === 'user') {
+        row.innerHTML = `
+          <div class="msg-wrapper">
+            <div class="bubble user"><div class="md">${content.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</div></div>
+          </div>
+        `;
+        return row;
+      }
+
+      const rawHtml = marked.parse(content.replace(/\$(.*?)\$/g, '**$1**'));
+      const safeHtml = DOMPurify.sanitize(rawHtml, {
+        ALLOWED_TAGS: ['p','br','strong','em','ul','ol','li','h1','h2','h3','h4','h5','pre','code','blockquote','table','thead','tbody','tr','th','td','a'],
+        ALLOWED_ATTR: ['href','target','rel']
+      });
+
+      row.innerHTML = `
+        <div class="msg-wrapper">
+          <div class="bubble bot"><div class="md">${safeHtml}</div></div>
+          <div class="msg-actions">
+            <button class="action-btn primary" onclick="app.logic.copyBubble(this)">Kopieren</button>
+            <button class="action-btn" onclick="app.logic.shareBubble(this)">Teilen</button>
+            <button class="action-btn" onclick="app.logic.pdfBubble(this)">PDF</button>
+            <button class="action-btn" onclick="app.ui.openModal('modal-feedback')">Feedback</button>
+          </div>
+        </div>
+      `;
+
+      const md = row.querySelector('.md');
+      app.utils.sanitizeLinkTargets(md);
+      return row;
+    },
+
+    scrollToBottom: () => {
+      requestAnimationFrame(() => {
+        app.ui.log.scrollTop = app.ui.log.scrollHeight;
+      });
+    },
+
+    syncKeyboardInset: () => {
+      if (!window.visualViewport) return;
+      const vv = window.visualViewport;
+      const keyboard = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
+      document.documentElement.style.setProperty('--kb', keyboard + 'px');
+    }
+  },
+
+  logic: {
+    getActiveSession: () => app.state.sessions.find((s) => s.id === app.state.activeId),
+
+    ensureSessionExists: () => {
+      if (app.state.sessions.length) return;
+      app.logic.newChat();
+    },
+
+    startApp: () => {
+      const c1 = document.getElementById('consent-data').checked;
+      const c2 = document.getElementById('consent-forward').checked;
+      if (!c1 || !c2) {
+        alert('Bitte beide Zustimmungen aktivieren.');
+        return;
+      }
+      app.state.consentGiven = true;
+      app.utils.save();
+      app.ui.closeModals();
+      app.logic.ensureSessionExists();
+      setTimeout(() => app.ui.input.focus(), 100);
+    },
+
+    newChat: () => {
+      const id = app.utils.uid();
+      app.state.sessions.unshift({
+        id,
+        name: 'Neuer Chat',
+        ts: app.utils.now(),
+        messages: []
+      });
+      app.state.activeId = id;
+      app.utils.save();
+      app.ui.log.innerHTML = '';
+      app.ui.closeModals();
+      app.logic.sendSystemMessage(
+        'Herzlich willkommen. Ich bin Linda, deine Lernassistentin.\\n\\n' +
+        'Stelle deine Frage direkt im Chat. Für präzisere Antworten kannst du in den Einstellungen einen Fachmodus wählen.'
+      );
+    },
+
+    switchSession: (id) => {
+      app.state.activeId = id;
+      app.utils.save();
+      app.ui.closeModals();
+      app.ui.log.innerHTML = '';
+      const s = app.logic.getActiveSession();
+      if (!s) return;
+
+      s.messages.forEach((m) => {
+        const bubble = app.ui.createBubble(m.role, m.content);
+        app.ui.log.appendChild(bubble);
+        if (m.role === 'assistant') app.logic.postProcessBubble(bubble);
+      });
+      app.ui.scrollToBottom();
+      setTimeout(() => app.ui.input.focus(), 80);
+    },
+
+    sendSystemMessage: (text) => {
+      const s = app.logic.getActiveSession();
+      if (!s) return;
+      s.messages.push({ role: 'assistant', content: text });
+      app.utils.save();
+      const bubble = app.ui.createBubble('assistant', text);
+      app.ui.log.appendChild(bubble);
+      app.logic.postProcessBubble(bubble);
+      app.ui.scrollToBottom();
+    },
+
+    saveSettings: () => {
+      app.state.settings.name = document.getElementById('inp-name').value.trim();
+      app.state.settings.domain = document.getElementById('inp-domain').value;
+      app.utils.save();
+      document.getElementById('domain-badge').textContent = app.state.settings.domain || 'Standard';
+      app.ui.closeModals();
+      setTimeout(() => app.ui.input.focus(), 80);
+    },
+
+    addSnippet: () => {
+      const inp = document.getElementById('inp-snippet');
+      const val = inp.value.trim();
+      if (!val) return;
+      app.state.settings.snippets = app.state.settings.snippets || [];
+      app.state.settings.snippets.push(val);
+      inp.value = '';
+      app.utils.save();
+      app.ui.renderSnippetList();
+    },
+
+    removeSnippet: (idx) => {
+      app.state.settings.snippets.splice(idx, 1);
+      app.utils.save();
+      app.ui.renderSnippetList();
+    },
+
+    insertSnippet: (txt) => {
+      app.ui.input.value = txt;
+      app.ui.input.dispatchEvent(new Event('input'));
+      document.getElementById('snippet-popup').classList.remove('active');
+      app.ui.input.focus();
+    },
+
+    extractResponseText: (rawText) => {
+      try {
+        const parsed = JSON.parse(rawText);
+        if (typeof parsed === 'string') return parsed;
+        if (parsed.answer) return String(parsed.answer);
+        if (parsed.response) return String(parsed.response);
+        if (parsed.text) return String(parsed.text);
+        if (parsed.output) return String(parsed.output);
+        return rawText;
+      } catch (_) {
+        return rawText;
+      }
+    },
+
+    sendMessage: async () => {
+      if (!app.state.consentGiven) {
+        app.ui.openModal('modal-disclaimer');
+        return;
+      }
+
+      if (app.state.isSending) {
+        if (app.state.requestController) app.state.requestController.abort();
+        return;
+      }
+
+      const txt = app.ui.input.value.trim();
+      if (!txt) return;
+
+      const s = app.logic.getActiveSession();
+      if (!s) return;
+
+      app.state.isSending = true;
+      app.state.lastQuestion = txt;
+
+      const displayName = app.state.settings.name ? `${app.state.settings.name}: ` : '';
+      const fullMsg = displayName + txt;
+
+      s.messages.push({ role: 'user', content: fullMsg });
+      app.utils.save();
+
+      app.ui.log.appendChild(app.ui.createBubble('user', fullMsg));
+      app.ui.scrollToBottom();
+
+      const loading = document.createElement('div');
+      loading.className = 'msg-row bot';
+      loading.innerHTML = '<div class="msg-wrapper"><div class="bubble bot"><div class="loading"><span></span><span></span><span></span></div></div></div>';
+      app.ui.log.appendChild(loading);
+      app.ui.scrollToBottom();
+
+      app.ui.sendBtn.classList.add('stop');
+      app.ui.sendBtn.textContent = '■';
+      app.ui.input.disabled = true;
+
+      const history = s.messages
+        .slice(-3)
+        .filter((m) => !/herzlich willkommen/i.test(m.content))
+        .map((m) => ({ role: m.role, content: app.utils.truncateForApi(m.content, 500) }));
+
+      const controller = new AbortController();
+      app.state.requestController = controller;
+      const timeout = setTimeout(() => controller.abort(), 30000);
+
+      let success = false;
+
+      try {
+        const res = await fetch(API_ENDPOINT, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            question: app.utils.truncateForApi(txt, 1200),
+            fachmodus: app.state.settings.domain || '',
+            history
+          }),
+          signal: controller.signal
+        });
+
+        if (!res.ok) {
+          let detail = '';
+          try {
+            const errJson = await res.json();
+            detail = errJson?.error ? `: ${errJson.error}` : '';
+          } catch (_) {}
+          throw new Error(`HTTP ${res.status}${detail}`);
+        }
+
+        const raw = await res.text();
+        const answer = app.logic.extractResponseText(raw);
+
+        loading.remove();
+        s.messages.push({ role: 'assistant', content: answer });
+        app.utils.save();
+
+        const bubble = app.ui.createBubble('assistant', answer);
+        app.ui.log.appendChild(bubble);
+        app.logic.postProcessBubble(bubble);
+        app.ui.scrollToBottom();
+
+        success = true;
+      } catch (err) {
+        loading.remove();
+        const offline = !navigator.onLine;
+        const timeoutErr = err?.name === 'AbortError';
+        const msg = offline
+          ? 'Du bist offline. Bitte Verbindung prüfen und erneut senden.'
+          : timeoutErr
+            ? 'Anfrage abgebrochen oder Timeout. Bitte erneut senden.'
+            : `Verbindungsfehler (${err.message || 'unbekannt'}).`;
+
+        const bubble = app.ui.createBubble('assistant', `❌ ${msg}`);
+        app.ui.log.appendChild(bubble);
+        app.ui.scrollToBottom();
+      } finally {
+        clearTimeout(timeout);
+        app.state.requestController = null;
+        app.state.isSending = false;
+        app.ui.sendBtn.classList.remove('stop');
+        app.ui.sendBtn.textContent = '➤';
+        app.ui.input.disabled = false;
+
+        app.ui.input.value = success ? '' : (app.state.lastQuestion || app.ui.input.value);
+        app.ui.input.dispatchEvent(new Event('input'));
+        app.ui.input.focus();
+        document.getElementById('snippet-popup').classList.remove('active');
+      }
+    },
+
+    getBubbleText: (btn) => {
+      const row = btn.closest('.msg-row');
+      const idx = Array.from(app.ui.log.children).indexOf(row);
+      let q = '';
+      for (let i = idx - 1; i >= 0; i--) {
+        const prev = app.ui.log.children[i];
+        if (prev.classList.contains('user')) {
+          q = prev.querySelector('.md')?.innerText || '';
+          break;
+        }
+      }
+      const a = row.querySelector('.md')?.innerText || '';
+      return { q, a };
+    },
+
+    copyBubble: (btn) => {
+      const { q, a } = app.logic.getBubbleText(btn);
+      navigator.clipboard.writeText(`Frage: ${q}\n\nAntwort: ${a}`).then(() => {
+        const t = btn.textContent;
+        btn.textContent = 'Kopiert';
+        setTimeout(() => { btn.textContent = t; }, 1200);
+      });
+    },
+
+    shareBubble: (btn) => {
+      const { q, a } = app.logic.getBubbleText(btn);
+      const payload = `Frage: ${q}\n\nAntwort: ${a}`;
+      if (navigator.share) {
+        navigator.share({ title: 'Linda Chat', text: payload }).catch(() => {});
+      } else {
+        window.location.href = `mailto:?subject=Linda Chat&body=${encodeURIComponent(payload)}`;
+      }
+    },
+
+    pdfBubble: (btn) => {
+      const bubble = btn.closest('.msg-wrapper')?.querySelector('.bubble.bot');
+      if (!bubble) return;
+      const win = window.open('', '_blank');
+      if (!win) return;
+      const content = bubble.innerHTML;
+      win.document.write(`
+        <html>
+          <head>
+            <title>Linda PDF</title>
+            <style>
+              body { font-family: Arial, sans-serif; margin: 24px; color: #111; }
+              h1 { color: #004481; }
+              .box { border: 1px solid #ddd; border-radius: 10px; padding: 16px; }
+            </style>
+          </head>
+          <body>
+            <h1>Linda Antwort</h1>
+            <div class="box">${content}</div>
+          </body>
+        </html>
+      `);
+      win.document.close();
+      setTimeout(() => { win.focus(); win.print(); }, 300);
+    },
+
+    postProcessBubble: (bubble) => {
+      const md = bubble.querySelector('.md');
+      if (!md) return;
+
+      md.querySelectorAll('table').forEach((table) => {
+        const wrapper = document.createElement('div');
+        wrapper.className = 'table-wrapper';
+        table.parentNode.insertBefore(wrapper, table);
+        wrapper.appendChild(table);
+      });
+
+      const heads = md.querySelectorAll('h1,h2,h3,h4,h5,p');
+      const src = Array.from(heads).find((n) => /^quellen\s*:*/i.test(n.textContent.trim()));
+      if (!src && !md.querySelector('.source-box')) {
+        const hint = document.createElement('div');
+        hint.className = 'source-missing';
+        hint.textContent = 'Hinweis: Diese Antwort enthält keine angegebenen Quellen.';
+        md.appendChild(hint);
+      }
+    },
+
+    clearAll: () => {
+      if (!confirm('Alle Verläufe wirklich löschen?')) return;
+      app.state.sessions = [];
+      app.state.activeId = null;
+      app.utils.save();
+      app.ui.log.innerHTML = '';
+      app.logic.newChat();
+    },
+
+    openFeedback: () => {
+      const s = app.logic.getActiveSession();
+      let body = 'Mein Feedback zu Linda:%0D%0A%0D%0A';
+      if (s) {
+        s.messages.forEach((m) => {
+          body += `${m.role === 'user' ? 'Ich' : 'Linda'}: ${encodeURIComponent(m.content)}%0D%0A`;
+        });
+      }
+      window.location.href = `mailto:KI-TEST@GMX.COM?subject=Feedback&body=${body}`;
+    }
+  }
+};
+
+window.addEventListener('load', () => {
+  app.utils.load();
+
+  const badge = document.getElementById('domain-badge');
+  badge.textContent = app.state.settings.domain || 'Standard';
+
+  if (app.state.consentGiven) {
+    document.getElementById('modal-disclaimer').classList.remove('open');
+  }
+
+  const check1 = document.getElementById('consent-data');
+  const check2 = document.getElementById('consent-forward');
+  const btnStart = document.getElementById('btn-start-disclaimer');
+  const toggleStart = () => { btnStart.disabled = !(check1.checked && check2.checked); };
+  check1.addEventListener('change', toggleStart);
+  check2.addEventListener('change', toggleStart);
+
+  const input = app.ui.input;
+  input.addEventListener('input', function () {
+    this.style.height = 'auto';
+    this.style.height = Math.min(this.scrollHeight, 180) + 'px';
+
+    const val = this.value;
+    if (val.startsWith('/')) {
+      const q = val.slice(1).toLowerCase();
+      const matches = (app.state.settings.snippets || []).filter((s) => s.toLowerCase().includes(q));
+      app.ui.showSnippetPopup(matches);
+    } else {
+      document.getElementById('snippet-popup').classList.remove('active');
+    }
+  });
+
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      app.logic.sendMessage();
+    }
+  });
+
+  app.ui.sendBtn.addEventListener('click', (e) => {
+    e.preventDefault();
+    app.logic.sendMessage();
+  });
+
+  document.getElementById('snippet-popup').addEventListener('click', (e) => {
+    const item = e.target.closest('.snippet-item');
+    if (!item) return;
+    const txt = decodeURIComponent(item.dataset.snippet || '');
+    app.logic.insertSnippet(txt);
+  });
+
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('#snippet-popup') && !e.target.closest('.input-wrapper')) {
+      document.getElementById('snippet-popup').classList.remove('active');
+    }
+  });
+
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener('resize', app.ui.syncKeyboardInset, { passive: true });
+    window.visualViewport.addEventListener('scroll', app.ui.syncKeyboardInset, { passive: true });
+    app.ui.syncKeyboardInset();
+  }
+
+  if (app.state.consentGiven && (!app.state.sessions || app.state.sessions.length === 0)) {
+    app.logic.newChat();
+  } else if (app.state.sessions.length > 0 && app.state.activeId) {
+    app.logic.switchSession(app.state.activeId);
+  }
+
+  window.addEventListener('online', () => console.log('online'));
+  window.addEventListener('offline', () => {
+    const s = app.logic.getActiveSession();
+    if (!s) return;
+    const bubble = app.ui.createBubble('assistant', '⚠️ Du bist offline. Einige Funktionen sind nicht verfügbar.');
+    app.ui.log.appendChild(bubble);
+    app.ui.scrollToBottom();
+  });
+});
+</script>
+</body>
+</html>
