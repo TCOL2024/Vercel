@@ -132,7 +132,7 @@ function expandShortReply(question, history) {
   return q;
 }
 
-// ---------- Router-Meta Guard (fehlte vorher) ----------
+// ---------- Router-Meta Guard ----------
 function looksLikeRouterMeta(text = "") {
   const t = String(text).trim();
 
@@ -150,7 +150,7 @@ function looksLikeRouterMeta(text = "") {
   return ROUTER_PIPELINE_RE.test(t) || ROUTER_LINE_RE.test(t) || looksLikeMetaExplanation;
 }
 
-// ---------- Leak/Injection (nur aktuelle Frage prüfen) ----------
+// ---------- Leak/Injection ----------
 function isLeakAttempt(text) {
   const t = (text || "").toLowerCase();
   const needles = [
@@ -166,8 +166,6 @@ function isLeakAttempt(text) {
   return false;
 }
 
-// ---------- Antwort: NICHT nach Quellen abschneiden ----------
-
 function looksLikeSecurityHallucination(text) {
   const v = String(text || "").toLowerCase();
   const markers = [
@@ -180,10 +178,11 @@ function looksLikeSecurityHallucination(text) {
   ];
   return markers.filter((m) => v.includes(m)).length >= 2;
 }
+
 function sanitizeReply(text) {
   let out = String(text || "").trim();
 
-  // 1) Wenn Make JSON liefert: sauber parsen und "answer" extrahieren (ohne Abschneiden)
+  // 1) Wenn Make/Provider JSON liefert: "answer" extrahieren
   const looksJson =
     (out.startsWith("{") && out.endsWith("}")) ||
     (out.startsWith("[") && out.endsWith("]"));
@@ -195,6 +194,7 @@ function sanitizeReply(text) {
         (obj && typeof obj.answer === "string" && obj.answer) ||
         (obj && obj.data && typeof obj.data.answer === "string" && obj.data.answer) ||
         (obj && obj.result && typeof obj.result === "string" && obj.result) ||
+        (obj && obj.choices && obj.choices[0] && obj.choices[0].message && obj.choices[0].message.content) ||
         "";
       if (answer) out = String(answer);
     } catch {
@@ -202,7 +202,7 @@ function sanitizeReply(text) {
     }
   }
 
-  // 2) Entferne Zitiermarker wie 【...】 (optional)
+  // 2) Zitiermarker entfernen (optional)
   out = out.replace(/【[^】]{1,200}】/g, "");
 
   // 3) Router-/Meta-Artefakte entfernen
@@ -217,8 +217,7 @@ function sanitizeReply(text) {
   lines = lines.filter((ln) => !ROUTER_LINE_RE.test(ln));
   out = lines.join("\n").trim();
 
-
-  // 4) Falls der Output nur Meta erklärt: neutraler Hinweis statt Meta-Text
+  // 4) Meta-Erklärungen neutralisieren
   const looksLikeMetaExplanation =
     /erkl[aä]rung und bedeutung/i.test(out) ||
     (/\bcontext\s*:/i.test(out) && /\bintent\s*:/i.test(out)) ||
@@ -238,8 +237,6 @@ function sanitizeReply(text) {
 
   // 6) Aufräumen
   out = out.replace(/\n{3,}/g, "\n\n").trim();
-
-
   return out;
 }
 
@@ -249,16 +246,15 @@ function normalizeFm(value) {
   if (!v) return "";
   const u = v.toUpperCase();
   if (["AEVO", "VWL", "PERSONAL"].includes(u)) return u;
-  return ""; // alles andere: wie "kein Modus"
+  return "";
 }
 
-// ---------- Vector decision (NUR User-Inhalte; KEINE Assistant-Texte) ----------
+// ---------- Vector decision ----------
 function getUserTextForVectorDecision(question, history) {
   const parts = [];
   const q = (question || "").trim();
   if (q) parts.push(q);
 
-  // Nur USER-Messages aus History berücksichtigen (keine Assistant-Self-Triggers)
   if (Array.isArray(history)) {
     for (const m of history) {
       if (m && m.role === "user" && typeof m.content === "string" && m.content.trim()) {
@@ -269,101 +265,25 @@ function getUserTextForVectorDecision(question, history) {
   return parts.join(" \n");
 }
 
-// Deine Trigger + abgeleitete Begriffe (wie vereinbart)
 function detectVectorYes(question, history) {
   const hay = getUserTextForVectorDecision(question, history).toLowerCase();
 
   const triggers = [
-    // von dir
-    "mehr details",
-    "urteil", "urteile",
-    "kündigung",
-    "arbeitszeit",
-    "berufsschule",
-    "verstehe ich nicht",
-    "erkläre genau",
-    "europäische zentralbank",
-    "ezb",
-    "inflation",
-    "rechenweg",
-    "erkläre genauer",
-    "erkläre besser",
-    "abmahnung",
-    "ermahnung",
-    "schwierigkeit",
-    "probleme",
-    "prüfung",
-    "prüfungsfrage",
-    "beschwerde",
-    "ich fühle mich unsicher",
-
-    // abgeleitet/ähnlich
-    "ausführlicher",
-    "detaillierter",
-    "genauer",
-    "vertiefung",
-    "vertiefen",
-    "schritt für schritt",
-    "nochmal erklären",
-    "bitte erklären",
-    "erläutere",
-    "erläuterung",
-    "unklar",
-    "verwirrend",
-    "wie meinst du das",
-    "was heißt das",
-    "begründung",
-    "belege",
-    "quelle",
-    "quellen",
-    "rechtsgrundlage",
-    "gesetzlich",
-
-    // Recht/Norm/Urteil
-    "§",
-    "art.",
-    "abs.",
-    "satz",
-    "nr.",
-    "aktenzeichen",
-    "az.",
-    "beschluss",
-    "rechtsprechung",
-    "bag",
-    "bgh",
-    "bverfg",
-    "lag",
-    "olg",
-    "ovg",
-
-    // Ausbildungskonflikte
-    "probezeit",
-    "fristlos",
-    "außerordentlich",
-    "ordentlich",
-    "freistellung",
-    "blockunterricht",
-    "fehlzeit",
-    "abmahnen",
-    "verwarnung",
-    "pflichtverletzung",
-
-    // VWL
-    "geldpolitik",
-    "leitzins",
-    "verbraucherpreisindex",
-    "vpi",
-    "kaufkraft",
-    "deflation",
-    "preisniveau",
-    "formel",
-    "beispielrechnung",
-    "berechnung",
-    "herleitung",
-    "prozentrechnung"
+    "mehr details", "urteil", "urteile", "kündigung", "arbeitszeit", "berufsschule",
+    "verstehe ich nicht", "erkläre genau", "europäische zentralbank", "ezb", "inflation",
+    "rechenweg", "erkläre genauer", "erkläre besser", "abmahnung", "ermahnung", "schwierigkeit",
+    "probleme", "prüfung", "prüfungsfrage", "beschwerde", "ich fühle mich unsicher",
+    "ausführlicher", "detaillierter", "genauer", "vertiefung", "vertiefen", "schritt für schritt",
+    "nochmal erklären", "bitte erklären", "erläutere", "erläuterung", "unklar", "verwirrend",
+    "wie meinst du das", "was heißt das", "begründung", "belege", "quelle", "quellen",
+    "rechtsgrundlage", "gesetzlich", "§", "art.", "abs.", "satz", "nr.", "aktenzeichen", "az.",
+    "beschluss", "rechtsprechung", "bag", "bgh", "bverfg", "lag", "olg", "ovg", "probezeit",
+    "fristlos", "außerordentlich", "ordentlich", "freistellung", "blockunterricht", "fehlzeit",
+    "abmahnen", "verwarnung", "pflichtverletzung", "geldpolitik", "leitzins",
+    "verbraucherpreisindex", "vpi", "kaufkraft", "deflation", "preisniveau", "formel",
+    "beispielrechnung", "berechnung", "herleitung", "prozentrechnung"
   ];
 
-  // Spezial: Normmuster
   if (/(^|\s)(§|art\.)\s*\d+/i.test(hay)) return true;
 
   for (const t of triggers) {
@@ -387,6 +307,74 @@ function detectNeed(vectorYes, question) {
   );
   if (isDef) return "FAST";
   return "DEFAULT";
+}
+
+// ---------- Schnellmodus (DeepSeek) ----------
+function wantsFastMode(body) {
+  return (
+    body?.schnellmodus === true ||
+    body?.routing?.preferred_model === "Linda3Schnellmodus"
+  );
+}
+
+function getDeepSeekConfig() {
+  // Unterstützt:
+  // A) Linda3Schnellmodus = API-Key (sk-...)
+  // B) Linda3Schnellmodus = Modellname + DEEPSEEK_API_KEY separat
+  const v = String(process.env.Linda3Schnellmodus || "").trim();
+  let apiKey = String(process.env.DEEPSEEK_API_KEY || "").trim();
+  let model = String(process.env.DEEPSEEK_MODEL || "deepseek-chat").trim();
+
+  if (v) {
+    if (v.startsWith("sk-")) apiKey = v;
+    else model = v;
+  }
+
+  return { apiKey, model };
+}
+
+async function callDeepSeek({ question, history, fm_user, signal }) {
+  const { apiKey, model } = getDeepSeekConfig();
+  if (!apiKey) throw new Error("DeepSeek API Key fehlt (Linda3Schnellmodus oder DEEPSEEK_API_KEY)");
+
+  const messages = [
+    { role: "system", content: "Du bist Linda. Antworte klar, fachlich korrekt und auf Deutsch." },
+    ...(fm_user ? [{ role: "system", content: `Fachmodus: ${fm_user}` }] : []),
+    ...(Array.isArray(history) ? history.slice(-8) : []),
+    { role: "user", content: question }
+  ];
+
+  const r = await fetch("https://api.deepseek.com/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${apiKey}`
+    },
+    body: JSON.stringify({
+      model,
+      temperature: 0.2,
+      messages
+    }),
+    signal
+  });
+
+  const txt = await r.text();
+
+  if (!r.ok) {
+    throw new Error(`DeepSeek HTTP ${r.status}: ${txt.slice(0, 600)}`);
+  }
+
+  try {
+    const j = JSON.parse(txt);
+    return (
+      j?.choices?.[0]?.message?.content ||
+      j?.answer ||
+      j?.response ||
+      txt
+    );
+  } catch {
+    return txt;
+  }
 }
 
 // -------------------- Handler --------------------
@@ -430,7 +418,6 @@ export default async function handler(req, res) {
   const questionRaw = typeof body.question === "string" ? body.question : "";
   let question = stripLeadingFillers(questionRaw);
 
-  // Guard: Router-/Meta-Text darf niemals als Nutzerfrage verarbeitet werden
   if (looksLikeRouterMeta(question)) {
     res.statusCode = 200;
     res.setHeader("Content-Type", "text/plain; charset=utf-8");
@@ -446,7 +433,6 @@ export default async function handler(req, res) {
   if (!question) return sendJson(res, 400, { error: "question fehlt" });
   if (question.length > 2000) return sendJson(res, 413, { error: "question zu lang (max 2000 Zeichen)" });
 
-  // Leak/Injection: NUR aktuelle Frage prüfen
   if (isLeakAttempt(question)) {
     res.statusCode = 200;
     res.setHeader("Content-Type", "text/plain; charset=utf-8");
@@ -456,16 +442,14 @@ export default async function handler(req, res) {
     );
   }
 
-  // FM (neu) oder fachmodus (alt)
   const fm_user = normalizeFm(body.fm_user || body.fachmodus || "");
-
-  // optional pass-through
   const token = (body.token == null) ? "" : String(body.token).slice(0, 200);
   const context = (body.context == null) ? "" : String(body.context).slice(0, 5000);
 
-  // Vector decision: nur User-Inhalte
   const vector_yes = detectVectorYes(question, history);
   const need = detectNeed(vector_yes, question);
+
+  const fastRequested = wantsFastMode(body);
 
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 90000);
@@ -475,6 +459,28 @@ export default async function handler(req, res) {
   const referer = req.headers.referer || "";
 
   try {
+    // Schnellmodus: direkt an DeepSeek, falls vom Frontend gewünscht
+    if (fastRequested) {
+      try {
+        const dsText = await callDeepSeek({
+          question,
+          history,
+          fm_user,
+          signal: controller.signal
+        });
+
+        clearTimeout(timeout);
+
+        const cleaned = sanitizeReply(dsText);
+        res.statusCode = 200;
+        res.setHeader("Content-Type", "text/plain; charset=utf-8");
+        return res.end(cleaned);
+      } catch (e) {
+        // wichtig: andere Bots/Flows dürfen weiter funktionieren
+        console.error("DeepSeek fallback to Make:", e?.message || e);
+      }
+    }
+
     const makeResp = await fetch(webhookUrl, {
       method: "POST",
       headers: {
@@ -524,6 +530,6 @@ export default async function handler(req, res) {
       );
     }
 
-    return sendJson(res, 500, { error: "Fehler beim Senden an Make", detail: e?.message || "Unbekannter Fehler" });
+    return sendJson(res, 500, { error: "Fehler beim Senden an Make/DeepSeek", detail: e?.message || "Unbekannter Fehler" });
   }
 }
