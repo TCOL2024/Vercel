@@ -1231,7 +1231,8 @@
         courseId: ''
       },
       fastMode: {
-        enabled: false
+        enabled: false,
+        consentAccepted: false
       },
       prompting: {
         enabled: false,
@@ -1950,6 +1951,18 @@
         return out.slice(0, 6);
       },
 
+      needsSlowModeHint: (text) => {
+        const t = String(text || '').toLowerCase();
+        const triggers = [
+          'urteil',
+          'beschwerde',
+          'tieferes wissen',
+          'mehr details',
+          'verstehe ich nicht'
+        ];
+        return triggers.some((k) => t.includes(k));
+      },
+
       openCardsTabWithPayload: (payload) => {
         localStorage.setItem(CARDS_KEY, JSON.stringify(payload));
         const target = `${window.location.pathname}?view=cards`;
@@ -2221,6 +2234,21 @@
 
         const text = app.ui.input.value.trim();
         if (!text) return;
+
+        if (app.state.settings.fastMode?.enabled && app.logic.needsSlowModeHint(text)) {
+          const disableFast = confirm(
+            'Hinweis: Für diese Anfrage wird empfohlen, den Schnellmodus auszuschalten, um bessere Nachvollziehbarkeit/Quellen zu erhalten.\n\n' +
+            'Jetzt Schnellmodus AUS schalten?'
+          );
+          if (disableFast) {
+            app.state.settings.fastMode.enabled = false;
+            app.ui.syncFastModeControls();
+            app.ui.updateDomainUI();
+            app.utils.save();
+          }
+          alert('Die Anfrage wird jetzt gesendet. Prüfe die Antwort bitte besonders sorgfältig.');
+        }
+
         app.ui.input.value = '';
         app.ui.input.dispatchEvent(new Event('input'));
 
@@ -2729,7 +2757,24 @@
     const fastMainOn = document.getElementById('fastmode-main-on');
     const fastMainOff = document.getElementById('fastmode-main-off');
     const syncFastMode = () => {
-      app.state.settings.fastMode.enabled = Boolean(fastMainOn && fastMainOn.checked);
+      const wantsOn = Boolean(fastMainOn && fastMainOn.checked);
+      if (wantsOn && !app.state.settings.fastMode.consentAccepted) {
+        const accepted = confirm(
+          'Du aktivierst den Schnellmodus, dieser unterstützt keine Quellenangaben der hinterlegten Dokumente. ' +
+          'Prüfe sehr intensiv die Antworten, da der Schnellmodus Fehler beinhalten kann. ' +
+          'Jede KI-Antwort muss überprüft werden.\n\nBestätigen?'
+        );
+        if (!accepted) {
+          app.state.settings.fastMode.enabled = false;
+          app.ui.syncFastModeControls();
+          app.ui.updateDomainUI();
+          app.utils.save();
+          return;
+        }
+        app.state.settings.fastMode.consentAccepted = true;
+      }
+
+      app.state.settings.fastMode.enabled = wantsOn;
       app.utils.save();
       app.ui.updateDomainUI();
     };
