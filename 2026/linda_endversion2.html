@@ -1,0 +1,1937 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>LINDA3 - Lernassistentin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.8/purify.min.js"></script>
+<style>
+  :root {
+    --ink: #111d2e;
+    --ink-soft: #46556b;
+    --brand: #0059b8;
+    --brand-deep: #003f83;
+    --brand-glow: #cae4ff;
+    --mint: #00b894;
+    --danger: #d7263d;
+    --paper: #f4f8ff;
+    --card: #ffffff;
+    --line: #d6e0ef;
+    --shadow: 0 14px 38px rgba(7, 21, 42, 0.12);
+    --radius-xl: 22px;
+    --radius-lg: 16px;
+    --radius-sm: 11px;
+    --header-h: 70px;
+    --input-h: 92px;
+    --kb: 0px;
+  }
+
+  * {
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  html,
+  body {
+    margin: 0;
+    height: 100%;
+    font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    color: var(--ink);
+    background:
+      radial-gradient(1200px 600px at 120% -10%, #d9ebff 0%, transparent 56%),
+      radial-gradient(900px 480px at -20% 110%, #e4fff8 0%, transparent 58%),
+      #e9f1fb;
+    font-size: 16px;
+    line-height: 1.55;
+    text-size-adjust: 100%;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    display: flex;
+    align-items: stretch;
+    justify-content: center;
+    padding: 0;
+  }
+
+  #app {
+    width: 100%;
+    height: 100dvh;
+    background: linear-gradient(180deg, #fafdff 0%, #f2f7ff 100%);
+    display: grid;
+    grid-template-rows: var(--header-h) auto 1fr auto;
+    overflow: hidden;
+    position: relative;
+  }
+
+  @media (min-width: 980px) {
+    body {
+      padding: 20px;
+    }
+
+    #app {
+      max-width: 1160px;
+      border-radius: 26px;
+      box-shadow: 0 24px 70px rgba(4, 20, 45, 0.25);
+      height: min(96vh, 960px);
+    }
+  }
+
+  header {
+    background: rgba(255, 255, 255, 0.94);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--line);
+    padding: 10px 12px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    z-index: 8;
+  }
+
+  .logo-wrap {
+    min-width: 0;
+    flex: 1;
+  }
+
+  .logo {
+    margin: 0;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 1.3rem;
+    letter-spacing: 0.02em;
+    color: #0d3c77;
+    white-space: nowrap;
+  }
+
+  .logo-sub {
+    font-size: 0.75rem;
+    color: var(--ink-soft);
+    margin-top: 2px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .pill {
+    border-radius: 999px;
+    border: 1px solid #bdd7fa;
+    color: #0d4b99;
+    background: #ebf4ff;
+    padding: 6px 10px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+
+  .header-actions {
+    display: flex;
+    gap: 6px;
+    overflow-x: auto;
+  }
+
+  .btn-icon {
+    border: 1px solid var(--line);
+    background: #fff;
+    color: #0b3f80;
+    border-radius: 12px;
+    height: 44px;
+    min-width: 44px;
+    padding: 0 11px;
+    font-weight: 800;
+    font-size: 0.95rem;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .btn-icon:hover,
+  .btn-icon:focus-visible {
+    background: #edf6ff;
+    border-color: #9fc5f6;
+    outline: none;
+  }
+
+  .btn-primary {
+    background: linear-gradient(135deg, var(--brand) 0%, #1f77d8 100%);
+    border: none;
+    color: #fff;
+  }
+
+  .source-toolbar {
+    border-bottom: 1px solid var(--line);
+    background: rgba(255, 255, 255, 0.88);
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    overflow-x: auto;
+    padding: 8px 10px;
+    min-height: 48px;
+  }
+
+  .source-chip {
+    border: 1px solid #d2dded;
+    background: #fff;
+    color: #28415e;
+    border-radius: 999px;
+    padding: 7px 10px;
+    display: inline-flex;
+    gap: 6px;
+    align-items: center;
+    font-size: 0.76rem;
+    font-weight: 700;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+
+  .source-chip.on {
+    background: #e9f4ff;
+    border-color: #8cb9ef;
+    color: #044892;
+  }
+
+  .source-chip input {
+    margin: 0;
+    accent-color: #0060c4;
+  }
+
+  #chat-log {
+    overflow-y: auto;
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    background:
+      radial-gradient(520px 220px at 100% 0%, rgba(217, 234, 255, 0.7) 0%, transparent 80%),
+      linear-gradient(180deg, #f9fcff 0%, #f3f8ff 100%);
+    padding-bottom: calc(var(--input-h) + 18px + var(--kb));
+  }
+
+  .msg-row {
+    width: 100%;
+    display: flex;
+    animation: fade-in 0.28s ease;
+  }
+
+  .msg-row.user {
+    justify-content: flex-end;
+  }
+
+  .msg-row.assistant {
+    justify-content: flex-start;
+  }
+
+  .msg-wrap {
+    width: min(100%, 820px);
+  }
+
+  .bubble {
+    border-radius: 17px;
+    padding: 12px 14px;
+    box-shadow: 0 2px 10px rgba(9, 26, 48, 0.08);
+    word-break: break-word;
+  }
+
+  .bubble.user {
+    background: linear-gradient(130deg, #0d58ae 0%, #2279d7 100%);
+    color: #fff;
+    border-radius: 18px 18px 6px 18px;
+  }
+
+  .bubble.assistant {
+    background: #fff;
+    border: 1px solid #d8e3f2;
+    border-radius: 18px 18px 18px 6px;
+  }
+
+  .md h1,
+  .md h2,
+  .md h3 {
+    font-family: 'Space Grotesk', sans-serif;
+    margin: 0 0 8px;
+    line-height: 1.25;
+    color: #0d4b99;
+  }
+
+  .md p,
+  .md ul,
+  .md ol,
+  .md pre,
+  .md blockquote,
+  .md table {
+    margin: 0 0 10px;
+  }
+
+  .md ul,
+  .md ol {
+    padding-left: 20px;
+  }
+
+  .md pre {
+    background: #eff5ff;
+    border: 1px solid #d8e6fa;
+    border-radius: 10px;
+    padding: 10px;
+    overflow: auto;
+  }
+
+  .md code {
+    background: #eff5ff;
+    border-radius: 6px;
+    padding: 2px 6px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  }
+
+  .md table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 340px;
+  }
+
+  .md th,
+  .md td {
+    border: 1px solid #dbe7f7;
+    padding: 8px;
+    text-align: left;
+  }
+
+  .md th {
+    background: #edf5ff;
+  }
+
+  .table-wrap {
+    overflow-x: auto;
+    border-radius: 10px;
+    border: 1px solid #dbe7f7;
+  }
+
+  .source-panel {
+    margin-top: 8px;
+    border: 1px solid #c7dcf8;
+    border-radius: 11px;
+    overflow: hidden;
+    background: #f3f9ff;
+  }
+
+  .source-head {
+    margin: 0;
+    padding: 8px 10px;
+    font-size: 0.78rem;
+    color: #0e4e9d;
+    border-bottom: 1px solid #d3e4fb;
+  }
+
+  .source-list {
+    margin: 0;
+    padding: 8px 10px 10px 24px;
+    font-size: 0.9rem;
+  }
+
+  .source-list a {
+    color: #0d58ae;
+  }
+
+  .source-missing {
+    margin-top: 9px;
+    color: #697a91;
+    font-size: 0.84rem;
+    font-style: italic;
+  }
+
+  .msg-actions {
+    margin-top: 6px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .action-btn {
+    border-radius: 999px;
+    border: 1px solid #d2dceb;
+    background: #fff;
+    color: #2d4560;
+    padding: 7px 11px;
+    font-size: 0.77rem;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .action-btn:hover {
+    background: #edf5ff;
+  }
+
+  .action-btn.strong {
+    background: #e8f4ff;
+    border-color: #9ec4f5;
+    color: #0b4f9e;
+  }
+
+  .input-area {
+    position: sticky;
+    bottom: 0;
+    border-top: 1px solid var(--line);
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(9px);
+    min-height: var(--input-h);
+    display: flex;
+    gap: 10px;
+    align-items: flex-end;
+    padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
+    z-index: 7;
+  }
+
+  .input-wrap {
+    flex: 1;
+    position: relative;
+  }
+
+  #chat-input {
+    width: 100%;
+    min-height: 52px;
+    max-height: 180px;
+    resize: none;
+    border: 2px solid #d9e2f1;
+    background: #fcfdff;
+    border-radius: 14px;
+    padding: 12px 14px;
+    font: inherit;
+    outline: none;
+  }
+
+  #chat-input:focus {
+    border-color: #3f88de;
+    box-shadow: 0 0 0 4px #e8f3ff;
+    background: #fff;
+  }
+
+  #send-btn {
+    border: none;
+    min-width: 50px;
+    height: 50px;
+    border-radius: 14px;
+    background: linear-gradient(135deg, #0c63c5 0%, #0060bc 100%);
+    color: #fff;
+    font-size: 1rem;
+    font-weight: 800;
+    cursor: pointer;
+  }
+
+  #send-btn.stop {
+    background: linear-gradient(135deg, #da2f45 0%, #b92434 100%);
+  }
+
+  #snippet-popup {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: calc(100% + 8px);
+    border: 1px solid #d5dfef;
+    background: #fff;
+    border-radius: 12px;
+    overflow: auto;
+    max-height: 230px;
+    box-shadow: var(--shadow);
+    display: none;
+    z-index: 15;
+  }
+
+  #snippet-popup.active {
+    display: block;
+  }
+
+  .snippet-item {
+    padding: 10px 12px;
+    border-bottom: 1px solid #edf1f7;
+    cursor: pointer;
+  }
+
+  .snippet-item:hover {
+    background: #f2f8ff;
+  }
+
+  .snippet-item:last-child {
+    border-bottom: none;
+  }
+
+  .loading {
+    display: inline-flex;
+    gap: 6px;
+  }
+
+  .loading span {
+    width: 9px;
+    height: 9px;
+    border-radius: 999px;
+    background: #0f61c1;
+    animation: pulse 0.95s ease-in-out infinite;
+  }
+
+  .loading span:nth-child(2) { animation-delay: 0.12s; }
+  .loading span:nth-child(3) { animation-delay: 0.24s; }
+
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(8, 21, 41, 0.56);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 14px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+    z-index: 50;
+  }
+
+  .modal-overlay.open {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .modal {
+    background: #fff;
+    width: min(100%, 640px);
+    border-radius: var(--radius-lg);
+    max-height: 90vh;
+    overflow: auto;
+    padding: 18px;
+    box-shadow: 0 22px 58px rgba(2, 15, 32, 0.38);
+  }
+
+  .modal h3 {
+    margin: 0 0 12px;
+    font-family: 'Space Grotesk', sans-serif;
+    color: #0d4a94;
+  }
+
+  .grid {
+    display: grid;
+    gap: 10px;
+  }
+
+  .grid.cols-2 {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .field label {
+    font-size: 0.84rem;
+    color: #3e536e;
+    display: block;
+    margin-bottom: 4px;
+    font-weight: 700;
+  }
+
+  .field input,
+  .field select,
+  .field textarea {
+    width: 100%;
+    border: 2px solid #d9e3f2;
+    border-radius: 10px;
+    padding: 10px 11px;
+    font: inherit;
+    background: #fdfeff;
+  }
+
+  .field textarea {
+    min-height: 72px;
+    resize: vertical;
+  }
+
+  .field input:focus,
+  .field select:focus,
+  .field textarea:focus {
+    outline: none;
+    border-color: #2f80d8;
+    box-shadow: 0 0 0 3px #eaf4ff;
+  }
+
+  .section {
+    border: 1px solid #dce5f3;
+    background: #f8fbff;
+    border-radius: 12px;
+    padding: 12px;
+  }
+
+  .section h4 {
+    margin: 0 0 8px;
+    font-size: 0.92rem;
+    color: #124a8f;
+  }
+
+  .mini {
+    margin: 0;
+    font-size: 0.8rem;
+    color: #5c6f86;
+  }
+
+  .toggle-list {
+    display: grid;
+    gap: 8px;
+  }
+
+  .toggle-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    border: 1px solid #d7e2f2;
+    border-radius: 10px;
+    background: #fff;
+    padding: 9px 10px;
+  }
+
+  .toggle-row label {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: #22415f;
+  }
+
+  .toggle-row input {
+    width: 18px;
+    height: 18px;
+    margin: 0;
+    accent-color: #0f65c8;
+  }
+
+  .btn-row {
+    margin-top: 14px;
+    display: flex;
+    gap: 8px;
+  }
+
+  .btn {
+    flex: 1;
+    border: none;
+    border-radius: 11px;
+    padding: 10px 12px;
+    font: inherit;
+    font-weight: 800;
+    cursor: pointer;
+  }
+
+  .btn.save {
+    background: linear-gradient(130deg, #0c63c5 0%, #1676d2 100%);
+    color: #fff;
+  }
+
+  .btn.cancel {
+    background: #e8edf6;
+    color: #1f3047;
+  }
+
+  .btn.warn {
+    background: #ffeff1;
+    color: #8c1f2c;
+    border: 1px solid #ffd3d8;
+  }
+
+  .list {
+    border: 1px solid #d7e2f2;
+    border-radius: 11px;
+    overflow: hidden;
+    background: #fff;
+  }
+
+  .list-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    border-bottom: 1px solid #e8eef7;
+    cursor: pointer;
+  }
+
+  .list-item:last-child {
+    border-bottom: none;
+  }
+
+  .list-item.active {
+    background: #eaf4ff;
+    color: #08488f;
+    font-weight: 700;
+  }
+
+  .consent {
+    border-top: 5px solid #0c61c2;
+  }
+
+  .check-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    margin: 10px 0;
+  }
+
+  .check-row input {
+    margin-top: 3px;
+    width: 18px;
+    height: 18px;
+    accent-color: #0f66c8;
+  }
+
+  .cards-layout {
+    min-height: 100dvh;
+    background:
+      radial-gradient(600px 300px at 10% 0%, #d8f6ff 0%, transparent 64%),
+      radial-gradient(800px 460px at 100% 100%, #dce7ff 0%, transparent 58%),
+      #edf4ff;
+    display: flex;
+    flex-direction: column;
+    color: #0f2138;
+  }
+
+  .cards-top {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px;
+    border-bottom: 1px solid #cfe0f8;
+    background: rgba(255,255,255,0.75);
+    backdrop-filter: blur(8px);
+  }
+
+  .cards-title {
+    margin: 0;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 1.14rem;
+    color: #0c4f98;
+  }
+
+  .cards-sub {
+    margin: 2px 0 0;
+    font-size: 0.8rem;
+    color: #4f637f;
+  }
+
+  .cards-body {
+    width: min(960px, 100%);
+    margin: 0 auto;
+    padding: 16px 14px 28px;
+    display: grid;
+    gap: 14px;
+    grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  }
+
+  .flash {
+    perspective: 1000px;
+    min-height: 190px;
+  }
+
+  .flash button {
+    width: 100%;
+    min-height: 190px;
+    border: none;
+    background: none;
+    padding: 0;
+    text-align: left;
+    cursor: pointer;
+  }
+
+  .flash-inner {
+    position: relative;
+    min-height: 190px;
+    transform-style: preserve-3d;
+    transition: transform 0.5s ease;
+  }
+
+  .flash.flipped .flash-inner {
+    transform: rotateY(180deg);
+  }
+
+  .flash-face {
+    position: absolute;
+    inset: 0;
+    backface-visibility: hidden;
+    border-radius: 14px;
+    box-shadow: 0 10px 28px rgba(11, 26, 43, 0.13);
+    border: 1px solid #d4e3f8;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    overflow: auto;
+  }
+
+  .flash-face.front {
+    background: linear-gradient(135deg, #ffffff 0%, #f4f9ff 100%);
+  }
+
+  .flash-face.back {
+    background: linear-gradient(135deg, #e9f5ff 0%, #ddedff 100%);
+    transform: rotateY(180deg);
+  }
+
+  .flash-kicker {
+    margin: 0;
+    font-size: 0.68rem;
+    color: #4a6587;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-weight: 800;
+  }
+
+  .flash h4 {
+    margin: 0;
+    font-size: 1.03rem;
+    line-height: 1.35;
+    color: #103766;
+  }
+
+  .flash p {
+    margin: 0;
+    font-size: 0.94rem;
+    color: #18395f;
+  }
+
+  .state-msg {
+    padding: 16px;
+    border: 1px dashed #b7cae8;
+    border-radius: 12px;
+    background: #f8fbff;
+    color: #415b79;
+  }
+
+  @keyframes fade-in {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 0.4; transform: scale(0.8); }
+    50% { opacity: 1; transform: scale(1); }
+  }
+
+  @media (max-width: 920px) {
+    :root {
+      --header-h: 64px;
+      --input-h: 98px;
+    }
+
+    .grid.cols-2 {
+      grid-template-columns: 1fr;
+    }
+
+    .header-actions .btn-icon span {
+      display: none;
+    }
+
+    .logo-sub {
+      max-width: 36vw;
+    }
+
+    .action-btn {
+      flex: 1;
+      text-align: center;
+      min-width: 0;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation: none !important;
+      transition: none !important;
+      scroll-behavior: auto !important;
+    }
+  }
+</style>
+</head>
+<body>
+<div id="app" aria-live="polite">
+  <header>
+    <div class="logo-wrap">
+      <h1 class="logo">LINDA3</h1>
+      <div class="logo-sub" id="domain-summary">Stabiler Lernassistent mit Quellensteuerung</div>
+    </div>
+    <div id="domain-badge" class="pill">Standard</div>
+    <div class="header-actions">
+      <button class="btn-icon btn-primary" title="Neuer Chat" onclick="app.logic.newChat()">Neu</button>
+      <button class="btn-icon" title="Lernkarten im neuen Tab" onclick="app.logic.openFlashcardsTab()">Karten</button>
+      <button class="btn-icon" title="Verlauf" onclick="app.ui.openModal('modal-sessions')">Verlauf</button>
+      <button class="btn-icon" title="Einstellungen" onclick="app.ui.openModal('modal-settings')">Setup</button>
+    </div>
+  </header>
+
+  <div class="source-toolbar" id="source-toolbar"></div>
+
+  <div id="chat-log"></div>
+
+  <div class="input-area">
+    <div class="input-wrap">
+      <div id="snippet-popup"></div>
+      <textarea id="chat-input" rows="1" placeholder="Frage eingeben...  (Shift+Enter für Zeilenumbruch)"></textarea>
+    </div>
+    <button id="send-btn" type="button" aria-label="Senden">➤</button>
+  </div>
+</div>
+
+<div id="modal-disclaimer" class="modal-overlay open">
+  <div class="modal consent">
+    <h3>Datenschutzhinweise</h3>
+    <p>Bitte keine vertraulichen personenbezogenen Daten eingeben. Inhalte können an konfigurierte Dienste übermittelt werden.</p>
+    <ul>
+      <li>LLM-Anbieter (z.B. OpenAI / Anthropic)</li>
+      <li>Automations-Dienste (z.B. Make)</li>
+      <li>Optional ILIAS-Schnittstelle (falls aktiviert)</li>
+    </ul>
+    <div class="check-row">
+      <input type="checkbox" id="consent-data">
+      <label for="consent-data">Ich gebe keine sensiblen personenbezogenen Daten ein.</label>
+    </div>
+    <div class="check-row">
+      <input type="checkbox" id="consent-forward">
+      <label for="consent-forward">Ich stimme der Weiterleitung an aktivierte Quellen/Schnittstellen zu.</label>
+    </div>
+    <div class="btn-row">
+      <button class="btn save" id="btn-start-disclaimer" disabled onclick="app.logic.startApp()">Akzeptieren und starten</button>
+    </div>
+  </div>
+</div>
+
+<div id="modal-settings" class="modal-overlay">
+  <div class="modal">
+    <h3>Einstellungen</h3>
+    <div class="grid cols-2">
+      <div class="field">
+        <label for="inp-name">Name (optional)</label>
+        <input id="inp-name" type="text" placeholder="z.B. Max">
+      </div>
+      <div class="field">
+        <label for="inp-domain">Fachmodus</label>
+        <select id="inp-domain">
+          <option value="">Standard</option>
+          <option value="AEVO">Ausbilder (AEVO)</option>
+          <option value="VWL">VWL / Betriebswirtschaft</option>
+          <option value="PERSONAL">Personalwesen</option>
+          <option value="IT">IT / Entwicklung</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="section" style="margin-top:10px;">
+      <h4>Quellen aktivieren/deaktivieren</h4>
+      <p class="mini">Diese Schalter werden mit jeder Anfrage an die API übertragen.</p>
+      <div class="toggle-list" id="source-toggle-list"></div>
+    </div>
+
+    <div class="section" style="margin-top:10px;">
+      <h4>ILIAS Schnittstelle</h4>
+      <p class="mini">Für API-Gateways oder Webhooks. Angaben bleiben lokal gespeichert.</p>
+      <div class="grid cols-2" style="margin-top:8px;">
+        <div class="field">
+          <label for="inp-ilias-enabled">Aktiv</label>
+          <select id="inp-ilias-enabled">
+            <option value="false">Nein</option>
+            <option value="true">Ja</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="inp-ilias-course">Kurs-ID</label>
+          <input id="inp-ilias-course" type="text" placeholder="z.B. 2026-AEVO-01">
+        </div>
+      </div>
+      <div class="field" style="margin-top:8px;">
+        <label for="inp-ilias-endpoint">Endpoint URL</label>
+        <input id="inp-ilias-endpoint" type="url" placeholder="https://.../ilias-proxy">
+      </div>
+      <div class="field" style="margin-top:8px;">
+        <label for="inp-ilias-token">API Token (optional)</label>
+        <input id="inp-ilias-token" type="password" placeholder="Token">
+      </div>
+      <div class="btn-row">
+        <button class="btn cancel" onclick="app.logic.testIliasConnection()">ILIAS testen</button>
+      </div>
+      <p id="ilias-test-result" class="mini" style="margin-top:8px;"></p>
+    </div>
+
+    <div class="section" style="margin-top:10px;">
+      <h4>Snippets</h4>
+      <div style="display:flex; gap:8px;">
+        <input id="inp-snippet" type="text" placeholder="Snippet hinzufügen" style="flex:1; border:2px solid #d9e3f2; border-radius:10px; padding:10px 11px;">
+        <button class="btn save" style="flex:0 0 60px;" onclick="app.logic.addSnippet()">+</button>
+      </div>
+      <div id="snippet-list-container" style="display:flex; flex-wrap:wrap; gap:6px; margin-top:8px;"></div>
+      <p class="mini" style="margin-top:8px;">Im Chat mit <code>/</code> starten, um Snippets vorzuschlagen.</p>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn cancel" onclick="app.ui.closeModals()">Abbrechen</button>
+      <button class="btn save" onclick="app.logic.saveSettings()">Speichern</button>
+    </div>
+  </div>
+</div>
+
+<div id="modal-sessions" class="modal-overlay">
+  <div class="modal">
+    <h3>Verlauf</h3>
+    <div id="session-list" class="list"></div>
+    <p class="mini" style="margin-top:8px;">Es werden bis zu 12 Sitzungen angezeigt.</p>
+    <div class="btn-row">
+      <button class="btn warn" onclick="app.logic.clearAll()">Alle löschen</button>
+      <button class="btn cancel" onclick="app.ui.closeModals()">Schließen</button>
+    </div>
+  </div>
+</div>
+
+<div id="modal-feedback" class="modal-overlay">
+  <div class="modal">
+    <h3>Feedback</h3>
+    <p>Feedback per E-Mail senden?</p>
+    <div class="btn-row">
+      <button class="btn cancel" onclick="app.ui.closeModals()">Nein</button>
+      <button class="btn save" onclick="app.logic.openFeedback()">Ja</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+  'use strict';
+
+  const API_ENDPOINT = window.LINDA_API_ENDPOINT || '/api/bot';
+  const STORAGE_KEY = 'linda3_state';
+  const CARDS_KEY = 'linda3_cards';
+  const APP_VERSION = 3;
+
+  const SOURCE_DEFS = [
+    { key: 'llm', label: 'LLM Wissen', default: true },
+    { key: 'web', label: 'Web Quellen', default: true },
+    { key: 'script', label: 'Skripte/PDF', default: true },
+    { key: 'ilias', label: 'ILIAS', default: false }
+  ];
+
+  const DEFAULT_STATE = {
+    version: APP_VERSION,
+    consentGiven: false,
+    isSending: false,
+    lastQuestion: '',
+    activeId: null,
+    requestController: null,
+    settings: {
+      name: '',
+      domain: '',
+      snippets: [],
+      sources: SOURCE_DEFS.reduce((acc, s) => {
+        acc[s.key] = s.default;
+        return acc;
+      }, {}),
+      ilias: {
+        enabled: false,
+        endpoint: '',
+        token: '',
+        courseId: ''
+      }
+    },
+    sessions: []
+  };
+
+  const parseJSON = (raw, fallback) => {
+    try {
+      return JSON.parse(raw);
+    } catch (_) {
+      return fallback;
+    }
+  };
+
+  const app = {
+    state: structuredClone(DEFAULT_STATE),
+
+    utils: {
+      uid: () => 's_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7),
+      now: () => Date.now(),
+      safeText: (v) => String(v || '').replace(/</g, '&lt;').replace(/>/g, '&gt;'),
+      truncate: (text, max = 1900) => {
+        if (!text || text.length <= max) return text;
+        return text.slice(0, Math.max(0, max - 3)) + '...';
+      },
+      save: () => {
+        const clone = structuredClone(app.state);
+        clone.requestController = null;
+        clone.isSending = false;
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(clone));
+        } catch (e) {
+          console.error('save failed', e);
+        }
+      },
+      load: () => {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) return;
+        const parsed = parseJSON(raw, null);
+        if (!parsed || typeof parsed !== 'object') return;
+
+        app.state = {
+          ...structuredClone(DEFAULT_STATE),
+          ...parsed,
+          settings: {
+            ...structuredClone(DEFAULT_STATE.settings),
+            ...(parsed.settings || {}),
+            ilias: {
+              ...structuredClone(DEFAULT_STATE.settings.ilias),
+              ...((parsed.settings && parsed.settings.ilias) || {})
+            },
+            sources: {
+              ...structuredClone(DEFAULT_STATE.settings.sources),
+              ...((parsed.settings && parsed.settings.sources) || {})
+            }
+          },
+          sessions: Array.isArray(parsed.sessions) ? parsed.sessions : []
+        };
+
+        app.state.version = APP_VERSION;
+        app.state.isSending = false;
+        app.state.requestController = null;
+      },
+      sanitizeLinks: (root) => {
+        root.querySelectorAll('a').forEach((a) => {
+          const href = String(a.getAttribute('href') || '').trim();
+          if (!/^https?:\/\//i.test(href)) a.removeAttribute('href');
+          a.setAttribute('target', '_blank');
+          a.setAttribute('rel', 'noopener noreferrer nofollow');
+        });
+      },
+      activeSources: () => {
+        const sources = app.state.settings.sources || {};
+        return Object.entries(sources).filter(([, on]) => Boolean(on)).map(([k]) => k);
+      },
+      chatContext: (session) => {
+        return (session?.messages || [])
+          .slice(-6)
+          .filter((m) => !/willkommen/i.test(m.content || ''))
+          .map((m) => ({ role: m.role, content: app.utils.truncate(m.content, 700) }));
+      },
+      parseApiAnswer: (rawText) => {
+        const parsed = parseJSON(rawText, null);
+        if (!parsed) return { answer: rawText, sources: [] };
+        if (typeof parsed === 'string') return { answer: parsed, sources: [] };
+        return {
+          answer: String(parsed.answer || parsed.response || parsed.text || parsed.output || rawText),
+          sources: Array.isArray(parsed.sources) ? parsed.sources : []
+        };
+      },
+      nowStamp: () => new Date().toLocaleString('de-DE')
+    },
+
+    ui: {
+      log: document.getElementById('chat-log'),
+      input: document.getElementById('chat-input'),
+      sendBtn: document.getElementById('send-btn'),
+
+      openModal: (id) => {
+        document.querySelectorAll('.modal-overlay').forEach((m) => m.classList.remove('open'));
+        const modal = document.getElementById(id);
+        if (!modal) return;
+        modal.classList.add('open');
+
+        if (id === 'modal-settings') {
+          app.ui.fillSettingsForm();
+          app.ui.renderSourceToggleList();
+          app.ui.renderSnippetList();
+        }
+        if (id === 'modal-sessions') app.ui.renderSessionList();
+      },
+
+      closeModals: () => {
+        document.querySelectorAll('.modal-overlay').forEach((m) => m.classList.remove('open'));
+      },
+
+      fillSettingsForm: () => {
+        const { settings } = app.state;
+        document.getElementById('inp-name').value = settings.name || '';
+        document.getElementById('inp-domain').value = settings.domain || '';
+        document.getElementById('inp-ilias-enabled').value = String(Boolean(settings.ilias.enabled));
+        document.getElementById('inp-ilias-endpoint').value = settings.ilias.endpoint || '';
+        document.getElementById('inp-ilias-token').value = settings.ilias.token || '';
+        document.getElementById('inp-ilias-course').value = settings.ilias.courseId || '';
+        document.getElementById('ilias-test-result').textContent = '';
+      },
+
+      renderSourceToolbar: () => {
+        const bar = document.getElementById('source-toolbar');
+        const active = app.state.settings.sources || {};
+        bar.innerHTML = SOURCE_DEFS.map((src) => {
+          const on = Boolean(active[src.key]);
+          return `
+            <label class="source-chip ${on ? 'on' : ''}" data-source-chip="${src.key}">
+              <input type="checkbox" data-source-cb="${src.key}" ${on ? 'checked' : ''}>
+              <span>${src.label}</span>
+            </label>
+          `;
+        }).join('');
+      },
+
+      renderSourceToggleList: () => {
+        const wrap = document.getElementById('source-toggle-list');
+        const active = app.state.settings.sources || {};
+        wrap.innerHTML = SOURCE_DEFS.map((src) => `
+          <div class="toggle-row">
+            <label for="src-${src.key}">${src.label}</label>
+            <input id="src-${src.key}" type="checkbox" data-source-setting="${src.key}" ${active[src.key] ? 'checked' : ''}>
+          </div>
+        `).join('');
+      },
+
+      renderSessionList: () => {
+        const list = document.getElementById('session-list');
+        const sessions = (app.state.sessions || []).slice(0, 12);
+        if (!sessions.length) {
+          list.innerHTML = '<div class="list-item"><span>Keine Verläufe vorhanden.</span></div>';
+          return;
+        }
+        list.innerHTML = sessions.map((s) => `
+          <div class="list-item ${s.id === app.state.activeId ? 'active' : ''}" data-session-id="${s.id}">
+            <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${app.utils.safeText(s.name || 'Neuer Chat')}</span>
+            <span class="mini">${new Date(s.ts).toLocaleDateString('de-DE')}</span>
+          </div>
+        `).join('');
+      },
+
+      renderSnippetList: () => {
+        const container = document.getElementById('snippet-list-container');
+        const snippets = app.state.settings.snippets || [];
+        if (!snippets.length) {
+          container.innerHTML = '<span class="mini">Keine Snippets hinterlegt.</span>';
+          return;
+        }
+        container.innerHTML = snippets.map((txt, i) => `
+          <span style="display:inline-flex;align-items:center;gap:6px;background:#edf4ff;border:1px solid #d4e2f6;padding:4px 8px;border-radius:999px;font-size:0.8rem;">
+            ${app.utils.safeText(txt)}
+            <button type="button" data-remove-snippet="${i}" style="border:none;background:none;color:#9c1f2e;cursor:pointer;font-size:0.9rem;">×</button>
+          </span>
+        `).join('');
+      },
+
+      showSnippetPopup: (items) => {
+        const pop = document.getElementById('snippet-popup');
+        if (!items.length) {
+          pop.classList.remove('active');
+          pop.innerHTML = '';
+          return;
+        }
+        pop.innerHTML = items
+          .map((item) => `<div class="snippet-item" data-snippet="${encodeURIComponent(item)}">${app.utils.safeText(item)}</div>`)
+          .join('');
+        pop.classList.add('active');
+      },
+
+      createBubble: (role, content, sources = []) => {
+        const row = document.createElement('div');
+        row.className = `msg-row ${role}`;
+
+        if (role === 'user') {
+          row.innerHTML = `
+            <div class="msg-wrap">
+              <div class="bubble user"><div class="md">${app.utils.safeText(content)}</div></div>
+            </div>
+          `;
+          return row;
+        }
+
+        const mdRaw = marked.parse(String(content).replace(/\$(.*?)\$/g, '**$1**'));
+        const safe = DOMPurify.sanitize(mdRaw, {
+          ALLOWED_TAGS: ['p','br','strong','em','ul','ol','li','h1','h2','h3','h4','h5','pre','code','blockquote','table','thead','tbody','tr','th','td','a'],
+          ALLOWED_ATTR: ['href','target','rel']
+        });
+
+        row.innerHTML = `
+          <div class="msg-wrap">
+            <div class="bubble assistant"><div class="md">${safe}</div></div>
+            <div class="msg-actions">
+              <button class="action-btn strong" data-action="copy">Kopieren</button>
+              <button class="action-btn" data-action="share">Teilen</button>
+              <button class="action-btn" data-action="pdf">PDF</button>
+              <button class="action-btn" data-action="cards">Karten</button>
+              <button class="action-btn" data-action="feedback">Feedback</button>
+            </div>
+          </div>
+        `;
+
+        const md = row.querySelector('.md');
+        app.utils.sanitizeLinks(md);
+        app.logic.decorateBubble(md, sources);
+        return row;
+      },
+
+      setSendingState: (sending) => {
+        app.state.isSending = sending;
+        app.ui.input.disabled = sending;
+        app.ui.sendBtn.classList.toggle('stop', sending);
+        app.ui.sendBtn.textContent = sending ? '■' : '➤';
+      },
+
+      scrollBottom: () => {
+        requestAnimationFrame(() => {
+          app.ui.log.scrollTop = app.ui.log.scrollHeight;
+        });
+      },
+
+      syncViewportInsets: () => {
+        if (!window.visualViewport) return;
+        const vv = window.visualViewport;
+        const kb = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
+        document.documentElement.style.setProperty('--kb', kb + 'px');
+      },
+
+      updateDomainUI: () => {
+        const domain = app.state.settings.domain || 'Standard';
+        document.getElementById('domain-badge').textContent = domain;
+        const src = app.utils.activeSources();
+        document.getElementById('domain-summary').textContent = `${domain} • Quellen aktiv: ${src.length ? src.join(', ') : 'keine'}`;
+      },
+
+      loadingRow: () => {
+        const row = document.createElement('div');
+        row.className = 'msg-row assistant';
+        row.innerHTML = '<div class="msg-wrap"><div class="bubble assistant"><div class="loading"><span></span><span></span><span></span></div></div></div>';
+        return row;
+      }
+    },
+
+    logic: {
+      activeSession: () => app.state.sessions.find((s) => s.id === app.state.activeId),
+
+      ensureSession: () => {
+        if (app.state.sessions.length && app.state.activeId) return;
+        app.logic.newChat();
+      },
+
+      startApp: () => {
+        const c1 = document.getElementById('consent-data').checked;
+        const c2 = document.getElementById('consent-forward').checked;
+        if (!c1 || !c2) {
+          alert('Bitte beide Zustimmungen aktivieren.');
+          return;
+        }
+        app.state.consentGiven = true;
+        app.utils.save();
+        app.ui.closeModals();
+        app.logic.ensureSession();
+        setTimeout(() => app.ui.input.focus(), 80);
+      },
+
+      sendSystemMessage: (text) => {
+        const s = app.logic.activeSession();
+        if (!s) return;
+        s.messages.push({ role: 'assistant', content: text, sources: [] });
+        app.utils.save();
+        const bubble = app.ui.createBubble('assistant', text);
+        app.ui.log.appendChild(bubble);
+        app.ui.scrollBottom();
+      },
+
+      newChat: () => {
+        const id = app.utils.uid();
+        app.state.sessions.unshift({
+          id,
+          name: 'Neuer Chat',
+          ts: app.utils.now(),
+          messages: []
+        });
+        app.state.activeId = id;
+        app.ui.log.innerHTML = '';
+        app.utils.save();
+        app.ui.closeModals();
+
+        app.logic.sendSystemMessage(
+          'Willkommen bei **LINDA3**.\\n\\n' +
+          '- Nutze die Quellen-Schalter direkt oben.\\n' +
+          '- Öffne Lernkarten über `Karten` oder pro Antwort über `Karten`.\\n' +
+          '- ILIAS kann im Setup aktiviert und je Anfrage zugeschaltet werden.'
+        );
+      },
+
+      switchSession: (id) => {
+        app.state.activeId = id;
+        app.ui.log.innerHTML = '';
+        app.utils.save();
+        app.ui.closeModals();
+
+        const s = app.logic.activeSession();
+        if (!s) return;
+
+        s.messages.forEach((m) => {
+          const bubble = app.ui.createBubble(m.role, m.content, m.sources || []);
+          app.ui.log.appendChild(bubble);
+        });
+
+        app.ui.scrollBottom();
+      },
+
+      saveSettings: () => {
+        app.state.settings.name = document.getElementById('inp-name').value.trim();
+        app.state.settings.domain = document.getElementById('inp-domain').value;
+
+        app.state.settings.ilias.enabled = document.getElementById('inp-ilias-enabled').value === 'true';
+        app.state.settings.ilias.endpoint = document.getElementById('inp-ilias-endpoint').value.trim();
+        app.state.settings.ilias.token = document.getElementById('inp-ilias-token').value.trim();
+        app.state.settings.ilias.courseId = document.getElementById('inp-ilias-course').value.trim();
+
+        document.querySelectorAll('[data-source-setting]').forEach((cb) => {
+          const key = cb.getAttribute('data-source-setting');
+          app.state.settings.sources[key] = cb.checked;
+        });
+
+        if (app.state.settings.ilias.enabled) app.state.settings.sources.ilias = true;
+
+        app.utils.save();
+        app.ui.updateDomainUI();
+        app.ui.renderSourceToolbar();
+        app.ui.closeModals();
+      },
+
+      addSnippet: () => {
+        const inp = document.getElementById('inp-snippet');
+        const val = inp.value.trim();
+        if (!val) return;
+        app.state.settings.snippets.push(val);
+        inp.value = '';
+        app.utils.save();
+        app.ui.renderSnippetList();
+      },
+
+      removeSnippet: (idx) => {
+        app.state.settings.snippets.splice(idx, 1);
+        app.utils.save();
+        app.ui.renderSnippetList();
+      },
+
+      insertSnippet: (txt) => {
+        app.ui.input.value = txt;
+        app.ui.input.dispatchEvent(new Event('input'));
+        document.getElementById('snippet-popup').classList.remove('active');
+        app.ui.input.focus();
+      },
+
+      sanitizeSourceList: (items) => {
+        return (Array.isArray(items) ? items : [])
+          .map((item) => {
+            if (typeof item === 'string') return { title: item, url: '' };
+            if (!item || typeof item !== 'object') return null;
+            const title = String(item.title || item.name || item.label || item.url || '').trim();
+            const url = String(item.url || item.link || '').trim();
+            if (!title && !url) return null;
+            return { title: title || url, url };
+          })
+          .filter(Boolean)
+          .slice(0, 10);
+      },
+
+      decorateBubble: (md, sources) => {
+        md.querySelectorAll('table').forEach((table) => {
+          const wrap = document.createElement('div');
+          wrap.className = 'table-wrap';
+          table.parentNode.insertBefore(wrap, table);
+          wrap.appendChild(table);
+        });
+
+        const sourceList = app.logic.sanitizeSourceList(sources);
+        if (!sourceList.length) {
+          const miss = document.createElement('div');
+          miss.className = 'source-missing';
+          miss.textContent = 'Hinweis: Keine strukturierten Quellen übermittelt.';
+          md.appendChild(miss);
+          return;
+        }
+
+        const panel = document.createElement('section');
+        panel.className = 'source-panel';
+        const title = document.createElement('h4');
+        title.className = 'source-head';
+        title.textContent = 'Quellen';
+        const ul = document.createElement('ul');
+        ul.className = 'source-list';
+        sourceList.forEach((s) => {
+          const li = document.createElement('li');
+          if (/^https?:\/\//i.test(s.url)) {
+            li.innerHTML = `<a href="${encodeURI(s.url)}">${app.utils.safeText(s.title)}</a>`;
+          } else {
+            li.textContent = s.title;
+          }
+          ul.appendChild(li);
+        });
+        panel.appendChild(title);
+        panel.appendChild(ul);
+        md.appendChild(panel);
+      },
+
+      sendMessage: async () => {
+        if (!app.state.consentGiven) {
+          app.ui.openModal('modal-disclaimer');
+          return;
+        }
+
+        if (app.state.isSending) {
+          if (app.state.requestController) app.state.requestController.abort();
+          return;
+        }
+
+        const text = app.ui.input.value.trim();
+        if (!text) return;
+
+        let s = app.logic.activeSession();
+        if (!s) {
+          app.logic.newChat();
+          s = app.logic.activeSession();
+          if (!s) return;
+        }
+
+        app.state.lastQuestion = text;
+
+        const displayText = app.state.settings.name
+          ? `${app.state.settings.name}: ${text}`
+          : text;
+
+        s.messages.push({ role: 'user', content: displayText, sources: [] });
+        if (!s.name || s.name === 'Neuer Chat') s.name = text.slice(0, 48);
+
+        app.ui.log.appendChild(app.ui.createBubble('user', displayText));
+        const loading = app.ui.loadingRow();
+        app.ui.log.appendChild(loading);
+        app.ui.scrollBottom();
+
+        app.ui.setSendingState(true);
+        app.utils.save();
+
+        const controller = new AbortController();
+        app.state.requestController = controller;
+        const timeout = setTimeout(() => controller.abort(), 40000);
+
+        try {
+          const payload = {
+            question: app.utils.truncate(text, 1300),
+            fachmodus: app.state.settings.domain || '',
+            history: app.utils.chatContext(s),
+            sources: app.state.settings.sources,
+            ilias: {
+              enabled: Boolean(app.state.settings.ilias.enabled && app.state.settings.sources.ilias),
+              endpoint: app.state.settings.ilias.endpoint || '',
+              token: app.state.settings.ilias.token || '',
+              courseId: app.state.settings.ilias.courseId || ''
+            },
+            clientMeta: {
+              app: 'LINDA3',
+              version: APP_VERSION,
+              ts: new Date().toISOString()
+            }
+          };
+
+          const res = await fetch(API_ENDPOINT, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+            signal: controller.signal
+          });
+
+          if (!res.ok) {
+            let detail = '';
+            try {
+              const err = await res.json();
+              detail = err?.error ? `: ${err.error}` : '';
+            } catch (_) {}
+            throw new Error(`HTTP ${res.status}${detail}`);
+          }
+
+          const raw = await res.text();
+          const parsed = app.utils.parseApiAnswer(raw);
+
+          loading.remove();
+          s.messages.push({ role: 'assistant', content: parsed.answer, sources: parsed.sources });
+          app.ui.log.appendChild(app.ui.createBubble('assistant', parsed.answer, parsed.sources));
+          app.utils.save();
+          app.ui.input.value = '';
+          app.ui.input.dispatchEvent(new Event('input'));
+          app.ui.scrollBottom();
+        } catch (err) {
+          loading.remove();
+          const offline = !navigator.onLine;
+          const timeoutErr = err?.name === 'AbortError';
+          const msg = offline
+            ? 'Du bist offline. Bitte Internetverbindung prüfen.'
+            : timeoutErr
+              ? 'Anfrage abgebrochen oder Timeout erreicht.'
+              : `Verbindungsfehler: ${err?.message || 'unbekannt'}`;
+
+          app.ui.log.appendChild(app.ui.createBubble('assistant', `❌ ${msg}`));
+          app.ui.scrollBottom();
+        } finally {
+          clearTimeout(timeout);
+          app.state.requestController = null;
+          app.ui.setSendingState(false);
+          app.ui.input.focus();
+          document.getElementById('snippet-popup').classList.remove('active');
+        }
+      },
+
+      getBubbleText: (btn) => {
+        const row = btn.closest('.msg-row');
+        const items = Array.from(app.ui.log.children);
+        const idx = items.indexOf(row);
+        let q = '';
+
+        for (let i = idx - 1; i >= 0; i -= 1) {
+          if (items[i].classList.contains('user')) {
+            q = items[i].querySelector('.md')?.innerText || '';
+            break;
+          }
+        }
+
+        const a = row.querySelector('.md')?.innerText || '';
+        return { q, a };
+      },
+
+      copyBubble: (btn) => {
+        const { q, a } = app.logic.getBubbleText(btn);
+        navigator.clipboard.writeText(`Frage: ${q}\n\nAntwort: ${a}`).then(() => {
+          const old = btn.textContent;
+          btn.textContent = 'Kopiert';
+          setTimeout(() => { btn.textContent = old; }, 1100);
+        }).catch(() => {
+          alert('Kopieren nicht möglich.');
+        });
+      },
+
+      shareBubble: (btn) => {
+        const { q, a } = app.logic.getBubbleText(btn);
+        const text = `Frage: ${q}\n\nAntwort: ${a}`;
+        if (navigator.share) {
+          navigator.share({ title: 'LINDA3', text }).catch(() => {});
+          return;
+        }
+        window.location.href = `mailto:?subject=LINDA3&body=${encodeURIComponent(text)}`;
+      },
+
+      pdfBubble: (btn) => {
+        const bubble = btn.closest('.msg-wrap')?.querySelector('.bubble.assistant');
+        if (!bubble) return;
+        const win = window.open('', '_blank');
+        if (!win) {
+          alert('Popup blockiert. Erlaube Popups für PDF-Export.');
+          return;
+        }
+
+        win.document.write(`
+          <html>
+            <head>
+              <title>LINDA3 Export</title>
+              <style>
+                body { font-family: 'Manrope', Arial, sans-serif; margin: 22px; color: #132236; }
+                h1 { color: #0d4d98; margin: 0 0 12px; }
+                .box { border: 1px solid #d8e3f3; border-radius: 12px; padding: 14px; }
+              </style>
+            </head>
+            <body>
+              <h1>LINDA3 Antwort</h1>
+              <p style="margin-top:0;color:#61738c;">Exportiert am ${app.utils.nowStamp()}</p>
+              <div class="box">${bubble.innerHTML}</div>
+            </body>
+          </html>
+        `);
+
+        win.document.close();
+        setTimeout(() => {
+          win.focus();
+          win.print();
+        }, 260);
+      },
+
+      buildFlashcardsFromText: (text) => {
+        const lines = String(text || '')
+          .replace(/\r/g, '')
+          .split('\n')
+          .map((l) => l.trim())
+          .filter(Boolean);
+
+        const bullets = lines
+          .filter((l) => /^[-*]|^\d+\./.test(l))
+          .map((l) => l.replace(/^[-*]\s*/, '').replace(/^\d+\.\s*/, '').trim())
+          .filter((l) => l.length > 7);
+
+        const paragraphs = lines
+          .filter((l) => !/^[-*]|^\d+\./.test(l) && l.length > 20)
+          .slice(0, 12);
+
+        const seed = (bullets.length ? bullets : paragraphs).slice(0, 16);
+        if (!seed.length) {
+          return [{
+            question: 'Keine Karten erkannt',
+            answer: 'Bitte zuerst eine inhaltliche Antwort erzeugen und dann erneut öffnen.'
+          }];
+        }
+
+        return seed.map((part, idx) => {
+          const q = `Kernpunkt ${idx + 1}`;
+          const a = part;
+          return { question: q, answer: a };
+        });
+      },
+
+      openFlashcardsTab: (forcedText) => {
+        const text = forcedText || (() => {
+          const s = app.logic.activeSession();
+          if (!s) return '';
+          const msg = [...s.messages].reverse().find((m) => m.role === 'assistant' && !/^❌/.test(m.content));
+          return msg ? msg.content : '';
+        })();
+
+        const cards = app.logic.buildFlashcardsFromText(text);
+        const payload = {
+          cards,
+          generatedAt: app.utils.nowStamp(),
+          sourceLength: String(text || '').length
+        };
+
+        localStorage.setItem(CARDS_KEY, JSON.stringify(payload));
+        const target = `${window.location.pathname}?view=cards`;
+        const tab = window.open(target, '_blank', 'noopener');
+        if (!tab) alert('Popup blockiert. Bitte Popups erlauben, um Karten in neuem Tab zu öffnen.');
+      },
+
+      clearAll: () => {
+        if (!confirm('Alle Verläufe wirklich löschen?')) return;
+        app.state.sessions = [];
+        app.state.activeId = null;
+        app.ui.log.innerHTML = '';
+        app.utils.save();
+        app.logic.newChat();
+      },
+
+      openFeedback: () => {
+        const s = app.logic.activeSession();
+        let body = 'Mein Feedback zu LINDA3:%0D%0A%0D%0A';
+        if (s) {
+          (s.messages || []).forEach((m) => {
+            body += `${m.role === 'user' ? 'Ich' : 'LINDA3'}: ${encodeURIComponent(m.content)}%0D%0A`;
+          });
+        }
+        window.location.href = `mailto:KI-TEST@GMX.COM?subject=Feedback LINDA3&body=${body}`;
+      },
+
+      testIliasConnection: async () => {
+        const result = document.getElementById('ilias-test-result');
+        const endpoint = document.getElementById('inp-ilias-endpoint').value.trim();
+        if (!endpoint) {
+          result.textContent = 'Bitte zuerst eine Endpoint URL eintragen.';
+          return;
+        }
+
+        result.textContent = 'Teste Verbindung...';
+
+        try {
+          const res = await fetch(endpoint, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              ...(document.getElementById('inp-ilias-token').value.trim() ? { 'Authorization': `Bearer ${document.getElementById('inp-ilias-token').value.trim()}` } : {})
+            },
+            body: JSON.stringify({ ping: 'linda3', ts: new Date().toISOString() })
+          });
+
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          result.textContent = 'Verbindung erfolgreich. Endpoint antwortet.';
+        } catch (e) {
+          result.textContent = `Test fehlgeschlagen: ${e.message || 'unbekannt'}`;
+        }
+      }
+    }
+  };
+
+  window.app = app;
+
+  const initCardTab = () => {
+    const root = document.body;
+    const payload = parseJSON(localStorage.getItem(CARDS_KEY) || '{}', {});
+    const cards = Array.isArray(payload.cards) ? payload.cards : [];
+
+    root.innerHTML = `
+      <div class="cards-layout">
+        <div class="cards-top">
+          <div>
+            <h1 class="cards-title">LINDA3 Lernkarten</h1>
+            <p class="cards-sub">Generiert: ${app.utils.safeText(payload.generatedAt || 'unbekannt')} • Karten: ${cards.length}</p>
+          </div>
+          <button class="btn-icon" onclick="window.close()">Schließen</button>
+        </div>
+        <main class="cards-body" id="cards-body"></main>
+      </div>
+    `;
+
+    const body = document.getElementById('cards-body');
+    if (!cards.length) {
+      body.innerHTML = '<div class="state-msg">Keine Lernkarten vorhanden. Öffne zuerst im Haupttab eine Antwort und klicke dann auf Karten.</div>';
+      return;
+    }
+
+    body.innerHTML = cards.map((card, idx) => `
+      <article class="flash" data-card="${idx}">
+        <button type="button" aria-label="Karte ${idx + 1} umdrehen">
+          <div class="flash-inner">
+            <div class="flash-face front">
+              <p class="flash-kicker">Frage</p>
+              <h4>${app.utils.safeText(card.question)}</h4>
+              <p>Tippen zum Umdrehen</p>
+            </div>
+            <div class="flash-face back">
+              <p class="flash-kicker">Antwort</p>
+              <p>${app.utils.safeText(card.answer)}</p>
+            </div>
+          </div>
+        </button>
+      </article>
+    `).join('');
+
+    body.addEventListener('click', (e) => {
+      const card = e.target.closest('.flash');
+      if (!card) return;
+      card.classList.toggle('flipped');
+    });
+  };
+
+  const initMainApp = () => {
+    app.utils.load();
+    app.ui.updateDomainUI();
+    app.ui.renderSourceToolbar();
+
+    if (app.state.consentGiven) {
+      document.getElementById('modal-disclaimer').classList.remove('open');
+    }
+
+    const c1 = document.getElementById('consent-data');
+    const c2 = document.getElementById('consent-forward');
+    const start = document.getElementById('btn-start-disclaimer');
+    const syncStart = () => { start.disabled = !(c1.checked && c2.checked); };
+    c1.addEventListener('change', syncStart);
+    c2.addEventListener('change', syncStart);
+
+    app.ui.input.addEventListener('input', function () {
+      this.style.height = 'auto';
+      this.style.height = Math.min(this.scrollHeight, 180) + 'px';
+
+      const val = this.value;
+      if (val.startsWith('/')) {
+        const q = val.slice(1).toLowerCase();
+        const matches = (app.state.settings.snippets || [])
+          .filter((s) => s.toLowerCase().includes(q))
+          .slice(0, 12);
+        app.ui.showSnippetPopup(matches);
+      } else {
+        document.getElementById('snippet-popup').classList.remove('active');
+      }
+    });
+
+    app.ui.input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        app.logic.sendMessage();
+      }
+    });
+
+    let sendThrottle = 0;
+    const triggerSend = (e) => {
+      if (e) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+      const now = Date.now();
+      if (now - sendThrottle < 300) return;
+      sendThrottle = now;
+      app.logic.sendMessage();
+    };
+
+    app.ui.sendBtn.addEventListener('click', triggerSend);
+    app.ui.sendBtn.addEventListener('touchend', triggerSend, { passive: false });
+
+    document.getElementById('snippet-popup').addEventListener('click', (e) => {
+      const item = e.target.closest('.snippet-item');
+      if (!item) return;
+      app.logic.insertSnippet(decodeURIComponent(item.dataset.snippet || ''));
+    });
+
+    document.getElementById('source-toolbar').addEventListener('change', (e) => {
+      const cb = e.target.closest('[data-source-cb]');
+      if (!cb) return;
+      const key = cb.getAttribute('data-source-cb');
+      app.state.settings.sources[key] = cb.checked;
+      if (key === 'ilias' && cb.checked) app.state.settings.ilias.enabled = true;
+      app.utils.save();
+      app.ui.updateDomainUI();
+      app.ui.renderSourceToolbar();
+    });
+
+    document.getElementById('source-toggle-list').addEventListener('change', (e) => {
+      const cb = e.target.closest('[data-source-setting]');
+      if (!cb) return;
+      app.state.settings.sources[cb.getAttribute('data-source-setting')] = cb.checked;
+    });
+
+    document.getElementById('snippet-list-container').addEventListener('click', (e) => {
+      const btn = e.target.closest('[data-remove-snippet]');
+      if (!btn) return;
+      app.logic.removeSnippet(Number(btn.getAttribute('data-remove-snippet')));
+    });
+
+    document.getElementById('session-list').addEventListener('click', (e) => {
+      const item = e.target.closest('[data-session-id]');
+      if (!item) return;
+      app.logic.switchSession(item.getAttribute('data-session-id'));
+    });
+
+    app.ui.log.addEventListener('click', (e) => {
+      const btn = e.target.closest('[data-action]');
+      if (!btn) return;
+      const action = btn.getAttribute('data-action');
+      if (action === 'copy') app.logic.copyBubble(btn);
+      if (action === 'share') app.logic.shareBubble(btn);
+      if (action === 'pdf') app.logic.pdfBubble(btn);
+      if (action === 'cards') {
+        const text = btn.closest('.msg-wrap')?.querySelector('.md')?.innerText || '';
+        app.logic.openFlashcardsTab(text);
+      }
+      if (action === 'feedback') app.ui.openModal('modal-feedback');
+    });
+
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('#snippet-popup') && !e.target.closest('.input-wrap')) {
+        document.getElementById('snippet-popup').classList.remove('active');
+      }
+      if (e.target.classList.contains('modal-overlay')) app.ui.closeModals();
+    });
+
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', app.ui.syncViewportInsets, { passive: true });
+      window.visualViewport.addEventListener('scroll', app.ui.syncViewportInsets, { passive: true });
+      app.ui.syncViewportInsets();
+    }
+
+    if (app.state.consentGiven && app.state.sessions.length === 0) {
+      app.logic.newChat();
+    } else if (app.state.sessions.length > 0) {
+      const activeExists = app.state.sessions.some((s) => s.id === app.state.activeId);
+      if (!activeExists) app.state.activeId = app.state.sessions[0].id;
+      app.logic.switchSession(app.state.activeId);
+    }
+
+    window.addEventListener('offline', () => {
+      const bubble = app.ui.createBubble('assistant', '⚠️ Offline erkannt: Antworten über APIs sind aktuell nicht verfügbar.');
+      app.ui.log.appendChild(bubble);
+      app.ui.scrollBottom();
+    });
+  };
+
+  const params = new URLSearchParams(window.location.search);
+  if (params.get('view') === 'cards') {
+    initCardTab();
+  } else {
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initMainApp);
+    } else {
+      initMainApp();
+    }
+  }
+})();
+</script>
+</body>
+</html>
