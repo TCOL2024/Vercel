@@ -2492,20 +2492,40 @@
 
             await new Promise((resolve) => setTimeout(resolve, 1000));
 
+            const deepseekPayload = {
+              ...payload,
+              routing: {
+                ...(payload.routing || {}),
+                preferred_model: 'deepseek'
+              },
+              clientMeta: {
+                ...(payload.clientMeta || {}),
+                channel: 'deepseek'
+              }
+            };
+
             try {
               deepParsed = await app.logic.requestAnswer(
                 DEEPSEEK_API_ENDPOINT,
-                {
-                  ...payload,
-                  routing: {
-                    ...(payload.routing || {}),
-                    preferred_model: 'deepseek'
-                  }
-                },
+                deepseekPayload,
                 controller.signal
               );
             } catch (e) {
-              deepParsed = { answer: `❌ Schnellmodus Fehler: ${e?.message || 'unbekannt'}`, sources: [] };
+              const msg = String(e?.message || '');
+              const missingDeepseekRoute = msg.includes('HTTP 404') && DEEPSEEK_API_ENDPOINT !== API_ENDPOINT;
+              if (missingDeepseekRoute) {
+                try {
+                  deepParsed = await app.logic.requestAnswer(
+                    API_ENDPOINT,
+                    deepseekPayload,
+                    controller.signal
+                  );
+                } catch (fallbackErr) {
+                  deepParsed = { answer: `❌ Schnellmodus Fehler: ${fallbackErr?.message || 'unbekannt'}`, sources: [] };
+                }
+              } else {
+                deepParsed = { answer: `❌ Schnellmodus Fehler: ${e?.message || 'unbekannt'}`, sources: [] };
+              }
             }
 
             s.messages.push({
