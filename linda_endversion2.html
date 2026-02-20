@@ -1316,6 +1316,10 @@
               ...structuredClone(DEFAULT_STATE.settings.prompting),
               ...((parsed.settings && parsed.settings.prompting) || {})
             },
+            cardsWebhook: {
+              ...structuredClone(DEFAULT_STATE.settings.cardsWebhook),
+              ...((parsed.settings && parsed.settings.cardsWebhook) || {})
+            },
             sources: {
               ...structuredClone(DEFAULT_STATE.settings.sources),
               ...((parsed.settings && parsed.settings.sources) || {})
@@ -1370,9 +1374,17 @@
         const parsed = parseJSON(rawText, null);
         if (!parsed) return { answer: rawText, sources: [] };
         if (typeof parsed === 'string') return { answer: parsed, sources: [] };
+        const altSources =
+          parsed.sources ||
+          parsed.quellen ||
+          parsed.references ||
+          parsed.citations ||
+          parsed.links ||
+          (parsed.metadata && parsed.metadata.sources) ||
+          [];
         return {
           answer: String(parsed.answer || parsed.response || parsed.text || parsed.output || rawText),
-          sources: Array.isArray(parsed.sources) ? parsed.sources : []
+          sources: Array.isArray(altSources) ? altSources : []
         };
       },
       nowStamp: () => new Date().toLocaleString('de-DE'),
@@ -1417,6 +1429,11 @@
         document.getElementById('inp-prompting-enabled').checked = Boolean(settings.prompting && settings.prompting.enabled);
         document.getElementById('inp-prompting-json').value = JSON.stringify(
           app.utils.getPromptingConfig(),
+          null,
+          2
+        );
+        document.getElementById('inp-cards-webhook-json').value = JSON.stringify(
+          app.state.settings.cardsWebhook || DEFAULT_CARDS_WEBHOOK_JSON,
           null,
           2
         );
@@ -1572,6 +1589,22 @@
         return row;
       },
 
+      hideSelectionMenu: () => {
+        const menu = document.getElementById('selection-menu');
+        menu.classList.remove('active');
+      },
+
+      showSelectionMenu: (x, y) => {
+        const menu = document.getElementById('selection-menu');
+        const vw = window.innerWidth;
+        const vh = window.innerHeight;
+        const left = Math.min(Math.max(8, x), vw - 250);
+        const top = Math.min(Math.max(8, y), vh - 80);
+        menu.style.left = `${left}px`;
+        menu.style.top = `${top}px`;
+        menu.classList.add('active');
+      },
+
       renderModeCards: () => {
         const cfg = app.utils.getPromptingConfig();
         const cards = Array.isArray(cfg.modeCards) ? cfg.modeCards : [];
@@ -1683,6 +1716,15 @@
           app.state.settings.prompting.config = parsedCfg;
         } catch (_) {
           alert('Prompting-JSON ist ungültig. Bitte prüfen.');
+          return;
+        }
+
+        try {
+          const rawCardsCfg = document.getElementById('inp-cards-webhook-json').value.trim();
+          const parsedCardsCfg = rawCardsCfg ? JSON.parse(rawCardsCfg) : structuredClone(DEFAULT_CARDS_WEBHOOK_JSON);
+          app.state.settings.cardsWebhook = parsedCardsCfg;
+        } catch (_) {
+          alert('Lernkarten-Webhook-JSON ist ungültig. Bitte prüfen.');
           return;
         }
 
@@ -1845,6 +1887,124 @@
         return out.slice(0, 6);
       },
 
+      openCardsTabWithPayload: (payload) => {
+        localStorage.setItem(CARDS_KEY, JSON.stringify(payload));
+        const target = `${window.location.pathname}?view=cards`;
+        const tab = window.open(target, '_blank', 'noopener');
+        if (!tab) alert('Popup blockiert. Bitte Popups erlauben, um Karten in neuem Tab zu öffnen.');
+      },
+
+      prepareSelectionDraftFromEvent: (evt) => {
+        const md = evt.target.closest('.msg-row.assistant .md');
+        if (!md) return false;
+        const sel = window.getSelection();
+        if (!sel || sel.rangeCount === 0) return false;
+        const txt = String(sel.toString() || '').trim();
+        const cfg = app.state.settings.cardsWebhook || DEFAULT_CARDS_WEBHOOK_JSON;
+        const minChars = Math.max(8, Number(cfg.minSelectionChars || 24));
+        if (!txt || txt.length < minChars) return false;
+        if (!md.contains(sel.anchorNode) || !md.contains(sel.focusNode)) return false;
+        app.state.selectionDraft = { text: txt, ts: app.utils.now() };
+        return true;
+      },
+
+      requestCardsFromSelection: async () => {
+        const draft = app.state.selectionDraft;
+        if (!draft || !draft.text) return;
+        const cfg = app.state.settings.cardsWebhook || DEFAULT_CARDS_WEBHOOK_JSON;
+        if (!cfg.enabled) {
+          alert('Lernkarten-Webhook ist deaktiviert (Einstellungen).');
+          return;
+        }
+        if (app.state.isCardsRequestRunning) return;
+        if (cfg.requireConfirmation && !confirm('Für den markierten Bereich Lernkarten über den Webhook erstellen?')) return;
+
+        app.state.isCardsRequestRunning = true;
+        app.ui.hideSelectionMenu();
+
+        try {
+          const targetCount = Number(cfg.targetCount || 8);
+          const domain = app.state.settings.domain || '';
+
+          let raw = '';
+          let parsed = null;
+
+          const primaryRes = await fetch(API_ENDPOINT, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              task: 'flashcards_selection',
+              route: String(cfg.route || 'flashcards.selection.v1'),
+              selectionText: draft.text,
+              fachmodus: domain,
+              history: [],
+              cardsConfig: {
+                targetCount,
+                adaptive: Boolean(cfg.adaptive)
+              }
+            })
+          });
+
+          if (primaryRes.ok) {
+            raw = await primaryRes.text();
+            parsed = parseCardsWebhookResponse(raw);
+          } else {
+            // Kompatibilitäts-Fallback für bestehende /api/bot-/Make-Flows
+            const fallbackPrompt =
+              'Erzeuge aus dem folgenden markierten Text präzise Lernkarten. ' +
+              `Erstelle genau ${targetCount} Karten. Antworte ausschließlich als JSON mit deckTitle und cards[].\n\n` +
+              'Format:\n' +
+              '{"deckTitle":"...","cards":[{"question":"...","answer":"..."}]}\n\n' +
+              `Fachmodus: ${domain || 'Standard'}\n\n` +
+              `Markierter Text:\n${draft.text}`;
+
+            const fallbackRes = await fetch(API_ENDPOINT, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                question: app.utils.truncate(fallbackPrompt, 2400),
+                fachmodus: domain,
+                history: []
+              })
+            });
+
+            if (!fallbackRes.ok) {
+              let detail = '';
+              try {
+                const err = await fallbackRes.json();
+                detail = err?.error ? `: ${err.error}` : '';
+              } catch (_) {}
+              throw new Error(`HTTP ${fallbackRes.status}${detail}`);
+            }
+
+            raw = await fallbackRes.text();
+            parsed = parseCardsWebhookResponse(raw);
+          }
+
+          let cards = parsed?.cards || [];
+          if (!cards.length) {
+            cards = app.logic.buildFlashcardsFromText(draft.text).map((c) => ({
+              ...c,
+              id: hashCardId(c.question, c.answer),
+              adaptive: { ease: 2, reps: 0, dueAt: 0 }
+            }));
+          }
+
+          app.logic.openCardsTabWithPayload({
+            cards: cards.slice(0, targetCount),
+            generatedAt: app.utils.nowStamp(),
+            sourceLength: draft.text.length,
+            adaptive: Boolean(cfg.adaptive),
+            deckTitle: parsed?.deckTitle || 'Lernkarten aus Auswahl',
+            sourceType: 'selection-webhook'
+          });
+        } catch (e) {
+          alert(`Lernkarten-Webhook Fehler: ${e.message || 'unbekannt'}`);
+        } finally {
+          app.state.isCardsRequestRunning = false;
+        }
+      },
+
       sanitizeSourceList: (items) => {
         return (Array.isArray(items) ? items : [])
           .map((item) => {
@@ -1859,6 +2019,64 @@
           .slice(0, 10);
       },
 
+      extractSourcesFromRenderedMarkdown: (md) => {
+        if (!md) return [];
+        const found = [];
+        const pushUrl = (urlText) => {
+          const url = String(urlText || '').trim();
+          if (!/^https?:\/\//i.test(url)) return;
+          found.push({ title: url, url });
+        };
+
+        md.querySelectorAll('a[href]').forEach((a) => {
+          const href = String(a.getAttribute('href') || '').trim();
+          if (!/^https?:\/\//i.test(href)) return;
+          found.push({ title: (a.textContent || href).trim(), url: href });
+        });
+
+        const nodes = md.querySelectorAll('h1,h2,h3,h4,h5,p,strong');
+        let sourceAnchor = null;
+        nodes.forEach((n) => {
+          if (sourceAnchor) return;
+          if (/^quellen?\s*:?\s*$/i.test((n.textContent || '').trim())) sourceAnchor = n;
+        });
+
+        if (sourceAnchor) {
+          let cur = sourceAnchor.nextElementSibling;
+          let hops = 0;
+          while (cur && hops < 5) {
+            if (cur.tagName === 'UL' || cur.tagName === 'OL') {
+              cur.querySelectorAll('a[href]').forEach((a) => {
+                const href = String(a.getAttribute('href') || '').trim();
+                if (/^https?:\/\//i.test(href)) found.push({ title: (a.textContent || href).trim(), url: href });
+              });
+              cur.querySelectorAll('li').forEach((li) => {
+                const text = (li.textContent || '').trim();
+                const m = text.match(/https?:\/\/\S+/gi) || [];
+                m.forEach(pushUrl);
+              });
+              break;
+            }
+            const text = (cur.textContent || '').trim();
+            const urls = text.match(/https?:\/\/\S+/gi) || [];
+            urls.forEach(pushUrl);
+            if (urls.length) break;
+            cur = cur.nextElementSibling;
+            hops += 1;
+          }
+        }
+
+        const unique = [];
+        const seen = new Set();
+        found.forEach((s) => {
+          const key = `${s.title}|${s.url}`.toLowerCase();
+          if (seen.has(key)) return;
+          seen.add(key);
+          unique.push(s);
+        });
+        return unique.slice(0, 10);
+      },
+
       decorateBubble: (md, sources) => {
         md.querySelectorAll('table').forEach((table) => {
           const wrap = document.createElement('div');
@@ -1868,7 +2086,9 @@
         });
 
         const sourceList = app.logic.sanitizeSourceList(sources);
-        if (!sourceList.length) {
+        const fallbackSources = sourceList.length ? [] : app.logic.extractSourcesFromRenderedMarkdown(md);
+        const finalSources = sourceList.length ? sourceList : fallbackSources;
+        if (!finalSources.length) {
           return;
         }
 
@@ -1879,7 +2099,7 @@
         title.textContent = 'Quellen';
         const ul = document.createElement('ul');
         ul.className = 'source-list';
-        sourceList.forEach((s) => {
+        finalSources.forEach((s) => {
           const li = document.createElement('li');
           if (/^https?:\/\//i.test(s.url)) {
             li.innerHTML = `<a href="${encodeURI(s.url)}">${app.utils.safeText(s.title)}</a>`;
@@ -1979,6 +2199,15 @@
           loading.remove();
           s.messages.push({ role: 'assistant', content: parsed.answer, sources: parsed.sources });
           app.ui.log.appendChild(app.ui.createBubble('assistant', parsed.answer, parsed.sources));
+          if (!app.state.telemetry.firstSelectionHintShown) {
+            app.ui.log.appendChild(
+              app.ui.createBubble(
+                'assistant',
+                'Tipp: Du kannst Text in meiner Antwort markieren und per Rechtsklick direkt Lernkarten über den Webhook erstellen.'
+              )
+            );
+            app.state.telemetry.firstSelectionHintShown = true;
+          }
           app.utils.save();
           app.ui.scrollBottom();
         } catch (err) {
@@ -2460,9 +2689,29 @@
       if (action === 'feedback') app.ui.openModal('modal-feedback');
     });
 
+    app.ui.log.addEventListener('contextmenu', (e) => {
+      if (!app.logic.prepareSelectionDraftFromEvent(e)) return;
+      e.preventDefault();
+      app.ui.showSelectionMenu(e.clientX + 6, e.clientY + 6);
+    });
+
+    app.ui.log.addEventListener('mouseup', (e) => {
+      if (!app.logic.prepareSelectionDraftFromEvent(e)) return;
+      if (app.utils.isMobileClient()) {
+        app.ui.showSelectionMenu(e.clientX + 6, e.clientY + 6);
+      }
+    });
+
+    document.getElementById('selection-cards-btn').addEventListener('click', () => {
+      app.logic.requestCardsFromSelection();
+    });
+
     document.addEventListener('click', (e) => {
       if (!e.target.closest('#snippet-popup') && !e.target.closest('.input-wrap')) {
         document.getElementById('snippet-popup').classList.remove('active');
+      }
+      if (!e.target.closest('#selection-menu')) {
+        app.ui.hideSelectionMenu();
       }
       if (e.target.classList.contains('modal-overlay')) app.ui.closeModals();
     });
