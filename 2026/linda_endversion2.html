@@ -194,8 +194,11 @@
   }
 
   .source-chip input {
-    margin: 0;
-    accent-color: #0060c4;
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+    pointer-events: none;
   }
 
   #chat-log {
@@ -824,10 +827,26 @@
       max-width: 36vw;
     }
 
+    .source-toolbar {
+      padding: 7px 8px;
+      gap: 6px;
+    }
+
+    .source-chip {
+      padding: 6px 9px;
+      font-size: 0.73rem;
+    }
+
     .action-btn {
       flex: 1;
       text-align: center;
       min-width: 0;
+    }
+
+    header,
+    .input-area,
+    .cards-top {
+      backdrop-filter: none;
     }
   }
 
@@ -845,14 +864,14 @@
   <header>
     <div class="logo-wrap">
       <h1 class="logo">LINDA3</h1>
-      <div class="logo-sub" id="domain-summary">Stabiler Lernassistent mit Quellensteuerung</div>
+      <div class="logo-sub" id="domain-summary">Lernassistenz für geschulte Anwender</div>
     </div>
     <div id="domain-badge" class="pill">Standard</div>
     <div class="header-actions">
       <button class="btn-icon btn-primary" title="Neuer Chat" onclick="app.logic.newChat()">Neu</button>
       <button class="btn-icon" title="Lernkarten im neuen Tab" onclick="app.logic.openFlashcardsTab()">Karten</button>
       <button class="btn-icon" title="Verlauf" onclick="app.ui.openModal('modal-sessions')">Verlauf</button>
-      <button class="btn-icon" title="Einstellungen" onclick="app.ui.openModal('modal-settings')">Setup</button>
+      <button class="btn-icon" title="Einstellungen" onclick="app.ui.openModal('modal-settings')">Einstellungen</button>
     </div>
   </header>
 
@@ -872,9 +891,9 @@
 <div id="modal-disclaimer" class="modal-overlay open">
   <div class="modal consent">
     <h3>Datenschutzhinweise</h3>
-    <p>Bitte keine vertraulichen personenbezogenen Daten eingeben. Inhalte können an konfigurierte Dienste übermittelt werden.</p>
+    <p>Bitte keine vertraulichen personenbezogenen Daten eingeben. Inhalte können an aktivierte Dienste übermittelt werden.</p>
     <ul>
-      <li>LLM-Anbieter (z.B. OpenAI / Anthropic)</li>
+      <li>KI-Dienste (z.B. OpenAI / Anthropic)</li>
       <li>Automations-Dienste (z.B. Make)</li>
       <li>Optional ILIAS-Schnittstelle (falls aktiviert)</li>
     </ul>
@@ -913,8 +932,8 @@
     </div>
 
     <div class="section" style="margin-top:10px;">
-      <h4>Quellen aktivieren/deaktivieren</h4>
-      <p class="mini">Diese Schalter werden mit jeder Anfrage an die API übertragen.</p>
+      <h4>Wissensquellen</h4>
+      <p class="mini">Du kannst die genutzten Wissensbereiche hier ein- und ausschalten.</p>
       <div class="toggle-list" id="source-toggle-list"></div>
     </div>
 
@@ -998,10 +1017,10 @@
   const APP_VERSION = 3;
 
   const SOURCE_DEFS = [
-    { key: 'llm', label: 'LLM Wissen', default: true },
-    { key: 'web', label: 'Web Quellen', default: true },
-    { key: 'script', label: 'Skripte/PDF', default: true },
-    { key: 'ilias', label: 'ILIAS', default: false }
+    { key: 'llm', label: 'Basiswissen', default: true },
+    { key: 'web', label: 'Aktuelle Informationen', default: true },
+    { key: 'script', label: 'Ihre Unterlagen', default: true },
+    { key: 'ilias', label: 'Kursraum (ILIAS)', default: false }
   ];
 
   const DEFAULT_STATE = {
@@ -1049,9 +1068,11 @@
         return text.slice(0, Math.max(0, max - 3)) + '...';
       },
       save: () => {
-        const clone = structuredClone(app.state);
-        clone.requestController = null;
-        clone.isSending = false;
+        const clone = {
+          ...app.state,
+          requestController: null,
+          isSending: false
+        };
         try {
           localStorage.setItem(STORAGE_KEY, JSON.stringify(clone));
         } catch (e) {
@@ -1278,9 +1299,9 @@
 
       updateDomainUI: () => {
         const domain = app.state.settings.domain || 'Standard';
+        const activeCount = app.utils.activeSources().length;
         document.getElementById('domain-badge').textContent = domain;
-        const src = app.utils.activeSources();
-        document.getElementById('domain-summary').textContent = `${domain} • Quellen aktiv: ${src.length ? src.join(', ') : 'keine'}`;
+        document.getElementById('domain-summary').textContent = `Fachmodus: ${domain} • Wissensbereiche: ${activeCount} aktiv`;
       },
 
       loadingRow: () => {
@@ -1337,10 +1358,10 @@
         app.ui.closeModals();
 
         app.logic.sendSystemMessage(
-          'Willkommen bei **LINDA3**.\\n\\n' +
-          '- Nutze die Quellen-Schalter direkt oben.\\n' +
-          '- Öffne Lernkarten über `Karten` oder pro Antwort über `Karten`.\\n' +
-          '- ILIAS kann im Setup aktiviert und je Anfrage zugeschaltet werden.'
+          'Willkommen bei **LINDA3**.\n\n' +
+          '- Nutze die Schalter für Wissensbereiche direkt oben.\n' +
+          '- Öffne Lernkarten über `Karten` oder pro Antwort über `Karten`.\n' +
+          '- ILIAS kann in den Einstellungen aktiviert und je Anfrage zugeschaltet werden.'
         );
       },
 
@@ -1471,6 +1492,8 @@
 
         const text = app.ui.input.value.trim();
         if (!text) return;
+        app.ui.input.value = '';
+        app.ui.input.dispatchEvent(new Event('input'));
 
         let s = app.logic.activeSession();
         if (!s) {
@@ -1542,8 +1565,6 @@
           s.messages.push({ role: 'assistant', content: parsed.answer, sources: parsed.sources });
           app.ui.log.appendChild(app.ui.createBubble('assistant', parsed.answer, parsed.sources));
           app.utils.save();
-          app.ui.input.value = '';
-          app.ui.input.dispatchEvent(new Event('input'));
           app.ui.scrollBottom();
         } catch (err) {
           loading.remove();
@@ -1639,34 +1660,98 @@
       },
 
       buildFlashcardsFromText: (text) => {
-        const lines = String(text || '')
+        const clean = String(text || '')
           .replace(/\r/g, '')
+          .replace(/`{1,3}[^`]*`{1,3}/g, '')
+          .replace(/\*\*|__/g, '')
+          .replace(/\[(.*?)\]\((.*?)\)/g, '$1')
+          .trim();
+
+        const lines = clean
           .split('\n')
           .map((l) => l.trim())
-          .filter(Boolean);
+          .filter(Boolean)
+          .filter((l) => !/^quellen?\s*:?\s*$/i.test(l));
 
         const bullets = lines
           .filter((l) => /^[-*]|^\d+\./.test(l))
           .map((l) => l.replace(/^[-*]\s*/, '').replace(/^\d+\.\s*/, '').trim())
-          .filter((l) => l.length > 7);
+          .filter((l) => l.length > 10);
 
-        const paragraphs = lines
-          .filter((l) => !/^[-*]|^\d+\./.test(l) && l.length > 20)
-          .slice(0, 12);
+        const sentences = clean
+          .split(/(?<=[.!?])\s+/)
+          .map((s) => s.trim())
+          .filter((s) => s.length > 24)
+          .filter((s) => !/^quellen?\s*:?\s*$/i.test(s));
 
-        const seed = (bullets.length ? bullets : paragraphs).slice(0, 16);
-        if (!seed.length) {
+        const seeds = [...bullets, ...sentences].slice(0, 30);
+        const cards = [];
+        const used = new Set();
+
+        const addCard = (question, answer) => {
+          const q = String(question || '').trim();
+          const a = String(answer || '').trim();
+          if (!q || !a) return;
+          if (q.length < 8 || a.length < 8) return;
+          const key = `${q.toLowerCase()}|${a.toLowerCase()}`;
+          if (used.has(key)) return;
+          used.add(key);
+          cards.push({ question: q, answer: a });
+        };
+
+        const toQuestionFromFact = (part) => {
+          const txt = part.replace(/\s+/g, ' ').trim();
+          const colon = txt.match(/^([^:]{3,80}):\s+(.{8,})$/);
+          if (colon) {
+            return {
+              question: `Was bedeutet ${colon[1].trim()}?`,
+              answer: colon[2].trim()
+            };
+          }
+
+          const isDef = txt.match(/^(.{3,80}?)\s+(ist|sind)\s+(.{10,})$/i);
+          if (isDef) {
+            return {
+              question: `Was ist ${isDef[1].trim()}?`,
+              answer: `${isDef[1].trim()} ${isDef[2]} ${isDef[3].trim()}`
+            };
+          }
+
+          const hasBecause = txt.match(/^(.{8,120}?)\s+(weil|da)\s+(.{8,})$/i);
+          if (hasBecause) {
+            return {
+              question: `Warum ${hasBecause[1].trim()}?`,
+              answer: `${hasBecause[2]} ${hasBecause[3].trim()}`
+            };
+          }
+
+          const startsWithVerb = txt.match(/^(Nutze|Verwende|Beachte|Prüfe|Aktiviere|Deaktiviere|Wähle|Öffne)\s+(.{6,})$/i);
+          if (startsWithVerb) {
+            return {
+              question: `Welche Handlung wird empfohlen?`,
+              answer: `${startsWithVerb[1]} ${startsWithVerb[2].trim()}`
+            };
+          }
+
+          return {
+            question: `Erkläre den folgenden Zusammenhang:`,
+            answer: txt
+          };
+        };
+
+        seeds.forEach((seed) => {
+          const qa = toQuestionFromFact(seed);
+          addCard(qa.question, qa.answer);
+        });
+
+        if (!cards.length) {
           return [{
-            question: 'Keine Karten erkannt',
-            answer: 'Bitte zuerst eine inhaltliche Antwort erzeugen und dann erneut öffnen.'
+            question: 'Keine Lernfragen erkannt',
+            answer: 'Bitte zuerst eine fachliche Antwort erzeugen und dann Lernkarten öffnen.'
           }];
         }
 
-        return seed.map((part, idx) => {
-          const q = `Kernpunkt ${idx + 1}`;
-          const a = part;
-          return { question: q, answer: a };
-        });
+        return cards.slice(0, 18);
       },
 
       openFlashcardsTab: (forcedText) => {
