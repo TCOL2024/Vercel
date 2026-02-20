@@ -196,6 +196,45 @@
     gap: 6px;
   }
 
+  .compare-bar {
+    border-bottom: 1px solid #d9e4f5;
+    background: #f7fbff;
+    padding: 8px 12px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 0.85rem;
+    color: #23466f;
+  }
+
+  .compare-bar .label {
+    font-weight: 800;
+    color: #0d4c96;
+    white-space: nowrap;
+  }
+
+  .compare-canvas {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  .compare-col {
+    border: 1px solid #d8e3f2;
+    border-radius: 12px;
+    background: #fbfdff;
+    padding: 10px 10px 8px;
+  }
+
+  .compare-col-head {
+    font-size: 0.76rem;
+    font-weight: 800;
+    color: #0d4c96;
+    margin-bottom: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+
   .source-chip {
     border: 1px solid #d2dded;
     background: #fff;
@@ -951,6 +990,17 @@
       gap: 10px;
       flex-wrap: wrap;
     }
+
+    .compare-bar {
+      font-size: 0.92rem;
+      padding: 10px 12px;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .compare-canvas {
+      grid-template-columns: 1fr;
+    }
   }
 
   body.mobile-fallback .logo-sub {
@@ -1035,6 +1085,18 @@
     <label class="fastmode-choice">
       <input id="fastmode-main-off" type="radio" name="fastmode-main" value="off">
       <span>Aus</span>
+    </label>
+  </div>
+
+  <div class="compare-bar">
+    <span class="label">Antwortmodus</span>
+    <label class="fastmode-choice">
+      <input id="compare-main-off" type="radio" name="compare-main" value="off">
+      <span>Standard</span>
+    </label>
+    <label class="fastmode-choice">
+      <input id="compare-main-on" type="radio" name="compare-main" value="on">
+      <span>Canvas Vergleich</span>
     </label>
   </div>
 
@@ -1172,6 +1234,7 @@
   'use strict';
 
   const API_ENDPOINT = window.LINDA_API_ENDPOINT || '/api/bot';
+  const DEEPSEEK_API_ENDPOINT = window.LINDA_DEEPSEEK_ENDPOINT || API_ENDPOINT;
   const STORAGE_KEY = 'linda3_state';
   const REQUEST_MEMORY_KEY = 'linda3_request_memory';
   const CARDS_KEY = 'linda3_cards';
@@ -1244,6 +1307,9 @@
       fastMode: {
         enabled: false,
         consentAccepted: false
+      },
+      compareMode: {
+        enabled: false
       },
       prompting: {
         enabled: false,
@@ -1377,6 +1443,10 @@
             fastMode: {
               ...structuredClone(DEFAULT_STATE.settings.fastMode),
               ...((parsed.settings && parsed.settings.fastMode) || {})
+            },
+            compareMode: {
+              ...structuredClone(DEFAULT_STATE.settings.compareMode),
+              ...((parsed.settings && parsed.settings.compareMode) || {})
             },
             prompting: {
               ...structuredClone(DEFAULT_STATE.settings.prompting),
@@ -1513,6 +1583,14 @@
         if (off) off.checked = !fastEnabled;
       },
 
+      syncCompareModeControls: () => {
+        const compareEnabled = Boolean(app.state.settings.compareMode && app.state.settings.compareMode.enabled);
+        const on = document.getElementById('compare-main-on');
+        const off = document.getElementById('compare-main-off');
+        if (on) on.checked = compareEnabled;
+        if (off) off.checked = !compareEnabled;
+      },
+
       renderSourceToolbar: () => {
         const bar = document.getElementById('source-toolbar');
         const active = app.state.settings.sources || {};
@@ -1635,6 +1713,55 @@
         return row;
       },
 
+      createCompareBubble: (makeData, deepseekData) => {
+        const row = document.createElement('div');
+        row.className = 'msg-row assistant';
+
+        const renderSection = (title, data) => {
+          const answer = String(data?.answer || '');
+          const mdRaw = marked.parse(answer.replace(/\$(.*?)\$/g, '**$1**'));
+          const safe = DOMPurify.sanitize(mdRaw, {
+            ALLOWED_TAGS: ['p','br','strong','em','ul','ol','li','h1','h2','h3','h4','h5','pre','code','blockquote','table','thead','tbody','tr','th','td','a'],
+            ALLOWED_ATTR: ['href','target','rel']
+          });
+          const hasJudgmentSignal = /(?:\burteil(?:e|en)?\b|\bbeschluss(?:e|es|en)?\b|\baktenzeichen\b|\baz\.\s*[:\-]?)/i.test(answer);
+          const disclaimerHtml = hasJudgmentSignal
+            ? '<div class="case-disclaimer"><strong>Wichtiger Hinweis:</strong> Urteile (insbesondere Aktenzeichen und Inhalte) müssen immer zwingend im Original überprüft werden.</div>'
+            : '';
+          return `
+            <section class="compare-col">
+              <div class="compare-col-head">${app.utils.safeText(title)}</div>
+              <div class="md">${safe}</div>
+              ${disclaimerHtml}
+            </section>
+          `;
+        };
+
+        row.innerHTML = `
+          <div class="msg-wrap">
+            <div class="bubble assistant">
+              <div class="compare-canvas">
+                ${renderSection('Make-Flow', makeData)}
+                ${renderSection('DeepSeek', deepseekData)}
+              </div>
+            </div>
+          </div>
+        `;
+
+        const cols = row.querySelectorAll('.compare-col');
+        if (cols[0]) {
+          const md = cols[0].querySelector('.md');
+          app.utils.sanitizeLinks(md);
+          app.logic.decorateBubble(md, makeData?.sources || []);
+        }
+        if (cols[1]) {
+          const md = cols[1].querySelector('.md');
+          app.utils.sanitizeLinks(md);
+          app.logic.decorateBubble(md, deepseekData?.sources || []);
+        }
+        return row;
+      },
+
       setSendingState: (sending) => {
         app.state.isSending = sending;
         app.ui.input.disabled = sending;
@@ -1659,8 +1786,9 @@
         const domain = app.state.settings.domain || 'Standard';
         const activeCount = app.utils.activeSources().length;
         const isFast = Boolean(app.state.settings.fastMode && app.state.settings.fastMode.enabled);
+        const isCompare = Boolean(app.state.settings.compareMode && app.state.settings.compareMode.enabled);
         document.getElementById('domain-badge').textContent = isFast ? `${domain} ⚡` : domain;
-        document.getElementById('domain-summary').textContent = `Fachmodus: ${domain}${isFast ? ' • Schnellmodus aktiv' : ''} • Wissensbereiche: ${activeCount} aktiv`;
+        document.getElementById('domain-summary').textContent = `Fachmodus: ${domain}${isFast ? ' • Schnellmodus aktiv' : ''}${isCompare ? ' • Vergleich aktiv' : ''} • Wissensbereiche: ${activeCount} aktiv`;
       },
 
       loadingRow: () => {
@@ -1776,6 +1904,15 @@
         if (!s) return;
 
         s.messages.forEach((m) => {
+          if (m.role === 'assistant' && m.compare && typeof m.compare === 'object') {
+            app.ui.log.appendChild(
+              app.ui.createCompareBubble(
+                m.compare.make || { answer: '' },
+                m.compare.deepseek || { answer: '' }
+              )
+            );
+            return;
+          }
           const bubble = app.ui.createBubble(m.role, m.content, m.sources || []);
           app.ui.log.appendChild(bubble);
         });
@@ -2096,6 +2233,27 @@
         };
       },
 
+      requestAnswer: async (endpoint, payload, signal) => {
+        const res = await fetch(endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+          signal
+        });
+
+        if (!res.ok) {
+          let detail = '';
+          try {
+            const err = await res.json();
+            detail = err?.error ? `: ${err.error}` : '';
+          } catch (_) {}
+          throw new Error(`HTTP ${res.status}${detail}`);
+        }
+
+        const raw = await res.text();
+        return app.utils.parseApiAnswer(raw);
+      },
+
       requestCardsFromSelection: async () => {
         const draft = app.state.selectionDraft;
         if (!draft || !draft.text) return;
@@ -2321,28 +2479,46 @@
             }
           };
 
-          const res = await fetch(API_ENDPOINT, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload),
-            signal: controller.signal
-          });
+          const compareEnabled = Boolean(app.state.settings.compareMode && app.state.settings.compareMode.enabled);
+          if (compareEnabled) {
+            const [makeRes, deepRes] = await Promise.allSettled([
+              app.logic.requestAnswer(API_ENDPOINT, payload, controller.signal),
+              app.logic.requestAnswer(
+                DEEPSEEK_API_ENDPOINT,
+                {
+                  ...payload,
+                  routing: {
+                    ...(payload.routing || {}),
+                    preferred_model: 'deepseek'
+                  }
+                },
+                controller.signal
+              )
+            ]);
 
-          if (!res.ok) {
-            let detail = '';
-            try {
-              const err = await res.json();
-              detail = err?.error ? `: ${err.error}` : '';
-            } catch (_) {}
-            throw new Error(`HTTP ${res.status}${detail}`);
+            const makeParsed = makeRes.status === 'fulfilled'
+              ? makeRes.value
+              : { answer: `❌ Make-Flow Fehler: ${makeRes.reason?.message || 'unbekannt'}`, sources: [] };
+            const deepParsed = deepRes.status === 'fulfilled'
+              ? deepRes.value
+              : { answer: `❌ DeepSeek Fehler: ${deepRes.reason?.message || 'unbekannt'}`, sources: [] };
+
+            s.messages.push({
+              role: 'assistant',
+              content: `Make-Flow:\n${makeParsed.answer}\n\nDeepSeek:\n${deepParsed.answer}`,
+              sources: [],
+              compare: {
+                make: makeParsed,
+                deepseek: deepParsed
+              }
+            });
+            app.ui.log.appendChild(app.ui.createCompareBubble(makeParsed, deepParsed));
+          } else {
+            const parsed = await app.logic.requestAnswer(API_ENDPOINT, payload, controller.signal);
+            s.messages.push({ role: 'assistant', content: parsed.answer, sources: parsed.sources });
+            app.ui.log.appendChild(app.ui.createBubble('assistant', parsed.answer, parsed.sources));
           }
-
-          const raw = await res.text();
-          const parsed = app.utils.parseApiAnswer(raw);
-
           loading.remove();
-          s.messages.push({ role: 'assistant', content: parsed.answer, sources: parsed.sources });
-          app.ui.log.appendChild(app.ui.createBubble('assistant', parsed.answer, parsed.sources));
           if (!app.state.telemetry.firstSelectionHintShown) {
             app.ui.log.appendChild(
               app.ui.createBubble(
@@ -2713,6 +2889,7 @@
     app.ui.updateDomainUI();
     app.ui.renderSourceToolbar();
     app.ui.syncFastModeControls();
+    app.ui.syncCompareModeControls();
 
     if (app.state.consentGiven) {
       document.getElementById('modal-disclaimer').classList.remove('open');
@@ -2797,6 +2974,17 @@
     };
     if (fastMainOn) fastMainOn.addEventListener('change', syncFastMode);
     if (fastMainOff) fastMainOff.addEventListener('change', syncFastMode);
+
+    const compareMainOn = document.getElementById('compare-main-on');
+    const compareMainOff = document.getElementById('compare-main-off');
+    const syncCompareMode = () => {
+      const wantsOn = Boolean(compareMainOn && compareMainOn.checked);
+      app.state.settings.compareMode.enabled = wantsOn;
+      app.utils.save();
+      app.ui.updateDomainUI();
+    };
+    if (compareMainOn) compareMainOn.addEventListener('change', syncCompareMode);
+    if (compareMainOff) compareMainOff.addEventListener('change', syncCompareMode);
 
     document.getElementById('snippet-popup').addEventListener('click', (e) => {
       const item = e.target.closest('.snippet-item');
