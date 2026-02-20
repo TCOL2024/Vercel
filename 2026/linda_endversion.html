@@ -612,7 +612,7 @@
       <div id="snippet-popup"></div>
       <textarea id="chat-input" rows="1" placeholder="Schreibe deine Frage..."></textarea>
     </div>
-    <button id="send-btn" aria-label="Senden">➤</button>
+    <button id="send-btn" type="button" aria-label="Senden" onclick="app.logic.sendMessage()">➤</button>
   </div>
 </div>
 
@@ -1246,10 +1246,21 @@ window.addEventListener('load', () => {
     }
   });
 
-  app.ui.sendBtn.addEventListener('click', (e) => {
-    e.preventDefault();
+  let lastSendTriggerTs = 0;
+  const sendAction = (e) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    const now = Date.now();
+    if (now - lastSendTriggerTs < 350) return;
+    lastSendTriggerTs = now;
     app.logic.sendMessage();
-  });
+  };
+
+  app.ui.sendBtn.addEventListener('click', sendAction);
+  app.ui.sendBtn.addEventListener('pointerup', sendAction);
+  app.ui.sendBtn.addEventListener('touchend', sendAction, { passive: false });
 
   document.getElementById('snippet-popup').addEventListener('click', (e) => {
     const item = e.target.closest('.snippet-item');
