@@ -172,6 +172,30 @@
     min-height: 48px;
   }
 
+  .fastmode-bar {
+    border-top: 1px solid #d9e4f5;
+    border-bottom: 1px solid #d9e4f5;
+    background: #f7fbff;
+    padding: 8px 12px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 0.85rem;
+    color: #23466f;
+  }
+
+  .fastmode-bar .label {
+    font-weight: 800;
+    color: #0d4c96;
+    white-space: nowrap;
+  }
+
+  .fastmode-choice {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+
   .source-chip {
     border: 1px solid #d2dded;
     background: #fff;
@@ -909,6 +933,13 @@
     .mode-grid {
       grid-template-columns: 1fr;
     }
+
+    .fastmode-bar {
+      font-size: 0.92rem;
+      padding: 10px 12px;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
   }
 
   body.mobile-fallback .logo-sub {
@@ -984,6 +1015,18 @@
 
   <div id="chat-log"></div>
 
+  <div class="fastmode-bar">
+    <span class="label">Schnellmodus</span>
+    <label class="fastmode-choice">
+      <input id="fastmode-main-on" type="radio" name="fastmode-main" value="on">
+      <span>Ein</span>
+    </label>
+    <label class="fastmode-choice">
+      <input id="fastmode-main-off" type="radio" name="fastmode-main" value="off">
+      <span>Aus</span>
+    </label>
+  </div>
+
   <div class="input-area">
     <div class="input-wrap">
       <div id="snippet-popup"></div>
@@ -1044,15 +1087,6 @@
     <div class="section" style="margin-top:10px;">
       <h4>ILIAS</h4>
       <p class="mini">ILIAS wird nur per Schalter bei den Wissensquellen aktiviert. Keine Token-Eingabe im Frontend.</p>
-    </div>
-
-    <div class="section" style="margin-top:10px;">
-      <h4>Schnellmodus</h4>
-      <p class="mini">Wenn aktiv, wird beim Backend ein schneller Modellpfad angefragt (z.B. DeepSeek via Vercel-Variable).</p>
-      <div class="toggle-row" style="margin-top:8px;">
-        <label for="inp-fastmode-enabled">Schnellmodus aktivieren</label>
-        <input id="inp-fastmode-enabled" type="checkbox">
-      </div>
     </div>
 
     <div class="section" style="margin-top:10px;">
@@ -1446,7 +1480,6 @@
         const { settings } = app.state;
         document.getElementById('inp-name').value = settings.name || '';
         document.getElementById('inp-domain').value = settings.domain || '';
-        document.getElementById('inp-fastmode-enabled').checked = Boolean(settings.fastMode && settings.fastMode.enabled);
         document.getElementById('inp-prompting-enabled').checked = Boolean(settings.prompting && settings.prompting.enabled);
         document.getElementById('inp-prompting-json').value = JSON.stringify(
           app.utils.getPromptingConfig(),
@@ -1458,6 +1491,14 @@
           null,
           2
         );
+      },
+
+      syncFastModeControls: () => {
+        const fastEnabled = Boolean(app.state.settings.fastMode && app.state.settings.fastMode.enabled);
+        const on = document.getElementById('fastmode-main-on');
+        const off = document.getElementById('fastmode-main-off');
+        if (on) on.checked = fastEnabled;
+        if (off) off.checked = !fastEnabled;
       },
 
       renderSourceToolbar: () => {
@@ -1728,7 +1769,6 @@
       saveSettings: () => {
         app.state.settings.name = document.getElementById('inp-name').value.trim();
         app.state.settings.domain = document.getElementById('inp-domain').value;
-        app.state.settings.fastMode.enabled = document.getElementById('inp-fastmode-enabled').checked;
 
         app.state.settings.ilias.enabled = Boolean(app.state.settings.sources.ilias);
         app.state.settings.prompting.enabled = document.getElementById('inp-prompting-enabled').checked;
@@ -2627,6 +2667,7 @@
     app.utils.load();
     app.ui.updateDomainUI();
     app.ui.renderSourceToolbar();
+    app.ui.syncFastModeControls();
 
     if (app.state.consentGiven) {
       document.getElementById('modal-disclaimer').classList.remove('open');
@@ -2684,6 +2725,16 @@
 
     app.ui.sendBtn.addEventListener('click', triggerSend);
     app.ui.sendBtn.addEventListener('touchend', triggerSend, { passive: false });
+
+    const fastMainOn = document.getElementById('fastmode-main-on');
+    const fastMainOff = document.getElementById('fastmode-main-off');
+    const syncFastMode = () => {
+      app.state.settings.fastMode.enabled = Boolean(fastMainOn && fastMainOn.checked);
+      app.utils.save();
+      app.ui.updateDomainUI();
+    };
+    if (fastMainOn) fastMainOn.addEventListener('change', syncFastMode);
+    if (fastMainOff) fastMainOff.addEventListener('change', syncFastMode);
 
     document.getElementById('snippet-popup').addEventListener('click', (e) => {
       const item = e.target.closest('.snippet-item');
