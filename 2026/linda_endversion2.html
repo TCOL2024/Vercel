@@ -132,6 +132,37 @@
     overflow-x: auto;
   }
 
+  .mobile-reader-toggle {
+    display: none;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 7px;
+    border: 1px solid #cddcf2;
+    background: #f5f9ff;
+    border-radius: 12px;
+    flex-shrink: 0;
+  }
+
+  .mobile-reader-toggle .label {
+    font-size: 0.68rem;
+    font-weight: 800;
+    color: #124a90;
+    white-space: nowrap;
+  }
+
+  .mobile-reader-toggle label {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    font-size: 0.68rem;
+    color: #27486f;
+    font-weight: 700;
+  }
+
+  .mobile-reader-toggle input {
+    margin: 0;
+  }
+
   .btn-icon {
     border: 1px solid var(--line);
     background: #fff;
@@ -954,6 +985,10 @@
       display: none;
     }
 
+    .mobile-reader-toggle {
+      display: inline-flex;
+    }
+
     .logo-sub {
       max-width: 36vw;
     }
@@ -1012,6 +1047,49 @@
     padding: 8px 12px;
   }
 
+  body.mobile-reader {
+    background: #f5f8fc;
+  }
+
+  body.mobile-reader #app {
+    background: #f9fbfe;
+  }
+
+  body.mobile-reader #domain-badge,
+  body.mobile-reader .header-actions,
+  body.mobile-reader .source-toolbar,
+  body.mobile-reader .fastmode-bar,
+  body.mobile-reader .compare-bar,
+  body.mobile-reader .msg-actions,
+  body.mobile-reader .source-panel {
+    display: none !important;
+  }
+
+  body.mobile-reader .logo {
+    font-size: 1.2rem;
+  }
+
+  body.mobile-reader .logo-sub {
+    display: none;
+  }
+
+  body.mobile-reader #chat-log {
+    padding-top: 12px;
+    padding-bottom: calc(var(--input-h) + 28px);
+  }
+
+  body.mobile-reader .bubble {
+    font-size: 1.1rem;
+    line-height: 1.72;
+    padding: 16px 17px;
+  }
+
+  body.mobile-reader #chat-input {
+    font-size: 19px;
+    line-height: 1.58;
+    min-height: 72px;
+  }
+
   #selection-menu {
     position: fixed;
     z-index: 1300;
@@ -1062,6 +1140,17 @@
     <div class="logo-wrap">
       <h1 class="logo">LINDA3</h1>
       <div class="logo-sub" id="domain-summary">Lernassistenz für geschulte Anwender</div>
+    </div>
+    <div class="mobile-reader-toggle" id="mobile-reader-toggle" aria-label="Mobiler Lesemodus">
+      <span class="label">Mobil</span>
+      <label for="mobile-reader-off">
+        <input id="mobile-reader-off" type="radio" name="mobile-reader-mode" value="off">
+        <span>Normal</span>
+      </label>
+      <label for="mobile-reader-on">
+        <input id="mobile-reader-on" type="radio" name="mobile-reader-mode" value="on">
+        <span>Lesen</span>
+      </label>
     </div>
     <div id="domain-badge" class="pill">Standard</div>
     <div class="header-actions">
@@ -1235,6 +1324,7 @@
 
   const API_ENDPOINT = window.LINDA_API_ENDPOINT || '/api/bot';
   const DEEPSEEK_API_ENDPOINT = window.LINDA_DEEPSEEK_ENDPOINT || '/api/deepseek';
+  const BBIG_PDF_PATH = './docs/sources/BBIG_V20022026.pdf';
   const STORAGE_KEY = 'linda3_state';
   const REQUEST_MEMORY_KEY = 'linda3_request_memory';
   const CARDS_KEY = 'linda3_cards';
@@ -1281,6 +1371,13 @@
     entries: []
   };
 
+  const MAKEFLOW_ONLY_SOURCES = {
+    llm: false,
+    web: false,
+    script: true,
+    ilias: false
+  };
+
   const DEFAULT_STATE = {
     version: APP_VERSION,
     consentGiven: false,
@@ -1309,6 +1406,9 @@
         consentAccepted: false
       },
       compareMode: {
+        enabled: false
+      },
+      mobileReader: {
         enabled: false
       },
       prompting: {
@@ -1447,6 +1547,10 @@
             compareMode: {
               ...structuredClone(DEFAULT_STATE.settings.compareMode),
               ...((parsed.settings && parsed.settings.compareMode) || {})
+            },
+            mobileReader: {
+              ...structuredClone(DEFAULT_STATE.settings.mobileReader),
+              ...((parsed.settings && parsed.settings.mobileReader) || {})
             },
             prompting: {
               ...structuredClone(DEFAULT_STATE.settings.prompting),
@@ -1589,6 +1693,20 @@
         const off = document.getElementById('compare-main-off');
         if (on) on.checked = compareEnabled;
         if (off) off.checked = !compareEnabled;
+      },
+
+      syncMobileReaderControls: () => {
+        const enabled = Boolean(app.state.settings.mobileReader && app.state.settings.mobileReader.enabled);
+        const on = document.getElementById('mobile-reader-on');
+        const off = document.getElementById('mobile-reader-off');
+        if (on) on.checked = enabled;
+        if (off) off.checked = !enabled;
+      },
+
+      applyMobileReaderClass: () => {
+        const mobileClient = app.utils.isMobileClient();
+        const enabled = mobileClient && Boolean(app.state.settings.mobileReader && app.state.settings.mobileReader.enabled);
+        document.body.classList.toggle('mobile-reader', enabled);
       },
 
       renderSourceToolbar: () => {
@@ -1842,6 +1960,36 @@
       ensureSession: () => {
         if (app.state.sessions.length && app.state.activeId) return;
         app.logic.newChat();
+      },
+
+      isMobileReaderEnabled: () => {
+        return Boolean(
+          app.utils.isMobileClient() &&
+          app.state.settings.mobileReader &&
+          app.state.settings.mobileReader.enabled
+        );
+      },
+
+      setMobileReader: (enabled) => {
+        app.state.settings.mobileReader.enabled = Boolean(enabled);
+
+        if (app.logic.isMobileReaderEnabled()) {
+          app.state.settings.fastMode.enabled = false;
+          app.state.settings.compareMode.enabled = false;
+          app.state.settings.sources = {
+            ...app.state.settings.sources,
+            ...MAKEFLOW_ONLY_SOURCES
+          };
+          app.state.settings.ilias.enabled = false;
+        }
+
+        app.ui.syncMobileReaderControls();
+        app.ui.syncFastModeControls();
+        app.ui.syncCompareModeControls();
+        app.ui.renderSourceToolbar();
+        app.ui.updateDomainUI();
+        app.ui.applyMobileReaderClass();
+        app.utils.save();
       },
 
       startApp: () => {
@@ -2370,7 +2518,18 @@
 
         const sourceList = app.logic.sanitizeSourceList(sources);
         const fallbackSources = sourceList.length ? [] : app.logic.extractSourcesFromRenderedMarkdown(md);
-        const finalSources = sourceList.length ? sourceList : fallbackSources;
+        const finalSources = sourceList.length ? sourceList.slice() : fallbackSources.slice();
+        const plainText = String(md.innerText || '').toLowerCase();
+        const mentionsBBIG = /(?:\bbbig\b|berufsbildungsgesetz)/i.test(plainText);
+        if (mentionsBBIG) {
+          const hasDoc = finalSources.some((s) => String(s.url || '').includes('BBIG_V20022026.pdf'));
+          if (!hasDoc) {
+            finalSources.push({
+              title: 'Berufsbildungsgesetz (BBiG) - Volltext (PDF)',
+              url: BBIG_PDF_PATH
+            });
+          }
+        }
         if (!finalSources.length) {
           return;
         }
@@ -2384,7 +2543,7 @@
         ul.className = 'source-list';
         finalSources.forEach((s) => {
           const li = document.createElement('li');
-          if (/^https?:\/\//i.test(s.url)) {
+          if (s.url) {
             li.innerHTML = `<a href="${encodeURI(s.url)}">${app.utils.safeText(s.title)}</a>`;
           } else {
             li.textContent = s.title;
@@ -2457,17 +2616,27 @@
         const timeout = setTimeout(() => controller.abort(), 40000);
 
         try {
+          const mobileReaderActive = app.logic.isMobileReaderEnabled();
+          const effectiveFastMode = mobileReaderActive
+            ? false
+            : Boolean(app.state.settings.fastMode && app.state.settings.fastMode.enabled);
+          const effectiveSources = mobileReaderActive
+            ? { ...app.state.settings.sources, ...MAKEFLOW_ONLY_SOURCES }
+            : app.state.settings.sources;
+
           const payload = {
             question: app.utils.truncate(text, 1300),
             fachmodus: app.state.settings.domain || '',
-            schnellmodus: Boolean(app.state.settings.fastMode && app.state.settings.fastMode.enabled),
+            schnellmodus: effectiveFastMode,
             history: app.utils.chatContext(s),
-            sources: app.state.settings.sources,
+            sources: effectiveSources,
             routing: {
-              preferred_model: (app.state.settings.fastMode && app.state.settings.fastMode.enabled) ? 'Linda3Schnellmodus' : 'default'
+              preferred_model: effectiveFastMode ? 'Linda3Schnellmodus' : 'default'
             },
             ilias: {
-              enabled: Boolean(app.state.settings.ilias.enabled && app.state.settings.sources.ilias),
+              enabled: mobileReaderActive
+                ? false
+                : Boolean(app.state.settings.ilias.enabled && effectiveSources.ilias),
               mode: 'manual-links',
               courseId: app.state.settings.ilias.courseId || '',
               keywords: []
@@ -2479,7 +2648,9 @@
             }
           };
 
-          const compareEnabled = Boolean(app.state.settings.compareMode && app.state.settings.compareMode.enabled);
+          const compareEnabled = mobileReaderActive
+            ? false
+            : Boolean(app.state.settings.compareMode && app.state.settings.compareMode.enabled);
           if (compareEnabled) {
             let makeParsed = { answer: '', sources: [] };
             let deepParsed = { answer: '', sources: [] };
@@ -2915,6 +3086,11 @@
     app.ui.renderSourceToolbar();
     app.ui.syncFastModeControls();
     app.ui.syncCompareModeControls();
+    app.ui.syncMobileReaderControls();
+    app.ui.applyMobileReaderClass();
+    if (app.logic.isMobileReaderEnabled()) {
+      app.logic.setMobileReader(true);
+    }
 
     if (app.state.consentGiven) {
       document.getElementById('modal-disclaimer').classList.remove('open');
@@ -3010,6 +3186,15 @@
     };
     if (compareMainOn) compareMainOn.addEventListener('change', syncCompareMode);
     if (compareMainOff) compareMainOff.addEventListener('change', syncCompareMode);
+
+    const mobileReaderOn = document.getElementById('mobile-reader-on');
+    const mobileReaderOff = document.getElementById('mobile-reader-off');
+    const syncMobileReader = () => {
+      const wantsOn = Boolean(mobileReaderOn && mobileReaderOn.checked);
+      app.logic.setMobileReader(wantsOn);
+    };
+    if (mobileReaderOn) mobileReaderOn.addEventListener('change', syncMobileReader);
+    if (mobileReaderOff) mobileReaderOff.addEventListener('change', syncMobileReader);
 
     document.getElementById('snippet-popup').addEventListener('click', (e) => {
       const item = e.target.closest('.snippet-item');
