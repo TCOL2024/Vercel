@@ -1234,7 +1234,7 @@
   'use strict';
 
   const API_ENDPOINT = window.LINDA_API_ENDPOINT || '/api/bot';
-  const DEEPSEEK_API_ENDPOINT = window.LINDA_DEEPSEEK_ENDPOINT || API_ENDPOINT;
+  const DEEPSEEK_API_ENDPOINT = window.LINDA_DEEPSEEK_ENDPOINT || '/api/deepseek';
   const STORAGE_KEY = 'linda3_state';
   const REQUEST_MEMORY_KEY = 'linda3_request_memory';
   const CARDS_KEY = 'linda3_cards';
@@ -1741,8 +1741,8 @@
           <div class="msg-wrap">
             <div class="bubble assistant">
               <div class="compare-canvas">
-                ${renderSection('Make-Flow', makeData)}
-                ${renderSection('DeepSeek', deepseekData)}
+                ${renderSection('Linda 3.0', makeData)}
+                ${renderSection('Schnellmodus', deepseekData)}
               </div>
             </div>
           </div>
@@ -2481,9 +2481,19 @@
 
           const compareEnabled = Boolean(app.state.settings.compareMode && app.state.settings.compareMode.enabled);
           if (compareEnabled) {
-            const [makeRes, deepRes] = await Promise.allSettled([
-              app.logic.requestAnswer(API_ENDPOINT, payload, controller.signal),
-              app.logic.requestAnswer(
+            let makeParsed = { answer: '', sources: [] };
+            let deepParsed = { answer: '', sources: [] };
+
+            try {
+              makeParsed = await app.logic.requestAnswer(API_ENDPOINT, payload, controller.signal);
+            } catch (e) {
+              makeParsed = { answer: `❌ Linda 3.0 Fehler: ${e?.message || 'unbekannt'}`, sources: [] };
+            }
+
+            await new Promise((resolve) => setTimeout(resolve, 1000));
+
+            try {
+              deepParsed = await app.logic.requestAnswer(
                 DEEPSEEK_API_ENDPOINT,
                 {
                   ...payload,
@@ -2493,19 +2503,14 @@
                   }
                 },
                 controller.signal
-              )
-            ]);
-
-            const makeParsed = makeRes.status === 'fulfilled'
-              ? makeRes.value
-              : { answer: `❌ Make-Flow Fehler: ${makeRes.reason?.message || 'unbekannt'}`, sources: [] };
-            const deepParsed = deepRes.status === 'fulfilled'
-              ? deepRes.value
-              : { answer: `❌ DeepSeek Fehler: ${deepRes.reason?.message || 'unbekannt'}`, sources: [] };
+              );
+            } catch (e) {
+              deepParsed = { answer: `❌ Schnellmodus Fehler: ${e?.message || 'unbekannt'}`, sources: [] };
+            }
 
             s.messages.push({
               role: 'assistant',
-              content: `Make-Flow:\n${makeParsed.answer}\n\nDeepSeek:\n${deepParsed.answer}`,
+              content: `Linda 3.0:\n${makeParsed.answer}\n\nSchnellmodus:\n${deepParsed.answer}`,
               sources: [],
               compare: {
                 make: makeParsed,
