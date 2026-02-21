@@ -28,7 +28,10 @@
       margin: 0;
       font-family: "Segoe UI", "Inter", sans-serif;
       color: var(--text);
-      background: linear-gradient(180deg, #f7f9ff 0%, #f2f5fb 100%);
+      background:
+        radial-gradient(circle at 8% 0%, #eaf1ff 0%, transparent 35%),
+        radial-gradient(circle at 92% 10%, #e8f6f1 0%, transparent 30%),
+        linear-gradient(180deg, #f7f9ff 0%, #f2f5fb 100%);
     }
 
     .app {
@@ -47,8 +50,9 @@
 
     .title {
       margin: 0;
-      font-size: 1.4rem;
+      font-size: 1.55rem;
       font-weight: 700;
+      letter-spacing: 0.2px;
     }
 
     .sub {
@@ -66,6 +70,12 @@
       border-radius: 10px;
       font-weight: 600;
       cursor: pointer;
+      transition: all 0.18s ease;
+    }
+
+    .btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 18px rgba(25, 57, 108, 0.12);
     }
 
     .btn.primary {
@@ -91,6 +101,13 @@
       border-radius: var(--radius);
       padding: 18px;
       box-shadow: var(--shadow);
+      transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+    }
+
+    .deck:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 14px 30px rgba(20, 56, 115, 0.12);
+      border-color: #c9d6f0;
     }
 
     .deck h3 {
@@ -430,6 +447,24 @@
     </div>
   </div>
 
+  <div id="modal-edit-card" class="modal-bg" aria-hidden="true">
+    <div class="modal">
+      <h3>Karte korrigieren</h3>
+      <div class="field">
+        <label for="edit-front">Frage</label>
+        <textarea id="edit-front" placeholder="Frage bearbeiten..."></textarea>
+      </div>
+      <div class="field">
+        <label for="edit-back">Antwort</label>
+        <textarea id="edit-back" placeholder="Antwort bearbeiten..."></textarea>
+      </div>
+      <div class="modal-actions">
+        <button class="btn" id="edit-cancel">Abbrechen</button>
+        <button class="btn primary" id="edit-save">Speichern</button>
+      </div>
+    </div>
+  </div>
+
   <script>
     (() => {
       const STORAGE_KEY = "linda3_flashcards_v1";
@@ -460,7 +495,10 @@
       const store = {
         state: {
           decks: [],
-          session: null
+          session: null,
+          prefs: {
+            correctionMode: false
+          }
         },
         save() {
           localStorage.setItem(STORAGE_KEY, JSON.stringify(this.state));
@@ -470,6 +508,9 @@
             const parsed = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
             if (Array.isArray(parsed.decks)) this.state.decks = parsed.decks;
             if (parsed.session && typeof parsed.session === "object") this.state.session = parsed.session;
+            if (parsed.prefs && typeof parsed.prefs === "object") {
+              this.state.prefs.correctionMode = Boolean(parsed.prefs.correctionMode);
+            }
           } catch (_) {}
         }
       };
@@ -586,10 +627,10 @@
             <header class="topbar">
               <div>
                 <h1 class="title">LINDA3 Lernkarten-Decks</h1>
-                <p class="sub">Eigene Seite, direkt vorbereitet für LINDA3 + API-Backend.</p>
+                <p class="sub">Lerne fokussiert mit klaren Decks, Wiederholungen und smartem Fortschritt.</p>
               </div>
               <div class="row">
-                <button class="btn" id="btn-api-test">API testen</button>
+                <button class="btn" id="btn-correction-mode">${store.state.prefs.correctionMode ? "Korrekturmodus: An" : "Korrekturmodus: Aus"}</button>
                 <div class="menu-wrap">
                 <button class="btn primary" id="btn-create-menu">+ Deck erstellen</button>
                 <div class="menu ${this.menuOpen ? "open" : ""}" id="create-menu">
@@ -648,7 +689,10 @@
             <section class="study">
               <div class="study-top">
                 <div class="progress"><span style="width:${progress}%"></span></div>
-                <div class="muted">${done + 1} / ${session.total}</div>
+                <div class="row" style="justify-content:flex-end;">
+                  ${store.state.prefs.correctionMode ? `<button class="btn" id="btn-edit-card" style="height:34px;">Karte korrigieren</button>` : ``}
+                  <div class="muted">${done + 1} / ${session.total}</div>
+                </div>
               </div>
               <article class="study-card">
                 <div>
@@ -693,31 +737,20 @@
             store.save();
             this.render();
           });
+
+          const editBtn = document.getElementById("btn-edit-card");
+          if (editBtn) {
+            editBtn.addEventListener("click", () => this.openEditCard(deck.id, card.id));
+          }
         },
         bindDeckEvents() {
           const btnMenu = document.getElementById("btn-create-menu");
-          const btnApiTest = document.getElementById("btn-api-test");
-          if (btnApiTest) {
-            btnApiTest.addEventListener("click", async () => {
-              const original = btnApiTest.textContent;
-              btnApiTest.disabled = true;
-              btnApiTest.textContent = "Prüfe...";
-              try {
-                const res = await fetch(API_BASE, { method: "GET" });
-                const data = await res.json().catch(() => ({}));
-                if (!res.ok) throw new Error(data.error || ("HTTP " + res.status));
-                alert(
-                  "API erreichbar.\n" +
-                  "Endpoint: " + String(data.endpoint || API_BASE) + "\n" +
-                  "Key gesetzt: " + (data.keyConfigured ? "Ja" : "Nein") + "\n" +
-                  "Model: " + String(data.model || "-")
-                );
-              } catch (err) {
-                alert("API-Test fehlgeschlagen: " + String(err.message || err));
-              } finally {
-                btnApiTest.disabled = false;
-                btnApiTest.textContent = original;
-              }
+          const btnCorrectionMode = document.getElementById("btn-correction-mode");
+          if (btnCorrectionMode) {
+            btnCorrectionMode.addEventListener("click", () => {
+              store.state.prefs.correctionMode = !store.state.prefs.correctionMode;
+              store.save();
+              this.renderDecks();
             });
           }
           if (btnMenu) {
@@ -846,6 +879,44 @@
           modal.classList.remove("open");
           delete modal.dataset.deckId;
         },
+        openEditCard(deckId, cardId) {
+          const deck = store.state.decks.find((d) => d.id === deckId);
+          const card = deck?.cards?.find((c) => c.id === cardId);
+          if (!deck || !card) return;
+          const modal = document.getElementById("modal-edit-card");
+          modal.dataset.deckId = deckId;
+          modal.dataset.cardId = cardId;
+          document.getElementById("edit-front").value = card.front || "";
+          document.getElementById("edit-back").value = card.back || "";
+          modal.classList.add("open");
+        },
+        closeEditCard() {
+          const modal = document.getElementById("modal-edit-card");
+          modal.classList.remove("open");
+          delete modal.dataset.deckId;
+          delete modal.dataset.cardId;
+        },
+        saveEditCard() {
+          const modal = document.getElementById("modal-edit-card");
+          const deckId = modal.dataset.deckId;
+          const cardId = modal.dataset.cardId;
+          if (!deckId || !cardId) return;
+          const deck = store.state.decks.find((d) => d.id === deckId);
+          const card = deck?.cards?.find((c) => c.id === cardId);
+          if (!deck || !card) return;
+          const front = String(document.getElementById("edit-front").value || "").trim();
+          const back = String(document.getElementById("edit-back").value || "").trim();
+          if (!front || !back) {
+            alert("Frage und Antwort dürfen nicht leer sein.");
+            return;
+          }
+          card.front = front;
+          card.back = back;
+          deck.updatedAt = new Date().toISOString();
+          store.save();
+          this.closeEditCard();
+          this.render();
+        },
         startSessionFromSettings() {
           const modal = document.getElementById("modal-settings");
           const deckId = modal.dataset.deckId;
@@ -888,12 +959,16 @@
       const wireModals = () => {
         const modalCreate = document.getElementById("modal-create");
         const modalSettings = document.getElementById("modal-settings");
+        const modalEditCard = document.getElementById("modal-edit-card");
         document.getElementById("create-cancel").addEventListener("click", () => app.closeCreateModal());
         document.getElementById("create-submit").addEventListener("click", () => app.submitCreateModal());
         document.getElementById("settings-cancel").addEventListener("click", () => app.closeSettings());
         document.getElementById("settings-start").addEventListener("click", () => app.startSessionFromSettings());
+        document.getElementById("edit-cancel").addEventListener("click", () => app.closeEditCard());
+        document.getElementById("edit-save").addEventListener("click", () => app.saveEditCard());
         modalCreate.addEventListener("click", (e) => { if (e.target === modalCreate) app.closeCreateModal(); });
         modalSettings.addEventListener("click", (e) => { if (e.target === modalSettings) app.closeSettings(); });
+        modalEditCard.addEventListener("click", (e) => { if (e.target === modalEditCard) app.closeEditCard(); });
       };
 
       store.load();

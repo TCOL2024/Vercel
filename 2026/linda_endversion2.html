@@ -1142,6 +1142,100 @@
     text-align: left;
   }
 
+  #selection-menu .sel-btn[disabled] {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+
+  #selection-menu .selection-note {
+    font-size: 0.72rem;
+    color: #5c6f8e;
+    margin-top: 7px;
+    line-height: 1.35;
+  }
+
+  .selection-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 1350;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    background: rgba(7, 20, 40, 0.4);
+    padding: 14px;
+  }
+
+  .selection-modal.open {
+    display: flex;
+  }
+
+  .selection-modal-card {
+    width: min(560px, 100%);
+    background: #ffffff;
+    border: 1px solid #cfdbef;
+    border-radius: 14px;
+    box-shadow: 0 22px 46px rgba(8, 24, 52, 0.25);
+    padding: 14px;
+  }
+
+  .selection-modal-card h4 {
+    margin: 0 0 8px 0;
+    font-size: 1rem;
+    color: #123f74;
+  }
+
+  .selection-preview {
+    margin: 0 0 10px;
+    padding: 9px 10px;
+    border: 1px solid #d5e2f6;
+    border-radius: 10px;
+    font-size: 0.84rem;
+    color: #2f4d72;
+    background: #f6faff;
+    max-height: 130px;
+    overflow: auto;
+    white-space: pre-wrap;
+  }
+
+  .selection-field {
+    display: grid;
+    gap: 5px;
+    margin-bottom: 11px;
+  }
+
+  .selection-field label {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    font-weight: 800;
+    letter-spacing: 0.03em;
+    color: #2a4b74;
+  }
+
+  .selection-field select,
+  .selection-field input,
+  .selection-result-text {
+    width: 100%;
+    border: 1px solid #c6d8f1;
+    border-radius: 10px;
+    padding: 9px 10px;
+    font: inherit;
+  }
+
+  .selection-result-text {
+    min-height: 200px;
+    resize: vertical;
+    font-size: 0.91rem;
+    line-height: 1.5;
+  }
+
+  .selection-modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: 10px;
+  }
+
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after {
       animation: none !important;
@@ -1172,7 +1266,6 @@
     <div id="domain-badge" class="pill">Standard</div>
     <div class="header-actions">
       <button class="btn-icon btn-primary" title="Neuer Chat" onclick="app.logic.newChat()">Neu</button>
-      <button class="btn-icon" title="Lernkarten im neuen Tab" onclick="app.logic.openFlashcardsTab()">Karten</button>
       <button class="btn-icon" title="Verlauf" onclick="app.ui.openModal('modal-sessions')">Verlauf</button>
       <button class="btn-icon" title="Einstellungen" onclick="app.ui.openModal('modal-settings')">Einstellungen</button>
     </div>
@@ -1344,7 +1437,33 @@
 
 <div id="selection-menu" role="menu" aria-label="Auswahlmenü">
   <div class="title">Markierter Bereich erkannt</div>
-  <button id="selection-cards-btn" class="sel-btn" type="button">Lernkarten über Webhook erstellen</button>
+  <button id="selection-cards-btn" class="sel-btn" type="button">Lernkarten erstellen</button>
+  <button id="selection-translate-btn" class="sel-btn" type="button">Übersetzen</button>
+  <button id="selection-rewrite-btn" class="sel-btn" type="button">Komprimiere Inhalt</button>
+  <div class="selection-note" id="selection-note">Zeichen: 0</div>
+</div>
+
+<div id="selection-action-modal" class="selection-modal" aria-hidden="true">
+  <div class="selection-modal-card">
+    <h4 id="selection-action-title">Aktion</h4>
+    <p class="selection-preview" id="selection-action-preview"></p>
+    <div id="selection-action-fields"></div>
+    <div class="selection-modal-actions">
+      <button class="btn cancel" id="selection-action-cancel" type="button">Abbrechen</button>
+      <button class="btn save" id="selection-action-confirm" type="button">Ausführen</button>
+    </div>
+  </div>
+</div>
+
+<div id="selection-result-modal" class="selection-modal" aria-hidden="true">
+  <div class="selection-modal-card">
+    <h4 id="selection-result-title">Ergebnis</h4>
+    <textarea id="selection-result-text" class="selection-result-text" spellcheck="false"></textarea>
+    <div class="selection-modal-actions">
+      <button class="btn save" id="selection-result-copy" type="button">Kopieren</button>
+      <button class="btn cancel" id="selection-result-close" type="button">Schließen</button>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -1360,6 +1479,9 @@
   const REQUEST_MEMORY_KEY = 'linda3_request_memory';
   const CARDS_KEY = 'linda3_cards';
   const CARDS_STATS_KEY = 'linda3_cards_stats';
+  const FLASHCARDS_API_ENDPOINT = window.LINDA_FLASHCARDS_ENDPOINT || '/api/flashcards';
+  const TRANSLATE_API_ENDPOINT = window.LINDA_TRANSLATE_ENDPOINT || '/api/translate';
+  const REWRITE_API_ENDPOINT = window.LINDA_REWRITE_ENDPOINT || '/api/rewrite';
   const APP_VERSION = 3;
   const REQUEST_MEMORY_VERSION = 1;
 
@@ -1881,7 +2003,6 @@
               <button class="action-btn strong" data-action="copy">Kopieren</button>
               <button class="action-btn" data-action="share">Teilen</button>
               <button class="action-btn" data-action="pdf">PDF</button>
-              <button class="action-btn" data-action="cards">Karten</button>
               <button class="action-btn" data-action="feedback">Feedback</button>
             </div>
           </div>
@@ -1986,6 +2107,25 @@
 
       showSelectionMenu: (x, y) => {
         const menu = document.getElementById('selection-menu');
+        const draft = app.state.selectionDraft || {};
+        const len = Number(draft.textLength || 0);
+        const canCards = len >= 24;
+        const canTranslate = len > 0 && len <= 250;
+        const canRewrite = len > 0 && len <= 500;
+
+        const cardsBtn = document.getElementById('selection-cards-btn');
+        const translateBtn = document.getElementById('selection-translate-btn');
+        const rewriteBtn = document.getElementById('selection-rewrite-btn');
+        const note = document.getElementById('selection-note');
+
+        if (cardsBtn) cardsBtn.disabled = !canCards;
+        if (translateBtn) translateBtn.disabled = !canTranslate;
+        if (rewriteBtn) rewriteBtn.disabled = !canRewrite;
+        if (note) {
+          note.textContent =
+            `Zeichen: ${len} • Übersetzen bis 250 • Komprimieren bis 500 • Lernkarten ab 24`;
+        }
+
         const vw = window.innerWidth;
         const vh = window.innerHeight;
         const left = Math.min(Math.max(8, x), vw - 250);
@@ -1993,6 +2133,62 @@
         menu.style.left = `${left}px`;
         menu.style.top = `${top}px`;
         menu.classList.add('active');
+      },
+
+      openSelectionActionModal: ({ title, preview, fieldsHtml, confirmLabel, onConfirm }) => {
+        const modal = document.getElementById('selection-action-modal');
+        const titleEl = document.getElementById('selection-action-title');
+        const previewEl = document.getElementById('selection-action-preview');
+        const fieldsEl = document.getElementById('selection-action-fields');
+        const confirmBtn = document.getElementById('selection-action-confirm');
+        const cancelBtn = document.getElementById('selection-action-cancel');
+
+        titleEl.textContent = title || 'Aktion';
+        previewEl.textContent = preview || '';
+        fieldsEl.innerHTML = fieldsHtml || '';
+        confirmBtn.textContent = confirmLabel || 'Ausführen';
+
+        const close = () => {
+          modal.classList.remove('open');
+          modal.setAttribute('aria-hidden', 'true');
+          confirmBtn.onclick = null;
+        };
+
+        cancelBtn.onclick = close;
+        modal.onclick = (evt) => {
+          if (evt.target === modal) close();
+        };
+
+        confirmBtn.onclick = async () => {
+          confirmBtn.disabled = true;
+          try {
+            await onConfirm();
+            close();
+          } catch (err) {
+            alert(`Aktion fehlgeschlagen: ${err?.message || 'unbekannt'}`);
+          } finally {
+            confirmBtn.disabled = false;
+          }
+        };
+
+        modal.classList.add('open');
+        modal.setAttribute('aria-hidden', 'false');
+      },
+
+      openSelectionResultModal: (title, text) => {
+        const modal = document.getElementById('selection-result-modal');
+        const titleEl = document.getElementById('selection-result-title');
+        const textEl = document.getElementById('selection-result-text');
+        titleEl.textContent = title || 'Ergebnis';
+        textEl.value = String(text || '');
+        modal.classList.add('open');
+        modal.setAttribute('aria-hidden', 'false');
+      },
+
+      closeSelectionResultModal: () => {
+        const modal = document.getElementById('selection-result-modal');
+        modal.classList.remove('open');
+        modal.setAttribute('aria-hidden', 'true');
       },
 
       renderModeCards: () => {
@@ -2445,11 +2641,9 @@
         const sel = window.getSelection();
         if (!sel || sel.rangeCount === 0) return false;
         const txt = String(sel.toString() || '').trim();
-        const cfg = app.state.settings.cardsWebhook || DEFAULT_CARDS_WEBHOOK_JSON;
-        const minChars = Math.max(8, Number(cfg.minSelectionChars || 24));
-        if (!txt || txt.length < minChars) return false;
+        if (!txt || txt.length < 2) return false;
         if (!md.contains(sel.anchorNode) || !md.contains(sel.focusNode)) return false;
-        app.state.selectionDraft = { text: txt, ts: app.utils.now() };
+        app.state.selectionDraft = { text: txt, textLength: txt.length, ts: app.utils.now() };
         return true;
       },
 
@@ -2617,35 +2811,119 @@
       requestCardsFromSelection: async () => {
         const draft = app.state.selectionDraft;
         if (!draft || !draft.text) return;
-        const cfg = app.state.settings.cardsWebhook || DEFAULT_CARDS_WEBHOOK_JSON;
-        if (!cfg.enabled) {
-          alert('Lernkarten-Webhook ist deaktiviert (Einstellungen).');
+        if (app.state.isCardsRequestRunning) return;
+        if (String(draft.text || '').length < 24) {
+          alert('Für Lernkarten bitte mindestens 24 Zeichen markieren.');
           return;
         }
-        if (app.state.isCardsRequestRunning) return;
-        if (cfg.requireConfirmation && !confirm('Für den markierten Bereich Lernkarten über den Webhook erstellen?')) return;
 
         app.state.isCardsRequestRunning = true;
         app.ui.hideSelectionMenu();
 
         try {
-          const result = await app.logic.requestCardsViaWebhook(draft.text, 'selection');
+          const result = await app.logic.requestSelectionFlashcards(draft.text);
           const cards = result.cards || [];
-          const targetCount = Math.max(3, Math.min(24, Number(cfg.targetCount || 8)));
 
           app.logic.openCardsTabWithPayload({
-            cards: cards.slice(0, targetCount),
+            cards,
             generatedAt: app.utils.nowStamp(),
             sourceLength: draft.text.length,
-            adaptive: Boolean(cfg.adaptive),
+            adaptive: true,
             deckTitle: result.deckTitle || 'Lernkarten aus Auswahl',
-            sourceType: result.sourceType || 'selection-webhook'
+            sourceType: result.sourceType || 'selection-api'
           });
         } catch (e) {
-          alert(`Lernkarten-Webhook Fehler: ${e.message || 'unbekannt'}`);
+          alert(`Lernkarten-Fehler: ${e.message || 'unbekannt'}`);
         } finally {
           app.state.isCardsRequestRunning = false;
         }
+      },
+
+      requestSelectionFlashcards: async (selectedText, count = 8) => {
+        const domain = app.state.settings.domain || 'Standard';
+        const safeCount = Math.max(4, Math.min(20, Number(count || 8)));
+        const res = await fetch(FLASHCARDS_API_ENDPOINT, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            title: `LINDA Auswahl ${domain}`,
+            source: `Markierter Text (${domain})`,
+            context: app.logic.sanitizeCardsInputText(selectedText, 1400),
+            count: safeCount,
+            economyMode: true
+          })
+        });
+
+        if (!res.ok) {
+          let detail = '';
+          try {
+            const err = await res.json();
+            detail = err?.error ? `: ${err.error}` : '';
+          } catch (_) {}
+          throw new Error(`HTTP ${res.status}${detail}`);
+        }
+
+        const parsed = await res.json();
+        const cards = (Array.isArray(parsed?.cards) ? parsed.cards : [])
+          .map((c) => ({
+            question: String(c.front || c.question || '').trim(),
+            answer: String(c.back || c.answer || '').trim()
+          }))
+          .filter((c) => c.question && c.answer)
+          .map((c) => ({
+            ...c,
+            id: hashCardId(c.question, c.answer),
+            adaptive: { ease: 2, reps: 0, dueAt: 0 }
+          }));
+
+        if (!cards.length) throw new Error('Keine Lernkarten erzeugt');
+        return {
+          cards,
+          deckTitle: 'Lernkarten aus Markierung',
+          sourceType: 'selection-flashcards-api'
+        };
+      },
+
+      requestSelectionTranslation: async (text, targetLang) => {
+        const res = await fetch(TRANSLATE_API_ENDPOINT, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            text: String(text || '').slice(0, 250),
+            targetLang: String(targetLang || 'EN').toUpperCase()
+          })
+        });
+        if (!res.ok) {
+          let detail = '';
+          try {
+            const err = await res.json();
+            detail = err?.error ? `: ${err.error}` : '';
+          } catch (_) {}
+          throw new Error(`HTTP ${res.status}${detail}`);
+        }
+        const parsed = await res.json();
+        return String(parsed?.text || parsed?.translation || '').trim();
+      },
+
+      requestSelectionRewrite: async (text, mode) => {
+        const res = await fetch(REWRITE_API_ENDPOINT, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            text: String(text || '').slice(0, 500),
+            mode: String(mode || 'easy')
+          })
+        });
+        if (!res.ok) {
+          let detail = '';
+          try {
+            const err = await res.json();
+            detail = err?.error ? `: ${err.error}` : '';
+          } catch (_) {}
+          throw new Error(`HTTP ${res.status}${detail}`);
+        }
+        const parsed = await res.json();
+        return String(parsed?.text || parsed?.result || '').trim();
       },
 
       sanitizeSourceList: (items) => {
@@ -3239,8 +3517,8 @@
     `;
 
     const body = document.getElementById('cards-body');
-    if (!cards.length) {
-      body.innerHTML = '<div class="state-msg">Keine Lernkarten vorhanden. Öffne zuerst im Haupttab eine Antwort und klicke dann auf Karten.</div>';
+      if (!cards.length) {
+      body.innerHTML = '<div class="state-msg">Keine Lernkarten vorhanden. Markiere im Haupttab eine Textpassage und nutze den Rechtsklick für Lernkarten.</div>';
       return;
     }
 
@@ -3503,23 +3781,6 @@
       if (action === 'copy') app.logic.copyBubble(btn);
       if (action === 'share') app.logic.shareBubble(btn);
       if (action === 'pdf') app.logic.pdfBubble(btn);
-      if (action === 'cards') {
-        const text = btn.closest('.msg-wrap')?.querySelector('.md')?.innerText || '';
-        app.logic.requestCardsViaWebhook(text, 'bubble')
-          .then((result) => {
-            app.logic.openCardsTabWithPayload({
-              cards: result.cards || [],
-              generatedAt: app.utils.nowStamp(),
-              sourceLength: String(text || '').length,
-              adaptive: Boolean(app.state.settings.cardsWebhook?.adaptive),
-              deckTitle: result.deckTitle || 'Lernkarten',
-              sourceType: result.sourceType || 'bubble-webhook'
-            });
-          })
-          .catch((e) => {
-            alert(`Lernkarten-Webhook Fehler: ${e.message || 'unbekannt'}`);
-          });
-      }
       if (action === 'feedback') app.ui.openModal('modal-feedback');
     });
 
@@ -3537,7 +3798,83 @@
     });
 
     document.getElementById('selection-cards-btn').addEventListener('click', () => {
-      app.logic.requestCardsFromSelection();
+      const draft = app.state.selectionDraft;
+      if (!draft || !draft.text) return;
+      app.ui.hideSelectionMenu();
+      app.ui.openSelectionActionModal({
+        title: 'Lernkarten aus Markierung',
+        preview: draft.text.slice(0, 450),
+        fieldsHtml:
+          '<div class="selection-field"><label for="selection-cards-count">Anzahl Lernkarten</label><select id="selection-cards-count"><option value="6">6</option><option value="8" selected>8</option><option value="10">10</option><option value="12">12</option></select></div>',
+        confirmLabel: 'Lernkarten erstellen',
+        onConfirm: async () => {
+          const count = Number(document.getElementById('selection-cards-count')?.value || 8);
+          const result = await app.logic.requestSelectionFlashcards(draft.text, count);
+          app.logic.openCardsTabWithPayload({
+            cards: result.cards || [],
+            generatedAt: app.utils.nowStamp(),
+            sourceLength: draft.text.length,
+            adaptive: true,
+            deckTitle: result.deckTitle || 'Lernkarten aus Auswahl',
+            sourceType: result.sourceType || 'selection-api'
+          });
+        }
+      });
+    });
+
+    document.getElementById('selection-translate-btn').addEventListener('click', () => {
+      const draft = app.state.selectionDraft;
+      if (!draft || !draft.text) return;
+      app.ui.hideSelectionMenu();
+      if (draft.text.length > 250) {
+        alert('Übersetzen ist nur bis 250 Zeichen möglich.');
+        return;
+      }
+      app.ui.openSelectionActionModal({
+        title: 'Text übersetzen',
+        preview: draft.text,
+        fieldsHtml:
+          '<div class="selection-field"><label for="selection-lang">Zielsprache</label><select id="selection-lang"><option value="EN">Englisch</option><option value="ES">Spanisch</option><option value="FR">Französisch</option><option value="TR">Türkisch</option></select></div>',
+        confirmLabel: 'Übersetzen',
+        onConfirm: async () => {
+          const lang = document.getElementById('selection-lang')?.value || 'EN';
+          const translated = await app.logic.requestSelectionTranslation(draft.text, lang);
+          app.ui.openSelectionResultModal('Übersetzung', translated || 'Keine Übersetzung erhalten.');
+        }
+      });
+    });
+
+    document.getElementById('selection-rewrite-btn').addEventListener('click', () => {
+      const draft = app.state.selectionDraft;
+      if (!draft || !draft.text) return;
+      app.ui.hideSelectionMenu();
+      if (draft.text.length > 500) {
+        alert('Komprimieren ist nur bis 500 Zeichen möglich.');
+        return;
+      }
+      app.ui.openSelectionActionModal({
+        title: 'Komprimiere Inhalt',
+        preview: draft.text,
+        fieldsHtml:
+          '<div class="selection-field"><label for="selection-rewrite-mode">Variante</label><select id="selection-rewrite-mode"><option value="easy">Einfachere Beschreibung</option><option value="detailed">Ausführlichere Beschreibung</option><option value="crisp">Kurz und knackig zusammenfassen</option></select></div>',
+        confirmLabel: 'Optimieren',
+        onConfirm: async () => {
+          const mode = document.getElementById('selection-rewrite-mode')?.value || 'easy';
+          const rewritten = await app.logic.requestSelectionRewrite(draft.text, mode);
+          app.ui.openSelectionResultModal('Komprimierter Inhalt', rewritten || 'Kein Text erhalten.');
+        }
+      });
+    });
+
+    document.getElementById('selection-result-copy').addEventListener('click', async () => {
+      const txt = document.getElementById('selection-result-text')?.value || '';
+      try {
+        await navigator.clipboard.writeText(txt);
+      } catch (_) {}
+    });
+
+    document.getElementById('selection-result-close').addEventListener('click', () => {
+      app.ui.closeSelectionResultModal();
     });
 
     document.addEventListener('click', (e) => {
@@ -3546,6 +3883,9 @@
       }
       if (!e.target.closest('#selection-menu')) {
         app.ui.hideSelectionMenu();
+      }
+      if (e.target.id === 'selection-result-modal') {
+        app.ui.closeSelectionResultModal();
       }
       if (e.target.classList.contains('modal-overlay')) app.ui.closeModals();
     });
