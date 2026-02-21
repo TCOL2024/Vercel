@@ -1,0 +1,906 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LINDA3 Lernkarten</title>
+  <style>
+    :root {
+      --bg: #f4f6fb;
+      --panel: #ffffff;
+      --line: #d9deea;
+      --text: #1e293b;
+      --muted: #64748b;
+      --brand: #173f7a;
+      --brand-soft: #e7eefb;
+      --danger: #dc2626;
+      --warn: #d97706;
+      --ok: #16a34a;
+      --shadow: 0 10px 30px rgba(23, 63, 122, 0.08);
+      --radius: 16px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: "Segoe UI", "Inter", sans-serif;
+      color: var(--text);
+      background: linear-gradient(180deg, #f7f9ff 0%, #f2f5fb 100%);
+    }
+
+    .app {
+      max-width: 1120px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+
+    .topbar {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+    }
+
+    .title {
+      margin: 0;
+      font-size: 1.4rem;
+      font-weight: 700;
+    }
+
+    .sub {
+      margin: 2px 0 0;
+      color: var(--muted);
+      font-size: 0.92rem;
+    }
+
+    .btn {
+      border: 1px solid var(--line);
+      background: #fff;
+      color: var(--text);
+      height: 40px;
+      padding: 0 14px;
+      border-radius: 10px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .btn.primary {
+      background: var(--brand);
+      color: #fff;
+      border-color: var(--brand);
+    }
+
+    .btn:disabled {
+      opacity: 0.55;
+      cursor: default;
+    }
+
+    .deck-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 16px;
+    }
+
+    .deck {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 18px;
+      box-shadow: var(--shadow);
+    }
+
+    .deck h3 {
+      margin: 0 0 8px;
+      font-size: 1.1rem;
+    }
+
+    .row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--brand-soft);
+      color: var(--brand);
+      border-radius: 999px;
+      padding: 4px 10px;
+      font-size: 0.88rem;
+      font-weight: 600;
+    }
+
+    .muted {
+      color: var(--muted);
+      font-size: 0.94rem;
+    }
+
+    .bar {
+      margin-top: 10px;
+      height: 8px;
+      border-radius: 999px;
+      background: #e8edf8;
+      overflow: hidden;
+    }
+
+    .bar > span {
+      display: block;
+      height: 100%;
+      background: linear-gradient(90deg, #4d7bce, #7ca2ea);
+      width: 0%;
+    }
+
+    .deck-actions {
+      margin-top: 14px;
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .empty {
+      border: 1px dashed #bcc7dc;
+      border-radius: var(--radius);
+      background: #fff;
+      padding: 28px;
+      text-align: center;
+      color: var(--muted);
+    }
+
+    .study {
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 20px;
+    }
+
+    .study-top {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 12px;
+      align-items: center;
+      margin-bottom: 14px;
+    }
+
+    .progress {
+      height: 10px;
+      border-radius: 999px;
+      background: #e8edf8;
+      overflow: hidden;
+    }
+
+    .progress > span {
+      display: block;
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #24509a, #5d8be4);
+    }
+
+    .study-card {
+      min-height: 360px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 22px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      background: #fff;
+    }
+
+    .study-front {
+      font-size: 1.95rem;
+      line-height: 1.35;
+      margin: 8px 0 0;
+      white-space: pre-wrap;
+    }
+
+    .study-answer {
+      margin-top: 16px;
+      white-space: pre-wrap;
+      line-height: 1.5;
+      color: #27364f;
+      display: none;
+    }
+
+    .study-answer.visible {
+      display: block;
+    }
+
+    .center {
+      text-align: center;
+      color: var(--muted);
+      font-weight: 600;
+      margin-top: 8px;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .rates {
+      margin-top: 14px;
+      display: grid;
+      grid-template-columns: repeat(4, minmax(120px, 1fr));
+      gap: 10px;
+    }
+
+    .rate {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 10px;
+      text-align: center;
+      background: #fff;
+      cursor: pointer;
+    }
+
+    .rate strong {
+      display: block;
+      font-size: 1.1rem;
+    }
+
+    .rate span {
+      color: var(--muted);
+      font-size: 0.84rem;
+    }
+
+    .rate.again strong { color: var(--danger); }
+    .rate.hard strong { color: var(--warn); }
+    .rate.good strong { color: var(--ok); }
+    .rate.easy strong { color: #1d4ed8; }
+
+    .modal-bg {
+      position: fixed;
+      inset: 0;
+      background: rgba(17, 24, 39, 0.5);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      z-index: 50;
+    }
+
+    .modal-bg.open {
+      display: flex;
+    }
+
+    .modal {
+      width: min(640px, 100%);
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      box-shadow: var(--shadow);
+      padding: 18px;
+    }
+
+    .modal h3 {
+      margin: 0 0 12px;
+    }
+
+    .field {
+      margin-bottom: 10px;
+    }
+
+    .field label {
+      display: block;
+      margin-bottom: 6px;
+      font-weight: 600;
+      font-size: 0.92rem;
+    }
+
+    .field input,
+    .field select,
+    .field textarea {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 10px 12px;
+      font: inherit;
+    }
+
+    .field textarea {
+      min-height: 120px;
+      resize: vertical;
+    }
+
+    .modal-actions {
+      margin-top: 14px;
+      display: flex;
+      gap: 8px;
+      justify-content: flex-end;
+      flex-wrap: wrap;
+    }
+
+    .menu-wrap {
+      position: relative;
+    }
+
+    .menu {
+      position: absolute;
+      right: 0;
+      top: 44px;
+      width: 240px;
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      box-shadow: var(--shadow);
+      padding: 6px;
+      display: none;
+      z-index: 15;
+    }
+
+    .menu.open {
+      display: block;
+    }
+
+    .menu button {
+      width: 100%;
+      text-align: left;
+      border: 0;
+      background: transparent;
+      border-radius: 8px;
+      padding: 10px;
+      cursor: pointer;
+      font: inherit;
+    }
+
+    .menu button:hover {
+      background: #f2f6ff;
+    }
+
+    .back-link {
+      margin-top: 14px;
+      display: inline-flex;
+      color: var(--muted);
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+    @media (max-width: 840px) {
+      .app {
+        padding: 14px;
+      }
+
+      .study-front {
+        font-size: 1.38rem;
+      }
+
+      .rates {
+        grid-template-columns: repeat(2, minmax(120px, 1fr));
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="app" class="app"></div>
+
+  <div id="modal-create" class="modal-bg" aria-hidden="true">
+    <div class="modal">
+      <h3>KI-Deck erstellen</h3>
+      <div class="field">
+        <label for="deck-title">Deckname</label>
+        <input id="deck-title" placeholder="z. B. Planungsrechnung" />
+      </div>
+      <div class="field">
+        <label for="deck-source">Quelle / Thema</label>
+        <input id="deck-source" placeholder="z. B. BBIG Kapitel 1 oder eigener Text" />
+      </div>
+      <div class="field">
+        <label for="deck-count">Anzahl Karten</label>
+        <input id="deck-count" type="number" min="4" max="50" value="12" />
+      </div>
+      <div class="field">
+        <label for="deck-input">Kontext (optional)</label>
+        <textarea id="deck-input" placeholder="Text einfügen oder leer lassen, wenn API mit Quelle arbeitet."></textarea>
+      </div>
+      <div class="modal-actions">
+        <button class="btn" id="create-cancel">Abbrechen</button>
+        <button class="btn primary" id="create-submit">Deck generieren</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="modal-settings" class="modal-bg" aria-hidden="true">
+    <div class="modal">
+      <h3>Lerneinstellungen</h3>
+      <div class="field">
+        <label for="mode-select">Lernmodus</label>
+        <select id="mode-select">
+          <option value="fsrs_scheduled">Spaced Repetition</option>
+          <option value="weak_cards">Schwierige Karten</option>
+          <option value="random">Zufällige Reihenfolge</option>
+          <option value="sequential">Sequentielle Reihenfolge</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="session-size">Karten pro Session</label>
+        <select id="session-size">
+          <option value="15">Max. 15 Karten</option>
+          <option value="999">Alle Karten</option>
+        </select>
+      </div>
+      <div class="modal-actions">
+        <button class="btn" id="settings-cancel">Abbrechen</button>
+        <button class="btn primary" id="settings-start">Lernen</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (() => {
+      const STORAGE_KEY = "linda3_flashcards_v1";
+      const LEGACY_CARDS_KEY = "linda3_cards";
+      const LEGACY_STATS_KEY = "linda3_cards_stats";
+      const API_BASE = window.LINDA_FLASHCARDS_API_BASE || "/api/flashcards";
+
+      const now = () => Date.now();
+
+      const uid = () =>
+        (crypto && crypto.randomUUID ? crypto.randomUUID() : "id_" + Math.random().toString(36).slice(2));
+
+      const fallbackCards = (topic, count) => {
+        const safeTopic = topic || "Lernstoff";
+        const list = [];
+        for (let i = 1; i <= count; i++) {
+          list.push({
+            id: uid(),
+            front: "Frage " + i + " zu " + safeTopic + "?",
+            back: "Antwort " + i + " zu " + safeTopic + ".",
+            source: safeTopic,
+            fsrs: { dueAt: 0, stability: 0.2, difficulty: 0.5, reps: 0, lapses: 0, lastRating: null }
+          });
+        }
+        return list;
+      };
+
+      const store = {
+        state: {
+          decks: [],
+          session: null
+        },
+        save() {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(this.state));
+        },
+        load() {
+          try {
+            const parsed = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
+            if (Array.isArray(parsed.decks)) this.state.decks = parsed.decks;
+            if (parsed.session && typeof parsed.session === "object") this.state.session = parsed.session;
+          } catch (_) {}
+        }
+      };
+
+      const importLegacyCardsIfNeeded = () => {
+        if (store.state.decks.length) return;
+        let payload = {};
+        let legacyStats = {};
+        try { payload = JSON.parse(localStorage.getItem(LEGACY_CARDS_KEY) || "{}"); } catch (_) {}
+        try { legacyStats = JSON.parse(localStorage.getItem(LEGACY_STATS_KEY) || "{}"); } catch (_) {}
+        const legacyCards = Array.isArray(payload.cards) ? payload.cards : [];
+        if (!legacyCards.length) return;
+        const deckId = uid();
+        const cards = legacyCards.map((c) => {
+          const stat = legacyStats[c.id] || {};
+          return {
+            id: c.id || uid(),
+            front: String(c.question || c.front || "").trim(),
+            back: String(c.answer || c.back || "").trim(),
+            source: payload.deckTitle || "LINDA3 Import",
+            fsrs: {
+              dueAt: Number(stat.dueAt || c.adaptive?.dueAt || 0),
+              stability: Number(stat.ease || 2),
+              difficulty: 0.5,
+              reps: Number(stat.reps || c.adaptive?.reps || 0),
+              lapses: 0,
+              lastRating: null
+            }
+          };
+        }).filter((c) => c.front && c.back);
+
+        store.state.decks.push({
+          id: deckId,
+          title: payload.deckTitle || "LINDA3 Import",
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          level: "Anfänger",
+          cards
+        });
+        store.save();
+      };
+
+      const deckStats = (deck) => {
+        const due = deck.cards.filter((c) => Number(c.fsrs?.dueAt || 0) <= now()).length;
+        const avgReps = deck.cards.length
+          ? deck.cards.reduce((sum, c) => sum + Number(c.fsrs?.reps || 0), 0) / deck.cards.length
+          : 0;
+        const mastery = Math.max(2, Math.min(100, Math.round((avgReps / 8) * 100)));
+        return { due, mastery };
+      };
+
+      const formatNext = (ms) => {
+        if (ms < 1000 * 60 * 60) return Math.max(1, Math.round(ms / 60000)) + " Min.";
+        if (ms < 1000 * 60 * 60 * 24) return Math.max(1, Math.round(ms / 3600000)) + " Std.";
+        return Math.max(1, Math.round(ms / 86400000)) + " Tage";
+      };
+
+      const intervalForRating = (card, rating) => {
+        const reps = Number(card.fsrs?.reps || 0);
+        const st = Number(card.fsrs?.stability || 0.2);
+        if (rating === "again") return 60 * 1000;
+        if (rating === "hard") return Math.round((4 + reps * 1.3) * 60000 * Math.max(1, st * 0.8));
+        if (rating === "good") return Math.round((12 + reps * 18) * 60000 * Math.max(1, st));
+        return Math.round((36 + reps * 48) * 60000 * Math.max(1, st * 1.25));
+      };
+
+      const applyReview = (card, rating) => {
+        const prev = card.fsrs || {};
+        const reps = Number(prev.reps || 0);
+        const lapses = Number(prev.lapses || 0);
+        const nextStability = rating === "again"
+          ? Math.max(0.15, Number(prev.stability || 0.2) * 0.7)
+          : Math.min(12, Number(prev.stability || 0.2) + (rating === "easy" ? 0.6 : rating === "good" ? 0.35 : 0.15));
+        const dueIn = intervalForRating(card, rating);
+        card.fsrs = {
+          dueAt: now() + dueIn,
+          stability: nextStability,
+          difficulty: Number(prev.difficulty || 0.5),
+          reps: rating === "again" ? reps : reps + 1,
+          lapses: rating === "again" ? lapses + 1 : lapses,
+          lastRating: rating
+        };
+      };
+
+      const app = {
+        el: document.getElementById("app"),
+        menuOpen: false,
+        render() {
+          if (store.state.session) return this.renderStudy();
+          return this.renderDecks();
+        },
+        renderDecks() {
+          const decks = store.state.decks;
+          const deckCards = decks.map((deck) => {
+            const stats = deckStats(deck);
+            return `
+              <article class="deck">
+                <h3>${this.escape(deck.title)}</h3>
+                <div class="row">
+                  <span class="muted">${deck.cards.length} Karten</span>
+                  <span class="pill">${stats.due} Karten zum Wiederholen</span>
+                </div>
+                <p class="muted" style="margin: 10px 0 0;">${this.escape(deck.level || "Anfänger")}</p>
+                <div class="bar"><span style="width:${stats.mastery}%"></span></div>
+                <div class="deck-actions">
+                  <button class="btn" data-open-settings="${deck.id}">Lernen</button>
+                  <button class="btn" data-delete-deck="${deck.id}">Löschen</button>
+                </div>
+              </article>
+            `;
+          }).join("");
+
+          this.el.innerHTML = `
+            <header class="topbar">
+              <div>
+                <h1 class="title">LINDA3 Lernkarten-Decks</h1>
+                <p class="sub">Eigene Seite, direkt vorbereitet für LINDA3 + API-Backend.</p>
+              </div>
+              <div class="row">
+                <button class="btn" id="btn-api-test">API testen</button>
+                <div class="menu-wrap">
+                <button class="btn primary" id="btn-create-menu">+ Deck erstellen</button>
+                <div class="menu ${this.menuOpen ? "open" : ""}" id="create-menu">
+                  <button id="menu-empty">Leeres Deck erstellen</button>
+                  <button id="menu-ai">KI-Generator verwenden</button>
+                  <button id="menu-legacy">Aus LINDA3 importieren</button>
+                </div>
+                </div>
+              </div>
+            </header>
+            ${decks.length ? `<section class="deck-grid">${deckCards}</section>` : `<div class="empty">Noch keine Decks vorhanden. Erstelle dein erstes Deck.</div>`}
+          `;
+          this.bindDeckEvents();
+        },
+        renderStudy() {
+          const session = store.state.session;
+          const deck = store.state.decks.find((d) => d.id === session.deckId);
+          if (!deck) {
+            store.state.session = null;
+            store.save();
+            return this.renderDecks();
+          }
+
+          if (!session.queue.length) {
+            this.el.innerHTML = `
+              <section class="study">
+                <h2 style="margin:0 0 8px;">Session abgeschlossen</h2>
+                <p class="muted">Alle Karten in dieser Session wurden bewertet.</p>
+                <button class="btn primary" id="back-to-decks">Zur Deck-Übersicht</button>
+              </section>
+            `;
+            document.getElementById("back-to-decks").addEventListener("click", () => {
+              store.state.session = null;
+              store.save();
+              this.render();
+            });
+            return;
+          }
+
+          const cardId = session.queue[0];
+          const card = deck.cards.find((c) => c.id === cardId);
+          if (!card) {
+            session.queue.shift();
+            store.save();
+            return this.render();
+          }
+
+          const done = session.total - session.queue.length;
+          const progress = Math.max(0, Math.min(100, Math.round((done / session.total) * 100)));
+          const iAgain = formatNext(intervalForRating(card, "again"));
+          const iHard = formatNext(intervalForRating(card, "hard"));
+          const iGood = formatNext(intervalForRating(card, "good"));
+          const iEasy = formatNext(intervalForRating(card, "easy"));
+
+          this.el.innerHTML = `
+            <section class="study">
+              <div class="study-top">
+                <div class="progress"><span style="width:${progress}%"></span></div>
+                <div class="muted">${done + 1} / ${session.total}</div>
+              </div>
+              <article class="study-card">
+                <div>
+                  <p class="muted" style="margin:0;">${this.escape(deck.title)}</p>
+                  <p class="study-front">${this.escape(card.front)}</p>
+                  <div id="answer" class="study-answer ${session.showAnswer ? "visible" : ""}">${this.escape(card.back)}</div>
+                </div>
+                <div>
+                  <div id="toggle-answer" class="center">${session.showAnswer ? "Antwort verbergen" : "Antwort zeigen"}</div>
+                </div>
+              </article>
+              <div class="rates" style="${session.showAnswer ? "" : "opacity:.45;pointer-events:none;"}">
+                <button class="rate again" data-rate="again"><strong>Nochmal</strong><span>${iAgain}</span></button>
+                <button class="rate hard" data-rate="hard"><strong>Schwer</strong><span>${iHard}</span></button>
+                <button class="rate good" data-rate="good"><strong>Gut</strong><span>${iGood}</span></button>
+                <button class="rate easy" data-rate="easy"><strong>Einfach</strong><span>${iEasy}</span></button>
+              </div>
+              <a href="#" id="abort-session" class="back-link">Zurück zur Deck-Übersicht</a>
+            </section>
+          `;
+
+          document.getElementById("toggle-answer").addEventListener("click", () => {
+            store.state.session.showAnswer = !store.state.session.showAnswer;
+            store.save();
+            this.render();
+          });
+
+          this.el.querySelectorAll("[data-rate]").forEach((btn) => {
+            btn.addEventListener("click", () => {
+              applyReview(card, btn.dataset.rate);
+              store.state.session.queue.shift();
+              store.state.session.showAnswer = false;
+              deck.updatedAt = new Date().toISOString();
+              store.save();
+              this.render();
+            });
+          });
+
+          document.getElementById("abort-session").addEventListener("click", (e) => {
+            e.preventDefault();
+            store.state.session = null;
+            store.save();
+            this.render();
+          });
+        },
+        bindDeckEvents() {
+          const btnMenu = document.getElementById("btn-create-menu");
+          const btnApiTest = document.getElementById("btn-api-test");
+          if (btnApiTest) {
+            btnApiTest.addEventListener("click", async () => {
+              const original = btnApiTest.textContent;
+              btnApiTest.disabled = true;
+              btnApiTest.textContent = "Prüfe...";
+              try {
+                const res = await fetch(API_BASE, { method: "GET" });
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok) throw new Error(data.error || ("HTTP " + res.status));
+                alert(
+                  "API erreichbar.\n" +
+                  "Endpoint: " + String(data.endpoint || API_BASE) + "\n" +
+                  "Key gesetzt: " + (data.keyConfigured ? "Ja" : "Nein") + "\n" +
+                  "Model: " + String(data.model || "-")
+                );
+              } catch (err) {
+                alert("API-Test fehlgeschlagen: " + String(err.message || err));
+              } finally {
+                btnApiTest.disabled = false;
+                btnApiTest.textContent = original;
+              }
+            });
+          }
+          if (btnMenu) {
+            btnMenu.addEventListener("click", () => {
+              this.menuOpen = !this.menuOpen;
+              this.renderDecks();
+            });
+          }
+
+          const menuEmpty = document.getElementById("menu-empty");
+          const menuAi = document.getElementById("menu-ai");
+          const menuLegacy = document.getElementById("menu-legacy");
+          if (menuEmpty) menuEmpty.addEventListener("click", () => this.createEmptyDeck());
+          if (menuAi) menuAi.addEventListener("click", () => this.openCreateModal());
+          if (menuLegacy) menuLegacy.addEventListener("click", () => {
+            importLegacyCardsIfNeeded();
+            this.menuOpen = false;
+            this.renderDecks();
+          });
+
+          this.el.querySelectorAll("[data-open-settings]").forEach((btn) => {
+            btn.addEventListener("click", () => this.openSettings(btn.dataset.openSettings));
+          });
+
+          this.el.querySelectorAll("[data-delete-deck]").forEach((btn) => {
+            btn.addEventListener("click", () => {
+              const id = btn.dataset.deleteDeck;
+              if (!confirm("Deck wirklich löschen?")) return;
+              store.state.decks = store.state.decks.filter((d) => d.id !== id);
+              store.save();
+              this.render();
+            });
+          });
+
+          document.addEventListener("click", (e) => {
+            const wrap = e.target.closest(".menu-wrap");
+            if (!wrap && this.menuOpen) {
+              this.menuOpen = false;
+              this.renderDecks();
+            }
+          }, { once: true });
+        },
+        createEmptyDeck() {
+          const title = prompt("Deckname");
+          if (!title) return;
+          store.state.decks.push({
+            id: uid(),
+            title: title.trim(),
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+            level: "Anfänger",
+            cards: []
+          });
+          this.menuOpen = false;
+          store.save();
+          this.render();
+        },
+        openCreateModal() {
+          this.menuOpen = false;
+          this.renderDecks();
+          document.getElementById("modal-create").classList.add("open");
+        },
+        closeCreateModal() {
+          document.getElementById("modal-create").classList.remove("open");
+        },
+        async submitCreateModal() {
+          const title = (document.getElementById("deck-title").value || "").trim() || "Neues Deck";
+          const source = (document.getElementById("deck-source").value || "").trim();
+          const count = Math.max(4, Math.min(50, Number(document.getElementById("deck-count").value || 12)));
+          const context = (document.getElementById("deck-input").value || "").trim();
+          const submit = document.getElementById("create-submit");
+          submit.disabled = true;
+          submit.textContent = "Generiere...";
+
+          let cards = [];
+          try {
+            const res = await fetch(API_BASE, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ title, source, context, count })
+            });
+            if (!res.ok) throw new Error("API-Fehler " + res.status);
+            const parsed = await res.json();
+            cards = Array.isArray(parsed.cards) ? parsed.cards : [];
+          } catch (_) {
+            cards = fallbackCards(source || title, count);
+          } finally {
+            submit.disabled = false;
+            submit.textContent = "Deck generieren";
+          }
+
+          const normalized = cards.map((c) => ({
+            id: c.id || uid(),
+            front: String(c.front || c.question || "").trim(),
+            back: String(c.back || c.answer || "").trim(),
+            source: String(c.source || source || title),
+            fsrs: {
+              dueAt: Number(c.fsrs?.dueAt || 0),
+              stability: Number(c.fsrs?.stability || 0.2),
+              difficulty: Number(c.fsrs?.difficulty || 0.5),
+              reps: Number(c.fsrs?.reps || 0),
+              lapses: Number(c.fsrs?.lapses || 0),
+              lastRating: c.fsrs?.lastRating || null
+            }
+          })).filter((c) => c.front && c.back);
+
+          store.state.decks.push({
+            id: uid(),
+            title,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+            level: "Anfänger",
+            cards: normalized
+          });
+          store.save();
+          this.closeCreateModal();
+          this.render();
+        },
+        openSettings(deckId) {
+          const modal = document.getElementById("modal-settings");
+          modal.classList.add("open");
+          modal.dataset.deckId = deckId;
+        },
+        closeSettings() {
+          const modal = document.getElementById("modal-settings");
+          modal.classList.remove("open");
+          delete modal.dataset.deckId;
+        },
+        startSessionFromSettings() {
+          const modal = document.getElementById("modal-settings");
+          const deckId = modal.dataset.deckId;
+          if (!deckId) return;
+          const mode = document.getElementById("mode-select").value;
+          const sessionSize = Number(document.getElementById("session-size").value || 15);
+          const deck = store.state.decks.find((d) => d.id === deckId);
+          if (!deck || !deck.cards.length) {
+            alert("Deck enthält keine Karten.");
+            return;
+          }
+          const cards = deck.cards.slice();
+          let filtered = cards;
+          if (mode === "fsrs_scheduled") filtered = cards.filter((c) => Number(c.fsrs?.dueAt || 0) <= now());
+          if (mode === "weak_cards") filtered = cards.filter((c) => Number(c.fsrs?.lapses || 0) > 0 || Number(c.fsrs?.reps || 0) < 2);
+          if (mode === "random") filtered = cards.sort(() => Math.random() - 0.5);
+          if (mode === "sequential") filtered = cards;
+          if (!filtered.length) filtered = cards.slice().sort((a, b) => Number(a.fsrs?.dueAt || 0) - Number(b.fsrs?.dueAt || 0));
+          const queue = filtered.slice(0, sessionSize).map((c) => c.id);
+
+          store.state.session = {
+            deckId,
+            mode,
+            total: queue.length,
+            queue,
+            showAnswer: false
+          };
+          store.save();
+          this.closeSettings();
+          this.render();
+        },
+        escape(value) {
+          return String(value || "")
+            .replaceAll("&", "&amp;")
+            .replaceAll("<", "&lt;")
+            .replaceAll(">", "&gt;");
+        }
+      };
+
+      const wireModals = () => {
+        const modalCreate = document.getElementById("modal-create");
+        const modalSettings = document.getElementById("modal-settings");
+        document.getElementById("create-cancel").addEventListener("click", () => app.closeCreateModal());
+        document.getElementById("create-submit").addEventListener("click", () => app.submitCreateModal());
+        document.getElementById("settings-cancel").addEventListener("click", () => app.closeSettings());
+        document.getElementById("settings-start").addEventListener("click", () => app.startSessionFromSettings());
+        modalCreate.addEventListener("click", (e) => { if (e.target === modalCreate) app.closeCreateModal(); });
+        modalSettings.addEventListener("click", (e) => { if (e.target === modalSettings) app.closeSettings(); });
+      };
+
+      store.load();
+      importLegacyCardsIfNeeded();
+      wireModals();
+      app.render();
+    })();
+  </script>
+</body>
+</html>
