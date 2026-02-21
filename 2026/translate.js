@@ -10,7 +10,7 @@ function isFreeKey(key) {
   return typeof key === "string" && key.endsWith(":fx");
 }
 
-export default async function handler(req, res) {
+module.exports = async (req, res) => {
   if (req.method !== "POST") {
     res.setHeader("Allow", "POST");
     return json(res, 405, { error: "Method not allowed. Use POST." });
@@ -69,4 +69,4 @@ export default async function handler(req, res) {
   } catch (e) {
     return json(res, 500, { error: e?.message || "Server error" });
   }
-}
+};
