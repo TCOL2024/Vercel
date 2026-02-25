@@ -1438,7 +1438,7 @@
     </div>
     <div id="domain-badge" class="pill">Standard</div>
     <div class="header-actions">
-      <button class="btn-icon btn-primary" title="Neuer Chat" onclick="app.logic.newChat()">Neu</button>
+      <button class="btn-icon btn-primary" title="Neuer Chat" onclick="app.logic.resetHistoryAndNewChat()">Neu</button>
       <button class="btn-icon" title="Verlauf" onclick="app.ui.openModal('modal-sessions')">Verlauf</button>
       <button class="btn-icon" title="Einstellungen" onclick="app.ui.openModal('modal-settings')">Einstellungen</button>
     </div>
@@ -1566,6 +1566,10 @@
       <div class="field" style="margin-top:8px;">
         <label for="inp-prompting-json">Vorschlags-JSON</label>
         <textarea id="inp-prompting-json" rows="8" style="width:100%; border:2px solid #d9e3f2; border-radius:10px; padding:10px 11px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.82rem;"></textarea>
+      </div>
+      <div class="btn-row" style="margin-top:8px;">
+        <button class="btn warn" type="button" onclick="app.logic.clearPromptConfigs()">Alle Prompt-Vorgaben löschen</button>
+        <button class="btn cancel" type="button" onclick="app.logic.resetPromptConfigs()">Prompt-Vorgaben auf Standard</button>
       </div>
     </div>
 
@@ -2816,6 +2820,17 @@
         app.logic.maybeShowModeCards();
       },
 
+      resetHistoryAndNewChat: () => {
+        if (!confirm('Verlauf und History komplett löschen und neuen Chat starten?')) return;
+        app.state.sessions = [];
+        app.state.activeId = null;
+        app.state.requestMemory = structuredClone(DEFAULT_REQUEST_MEMORY);
+        app.state.lastQuestion = '';
+        app.ui.log.innerHTML = '';
+        app.utils.save();
+        app.logic.newChat();
+      },
+
       switchSession: (id) => {
         app.state.activeId = id;
         app.ui.log.innerHTML = '';
@@ -2881,6 +2896,29 @@
         app.ui.syncLearningDirectoryControls();
         app.ui.closeModals();
         app.logic.maybeShowModeCards();
+      },
+
+      clearPromptConfigs: () => {
+        if (!confirm('Alle lokalen Prompt-Vorgaben wirklich löschen?')) return;
+        app.state.settings.prompting.enabled = false;
+        app.state.settings.prompting.config = {
+          inlineExpansions: [],
+          quickSuggestions: [],
+          modeCards: []
+        };
+        const t = document.getElementById('inp-prompting-json');
+        const c = document.getElementById('inp-prompting-enabled');
+        if (t) t.value = JSON.stringify(app.state.settings.prompting.config, null, 2);
+        if (c) c.checked = false;
+      },
+
+      resetPromptConfigs: () => {
+        app.state.settings.prompting.enabled = false;
+        app.state.settings.prompting.config = structuredClone(DEFAULT_PROMPTING_JSON);
+        const t = document.getElementById('inp-prompting-json');
+        const c = document.getElementById('inp-prompting-enabled');
+        if (t) t.value = JSON.stringify(app.state.settings.prompting.config, null, 2);
+        if (c) c.checked = false;
       },
 
       addSnippet: () => {
@@ -3121,7 +3159,7 @@
             fachmodus: domain,
             schnellmodus: Boolean(app.state.settings.fastMode && app.state.settings.fastMode.enabled),
             routing: {
-              preferred_model: (app.state.settings.fastMode && app.state.settings.fastMode.enabled) ? 'Linda3Schnellmodus' : 'default'
+              preferred_model: (app.state.settings.fastMode && app.state.settings.fastMode.enabled) ? 'deepseek' : 'default'
             },
             history: []
           })
@@ -3792,6 +3830,8 @@
         t = t.replace(/^\s*(hallo|hi|hey|guten tag|guten morgen|guten abend)[\s\S]{0,260}?ich\s+bin\s+linda[\s\S]{0,260}?[.!?]\s*/i, '');
         t = t.replace(/^\s*ich\s+bin\s+linda[\s\S]{0,260}?[.!?]\s*/i, '');
         t = t.replace(/darf\s+ich\s+dich\s+mit\s+neopronomen\s+ansprechen[\s\S]{0,220}?[.!?]?/ig, '');
+        t = t.replace(/geschlechtergerechte?\s+kommunikation[\s\S]{0,180}?[.!?]?/ig, '');
+        t = t.replace(/gender(n|gerechte|sprache)?[\s\S]{0,120}?[.!?]?/ig, '');
         t = t.replace(/\s+/g, ' ').trim();
         if (!t) return 'Danke fuer deine Frage.';
         if (!/^danke\b/i.test(t)) t = `Danke fuer deine Frage. ${t}`;
@@ -3813,6 +3853,14 @@
         );
         t = t.replace(
           /darf\s+ich\s+dich\s+mit\s+neopronomen\s+ansprechen[\s\S]{0,220}?[.!?]?/ig,
+          ''
+        );
+        t = t.replace(
+          /geschlechtergerechte?\s+kommunikation[\s\S]{0,180}?[.!?]?/ig,
+          ''
+        );
+        t = t.replace(
+          /gender(n|gerechte|sprache)?[\s\S]{0,120}?[.!?]?/ig,
           ''
         );
         t = t.replace(/\n{3,}/g, '\n\n').trim();
@@ -3850,21 +3898,26 @@
           speed: Number.isFinite(Number(opts.speed)) ? Number(opts.speed) : 1
         };
         if (!payload.text) throw new Error('Kein Text zum Vorlesen vorhanden.');
+        let lastErr = null;
+        for (let attempt = 1; attempt <= 2; attempt += 1) {
+          const res = await fetch(TTS_API_ENDPOINT, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+          if (res.ok) return res.blob();
 
-        const res = await fetch(TTS_API_ENDPOINT, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        });
-        if (!res.ok) {
           let detail = '';
           try {
             const err = await res.json();
             detail = String(err?.error || err?.detail || '').trim();
           } catch (_) {}
-          throw new Error(`TTS-API Fehler (${res.status})${detail ? `: ${detail}` : ''}`);
+          lastErr = new Error(`TTS-API Fehler (${res.status})${detail ? `: ${detail}` : ''}`);
+          const retryable = [408, 409, 425, 429, 500, 502, 503, 504].includes(res.status);
+          if (!retryable || attempt === 2) break;
+          await new Promise((resolve) => setTimeout(resolve, 350 * attempt));
         }
-        return res.blob();
+        throw lastErr || new Error('TTS-API Fehler');
       },
 
       playAudioBlob: async (blob) => {
@@ -3918,13 +3971,16 @@
 
       speakText: async (text, langHint, opts = {}) => {
         const preferApi = opts.preferApi !== false;
+        const allowLocalFallback = opts.allowLocalFallback === true;
         if (preferApi) {
           try {
             const blob = await app.logic.requestTtsAudio(text, langHint, opts);
             await app.logic.playAudioBlob(blob);
             return;
-          } catch (_) {
-            // fallback to local speech
+          } catch (e) {
+            if (!allowLocalFallback) {
+              throw new Error(String(e?.message || 'TTS-API fehlgeschlagen.'));
+            }
           }
         }
         await app.logic.speakTextLocal(text, langHint);
@@ -4144,17 +4200,7 @@
         if (!text) return;
 
         if (app.state.settings.fastMode?.enabled && app.logic.needsSlowModeHint(text)) {
-          const disableFast = confirm(
-            'Hinweis: Für diese Anfrage wird empfohlen, den Schnellmodus auszuschalten, um bessere Nachvollziehbarkeit/Quellen zu erhalten.\n\n' +
-            'Jetzt Schnellmodus AUS schalten?'
-          );
-          if (disableFast) {
-            app.state.settings.fastMode.enabled = false;
-            app.ui.syncFastModeControls();
-            app.ui.updateDomainUI();
-            app.utils.save();
-          }
-          alert('Die Anfrage wird jetzt gesendet. Prüfe die Antwort bitte besonders sorgfältig.');
+          alert('Schnellmodus ist aktiv. Prüfe die Antwort bitte besonders sorgfältig.');
         }
 
         if (!forcedText) {
@@ -4209,7 +4255,7 @@
             history: app.utils.chatContext(s),
             sources: effectiveSources,
             routing: {
-              preferred_model: effectiveFastMode ? 'Linda3Schnellmodus' : 'default'
+              preferred_model: effectiveFastMode ? 'deepseek' : 'default'
             },
             ilias: {
               enabled: mobileReaderActive
@@ -4310,7 +4356,8 @@
               speaking.remove();
             }
           } else {
-            const parsed = await app.logic.requestAnswer(API_ENDPOINT, payload, controller.signal);
+            const primaryEndpoint = effectiveFastMode ? DEEPSEEK_API_ENDPOINT : API_ENDPOINT;
+            const parsed = await app.logic.requestAnswer(primaryEndpoint, payload, controller.signal);
             parsed.answer = app.logic.stripRepeatedIntro(parsed.answer, allowIntroForThisTurn);
             if (opts?.autoSpeak) {
               const spokenText = app.logic.buildSpokenAnswer(parsed?.answer || '');
@@ -4360,7 +4407,7 @@
                 schnellmodus: true,
                 routing: {
                   ...(lastPayload.routing || {}),
-                  preferred_model: 'Linda3Schnellmodus'
+                  preferred_model: 'deepseek'
                 }
               };
               const fallbackParsed = await app.logic.requestAnswer(
@@ -4673,6 +4720,8 @@
         if (!confirm('Alle Verläufe wirklich löschen?')) return;
         app.state.sessions = [];
         app.state.activeId = null;
+        app.state.requestMemory = structuredClone(DEFAULT_REQUEST_MEMORY);
+        app.state.lastQuestion = '';
         app.ui.log.innerHTML = '';
         app.utils.save();
         app.logic.newChat();
@@ -4963,6 +5012,10 @@
       }
 
       app.state.settings.fastMode.enabled = wantsOn;
+      if (wantsOn) {
+        app.state.settings.compareMode.enabled = false;
+        app.ui.syncCompareModeControls();
+      }
       app.utils.save();
       app.ui.updateDomainUI();
     };
@@ -4973,6 +5026,12 @@
     const compareMainOff = document.getElementById('compare-main-off');
     const syncCompareMode = () => {
       const wantsOn = Boolean(compareMainOn && compareMainOn.checked);
+      if (wantsOn && app.state.settings.fastMode?.enabled) {
+        alert('Canvas ist deaktiviert, solange Schnellmodus aktiv ist.');
+        app.state.settings.compareMode.enabled = false;
+        app.ui.syncCompareModeControls();
+        return;
+      }
       app.state.settings.compareMode.enabled = wantsOn;
       app.utils.save();
       app.ui.updateDomainUI();
