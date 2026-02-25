@@ -254,21 +254,63 @@ async function handleFlashcards(res, body) {
   const buildFallbackCards = (text, count = 8) => {
     const clean = String(text || '')
       .replace(/\r/g, '')
+      .replace(/`{1,3}[^`]*`{1,3}/g, '')
+      .replace(/\[(.*?)\]\((.*?)\)/g, '$1')
       .replace(/\s+/g, ' ')
       .trim();
     if (!clean) return [];
 
+    const lines = clean
+      .split('\n')
+      .map((s) => s.trim())
+      .filter(Boolean)
+      .filter((s) => !/^quellen?\s*:?/i.test(s));
+    const bullets = lines
+      .filter((s) => /^[-*]|^\d+\./.test(s))
+      .map((s) => s.replace(/^[-*]\s*/, '').replace(/^\d+\.\s*/, '').trim())
+      .filter((s) => s.length > 20);
     const sentences = clean
       .split(/(?<=[.!?])\s+/)
       .map((s) => s.trim())
-      .filter((s) => s.length > 25)
+      .filter((s) => s.length > 28)
       .slice(0, 24);
 
+    const seeds = [...bullets, ...sentences].slice(0, 36);
     const cards = [];
     const used = new Set();
-    for (const s of sentences) {
-      const q = 'Erklaere den folgenden Zusammenhang:';
-      const a = s;
+
+    const mkQuestion = (textPart) => {
+      const t = String(textPart || '').trim().replace(/\s+/g, ' ');
+      if (!t) return { q: '', a: '' };
+      if (/^(Bei|Wenn|Falls|Sobald)\b/i.test(t)) {
+        return {
+          q: `Welche Konsequenz gilt, ${t.replace(/[.;]+$/, '').toLowerCase()}?`,
+          a: t
+        };
+      }
+      const def = t.match(/^(.{5,90}?)\s+(ist|sind)\s+(.{12,})$/i);
+      if (def) {
+        return {
+          q: `Was bedeutet ${def[1].trim()} im Kontext?`,
+          a: `${def[1].trim()} ${def[2]} ${def[3].trim()}`
+        };
+      }
+      if (/\b(muss|muesse?n|darf|duerfen|soll|sollen|kann|koennen|gilt)\b/i.test(t)) {
+        const topic = t.split(/\s+/).slice(0, 9).join(' ');
+        return {
+          q: `Welche Regel beschreibt der Text fuer \"${topic}\"?`,
+          a: t
+        };
+      }
+      return {
+        q: `Welche Kernaussage laesst sich aus diesem Abschnitt ableiten?`,
+        a: t
+      };
+    };
+
+    for (const s of seeds) {
+      const { q, a } = mkQuestion(s);
+      if (!q || !a) continue;
       const key = `${q}|${a}`.toLowerCase();
       if (used.has(key)) continue;
       used.add(key);
@@ -278,11 +320,40 @@ async function handleFlashcards(res, body) {
     return cards;
   };
 
+  const buildFallbackExerciseSet = (cards, mode = 'multiple_choice') => {
+    const title = `Uebungsaufgaben (${mode})`;
+    const source = Array.isArray(cards) ? cards : [];
+    const questions = source.slice(0, 10).map((card, idx) => {
+      const options = [
+        String(card.answer || '').trim(),
+        'Die Aussage gilt ohne weitere Voraussetzungen immer.',
+        'Die Aussage ist nur in Ausnahmefaellen ohne Fachbezug relevant.',
+        'Die Aussage beschreibt ausschliesslich einen historischen Sonderfall.'
+      ];
+      return {
+        type: mode === 'deep_dive' && idx % 3 === 2 ? 'open' : 'mc',
+        question: String(card.question || '').trim() || 'Erläutere den fachlichen Zusammenhang.',
+        options: mode === 'deep_dive' && idx % 3 === 2 ? [] : options,
+        correctIndices: mode === 'deep_dive' && idx % 3 === 2 ? [] : [0],
+        hint: `Achte auf die Kernformulierung in der Antwort: ${String(card.answer || '').slice(0, 90)}${String(card.answer || '').length > 90 ? '...' : ''}`,
+        solution: String(card.answer || '').trim(),
+        points: mode === 'deep_dive' && idx % 3 === 2 ? 3 : 2
+      };
+    });
+    return { title, questions };
+  };
+
   const contextText = String(body?.context || body?.text || '').trim();
   const wanted = Math.max(4, Math.min(20, Number(body?.count || 8)));
+  const mode = String(body?.mode || '').trim().toLowerCase();
+  const templateId = String(body?.template_id || 'multiple_choice').trim();
   const endpoint = String(process.env.LernkartenAPI || '').trim();
   if (!endpoint) {
     const fallback = buildFallbackCards(contextText, wanted);
+    if (mode === 'exercise') {
+      const practice = buildFallbackExerciseSet(fallback, templateId || 'multiple_choice');
+      if (practice.questions.length) return sendJson(res, 200, { ...practice, sourceType: 'local-fallback-practice-no-env' });
+    }
     if (fallback.length) return sendJson(res, 200, { cards: fallback, sourceType: 'local-fallback-no-env' });
     return sendJson(res, 500, { error: 'LernkartenAPI fehlt in Environment' });
   }
@@ -297,24 +368,52 @@ async function handleFlashcards(res, body) {
 
     if (!upstream.ok) {
       const fallback = buildFallbackCards(contextText, wanted);
+      if (mode === 'exercise') {
+        const practice = buildFallbackExerciseSet(fallback, templateId || 'multiple_choice');
+        if (practice.questions.length) return sendJson(res, 200, { ...practice, sourceType: 'local-fallback-practice-upstream-error' });
+      }
       if (fallback.length) return sendJson(res, 200, { cards: fallback, sourceType: 'local-fallback-upstream-error' });
       return sendJson(res, upstream.status, { error: 'Lernkarten API Fehler', detail: raw.slice(0, 1500) });
     }
 
     try {
       const parsed = JSON.parse(raw);
+      if (mode === 'exercise') {
+        if (Array.isArray(parsed?.questions) && parsed.questions.length) return sendJson(res, 200, parsed);
+        const arrCards = Array.isArray(parsed?.cards) ? parsed.cards : [];
+        if (arrCards.length) {
+          const normalizedCards = arrCards.map((c) => ({
+            question: String(c.question || c.front || '').trim(),
+            answer: String(c.answer || c.back || '').trim()
+          })).filter((c) => c.question && c.answer);
+          const practice = buildFallbackExerciseSet(normalizedCards, templateId || 'multiple_choice');
+          if (practice.questions.length) return sendJson(res, 200, { ...practice, sourceType: 'local-fallback-practice-from-cards' });
+        }
+      }
       const arr = Array.isArray(parsed?.cards) ? parsed.cards : [];
       if (arr.length) return sendJson(res, 200, parsed);
       const fallback = buildFallbackCards(contextText, wanted);
+      if (mode === 'exercise') {
+        const practice = buildFallbackExerciseSet(fallback, templateId || 'multiple_choice');
+        if (practice.questions.length) return sendJson(res, 200, { ...practice, sourceType: 'local-fallback-practice-empty' });
+      }
       if (fallback.length) return sendJson(res, 200, { cards: fallback, sourceType: 'local-fallback-empty' });
       return sendJson(res, 200, { cards: [], raw });
     } catch (_) {
       const fallback = buildFallbackCards(contextText, wanted);
+      if (mode === 'exercise') {
+        const practice = buildFallbackExerciseSet(fallback, templateId || 'multiple_choice');
+        if (practice.questions.length) return sendJson(res, 200, { ...practice, sourceType: 'local-fallback-practice-invalid-json' });
+      }
       if (fallback.length) return sendJson(res, 200, { cards: fallback, sourceType: 'local-fallback-invalid-json' });
       return sendJson(res, 200, { cards: [], raw });
     }
   } catch (e) {
     const fallback = buildFallbackCards(contextText, wanted);
+    if (mode === 'exercise') {
+      const practice = buildFallbackExerciseSet(fallback, templateId || 'multiple_choice');
+      if (practice.questions.length) return sendJson(res, 200, { ...practice, sourceType: 'local-fallback-practice-exception' });
+    }
     if (fallback.length) return sendJson(res, 200, { cards: fallback, sourceType: 'local-fallback-exception' });
     return sendJson(res, 500, { error: 'Lernkarten request failed', detail: String(e?.message || '') });
   }
