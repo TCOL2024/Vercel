@@ -45,6 +45,21 @@ function checkTtsRateLimit(ip) {
   return slot.count <= ttsRateMaxPerWindow;
 }
 
+const sttRateWindowMs = 60 * 1000;
+const sttRateMaxPerWindow = 20;
+const sttRateState = new Map();
+function checkSttRateLimit(ip) {
+  const now = Date.now();
+  const slot = sttRateState.get(ip) || { count: 0, resetAt: now + sttRateWindowMs };
+  if (now > slot.resetAt) {
+    slot.count = 0;
+    slot.resetAt = now + sttRateWindowMs;
+  }
+  slot.count += 1;
+  sttRateState.set(ip, slot);
+  return slot.count <= sttRateMaxPerWindow;
+}
+
 function isSet(name) {
   return Boolean(String(process.env[name] || '').trim());
 }
@@ -104,7 +119,8 @@ async function handleHealth(res) {
     DEEPL_API_KEY: isSet('DEEPL_API_KEY'),
     ReWrite: isSet('ReWrite'),
     LernkartenAPI: isSet('LernkartenAPI'),
-    TTS_API_KEY: isSet('TTS_API_KEY') || /^sk-/.test(String(process.env.ReWrite || '').trim())
+    TTS_API_KEY: isSet('TTS_API_KEY') || /^sk-/.test(String(process.env.ReWrite || '').trim()),
+    STT_API_KEY: isSet('STT_API_KEY') || isSet('TTS_API_KEY') || /^sk-/.test(String(process.env.ReWrite || '').trim())
   };
   const required = ['MAKE_WEBHOOK_URL', 'Linda3Schnellmodus', 'DEEPL_API_KEY', 'ReWrite', 'LernkartenAPI'];
   return sendJson(res, 200, {
@@ -520,9 +536,9 @@ async function handleTts(req, res, body) {
   const langTag = /^[a-z]{2}(-[a-z]{2})?$/i.test(lang) ? lang : 'de-DE';
   const input = `[Sprache: ${langTag}] ${text}`;
 
-  const reqVoice = String(body?.voice || process.env.TTS_VOICE || 'alloy').trim().toLowerCase();
+  const reqVoice = String(body?.voice || process.env.TTS_VOICE || 'nova').trim().toLowerCase();
   const allowedVoices = new Set(['alloy', 'ash', 'ballad', 'coral', 'echo', 'fable', 'onyx', 'nova', 'sage', 'shimmer', 'verse']);
-  const voice = allowedVoices.has(reqVoice) ? reqVoice : 'alloy';
+  const voice = allowedVoices.has(reqVoice) ? reqVoice : 'nova';
   const speedRaw = Number(body?.speed);
   const speed = Number.isFinite(speedRaw) ? Math.max(0.7, Math.min(1.2, speedRaw)) : 1;
   const model = String(process.env.TTS_MODEL || 'gpt-4o-mini-tts').trim();
@@ -555,6 +571,82 @@ async function handleTts(req, res, body) {
   return res.end(buf);
 }
 
+async function handleStt(req, res, body) {
+  const sttKey = String(process.env.STT_API_KEY || '').trim();
+  const ttsKey = String(process.env.TTS_API_KEY || '').trim();
+  const rewriteKey = String(process.env.ReWrite || '').trim();
+  const apiKey = sttKey || ttsKey || (/^sk-/.test(rewriteKey) ? rewriteKey : '');
+  if (!apiKey) return sendJson(res, 500, { error: 'STT_API_KEY fehlt (oder TTS_API_KEY/ReWrite als sk- Key)' });
+
+  const b64Raw = String(body?.audio_base64 || '').trim();
+  if (!b64Raw) return sendJson(res, 400, { error: 'audio_base64 fehlt' });
+
+  const b64 = b64Raw.includes(',') ? b64Raw.split(',').pop() : b64Raw;
+  if (!b64 || b64.length > 4 * 1024 * 1024) {
+    return sendJson(res, 413, { error: 'Audio zu groß (max ~3MB Base64)' });
+  }
+
+  let audioBuf;
+  try {
+    audioBuf = Buffer.from(b64, 'base64');
+  } catch (_) {
+    return sendJson(res, 400, { error: 'audio_base64 ungültig' });
+  }
+  if (!audioBuf.length) return sendJson(res, 400, { error: 'Leeres Audio' });
+  if (audioBuf.length > 2.5 * 1024 * 1024) return sendJson(res, 413, { error: 'Audio zu groß (max 2.5MB)' });
+
+  const mime = String(body?.mime_type || 'audio/webm').trim().toLowerCase();
+  const allowedMime = new Set(['audio/webm', 'audio/webm;codecs=opus', 'audio/mp4', 'audio/mpeg', 'audio/wav', 'audio/x-wav', 'audio/ogg', 'audio/ogg;codecs=opus']);
+  const safeMime = allowedMime.has(mime) ? mime : 'audio/webm';
+
+  const extMap = {
+    'audio/webm': 'webm',
+    'audio/webm;codecs=opus': 'webm',
+    'audio/mp4': 'mp4',
+    'audio/mpeg': 'mp3',
+    'audio/wav': 'wav',
+    'audio/x-wav': 'wav',
+    'audio/ogg': 'ogg',
+    'audio/ogg;codecs=opus': 'ogg'
+  };
+  const fileExt = extMap[safeMime] || 'webm';
+
+  const langRaw = String(body?.language || body?.lang || '').trim().toLowerCase();
+  const language = /^[a-z]{2}$/.test(langRaw) ? langRaw : '';
+  const model = String(process.env.STT_MODEL || 'gpt-4o-mini-transcribe').trim();
+
+  const fd = new FormData();
+  fd.append('model', model);
+  if (language) fd.append('language', language);
+  fd.append('response_format', 'json');
+  fd.append('file', new Blob([audioBuf], { type: safeMime }), `audio.${fileExt}`);
+
+  const upstream = await fetch('https://api.openai.com/v1/audio/transcriptions', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${apiKey}`
+    },
+    body: fd
+  });
+
+  const raw = await upstream.text();
+  if (!upstream.ok) {
+    return sendJson(res, upstream.status, {
+      error: 'STT Provider Fehler',
+      detail: raw.slice(0, 900)
+    });
+  }
+
+  try {
+    const parsed = JSON.parse(raw);
+    const text = String(parsed?.text || '').trim();
+    if (!text) return sendJson(res, 200, { text: '' });
+    return sendJson(res, 200, { text });
+  } catch (_) {
+    return sendJson(res, 200, { text: String(raw || '').trim() });
+  }
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'GET' && req.method !== 'POST') {
     res.setHeader('Allow', 'GET, POST');
@@ -582,6 +674,12 @@ export default async function handler(req, res) {
       const ip = getClientIp(req);
       if (!checkTtsRateLimit(ip)) return sendJson(res, 429, { error: 'Rate limit erreicht. Bitte in 1 Minute erneut versuchen.' });
       return handleTts(req, res, body);
+    }
+    if (action === 'stt') {
+      if (req.method !== 'POST') return sendJson(res, 405, { error: 'Nur POST erlaubt' });
+      const ip = getClientIp(req);
+      if (!checkSttRateLimit(ip)) return sendJson(res, 429, { error: 'Rate limit erreicht. Bitte in 1 Minute erneut versuchen.' });
+      return handleStt(req, res, body);
     }
     return sendJson(res, 400, { error: 'Unbekannte action', action });
   } catch (e) {
