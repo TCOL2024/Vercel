@@ -164,6 +164,13 @@ async function handleRewrite(res, body) {
   const style = String(body?.style || 'neutral').trim();
   if (!text) return sendJson(res, 400, { error: 'text fehlt' });
 
+  const stylePrompt = (() => {
+    const s = style.toLowerCase();
+    if (s === 'kurz') return 'Formuliere den Text kuerzer und praeziser.';
+    if (s === 'besser') return 'Formuliere den Text sprachlich besser und strukturierter.';
+    return 'Formuliere den Text in einfacher, gut verstaendlicher Sprache.';
+  })();
+
   if (/^https?:\/\//i.test(rewriteCfg)) {
     const upstream = await fetch(rewriteCfg, {
       method: 'POST',
@@ -180,23 +187,136 @@ async function handleRewrite(res, body) {
     }
   }
 
-  return sendJson(res, 500, { error: 'ReWrite ist nicht als URL konfiguriert' });
+  // ReWrite as OpenAI API key
+  if (/^sk-/i.test(rewriteCfg)) {
+    const upstream = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${rewriteCfg}`
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o-mini',
+        temperature: 0.2,
+        messages: [
+          { role: 'system', content: 'Du formulierst Texte in klarem, natuerlichem Deutsch um.' },
+          { role: 'user', content: `${stylePrompt}\n\nText:\n${text}` }
+        ]
+      })
+    });
+    const raw = await upstream.text();
+    if (!upstream.ok) return sendJson(res, upstream.status, { error: 'ReWrite API Fehler', detail: raw.slice(0, 1200) });
+    try {
+      const parsed = JSON.parse(raw);
+      const result = String(parsed?.choices?.[0]?.message?.content || '').trim();
+      return sendJson(res, 200, { result });
+    } catch (_) {
+      return sendJson(res, 200, { result: raw });
+    }
+  }
+
+  // ReWrite as DeepSeek model name (key from Linda3Schnellmodus / DEEPSEEK_API_KEY)
+  const ds = getDeepSeekConfig();
+  if (!ds.apiKey) {
+    return sendJson(res, 500, {
+      error: 'ReWrite ist weder URL noch API-Key; fuer Modellmodus wird Linda3Schnellmodus (oder DEEPSEEK_API_KEY) benoetigt'
+    });
+  }
+
+  const dsModel = rewriteCfg || ds.model || 'deepseek-chat';
+  const upstream = await fetch('https://api.deepseek.com/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${ds.apiKey}`
+    },
+    body: JSON.stringify({
+      model: dsModel,
+      temperature: 0.2,
+      messages: [
+        { role: 'system', content: 'Du formulierst Texte in klarem, natuerlichem Deutsch um.' },
+        { role: 'user', content: `${stylePrompt}\n\nText:\n${text}` }
+      ]
+    })
+  });
+  const raw = await upstream.text();
+  if (!upstream.ok) return sendJson(res, upstream.status, { error: 'ReWrite DeepSeek Fehler', detail: raw.slice(0, 1200) });
+  try {
+    const parsed = JSON.parse(raw);
+    const result = String(parsed?.choices?.[0]?.message?.content || parsed?.answer || parsed?.response || '').trim();
+    return sendJson(res, 200, { result: result || raw });
+  } catch (_) {
+    return sendJson(res, 200, { result: raw });
+  }
 }
 
 async function handleFlashcards(res, body) {
+  const buildFallbackCards = (text, count = 8) => {
+    const clean = String(text || '')
+      .replace(/\r/g, '')
+      .replace(/\s+/g, ' ')
+      .trim();
+    if (!clean) return [];
+
+    const sentences = clean
+      .split(/(?<=[.!?])\s+/)
+      .map((s) => s.trim())
+      .filter((s) => s.length > 25)
+      .slice(0, 24);
+
+    const cards = [];
+    const used = new Set();
+    for (const s of sentences) {
+      const q = 'Erklaere den folgenden Zusammenhang:';
+      const a = s;
+      const key = `${q}|${a}`.toLowerCase();
+      if (used.has(key)) continue;
+      used.add(key);
+      cards.push({ question: q, answer: a });
+      if (cards.length >= count) break;
+    }
+    return cards;
+  };
+
+  const contextText = String(body?.context || body?.text || '').trim();
+  const wanted = Math.max(4, Math.min(20, Number(body?.count || 8)));
   const endpoint = String(process.env.LernkartenAPI || '').trim();
-  if (!endpoint) return sendJson(res, 500, { error: 'LernkartenAPI fehlt in Environment' });
-  const upstream = await fetch(endpoint, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body || {})
-  });
-  const raw = await upstream.text();
-  if (!upstream.ok) return sendJson(res, upstream.status, { error: 'Lernkarten API Fehler', detail: raw.slice(0, 1500) });
+  if (!endpoint) {
+    const fallback = buildFallbackCards(contextText, wanted);
+    if (fallback.length) return sendJson(res, 200, { cards: fallback, sourceType: 'local-fallback-no-env' });
+    return sendJson(res, 500, { error: 'LernkartenAPI fehlt in Environment' });
+  }
+
   try {
-    return sendJson(res, 200, JSON.parse(raw));
-  } catch (_) {
-    return sendJson(res, 200, { cards: [], raw });
+    const upstream = await fetch(endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body || {})
+    });
+    const raw = await upstream.text();
+
+    if (!upstream.ok) {
+      const fallback = buildFallbackCards(contextText, wanted);
+      if (fallback.length) return sendJson(res, 200, { cards: fallback, sourceType: 'local-fallback-upstream-error' });
+      return sendJson(res, upstream.status, { error: 'Lernkarten API Fehler', detail: raw.slice(0, 1500) });
+    }
+
+    try {
+      const parsed = JSON.parse(raw);
+      const arr = Array.isArray(parsed?.cards) ? parsed.cards : [];
+      if (arr.length) return sendJson(res, 200, parsed);
+      const fallback = buildFallbackCards(contextText, wanted);
+      if (fallback.length) return sendJson(res, 200, { cards: fallback, sourceType: 'local-fallback-empty' });
+      return sendJson(res, 200, { cards: [], raw });
+    } catch (_) {
+      const fallback = buildFallbackCards(contextText, wanted);
+      if (fallback.length) return sendJson(res, 200, { cards: fallback, sourceType: 'local-fallback-invalid-json' });
+      return sendJson(res, 200, { cards: [], raw });
+    }
+  } catch (e) {
+    const fallback = buildFallbackCards(contextText, wanted);
+    if (fallback.length) return sendJson(res, 200, { cards: fallback, sourceType: 'local-fallback-exception' });
+    return sendJson(res, 500, { error: 'Lernkarten request failed', detail: String(e?.message || '') });
   }
 }
 
