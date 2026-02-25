@@ -301,6 +301,26 @@ function normalizeFachmodus(value) {
   return v;
 }
 
+function fachmodusLabel(value) {
+  const v = normalizeFachmodus(value);
+  if (v === 'AEVO') return 'AEVO';
+  if (v === 'VWL') return 'VWL';
+  if (v === 'PERSONAL' || v === 'PERSONALWESEN') return 'Personal';
+  return v || '';
+}
+
+function detectNeedType(question) {
+  const q = String(question || '').trim().toLowerCase();
+  const isFast = q.length <= 220 && (
+    q.startsWith('was ist') ||
+    q.includes('was bedeutet') ||
+    q.includes('definition') ||
+    q.includes('kurz erklär') ||
+    q.includes('kurz erklaer')
+  );
+  return isFast ? 'FAST' : 'DEFAULT';
+}
+
 function sanitizeQuestion(input) {
   return String(input || '')
     .replace(/<\s*\/?\s*system\s*>/gi, ' ')
@@ -361,6 +381,16 @@ async function handleBot(res, body) {
   const bbigKeywordHits = detectBbigKeywordSections(questionRaw, 4);
   const bbigKeywordInstruction = buildBbigKeywordInstruction(bbigKeywordHits);
   const fmUser = normalizeFachmodus(body?.fm_user || body?.fachmodus || body?.meta?.fm_user || '');
+  const fmLabel = fachmodusLabel(body?.fm_user || body?.fachmodus || body?.meta?.fm_user || '');
+  const token = (body?.token == null) ? '' : String(body.token).slice(0, 200);
+  const context = (body?.context == null) ? '' : String(body.context).slice(0, 5000);
+  const history = Array.isArray(body?.history) ? body.history : [];
+  const vectorYes = Boolean(
+    bbigMatches.length ||
+    bbigKeywordHits.length ||
+    /(^|\s)(§|art\.)\s*\d+/i.test(String(questionRaw || '').toLowerCase())
+  );
+  const need = detectNeedType(questionRaw);
   const question = bbigInstruction
     ? `${questionRaw}\n\n${bbigInstruction}${bbigKeywordInstruction ? `\n\n${bbigKeywordInstruction}` : ''}`
     : (bbigKeywordInstruction ? `${questionRaw}\n\n${bbigKeywordInstruction}` : questionRaw);
@@ -368,14 +398,21 @@ async function handleBot(res, body) {
   const mergedMeta = {
     ...(body?.meta && typeof body.meta === 'object' ? body.meta : {}),
     fm_user: fmUser || String(body?.meta?.fm_user || ''),
-    fachmodus: fmUser || String(body?.meta?.fachmodus || '')
+    fm_user_label: fmLabel || String(body?.meta?.fm_user_label || ''),
+    fachmodus: fmUser || String(body?.meta?.fachmodus || ''),
+    vector_yes: vectorYes,
+    need,
+    token,
+    context
   };
 
   const payloadMeta = {
     ...body,
     question,
     fm_user: fmUser || String(body?.fm_user || ''),
+    fm_user_label: fmLabel || '',
     fachmodus: fmUser || String(body?.fachmodus || ''),
+    history,
     meta: mergedMeta,
     legal_guardrails: {
       active: Boolean(bbigMatches.length),
