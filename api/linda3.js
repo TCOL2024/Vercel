@@ -99,10 +99,13 @@ async function handleDeepseek(res, body) {
   }
 }
 
-async function callDeepL(apiKey, text, targetLang) {
-  return fetch('https://api-free.deepl.com/v2/translate', {
+async function callDeepL(endpoint, apiKey, text, targetLang) {
+  return fetch(endpoint, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+      Authorization: `DeepL-Auth-Key ${apiKey}`
+    },
     body: new URLSearchParams({
       auth_key: apiKey,
       text,
@@ -118,16 +121,38 @@ async function handleTranslate(res, body) {
   const targetLang = String(body?.target_lang || 'EN').trim().toUpperCase();
   if (!text) return sendJson(res, 400, { error: 'text fehlt' });
 
-  let upstream = await callDeepL(apiKey, text, targetLang);
+  const freeEndpoint = 'https://api-free.deepl.com/v2/translate';
+  const proEndpoint = 'https://api.deepl.com/v2/translate';
+  const prefersFree = apiKey.includes(':fx');
+  const primary = prefersFree ? freeEndpoint : proEndpoint;
+  const secondary = prefersFree ? proEndpoint : freeEndpoint;
+
+  let upstream = await callDeepL(primary, apiKey, text, targetLang);
+  let raw = await upstream.text();
+
   if (!upstream.ok && upstream.status !== 456) {
-    upstream = await fetch('https://api.deepl.com/v2/translate', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({ auth_key: apiKey, text, target_lang: targetLang }).toString()
+    const retry = await callDeepL(secondary, apiKey, text, targetLang);
+    const retryRaw = await retry.text();
+    if (retry.ok) {
+      upstream = retry;
+      raw = retryRaw;
+    } else {
+      upstream = retry;
+      raw = retryRaw || raw;
+    }
+  }
+
+  if (!upstream.ok) {
+    let detailText = raw;
+    try {
+      const parsedErr = JSON.parse(raw);
+      detailText = String(parsedErr?.message || parsedErr?.detail || raw);
+    } catch (_) {}
+    return sendJson(res, upstream.status, {
+      error: `DeepL Fehler (${upstream.status}): ${detailText.slice(0, 300)}`
     });
   }
-  const raw = await upstream.text();
-  if (!upstream.ok) return sendJson(res, upstream.status, { error: 'DeepL Fehler', detail: raw.slice(0, 1000) });
+
   const parsed = JSON.parse(raw);
   return sendJson(res, 200, { result: String(parsed?.translations?.[0]?.text || '').trim() });
 }
@@ -195,4 +220,3 @@ export default async function handler(req, res) {
     return sendJson(res, 500, { error: 'Linda3 API Fehler', detail: String(e?.message || '') });
   }
 }
-
