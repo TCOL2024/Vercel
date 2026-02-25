@@ -624,6 +624,33 @@
   .loading span:nth-child(2) { animation-delay: 0.12s; }
   .loading span:nth-child(3) { animation-delay: 0.24s; }
 
+  .voice-playing {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    color: #14508f;
+    font-weight: 700;
+  }
+
+  .voice-eq {
+    display: inline-flex;
+    gap: 4px;
+    align-items: flex-end;
+    height: 16px;
+  }
+
+  .voice-eq span {
+    width: 4px;
+    border-radius: 4px;
+    background: #1f73c8;
+    animation: voice-eq 1s ease-in-out infinite;
+  }
+
+  .voice-eq span:nth-child(1) { height: 6px; animation-delay: 0s; }
+  .voice-eq span:nth-child(2) { height: 12px; animation-delay: .14s; }
+  .voice-eq span:nth-child(3) { height: 9px; animation-delay: .28s; }
+  .voice-eq span:nth-child(4) { height: 14px; animation-delay: .42s; }
+
   .modal-overlay {
     position: fixed;
     inset: 0;
@@ -1110,6 +1137,11 @@
   @keyframes pulse {
     0%, 100% { opacity: 0.4; transform: scale(0.8); }
     50% { opacity: 1; transform: scale(1); }
+  }
+
+  @keyframes voice-eq {
+    0%, 100% { transform: scaleY(0.55); opacity: 0.6; }
+    50% { transform: scaleY(1); opacity: 1; }
   }
 
   @media (max-width: 920px) {
@@ -2323,6 +2355,16 @@
         const row = document.createElement('div');
         row.className = 'msg-row assistant';
         row.innerHTML = '<div class="msg-wrap"><div class="bubble assistant"><div class="loading"><span></span><span></span><span></span></div></div></div>';
+        return row;
+      },
+
+      voicePlaybackRow: () => {
+        const row = document.createElement('div');
+        row.className = 'msg-row assistant';
+        row.innerHTML =
+          '<div class="msg-wrap"><div class="bubble assistant">' +
+          '<div class="voice-playing">🔊 Sprache wird wiedergegeben <span class="voice-eq"><span></span><span></span><span></span><span></span></span></div>' +
+          '</div></div>';
         return row;
       },
 
@@ -3646,6 +3688,13 @@
           return;
         }
 
+        if (app.state.settings.compareMode && app.state.settings.compareMode.enabled) {
+          app.state.settings.compareMode.enabled = false;
+          app.ui.syncCompareModeControls();
+          app.ui.updateDomainUI();
+          app.utils.save();
+        }
+
         try {
           app.logic.updateMicButton('busy');
           const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -3731,6 +3780,40 @@
         if (/^[a-z]{2}-[a-z]{2}$/i.test(lang || '')) return String(lang);
         if (/^[a-z]{2}$/i.test(lang || '')) return `${String(lang).toLowerCase()}-${String(lang).toUpperCase()}`;
         return String(navigator.language || 'de-DE');
+      },
+
+      buildSpokenAnswer: (raw) => {
+        let t = String(raw || '');
+        t = t.replace(/```[\s\S]*?```/g, ' ');
+        t = t.replace(/\[(.*?)\]\((.*?)\)/g, '$1');
+        t = t.replace(/[*_`>#-]/g, ' ');
+        const sourceMatch = t.search(/\bquellen?\s*:/i);
+        if (sourceMatch >= 0) t = t.slice(0, sourceMatch);
+        t = t.replace(/^\s*(hallo|hi|hey|guten tag|guten morgen|guten abend)[^.!?]*[.!?]?\s*/i, '');
+        t = t.replace(/^\s*ich\s+bin\s+linda[^.!?]*[.!?]?\s*/i, '');
+        t = t.replace(/\s+/g, ' ').trim();
+        if (!t) return 'Danke fuer deine Frage.';
+        if (!/^danke\b/i.test(t)) t = `Danke fuer deine Frage. ${t}`;
+        return t;
+      },
+
+      stripRepeatedIntro: (raw, allowIntro = false) => {
+        let t = String(raw || '');
+        if (allowIntro) return t;
+
+        const before = t;
+        t = t.replace(
+          /^\s*(hallo|hi|hey)\s*,?\s*ich\s+bin\s+linda[^.!?\n]*[.!?]?\s*/i,
+          ''
+        );
+        t = t.replace(
+          /darf\s+ich\s+dich\s+mit\s+neopronomen\s+ansprechen[^.!?\n]*[.!?]?/ig,
+          ''
+        );
+        t = t.replace(/\n{3,}/g, '\n\n').trim();
+
+        if (!t) return String(before || '').trim();
+        return t;
       },
 
       stopSpeech: () => {
@@ -4083,6 +4166,8 @@
 
         app.state.lastQuestion = text;
         app.logic.rememberQuestion(text);
+        const userTurns = (s.messages || []).filter((m) => m.role === 'user').length;
+        const allowIntroForThisTurn = userTurns <= 1;
 
         const displayText = app.state.settings.name
           ? `${app.state.settings.name}: ${text}`
@@ -4136,7 +4221,7 @@
             }
           };
 
-          const compareEnabled = mobileReaderActive
+          const compareEnabled = (opts?.autoSpeak || mobileReaderActive)
             ? false
             : Boolean(app.state.settings.compareMode && app.state.settings.compareMode.enabled);
           if (compareEnabled) {
@@ -4145,6 +4230,7 @@
 
             try {
               makeParsed = await app.logic.requestAnswer(API_ENDPOINT, payload, controller.signal);
+              makeParsed.answer = app.logic.stripRepeatedIntro(makeParsed.answer, allowIntroForThisTurn);
             } catch (e) {
               makeParsed = { answer: `❌ Linda 3.0 Fehler: ${e?.message || 'unbekannt'}`, sources: [] };
             }
@@ -4169,6 +4255,7 @@
                 deepseekPayload,
                 controller.signal
               );
+              deepParsed.answer = app.logic.stripRepeatedIntro(deepParsed.answer, allowIntroForThisTurn);
             } catch (e) {
               const msg = String(e?.message || '');
               const missingDeepseekRoute = msg.includes('HTTP 404') && DEEPSEEK_API_ENDPOINT !== API_ENDPOINT;
@@ -4179,6 +4266,7 @@
                     deepseekPayload,
                     controller.signal
                   );
+                  deepParsed.answer = app.logic.stripRepeatedIntro(deepParsed.answer, allowIntroForThisTurn);
                 } catch (fallbackErr) {
                   deepParsed = { answer: `❌ Schnellmodus Fehler: ${fallbackErr?.message || 'unbekannt'}`, sources: [] };
                 }
@@ -4208,17 +4296,23 @@
             }
           } else {
             const parsed = await app.logic.requestAnswer(API_ENDPOINT, payload, controller.signal);
-            s.messages.push({ role: 'assistant', content: parsed.answer, sources: parsed.sources });
-            app.ui.log.appendChild(app.ui.createBubble('assistant', parsed.answer, parsed.sources));
+            parsed.answer = app.logic.stripRepeatedIntro(parsed.answer, allowIntroForThisTurn);
             if (opts?.autoSpeak) {
+              const spokenText = app.logic.buildSpokenAnswer(parsed?.answer || '');
+              const speaking = app.ui.voicePlaybackRow();
+              app.ui.log.appendChild(speaking);
+              app.ui.scrollBottom();
               try {
                 await app.logic.speakText(
-                  String(parsed?.answer || ''),
+                  spokenText,
                   String(opts?.speechLang || navigator.language || 'de-DE'),
                   { preferApi: true, voice: 'nova', speed: 1 }
                 );
               } catch (_) {}
+              speaking.remove();
             }
+            s.messages.push({ role: 'assistant', content: parsed.answer, sources: parsed.sources });
+            app.ui.log.appendChild(app.ui.createBubble('assistant', parsed.answer, parsed.sources));
           }
           loading.remove();
           if (!app.state.telemetry.firstSelectionHintShown) {
