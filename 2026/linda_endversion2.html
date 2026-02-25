@@ -1588,6 +1588,7 @@
     <textarea id="selection-result-text" class="selection-result-text" spellcheck="false"></textarea>
     <div class="selection-modal-actions">
       <button class="btn save" id="selection-result-copy" type="button">Kopieren</button>
+      <button class="btn save" id="selection-result-speak" type="button">Vorlesen</button>
       <button class="btn cancel" id="selection-result-close" type="button">Schließen</button>
     </div>
   </div>
@@ -2362,18 +2363,30 @@
         modal.setAttribute('aria-hidden', 'false');
       },
 
-      openSelectionResultModal: (title, text) => {
+      openSelectionResultModal: (title, text, opts = {}) => {
         const modal = document.getElementById('selection-result-modal');
         const titleEl = document.getElementById('selection-result-title');
         const textEl = document.getElementById('selection-result-text');
+        const speakBtn = document.getElementById('selection-result-speak');
         titleEl.textContent = title || 'Ergebnis';
         textEl.value = String(text || '');
+        modal.dataset.speechLang = String(opts.lang || navigator.language || 'de-DE');
+        modal.dataset.speechEnabled = String(Boolean(opts.allowSpeech !== false));
+        if (speakBtn) {
+          const supported = app.logic.isSpeechSupported();
+          const hasText = String(text || '').trim().length > 0;
+          speakBtn.disabled = !supported || !hasText || modal.dataset.speechEnabled === 'false';
+          speakBtn.textContent = 'Vorlesen';
+        }
         modal.classList.add('open');
         modal.setAttribute('aria-hidden', 'false');
       },
 
       closeSelectionResultModal: () => {
         const modal = document.getElementById('selection-result-modal');
+        app.logic.stopSpeech();
+        const speakBtn = document.getElementById('selection-result-speak');
+        if (speakBtn) speakBtn.textContent = 'Vorlesen';
         modal.classList.remove('open');
         modal.setAttribute('aria-hidden', 'true');
       },
@@ -3393,6 +3406,67 @@
         } catch (_) {
           return localFromCards();
         }
+      },
+
+      isSpeechSupported: () => {
+        return typeof window !== 'undefined' &&
+          'speechSynthesis' in window &&
+          typeof window.SpeechSynthesisUtterance !== 'undefined';
+      },
+
+      mapSpeechLang: (lang) => {
+        const key = String(lang || '').trim().toUpperCase();
+        const map = {
+          DE: 'de-DE',
+          EN: 'en-US',
+          ES: 'es-ES',
+          FR: 'fr-FR',
+          TR: 'tr-TR',
+          IT: 'it-IT',
+          PL: 'pl-PL',
+          NL: 'nl-NL',
+          PT: 'pt-PT'
+        };
+        if (map[key]) return map[key];
+        if (/^[a-z]{2}-[a-z]{2}$/i.test(lang || '')) return String(lang);
+        if (/^[a-z]{2}$/i.test(lang || '')) return `${String(lang).toLowerCase()}-${String(lang).toUpperCase()}`;
+        return String(navigator.language || 'de-DE');
+      },
+
+      stopSpeech: () => {
+        if (!app.logic.isSpeechSupported()) return;
+        try { window.speechSynthesis.cancel(); } catch (_) {}
+      },
+
+      speakText: async (text, langHint) => {
+        if (!app.logic.isSpeechSupported()) throw new Error('Sprachausgabe wird in diesem Browser nicht unterstützt.');
+        const content = String(text || '').trim();
+        if (!content) throw new Error('Kein Text zum Vorlesen vorhanden.');
+
+        const synth = window.speechSynthesis;
+        const utter = new SpeechSynthesisUtterance(content);
+        const wantedLang = app.logic.mapSpeechLang(langHint || navigator.language || 'de-DE');
+        utter.lang = wantedLang;
+
+        const pickVoice = () => {
+          const voices = synth.getVoices();
+          if (!Array.isArray(voices) || !voices.length) return;
+          const exact = voices.find((v) => String(v.lang || '').toLowerCase() === wantedLang.toLowerCase());
+          const prefix = voices.find((v) => String(v.lang || '').toLowerCase().startsWith(wantedLang.slice(0, 2).toLowerCase()));
+          utter.voice = exact || prefix || null;
+        };
+
+        pickVoice();
+        if (!utter.voice && typeof synth.onvoiceschanged !== 'undefined') {
+          synth.onvoiceschanged = () => pickVoice();
+        }
+
+        synth.cancel();
+        await new Promise((resolve, reject) => {
+          utter.onend = () => resolve();
+          utter.onerror = () => reject(new Error('Sprachausgabe konnte nicht gestartet werden.'));
+          synth.speak(utter);
+        });
       },
 
       requestSelectionTranslation: async (text, targetLang) => {
@@ -4519,7 +4593,7 @@
           const difficulty = String(document.getElementById('selection-practice-difficulty')?.value || 'mittel');
 
           const result = await app.logic.requestSelectionPractice(draft.text, { templateId, count, difficulty });
-          app.utils.openPracticeTabWithPayload({
+          app.logic.openPracticeTabWithPayload({
             ...result,
             generatedAt: app.utils.nowStamp(),
             sourceLength: draft.text.length
@@ -4555,7 +4629,7 @@
         onConfirm: async () => {
           const lang = document.getElementById('selection-lang')?.value || 'EN';
           const translated = await app.logic.requestSelectionTranslation(draft.text, lang);
-          app.ui.openSelectionResultModal('Übersetzung', translated || 'Keine Übersetzung erhalten.');
+          app.ui.openSelectionResultModal('Übersetzung', translated || 'Keine Übersetzung erhalten.', { lang });
         }
       });
     });
@@ -4587,6 +4661,31 @@
       try {
         await navigator.clipboard.writeText(txt);
       } catch (_) {}
+    });
+
+    document.getElementById('selection-result-speak').addEventListener('click', async () => {
+      const btn = document.getElementById('selection-result-speak');
+      const modal = document.getElementById('selection-result-modal');
+      const txt = document.getElementById('selection-result-text')?.value || '';
+      const lang = modal?.dataset?.speechLang || navigator.language || 'de-DE';
+      if (!app.logic.isSpeechSupported()) {
+        alert('Sprachausgabe wird in diesem Browser nicht unterstützt.');
+        return;
+      }
+      const synth = window.speechSynthesis;
+      if (synth.speaking) {
+        app.logic.stopSpeech();
+        if (btn) btn.textContent = 'Vorlesen';
+        return;
+      }
+      if (btn) btn.textContent = 'Stop';
+      try {
+        await app.logic.speakText(txt, lang);
+      } catch (e) {
+        alert(String(e?.message || 'Sprachausgabe fehlgeschlagen.'));
+      } finally {
+        if (btn) btn.textContent = 'Vorlesen';
+      }
     });
 
     document.getElementById('selection-result-close').addEventListener('click', () => {
