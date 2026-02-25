@@ -4,6 +4,47 @@ function sendJson(res, status, obj) {
   res.end(JSON.stringify(obj));
 }
 
+function getClientIp(req) {
+  const xf = req.headers?.['x-forwarded-for'];
+  if (typeof xf === 'string' && xf.length) return xf.split(',')[0].trim();
+  return req.socket?.remoteAddress || 'unknown';
+}
+
+function allowSameOrigin(req) {
+  const origin = req.headers?.origin || '';
+  const referer = req.headers?.referer || '';
+  const host = req.headers?.host || '';
+  const proto = req.headers?.['x-forwarded-proto'] || '';
+  if (!origin && !referer) return true;
+  if (!host) return false;
+
+  const allowed = new Set([`https://${host}`, `http://${host}`]);
+  if (proto) allowed.add(`${proto}://${host}`);
+  const parseOrigin = (value) => {
+    try { return new URL(value).origin; } catch (_) { return ''; }
+  };
+  const reqOrigin = origin ? parseOrigin(origin) : '';
+  const refOrigin = referer ? parseOrigin(referer) : '';
+  if (reqOrigin && allowed.has(reqOrigin)) return true;
+  if (!reqOrigin && refOrigin && allowed.has(refOrigin)) return true;
+  return false;
+}
+
+const ttsRateWindowMs = 60 * 1000;
+const ttsRateMaxPerWindow = 20;
+const ttsRateState = new Map();
+function checkTtsRateLimit(ip) {
+  const now = Date.now();
+  const slot = ttsRateState.get(ip) || { count: 0, resetAt: now + ttsRateWindowMs };
+  if (now > slot.resetAt) {
+    slot.count = 0;
+    slot.resetAt = now + ttsRateWindowMs;
+  }
+  slot.count += 1;
+  ttsRateState.set(ip, slot);
+  return slot.count <= ttsRateMaxPerWindow;
+}
+
 function isSet(name) {
   return Boolean(String(process.env[name] || '').trim());
 }
@@ -31,10 +72,12 @@ async function handleHealth(res) {
     Linda3Schnellmodus: isSet('Linda3Schnellmodus'),
     DEEPL_API_KEY: isSet('DEEPL_API_KEY'),
     ReWrite: isSet('ReWrite'),
-    LernkartenAPI: isSet('LernkartenAPI')
+    LernkartenAPI: isSet('LernkartenAPI'),
+    TTS_API_KEY: isSet('TTS_API_KEY') || /^sk-/.test(String(process.env.ReWrite || '').trim())
   };
+  const required = ['MAKE_WEBHOOK_URL', 'Linda3Schnellmodus', 'DEEPL_API_KEY', 'ReWrite', 'LernkartenAPI'];
   return sendJson(res, 200, {
-    ok: Object.values(checks).every(Boolean),
+    ok: required.every((k) => Boolean(checks[k])),
     checks,
     ts: new Date().toISOString()
   });
@@ -419,13 +462,69 @@ async function handleFlashcards(res, body) {
   }
 }
 
+async function handleTts(req, res, body) {
+  const ttsKey = String(process.env.TTS_API_KEY || '').trim();
+  const rewriteKey = String(process.env.ReWrite || '').trim();
+  const apiKey = ttsKey || (/^sk-/.test(rewriteKey) ? rewriteKey : '');
+  if (!apiKey) return sendJson(res, 500, { error: 'TTS_API_KEY fehlt (oder ReWrite als sk- Key)' });
+
+  const rawText = String(body?.text || '').trim();
+  if (!rawText) return sendJson(res, 400, { error: 'text fehlt' });
+  const text = rawText.slice(0, 1800);
+
+  const lang = String(body?.lang || body?.language || 'de-DE').trim();
+  const langTag = /^[a-z]{2}(-[a-z]{2})?$/i.test(lang) ? lang : 'de-DE';
+  const input = `[Sprache: ${langTag}] ${text}`;
+
+  const reqVoice = String(body?.voice || process.env.TTS_VOICE || 'alloy').trim().toLowerCase();
+  const allowedVoices = new Set(['alloy', 'ash', 'ballad', 'coral', 'echo', 'fable', 'onyx', 'nova', 'sage', 'shimmer', 'verse']);
+  const voice = allowedVoices.has(reqVoice) ? reqVoice : 'alloy';
+  const speedRaw = Number(body?.speed);
+  const speed = Number.isFinite(speedRaw) ? Math.max(0.7, Math.min(1.2, speedRaw)) : 1;
+  const model = String(process.env.TTS_MODEL || 'gpt-4o-mini-tts').trim();
+
+  const upstream = await fetch('https://api.openai.com/v1/audio/speech', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${apiKey}`
+    },
+    body: JSON.stringify({
+      model,
+      voice,
+      input,
+      response_format: 'mp3',
+      speed
+    })
+  });
+
+  const buf = Buffer.from(await upstream.arrayBuffer());
+  if (!upstream.ok) {
+    const detail = String(buf.toString('utf8') || '').slice(0, 800);
+    return sendJson(res, upstream.status, { error: 'TTS Provider Fehler', detail });
+  }
+
+  res.statusCode = 200;
+  res.setHeader('Content-Type', 'audio/mpeg');
+  res.setHeader('Cache-Control', 'no-store');
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  return res.end(buf);
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'GET' && req.method !== 'POST') {
     res.setHeader('Allow', 'GET, POST');
     return sendJson(res, 405, { error: 'Nur GET/POST erlaubt' });
   }
 
+  if (!allowSameOrigin(req)) {
+    return sendJson(res, 403, { error: 'Origin/Referer nicht erlaubt (same-origin)' });
+  }
+
   const body = req.body && typeof req.body === 'object' ? req.body : {};
+  const bodyLength = Buffer.byteLength(JSON.stringify(body || {}), 'utf8');
+  if (bodyLength > 32 * 1024) return sendJson(res, 413, { error: 'Payload zu groß (max 32KB)' });
+
   const action = getAction(req, body);
   try {
     if (action === 'health' || (req.method === 'GET' && !action)) return handleHealth(res);
@@ -434,6 +533,12 @@ export default async function handler(req, res) {
     if (action === 'translate') return handleTranslate(res, body);
     if (action === 'rewrite') return handleRewrite(res, body);
     if (action === 'flashcards') return handleFlashcards(res, body);
+    if (action === 'tts') {
+      if (req.method !== 'POST') return sendJson(res, 405, { error: 'Nur POST erlaubt' });
+      const ip = getClientIp(req);
+      if (!checkTtsRateLimit(ip)) return sendJson(res, 429, { error: 'Rate limit erreicht. Bitte in 1 Minute erneut versuchen.' });
+      return handleTts(req, res, body);
+    }
     return sendJson(res, 400, { error: 'Unbekannte action', action });
   } catch (e) {
     return sendJson(res, 500, { error: 'Linda3 API Fehler', detail: String(e?.message || '') });
