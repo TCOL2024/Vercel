@@ -658,10 +658,14 @@ export default async function handler(req, res) {
   }
 
   const body = req.body && typeof req.body === 'object' ? req.body : {};
-  const bodyLength = Buffer.byteLength(JSON.stringify(body || {}), 'utf8');
-  if (bodyLength > 32 * 1024) return sendJson(res, 413, { error: 'Payload zu groß (max 32KB)' });
-
   const action = getAction(req, body);
+  const bodyLength = Buffer.byteLength(JSON.stringify(body || {}), 'utf8');
+  const maxPayload = action === 'stt' ? 6 * 1024 * 1024 : 32 * 1024;
+  if (bodyLength > maxPayload) {
+    return sendJson(res, 413, {
+      error: `Payload zu groß (max ${action === 'stt' ? '6MB' : '32KB'})`
+    });
+  }
   try {
     if (action === 'health' || (req.method === 'GET' && !action)) return handleHealth(res);
     if (action === 'bot') return handleBot(res, body);
