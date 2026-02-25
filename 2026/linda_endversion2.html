@@ -1374,6 +1374,15 @@
     </div>
 
     <div class="section" style="margin-top:10px;">
+      <h4>API Health</h4>
+      <p class="mini">Prüft, ob die benötigten Environment-Variablen für diese Site gesetzt sind.</p>
+      <div class="btn-row" style="margin-top:8px;">
+        <button class="btn save" type="button" onclick="app.logic.checkApiHealth()">Health prüfen</button>
+      </div>
+      <pre id="api-health-status" class="mini" style="margin-top:8px; background:#f4f8ff; border:1px solid #d7e4f8; border-radius:10px; padding:10px; white-space:pre-wrap;">Noch nicht geprüft.</pre>
+    </div>
+
+    <div class="section" style="margin-top:10px;">
       <h4>Prompting-Vorschläge</h4>
       <p class="mini">Optional zuschaltbar. Vorschläge werden lokal erzeugt und nicht als feste Prompt-Vorgabe an den Bot gesendet.</p>
       <div class="toggle-row" style="margin-top:8px;">
@@ -1470,8 +1479,9 @@
 (() => {
   'use strict';
 
-  const DEEPSEEK_API_ENDPOINT = window.LINDA_DEEPSEEK_ENDPOINT || '/api/deepseek';
-  const API_ENDPOINT = window.LINDA_API_ENDPOINT || DEEPSEEK_API_ENDPOINT;
+  const API_ENDPOINT = '/api/linda/bot';
+  const DEEPSEEK_API_ENDPOINT = '/api/linda/deepseek';
+  const HEALTH_API_ENDPOINT = '/api/linda/health';
   const BBIG_PDF_PATH = 'https://vercel-kappa-seven-33.vercel.app/2026/document/BBIG_V20022026.pdf';
   const DIRECTORY_LINKS_PATH = './directory_links.json';
   const DIRECTORY_KEYWORD_MATCHING_ENABLED = false;
@@ -1479,9 +1489,9 @@
   const REQUEST_MEMORY_KEY = 'linda3_request_memory';
   const CARDS_KEY = 'linda3_cards';
   const CARDS_STATS_KEY = 'linda3_cards_stats';
-  const FLASHCARDS_API_ENDPOINT = window.LINDA_FLASHCARDS_ENDPOINT || '/api/flashcards';
-  const TRANSLATE_API_ENDPOINT = window.LINDA_TRANSLATE_ENDPOINT || '/api/translate';
-  const REWRITE_API_ENDPOINT = window.LINDA_REWRITE_ENDPOINT || '/api/rewrite';
+  const FLASHCARDS_API_ENDPOINT = '/api/linda/flashcards';
+  const TRANSLATE_API_ENDPOINT = '/api/linda/translate';
+  const REWRITE_API_ENDPOINT = '/api/linda/rewrite';
   const APP_VERSION = 3;
   const REQUEST_MEMORY_VERSION = 1;
 
@@ -1580,6 +1590,11 @@
     },
     cards: {
       lastDeckTitle: ''
+    },
+    apiHealth: {
+      ok: null,
+      checks: {},
+      ts: ''
     },
     keywordLinks: structuredClone(DEFAULT_DIRECTORY_LINKS),
     telemetry: {
@@ -1853,6 +1868,29 @@
           null,
           2
         );
+        app.ui.renderApiHealthStatus(app.state.apiHealth);
+      },
+
+      renderApiHealthStatus: (health) => {
+        const box = document.getElementById('api-health-status');
+        if (!box) return;
+        const h = (health && typeof health === 'object') ? health : null;
+        if (!h || !h.checks || typeof h.checks !== 'object' || !Object.keys(h.checks).length) {
+          box.textContent = 'Noch nicht geprüft.';
+          box.style.color = '#37526f';
+          return;
+        }
+        const lines = [];
+        lines.push(`Status: ${h.ok ? 'OK' : 'Unvollständig'}`);
+        Object.entries(h.checks).forEach(([k, v]) => {
+          lines.push(`${v ? '✓' : '✗'} ${k}`);
+        });
+        if (h.ts) {
+          const ts = new Date(h.ts);
+          if (!Number.isNaN(ts.getTime())) lines.push(`Geprüft: ${ts.toLocaleString('de-DE')}`);
+        }
+        box.textContent = lines.join('\n');
+        box.style.color = h.ok ? '#1f6b2a' : '#8a3b00';
       },
 
       syncFastModeControls: () => {
@@ -2321,6 +2359,40 @@
 
           app.state.keywordLinks = out;
         } catch (_) {}
+      },
+
+      checkApiHealth: async () => {
+        const box = document.getElementById('api-health-status');
+        if (box) {
+          box.textContent = 'Prüfe API-Konfiguration...';
+          box.style.color = '#37526f';
+        }
+        try {
+          const res = await fetch(HEALTH_API_ENDPOINT, { method: 'GET' });
+          const raw = await res.text();
+          let parsed = {};
+          try { parsed = JSON.parse(raw); } catch (_) {}
+          if (!res.ok) throw new Error(parsed?.error || `HTTP ${res.status}`);
+
+          app.state.apiHealth = {
+            ok: Boolean(parsed?.ok),
+            checks: (parsed?.checks && typeof parsed.checks === 'object') ? parsed.checks : {},
+            ts: String(parsed?.ts || new Date().toISOString())
+          };
+          app.ui.renderApiHealthStatus(app.state.apiHealth);
+          app.utils.save();
+        } catch (e) {
+          app.state.apiHealth = {
+            ok: false,
+            checks: {},
+            ts: new Date().toISOString(),
+            error: String(e?.message || 'unbekannt')
+          };
+          if (box) {
+            box.textContent = `Health-Check fehlgeschlagen: ${app.state.apiHealth.error}`;
+            box.style.color = '#8a3b00';
+          }
+        }
       },
 
       findKeywordLinks: (text) => {
@@ -2890,7 +2962,7 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             text: String(text || '').slice(0, 250),
-            targetLang: String(targetLang || 'EN').toUpperCase()
+            target_lang: String(targetLang || 'EN').toUpperCase()
           })
         });
         if (!res.ok) {
@@ -2902,16 +2974,22 @@
           throw new Error(`HTTP ${res.status}${detail}`);
         }
         const parsed = await res.json();
-        return String(parsed?.text || parsed?.translation || '').trim();
+        return String(parsed?.result || parsed?.text || parsed?.translation || '').trim();
       },
 
       requestSelectionRewrite: async (text, mode) => {
+        const modeToStyle = {
+          easy: 'neutral',
+          detailed: 'besser',
+          crisp: 'kurz'
+        };
+        const style = modeToStyle[String(mode || 'easy')] || 'neutral';
         const res = await fetch(REWRITE_API_ENDPOINT, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             text: String(text || '').slice(0, 500),
-            mode: String(mode || 'easy')
+            style
           })
         });
         if (!res.ok) {
@@ -2923,7 +3001,16 @@
           throw new Error(`HTTP ${res.status}${detail}`);
         }
         const parsed = await res.json();
-        return String(parsed?.text || parsed?.result || '').trim();
+        if (String(parsed?.type || '') === 'clarification') {
+          const qs = Array.isArray(parsed?.questions) ? parsed.questions : [];
+          const hint = String(parsed?.hint || '').trim();
+          return [
+            hint || 'Bitte beantworte kurz folgende Rückfragen:',
+            '',
+            ...qs.map((q, i) => `${i + 1}. ${q}`)
+          ].join('\n').trim();
+        }
+        return String(parsed?.result || parsed?.text || '').trim();
       },
 
       sanitizeSourceList: (items) => {
