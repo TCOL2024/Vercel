@@ -925,6 +925,119 @@
     color: #415b79;
   }
 
+  .practice-card {
+    border: 1px solid #d2e2f6;
+    border-radius: 14px;
+    background: #fff;
+    padding: 14px;
+    box-shadow: 0 8px 20px rgba(12, 41, 74, 0.06);
+  }
+
+  .practice-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+
+  .practice-header h3 {
+    margin: 0;
+    font-size: 1.02rem;
+    color: #123f72;
+  }
+
+  .practice-points {
+    border: 1px solid #c5d9f5;
+    color: #1b4f8a;
+    border-radius: 999px;
+    padding: 4px 8px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    background: #f3f8ff;
+  }
+
+  .practice-question {
+    margin: 0 0 10px;
+    color: #1d3652;
+    line-height: 1.5;
+  }
+
+  .practice-options {
+    display: grid;
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+
+  .practice-option {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    border: 1px solid #d7e4f8;
+    border-radius: 10px;
+    padding: 9px 10px;
+    background: #fbfdff;
+    font-size: 0.94rem;
+    color: #233c57;
+  }
+
+  .practice-open-answer {
+    width: 100%;
+    min-height: 94px;
+    border: 1px solid #c8d9f4;
+    border-radius: 10px;
+    padding: 10px;
+    font: inherit;
+    resize: vertical;
+    background: #fdfefe;
+  }
+
+  .practice-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .practice-solution {
+    margin-top: 10px;
+    border: 1px solid #c8ddf8;
+    border-radius: 10px;
+    background: #f4f9ff;
+    padding: 10px;
+    font-size: 0.92rem;
+    color: #1e436b;
+  }
+
+  .selection-template-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .selection-template {
+    border: 1px solid #cfe0f7;
+    border-radius: 12px;
+    padding: 10px;
+    cursor: pointer;
+    background: #f8fbff;
+  }
+
+  .selection-template.active {
+    border-color: #2372ce;
+    background: #eaf3ff;
+  }
+
+  .selection-template strong {
+    display: block;
+    margin-bottom: 4px;
+    color: #0f4f9a;
+  }
+
+  .selection-template small {
+    color: #506986;
+    display: block;
+  }
+
   .mode-card {
     border: 1px solid #cfe0f7;
     background: #f6fbff;
@@ -998,6 +1111,10 @@
     }
 
     .grid.cols-2 {
+      grid-template-columns: 1fr;
+    }
+
+    .selection-template-grid {
       grid-template-columns: 1fr;
     }
 
@@ -1447,6 +1564,7 @@
 <div id="selection-menu" role="menu" aria-label="Auswahlmenü">
   <div class="title">Markierter Bereich erkannt</div>
   <button id="selection-cards-btn" class="sel-btn" type="button">Lernkarten erstellen</button>
+  <button id="selection-practice-btn" class="sel-btn" type="button">Übungsaufgaben erstellen</button>
   <button id="selection-translate-btn" class="sel-btn" type="button">Übersetzen</button>
   <button id="selection-rewrite-btn" class="sel-btn" type="button">Komprimiere Inhalt</button>
   <div class="selection-note" id="selection-note">Zeichen: 0</div>
@@ -1488,10 +1606,12 @@
   const STORAGE_KEY = 'linda3_state';
   const REQUEST_MEMORY_KEY = 'linda3_request_memory';
   const CARDS_KEY = 'linda3_cards';
+  const PRACTICE_KEY = 'linda3_practice';
   const CARDS_STATS_KEY = 'linda3_cards_stats';
   const FLASHCARDS_API_ENDPOINT = '/api/linda3?action=flashcards';
   const TRANSLATE_API_ENDPOINT = '/api/linda3?action=translate';
   const REWRITE_API_ENDPOINT = '/api/linda3?action=rewrite';
+  const LEARNING_TEMPLATES_PATH = './docs/learning_templates.json';
   const APP_VERSION = 3;
   const REQUEST_MEMORY_VERSION = 1;
 
@@ -1527,6 +1647,32 @@
     requireConfirmation: true,
     adaptive: true
   };
+
+  const DEFAULT_LEARNING_TEMPLATES = {
+    version: '1.0',
+    flashcards: {
+      instruction_template:
+        'Erstelle aus dem folgenden Inhalt genau {{count}} hochwertige Lernkarten. ' +
+        'Antwort ausschliesslich als JSON ohne Markdown im Format {"deckTitle":"...","cards":[{"question":"...","answer":"..."}]}. ' +
+        'Regeln: Nur fachlich relevante Inhalte, keine Meta-Hinweise, kurze und pruefungsorientierte Antworten. ' +
+        'Fachmodus: {{domain}}. Inhalt: {{content}}'
+    },
+    practice: {
+      title_prefix: 'Uebungsaufgaben',
+      instruction_template:
+        'Analysiere den Inhalt gruendlich und erstelle durchdachte Uebungsaufgaben im Modus {{template_label}} mit Niveau {{difficulty}}. ' +
+        'Liefere JSON ohne Markdown im Format {"title":"...","questions":[{"type":"mc","question":"...","options":["..."],"correctIndices":[0],"hint":"...","solution":"...","points":2}]}. ' +
+        'Fuer MC mindestens 4 Optionen. Kontext: {{content}}',
+      templates: [
+        { id: 'quick_quiz', label: 'Schnelles Quiz', description: 'Kurze Wiederholung von Fakten und Definitionen', duration: '5 Minuten', default_count: 4, supports_open: false },
+        { id: 'multiple_choice', label: 'Multiple Choice', description: 'Prueft Verstaendnis auf mehreren Ebenen', duration: '10 Minuten', default_count: 6, supports_open: false },
+        { id: 'progressive', label: 'Progressive Uebung', description: 'Steigendes Niveau inkl. Transferaufgaben', duration: '15 Minuten', default_count: 6, supports_open: true },
+        { id: 'deep_dive', label: 'Deep Dive', description: 'Anwendung, Begruendung und kritisches Denken', duration: '25 Minuten', default_count: 8, supports_open: true }
+      ],
+      difficulties: ['leicht', 'mittel', 'anspruchsvoll']
+    }
+  };
+  let learningTemplatesCache = structuredClone(DEFAULT_LEARNING_TEMPLATES);
 
   const DEFAULT_REQUEST_MEMORY = {
     version: REQUEST_MEMORY_VERSION,
@@ -2148,20 +2294,23 @@
         const draft = app.state.selectionDraft || {};
         const len = Number(draft.textLength || 0);
         const canCards = len >= 24;
+        const canPractice = len >= 40;
         const canTranslate = len > 0 && len <= 250;
         const canRewrite = len > 0 && len <= 500;
 
         const cardsBtn = document.getElementById('selection-cards-btn');
+        const practiceBtn = document.getElementById('selection-practice-btn');
         const translateBtn = document.getElementById('selection-translate-btn');
         const rewriteBtn = document.getElementById('selection-rewrite-btn');
         const note = document.getElementById('selection-note');
 
         if (cardsBtn) cardsBtn.disabled = !canCards;
+        if (practiceBtn) practiceBtn.disabled = !canPractice;
         if (translateBtn) translateBtn.disabled = !canTranslate;
         if (rewriteBtn) rewriteBtn.disabled = !canRewrite;
         if (note) {
           note.textContent =
-            `Zeichen: ${len} • Übersetzen bis 250 • Komprimieren bis 500 • Lernkarten ab 24`;
+            `Zeichen: ${len} • Uebungsaufgaben ab 40 • Uebersetzen bis 250 • Komprimieren bis 500 • Lernkarten ab 24`;
         }
 
         const vw = window.innerWidth;
@@ -2359,6 +2508,71 @@
 
           app.state.keywordLinks = out;
         } catch (_) {}
+      },
+
+      loadLearningTemplates: async () => {
+        try {
+          const res = await fetch(LEARNING_TEMPLATES_PATH, { cache: 'no-store' });
+          if (!res.ok) return;
+          const parsed = await res.json();
+          if (!parsed || typeof parsed !== 'object') return;
+
+          const flashInstruction = String(parsed?.flashcards?.instruction_template || '').trim();
+          const practiceObj = parsed?.practice && typeof parsed.practice === 'object' ? parsed.practice : {};
+          const practiceTemplates = Array.isArray(practiceObj.templates) ? practiceObj.templates : [];
+          const normalizedTemplates = practiceTemplates
+            .map((t) => {
+              if (!t || typeof t !== 'object') return null;
+              const id = String(t.id || '').trim();
+              const label = String(t.label || '').trim();
+              if (!id || !label) return null;
+              return {
+                id,
+                label,
+                description: String(t.description || '').trim(),
+                duration: String(t.duration || '').trim(),
+                default_count: Math.max(3, Math.min(12, Number(t.default_count || 6))),
+                supports_open: Boolean(t.supports_open)
+              };
+            })
+            .filter(Boolean);
+
+          learningTemplatesCache = {
+            version: String(parsed.version || DEFAULT_LEARNING_TEMPLATES.version || '1.0'),
+            flashcards: {
+              instruction_template:
+                flashInstruction || DEFAULT_LEARNING_TEMPLATES.flashcards.instruction_template
+            },
+            practice: {
+              title_prefix: String(practiceObj.title_prefix || DEFAULT_LEARNING_TEMPLATES.practice.title_prefix || 'Uebungsaufgaben').trim(),
+              instruction_template:
+                String(practiceObj.instruction_template || '').trim() ||
+                DEFAULT_LEARNING_TEMPLATES.practice.instruction_template,
+              templates: normalizedTemplates.length
+                ? normalizedTemplates
+                : structuredClone(DEFAULT_LEARNING_TEMPLATES.practice.templates),
+              difficulties: (Array.isArray(practiceObj.difficulties) ? practiceObj.difficulties : [])
+                .map((v) => String(v || '').trim())
+                .filter(Boolean)
+            }
+          };
+          if (!learningTemplatesCache.practice.difficulties.length) {
+            learningTemplatesCache.practice.difficulties = structuredClone(DEFAULT_LEARNING_TEMPLATES.practice.difficulties);
+          }
+        } catch (_) {}
+      },
+
+      getLearningTemplates: () => {
+        return learningTemplatesCache || structuredClone(DEFAULT_LEARNING_TEMPLATES);
+      },
+
+      fillTemplateVars: (template, vars) => {
+        let out = String(template || '');
+        Object.entries(vars || {}).forEach(([k, v]) => {
+          const rx = new RegExp(`{{\\s*${k}\\s*}}`, 'g');
+          out = out.replace(rx, String(v == null ? '' : v));
+        });
+        return out;
       },
 
       checkApiHealth: async () => {
@@ -2707,6 +2921,13 @@
         if (!tab) alert('Popup blockiert. Bitte Popups erlauben, um Karten in neuem Tab zu öffnen.');
       },
 
+      openPracticeTabWithPayload: (payload) => {
+        localStorage.setItem(PRACTICE_KEY, JSON.stringify(payload));
+        const target = `${window.location.pathname}?view=practice`;
+        const tab = window.open(target, '_blank', 'noopener');
+        if (!tab) alert('Popup blockiert. Bitte Popups erlauben, um Uebungsaufgaben in neuem Tab zu öffnen.');
+      },
+
       prepareSelectionDraftFromEvent: (evt) => {
         const md = evt.target.closest('.msg-row.assistant .md');
         if (!md) return false;
@@ -2748,18 +2969,15 @@
 
       buildCardsWebhookQuestion: (text, targetCount, domain) => {
         const safeText = app.logic.sanitizeCardsInputText(text, 1400);
-        return (
-          `Erstelle aus dem folgenden Inhalt genau ${targetCount} hochwertige Lernkarten. ` +
-          'Antwort ausschließlich als JSON ohne Markdown.\n\n' +
-          'Format:\n' +
-          '{"deckTitle":"...","cards":[{"question":"...","answer":"..."}]}\n\n' +
-          'Regeln:\n' +
-          '- Nur fachlich relevante Inhalte.\n' +
-          '- Keine Meta-Hinweise, keine UI-Texte.\n' +
-          '- Kurz, präzise, prüfungsorientiert.\n\n' +
-          `Fachmodus: ${domain || 'Standard'}\n\n` +
-          `Inhalt:\n${safeText}`
-        );
+        const tpl = app.logic.getLearningTemplates();
+        const pattern =
+          String(tpl?.flashcards?.instruction_template || '').trim() ||
+          DEFAULT_LEARNING_TEMPLATES.flashcards.instruction_template;
+        return app.logic.fillTemplateVars(pattern, {
+          count: targetCount,
+          domain: domain || 'Standard',
+          content: safeText
+        });
       },
 
       requestCardsViaWebhook: async (rawText, sourceType = 'manual') => {
@@ -2916,46 +3134,265 @@
       requestSelectionFlashcards: async (selectedText, count = 8) => {
         const domain = app.state.settings.domain || 'Standard';
         const safeCount = Math.max(4, Math.min(20, Number(count || 8)));
-        const res = await fetch(FLASHCARDS_API_ENDPOINT, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            title: `LINDA Auswahl ${domain}`,
-            source: `Markierter Text (${domain})`,
-            context: app.logic.sanitizeCardsInputText(selectedText, 1400),
-            count: safeCount,
-            economyMode: true
+        const localFallback = () => {
+          const cards = app.logic.buildFlashcardsFromText(selectedText)
+            .slice(0, safeCount)
+            .map((c) => ({
+              ...c,
+              id: hashCardId(c.question, c.answer),
+              adaptive: { ease: 2, reps: 0, dueAt: 0 }
+            }));
+
+          if (!cards.length) throw new Error('Keine Lernkarten erzeugt');
+          return {
+            cards,
+            deckTitle: 'Lernkarten aus Markierung',
+            sourceType: 'selection-local-fallback'
+          };
+        };
+
+        try {
+          const res = await fetch(FLASHCARDS_API_ENDPOINT, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              title: `LINDA Auswahl ${domain}`,
+              source: `Markierter Text (${domain})`,
+              context: app.logic.sanitizeCardsInputText(selectedText, 1400),
+              count: safeCount,
+              economyMode: true
+            })
+          });
+
+          if (!res.ok) return localFallback();
+
+          const parsed = await res.json();
+          const cards = (Array.isArray(parsed?.cards) ? parsed.cards : [])
+            .map((c) => ({
+              question: String(c.front || c.question || '').trim(),
+              answer: String(c.back || c.answer || '').trim()
+            }))
+            .filter((c) => c.question && c.answer)
+            .map((c) => ({
+              ...c,
+              id: hashCardId(c.question, c.answer),
+              adaptive: { ease: 2, reps: 0, dueAt: 0 }
+            }));
+
+          if (!cards.length) return localFallback();
+          return {
+            cards,
+            deckTitle: 'Lernkarten aus Markierung',
+            sourceType: 'selection-flashcards-api'
+          };
+        } catch (_) {
+          return localFallback();
+        }
+      },
+
+      getPracticeTemplates: () => {
+        const cfg = app.logic.getLearningTemplates();
+        const fromCfg = Array.isArray(cfg?.practice?.templates) ? cfg.practice.templates : [];
+        return fromCfg.length ? fromCfg : structuredClone(DEFAULT_LEARNING_TEMPLATES.practice.templates);
+      },
+
+      normalizePracticeSet: (data) => {
+        const title = String(data?.title || '').trim() || 'Uebungsaufgaben';
+        const questions = (Array.isArray(data?.questions) ? data.questions : [])
+          .map((q, idx) => {
+            const question = String(q?.question || '').trim();
+            const type = String(q?.type || 'mc').toLowerCase();
+            const options = (Array.isArray(q?.options) ? q.options : [])
+              .map((o) => String(o || '').trim())
+              .filter(Boolean)
+              .slice(0, 6);
+            const rawCorrect = Array.isArray(q?.correctIndices) ? q.correctIndices : [];
+            const correctIndices = rawCorrect
+              .map((v) => Number(v))
+              .filter((v) => Number.isInteger(v) && v >= 0 && v < options.length)
+              .slice(0, 2);
+            const hint = String(q?.hint || '').trim();
+            const solution = String(q?.solution || q?.answer || '').trim();
+            const points = Math.max(1, Math.min(5, Number(q?.points || 2)));
+            if (!question) return null;
+            if (type === 'mc' && options.length < 2) return null;
+            return {
+              id: `p_${idx + 1}_${Date.now().toString(36)}`,
+              type: type === 'open' ? 'open' : 'mc',
+              question,
+              options,
+              correctIndices,
+              hint,
+              solution,
+              points
+            };
           })
+          .filter(Boolean);
+        return { title, questions };
+      },
+
+      parsePracticeApiResponse: (raw) => {
+        const clean = String(raw || '')
+          .replace(/```json/gi, '```')
+          .replace(/```/g, '')
+          .trim();
+        const direct = parseJSON(clean, null);
+        if (direct && typeof direct === 'object') return app.logic.normalizePracticeSet(direct);
+        const objMatch = clean.match(/\{[\s\S]*\}/);
+        if (objMatch) {
+          const fromMatch = parseJSON(objMatch[0], null);
+          if (fromMatch && typeof fromMatch === 'object') return app.logic.normalizePracticeSet(fromMatch);
+        }
+        return null;
+      },
+
+      buildPracticeFromCards: (cards, opts) => {
+        const template = opts?.template || {};
+        const wanted = Math.max(3, Math.min(12, Number(opts?.count || template.default_count || 6)));
+        const sourceCards = Array.isArray(cards) ? cards.filter((c) => c.question && c.answer) : [];
+        const picked = sourceCards.slice(0, wanted);
+        const questions = [];
+
+        const buildDistractors = (correct, pool) => {
+          const out = [];
+          const seen = new Set([String(correct || '').toLowerCase()]);
+          for (const entry of pool) {
+            const candidate = String(entry || '').trim();
+            if (!candidate) continue;
+            const key = candidate.toLowerCase();
+            if (seen.has(key)) continue;
+            seen.add(key);
+            out.push(candidate);
+            if (out.length >= 3) break;
+          }
+          if (out.length < 3) {
+            const fallback = [
+              'Die Aussage gilt ohne weitere Voraussetzungen immer.',
+              'Die Aussage ist nur bei freiwilliger Anwendung relevant.',
+              'Die Aussage bezieht sich ausschliesslich auf Theorie ohne Praxisbezug.'
+            ];
+            for (const f of fallback) {
+              const key = f.toLowerCase();
+              if (seen.has(key)) continue;
+              out.push(f);
+              if (out.length >= 3) break;
+            }
+          }
+          return out;
+        };
+
+        picked.forEach((card, idx) => {
+          const questionText = String(card.question || '').replace(/\?+$/, '').trim();
+          const answerText = String(card.answer || '').trim();
+          const pool = sourceCards
+            .map((c) => c.answer)
+            .filter((a) => String(a || '').trim() && String(a || '').trim() !== answerText);
+          const distractors = buildDistractors(answerText, pool);
+          const options = [answerText, ...distractors].slice(0, 4);
+          options.sort((a, b) => (a > b ? 1 : -1));
+          const correctIndex = options.findIndex((o) => o === answerText);
+
+          const isOpen = Boolean(template.supports_open) && idx % 3 === 2;
+          if (isOpen) {
+            questions.push({
+              id: `open_${idx + 1}`,
+              type: 'open',
+              question: `${questionText || 'Erläutere den Zusammenhang'}. Begründe deine Antwort mit Bezug auf den markierten Inhalt.`,
+              options: [],
+              correctIndices: [],
+              hint: `Nutze die Kernaussage aus: ${answerText.slice(0, 120)}${answerText.length > 120 ? '...' : ''}`,
+              solution: answerText,
+              points: 3
+            });
+            return;
+          }
+
+          questions.push({
+            id: `mc_${idx + 1}`,
+            type: 'mc',
+            question: `${questionText || 'Welche Aussage ist fachlich korrekt'}?`,
+            options,
+            correctIndices: correctIndex >= 0 ? [correctIndex] : [0],
+            hint: `Pruefe den Abschnitt mit Fokus auf den Kernbegriff: ${questionText.split(' ').slice(0, 4).join(' ')}.`,
+            solution: answerText,
+            points: 2
+          });
         });
 
-        if (!res.ok) {
-          let detail = '';
-          try {
-            const err = await res.json();
-            detail = err?.error ? `: ${err.error}` : '';
-          } catch (_) {}
-          throw new Error(`HTTP ${res.status}${detail}`);
-        }
-
-        const parsed = await res.json();
-        const cards = (Array.isArray(parsed?.cards) ? parsed.cards : [])
-          .map((c) => ({
-            question: String(c.front || c.question || '').trim(),
-            answer: String(c.back || c.answer || '').trim()
-          }))
-          .filter((c) => c.question && c.answer)
-          .map((c) => ({
-            ...c,
-            id: hashCardId(c.question, c.answer),
-            adaptive: { ease: 2, reps: 0, dueAt: 0 }
-          }));
-
-        if (!cards.length) throw new Error('Keine Lernkarten erzeugt');
         return {
-          cards,
-          deckTitle: 'Lernkarten aus Markierung',
-          sourceType: 'selection-flashcards-api'
+          title: `${app.logic.getLearningTemplates()?.practice?.title_prefix || 'Uebungsaufgaben'} ${app.utils.nowStamp()}`,
+          templateId: template.id || 'multiple_choice',
+          templateLabel: template.label || 'Multiple Choice',
+          difficulty: String(opts?.difficulty || 'mittel'),
+          sourceType: 'selection-practice-local',
+          questions
         };
+      },
+
+      requestSelectionPractice: async (selectedText, options = {}) => {
+        const safeText = app.logic.sanitizeCardsInputText(selectedText, 1800);
+        const templates = app.logic.getPracticeTemplates();
+        const templateId = String(options.templateId || templates[0]?.id || 'multiple_choice');
+        const template = templates.find((t) => t.id === templateId) || templates[0] || DEFAULT_LEARNING_TEMPLATES.practice.templates[0];
+        const count = Math.max(3, Math.min(12, Number(options.count || template.default_count || 6)));
+        const difficulty = String(options.difficulty || 'mittel');
+
+        const localFromCards = () => {
+          const cards = app.logic.buildFlashcardsFromText(safeText).slice(0, Math.max(6, count + 2));
+          return app.logic.buildPracticeFromCards(cards, { template, count, difficulty });
+        };
+
+        try {
+          const tplCfg = app.logic.getLearningTemplates();
+          const instruction = app.logic.fillTemplateVars(
+            String(tplCfg?.practice?.instruction_template || DEFAULT_LEARNING_TEMPLATES.practice.instruction_template),
+            {
+              template_label: template.label,
+              difficulty,
+              content: safeText
+            }
+          );
+
+          const res = await fetch(FLASHCARDS_API_ENDPOINT, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              mode: 'exercise',
+              template_id: template.id,
+              template_label: template.label,
+              count,
+              difficulty,
+              title: `${template.label} - ${app.state.settings.domain || 'Standard'}`,
+              source: `Markierter Text (${app.state.settings.domain || 'Standard'})`,
+              context: safeText,
+              instruction,
+              economyMode: true
+            })
+          });
+
+          if (!res.ok) return localFromCards();
+
+          const raw = await res.text();
+          const parsedPractice = app.logic.parsePracticeApiResponse(raw);
+          if (parsedPractice && parsedPractice.questions.length) {
+            return {
+              ...parsedPractice,
+              templateId: template.id,
+              templateLabel: template.label,
+              difficulty,
+              sourceType: 'selection-practice-api'
+            };
+          }
+
+          const parsedCards = parseCardsWebhookResponse(raw);
+          if (parsedCards && Array.isArray(parsedCards.cards) && parsedCards.cards.length) {
+            return app.logic.buildPracticeFromCards(parsedCards.cards, { template, count, difficulty });
+          }
+
+          return localFromCards();
+        } catch (_) {
+          return localFromCards();
+        }
       },
 
       requestSelectionTranslation: async (text, targetLang) => {
@@ -3451,7 +3888,13 @@
           .filter((s) => s.length > 24)
           .filter((s) => !/^quellen?\s*:?\s*$/i.test(s));
 
-        const seeds = [...bullets, ...sentences].slice(0, 30);
+        const compact = (v) => String(v || '').replace(/\s+/g, ' ').trim();
+        const clauses = [...bullets, ...sentences]
+          .flatMap((s) => compact(s).split(/\s*[;•]\s+/))
+          .map(compact)
+          .filter((s) => s.length >= 18);
+
+        const seeds = clauses.slice(0, 36);
         const cards = [];
         const used = new Set();
 
@@ -3466,12 +3909,37 @@
           cards.push({ question: q, answer: a });
         };
 
+        const extractTopic = (txt) => {
+          const t = compact(txt);
+          const withParenRemoved = t.replace(/\([^)]{1,80}\)/g, '').trim();
+
+          const m1 = withParenRemoved.match(/^(.{4,90}?)\s+(muss|müssen|darf|dürfen|kann|können|soll|sollen|ist|sind|gilt|gelten|beträgt|betragen)\b/i);
+          if (m1) return compact(m1[1]).replace(/[,:;.-]+$/, '');
+
+          const m2 = withParenRemoved.match(/^bei\s+(.{4,90}?)(?:\s+gilt|\s+ist|\s+muss|\s+soll|,)/i);
+          if (m2) return `bei ${compact(m2[1])}`;
+
+          const m3 = withParenRemoved.match(/für\s+(.{4,80}?)(?:\s+gilt|\s+ist|\s+sind|\s+muss|\s+soll|,|\.|$)/i);
+          if (m3) return `für ${compact(m3[1])}`;
+
+          return compact(withParenRemoved.split(/\s+/).slice(0, 9).join(' '));
+        };
+
         const toQuestionFromFact = (part) => {
-          const txt = part.replace(/\s+/g, ' ').trim();
+          const txt = compact(part);
+          const topic = extractTopic(txt);
+
+          if (/\b§\s*\d+[a-z]?\b/i.test(txt)) {
+            return {
+              question: `Welche Regelung beschreibt ${topic}?`,
+              answer: txt
+            };
+          }
+
           const colon = txt.match(/^([^:]{3,80}):\s+(.{8,})$/);
           if (colon) {
             return {
-              question: `Was bedeutet ${colon[1].trim()}?`,
+              question: `Wie wird ${colon[1].trim()} im Text konkret beschrieben?`,
               answer: colon[2].trim()
             };
           }
@@ -3484,6 +3952,30 @@
             };
           }
 
+          const condition = txt.match(/^(Bei|Wenn|Falls|Sobald)\s+(.{6,140})$/i);
+          if (condition) {
+            return {
+              question: `Was gilt, ${condition[1].toLowerCase()} ${condition[2].replace(/[.;]+$/, '')}?`,
+              answer: txt
+            };
+          }
+
+          const hasRuleVerb = /\b(muss|müssen|darf|dürfen|kann|können|soll|sollen|ist verpflichtet|gilt|gelten)\b/i.test(txt);
+          if (hasRuleVerb) {
+            return {
+              question: `Welche Regel gilt ${topic.startsWith('für') ? topic : `für ${topic}`}?`,
+              answer: txt
+            };
+          }
+
+          const hasNumber = /\b\d+\s*(?:%|UE|Stunden?|Tage|Wochen?|Monate|Jahre|Uhr)\b/i.test(txt);
+          if (hasNumber) {
+            return {
+              question: `Welche konkrete Vorgabe nennt der Text ${topic.startsWith('für') ? topic : `für ${topic}`}?`,
+              answer: txt
+            };
+          }
+
           const hasBecause = txt.match(/^(.{8,120}?)\s+(weil|da)\s+(.{8,})$/i);
           if (hasBecause) {
             return {
@@ -3492,16 +3984,16 @@
             };
           }
 
-          const startsWithVerb = txt.match(/^(Nutze|Verwende|Beachte|Prüfe|Aktiviere|Deaktiviere|Wähle|Öffne)\s+(.{6,})$/i);
+          const startsWithVerb = txt.match(/^(Nutze|Verwende|Beachte|Prüfe|Aktiviere|Deaktiviere|Wähle|Öffne|Plane|Dokumentiere)\s+(.{6,})$/i);
           if (startsWithVerb) {
             return {
-              question: `Welche Handlung wird empfohlen?`,
+              question: `Welche konkrete Handlung wird empfohlen?`,
               answer: `${startsWithVerb[1]} ${startsWithVerb[2].trim()}`
             };
           }
 
           return {
-            question: `Erkläre den folgenden Zusammenhang:`,
+            question: `Welche Kernaussage enthält der Text zu ${topic}?`,
             answer: txt
           };
         };
@@ -3677,6 +4169,86 @@
     });
   };
 
+  const initPracticeTab = () => {
+    const root = document.getElementById('app');
+    const payload = parseJSON(localStorage.getItem(PRACTICE_KEY) || '{}', {});
+    const questions = Array.isArray(payload.questions) ? payload.questions : [];
+
+    root.innerHTML = `
+      <div class="cards-layout">
+        <div class="cards-top">
+          <div>
+            <h1 class="cards-title">LINDA3 Uebungsaufgaben</h1>
+            <p class="cards-sub">${app.utils.safeText(payload.title || 'Uebungsaufgaben')} • ${questions.length} Aufgaben • Generiert: ${app.utils.safeText(payload.generatedAt || 'unbekannt')}</p>
+          </div>
+          <button class="btn-icon" onclick="window.close()">Schließen</button>
+        </div>
+        <main class="cards-body" id="practice-body" style="grid-template-columns:1fr;max-width:960px;"></main>
+      </div>
+    `;
+
+    const body = document.getElementById('practice-body');
+    if (!questions.length) {
+      body.innerHTML = '<div class="state-msg">Keine Uebungsaufgaben vorhanden. Markiere im Haupttab eine Textpassage und nutze den Rechtsklick fuer Uebungsaufgaben.</div>';
+      return;
+    }
+
+    body.innerHTML = questions.map((q, idx) => {
+      const optionsHtml = (q.type === 'mc')
+        ? `<div class="practice-options">${(Array.isArray(q.options) ? q.options : []).map((opt, i) => (
+            `<label class="practice-option"><input type="checkbox" data-practice-input="${idx}" data-opt="${i}"><span>${app.utils.safeText(opt)}</span></label>`
+          )).join('')}</div>`
+        : `<textarea class="practice-open-answer" data-practice-open="${idx}" placeholder="Hier deine Antwort eingeben..."></textarea>`;
+
+      return `
+        <article class="practice-card" data-practice-card="${idx}">
+          <div class="practice-header">
+            <h3>Aufgabe ${idx + 1}</h3>
+            <span class="practice-points">${Number(q.points || 2)} P</span>
+          </div>
+          <p class="practice-question">${app.utils.safeText(q.question || '')}</p>
+          ${optionsHtml}
+          <div class="practice-actions">
+            <button type="button" class="btn-icon btn-primary" data-practice-hint="${idx}">Hinweis</button>
+            <button type="button" class="btn-icon" data-practice-solution="${idx}">Loesung anzeigen</button>
+          </div>
+          <div class="practice-solution" id="practice-solution-${idx}" hidden></div>
+        </article>
+      `;
+    }).join('');
+
+    body.addEventListener('click', (e) => {
+      const hintBtn = e.target.closest('[data-practice-hint]');
+      if (hintBtn) {
+        const idx = Number(hintBtn.getAttribute('data-practice-hint'));
+        const q = questions[idx];
+        alert(String(q?.hint || 'Kein Hinweis vorhanden.'));
+        return;
+      }
+
+      const solutionBtn = e.target.closest('[data-practice-solution]');
+      if (solutionBtn) {
+        const idx = Number(solutionBtn.getAttribute('data-practice-solution'));
+        const q = questions[idx];
+        const box = document.getElementById(`practice-solution-${idx}`);
+        if (!box) return;
+        box.hidden = !box.hidden;
+        if (!box.hidden) {
+          let evaluation = '';
+          if (q?.type === 'mc') {
+            const selected = Array.from(body.querySelectorAll(`[data-practice-input="${idx}"]:checked`)).map((el) => Number(el.getAttribute('data-opt')));
+            const expected = Array.isArray(q.correctIndices) ? q.correctIndices : [];
+            const selectedKey = selected.slice().sort().join(',');
+            const expectedKey = expected.slice().sort().join(',');
+            evaluation = selectedKey === expectedKey ? 'Bewertung: korrekt.' : 'Bewertung: noch nicht korrekt.';
+          }
+          const solutionText = String(q?.solution || '').trim() || 'Keine Musterloesung hinterlegt.';
+          box.textContent = `${evaluation ? `${evaluation} ` : ''}Musterloesung: ${solutionText}`;
+        }
+      }
+    });
+  };
+
   const initMainApp = () => {
     if (app.utils.isMobileClient()) {
       document.body.classList.add('mobile-fallback');
@@ -3684,6 +4256,7 @@
 
     app.utils.load();
     app.logic.loadKeywordLinks();
+    app.logic.loadLearningTemplates();
     app.ui.updateDomainUI();
     app.ui.renderSourceToolbar();
     app.ui.syncFastModeControls();
@@ -3911,6 +4484,60 @@
       });
     });
 
+    document.getElementById('selection-practice-btn').addEventListener('click', () => {
+      const draft = app.state.selectionDraft;
+      if (!draft || !draft.text) return;
+      app.ui.hideSelectionMenu();
+      if (draft.text.length < 40) {
+        alert('Fuer Uebungsaufgaben bitte mindestens 40 Zeichen markieren.');
+        return;
+      }
+      const templates = app.logic.getPracticeTemplates();
+      const cardsHtml = templates.map((t, idx) => (
+        `<button type="button" class="selection-template ${idx === 0 ? 'active' : ''}" data-practice-template="${app.utils.safeText(t.id)}">` +
+        `<strong>${app.utils.safeText(t.label)}</strong>` +
+        `<small>${app.utils.safeText(t.description || '')}</small>` +
+        `<small>${app.utils.safeText(t.duration || '')}</small>` +
+        '</button>'
+      )).join('');
+      const difficultyOptions = (app.logic.getLearningTemplates()?.practice?.difficulties || ['leicht', 'mittel', 'anspruchsvoll'])
+        .map((d) => `<option value="${app.utils.safeText(d)}"${d === 'mittel' ? ' selected' : ''}>${app.utils.safeText(d)}</option>`)
+        .join('');
+
+      app.ui.openSelectionActionModal({
+        title: 'Uebungsaufgaben aus Markierung',
+        preview: draft.text.slice(0, 450),
+        fieldsHtml:
+          `<div class="selection-field"><label>Vorlage</label><div class="selection-template-grid">${cardsHtml}</div></div>` +
+          '<div class="selection-field"><label for="selection-practice-count">Anzahl Aufgaben</label><select id="selection-practice-count"><option value="4">4</option><option value="6" selected>6</option><option value="8">8</option><option value="10">10</option></select></div>' +
+          `<div class="selection-field"><label for="selection-practice-difficulty">Niveau</label><select id="selection-practice-difficulty">${difficultyOptions}</select></div>`,
+        confirmLabel: 'Uebungsaufgaben erstellen',
+        onConfirm: async () => {
+          const activeTemplate = document.querySelector('.selection-template.active');
+          const templateId = activeTemplate?.getAttribute('data-practice-template') || templates[0]?.id;
+          const count = Number(document.getElementById('selection-practice-count')?.value || 6);
+          const difficulty = String(document.getElementById('selection-practice-difficulty')?.value || 'mittel');
+
+          const result = await app.logic.requestSelectionPractice(draft.text, { templateId, count, difficulty });
+          app.utils.openPracticeTabWithPayload({
+            ...result,
+            generatedAt: app.utils.nowStamp(),
+            sourceLength: draft.text.length
+          });
+        }
+      });
+
+      const wrap = document.getElementById('selection-action-fields');
+      if (wrap) {
+        wrap.querySelectorAll('[data-practice-template]').forEach((btn) => {
+          btn.addEventListener('click', () => {
+            wrap.querySelectorAll('[data-practice-template]').forEach((b) => b.classList.remove('active'));
+            btn.classList.add('active');
+          });
+        });
+      }
+    });
+
     document.getElementById('selection-translate-btn').addEventListener('click', () => {
       const draft = app.state.selectionDraft;
       if (!draft || !draft.text) return;
@@ -4003,6 +4630,8 @@
   const params = new URLSearchParams(window.location.search);
   if (params.get('view') === 'cards') {
     initCardTab();
+  } else if (params.get('view') === 'practice') {
+    initPracticeTab();
   } else {
     if (document.readyState === 'loading') {
       document.addEventListener('DOMContentLoaded', initMainApp);
