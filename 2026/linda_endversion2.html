@@ -1521,7 +1521,7 @@
 
   const DEFAULT_CARDS_WEBHOOK_JSON = {
     enabled: true,
-    endpointPath: "/api/bot",
+    endpointPath: "/api/linda/bot",
     minSelectionChars: 24,
     targetCount: 8,
     requireConfirmation: true,
@@ -2721,19 +2721,19 @@
 
       resolveSafeCardsEndpoint: () => {
         const cfg = app.state.settings.cardsWebhook || DEFAULT_CARDS_WEBHOOK_JSON;
-        const raw = String(cfg.endpointPath || API_ENDPOINT || '/api/bot').trim();
-        if (!raw) return '/api/bot';
+        const raw = String(cfg.endpointPath || API_ENDPOINT || '/api/linda/bot').trim();
+        if (!raw) return '/api/linda/bot';
         if (raw.startsWith('/')) {
-          if (!raw.startsWith('/api/')) return '/api/bot';
+          if (!raw.startsWith('/api/')) return '/api/linda/bot';
           return raw;
         }
         try {
           const u = new URL(raw, window.location.origin);
-          if (u.origin !== window.location.origin) return '/api/bot';
-          if (!u.pathname.startsWith('/api/')) return '/api/bot';
+          if (u.origin !== window.location.origin) return '/api/linda/bot';
+          if (!u.pathname.startsWith('/api/')) return '/api/linda/bot';
           return `${u.pathname}${u.search}`;
         } catch (_) {
-          return '/api/bot';
+          return '/api/linda/bot';
         }
       },
 
