@@ -1612,6 +1612,7 @@
   const FLASHCARDS_API_ENDPOINT = '/api/linda3?action=flashcards';
   const TRANSLATE_API_ENDPOINT = '/api/linda3?action=translate';
   const REWRITE_API_ENDPOINT = '/api/linda3?action=rewrite';
+  const TTS_API_ENDPOINT = '/api/linda3?action=tts';
   const LEARNING_TEMPLATES_PATH = './docs/learning_templates.json';
   const APP_VERSION = 3;
   const REQUEST_MEMORY_VERSION = 1;
@@ -1674,6 +1675,8 @@
     }
   };
   let learningTemplatesCache = structuredClone(DEFAULT_LEARNING_TEMPLATES);
+  let activeTtsAudio = null;
+  let activeTtsAudioUrl = '';
 
   const DEFAULT_REQUEST_MEMORY = {
     version: REQUEST_MEMORY_VERSION,
@@ -2372,6 +2375,9 @@
         textEl.value = String(text || '');
         modal.dataset.speechLang = String(opts.lang || navigator.language || 'de-DE');
         modal.dataset.speechEnabled = String(Boolean(opts.allowSpeech !== false));
+        modal.dataset.speechPreferApi = String(Boolean(opts.preferApiTts !== false));
+        modal.dataset.speechVoice = String(opts.voice || 'alloy');
+        modal.dataset.speechSpeed = String(Number(opts.speed || 1));
         if (speakBtn) {
           const supported = app.logic.isSpeechSupported();
           const hasText = String(text || '').trim().length > 0;
@@ -3434,11 +3440,70 @@
       },
 
       stopSpeech: () => {
-        if (!app.logic.isSpeechSupported()) return;
-        try { window.speechSynthesis.cancel(); } catch (_) {}
+        if (activeTtsAudio) {
+          try {
+            activeTtsAudio.pause();
+            activeTtsAudio.src = '';
+          } catch (_) {}
+          activeTtsAudio = null;
+        }
+        if (activeTtsAudioUrl) {
+          try { URL.revokeObjectURL(activeTtsAudioUrl); } catch (_) {}
+          activeTtsAudioUrl = '';
+        }
+        if (app.logic.isSpeechSupported()) {
+          try { window.speechSynthesis.cancel(); } catch (_) {}
+        }
       },
 
-      speakText: async (text, langHint) => {
+      isApiSpeechPlaying: () => {
+        return Boolean(activeTtsAudio && !activeTtsAudio.paused);
+      },
+
+      requestTtsAudio: async (text, langHint, opts = {}) => {
+        const payload = {
+          text: String(text || '').trim().slice(0, 1800),
+          lang: app.logic.mapSpeechLang(langHint || navigator.language || 'de-DE'),
+          voice: String(opts.voice || 'alloy'),
+          speed: Number.isFinite(Number(opts.speed)) ? Number(opts.speed) : 1
+        };
+        if (!payload.text) throw new Error('Kein Text zum Vorlesen vorhanden.');
+
+        const res = await fetch(TTS_API_ENDPOINT, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        if (!res.ok) {
+          let detail = '';
+          try {
+            const err = await res.json();
+            detail = String(err?.error || err?.detail || '').trim();
+          } catch (_) {}
+          throw new Error(`TTS-API Fehler (${res.status})${detail ? `: ${detail}` : ''}`);
+        }
+        return res.blob();
+      },
+
+      playAudioBlob: async (blob) => {
+        if (!blob || !blob.size) throw new Error('Leere Audio-Antwort.');
+        app.logic.stopSpeech();
+        const url = URL.createObjectURL(blob);
+        const audio = new Audio(url);
+        activeTtsAudio = audio;
+        activeTtsAudioUrl = url;
+
+        await new Promise((resolve, reject) => {
+          audio.onended = () => resolve();
+          audio.onerror = () => reject(new Error('Audio konnte nicht abgespielt werden.'));
+          const p = audio.play();
+          if (p && typeof p.then === 'function') {
+            p.catch(() => reject(new Error('Autoplay blockiert. Bitte erneut klicken.')));
+          }
+        });
+      },
+
+      speakTextLocal: async (text, langHint) => {
         if (!app.logic.isSpeechSupported()) throw new Error('Sprachausgabe wird in diesem Browser nicht unterstützt.');
         const content = String(text || '').trim();
         if (!content) throw new Error('Kein Text zum Vorlesen vorhanden.');
@@ -3464,9 +3529,23 @@
         synth.cancel();
         await new Promise((resolve, reject) => {
           utter.onend = () => resolve();
-          utter.onerror = () => reject(new Error('Sprachausgabe konnte nicht gestartet werden.'));
+          utter.onerror = () => reject(new Error('Lokale Sprachausgabe konnte nicht gestartet werden.'));
           synth.speak(utter);
         });
+      },
+
+      speakText: async (text, langHint, opts = {}) => {
+        const preferApi = opts.preferApi !== false;
+        if (preferApi) {
+          try {
+            const blob = await app.logic.requestTtsAudio(text, langHint, opts);
+            await app.logic.playAudioBlob(blob);
+            return;
+          } catch (_) {
+            // fallback to local speech
+          }
+        }
+        await app.logic.speakTextLocal(text, langHint);
       },
 
       requestSelectionTranslation: async (text, targetLang) => {
@@ -4668,19 +4747,18 @@
       const modal = document.getElementById('selection-result-modal');
       const txt = document.getElementById('selection-result-text')?.value || '';
       const lang = modal?.dataset?.speechLang || navigator.language || 'de-DE';
-      if (!app.logic.isSpeechSupported()) {
-        alert('Sprachausgabe wird in diesem Browser nicht unterstützt.');
-        return;
-      }
+      const preferApi = (modal?.dataset?.speechPreferApi || 'true') !== 'false';
+      const voice = String(modal?.dataset?.speechVoice || 'alloy');
+      const speed = Number(modal?.dataset?.speechSpeed || 1);
       const synth = window.speechSynthesis;
-      if (synth.speaking) {
+      if (app.logic.isApiSpeechPlaying() || (app.logic.isSpeechSupported() && synth.speaking)) {
         app.logic.stopSpeech();
         if (btn) btn.textContent = 'Vorlesen';
         return;
       }
       if (btn) btn.textContent = 'Stop';
       try {
-        await app.logic.speakText(txt, lang);
+        await app.logic.speakText(txt, lang, { preferApi, voice, speed });
       } catch (e) {
         alert(String(e?.message || 'Sprachausgabe fehlgeschlagen.'));
       } finally {
