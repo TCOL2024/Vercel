@@ -3789,8 +3789,9 @@
         t = t.replace(/[*_`>#-]/g, ' ');
         const sourceMatch = t.search(/\bquellen?\s*:/i);
         if (sourceMatch >= 0) t = t.slice(0, sourceMatch);
-        t = t.replace(/^\s*(hallo|hi|hey|guten tag|guten morgen|guten abend)[^.!?]*[.!?]?\s*/i, '');
-        t = t.replace(/^\s*ich\s+bin\s+linda[^.!?]*[.!?]?\s*/i, '');
+        t = t.replace(/^\s*(hallo|hi|hey|guten tag|guten morgen|guten abend)[\s\S]{0,260}?ich\s+bin\s+linda[\s\S]{0,260}?[.!?]\s*/i, '');
+        t = t.replace(/^\s*ich\s+bin\s+linda[\s\S]{0,260}?[.!?]\s*/i, '');
+        t = t.replace(/darf\s+ich\s+dich\s+mit\s+neopronomen\s+ansprechen[\s\S]{0,220}?[.!?]?/ig, '');
         t = t.replace(/\s+/g, ' ').trim();
         if (!t) return 'Danke fuer deine Frage.';
         if (!/^danke\b/i.test(t)) t = `Danke fuer deine Frage. ${t}`;
@@ -3803,11 +3804,15 @@
 
         const before = t;
         t = t.replace(
-          /^\s*(hallo|hi|hey)\s*,?\s*ich\s+bin\s+linda[^.!?\n]*[.!?]?\s*/i,
+          /^\s*(hallo|hi|hey|guten tag|guten morgen|guten abend)[\s\S]{0,260}?ich\s+bin\s+linda[\s\S]{0,260}?[.!?]\s*/i,
           ''
         );
         t = t.replace(
-          /darf\s+ich\s+dich\s+mit\s+neopronomen\s+ansprechen[^.!?\n]*[.!?]?/ig,
+          /^\s*ich\s+bin\s+linda[\s\S]{0,260}?[.!?]\s*/i,
+          ''
+        );
+        t = t.replace(
+          /darf\s+ich\s+dich\s+mit\s+neopronomen\s+ansprechen[\s\S]{0,220}?[.!?]?/ig,
           ''
         );
         t = t.replace(/\n{3,}/g, '\n\n').trim();
@@ -4166,8 +4171,7 @@
 
         app.state.lastQuestion = text;
         app.logic.rememberQuestion(text);
-        const userTurns = (s.messages || []).filter((m) => m.role === 'user').length;
-        const allowIntroForThisTurn = userTurns <= 1;
+        const allowIntroForThisTurn = false;
 
         const displayText = app.state.settings.name
           ? `${app.state.settings.name}: ${text}`
@@ -4186,7 +4190,8 @@
 
         const controller = new AbortController();
         app.state.requestController = controller;
-        const timeout = setTimeout(() => controller.abort(), 40000);
+        const timeout = setTimeout(() => controller.abort(), 65000);
+        let lastPayload = null;
 
         try {
           const mobileReaderActive = app.logic.isMobileReaderEnabled();
@@ -4220,6 +4225,7 @@
               ts: new Date().toISOString()
             }
           };
+          lastPayload = payload;
 
           const compareEnabled = (opts?.autoSpeak || mobileReaderActive)
             ? false
@@ -4286,13 +4292,22 @@
             });
             app.ui.log.appendChild(app.ui.createCompareBubble(makeParsed, deepParsed));
             if (opts?.autoSpeak) {
+              const speaking = app.ui.voicePlaybackRow();
+              app.ui.log.appendChild(speaking);
+              app.ui.scrollBottom();
+              const started = Date.now();
               try {
                 await app.logic.speakText(
-                  String(makeParsed?.answer || ''),
+                  app.logic.buildSpokenAnswer(makeParsed?.answer || ''),
                   String(opts?.speechLang || navigator.language || 'de-DE'),
                   { preferApi: true, voice: 'nova', speed: 1 }
                 );
               } catch (_) {}
+              const elapsed = Date.now() - started;
+              if (elapsed < 900) {
+                await new Promise((resolve) => setTimeout(resolve, 900 - elapsed));
+              }
+              speaking.remove();
             }
           } else {
             const parsed = await app.logic.requestAnswer(API_ENDPOINT, payload, controller.signal);
@@ -4302,6 +4317,7 @@
               const speaking = app.ui.voicePlaybackRow();
               app.ui.log.appendChild(speaking);
               app.ui.scrollBottom();
+              const started = Date.now();
               try {
                 await app.logic.speakText(
                   spokenText,
@@ -4309,6 +4325,10 @@
                   { preferApi: true, voice: 'nova', speed: 1 }
                 );
               } catch (_) {}
+              const elapsed = Date.now() - started;
+              if (elapsed < 900) {
+                await new Promise((resolve) => setTimeout(resolve, 900 - elapsed));
+              }
               speaking.remove();
             }
             s.messages.push({ role: 'assistant', content: parsed.answer, sources: parsed.sources });
@@ -4330,6 +4350,40 @@
           loading.remove();
           const offline = !navigator.onLine;
           const timeoutErr = err?.name === 'AbortError';
+
+          if (timeoutErr && lastPayload && !offline) {
+            try {
+              const fallbackController = new AbortController();
+              const fallbackTimeout = setTimeout(() => fallbackController.abort(), 25000);
+              const fallbackPayload = {
+                ...lastPayload,
+                schnellmodus: true,
+                routing: {
+                  ...(lastPayload.routing || {}),
+                  preferred_model: 'Linda3Schnellmodus'
+                }
+              };
+              const fallbackParsed = await app.logic.requestAnswer(
+                DEEPSEEK_API_ENDPOINT,
+                fallbackPayload,
+                fallbackController.signal
+              );
+              clearTimeout(fallbackTimeout);
+              fallbackParsed.answer = app.logic.stripRepeatedIntro(fallbackParsed.answer, false);
+              s.messages.push({ role: 'assistant', content: fallbackParsed.answer, sources: fallbackParsed.sources || [] });
+              app.ui.log.appendChild(app.ui.createBubble('assistant', fallbackParsed.answer, fallbackParsed.sources || []));
+              app.ui.log.appendChild(
+                app.ui.createBubble(
+                  'assistant',
+                  'Hinweis: Standardmodus war zu langsam. Antwort wurde ersatzweise im Schnellmodus erzeugt.'
+                )
+              );
+              app.utils.save();
+              app.ui.scrollBottom();
+              return;
+            } catch (_) {}
+          }
+
           const msg = offline
             ? 'Du bist offline. Bitte Internetverbindung prüfen.'
             : timeoutErr
