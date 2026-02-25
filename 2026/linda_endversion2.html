@@ -1739,6 +1739,8 @@
   let learningTemplatesCache = structuredClone(DEFAULT_LEARNING_TEMPLATES);
   let activeTtsAudio = null;
   let activeTtsAudioUrl = '';
+  let activePlaybackCtx = null;
+  let activePlaybackSource = null;
   let activeMicRecorder = null;
   let activeMicStream = null;
   let activeMicChunks = [];
@@ -3870,6 +3872,10 @@
       },
 
       stopSpeech: () => {
+        if (activePlaybackSource) {
+          try { activePlaybackSource.stop(0); } catch (_) {}
+          activePlaybackSource = null;
+        }
         if (activeTtsAudio) {
           try {
             activeTtsAudio.pause();
@@ -3884,6 +3890,16 @@
         if (app.logic.isSpeechSupported()) {
           try { window.speechSynthesis.cancel(); } catch (_) {}
         }
+      },
+
+      ensurePlaybackContext: async () => {
+        const AC = window.AudioContext || window.webkitAudioContext;
+        if (!AC) return null;
+        if (!activePlaybackCtx) activePlaybackCtx = new AC();
+        if (activePlaybackCtx.state !== 'running') {
+          try { await activePlaybackCtx.resume(); } catch (_) {}
+        }
+        return activePlaybackCtx;
       },
 
       isApiSpeechPlaying: () => {
@@ -3923,17 +3939,25 @@
       playAudioBlob: async (blob) => {
         if (!blob || !blob.size) throw new Error('Leere Audio-Antwort.');
         app.logic.stopSpeech();
-        const url = URL.createObjectURL(blob);
-        const audio = new Audio(url);
-        activeTtsAudio = audio;
-        activeTtsAudioUrl = url;
+        const ctx = await app.logic.ensurePlaybackContext();
+        if (!ctx) throw new Error('AudioContext nicht verfügbar.');
+
+        const arr = await blob.arrayBuffer();
+        const buf = await ctx.decodeAudioData(arr.slice(0));
+        const source = ctx.createBufferSource();
+        source.buffer = buf;
+        source.connect(ctx.destination);
+        activePlaybackSource = source;
 
         await new Promise((resolve, reject) => {
-          audio.onended = () => resolve();
-          audio.onerror = () => reject(new Error('Audio konnte nicht abgespielt werden.'));
-          const p = audio.play();
-          if (p && typeof p.then === 'function') {
-            p.catch(() => reject(new Error('Autoplay blockiert. Bitte erneut klicken.')));
+          source.onended = () => {
+            if (activePlaybackSource === source) activePlaybackSource = null;
+            resolve();
+          };
+          try {
+            source.start(0);
+          } catch (e) {
+            reject(new Error(String(e?.message || 'Audio konnte nicht abgespielt werden.')));
           }
         });
       },
@@ -4972,6 +4996,7 @@
         e.preventDefault();
         e.stopPropagation();
       }
+      app.logic.ensurePlaybackContext();
       const now = Date.now();
       if (now - sendThrottle < 300) return;
       sendThrottle = now;
@@ -4986,6 +5011,7 @@
         app.ui.micBtn.style.display = 'none';
       } else {
         app.ui.micBtn.addEventListener('click', async () => {
+          await app.logic.ensurePlaybackContext();
           await app.logic.startSpeechInput({ autoSend: true });
         });
       }
@@ -5273,6 +5299,7 @@
       const preferApi = (modal?.dataset?.speechPreferApi || 'true') !== 'false';
       const voice = String(modal?.dataset?.speechVoice || 'nova');
       const speed = Number(modal?.dataset?.speechSpeed || 1);
+      await app.logic.ensurePlaybackContext();
       const synth = window.speechSynthesis;
       if (app.logic.isApiSpeechPlaying() || (app.logic.isSpeechSupported() && synth.speaking)) {
         app.logic.stopSpeech();
