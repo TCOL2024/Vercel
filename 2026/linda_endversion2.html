@@ -547,6 +547,30 @@
     cursor: pointer;
   }
 
+  #mic-btn {
+    border: 1px solid #bfd3ef;
+    min-width: 50px;
+    height: 50px;
+    border-radius: 14px;
+    background: #eff6ff;
+    color: #11487f;
+    font-size: 1.05rem;
+    font-weight: 800;
+    cursor: pointer;
+  }
+
+  #mic-btn.recording {
+    background: linear-gradient(135deg, #da2f45 0%, #b92434 100%);
+    border-color: #a31d2d;
+    color: #fff;
+    box-shadow: 0 0 0 4px rgba(206, 44, 63, 0.2);
+  }
+
+  #mic-btn.busy {
+    opacity: 0.7;
+    cursor: wait;
+  }
+
   #send-btn.stop {
     background: linear-gradient(135deg, #da2f45 0%, #b92434 100%);
   }
@@ -1433,6 +1457,7 @@
       <div id="snippet-popup"></div>
       <textarea id="chat-input" rows="1" placeholder="Frage eingeben...  (Shift+Enter für Zeilenumbruch)"></textarea>
     </div>
+    <button id="mic-btn" type="button" aria-label="Spracheingabe">🎙</button>
     <button id="send-btn" type="button" aria-label="Senden">➤</button>
   </div>
 </div>
@@ -1613,6 +1638,7 @@
   const TRANSLATE_API_ENDPOINT = '/api/linda3?action=translate';
   const REWRITE_API_ENDPOINT = '/api/linda3?action=rewrite';
   const TTS_API_ENDPOINT = '/api/linda3?action=tts';
+  const STT_API_ENDPOINT = '/api/linda3?action=stt';
   const LEARNING_TEMPLATES_PATH = './docs/learning_templates.json';
   const APP_VERSION = 3;
   const REQUEST_MEMORY_VERSION = 1;
@@ -1677,6 +1703,9 @@
   let learningTemplatesCache = structuredClone(DEFAULT_LEARNING_TEMPLATES);
   let activeTtsAudio = null;
   let activeTtsAudioUrl = '';
+  let activeMicRecorder = null;
+  let activeMicStream = null;
+  let activeMicChunks = [];
 
   const DEFAULT_REQUEST_MEMORY = {
     version: REQUEST_MEMORY_VERSION,
@@ -1983,6 +2012,7 @@
     ui: {
       log: document.getElementById('chat-log'),
       input: document.getElementById('chat-input'),
+      micBtn: document.getElementById('mic-btn'),
       sendBtn: document.getElementById('send-btn'),
 
       openModal: (id) => {
@@ -2256,6 +2286,9 @@
         app.ui.input.disabled = sending;
         app.ui.sendBtn.classList.toggle('stop', sending);
         app.ui.sendBtn.textContent = sending ? '■' : '➤';
+        if (app.ui.micBtn && !app.ui.micBtn.classList.contains('recording')) {
+          app.ui.micBtn.disabled = sending;
+        }
       },
 
       scrollBottom: () => {
@@ -2376,7 +2409,7 @@
         modal.dataset.speechLang = String(opts.lang || navigator.language || 'de-DE');
         modal.dataset.speechEnabled = String(Boolean(opts.allowSpeech !== false));
         modal.dataset.speechPreferApi = String(Boolean(opts.preferApiTts !== false));
-        modal.dataset.speechVoice = String(opts.voice || 'alloy');
+        modal.dataset.speechVoice = String(opts.voice || 'nova');
         modal.dataset.speechSpeed = String(Number(opts.speed || 1));
         if (speakBtn) {
           const supported = app.logic.isSpeechSupported();
@@ -2669,8 +2702,35 @@
         app.state.consentGiven = true;
         app.utils.save();
         app.ui.closeModals();
+        const view = new URLSearchParams(window.location.search).get('view');
+        if (view === 'cards' || view === 'practice') return;
         app.logic.ensureSession();
         setTimeout(() => app.ui.input.focus(), 80);
+      },
+
+      setupConsentUI: () => {
+        const modal = document.getElementById('modal-disclaimer');
+        const c1 = document.getElementById('consent-data');
+        const c2 = document.getElementById('consent-forward');
+        const start = document.getElementById('btn-start-disclaimer');
+        if (!modal || !c1 || !c2 || !start) return;
+
+        if (app.state.consentGiven) {
+          modal.classList.remove('open');
+          start.disabled = false;
+          return;
+        }
+
+        const syncStart = () => { start.disabled = !(c1.checked && c2.checked); };
+        if (!c1.dataset.boundConsent) {
+          c1.addEventListener('change', syncStart);
+          c1.dataset.boundConsent = '1';
+        }
+        if (!c2.dataset.boundConsent) {
+          c2.addEventListener('change', syncStart);
+          c2.dataset.boundConsent = '1';
+        }
+        syncStart();
       },
 
       sendSystemMessage: (text) => {
@@ -3414,6 +3474,168 @@
         }
       },
 
+      isSpeechInputSupported: () => {
+        return Boolean(
+          navigator.mediaDevices &&
+          typeof navigator.mediaDevices.getUserMedia === 'function' &&
+          typeof window.MediaRecorder !== 'undefined'
+        );
+      },
+
+      updateMicButton: (state = 'idle') => {
+        const btn = app.ui.micBtn;
+        if (!btn) return;
+        btn.classList.remove('recording', 'busy');
+        btn.disabled = false;
+        if (state === 'recording') {
+          btn.classList.add('recording');
+          btn.textContent = '■';
+          btn.title = 'Aufnahme stoppen';
+          btn.setAttribute('aria-label', 'Aufnahme stoppen');
+          return;
+        }
+        if (state === 'busy') {
+          btn.classList.add('busy');
+          btn.textContent = '…';
+          btn.disabled = true;
+          btn.title = 'Sprachtext wird verarbeitet';
+          btn.setAttribute('aria-label', 'Sprachtext wird verarbeitet');
+          return;
+        }
+        btn.textContent = '🎙';
+        btn.title = 'Spracheingabe starten';
+        btn.setAttribute('aria-label', 'Spracheingabe starten');
+      },
+
+      getRecordingMimeType: () => {
+        if (typeof window.MediaRecorder === 'undefined') return '';
+        const candidates = [
+          'audio/webm;codecs=opus',
+          'audio/webm',
+          'audio/mp4',
+          'audio/ogg;codecs=opus',
+          'audio/ogg'
+        ];
+        for (const c of candidates) {
+          try {
+            if (MediaRecorder.isTypeSupported(c)) return c;
+          } catch (_) {}
+        }
+        return '';
+      },
+
+      stopSpeechInput: () => {
+        if (activeMicRecorder && activeMicRecorder.state !== 'inactive') {
+          try { activeMicRecorder.stop(); } catch (_) {}
+        }
+      },
+
+      requestSpeechToText: async (blob, langHint) => {
+        const arr = await blob.arrayBuffer();
+        const bytes = new Uint8Array(arr);
+        let binary = '';
+        const chunk = 0x8000;
+        for (let i = 0; i < bytes.length; i += chunk) {
+          binary += String.fromCharCode(...bytes.subarray(i, i + chunk));
+        }
+        const audioBase64 = btoa(binary);
+        const mapped = app.logic.mapSpeechLang(langHint || navigator.language || 'de-DE');
+        const language = String(mapped || 'de-DE').slice(0, 2).toLowerCase();
+
+        const res = await fetch(STT_API_ENDPOINT, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            audio_base64: audioBase64,
+            mime_type: String(blob?.type || 'audio/webm'),
+            language
+          })
+        });
+        if (!res.ok) {
+          let detail = '';
+          try {
+            const err = await res.json();
+            detail = String(err?.error || err?.detail || '').trim();
+          } catch (_) {}
+          throw new Error(`STT-Fehler (${res.status})${detail ? `: ${detail}` : ''}`);
+        }
+        const parsed = await res.json();
+        return String(parsed?.text || '').trim();
+      },
+
+      startSpeechInput: async ({ autoSend = true } = {}) => {
+        if (!app.logic.isSpeechInputSupported()) {
+          alert('Spracheingabe wird in diesem Browser nicht unterstützt.');
+          return;
+        }
+        if (!app.state.consentGiven) {
+          app.ui.openModal('modal-disclaimer');
+          return;
+        }
+        if (activeMicRecorder && activeMicRecorder.state === 'recording') {
+          app.logic.stopSpeechInput();
+          return;
+        }
+
+        try {
+          app.logic.updateMicButton('busy');
+          const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+          activeMicStream = stream;
+          activeMicChunks = [];
+          const mime = app.logic.getRecordingMimeType();
+          const recorder = mime ? new MediaRecorder(stream, { mimeType: mime }) : new MediaRecorder(stream);
+          activeMicRecorder = recorder;
+
+          recorder.ondataavailable = (evt) => {
+            if (evt.data && evt.data.size > 0) activeMicChunks.push(evt.data);
+          };
+
+          recorder.onerror = () => {
+            app.logic.updateMicButton('idle');
+            alert('Mikrofonaufnahme fehlgeschlagen.');
+          };
+
+          recorder.onstop = async () => {
+            const type = String(recorder.mimeType || mime || 'audio/webm');
+            const blob = new Blob(activeMicChunks, { type });
+            activeMicChunks = [];
+            if (activeMicStream) {
+              try { activeMicStream.getTracks().forEach((t) => t.stop()); } catch (_) {}
+              activeMicStream = null;
+            }
+            activeMicRecorder = null;
+            app.logic.updateMicButton('busy');
+
+            try {
+              const transcript = await app.logic.requestSpeechToText(blob, navigator.language || 'de-DE');
+              if (!transcript) throw new Error('Keine Sprache erkannt.');
+
+              if (autoSend && !app.state.isSending) {
+                await app.logic.sendMessage({
+                  textOverride: transcript,
+                  autoSpeak: true,
+                  speechLang: navigator.language || 'de-DE'
+                });
+              } else {
+                app.ui.input.value = transcript;
+                app.ui.input.dispatchEvent(new Event('input'));
+                app.ui.input.focus();
+              }
+            } catch (e) {
+              alert(String(e?.message || 'Spracherkennung fehlgeschlagen.'));
+            } finally {
+              app.logic.updateMicButton('idle');
+            }
+          };
+
+          recorder.start();
+          app.logic.updateMicButton('recording');
+        } catch (e) {
+          app.logic.updateMicButton('idle');
+          alert(`Mikrofonzugriff fehlgeschlagen: ${String(e?.message || 'unbekannt')}`);
+        }
+      },
+
       isSpeechSupported: () => {
         return typeof window !== 'undefined' &&
           'speechSynthesis' in window &&
@@ -3464,7 +3686,7 @@
         const payload = {
           text: String(text || '').trim().slice(0, 1800),
           lang: app.logic.mapSpeechLang(langHint || navigator.language || 'de-DE'),
-          voice: String(opts.voice || 'alloy'),
+          voice: String(opts.voice || 'nova'),
           speed: Number.isFinite(Number(opts.speed)) ? Number(opts.speed) : 1
         };
         if (!payload.text) throw new Error('Kein Text zum Vorlesen vorhanden.');
@@ -3746,7 +3968,7 @@
         app.utils.sanitizeLinks(md);
       },
 
-      sendMessage: async () => {
+      sendMessage: async (opts = {}) => {
         if (!app.state.consentGiven) {
           app.ui.openModal('modal-disclaimer');
           return;
@@ -3757,7 +3979,8 @@
           return;
         }
 
-        const text = app.ui.input.value.trim();
+        const forcedText = String(opts?.textOverride || '').trim();
+        const text = forcedText || app.ui.input.value.trim();
         if (!text) return;
 
         if (app.state.settings.fastMode?.enabled && app.logic.needsSlowModeHint(text)) {
@@ -3774,8 +3997,10 @@
           alert('Die Anfrage wird jetzt gesendet. Prüfe die Antwort bitte besonders sorgfältig.');
         }
 
-        app.ui.input.value = '';
-        app.ui.input.dispatchEvent(new Event('input'));
+        if (!forcedText) {
+          app.ui.input.value = '';
+          app.ui.input.dispatchEvent(new Event('input'));
+        }
 
         let s = app.logic.activeSession();
         if (!s) {
@@ -3900,10 +4125,28 @@
               }
             });
             app.ui.log.appendChild(app.ui.createCompareBubble(makeParsed, deepParsed));
+            if (opts?.autoSpeak) {
+              try {
+                await app.logic.speakText(
+                  String(makeParsed?.answer || ''),
+                  String(opts?.speechLang || navigator.language || 'de-DE'),
+                  { preferApi: true, voice: 'nova', speed: 1 }
+                );
+              } catch (_) {}
+            }
           } else {
             const parsed = await app.logic.requestAnswer(API_ENDPOINT, payload, controller.signal);
             s.messages.push({ role: 'assistant', content: parsed.answer, sources: parsed.sources });
             app.ui.log.appendChild(app.ui.createBubble('assistant', parsed.answer, parsed.sources));
+            if (opts?.autoSpeak) {
+              try {
+                await app.logic.speakText(
+                  String(parsed?.answer || ''),
+                  String(opts?.speechLang || navigator.language || 'de-DE'),
+                  { preferApi: true, voice: 'nova', speed: 1 }
+                );
+              } catch (_) {}
+            }
           }
           loading.remove();
           if (!app.state.telemetry.firstSelectionHintShown) {
@@ -4323,7 +4566,7 @@
   };
 
   const initPracticeTab = () => {
-    const root = document.getElementById('app');
+    const root = document.body;
     const payload = parseJSON(localStorage.getItem(PRACTICE_KEY) || '{}', {});
     const questions = Array.isArray(payload.questions) ? payload.questions : [];
 
@@ -4421,16 +4664,7 @@
       app.logic.setMobileReader(true);
     }
 
-    if (app.state.consentGiven) {
-      document.getElementById('modal-disclaimer').classList.remove('open');
-    }
-
-    const c1 = document.getElementById('consent-data');
-    const c2 = document.getElementById('consent-forward');
-    const start = document.getElementById('btn-start-disclaimer');
-    const syncStart = () => { start.disabled = !(c1.checked && c2.checked); };
-    c1.addEventListener('change', syncStart);
-    c2.addEventListener('change', syncStart);
+    app.logic.setupConsentUI();
 
     app.ui.input.addEventListener('input', function () {
       this.style.height = 'auto';
@@ -4477,6 +4711,16 @@
 
     app.ui.sendBtn.addEventListener('click', triggerSend);
     app.ui.sendBtn.addEventListener('touchend', triggerSend, { passive: false });
+    app.logic.updateMicButton('idle');
+    if (app.ui.micBtn) {
+      if (!app.logic.isSpeechInputSupported()) {
+        app.ui.micBtn.style.display = 'none';
+      } else {
+        app.ui.micBtn.addEventListener('click', async () => {
+          await app.logic.startSpeechInput({ autoSend: true });
+        });
+      }
+    }
 
     const fastMainOn = document.getElementById('fastmode-main-on');
     const fastMainOff = document.getElementById('fastmode-main-off');
@@ -4748,7 +4992,7 @@
       const txt = document.getElementById('selection-result-text')?.value || '';
       const lang = modal?.dataset?.speechLang || navigator.language || 'de-DE';
       const preferApi = (modal?.dataset?.speechPreferApi || 'true') !== 'false';
-      const voice = String(modal?.dataset?.speechVoice || 'alloy');
+      const voice = String(modal?.dataset?.speechVoice || 'nova');
       const speed = Number(modal?.dataset?.speechSpeed || 1);
       const synth = window.speechSynthesis;
       if (app.logic.isApiSpeechPlaying() || (app.logic.isSpeechSupported() && synth.speaking)) {
@@ -4801,6 +5045,16 @@
       const bubble = app.ui.createBubble('assistant', '⚠️ Offline erkannt: Antworten über APIs sind aktuell nicht verfügbar.');
       app.ui.log.appendChild(bubble);
       app.ui.scrollBottom();
+    });
+
+    window.addEventListener('beforeunload', () => {
+      try { app.logic.stopSpeechInput(); } catch (_) {}
+      try {
+        if (activeMicStream) activeMicStream.getTracks().forEach((t) => t.stop());
+      } catch (_) {}
+      activeMicStream = null;
+      activeMicRecorder = null;
+      activeMicChunks = [];
     });
   };
 
