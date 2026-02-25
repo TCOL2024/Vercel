@@ -391,42 +391,37 @@ async function handleBot(res, body) {
     /(^|\s)(§|art\.)\s*\d+/i.test(String(questionRaw || '').toLowerCase())
   );
   const need = detectNeedType(questionRaw);
-  const question = bbigInstruction
+  const questionComposed = bbigInstruction
     ? `${questionRaw}\n\n${bbigInstruction}${bbigKeywordInstruction ? `\n\n${bbigKeywordInstruction}` : ''}`
     : (bbigKeywordInstruction ? `${questionRaw}\n\n${bbigKeywordInstruction}` : questionRaw);
-
-  const mergedMeta = {
-    ...(body?.meta && typeof body.meta === 'object' ? body.meta : {}),
-    fm_user: fmUser || String(body?.meta?.fm_user || ''),
-    fm_user_label: fmLabel || String(body?.meta?.fm_user_label || ''),
-    fachmodus: fmUser || String(body?.meta?.fachmodus || ''),
-    vector_yes: vectorYes,
-    need,
-    token,
-    context
-  };
+  const question = questionComposed.slice(0, 2000);
+  if (!question) return sendJson(res, 400, { error: 'question fehlt' });
 
   const payloadMeta = {
-    ...body,
     question,
-    fm_user: fmUser || String(body?.fm_user || ''),
-    fm_user_label: fmLabel || '',
-    fachmodus: fmUser || String(body?.fachmodus || ''),
     history,
-    meta: mergedMeta,
-    legal_guardrails: {
-      active: Boolean(bbigMatches.length),
-      source: 'BBIG_GUARDRAILS',
-      matches: bbigMatches.map((m) => ({
-        id: String(m.id || ''),
-        references: Array.isArray(m.references) ? m.references : []
-      })),
-      instruction: bbigInstruction || ''
-    },
-    bbig_keyword_context: {
-      active: Boolean(bbigKeywordHits.length),
-      source: 'docs/bbig_fulltext.json',
-      hits: bbigKeywordHits
+    meta: {
+      fm_user: fmUser || '',
+      fm_user_label: fmLabel || '',
+      fachmodus: fmUser || '',
+      vector_yes: vectorYes,
+      need,
+      token,
+      context,
+      legal_guardrails: {
+        active: Boolean(bbigMatches.length),
+        source: 'BBIG_GUARDRAILS',
+        matches: bbigMatches.map((m) => ({
+          id: String(m.id || ''),
+          references: Array.isArray(m.references) ? m.references : []
+        })),
+        instruction: bbigInstruction || ''
+      },
+      bbig_keyword_context: {
+        active: Boolean(bbigKeywordHits.length),
+        source: 'docs/bbig_fulltext.json',
+        hits: bbigKeywordHits
+      }
     }
   };
 
