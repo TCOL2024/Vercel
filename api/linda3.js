@@ -291,6 +291,16 @@ function getDeepSeekConfig() {
   return { apiKey, model };
 }
 
+function normalizeFachmodus(value) {
+  const v = String(value || '').trim();
+  if (!v) return '';
+  const u = v.toUpperCase();
+  if (u === 'AEVO') return 'AEVO';
+  if (u === 'VWL') return 'VWL';
+  if (u === 'PERSONAL' || u === 'PERSONALWESEN') return 'PERSONAL';
+  return v;
+}
+
 function sanitizeQuestion(input) {
   return String(input || '')
     .replace(/<\s*\/?\s*system\s*>/gi, ' ')
@@ -350,13 +360,23 @@ async function handleBot(res, body) {
   const bbigInstruction = buildBbigGuardrailInstruction(bbigMatches);
   const bbigKeywordHits = detectBbigKeywordSections(questionRaw, 4);
   const bbigKeywordInstruction = buildBbigKeywordInstruction(bbigKeywordHits);
+  const fmUser = normalizeFachmodus(body?.fm_user || body?.fachmodus || body?.meta?.fm_user || '');
   const question = bbigInstruction
     ? `${questionRaw}\n\n${bbigInstruction}${bbigKeywordInstruction ? `\n\n${bbigKeywordInstruction}` : ''}`
     : (bbigKeywordInstruction ? `${questionRaw}\n\n${bbigKeywordInstruction}` : questionRaw);
 
+  const mergedMeta = {
+    ...(body?.meta && typeof body.meta === 'object' ? body.meta : {}),
+    fm_user: fmUser || String(body?.meta?.fm_user || ''),
+    fachmodus: fmUser || String(body?.meta?.fachmodus || '')
+  };
+
   const payloadMeta = {
     ...body,
     question,
+    fm_user: fmUser || String(body?.fm_user || ''),
+    fachmodus: fmUser || String(body?.fachmodus || ''),
+    meta: mergedMeta,
     legal_guardrails: {
       active: Boolean(bbigMatches.length),
       source: 'BBIG_GUARDRAILS',
