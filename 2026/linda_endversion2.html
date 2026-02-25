@@ -2787,7 +2787,9 @@
           let detail = '';
           try {
             const err = await res.json();
-            detail = err?.error ? `: ${err.error}` : '';
+            const errMsg = String(err?.error || '').trim();
+            const errDetail = String(err?.detail || '').trim();
+            detail = errMsg ? `: ${errMsg}${errDetail ? ` (${errDetail})` : ''}` : '';
           } catch (_) {}
           throw new Error(`HTTP ${res.status}${detail}`);
         }
