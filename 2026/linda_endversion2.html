@@ -1706,6 +1706,11 @@
   let activeMicRecorder = null;
   let activeMicStream = null;
   let activeMicChunks = [];
+  let activeMicAudioCtx = null;
+  let activeMicAnalyser = null;
+  let activeMicAnalyserBuffer = null;
+  let activeMicSilenceTimer = null;
+  let activeMicStartedAt = 0;
 
   const DEFAULT_REQUEST_MEMORY = {
     version: REQUEST_MEMORY_VERSION,
@@ -3530,6 +3535,70 @@
         }
       },
 
+      cleanupSpeechInputAnalyser: () => {
+        if (activeMicSilenceTimer) {
+          clearInterval(activeMicSilenceTimer);
+          activeMicSilenceTimer = null;
+        }
+        activeMicAnalyser = null;
+        activeMicAnalyserBuffer = null;
+        if (activeMicAudioCtx) {
+          try { activeMicAudioCtx.close(); } catch (_) {}
+          activeMicAudioCtx = null;
+        }
+      },
+
+      setupSpeechInputAutoStop: (stream) => {
+        app.logic.cleanupSpeechInputAnalyser();
+        const AC = window.AudioContext || window.webkitAudioContext;
+        if (!AC) return;
+        try {
+          activeMicAudioCtx = new AC();
+          const source = activeMicAudioCtx.createMediaStreamSource(stream);
+          const analyser = activeMicAudioCtx.createAnalyser();
+          analyser.fftSize = 2048;
+          source.connect(analyser);
+          activeMicAnalyser = analyser;
+          activeMicAnalyserBuffer = new Uint8Array(analyser.fftSize);
+          activeMicStartedAt = Date.now();
+
+          let silenceMs = 0;
+          const threshold = 0.012;
+          const frameMs = 200;
+          const graceMs = 1200;
+          const requiredSilenceMs = 1300;
+          const maxRecordMs = 18000;
+
+          activeMicSilenceTimer = setInterval(() => {
+            if (!activeMicRecorder || activeMicRecorder.state !== 'recording' || !activeMicAnalyser || !activeMicAnalyserBuffer) return;
+
+            activeMicAnalyser.getByteTimeDomainData(activeMicAnalyserBuffer);
+            let sum = 0;
+            for (let i = 0; i < activeMicAnalyserBuffer.length; i += 1) {
+              const v = (activeMicAnalyserBuffer[i] - 128) / 128;
+              sum += v * v;
+            }
+            const rms = Math.sqrt(sum / activeMicAnalyserBuffer.length);
+
+            const elapsed = Date.now() - activeMicStartedAt;
+            if (elapsed > maxRecordMs) {
+              app.logic.stopSpeechInput();
+              return;
+            }
+            if (elapsed < graceMs) return;
+
+            if (rms < threshold) silenceMs += frameMs;
+            else silenceMs = 0;
+
+            if (silenceMs >= requiredSilenceMs) {
+              app.logic.stopSpeechInput();
+            }
+          }, frameMs);
+        } catch (_) {
+          app.logic.cleanupSpeechInputAnalyser();
+        }
+      },
+
       requestSpeechToText: async (blob, langHint) => {
         const arr = await blob.arrayBuffer();
         const bytes = new Uint8Array(arr);
@@ -3585,6 +3654,7 @@
           const mime = app.logic.getRecordingMimeType();
           const recorder = mime ? new MediaRecorder(stream, { mimeType: mime }) : new MediaRecorder(stream);
           activeMicRecorder = recorder;
+          app.logic.setupSpeechInputAutoStop(stream);
 
           recorder.ondataavailable = (evt) => {
             if (evt.data && evt.data.size > 0) activeMicChunks.push(evt.data);
@@ -3596,6 +3666,7 @@
           };
 
           recorder.onstop = async () => {
+            app.logic.cleanupSpeechInputAnalyser();
             const type = String(recorder.mimeType || mime || 'audio/webm');
             const blob = new Blob(activeMicChunks, { type });
             activeMicChunks = [];
@@ -3628,9 +3699,10 @@
             }
           };
 
-          recorder.start();
+          recorder.start(250);
           app.logic.updateMicButton('recording');
         } catch (e) {
+          app.logic.cleanupSpeechInputAnalyser();
           app.logic.updateMicButton('idle');
           alert(`Mikrofonzugriff fehlgeschlagen: ${String(e?.message || 'unbekannt')}`);
         }
@@ -5049,6 +5121,7 @@
 
     window.addEventListener('beforeunload', () => {
       try { app.logic.stopSpeechInput(); } catch (_) {}
+      try { app.logic.cleanupSpeechInputAnalyser(); } catch (_) {}
       try {
         if (activeMicStream) activeMicStream.getTracks().forEach((t) => t.stop());
       } catch (_) {}
