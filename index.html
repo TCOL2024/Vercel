@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Linda Auswahl</title>
+  <style>
+    :root {
+      --bg: #eaf2fb;
+      --bg-deep: #dbe8f8;
+      --panel: rgba(255, 255, 255, 0.92);
+      --text: #112238;
+      --muted: #56708e;
+      --line: rgba(17, 34, 56, 0.1);
+      --shadow: 0 20px 60px rgba(10, 29, 54, 0.14);
+      --radius-xl: 28px;
+      --radius-lg: 22px;
+      --accent-stable: #005bbb;
+      --accent-stable-soft: #e8f2ff;
+      --accent-next: #008a7a;
+      --accent-next-soft: #e6fbf5;
+    }
+
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html,
+    body {
+      margin: 0;
+      min-height: 100%;
+      font-family: "Manrope", "Segoe UI", sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(900px 500px at 0% 0%, rgba(0, 91, 187, 0.12), transparent 60%),
+        radial-gradient(800px 520px at 100% 100%, rgba(0, 138, 122, 0.14), transparent 60%),
+        linear-gradient(180deg, var(--bg) 0%, var(--bg-deep) 100%);
+    }
+
+    body {
+      padding: 20px;
+    }
+
+    .shell {
+      max-width: 1120px;
+      margin: 0 auto;
+      min-height: calc(100dvh - 40px);
+      display: grid;
+      align-content: center;
+      gap: 24px;
+    }
+
+    .hero {
+      padding: 8px 4px;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.7);
+      border: 1px solid rgba(255, 255, 255, 0.75);
+      color: #1d4975;
+      font-size: 0.82rem;
+      font-weight: 800;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      margin: 18px 0 10px;
+      font-size: clamp(2.2rem, 6vw, 4.8rem);
+      line-height: 0.96;
+      letter-spacing: -0.04em;
+      max-width: 10ch;
+    }
+
+    .intro {
+      margin: 0;
+      max-width: 620px;
+      font-size: clamp(1rem, 2.6vw, 1.15rem);
+      line-height: 1.6;
+      color: var(--muted);
+    }
+
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 18px;
+    }
+
+    .card {
+      display: grid;
+      gap: 18px;
+      padding: 24px;
+      border-radius: var(--radius-xl);
+      text-decoration: none;
+      color: inherit;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(12px);
+      transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
+      min-height: 320px;
+    }
+
+    .card:hover,
+    .card:focus-visible {
+      transform: translateY(-4px);
+      box-shadow: 0 28px 70px rgba(10, 29, 54, 0.18);
+      outline: none;
+    }
+
+    .card.stable:hover,
+    .card.stable:focus-visible {
+      border-color: rgba(0, 91, 187, 0.3);
+    }
+
+    .card.next:hover,
+    .card.next:focus-visible {
+      border-color: rgba(0, 138, 122, 0.3);
+    }
+
+    .badge {
+      width: fit-content;
+      padding: 8px 12px;
+      border-radius: 999px;
+      font-size: 0.8rem;
+      font-weight: 800;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+    }
+
+    .stable .badge {
+      background: var(--accent-stable-soft);
+      color: var(--accent-stable);
+    }
+
+    .next .badge {
+      background: var(--accent-next-soft);
+      color: var(--accent-next);
+    }
+
+    .card h2 {
+      margin: 0;
+      font-size: clamp(1.5rem, 3vw, 2.4rem);
+      line-height: 1.05;
+      letter-spacing: -0.03em;
+    }
+
+    .card p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 1rem;
+      line-height: 1.6;
+    }
+
+    .features {
+      display: grid;
+      gap: 10px;
+      margin-top: auto;
+    }
+
+    .feature {
+      padding: 12px 14px;
+      border-radius: var(--radius-lg);
+      font-size: 0.95rem;
+      font-weight: 700;
+      border: 1px solid rgba(17, 34, 56, 0.07);
+      background: rgba(255, 255, 255, 0.72);
+    }
+
+    .cta {
+      display: inline-flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-top: 4px;
+      padding: 14px 16px;
+      border-radius: 18px;
+      font-weight: 900;
+      font-size: 0.98rem;
+      color: #fff;
+    }
+
+    .stable .cta {
+      background: linear-gradient(135deg, #005bbb 0%, #2579d7 100%);
+    }
+
+    .next .cta {
+      background: linear-gradient(135deg, #008a7a 0%, #18a892 100%);
+    }
+
+    .arrow {
+      font-size: 1.15rem;
+      line-height: 1;
+    }
+
+    @media (max-width: 760px) {
+      body {
+        padding: 14px;
+      }
+
+      .shell {
+        min-height: calc(100dvh - 28px);
+        gap: 18px;
+      }
+
+      .cards {
+        grid-template-columns: 1fr;
+      }
+
+      .card {
+        min-height: 0;
+        padding: 20px;
+      }
+
+      h1 {
+        max-width: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <section class="hero">
+      <div class="eyebrow">Linda - Deine Lernassistentin</div>
+      <h1>Welche Version möchtest du nutzen?</h1>
+      <p class="intro">
+        Wähle die stabile Version für den bewährten Einsatz oder teste die neue Generation mit zusätzlichen Features.
+      </p>
+    </section>
+
+    <section class="cards" aria-label="Linda Versionen">
+      <a class="card stable" href="https://vercel-kappa-seven-33.vercel.app/index2.html">
+        <div class="badge">Empfohlen für Stabilität</div>
+        <div>
+          <h2>Linda 2.0</h2>
+          <p>Nutze diese Version mit bewährter Stabilität.</p>
+        </div>
+        <div class="features">
+          <div class="feature">Verlässlich für den laufenden Einsatz</div>
+          <div class="feature">Bekannte Abläufe und bewährtes Verhalten</div>
+        </div>
+        <div class="cta">
+          <span>Zu Linda 2.0</span>
+          <span class="arrow" aria-hidden="true">→</span>
+        </div>
+      </a>
+
+      <a class="card next" href="https://vercel-kappa-seven-33.vercel.app/2026/linda_endversion2.html">
+        <div class="badge">Neue Features</div>
+        <div>
+          <h2>Linda 3.0</h2>
+          <p>Neue Features, aber noch nicht ganz abschließend entwickelt.</p>
+        </div>
+        <div class="features">
+          <div class="feature">Erweiterte Funktionen und neuer Stand</div>
+          <div class="feature">Ideal zum Testen der nächsten Version</div>
+        </div>
+        <div class="cta">
+          <span>Zu Linda 3.0</span>
+          <span class="arrow" aria-hidden="true">→</span>
+        </div>
+      </a>
+    </section>
+  </main>
+</body>
+</html>
