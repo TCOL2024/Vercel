@@ -2128,6 +2128,84 @@
     }
   }
 
+  /* Exact badge/input/shadow values from login.html */
+  :root {
+    --lina-badge-radius: 999px;
+    --lina-badge-padding: 6px 10px;
+    --lina-badge-font-size: 12px;
+    --lina-badge-font-weight: 700;
+    --lina-badge-letter-spacing: 0.04em;
+    --lina-badge-bg: #e6f3ef;
+    --lina-badge-color: #045144;
+    --lina-input-radius: 12px;
+    --lina-input-border: #bfd5cc;
+    --lina-input-padding: 12px 13px;
+    --lina-input-font-size: 15px;
+    --lina-input-bg: #fbfdfc;
+    --lina-input-focus-border: #006d5c;
+    --lina-input-focus-shadow: 0 0 0 4px rgba(0, 109, 92, 0.25);
+    --lina-shadow: 0 20px 48px rgba(6, 28, 22, 0.13);
+  }
+
+  .badge,
+  .pill,
+  .version-tag,
+  .compare-kicker,
+  .status-chip,
+  .practice-points {
+    border-radius: var(--lina-badge-radius) !important;
+    padding: var(--lina-badge-padding) !important;
+    font-size: var(--lina-badge-font-size) !important;
+    font-weight: var(--lina-badge-font-weight) !important;
+    letter-spacing: var(--lina-badge-letter-spacing) !important;
+    text-transform: uppercase;
+    background: var(--lina-badge-bg) !important;
+    color: var(--lina-badge-color) !important;
+    border-color: #bddfd5 !important;
+  }
+
+  input:not([type="checkbox"]):not([type="radio"]),
+  select,
+  textarea,
+  #chat-input,
+  .selection-result-text,
+  .practice-open-answer {
+    border-radius: var(--lina-input-radius) !important;
+    border: 1px solid var(--lina-input-border) !important;
+    padding: var(--lina-input-padding) !important;
+    font-size: var(--lina-input-font-size) !important;
+    color: var(--ink) !important;
+    background: var(--lina-input-bg) !important;
+  }
+
+  input:not([type="checkbox"]):not([type="radio"]):focus,
+  select:focus,
+  textarea:focus,
+  #chat-input:focus,
+  .selection-result-text:focus,
+  .practice-open-answer:focus {
+    outline: none;
+    border-color: var(--lina-input-focus-border) !important;
+    box-shadow: var(--lina-input-focus-shadow) !important;
+    transform: translateY(-1px);
+  }
+
+  #app,
+  .bubble,
+  .modal,
+  .selection-modal-card,
+  .smart-control,
+  .source-panel,
+  .keyword-panel,
+  .practice-card,
+  .flash-face,
+  #snippet-popup,
+  .mode-card,
+  .selection-template,
+  .compare-col {
+    box-shadow: var(--lina-shadow) !important;
+  }
+
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after {
       animation: none !important;
@@ -2229,6 +2307,10 @@
     <div class="check-row">
       <input type="checkbox" id="consent-forward">
       <label for="consent-forward">Ich stimme der Weiterleitung an aktivierte Quellen/Schnittstellen zu.</label>
+    </div>
+    <div class="check-row">
+      <input type="checkbox" id="consent-hide-future">
+      <label for="consent-hide-future">Künftig nicht anzeigen</label>
     </div>
     <div class="btn-row">
       <button class="btn save" id="btn-start-disclaimer" disabled onclick="app.logic.startApp()">Akzeptieren und starten</button>
@@ -2523,6 +2605,9 @@
       mobileReader: {
         enabled: false
       },
+      disclaimer: {
+        hideFuture: false
+      },
       prompting: {
         enabled: false,
         config: DEFAULT_PROMPTING_JSON
@@ -2680,6 +2765,10 @@
             mobileReader: {
               ...structuredClone(DEFAULT_STATE.settings.mobileReader),
               ...((parsed.settings && parsed.settings.mobileReader) || {})
+            },
+            disclaimer: {
+              ...structuredClone(DEFAULT_STATE.settings.disclaimer),
+              ...((parsed.settings && parsed.settings.disclaimer) || {})
             },
             prompting: {
               ...structuredClone(DEFAULT_STATE.settings.prompting),
@@ -3472,11 +3561,13 @@
       startApp: () => {
         const c1 = document.getElementById('consent-data').checked;
         const c2 = document.getElementById('consent-forward').checked;
+        const c3 = Boolean(document.getElementById('consent-hide-future')?.checked);
         if (!c1 || !c2) {
           alert('Bitte beide Zustimmungen aktivieren.');
           return;
         }
         app.state.consentGiven = true;
+        app.state.settings.disclaimer.hideFuture = c3;
         app.utils.save();
         app.ui.closeModals();
         const view = new URLSearchParams(window.location.search).get('view');
@@ -3489,14 +3580,23 @@
         const modal = document.getElementById('modal-disclaimer');
         const c1 = document.getElementById('consent-data');
         const c2 = document.getElementById('consent-forward');
+        const c3 = document.getElementById('consent-hide-future');
         const start = document.getElementById('btn-start-disclaimer');
         if (!modal || !c1 || !c2 || !start) return;
 
-        if (app.state.consentGiven) {
+        const hideFuture = Boolean(app.state.settings?.disclaimer?.hideFuture);
+        if (hideFuture) {
+          app.state.consentGiven = true;
           modal.classList.remove('open');
           start.disabled = false;
           return;
         }
+
+        app.state.consentGiven = false;
+        modal.classList.add('open');
+        c1.checked = false;
+        c2.checked = false;
+        if (c3) c3.checked = false;
 
         const syncStart = () => { start.disabled = !(c1.checked && c2.checked); };
         if (!c1.dataset.boundConsent) {
