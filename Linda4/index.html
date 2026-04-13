@@ -574,6 +574,35 @@
     color: #29405f;
   }
 
+  .plausibility-panel {
+    margin-top: 8px;
+    border-radius: 11px;
+    overflow: hidden;
+    border: 1px solid #f0d7a3;
+    background: #fff8eb;
+  }
+
+  .plausibility-head {
+    margin: 0;
+    padding: 8px 10px;
+    font-size: 0.78rem;
+    color: #8a5700;
+    border-bottom: 1px solid #f3e2bd;
+    background: rgba(255, 255, 255, 0.72);
+  }
+
+  .plausibility-body {
+    padding: 10px;
+    color: #5d470d;
+    font-size: 0.9rem;
+  }
+
+  .plausibility-meta {
+    margin-top: 8px;
+    font-size: 0.8rem;
+    color: #7a6020;
+  }
+
   .source-missing {
     margin-top: 9px;
     color: #697a91;
@@ -2870,6 +2899,21 @@
     { key: 'directory', label: 'Lernverzeichnis BETA', default: false }
   ];
 
+  const DOMAIN_PLAUSIBILITY = {
+    VWL: {
+      strong: ['markt', 'angebot', 'nachfrage', 'preis', 'preiselast', 'inflation', 'bip', 'konjunktur', 'arbeitslosigkeit', 'monopol', 'wettbewerb', 'ordnungspolit', 'humankapital'],
+      foreign: ['bbig', 'berufsbildungsgesetz', 'aevo', 'ausbildung', 'ausbildender', 'auszubild', 'ausbildungsvertrag', 'eignung', 'probezeit', 'pruefungsausschuss', 'paragraph', '§']
+    },
+    AEVO: {
+      strong: ['bbig', 'berufsbildungsgesetz', 'aevo', 'ausbildung', 'ausbildender', 'auszubild', 'ausbildungsvertrag', 'eignung', 'probezeit', 'pflicht', 'rechte', 'paragraph', '§'],
+      foreign: ['inflation', 'bip', 'konjunktur', 'marktgleichgewicht', 'preiselast', 'angebot', 'nachfrage', 'monopol', 'wettbewerb', 'volkswirtschaft']
+    },
+    PERSONAL: {
+      strong: ['personal', 'rekrutierung', 'bewerbung', 'arbeitsvertrag', 'fuehrung', 'führung', 'motivation', 'personalentwicklung', 'feedback', 'arbeitszeugnis'],
+      foreign: ['bbig', 'berufsbildungsgesetz', 'aevo', 'preiselast', 'marktgleichgewicht', 'bip', 'konjunktur']
+    }
+  };
+
   const DEFAULT_PROMPTING_JSON = {
     inlineExpansions: [
       { pattern: "der\\s+auszu$", replacement: "der Auszubildende " },
@@ -4366,6 +4410,75 @@
         };
       },
 
+      detectDomainPlausibility: (question, currentMode) => {
+        const mode = String(currentMode || '').trim().toUpperCase();
+        if (!mode || !DOMAIN_PLAUSIBILITY[mode]) return null;
+        const q = app.utils.normalizeForKeyword(question || '');
+        if (!q) return null;
+        const strongHits = DOMAIN_PLAUSIBILITY[mode].strong.filter((k) => q.includes(app.utils.normalizeForKeyword(k)));
+        const foreignHits = DOMAIN_PLAUSIBILITY[mode].foreign.filter((k) => q.includes(app.utils.normalizeForKeyword(k)));
+        if (!foreignHits.length) return null;
+        if (!strongHits.length || foreignHits.length > strongHits.length) {
+          return {
+            currentMode: mode,
+            strongHits,
+            foreignHits,
+            likelyDomain: app.logic.inferLikelyDomainFromHits(foreignHits)
+          };
+        }
+        return null;
+      },
+
+      inferLikelyDomainFromHits: (hits = []) => {
+        const joined = app.utils.normalizeForKeyword((Array.isArray(hits) ? hits : []).join(' '));
+        if (!joined) return '';
+        if (/bbig|berufsbildungsgesetz|aevo|ausbildung|ausbildender|auszubild|eignung|probezeit|paragraph/.test(joined)) return 'AEVO';
+        if (/markt|angebot|nachfrage|inflation|bip|konjunktur|monopol|wettbewerb|volkswirtschaft/.test(joined)) return 'VWL';
+        if (/personal|rekrutierung|arbeitsvertrag|fuehrung|motivation|personalentwicklung/.test(joined)) return 'PERSONAL';
+        return '';
+      },
+
+      domainLabel: (mode) => {
+        const labels = {
+          VWL: 'VWL',
+          AEVO: 'AEVO/BBiG',
+          PERSONAL: 'Personalwesen',
+          STANDARD: 'Standard'
+        };
+        const key = String(mode || 'STANDARD').trim().toUpperCase();
+        return labels[key] || key || 'Standard';
+      },
+
+      buildSoftGateNotice: (conflict) => {
+        if (!conflict) return null;
+        const currentLabel = app.logic.domainLabel(conflict.currentMode);
+        const likelyDomain = String(conflict.likelyDomain || '').trim().toUpperCase();
+        const likelyLabel = likelyDomain ? app.logic.domainLabel(likelyDomain) : 'einem anderen Fachbereich';
+        const hits = (conflict.foreignHits || []).slice(0, 4);
+        return {
+          title: 'Fachhinweis',
+          text: `Deine Frage gehoert inhaltlich eher zum Bereich ${likelyLabel}. Aktuell ist jedoch der Fachmodus ${currentLabel} aktiv. Ich beantworte sie deshalb bewusst aus ${currentLabel}-Perspektive und ordne fachfremde Bezüge nur ein.`,
+          meta: hits.length ? `Erkannte fachfremde Signale: ${hits.join(', ')}` : ''
+        };
+      },
+
+      detectAnswerDomainDrift: (answer, currentMode) => {
+        const mode = String(currentMode || '').trim().toUpperCase();
+        if (!mode || !DOMAIN_PLAUSIBILITY[mode]) return null;
+        const q = app.utils.normalizeForKeyword(answer || '');
+        if (!q) return null;
+        const strongHits = DOMAIN_PLAUSIBILITY[mode].strong.filter((k) => q.includes(app.utils.normalizeForKeyword(k)));
+        const foreignHits = DOMAIN_PLAUSIBILITY[mode].foreign.filter((k) => q.includes(app.utils.normalizeForKeyword(k)));
+        if (foreignHits.length >= 2 && foreignHits.length > strongHits.length) {
+          return {
+            currentMode: mode,
+            foreignHits: foreignHits.slice(0, 4),
+            likelyDomain: app.logic.inferLikelyDomainFromHits(foreignHits)
+          };
+        }
+        return null;
+      },
+
       enrichAssistantResponse: (result, question, payload, extra = {}) => {
         const backendMeta = (result && result.meta && typeof result.meta === 'object') ? result.meta : {};
         let answer = String(result?.answer || '').trim();
@@ -4402,6 +4515,18 @@
           blockedForMissingSources
         });
 
+        const softGateNotice = payload?.softGate?.active ? {
+          title: String(payload?.softGate?.title || 'Fachhinweis').trim() || 'Fachhinweis',
+          text: String(payload?.softGate?.notice || '').trim(),
+          meta: String(payload?.softGate?.meta || '').trim()
+        } : null;
+        const drift = app.logic.detectAnswerDomainDrift(answer, payload?.fachmodus || app.state.settings.domain || '');
+        const answerPlausibility = drift ? {
+          title: 'Einordnung zur Antwort',
+          text: `Die Antwort enthaelt deutliche Bezüge zu ${app.logic.domainLabel(drift.likelyDomain || '')}. Ich lasse sie stehen, ordne sie aber dem aktiven Fachmodus ${app.logic.domainLabel(drift.currentMode)} unter.`,
+          meta: drift.foreignHits?.length ? `Auffaellige Signale in der Antwort: ${drift.foreignHits.join(', ')}` : ''
+        } : null;
+
         return {
           answer,
           sources,
@@ -4411,7 +4536,9 @@
             followups,
             learningStep,
             evidenceNote: String(backendMeta.evidenceNote || '').trim(),
-            blockedForMissingSources
+            blockedForMissingSources,
+            softGateNotice,
+            answerPlausibility
           }
         };
       },
@@ -5970,6 +6097,32 @@
           }
         }
 
+        if (bubbleMeta.softGateNotice && bubbleMeta.softGateNotice.text) {
+          const panel = document.createElement('section');
+          panel.className = 'plausibility-panel';
+          panel.innerHTML = `
+            <h4 class="plausibility-head">${app.utils.safeText(bubbleMeta.softGateNotice.title || 'Fachhinweis')}</h4>
+            <div class="plausibility-body">
+              <div>${app.utils.safeText(bubbleMeta.softGateNotice.text || '')}</div>
+              ${bubbleMeta.softGateNotice.meta ? `<div class="plausibility-meta">${app.utils.safeText(bubbleMeta.softGateNotice.meta)}</div>` : ''}
+            </div>
+          `;
+          md.appendChild(panel);
+        }
+
+        if (bubbleMeta.answerPlausibility && bubbleMeta.answerPlausibility.text) {
+          const panel = document.createElement('section');
+          panel.className = 'plausibility-panel';
+          panel.innerHTML = `
+            <h4 class="plausibility-head">${app.utils.safeText(bubbleMeta.answerPlausibility.title || 'Einordnung')}</h4>
+            <div class="plausibility-body">
+              <div>${app.utils.safeText(bubbleMeta.answerPlausibility.text || '')}</div>
+              ${bubbleMeta.answerPlausibility.meta ? `<div class="plausibility-meta">${app.utils.safeText(bubbleMeta.answerPlausibility.meta)}</div>` : ''}
+            </div>
+          `;
+          md.appendChild(panel);
+        }
+
         if (app.state.settings.assistant?.showEvidence && bubbleMeta.evidence) {
           const evidencePanel = document.createElement('section');
           evidencePanel.className = 'evidence-panel';
@@ -6143,6 +6296,8 @@
         app.state.lastQuestion = text;
         app.logic.rememberQuestion(text);
         const allowIntroForThisTurn = false;
+        const plausibilityConflict = app.logic.detectDomainPlausibility(text, app.state.settings.domain || '');
+        const softGateNotice = app.logic.buildSoftGateNotice(plausibilityConflict);
 
         const displayText = app.state.settings.name
           ? `${app.state.settings.name}: ${text}`
@@ -6208,7 +6363,15 @@
               show_followups: Boolean(app.state.settings.assistant?.showFollowups),
               show_learning_path: Boolean(app.state.settings.assistant?.showLearningPath),
               learning_goal: String(app.state.settings.assistant?.learningGoal || '').trim()
-            }
+            },
+            softGate: softGateNotice ? {
+              active: true,
+              title: softGateNotice.title,
+              notice: softGateNotice.text,
+              meta: softGateNotice.meta,
+              current_mode: String(app.state.settings.domain || '').trim(),
+              likely_domain: String(plausibilityConflict?.likelyDomain || '').trim()
+            } : { active: false }
           };
           lastPayload = payload;
 
