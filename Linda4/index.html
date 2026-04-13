@@ -209,7 +209,7 @@
     background: #f7fbff;
     padding: 8px 12px;
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
     gap: 8px;
     font-size: 0.84rem;
     color: #23466f;
@@ -423,6 +423,155 @@
 
   .source-list a {
     color: #0d58ae;
+  }
+
+  .evidence-panel,
+  .followup-panel,
+  .learning-panel {
+    margin-top: 8px;
+    border-radius: 11px;
+    overflow: hidden;
+    border: 1px solid #d7e3f4;
+    background: #f9fbff;
+  }
+
+  .evidence-head,
+  .followup-head,
+  .learning-head {
+    margin: 0;
+    padding: 8px 10px;
+    font-size: 0.78rem;
+    color: #0e4e9d;
+    border-bottom: 1px solid #e1e9f7;
+    background: rgba(255, 255, 255, 0.75);
+  }
+
+  .evidence-body,
+  .learning-body {
+    padding: 10px;
+  }
+
+  .evidence-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    border-radius: 999px;
+    padding: 5px 9px;
+    font-size: 0.75rem;
+    font-weight: 800;
+    letter-spacing: 0.01em;
+  }
+
+  .evidence-badge.high {
+    background: #e8fbf2;
+    color: #177245;
+    border: 1px solid #b7e8cf;
+  }
+
+  .evidence-badge.medium {
+    background: #eef6ff;
+    color: #0d4f98;
+    border: 1px solid #c8def8;
+  }
+
+  .evidence-badge.low {
+    background: #fff6e6;
+    color: #8a5700;
+    border: 1px solid #f0d59d;
+  }
+
+  .evidence-badge.none {
+    background: #fff0f0;
+    color: #9a2c2c;
+    border: 1px solid #f0c0c0;
+  }
+
+  .evidence-note {
+    margin-top: 8px;
+    font-size: 0.86rem;
+    color: #49607e;
+  }
+
+  .source-card-list,
+  .followup-list {
+    list-style: none;
+    margin: 0;
+    padding: 10px;
+    display: grid;
+    gap: 8px;
+  }
+
+  .source-card {
+    border: 1px solid #d8e5f6;
+    background: #ffffff;
+    border-radius: 10px;
+    padding: 10px;
+  }
+
+  .source-card-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 6px;
+  }
+
+  .source-card-head a {
+    color: #0d58ae;
+    font-weight: 800;
+    text-decoration: none;
+  }
+
+  .source-card-head a:hover,
+  .source-card-head a:focus-visible {
+    text-decoration: underline;
+  }
+
+  .source-card-meta {
+    font-size: 0.76rem;
+    color: #5e728d;
+    white-space: nowrap;
+  }
+
+  .source-card-snippet {
+    margin: 0;
+    font-size: 0.88rem;
+    color: #22324a;
+  }
+
+  .source-card-note {
+    margin-top: 6px;
+    font-size: 0.8rem;
+    color: #53657f;
+  }
+
+  .followup-btn,
+  .learning-btn {
+    width: 100%;
+    border: 1px solid #d8e3f2;
+    background: #ffffff;
+    color: #0c437f;
+    border-radius: 10px;
+    padding: 10px 12px;
+    text-align: left;
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .followup-btn:hover,
+  .followup-btn:focus-visible,
+  .learning-btn:hover,
+  .learning-btn:focus-visible {
+    background: #edf6ff;
+    border-color: #a9caf2;
+    outline: none;
+  }
+
+  .learning-copy {
+    margin: 0 0 10px;
+    font-size: 0.9rem;
+    color: #29405f;
   }
 
   .source-missing {
@@ -2291,6 +2440,28 @@
         <span>Aus</span>
       </label>
     </div>
+    <div class="smart-control">
+      <span class="label">Quellenmodus</span>
+      <label class="fastmode-choice">
+        <input id="grounded-main-on" type="radio" name="grounded-main" value="on">
+        <span>Strikt</span>
+      </label>
+      <label class="fastmode-choice">
+        <input id="grounded-main-off" type="radio" name="grounded-main" value="off">
+        <span>Flexibel</span>
+      </label>
+    </div>
+    <div class="smart-control">
+      <span class="label">Privatmodus</span>
+      <label class="fastmode-choice">
+        <input id="privacy-main-on" type="radio" name="privacy-main" value="on">
+        <span>Ein</span>
+      </label>
+      <label class="fastmode-choice">
+        <input id="privacy-main-off" type="radio" name="privacy-main" value="off">
+        <span>Aus</span>
+      </label>
+    </div>
   </div>
 
   <div class="input-area">
@@ -2383,6 +2554,51 @@
       <div class="btn-row" style="margin-top:8px;">
         <button class="btn warn" type="button" onclick="app.logic.clearPromptConfigs()">Alle Prompt-Vorgaben löschen</button>
         <button class="btn cancel" type="button" onclick="app.logic.resetPromptConfigs()">Prompt-Vorgaben auf Standard</button>
+      </div>
+    </div>
+
+    <div class="section" style="margin-top:10px;">
+      <h4>Guardrails & Knowledge Assistant</h4>
+      <p class="mini">Steuert, wie strikt LINDA auf Quellen, Datenschutz und Lernunterstützung achtet.</p>
+      <div class="toggle-row" style="margin-top:8px;">
+        <label for="inp-grounded-mode">Quellenmodus aktivieren</label>
+        <input id="inp-grounded-mode" type="checkbox">
+      </div>
+      <div class="toggle-row">
+        <label for="inp-strict-unknown">Bei fehlender Quelle lieber "Ich weiss es nicht"</label>
+        <input id="inp-strict-unknown" type="checkbox">
+      </div>
+      <div class="toggle-row">
+        <label for="inp-clarification-mode">Rueckfragen bei missverstaendlichen Fragen</label>
+        <input id="inp-clarification-mode" type="checkbox">
+      </div>
+      <div class="toggle-row">
+        <label for="inp-pii-shield">Eingaben auf sensible Daten pruefen</label>
+        <input id="inp-pii-shield" type="checkbox">
+      </div>
+      <div class="toggle-row">
+        <label for="inp-show-evidence">Evidenz- und Quellenkarten anzeigen</label>
+        <input id="inp-show-evidence" type="checkbox">
+      </div>
+      <div class="toggle-row">
+        <label for="inp-show-followups">Follow-up-Fragen anbieten</label>
+        <input id="inp-show-followups" type="checkbox">
+      </div>
+      <div class="toggle-row">
+        <label for="inp-show-learning-path">Persoenlichen Lernpfad anzeigen</label>
+        <input id="inp-show-learning-path" type="checkbox">
+      </div>
+      <div class="toggle-row">
+        <label for="inp-privacy-ephemeral">Datensparsam ohne Verlaufsspeicherung arbeiten</label>
+        <input id="inp-privacy-ephemeral" type="checkbox">
+      </div>
+      <div class="toggle-row">
+        <label for="inp-feedback-transcript">Feedback-Mail mit Chatverlauf fuellen</label>
+        <input id="inp-feedback-transcript" type="checkbox">
+      </div>
+      <div class="field" style="margin-top:8px;">
+        <label for="inp-learning-goal">Persoenliches Lernziel (optional)</label>
+        <input id="inp-learning-goal" type="text" placeholder="z.B. AEVO-Pruefung sicher bestehen">
       </div>
     </div>
 
@@ -2525,6 +2741,25 @@
     adaptive: true
   };
 
+  const DEFAULT_GUARDRAILS = {
+    groundedMode: true,
+    strictUnknown: true,
+    clarificationMode: true,
+    piiShield: true
+  };
+
+  const DEFAULT_ASSISTANT_PREFS = {
+    showEvidence: true,
+    showFollowups: true,
+    showLearningPath: true,
+    learningGoal: '',
+    feedbackIncludeTranscript: false
+  };
+
+  const DEFAULT_PRIVACY_SETTINGS = {
+    ephemeral: false
+  };
+
   const DEFAULT_LEARNING_TEMPLATES = {
     version: '1.0',
     flashcards: {
@@ -2624,7 +2859,10 @@
         enabled: false,
         config: DEFAULT_PROMPTING_JSON
       },
-      cardsWebhook: DEFAULT_CARDS_WEBHOOK_JSON
+      cardsWebhook: DEFAULT_CARDS_WEBHOOK_JSON,
+      guardrails: DEFAULT_GUARDRAILS,
+      assistant: DEFAULT_ASSISTANT_PREFS,
+      privacy: DEFAULT_PRIVACY_SETTINGS
     },
     cards: {
       lastDeckTitle: ''
@@ -2719,17 +2957,28 @@
           .replace(/\s+/g, ' ')
           .trim();
       },
+      privacyModeEnabled: () => Boolean(app.state.settings?.privacy && app.state.settings.privacy.ephemeral),
       save: () => {
         const requestMemory = app.state.requestMemory || structuredClone(DEFAULT_REQUEST_MEMORY);
+        const privacyMode = app.utils.privacyModeEnabled();
         const clone = {
           ...app.state,
           requestController: null,
           isSending: false,
           requestMemory: undefined
         };
+        if (privacyMode) {
+          clone.sessions = [];
+          clone.activeId = null;
+          clone.lastQuestion = '';
+        }
         try {
           localStorage.setItem(STORAGE_KEY, JSON.stringify(clone));
-          localStorage.setItem(REQUEST_MEMORY_KEY, JSON.stringify(requestMemory));
+          if (privacyMode) {
+            localStorage.removeItem(REQUEST_MEMORY_KEY);
+          } else {
+            localStorage.setItem(REQUEST_MEMORY_KEY, JSON.stringify(requestMemory));
+          }
         } catch (e) {
           console.error('save failed', e);
         }
@@ -2790,6 +3039,18 @@
               ...structuredClone(DEFAULT_STATE.settings.cardsWebhook),
               ...((parsed.settings && parsed.settings.cardsWebhook) || {})
             },
+            guardrails: {
+              ...structuredClone(DEFAULT_STATE.settings.guardrails),
+              ...((parsed.settings && parsed.settings.guardrails) || {})
+            },
+            assistant: {
+              ...structuredClone(DEFAULT_STATE.settings.assistant),
+              ...((parsed.settings && parsed.settings.assistant) || {})
+            },
+            privacy: {
+              ...structuredClone(DEFAULT_STATE.settings.privacy),
+              ...((parsed.settings && parsed.settings.privacy) || {})
+            },
             sources: {
               ...structuredClone(DEFAULT_STATE.settings.sources),
               ...((parsed.settings && parsed.settings.sources) || {})
@@ -2845,8 +3106,8 @@
       },
       parseApiAnswer: (rawText) => {
         const parsed = parseJSON(rawText, null);
-        if (!parsed) return { answer: rawText, sources: [] };
-        if (typeof parsed === 'string') return { answer: parsed, sources: [] };
+        if (!parsed) return { answer: rawText, sources: [], meta: {} };
+        if (typeof parsed === 'string') return { answer: parsed, sources: [], meta: {} };
         const altSources =
           parsed.sources ||
           parsed.quellen ||
@@ -2855,9 +3116,20 @@
           parsed.links ||
           (parsed.metadata && parsed.metadata.sources) ||
           [];
+        const followups =
+          parsed.followups ||
+          parsed.next_questions ||
+          parsed.suggestions ||
+          parsed.recommended_questions ||
+          [];
         return {
           answer: String(parsed.answer || parsed.response || parsed.text || parsed.output || rawText),
-          sources: Array.isArray(altSources) ? altSources : []
+          sources: Array.isArray(altSources) ? altSources : [],
+          meta: {
+            followups: Array.isArray(followups) ? followups : [],
+            confidence: Number.isFinite(Number(parsed.confidence)) ? Number(parsed.confidence) : null,
+            evidenceNote: String(parsed.evidence_note || parsed.reasoning_note || '').trim()
+          }
         };
       },
       nowStamp: () => new Date().toLocaleString('de-DE'),
@@ -2901,6 +3173,16 @@
         document.getElementById('inp-name').value = settings.name || '';
         document.getElementById('inp-domain').value = settings.domain || '';
         document.getElementById('inp-prompting-enabled').checked = Boolean(settings.prompting && settings.prompting.enabled);
+        document.getElementById('inp-grounded-mode').checked = Boolean(settings.guardrails && settings.guardrails.groundedMode);
+        document.getElementById('inp-strict-unknown').checked = Boolean(settings.guardrails && settings.guardrails.strictUnknown);
+        document.getElementById('inp-clarification-mode').checked = Boolean(settings.guardrails && settings.guardrails.clarificationMode);
+        document.getElementById('inp-pii-shield').checked = Boolean(settings.guardrails && settings.guardrails.piiShield);
+        document.getElementById('inp-show-evidence').checked = Boolean(settings.assistant && settings.assistant.showEvidence);
+        document.getElementById('inp-show-followups').checked = Boolean(settings.assistant && settings.assistant.showFollowups);
+        document.getElementById('inp-show-learning-path').checked = Boolean(settings.assistant && settings.assistant.showLearningPath);
+        document.getElementById('inp-privacy-ephemeral').checked = Boolean(settings.privacy && settings.privacy.ephemeral);
+        document.getElementById('inp-feedback-transcript').checked = Boolean(settings.assistant && settings.assistant.feedbackIncludeTranscript);
+        document.getElementById('inp-learning-goal').value = String(settings.assistant?.learningGoal || '');
         document.getElementById('inp-prompting-json').value = JSON.stringify(
           app.utils.getPromptingConfig(),
           null,
@@ -2956,6 +3238,22 @@
         const enabled = Boolean(app.state.settings.sources && app.state.settings.sources.directory);
         const on = document.getElementById('directory-main-on');
         const off = document.getElementById('directory-main-off');
+        if (on) on.checked = enabled;
+        if (off) off.checked = !enabled;
+      },
+
+      syncGroundedModeControls: () => {
+        const enabled = Boolean(app.state.settings.guardrails && app.state.settings.guardrails.groundedMode);
+        const on = document.getElementById('grounded-main-on');
+        const off = document.getElementById('grounded-main-off');
+        if (on) on.checked = enabled;
+        if (off) off.checked = !enabled;
+      },
+
+      syncPrivacyModeControls: () => {
+        const enabled = Boolean(app.state.settings.privacy && app.state.settings.privacy.ephemeral);
+        const on = document.getElementById('privacy-main-on');
+        const off = document.getElementById('privacy-main-off');
         if (on) on.checked = enabled;
         if (off) off.checked = !enabled;
       },
@@ -3052,7 +3350,7 @@
         pop.classList.add('active');
       },
 
-      createBubble: (role, content, sources = []) => {
+      createBubble: (role, content, sources = [], meta = {}) => {
         const row = document.createElement('div');
         row.className = `msg-row ${role}`;
 
@@ -3091,7 +3389,7 @@
 
         const md = row.querySelector('.md');
         app.utils.sanitizeLinks(md);
-        app.logic.decorateBubble(md, sources);
+        app.logic.decorateBubble(md, sources, meta);
         return row;
       },
 
@@ -3134,12 +3432,12 @@
         if (cols[0]) {
           const md = cols[0].querySelector('.md');
           app.utils.sanitizeLinks(md);
-          app.logic.decorateBubble(md, makeData?.sources || []);
+          app.logic.decorateBubble(md, makeData?.sources || [], makeData?.meta || {});
         }
         if (cols[1]) {
           const md = cols[1].querySelector('.md');
           app.utils.sanitizeLinks(md);
-          app.logic.decorateBubble(md, deepseekData?.sources || []);
+          app.logic.decorateBubble(md, deepseekData?.sources || [], deepseekData?.meta || {});
         }
         return row;
       },
@@ -3173,8 +3471,10 @@
         const isFast = Boolean(app.state.settings.fastMode && app.state.settings.fastMode.enabled);
         const isCompare = Boolean(app.state.settings.compareMode && app.state.settings.compareMode.enabled);
         const hasDirectory = Boolean(app.state.settings.sources && app.state.settings.sources.directory);
+        const grounded = Boolean(app.state.settings.guardrails && app.state.settings.guardrails.groundedMode);
+        const privacy = Boolean(app.state.settings.privacy && app.state.settings.privacy.ephemeral);
         document.getElementById('domain-badge').textContent = isFast ? `${domain} ⚡` : domain;
-        document.getElementById('domain-summary').textContent = `Fachmodus: ${domain}${isFast ? ' • Schnellmodus aktiv' : ''}${isCompare ? ' • Vergleich aktiv' : ''}${hasDirectory ? ' • Lernverzeichnis (Beta) aktiv' : ''} • Wissensbereiche: ${activeCount} aktiv`;
+        document.getElementById('domain-summary').textContent = `Fachmodus: ${domain}${isFast ? ' • Schnellmodus aktiv' : ''}${isCompare ? ' • Vergleich aktiv' : ''}${hasDirectory ? ' • Lernverzeichnis (Beta) aktiv' : ''}${grounded ? ' • Quellenmodus strikt' : ''}${privacy ? ' • Privatmodus aktiv' : ''} • Wissensbereiche: ${activeCount} aktiv`;
       },
 
       loadingRow: () => {
@@ -3505,6 +3805,292 @@
         return out;
       },
 
+      sanitizePromptingConfig: (cfg) => {
+        if (!cfg || typeof cfg !== 'object') return structuredClone(DEFAULT_PROMPTING_JSON);
+
+        const inlineExpansions = (Array.isArray(cfg.inlineExpansions) ? cfg.inlineExpansions : [])
+          .map((rule) => {
+            if (!rule || typeof rule !== 'object') return null;
+            const pattern = String(rule.pattern || '').trim();
+            const replacement = String(rule.replacement || '').trim();
+            if (!pattern || !replacement) return null;
+            if (pattern.length > 80 || replacement.length > 160) return null;
+            try {
+              new RegExp(pattern, 'i');
+            } catch (_) {
+              return null;
+            }
+            return { pattern, replacement };
+          })
+          .filter(Boolean)
+          .slice(0, 8);
+
+        const quickSuggestions = (Array.isArray(cfg.quickSuggestions) ? cfg.quickSuggestions : [])
+          .map((item) => String(item || '').trim())
+          .filter(Boolean)
+          .slice(0, 8);
+
+        const modeCards = (Array.isArray(cfg.modeCards) ? cfg.modeCards : [])
+          .map((card) => {
+            if (!card || typeof card !== 'object') return null;
+            const key = String(card.key || '').trim();
+            const label = String(card.label || '').trim();
+            if (!key || !label) return null;
+            return {
+              key: key.slice(0, 24),
+              label: label.slice(0, 40),
+              hint: String(card.hint || '').trim().slice(0, 60)
+            };
+          })
+          .filter(Boolean)
+          .slice(0, 8);
+
+        return {
+          inlineExpansions,
+          quickSuggestions,
+          modeCards
+        };
+      },
+
+      sanitizeAssistantFollowups: (items) => {
+        const out = [];
+        const seen = new Set();
+        (Array.isArray(items) ? items : []).forEach((item) => {
+          const raw = (item && typeof item === 'object')
+            ? String(item.question || item.label || item.text || '')
+            : String(item || '');
+          const text = raw.replace(/\s+/g, ' ').trim();
+          if (!text || text.length < 8) return;
+          const short = text.slice(0, 140);
+          const key = short.toLowerCase();
+          if (seen.has(key)) return;
+          seen.add(key);
+          out.push(short);
+        });
+        return out.slice(0, 4);
+      },
+
+      topicFromText: (text, fallback = 'das Thema') => {
+        const stop = new Set(['bitte', 'kannst', 'kann', 'mir', 'und', 'oder', 'eine', 'einer', 'eines', 'zum', 'zur', 'der', 'die', 'das', 'ist', 'sind', 'wie', 'was', 'warum', 'wieso', 'weshalb', 'mit', 'fuer', 'für', 'den', 'dem']);
+        const tokens = String(text || '')
+          .replace(/[^\p{L}\p{N}\s-]/gu, ' ')
+          .split(/\s+/)
+          .map((t) => t.trim())
+          .filter((t) => t.length >= 4 && !stop.has(t.toLowerCase()));
+        if (!tokens.length) return fallback;
+        return tokens.slice(0, 5).join(' ');
+      },
+
+      detectSensitiveSignals: (text) => {
+        const raw = String(text || '');
+        const checks = [
+          { label: 'E-Mail-Adresse', pattern: /\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/i },
+          { label: 'Telefonnummer', pattern: /(?:\+?\d[\d\s()/.-]{7,}\d)/ },
+          { label: 'IBAN', pattern: /\b[A-Z]{2}\d{2}[A-Z0-9]{11,30}\b/i },
+          { label: 'Karten- oder Kontonummer', pattern: /\b(?:\d[ -]?){13,19}\b/ },
+          { label: 'Geburtsdatum', pattern: /\b\d{1,2}[./-]\d{1,2}[./-]\d{2,4}\b/ }
+        ];
+        return checks.filter((item) => item.pattern.test(raw)).map((item) => item.label);
+      },
+
+      buildClarificationPrompts: (text, session) => {
+        const raw = String(text || '').trim();
+        if (!raw) return [];
+        const prompts = [];
+        const tokenCount = raw.split(/\s+/).filter(Boolean).length;
+        const hasPriorContext = Boolean((session?.messages || []).length);
+        const vague =
+          /\b(das|dies|diese|dieses|dazu|damit|hierzu|so|stimmt das|ist das richtig|wie ist das)\b/i.test(raw);
+
+        if (tokenCount <= 2 || raw.length < 12) {
+          prompts.push('Welches konkrete Thema oder welchen Begriff meinst du genau?');
+        }
+        if (vague && !hasPriorContext) {
+          prompts.push('Beziehst du dich auf ein Dokument, einen Gesetzestext oder eine konkrete Situation?');
+        }
+        if (!app.state.settings.domain && (tokenCount <= 3 || vague)) {
+          prompts.push('Soll ich die Antwort auf AEVO, VWL/BWL oder Personalwesen zuschneiden?');
+        }
+        return app.logic.sanitizeAssistantFollowups(prompts);
+      },
+
+      answerContainsSourceSignal: (answer) => {
+        return /https?:\/\/|\bquellen?\b|\bsource\b|\bcitation\b|\[[^\]]{1,8}\]/i.test(String(answer || ''));
+      },
+
+      isOperationalAnswer: (answer) => {
+        const raw = String(answer || '').trim();
+        if (!raw) return true;
+        return /^(?:❌|⚠️|hinweis:|tipp:|willkommen|du bist offline|anfrage abgebrochen)/i.test(raw);
+      },
+
+      computeEvidenceMeta: (answer, sources, opts = {}) => {
+        const list = app.logic.sanitizeSourceList(sources);
+        const sourceCount = list.length;
+        const excerptCount = list.filter((item) => item.excerpt).length;
+        const locatedCount = list.filter((item) => item.page || item.section).length;
+        let score = 0;
+
+        if (sourceCount) score += Math.min(45, sourceCount * 14);
+        if (!sourceCount && opts.textSourceSignals) score += 28;
+        if (excerptCount) score += Math.min(24, excerptCount * 12);
+        if (locatedCount) score += Math.min(16, locatedCount * 8);
+        if (Number.isFinite(Number(opts.backendConfidence))) {
+          score += Math.round(Math.max(0, Math.min(1, Number(opts.backendConfidence))) * 15);
+        }
+        if (opts.groundedMode) score += 8;
+        if (opts.fastMode) score -= 8;
+
+        score = Math.max(0, Math.min(100, score));
+
+        let level = 'none';
+        let label = 'Keine belastbare Evidenz';
+        if (sourceCount >= 2 && score >= 70) {
+          level = 'high';
+          label = 'Hohe Evidenz';
+        } else if (sourceCount >= 1 && score >= 45) {
+          level = 'medium';
+          label = 'Mittlere Evidenz';
+        } else if (sourceCount >= 1 || opts.textSourceSignals) {
+          level = 'low';
+          label = 'Begrenzte Evidenz';
+        }
+
+        let note = '';
+        if (!sourceCount) {
+          note = opts.blockedForMissingSources
+            ? 'Antwort ohne belastbare Quelle wurde im Quellenmodus abgefangen.'
+            : (opts.textSourceSignals
+                ? 'Im Antworttext wurden Quellenhinweise erkannt, aber keine strukturierten Quellenobjekte geliefert.'
+                : 'Es wurden keine belastbaren Quellen mitgeliefert.');
+        } else if (excerptCount) {
+          note = `${sourceCount} Quelle${sourceCount === 1 ? '' : 'n'}, davon ${excerptCount} mit direkt nutzbarem Abschnitt.`;
+        } else {
+          note = `${sourceCount} Quelle${sourceCount === 1 ? '' : 'n'} vorhanden, aber ohne markierten Abschnitt.`;
+        }
+
+        if (opts.fastMode && sourceCount) {
+          note += ' Schnellmodus aktiv: bitte besonders sorgfaeltig pruefen.';
+        }
+
+        return { level, label, note, score, sourceCount, excerptCount, locatedCount };
+      },
+
+      buildUnknownAnswer: (question) => {
+        const topic = app.logic.topicFromText(question, 'deine Frage');
+        return `Ich weiss es nicht sicher. Im Quellenmodus antworte ich zu "${topic}" nur, wenn ich eine belastbare Quelle nennen kann. Formuliere die Frage bitte enger oder aktiviere passende Wissensquellen.`;
+      },
+
+      buildFollowupSuggestions: (question, answer, sources, meta = {}) => {
+        if (!app.state.settings.assistant?.showFollowups) return [];
+
+        const topic = app.logic.topicFromText(question || answer, 'das Thema');
+        const goal = String(app.state.settings.assistant?.learningGoal || '').trim();
+        const domain = String(app.state.settings.domain || '').trim();
+        const out = [];
+
+        if (meta.blockedForMissingSources) {
+          out.push('Welche Quelle oder welches Dokument soll ich dafuer gezielt nutzen?');
+          out.push(`Formuliere mir eine praezisere Frage zu ${topic}.`);
+        } else {
+          out.push(...app.logic.sanitizeAssistantFollowups(meta.backendFollowups || []));
+          if (sources.length) out.push(`Zeige mir die wichtigste Quelle zu ${topic}.`);
+          out.push(`Gib mir ein kurzes Praxisbeispiel zu ${topic}.`);
+          out.push(`Fasse ${topic} in drei Stichpunkten zusammen.`);
+          if (domain) out.push(`Erstelle drei Pruefungsfragen zu ${topic} im Fachmodus ${domain}.`);
+          if (goal) out.push(`Verbinde ${topic} mit meinem Lernziel "${goal}".`);
+        }
+
+        return app.logic.sanitizeAssistantFollowups(out);
+      },
+
+      buildLearningStep: (question, answer, meta = {}) => {
+        if (!app.state.settings.assistant?.showLearningPath) return null;
+        const topic = app.logic.topicFromText(question || answer, 'das Thema');
+        const goal = String(app.state.settings.assistant?.learningGoal || '').trim();
+        const domain = String(app.state.settings.domain || 'Standard').trim();
+
+        if (meta.blockedForMissingSources) {
+          return {
+            text: `Naechster Lernschritt: waehle zuerst eine belastbare Quelle fuer ${topic}, damit wir darauf aufbauen koennen.`,
+            prompt: `Hilf mir, fuer ${topic} zuerst die richtige Quelle oder das richtige Dokument auszuwaehlen.`
+          };
+        }
+
+        if (goal) {
+          return {
+            text: `Naechster Lernschritt fuer dein Lernziel "${goal}": vertiefe ${topic} mit einem Praxisfall und anschliessend drei Pruefungsfragen.`,
+            prompt: `Fuehre mich durch den naechsten Lernschritt fuer mein Lernziel "${goal}" zum Thema ${topic}.`
+          };
+        }
+
+        return {
+          text: `Naechster Lernschritt im Fachmodus ${domain}: sichere ${topic} erst mit einem kurzen Praxisbeispiel und dann mit Lernkarten ab.`,
+          prompt: `Plane den naechsten Lernschritt zu ${topic} im Fachmodus ${domain}.`
+        };
+      },
+
+      enrichAssistantResponse: (result, question, payload, extra = {}) => {
+        const backendMeta = (result && result.meta && typeof result.meta === 'object') ? result.meta : {};
+        let answer = String(result?.answer || '').trim();
+        let sources = app.logic.sanitizeSourceList(result?.sources || []);
+
+        const groundedMode = Boolean(app.state.settings.guardrails?.groundedMode);
+        const strictUnknown = Boolean(app.state.settings.guardrails?.strictUnknown);
+        const hasSourceSignals = sources.length > 0 || app.logic.answerContainsSourceSignal(answer);
+        const blockedForMissingSources =
+          groundedMode &&
+          strictUnknown &&
+          !hasSourceSignals &&
+          !app.logic.isOperationalAnswer(answer);
+
+        if (blockedForMissingSources) {
+          answer = app.logic.buildUnknownAnswer(question);
+          sources = [];
+        }
+
+        const evidence = app.logic.computeEvidenceMeta(answer, sources, {
+          groundedMode,
+          fastMode: Boolean(payload?.schnellmodus),
+          backendConfidence: backendMeta.confidence,
+          blockedForMissingSources,
+          textSourceSignals: hasSourceSignals && sources.length === 0
+        });
+
+        const followups = app.logic.buildFollowupSuggestions(question, answer, sources, {
+          blockedForMissingSources,
+          backendFollowups: backendMeta.followups || []
+        });
+
+        const learningStep = app.logic.buildLearningStep(question, answer, {
+          blockedForMissingSources
+        });
+
+        return {
+          answer,
+          sources,
+          meta: {
+            question: String(question || '').trim(),
+            evidence,
+            followups,
+            learningStep,
+            evidenceNote: String(backendMeta.evidenceNote || '').trim(),
+            blockedForMissingSources
+          }
+        };
+      },
+
+      applyPrivacyMode: (enabled) => {
+        app.state.settings.privacy.ephemeral = Boolean(enabled);
+        if (enabled) {
+          app.state.requestMemory = structuredClone(DEFAULT_REQUEST_MEMORY);
+          try { localStorage.removeItem(REQUEST_MEMORY_KEY); } catch (_) {}
+        }
+        app.ui.syncPrivacyModeControls();
+        app.ui.updateDomainUI();
+        app.utils.save();
+      },
+
       checkApiHealth: async () => {
         const box = document.getElementById('api-health-status');
         if (box) {
@@ -3622,12 +4208,12 @@
         syncStart();
       },
 
-      sendSystemMessage: (text) => {
+      sendSystemMessage: (text, meta = {}) => {
         const s = app.logic.activeSession();
         if (!s) return;
-        s.messages.push({ role: 'assistant', content: text, sources: [] });
+        s.messages.push({ role: 'assistant', content: text, sources: [], meta });
         app.utils.save();
-        const bubble = app.ui.createBubble('assistant', text);
+        const bubble = app.ui.createBubble('assistant', text, [], meta);
         app.ui.log.appendChild(bubble);
         app.ui.scrollBottom();
       },
@@ -3688,7 +4274,7 @@
             );
             return;
           }
-          const bubble = app.ui.createBubble(m.role, m.content, m.sources || []);
+          const bubble = app.ui.createBubble(m.role, m.content, m.sources || [], m.meta || {});
           app.ui.log.appendChild(bubble);
         });
 
@@ -3702,11 +4288,23 @@
 
         app.state.settings.ilias.enabled = Boolean(app.state.settings.sources.ilias);
         app.state.settings.prompting.enabled = document.getElementById('inp-prompting-enabled').checked;
+        app.state.settings.guardrails.groundedMode = document.getElementById('inp-grounded-mode').checked;
+        app.state.settings.guardrails.strictUnknown = document.getElementById('inp-strict-unknown').checked;
+        app.state.settings.guardrails.clarificationMode = document.getElementById('inp-clarification-mode').checked;
+        app.state.settings.guardrails.piiShield = document.getElementById('inp-pii-shield').checked;
+        if (!app.state.settings.guardrails.groundedMode) {
+          app.state.settings.guardrails.strictUnknown = false;
+        }
+        app.state.settings.assistant.showEvidence = document.getElementById('inp-show-evidence').checked;
+        app.state.settings.assistant.showFollowups = document.getElementById('inp-show-followups').checked;
+        app.state.settings.assistant.showLearningPath = document.getElementById('inp-show-learning-path').checked;
+        app.state.settings.assistant.feedbackIncludeTranscript = document.getElementById('inp-feedback-transcript').checked;
+        app.state.settings.assistant.learningGoal = document.getElementById('inp-learning-goal').value.trim().slice(0, 140);
 
         try {
           const rawCfg = document.getElementById('inp-prompting-json').value.trim();
           const parsedCfg = rawCfg ? JSON.parse(rawCfg) : structuredClone(DEFAULT_PROMPTING_JSON);
-          app.state.settings.prompting.config = parsedCfg;
+          app.state.settings.prompting.config = app.logic.sanitizePromptingConfig(parsedCfg);
         } catch (_) {
           alert('Prompting-JSON ist ungültig. Bitte prüfen.');
           return;
@@ -3727,10 +4325,13 @@
         });
 
         app.state.settings.ilias.enabled = Boolean(app.state.settings.sources.ilias);
+        app.logic.applyPrivacyMode(document.getElementById('inp-privacy-ephemeral').checked);
 
         app.utils.save();
         app.ui.updateDomainUI();
         app.ui.renderSourceToolbar();
+        app.ui.syncGroundedModeControls();
+        app.ui.syncPrivacyModeControls();
         app.ui.syncLearningDirectoryControls();
         app.ui.closeModals();
         app.logic.maybeShowModeCards();
@@ -3783,6 +4384,7 @@
       },
 
       rememberQuestion: (text) => {
+        if (app.utils.privacyModeEnabled()) return;
         const normalized = app.utils.normalizeQuestion(text);
         if (normalized.length < 4) return;
 
@@ -3814,6 +4416,7 @@
       },
 
       findQuestionSuggestions: (input, limit = 6) => {
+        if (app.utils.privacyModeEnabled()) return [];
         const raw = String(input || '').trim();
         if (raw.length < 3) return [];
 
@@ -3917,14 +4520,22 @@
       },
 
       openCardsTabWithPayload: (payload) => {
-        localStorage.setItem(CARDS_KEY, JSON.stringify(payload));
+        const nextPayload = {
+          ...(payload || {}),
+          transient: Boolean(app.utils.privacyModeEnabled())
+        };
+        localStorage.setItem(CARDS_KEY, JSON.stringify(nextPayload));
         const target = `${window.location.pathname}?view=cards`;
         const tab = window.open(target, '_blank', 'noopener');
         if (!tab) alert('Popup blockiert. Bitte Popups erlauben, um Karten in neuem Tab zu öffnen.');
       },
 
       openPracticeTabWithPayload: (payload) => {
-        localStorage.setItem(PRACTICE_KEY, JSON.stringify(payload));
+        const nextPayload = {
+          ...(payload || {}),
+          transient: Boolean(app.utils.privacyModeEnabled())
+        };
+        localStorage.setItem(PRACTICE_KEY, JSON.stringify(nextPayload));
         const target = `${window.location.pathname}?view=practice`;
         const tab = window.open(target, '_blank', 'noopener');
         if (!tab) alert('Popup blockiert. Bitte Popups erlauben, um Uebungsaufgaben in neuem Tab zu öffnen.');
@@ -4899,17 +5510,33 @@
       },
 
       sanitizeSourceList: (items) => {
-        return (Array.isArray(items) ? items : [])
-          .map((item) => {
-            if (typeof item === 'string') return { title: item, url: '' };
-            if (!item || typeof item !== 'object') return null;
-            const title = String(item.title || item.name || item.label || item.url || '').trim();
+        const unique = [];
+        const seen = new Set();
+        (Array.isArray(items) ? items : []).forEach((item) => {
+          let next = null;
+          if (typeof item === 'string') {
+            const text = String(item || '').trim();
+            if (text) next = { title: text, url: '', excerpt: '', section: '', page: '', note: '', confidence: null };
+          } else if (item && typeof item === 'object') {
+            const title = String(item.title || item.name || item.label || item.url || 'Quelle').trim();
             const url = String(item.url || item.link || '').trim();
-            if (!title && !url) return null;
-            return { title: title || url, url };
-          })
-          .filter(Boolean)
-          .slice(0, 10);
+            const excerpt = String(item.excerpt || item.quote || item.snippet || item.text || item.chunk || '').trim();
+            const section = String(item.section || item.heading || item.chapter || '').trim();
+            const page = String(item.page || item.pageNumber || item.seite || '').trim();
+            const note = String(item.note || item.reason || item.description || '').trim();
+            const confidence = Number.isFinite(Number(item.confidence)) ? Number(item.confidence) : null;
+            if (title || url || excerpt) {
+              next = { title: title || url || 'Quelle', url, excerpt, section, page, note, confidence };
+            }
+          }
+
+          if (!next) return;
+          const key = `${next.title}|${next.url}|${next.excerpt}`.toLowerCase();
+          if (seen.has(key)) return;
+          seen.add(key);
+          unique.push(next);
+        });
+        return unique.slice(0, 10);
       },
 
       extractSourcesFromRenderedMarkdown: (md) => {
@@ -4970,7 +5597,7 @@
         return unique.slice(0, 10);
       },
 
-      decorateBubble: (md, sources) => {
+      decorateBubble: (md, sources, meta = {}) => {
         md.querySelectorAll('table').forEach((table) => {
           const wrap = document.createElement('div');
           wrap.className = 'table-wrap';
@@ -4978,6 +5605,7 @@
           wrap.appendChild(table);
         });
 
+        const bubbleMeta = (meta && typeof meta === 'object') ? meta : {};
         const sourceList = app.logic.sanitizeSourceList(sources);
         const fallbackSources = sourceList.length ? [] : app.logic.extractSourcesFromRenderedMarkdown(md);
         const finalSources = sourceList.length ? sourceList.slice() : fallbackSources.slice();
@@ -4993,21 +5621,52 @@
           }
         }
 
-        if (finalSources.length) {
+        if (app.state.settings.assistant?.showEvidence && bubbleMeta.evidence) {
+          const evidencePanel = document.createElement('section');
+          evidencePanel.className = 'evidence-panel';
+          evidencePanel.innerHTML = `
+            <h4 class="evidence-head">Evidenz</h4>
+            <div class="evidence-body">
+              <span class="evidence-badge ${app.utils.safeText(bubbleMeta.evidence.level || 'none')}">${app.utils.safeText(bubbleMeta.evidence.label || 'Keine Evidenz')}</span>
+              <div class="evidence-note">${app.utils.safeText(bubbleMeta.evidence.note || bubbleMeta.evidenceNote || '')}</div>
+            </div>
+          `;
+          md.appendChild(evidencePanel);
+        }
+
+        if (finalSources.length && app.state.settings.assistant?.showEvidence) {
           const panel = document.createElement('section');
           panel.className = 'source-panel';
           const title = document.createElement('h4');
           title.className = 'source-head';
-          title.textContent = 'Quellen';
+          title.textContent = 'Quellen & Abschnitte';
           const ul = document.createElement('ul');
-          ul.className = 'source-list';
+          ul.className = 'source-card-list';
           finalSources.forEach((s) => {
             const li = document.createElement('li');
-            if (s.url) {
-              li.innerHTML = `<a href="${encodeURI(s.url)}">${app.utils.safeText(s.title)}</a>`;
-            } else {
-              li.textContent = s.title;
-            }
+            const metaBits = [];
+            if (s.section) metaBits.push(s.section);
+            if (s.page) metaBits.push(/^s\./i.test(s.page) ? s.page : `S. ${s.page}`);
+            if (Number.isFinite(s.confidence)) metaBits.push(`Evidenz ${Math.round(Math.max(0, Math.min(1, s.confidence)) * 100)}%`);
+            const anchorHtml = s.url
+              ? `<a href="${encodeURI(s.url)}">${app.utils.safeText(s.title)}</a>`
+              : `<span>${app.utils.safeText(s.title)}</span>`;
+            const snippetHtml = s.excerpt
+              ? `<p class="source-card-snippet">${app.utils.safeText(s.excerpt)}</p>`
+              : '<p class="source-card-snippet">Kein markierter Abschnitt vorhanden.</p>';
+            const noteHtml = s.note
+              ? `<div class="source-card-note">${app.utils.safeText(s.note)}</div>`
+              : '';
+            li.innerHTML = `
+              <div class="source-card">
+                <div class="source-card-head">
+                  ${anchorHtml}
+                  ${metaBits.length ? `<span class="source-card-meta">${app.utils.safeText(metaBits.join(' • '))}</span>` : ''}
+                </div>
+                ${snippetHtml}
+                ${noteHtml}
+              </div>
+            `;
             ul.appendChild(li);
           });
           panel.appendChild(title);
@@ -5016,26 +5675,57 @@
         }
 
         const keywordLinks = app.logic.findKeywordLinks(md.innerText || '');
-        if (!keywordLinks.length) {
-          return;
+        if (keywordLinks.length) {
+          const keywordPanel = document.createElement('section');
+          keywordPanel.className = 'keyword-panel';
+          const keywordTitle = document.createElement('h4');
+          keywordTitle.className = 'keyword-head';
+          keywordTitle.textContent = 'Lernverzeichnis';
+          const keywordList = document.createElement('ul');
+          keywordList.className = 'keyword-list';
+          keywordLinks.forEach((entry) => {
+            const li = document.createElement('li');
+            const noteText = entry.note ? ` - ${app.utils.safeText(entry.note)}` : '';
+            li.innerHTML = `<a href="${encodeURI(entry.url)}">${app.utils.safeText(entry.title)}</a>${noteText}`;
+            keywordList.appendChild(li);
+          });
+          keywordPanel.appendChild(keywordTitle);
+          keywordPanel.appendChild(keywordList);
+          md.appendChild(keywordPanel);
         }
 
-        const keywordPanel = document.createElement('section');
-        keywordPanel.className = 'keyword-panel';
-        const keywordTitle = document.createElement('h4');
-        keywordTitle.className = 'keyword-head';
-        keywordTitle.textContent = 'Lernverzeichnis';
-        const keywordList = document.createElement('ul');
-        keywordList.className = 'keyword-list';
-        keywordLinks.forEach((entry) => {
-          const li = document.createElement('li');
-          const noteText = entry.note ? ` - ${app.utils.safeText(entry.note)}` : '';
-          li.innerHTML = `<a href="${encodeURI(entry.url)}">${app.utils.safeText(entry.title)}</a>${noteText}`;
-          keywordList.appendChild(li);
-        });
-        keywordPanel.appendChild(keywordTitle);
-        keywordPanel.appendChild(keywordList);
-        md.appendChild(keywordPanel);
+        const followups = app.logic.sanitizeAssistantFollowups(bubbleMeta.followups || []);
+        if (followups.length && app.state.settings.assistant?.showFollowups) {
+          const followupPanel = document.createElement('section');
+          followupPanel.className = 'followup-panel';
+          const title = document.createElement('h4');
+          title.className = 'followup-head';
+          title.textContent = 'Naechste Fragen';
+          const list = document.createElement('ul');
+          list.className = 'followup-list';
+          followups.forEach((item) => {
+            const li = document.createElement('li');
+            li.innerHTML = `<button type="button" class="followup-btn" data-followup="${encodeURIComponent(item)}">${app.utils.safeText(item)}</button>`;
+            list.appendChild(li);
+          });
+          followupPanel.appendChild(title);
+          followupPanel.appendChild(list);
+          md.appendChild(followupPanel);
+        }
+
+        if (bubbleMeta.learningStep && app.state.settings.assistant?.showLearningPath) {
+          const learningPanel = document.createElement('section');
+          learningPanel.className = 'learning-panel';
+          learningPanel.innerHTML = `
+            <h4 class="learning-head">Persoenlicher Lernpfad</h4>
+            <div class="learning-body">
+              <p class="learning-copy">${app.utils.safeText(bubbleMeta.learningStep.text || '')}</p>
+              <button type="button" class="learning-btn" data-learning-prompt="${encodeURIComponent(String(bubbleMeta.learningStep.prompt || ''))}">Diesen Lernschritt starten</button>
+            </div>
+          `;
+          md.appendChild(learningPanel);
+        }
+
         app.utils.sanitizeLinks(md);
       },
 
@@ -5054,6 +5744,44 @@
         const text = forcedText || app.ui.input.value.trim();
         if (!text) return;
 
+        let s = app.logic.activeSession();
+        if (!s) {
+          app.logic.newChat();
+          s = app.logic.activeSession();
+          if (!s) return;
+        }
+
+        if (app.state.settings.guardrails?.piiShield) {
+          const sensitiveSignals = app.logic.detectSensitiveSignals(text);
+          if (sensitiveSignals.length) {
+            app.logic.sendSystemMessage(
+              `Ich habe moeglicherweise sensible Angaben erkannt (${sensitiveSignals.join(', ')}). Bitte entferne oder anonymisiere diese Daten, bevor ich die Anfrage an aktive Quellen oder KI-Dienste weiterleite.`,
+              {
+                followups: [
+                  'Formuliere mir dieselbe Frage ohne personenbezogene Daten.',
+                  'Welche Angaben sollte ich vor dem Senden anonymisieren?'
+                ],
+                learningStep: {
+                  text: 'Datenschutz zuerst: ersetze Namen, Nummern und direkte Kontaktdaten durch neutrale Platzhalter.',
+                  prompt: 'Zeige mir, wie ich meine Frage datenschutzkonform anonymisieren kann.'
+                }
+              }
+            );
+            return;
+          }
+        }
+
+        if (app.state.settings.guardrails?.clarificationMode) {
+          const clarificationPrompts = app.logic.buildClarificationPrompts(text, s);
+          if (clarificationPrompts.length) {
+            app.logic.sendSystemMessage(
+              'Ich vermute ein moegliches Missverstaendnis und haette gern noch etwas Kontext, bevor ich antworte.',
+              { followups: clarificationPrompts }
+            );
+            return;
+          }
+        }
+
         if (app.state.settings.fastMode?.enabled && app.logic.needsSlowModeHint(text)) {
           alert('Schnellmodus ist aktiv. Prüfe die Antwort bitte besonders sorgfältig.');
         }
@@ -5061,13 +5789,6 @@
         if (!forcedText) {
           app.ui.input.value = '';
           app.ui.input.dispatchEvent(new Event('input'));
-        }
-
-        let s = app.logic.activeSession();
-        if (!s) {
-          app.logic.newChat();
-          s = app.logic.activeSession();
-          if (!s) return;
         }
 
         app.state.lastQuestion = text;
@@ -5107,7 +5828,7 @@
             question: app.utils.truncate(text, 1300),
             fachmodus: app.state.settings.domain || '',
             schnellmodus: effectiveFastMode,
-            history: app.utils.chatContext(s),
+            history: app.utils.privacyModeEnabled() ? [] : app.utils.chatContext(s),
             sources: effectiveSources,
             routing: {
               preferred_model: effectiveFastMode ? 'deepseek' : 'default'
@@ -5123,7 +5844,20 @@
             clientMeta: {
               app: 'LINDA3',
               version: APP_VERSION,
-              ts: new Date().toISOString()
+              ts: new Date().toISOString(),
+              privacyMode: app.utils.privacyModeEnabled()
+            },
+            guardrails: {
+              grounded_mode: Boolean(app.state.settings.guardrails?.groundedMode),
+              strict_unknown: Boolean(app.state.settings.guardrails?.strictUnknown),
+              clarification_mode: Boolean(app.state.settings.guardrails?.clarificationMode),
+              pii_shield: Boolean(app.state.settings.guardrails?.piiShield)
+            },
+            assistantPrefs: {
+              show_evidence: Boolean(app.state.settings.assistant?.showEvidence),
+              show_followups: Boolean(app.state.settings.assistant?.showFollowups),
+              show_learning_path: Boolean(app.state.settings.assistant?.showLearningPath),
+              learning_goal: String(app.state.settings.assistant?.learningGoal || '').trim()
             }
           };
           lastPayload = payload;
@@ -5138,8 +5872,9 @@
             try {
               makeParsed = await app.logic.requestAnswer(API_ENDPOINT, payload, controller.signal);
               makeParsed.answer = app.logic.stripRepeatedIntro(makeParsed.answer, allowIntroForThisTurn);
+              makeParsed = app.logic.enrichAssistantResponse(makeParsed, text, payload, { channel: 'default' });
             } catch (e) {
-              makeParsed = { answer: `❌ Linda 3.0 Fehler: ${e?.message || 'unbekannt'}`, sources: [] };
+              makeParsed = { answer: `❌ Linda 3.0 Fehler: ${e?.message || 'unbekannt'}`, sources: [], meta: {} };
             }
 
             await new Promise((resolve) => setTimeout(resolve, 1000));
@@ -5163,6 +5898,7 @@
                 controller.signal
               );
               deepParsed.answer = app.logic.stripRepeatedIntro(deepParsed.answer, allowIntroForThisTurn);
+              deepParsed = app.logic.enrichAssistantResponse(deepParsed, text, deepseekPayload, { channel: 'deepseek' });
             } catch (e) {
               const msg = String(e?.message || '');
               const missingDeepseekRoute = msg.includes('HTTP 404') && DEEPSEEK_API_ENDPOINT !== API_ENDPOINT;
@@ -5174,11 +5910,12 @@
                     controller.signal
                   );
                   deepParsed.answer = app.logic.stripRepeatedIntro(deepParsed.answer, allowIntroForThisTurn);
+                  deepParsed = app.logic.enrichAssistantResponse(deepParsed, text, deepseekPayload, { channel: 'deepseek-fallback' });
                 } catch (fallbackErr) {
-                  deepParsed = { answer: `❌ Schnellmodus Fehler: ${fallbackErr?.message || 'unbekannt'}`, sources: [] };
+                  deepParsed = { answer: `❌ Schnellmodus Fehler: ${fallbackErr?.message || 'unbekannt'}`, sources: [], meta: {} };
                 }
               } else {
-                deepParsed = { answer: `❌ Schnellmodus Fehler: ${e?.message || 'unbekannt'}`, sources: [] };
+                deepParsed = { answer: `❌ Schnellmodus Fehler: ${e?.message || 'unbekannt'}`, sources: [], meta: {} };
               }
             }
 
@@ -5189,6 +5926,9 @@
               compare: {
                 make: makeParsed,
                 deepseek: deepParsed
+              },
+              meta: {
+                question: text
               }
             });
             app.ui.log.appendChild(app.ui.createCompareBubble(makeParsed, deepParsed));
@@ -5214,8 +5954,11 @@
             const primaryEndpoint = effectiveFastMode ? DEEPSEEK_API_ENDPOINT : API_ENDPOINT;
             const parsed = await app.logic.requestAnswer(primaryEndpoint, payload, controller.signal);
             parsed.answer = app.logic.stripRepeatedIntro(parsed.answer, allowIntroForThisTurn);
+            const enriched = app.logic.enrichAssistantResponse(parsed, text, payload, {
+              channel: effectiveFastMode ? 'deepseek' : 'default'
+            });
             if (opts?.autoSpeak) {
-              const spokenText = app.logic.buildSpokenAnswer(parsed?.answer || '');
+              const spokenText = app.logic.buildSpokenAnswer(enriched?.answer || '');
               const speaking = app.ui.voicePlaybackRow();
               app.ui.log.appendChild(speaking);
               app.ui.scrollBottom();
@@ -5233,8 +5976,8 @@
               }
               speaking.remove();
             }
-            s.messages.push({ role: 'assistant', content: parsed.answer, sources: parsed.sources });
-            app.ui.log.appendChild(app.ui.createBubble('assistant', parsed.answer, parsed.sources));
+            s.messages.push({ role: 'assistant', content: enriched.answer, sources: enriched.sources, meta: enriched.meta });
+            app.ui.log.appendChild(app.ui.createBubble('assistant', enriched.answer, enriched.sources, enriched.meta));
           }
           loading.remove();
           if (!app.state.telemetry.firstSelectionHintShown) {
@@ -5272,8 +6015,9 @@
               );
               clearTimeout(fallbackTimeout);
               fallbackParsed.answer = app.logic.stripRepeatedIntro(fallbackParsed.answer, false);
-              s.messages.push({ role: 'assistant', content: fallbackParsed.answer, sources: fallbackParsed.sources || [] });
-              app.ui.log.appendChild(app.ui.createBubble('assistant', fallbackParsed.answer, fallbackParsed.sources || []));
+              const fallbackEnriched = app.logic.enrichAssistantResponse(fallbackParsed, text, fallbackPayload, { channel: 'timeout-fallback' });
+              s.messages.push({ role: 'assistant', content: fallbackEnriched.answer, sources: fallbackEnriched.sources || [], meta: fallbackEnriched.meta });
+              app.ui.log.appendChild(app.ui.createBubble('assistant', fallbackEnriched.answer, fallbackEnriched.sources || [], fallbackEnriched.meta));
               app.ui.log.appendChild(
                 app.ui.createBubble(
                   'assistant',
@@ -5562,7 +6306,8 @@
           cards,
           generatedAt: app.utils.nowStamp(),
           sourceLength: String(text || '').length,
-          adaptive: true
+          adaptive: true,
+          transient: Boolean(app.utils.privacyModeEnabled())
         };
 
         localStorage.setItem(CARDS_KEY, JSON.stringify(payload));
@@ -5585,10 +6330,15 @@
       openFeedback: () => {
         const s = app.logic.activeSession();
         let body = 'Mein Feedback zu LINDA3:%0D%0A%0D%0A';
-        if (s) {
+        const includeTranscript =
+          !app.utils.privacyModeEnabled() &&
+          Boolean(app.state.settings.assistant?.feedbackIncludeTranscript);
+        if (s && includeTranscript) {
           (s.messages || []).forEach((m) => {
             body += `${m.role === 'user' ? 'Ich' : 'LINDA3'}: ${encodeURIComponent(m.content)}%0D%0A`;
           });
+        } else {
+          body += 'Hinweis: Chatverlauf wird aus Datenschutzgruenden nicht automatisch angehaengt.%0D%0A';
         }
         window.location.href = `mailto:KI-TEST@GMX.COM?subject=Feedback LINDA3&body=${body}`;
       }
@@ -5600,6 +6350,9 @@
   const initCardTab = () => {
     const root = document.body;
     const payload = parseJSON(localStorage.getItem(CARDS_KEY) || '{}', {});
+    if (payload?.transient) {
+      try { localStorage.removeItem(CARDS_KEY); } catch (_) {}
+    }
     const cards = Array.isArray(payload.cards) ? payload.cards : [];
     const stats = parseJSON(localStorage.getItem(CARDS_STATS_KEY) || '{}', {});
     const now = Date.now();
@@ -5692,6 +6445,9 @@
   const initPracticeTab = () => {
     const root = document.body;
     const payload = parseJSON(localStorage.getItem(PRACTICE_KEY) || '{}', {});
+    if (payload?.transient) {
+      try { localStorage.removeItem(PRACTICE_KEY); } catch (_) {}
+    }
     const questions = Array.isArray(payload.questions) ? payload.questions : [];
 
     root.innerHTML = `
@@ -5782,6 +6538,8 @@
     app.ui.syncFastModeControls();
     app.ui.syncCompareModeControls();
     app.ui.syncLearningDirectoryControls();
+    app.ui.syncGroundedModeControls();
+    app.ui.syncPrivacyModeControls();
     app.ui.syncMobileReaderControls();
     app.ui.applyMobileReaderClass();
     if (app.logic.isMobileReaderEnabled()) {
@@ -5909,6 +6667,31 @@
     if (directoryMainOn) directoryMainOn.addEventListener('change', syncLearningDirectory);
     if (directoryMainOff) directoryMainOff.addEventListener('change', syncLearningDirectory);
 
+    const groundedMainOn = document.getElementById('grounded-main-on');
+    const groundedMainOff = document.getElementById('grounded-main-off');
+    const syncGroundedMode = () => {
+      const wantsOn = Boolean(groundedMainOn && groundedMainOn.checked);
+      app.state.settings.guardrails.groundedMode = wantsOn;
+      if (!wantsOn) {
+        app.state.settings.guardrails.strictUnknown = false;
+      } else if (!app.state.settings.guardrails.strictUnknown) {
+        app.state.settings.guardrails.strictUnknown = true;
+      }
+      app.utils.save();
+      app.ui.updateDomainUI();
+    };
+    if (groundedMainOn) groundedMainOn.addEventListener('change', syncGroundedMode);
+    if (groundedMainOff) groundedMainOff.addEventListener('change', syncGroundedMode);
+
+    const privacyMainOn = document.getElementById('privacy-main-on');
+    const privacyMainOff = document.getElementById('privacy-main-off');
+    const syncPrivacyMode = () => {
+      const wantsOn = Boolean(privacyMainOn && privacyMainOn.checked);
+      app.logic.applyPrivacyMode(wantsOn);
+    };
+    if (privacyMainOn) privacyMainOn.addEventListener('change', syncPrivacyMode);
+    if (privacyMainOff) privacyMainOff.addEventListener('change', syncPrivacyMode);
+
     const mobileReaderOn = document.getElementById('mobile-reader-on');
     const mobileReaderOff = document.getElementById('mobile-reader-off');
     const syncMobileReader = () => {
@@ -5967,6 +6750,20 @@
         app.ui.log.querySelectorAll('.mode-card-row').forEach((el) => el.remove());
         app.ui.log.appendChild(app.ui.createBubble('assistant', `Fachmodus wurde auf **${mode}** gesetzt.`));
         app.ui.scrollBottom();
+        return;
+      }
+
+      const followupBtn = e.target.closest('[data-followup]');
+      if (followupBtn) {
+        const prompt = decodeURIComponent(followupBtn.getAttribute('data-followup') || '');
+        if (prompt) app.logic.sendMessage({ textOverride: prompt });
+        return;
+      }
+
+      const learningBtn = e.target.closest('[data-learning-prompt]');
+      if (learningBtn) {
+        const prompt = decodeURIComponent(learningBtn.getAttribute('data-learning-prompt') || '');
+        if (prompt) app.logic.sendMessage({ textOverride: prompt });
         return;
       }
 
