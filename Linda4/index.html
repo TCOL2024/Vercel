@@ -835,6 +835,138 @@
     color: #0d4a94;
   }
 
+  .mode-info-copy {
+    color: #28425f;
+    font-size: 0.96rem;
+    line-height: 1.6;
+  }
+
+  .mode-info-copy p {
+    margin: 0 0 10px;
+  }
+
+  .mode-info-copy ul {
+    margin: 10px 0 0;
+    padding-left: 20px;
+  }
+
+  .mode-info-copy li + li {
+    margin-top: 7px;
+  }
+
+  .mode-info-note {
+    margin-top: 12px;
+    padding: 10px 12px;
+    border-radius: 12px;
+    background: #eef6ff;
+    border: 1px solid #cfe0f8;
+    color: #214c84;
+    font-size: 0.88rem;
+    font-weight: 700;
+  }
+
+  .feature-showcase {
+    margin: 18px 12px 8px;
+    padding: 18px;
+    border-radius: 24px;
+    border: 1px solid #cfe0f3;
+    background:
+      radial-gradient(520px 220px at 110% 0%, rgba(0, 185, 148, 0.12) 0%, transparent 68%),
+      radial-gradient(480px 240px at -10% 10%, rgba(0, 89, 184, 0.12) 0%, transparent 68%),
+      linear-gradient(180deg, rgba(255,255,255,0.96) 0%, rgba(246,250,255,0.96) 100%);
+  }
+
+  .feature-showcase.hidden {
+    display: none;
+  }
+
+  .feature-hero {
+    display: grid;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+
+  .feature-kicker {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    width: fit-content;
+    border-radius: 999px;
+    border: 1px solid #c5dbf7;
+    background: #edf5ff;
+    color: #0b4f9b;
+    padding: 6px 10px;
+    font-size: 0.76rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  .feature-title {
+    margin: 0;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: clamp(1.4rem, 2vw, 2rem);
+    line-height: 1.1;
+    color: #123765;
+  }
+
+  .feature-copy {
+    margin: 0;
+    color: #355170;
+    max-width: 68ch;
+  }
+
+  .feature-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  .feature-card {
+    border-radius: 18px;
+    border: 1px solid #d5e3f5;
+    background: rgba(255, 255, 255, 0.92);
+    padding: 14px;
+  }
+
+  .feature-card h4 {
+    margin: 0 0 8px;
+    font-size: 0.96rem;
+    color: #12457f;
+  }
+
+  .feature-card p {
+    margin: 0;
+    color: #435c79;
+    font-size: 0.9rem;
+  }
+
+  .feature-actions {
+    margin-top: 10px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .feature-btn {
+    border: 1px solid #cfe0f7;
+    background: #ffffff;
+    color: #0d4c96;
+    border-radius: 999px;
+    padding: 8px 12px;
+    font: inherit;
+    font-size: 0.82rem;
+    font-weight: 800;
+    cursor: pointer;
+  }
+
+  .feature-btn:hover,
+  .feature-btn:focus-visible {
+    background: #edf6ff;
+    border-color: #9fc3f2;
+    outline: none;
+  }
+
   .grid {
     display: grid;
     gap: 10px;
@@ -1375,6 +1507,16 @@
 
     .compare-canvas {
       grid-template-columns: 1fr;
+    }
+
+    .feature-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .feature-showcase {
+      margin: 14px 10px 6px;
+      padding: 16px;
+      border-radius: 20px;
     }
   }
 
@@ -2478,6 +2620,7 @@
   <div class="modal consent">
     <h3>Datenschutzhinweise</h3>
     <p>Bitte keine vertraulichen personenbezogenen Daten eingeben. Inhalte können an aktivierte Dienste übermittelt werden.</p>
+    <p class="mini" style="margin-top:-2px;">Hinweis: Quellenmodus priorisiert belegte Antworten, Privatmodus minimiert Verlaufsspeicherung und Datenablage.</p>
     <ul>
       <li>KI-Dienste (z.B. OpenAI / Anthropic)</li>
       <li>Automations-Dienste (z.B. Make)</li>
@@ -2651,6 +2794,16 @@
   </div>
 </div>
 
+<div id="modal-mode-info" class="modal-overlay">
+  <div class="modal">
+    <h3 id="mode-info-title">Modus-Hinweis</h3>
+    <div id="mode-info-body" class="mode-info-copy"></div>
+    <div class="btn-row">
+      <button class="btn save" type="button" id="mode-info-close">Verstanden</button>
+    </div>
+  </div>
+</div>
+
 <div id="selection-menu" role="menu" aria-label="Auswahlmenü">
   <div class="title">Markierter Bereich erkannt</div>
   <button id="selection-cards-btn" class="sel-btn" type="button">Lernkarten erstellen</button>
@@ -2691,6 +2844,7 @@
   const API_ENDPOINT = '/api/linda3?action=bot';
   const DEEPSEEK_API_ENDPOINT = '/api/linda3?action=deepseek';
   const HEALTH_API_ENDPOINT = '/api/linda3?action=health';
+  const LEGACY_API_ORIGIN = 'https://vercel-kappa-seven-33.vercel.app';
   const BBIG_PDF_PATH = 'https://vercel-kappa-seven-33.vercel.app/2026/document/BBIG_V20022026.pdf';
   const DIRECTORY_LINKS_PATH = './directory_links.json';
   const DIRECTORY_KEYWORD_MATCHING_ENABLED = false;
@@ -3168,6 +3322,77 @@
         document.querySelectorAll('.modal-overlay').forEach((m) => m.classList.remove('open'));
       },
 
+      openModeInfo: (kind) => {
+        const info = app.logic.getModeInfo(kind);
+        const modal = document.getElementById('modal-mode-info');
+        const title = document.getElementById('mode-info-title');
+        const body = document.getElementById('mode-info-body');
+        if (!modal || !title || !body || !info) return;
+        title.textContent = info.title;
+        body.innerHTML = `
+          <p>${app.utils.safeText(info.intro)}</p>
+          <ul>
+            ${info.points.map((item) => `<li>${app.utils.safeText(item)}</li>`).join('')}
+          </ul>
+          <div class="mode-info-note">${app.utils.safeText(info.note)}</div>
+        `;
+        modal.classList.add('open');
+      },
+
+      renderFeatureShowcase: () => {
+        const stage = document.createElement('section');
+        stage.className = 'feature-showcase';
+        stage.setAttribute('data-feature-showcase', 'true');
+        stage.innerHTML = `
+          <div class="feature-hero">
+            <span class="feature-kicker">So arbeitet LINDA</span>
+            <h2 class="feature-title">Guardrails, Quellen und Lernhilfe auf einen Blick</h2>
+            <p class="feature-copy">Nach dem Start zeigt dir LINDA hier die wichtigsten Schutz- und Assistenzfunktionen. Du kannst direkt nachlesen, was Privatmodus, Quellenmodus, Evidenzkarten und Lernpfade konkret bewirken.</p>
+          </div>
+          <div class="feature-grid">
+            <article class="feature-card">
+              <h4>Quellenmodus</h4>
+              <p>Antworten werden strenger an belastbare Quellen gekoppelt. Fehlt eine belastbare Quelle, sagt LINDA lieber offen, dass sie es nicht sicher weiss.</p>
+              <div class="feature-actions">
+                <button type="button" class="feature-btn" data-show-mode-info="grounded">Mehr zu Quellenmodus</button>
+              </div>
+            </article>
+            <article class="feature-card">
+              <h4>Privatmodus</h4>
+              <p>Verlauf, Verlaufsvorschläge und Zusatzdaten werden minimiert. LINDA arbeitet datensparsamer und hängt nichts automatisch an Feedback-Mails an.</p>
+              <div class="feature-actions">
+                <button type="button" class="feature-btn" data-show-mode-info="privacy">Mehr zu Privatmodus</button>
+              </div>
+            </article>
+            <article class="feature-card">
+              <h4>Evidenz & Quellenkarten</h4>
+              <p>Antworten zeigen sichtbare Evidenzstufen, klickbare Quellen und direkt lesbare Ausschnitte statt nur einer bloßen Linkliste.</p>
+            </article>
+            <article class="feature-card">
+              <h4>Follow-ups & Lernpfad</h4>
+              <p>LINDA schlägt passende Anschlussfragen vor und zeigt dir einen nächsten Lernschritt, damit aus einer Antwort ein echter Lernfluss wird.</p>
+            </article>
+          </div>
+        `;
+        return stage;
+      },
+
+      showFeatureShowcase: (force = false) => {
+        const log = app.ui.log;
+        if (!log) return;
+        const exists = document.querySelector('[data-feature-showcase="true"]');
+        if (exists) return;
+        const session = app.logic.activeSession();
+        const hasUserMessages = Boolean((session?.messages || []).some((m) => m.role === 'user'));
+        if (!force && hasUserMessages) return;
+        log.prepend(app.ui.renderFeatureShowcase());
+      },
+
+      removeFeatureShowcase: () => {
+        const stage = document.querySelector('[data-feature-showcase="true"]');
+        if (stage) stage.remove();
+      },
+
       fillSettingsForm: () => {
         const { settings } = app.state;
         document.getElementById('inp-name').value = settings.name || '';
@@ -3210,6 +3435,9 @@
         Object.entries(h.checks).forEach(([k, v]) => {
           lines.push(`${v ? '✓' : '✗'} ${k}`);
         });
+        if (h.baseUrl) {
+          lines.push(`API-Basis: ${h.baseUrl}`);
+        }
         if (h.ts) {
           const ts = new Date(h.ts);
           if (!Number.isNaN(ts.getTime())) lines.push(`Geprüft: ${ts.toLocaleString('de-DE')}`);
@@ -3805,6 +4033,114 @@
         return out;
       },
 
+      isLindaApiEndpoint: (endpoint) => {
+        const raw = String(endpoint || '').trim();
+        return /^\/api\/linda3(?:\?|$)/i.test(raw) || /^https?:\/\/[^?#]+\/api\/linda3(?:\?|$)/i.test(raw);
+      },
+
+      toAbsoluteEndpoint: (endpoint, origin = '') => {
+        const raw = String(endpoint || '').trim();
+        if (!raw) return raw;
+        if (/^https?:\/\//i.test(raw)) return raw;
+        const base = String(origin || '').trim().replace(/\/$/, '');
+        return base ? `${base}${raw.startsWith('/') ? raw : `/${raw}`}` : raw;
+      },
+
+      endpointOrigin: (endpoint) => {
+        try {
+          return new URL(String(endpoint || ''), window.location.origin).origin;
+        } catch (_) {
+          return '';
+        }
+      },
+
+      describeApiStatus: (status, endpoint, detail = '', finalUrl = '') => {
+        const isLindaApi = app.logic.isLindaApiEndpoint(endpoint);
+        if (status === 404 && isLindaApi) {
+          const targetOrigin = app.logic.endpointOrigin(finalUrl || endpoint);
+          const extra = targetOrigin && targetOrigin !== window.location.origin
+            ? ` Auch das Fallback-Backend unter ${targetOrigin} hat keinen Treffer geliefert.`
+            : '';
+          return `HTTP 404: /api/linda3 wurde auf diesem Deployment nicht gefunden.${extra} Es fehlt das Backend oder die API-Zieladresse ist falsch.`;
+        }
+        return `HTTP ${status}${detail}`;
+      },
+
+      fetchApi: async (endpoint, options = {}, opts = {}) => {
+        const rawEndpoint = String(endpoint || '').trim();
+        const allowLegacyFallback = opts.allowLegacyFallback !== false;
+        const isLindaApi = app.logic.isLindaApiEndpoint(rawEndpoint);
+        const primaryUrl = app.logic.toAbsoluteEndpoint(rawEndpoint);
+        const legacyUrl =
+          allowLegacyFallback &&
+          isLindaApi &&
+          app.logic.endpointOrigin(primaryUrl || rawEndpoint) !== LEGACY_API_ORIGIN
+            ? app.logic.toAbsoluteEndpoint(rawEndpoint, LEGACY_API_ORIGIN)
+            : '';
+
+        let res;
+        try {
+          res = await fetch(primaryUrl, options);
+        } catch (err) {
+          if (!legacyUrl) throw err;
+          res = await fetch(legacyUrl, options);
+          return res;
+        }
+
+        if (res.status === 404 && legacyUrl) {
+          const legacyRes = await fetch(legacyUrl, options);
+          return legacyRes;
+        }
+
+        return res;
+      },
+
+      getModeInfo: (kind) => {
+        const map = {
+          privacy: {
+            title: 'Privatmodus',
+            intro: 'Privatmodus sorgt dafuer, dass LINDA datensparsamer arbeitet.',
+            points: [
+              'Verlauf wird nicht weiter lokal gespeichert.',
+              'Verlaufsvorschlaege aus alten Fragen werden abgeschaltet.',
+              'An die API wird keine Chat-History mehr mitgesendet.',
+              'Lernkarten- und Uebungsdaten werden nur transient abgelegt.',
+              'Feedback-Mails haengen den Chatverlauf nicht automatisch an.'
+            ],
+            note: 'Kurz gesagt: Privatmodus schuetzt Daten.'
+          },
+          grounded: {
+            title: 'Quellenmodus',
+            intro: 'Quellenmodus macht die Antworten strenger quellengebunden.',
+            points: [
+              'LINDA bevorzugt belastbare Quellen statt freier Ableitungen.',
+              'Wenn keine belastbare Quelle erkennbar ist, antwortet LINDA lieber mit "Ich weiss es nicht sicher".',
+              'Evidenz, Quellen-Chunks und Anschlussfragen werden sichtbarer dargestellt.',
+              'Die UI macht staerker kenntlich, wie belastbar eine Antwort gerade ist.'
+            ],
+            note: 'Kurz gesagt: Quellenmodus schuetzt gegen Halluzinationen.'
+          }
+        };
+        return map[kind] || null;
+      },
+
+      setGroundedMode: (enabled, opts = {}) => {
+        const prev = Boolean(app.state.settings.guardrails?.groundedMode);
+        const next = Boolean(enabled);
+        app.state.settings.guardrails.groundedMode = next;
+        if (!next) {
+          app.state.settings.guardrails.strictUnknown = false;
+        } else if (!app.state.settings.guardrails.strictUnknown) {
+          app.state.settings.guardrails.strictUnknown = true;
+        }
+        app.ui.syncGroundedModeControls();
+        app.ui.updateDomainUI();
+        app.utils.save();
+        if (next && !prev && opts.showOverlay !== false) {
+          app.ui.openModeInfo('grounded');
+        }
+      },
+
       sanitizePromptingConfig: (cfg) => {
         if (!cfg || typeof cfg !== 'object') return structuredClone(DEFAULT_PROMPTING_JSON);
 
@@ -4080,15 +4416,20 @@
         };
       },
 
-      applyPrivacyMode: (enabled) => {
-        app.state.settings.privacy.ephemeral = Boolean(enabled);
-        if (enabled) {
+      applyPrivacyMode: (enabled, opts = {}) => {
+        const prev = Boolean(app.state.settings.privacy?.ephemeral);
+        const next = Boolean(enabled);
+        app.state.settings.privacy.ephemeral = next;
+        if (next) {
           app.state.requestMemory = structuredClone(DEFAULT_REQUEST_MEMORY);
           try { localStorage.removeItem(REQUEST_MEMORY_KEY); } catch (_) {}
         }
         app.ui.syncPrivacyModeControls();
         app.ui.updateDomainUI();
         app.utils.save();
+        if (next && !prev && opts.showOverlay !== false) {
+          app.ui.openModeInfo('privacy');
+        }
       },
 
       checkApiHealth: async () => {
@@ -4098,16 +4439,17 @@
           box.style.color = '#37526f';
         }
         try {
-          const res = await fetch(HEALTH_API_ENDPOINT, { method: 'GET' });
+          const res = await app.logic.fetchApi(HEALTH_API_ENDPOINT, { method: 'GET' });
           const raw = await res.text();
           let parsed = {};
           try { parsed = JSON.parse(raw); } catch (_) {}
-          if (!res.ok) throw new Error(parsed?.error || `HTTP ${res.status}`);
+          if (!res.ok) throw new Error(parsed?.error || app.logic.describeApiStatus(res.status, HEALTH_API_ENDPOINT, '', res.url || ''));
 
           app.state.apiHealth = {
             ok: Boolean(parsed?.ok),
             checks: (parsed?.checks && typeof parsed.checks === 'object') ? parsed.checks : {},
-            ts: String(parsed?.ts || new Date().toISOString())
+            ts: String(parsed?.ts || new Date().toISOString()),
+            baseUrl: app.logic.endpointOrigin(res.url || HEALTH_API_ENDPOINT)
           };
           app.ui.renderApiHealthStatus(app.state.apiHealth);
           app.utils.save();
@@ -4171,6 +4513,7 @@
         const view = new URLSearchParams(window.location.search).get('view');
         if (view === 'cards' || view === 'practice') return;
         app.logic.ensureSession();
+        app.ui.showFeatureShowcase(true);
         setTimeout(() => app.ui.input.focus(), 80);
       },
 
@@ -4241,6 +4584,7 @@
           app.state.welcomeShown = true;
           app.utils.save();
         }
+        app.ui.showFeatureShowcase();
         app.logic.maybeShowModeCards();
       },
 
@@ -4283,16 +4627,18 @@
       },
 
       saveSettings: () => {
+        const prevGrounded = Boolean(app.state.settings.guardrails?.groundedMode);
+        const prevPrivacy = Boolean(app.state.settings.privacy?.ephemeral);
         app.state.settings.name = document.getElementById('inp-name').value.trim();
         app.state.settings.domain = document.getElementById('inp-domain').value;
 
         app.state.settings.ilias.enabled = Boolean(app.state.settings.sources.ilias);
         app.state.settings.prompting.enabled = document.getElementById('inp-prompting-enabled').checked;
-        app.state.settings.guardrails.groundedMode = document.getElementById('inp-grounded-mode').checked;
+        const nextGrounded = document.getElementById('inp-grounded-mode').checked;
         app.state.settings.guardrails.strictUnknown = document.getElementById('inp-strict-unknown').checked;
         app.state.settings.guardrails.clarificationMode = document.getElementById('inp-clarification-mode').checked;
         app.state.settings.guardrails.piiShield = document.getElementById('inp-pii-shield').checked;
-        if (!app.state.settings.guardrails.groundedMode) {
+        if (!nextGrounded) {
           app.state.settings.guardrails.strictUnknown = false;
         }
         app.state.settings.assistant.showEvidence = document.getElementById('inp-show-evidence').checked;
@@ -4325,7 +4671,8 @@
         });
 
         app.state.settings.ilias.enabled = Boolean(app.state.settings.sources.ilias);
-        app.logic.applyPrivacyMode(document.getElementById('inp-privacy-ephemeral').checked);
+        app.logic.setGroundedMode(nextGrounded, { showOverlay: false });
+        app.logic.applyPrivacyMode(document.getElementById('inp-privacy-ephemeral').checked, { showOverlay: false });
 
         app.utils.save();
         app.ui.updateDomainUI();
@@ -4335,6 +4682,8 @@
         app.ui.syncLearningDirectoryControls();
         app.ui.closeModals();
         app.logic.maybeShowModeCards();
+        if (nextGrounded && !prevGrounded) app.ui.openModeInfo('grounded');
+        if (document.getElementById('inp-privacy-ephemeral').checked && !prevPrivacy) app.ui.openModeInfo('privacy');
       },
 
       clearPromptConfigs: () => {
@@ -4600,7 +4949,7 @@
         const endpoint = app.logic.resolveSafeCardsEndpoint();
         const question = app.logic.buildCardsWebhookQuestion(rawText, targetCount, domain);
 
-        const res = await fetch(endpoint, {
+        const res = await app.logic.fetchApi(endpoint, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -4664,7 +5013,7 @@
           throw new Error('Frage ist leer');
         }
 
-        let res = await fetch(endpoint, {
+        let res = await app.logic.fetchApi(endpoint, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(safePayload),
@@ -4691,7 +5040,7 @@
               history: Array.isArray(safePayload.history) ? safePayload.history : [],
               routing: safePayload.routing || {}
             };
-            res = await fetch(endpoint, {
+            res = await app.logic.fetchApi(endpoint, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify(retryPayload),
@@ -4706,7 +5055,7 @@
             const err = await res.json();
             detail = err?.error ? `: ${err.error}` : '';
           } catch (_) {}
-          throw new Error(`HTTP ${res.status}${detail}`);
+          throw new Error(app.logic.describeApiStatus(res.status, endpoint, detail, res.url || ''));
         }
 
         const raw = await res.text();
@@ -4765,7 +5114,7 @@
         };
 
         try {
-          const res = await fetch(FLASHCARDS_API_ENDPOINT, {
+          const res = await app.logic.fetchApi(FLASHCARDS_API_ENDPOINT, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -4966,7 +5315,7 @@
             }
           );
 
-          const res = await fetch(FLASHCARDS_API_ENDPOINT, {
+          const res = await app.logic.fetchApi(FLASHCARDS_API_ENDPOINT, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -5140,7 +5489,7 @@
         const mapped = app.logic.mapSpeechLang(langHint || navigator.language || 'de-DE');
         const language = String(mapped || 'de-DE').slice(0, 2).toLowerCase();
 
-        const res = await fetch(STT_API_ENDPOINT, {
+        const res = await app.logic.fetchApi(STT_API_ENDPOINT, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -5155,7 +5504,7 @@
             const err = await res.json();
             detail = String(err?.error || err?.detail || '').trim();
           } catch (_) {}
-          throw new Error(`STT-Fehler (${res.status})${detail ? `: ${detail}` : ''}`);
+          throw new Error(`STT-Fehler: ${app.logic.describeApiStatus(res.status, STT_API_ENDPOINT, detail ? `: ${detail}` : '', res.url || '')}`);
         }
         const parsed = await res.json();
         return String(parsed?.text || '').trim();
@@ -5358,7 +5707,7 @@
         if (!payload.text) throw new Error('Kein Text zum Vorlesen vorhanden.');
         let lastErr = null;
         for (let attempt = 1; attempt <= 2; attempt += 1) {
-          const res = await fetch(TTS_API_ENDPOINT, {
+          const res = await app.logic.fetchApi(TTS_API_ENDPOINT, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
@@ -5370,7 +5719,7 @@
             const err = await res.json();
             detail = String(err?.error || err?.detail || '').trim();
           } catch (_) {}
-          lastErr = new Error(`TTS-API Fehler (${res.status})${detail ? `: ${detail}` : ''}`);
+          lastErr = new Error(`TTS-API Fehler: ${app.logic.describeApiStatus(res.status, TTS_API_ENDPOINT, detail ? `: ${detail}` : '', res.url || '')}`);
           const retryable = [408, 409, 425, 429, 500, 502, 503, 504].includes(res.status);
           if (!retryable || attempt === 2) break;
           await new Promise((resolve) => setTimeout(resolve, 350 * attempt));
@@ -5453,7 +5802,7 @@
       },
 
       requestSelectionTranslation: async (text, targetLang) => {
-        const res = await fetch(TRANSLATE_API_ENDPOINT, {
+        const res = await app.logic.fetchApi(TRANSLATE_API_ENDPOINT, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -5480,7 +5829,7 @@
           crisp: 'kurz'
         };
         const style = modeToStyle[String(mode || 'easy')] || 'neutral';
-        const res = await fetch(REWRITE_API_ENDPOINT, {
+        const res = await app.logic.fetchApi(REWRITE_API_ENDPOINT, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -5799,6 +6148,7 @@
           ? `${app.state.settings.name}: ${text}`
           : text;
 
+        app.ui.removeFeatureShowcase();
         s.messages.push({ role: 'user', content: displayText, sources: [] });
         if (!s.name || s.name === 'Neuer Chat') s.name = text.slice(0, 48);
 
@@ -6671,14 +7021,7 @@
     const groundedMainOff = document.getElementById('grounded-main-off');
     const syncGroundedMode = () => {
       const wantsOn = Boolean(groundedMainOn && groundedMainOn.checked);
-      app.state.settings.guardrails.groundedMode = wantsOn;
-      if (!wantsOn) {
-        app.state.settings.guardrails.strictUnknown = false;
-      } else if (!app.state.settings.guardrails.strictUnknown) {
-        app.state.settings.guardrails.strictUnknown = true;
-      }
-      app.utils.save();
-      app.ui.updateDomainUI();
+      app.logic.setGroundedMode(wantsOn);
     };
     if (groundedMainOn) groundedMainOn.addEventListener('change', syncGroundedMode);
     if (groundedMainOff) groundedMainOff.addEventListener('change', syncGroundedMode);
@@ -6740,7 +7083,18 @@
       app.logic.switchSession(item.getAttribute('data-session-id'));
     });
 
+    document.getElementById('mode-info-close').addEventListener('click', () => {
+      app.ui.closeModals();
+    });
+
     app.ui.log.addEventListener('click', (e) => {
+      const stageModeBtn = e.target.closest('[data-show-mode-info]');
+      if (stageModeBtn) {
+        const kind = stageModeBtn.getAttribute('data-show-mode-info') || '';
+        app.ui.openModeInfo(kind);
+        return;
+      }
+
       const modeBtn = e.target.closest('[data-set-domain]');
       if (modeBtn) {
         const mode = modeBtn.getAttribute('data-set-domain') || '';
