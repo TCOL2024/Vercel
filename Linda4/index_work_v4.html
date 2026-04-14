@@ -3702,11 +3702,23 @@
       },
 
       syncPrivacyModeControls: () => {
-        const enabled = Boolean(app.state.settings.privacy && app.state.settings.privacy.ephemeral);
+        const locked = app.logic.isSozialrechtDomain();
+        if (locked && app.state.settings?.privacy) app.state.settings.privacy.ephemeral = true;
+        const enabled = locked
+          ? true
+          : Boolean(app.state.settings.privacy && app.state.settings.privacy.ephemeral);
         const on = document.getElementById('privacy-main-on');
         const off = document.getElementById('privacy-main-off');
         if (on) on.checked = enabled;
         if (off) off.checked = !enabled;
+        if (on) on.disabled = locked;
+        if (off) off.disabled = locked;
+        const privacySetting = document.getElementById('inp-privacy-ephemeral');
+        if (privacySetting) {
+          privacySetting.checked = enabled;
+          privacySetting.disabled = locked;
+          privacySetting.title = locked ? 'Im Fachmodus Sozialrecht ist Privatmodus fest aktiv.' : '';
+        }
       },
 
       syncMobileReaderControls: () => {
@@ -4458,7 +4470,34 @@
         return map[kind] || null;
       },
 
+      isSozialrechtDomain: (domain = app.state.settings?.domain) => {
+        return String(domain || '').trim().toUpperCase() === 'SOZIALRECHT';
+      },
+
+      enforceSozialrechtMode: (opts = {}) => {
+        if (!app.logic.isSozialrechtDomain()) return false;
+        const prevPrivacy = Boolean(app.state.settings.privacy?.ephemeral);
+        app.state.settings.privacy.ephemeral = true;
+        app.state.settings.guardrails.groundedMode = true;
+        app.state.settings.guardrails.strictUnknown = true;
+        app.state.settings.guardrails.clarificationMode = true;
+        app.state.settings.guardrails.piiShield = true;
+        if (!prevPrivacy) {
+          app.state.requestMemory = structuredClone(DEFAULT_REQUEST_MEMORY);
+          try { localStorage.removeItem(REQUEST_MEMORY_KEY); } catch (_) {}
+        }
+        app.ui.syncGroundedModeControls();
+        app.ui.syncPrivacyModeControls();
+        app.ui.updateDomainUI();
+        if (opts.save !== false) app.utils.save();
+        return true;
+      },
+
       setGroundedMode: (enabled, opts = {}) => {
+        if (app.logic.isSozialrechtDomain() && !enabled) {
+          app.logic.enforceSozialrechtMode({ save: true });
+          return;
+        }
         const prev = Boolean(app.state.settings.guardrails?.groundedMode);
         const next = Boolean(enabled);
         app.state.settings.guardrails.groundedMode = next;
@@ -4752,8 +4791,12 @@
       },
 
       applyPrivacyMode: (enabled, opts = {}) => {
+        if (app.logic.isSozialrechtDomain() && !enabled) {
+          app.logic.enforceSozialrechtMode({ save: true });
+          return;
+        }
         const prev = Boolean(app.state.settings.privacy?.ephemeral);
-        const next = Boolean(enabled);
+        const next = app.logic.isSozialrechtDomain() ? true : Boolean(enabled);
         app.state.settings.privacy.ephemeral = next;
         if (next) {
           app.state.requestMemory = structuredClone(DEFAULT_REQUEST_MEMORY);
@@ -4966,10 +5009,17 @@
         const prevPrivacy = Boolean(app.state.settings.privacy?.ephemeral);
         app.state.settings.name = document.getElementById('inp-name').value.trim();
         app.state.settings.domain = document.getElementById('inp-domain').value;
+        const sozialrechtLocked = app.logic.isSozialrechtDomain();
+        if (sozialrechtLocked) {
+          const privacyInput = document.getElementById('inp-privacy-ephemeral');
+          if (privacyInput) privacyInput.checked = true;
+        }
 
         app.state.settings.ilias.enabled = Boolean(app.state.settings.sources.ilias);
         app.state.settings.prompting.enabled = document.getElementById('inp-prompting-enabled').checked;
-        const nextGrounded = document.getElementById('inp-grounded-mode').checked;
+        const nextGrounded = sozialrechtLocked
+          ? true
+          : document.getElementById('inp-grounded-mode').checked;
         app.state.settings.guardrails.strictUnknown = document.getElementById('inp-strict-unknown').checked;
         app.state.settings.guardrails.clarificationMode = document.getElementById('inp-clarification-mode').checked;
         app.state.settings.guardrails.piiShield = document.getElementById('inp-pii-shield').checked;
@@ -5007,7 +5057,11 @@
 
         app.state.settings.ilias.enabled = Boolean(app.state.settings.sources.ilias);
         app.logic.setGroundedMode(nextGrounded, { showOverlay: false });
-        app.logic.applyPrivacyMode(document.getElementById('inp-privacy-ephemeral').checked, { showOverlay: false });
+        const nextPrivacy = sozialrechtLocked
+          ? true
+          : document.getElementById('inp-privacy-ephemeral').checked;
+        app.logic.applyPrivacyMode(nextPrivacy, { showOverlay: false, showLockHint: false });
+        if (sozialrechtLocked) app.logic.enforceSozialrechtMode({ save: false });
 
         app.utils.save();
         app.ui.updateDomainUI();
@@ -5018,7 +5072,7 @@
         app.ui.closeModals();
         app.logic.maybeShowModeCards();
         if (nextGrounded && !prevGrounded) app.ui.openModeInfo('grounded');
-        if (document.getElementById('inp-privacy-ephemeral').checked && !prevPrivacy) app.ui.openModeInfo('privacy');
+        if (nextPrivacy && !prevPrivacy) app.ui.openModeInfo('privacy');
       },
 
       clearPromptConfigs: () => {
@@ -5500,9 +5554,6 @@
           ...(payload && typeof payload === 'object' ? payload : {}),
           question: app.utils.truncate(safeQuestion, 1300)
         };
-        safePayload.prompt = safePayload.question;
-        safePayload.input = safePayload.question;
-        safePayload.text = safePayload.question;
         if (!safePayload.question) {
           throw new Error('Frage ist leer');
         }
@@ -6643,18 +6694,24 @@
 
         try {
           const mobileReaderActive = app.logic.isMobileReaderEnabled();
+          const sozialrechtDomain = app.logic.isSozialrechtDomain();
+          if (sozialrechtDomain) app.logic.enforceSozialrechtMode({ save: false });
           const effectiveFastMode = mobileReaderActive
             ? false
             : Boolean(app.state.settings.fastMode && app.state.settings.fastMode.enabled);
           const effectiveSources = mobileReaderActive
             ? { ...app.state.settings.sources, ...MAKEFLOW_ONLY_SOURCES }
             : app.state.settings.sources;
+          const contextWindow = app.utils.chatContext(s);
+          const historyForApi = sozialrechtDomain
+            ? contextWindow.slice(-4)
+            : (app.utils.privacyModeEnabled() ? [] : contextWindow);
 
           const payload = {
             question: app.utils.truncate(text, 1300),
             fachmodus: app.state.settings.domain || '',
             schnellmodus: effectiveFastMode,
-            history: app.utils.privacyModeEnabled() ? [] : app.utils.chatContext(s),
+            history: historyForApi,
             sources: effectiveSources,
             routing: {
               preferred_model: effectiveFastMode ? 'deepseek' : 'default'
@@ -6671,7 +6728,8 @@
               app: 'LINDA3',
               version: APP_VERSION,
               ts: new Date().toISOString(),
-              privacyMode: app.utils.privacyModeEnabled()
+              privacyMode: sozialrechtDomain ? true : app.utils.privacyModeEnabled(),
+              sozialrecht_mode: sozialrechtDomain
             },
             guardrails: {
               grounded_mode: Boolean(app.state.settings.guardrails?.groundedMode),
@@ -7397,6 +7455,7 @@
     }
 
     app.utils.load();
+    app.logic.enforceSozialrechtMode({ save: false });
     app.logic.loadKeywordLinks();
     app.logic.loadLearningTemplates();
     app.logic.loadSozialrechtCurriculum();
@@ -7625,6 +7684,7 @@
       if (modeBtn) {
         const mode = modeBtn.getAttribute('data-set-domain') || '';
         app.state.settings.domain = mode;
+        app.logic.enforceSozialrechtMode({ save: false });
         app.utils.save();
         app.ui.updateDomainUI();
         app.ui.log.querySelectorAll('.mode-card-row').forEach((el) => el.remove());
