@@ -3157,6 +3157,9 @@
         <label for="inp-domain">Fachmodus</label>
         <select id="inp-domain">
           <option value="">Standard</option>
+          <option value="AEVO">Ausbilder (AEVO)</option>
+          <option value="VWL">VWL / Betriebswirtschaft</option>
+          <option value="PERSONAL">Personalwesen</option>
           <option value="SOZIALRECHT">Sozialrecht (SGB I-XII)</option>
         </select>
         <p class="mini">Fachmodus ist hier frei waehlbar.</p>
@@ -3507,7 +3510,7 @@
     },
     settings: {
         name: '',
-        domain: SOZIALRECHT_ONLY_MODE ? SOZIALRECHT_DOMAIN_KEY : SOZIALRECHT_DOMAIN_KEY,
+        domain: SOZIALRECHT_ONLY_MODE ? SOZIALRECHT_DOMAIN_KEY : '',
         snippets: [],
       sources: SOURCE_DEFS.reduce((acc, s) => {
         acc[s.key] = s.default;
@@ -4010,7 +4013,7 @@
       fillSettingsForm: () => {
         const { settings } = app.state;
         document.getElementById('inp-name').value = settings.name || '';
-        document.getElementById('inp-domain').value = settings.domain || SOZIALRECHT_DOMAIN_KEY;
+        document.getElementById('inp-domain').value = settings.domain || '';
         document.getElementById('inp-prompting-enabled').checked = Boolean(settings.prompting && settings.prompting.enabled);
         document.getElementById('inp-grounded-mode').checked = Boolean(settings.guardrails && settings.guardrails.groundedMode);
         document.getElementById('inp-strict-unknown').checked = Boolean(settings.guardrails && settings.guardrails.strictUnknown);
@@ -8782,11 +8785,11 @@
         return;
       }
 
-      const modeBtn = e.target.closest('[data-set-domain]');
-      if (modeBtn) {
-        const pickedMode = modeBtn.getAttribute('data-set-domain') || '';
-        const mode = SOZIALRECHT_ONLY_MODE ? SOZIALRECHT_DOMAIN_KEY : pickedMode;
-        app.state.settings.domain = mode;
+        const modeBtn = e.target.closest('[data-set-domain]');
+        if (modeBtn) {
+          const pickedMode = modeBtn.getAttribute('data-set-domain') || '';
+          const mode = SOZIALRECHT_ONLY_MODE ? SOZIALRECHT_DOMAIN_KEY : pickedMode;
+          app.state.settings.domain = mode;
         app.logic.enforceSozialrechtMode({ save: false });
         app.utils.save();
         app.ui.updateDomainUI();
@@ -8796,7 +8799,7 @@
             'assistant',
             SOZIALRECHT_ONLY_MODE
               ? 'Fachmodus ist fest auf **SOZIALRECHT** gesetzt.'
-              : `Fachmodus wurde auf **${mode}** gesetzt.`
+              : `Fachmodus wurde auf **${mode || 'STANDARD'}** gesetzt.`
           )
         );
         app.ui.scrollBottom();
