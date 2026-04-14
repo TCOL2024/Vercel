@@ -611,6 +611,37 @@
     color: #53657f;
   }
 
+  .source-mark {
+    background: #fff29a;
+    color: #3d3000;
+    padding: 0 2px;
+    border-radius: 3px;
+  }
+
+  .source-card-tools {
+    margin-top: 8px;
+    display: flex;
+    justify-content: flex-end;
+  }
+
+  .source-card-btn {
+    border: 1px solid #d3e0f2;
+    background: #ffffff;
+    color: #294a71;
+    border-radius: 8px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    padding: 6px 9px;
+    cursor: pointer;
+  }
+
+  .source-card-btn:hover,
+  .source-card-btn:focus-visible {
+    border-color: #9ebfe9;
+    background: #eef5ff;
+    outline: none;
+  }
+
   .followup-btn,
   .learning-btn {
     width: 100%;
@@ -4264,8 +4295,8 @@
           <div class="msg-wrap">
             <div class="bubble assistant">
               <div class="compare-canvas">
-                ${renderSection('Linda 3.0', makeData)}
-                ${renderSection('Schnellmodus', deepseekData)}
+                ${renderSection(String(makeData?.meta?.panelTitle || 'Canvas'), makeData)}
+                ${renderSection(String(deepseekData?.meta?.panelTitle || 'Schnellmodus'), deepseekData)}
               </div>
             </div>
           </div>
@@ -4959,6 +4990,104 @@
           out.push(short);
         });
         return out.slice(0, 4);
+      },
+
+      escapeRegExp: (value) => String(value || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&'),
+
+      buildSourceHighlightTerms: (question = '', excerpt = '') => {
+        const stop = new Set([
+          'und', 'oder', 'aber', 'nicht', 'kein', 'keine', 'einer', 'einem', 'einen', 'eines',
+          'dies', 'diese', 'dieses', 'dieser', 'damit', 'dazu', 'hierzu', 'bitte', 'kannst', 'kann',
+          'soll', 'sollte', 'muss', 'fuer', 'für', 'mit', 'ohne', 'ist', 'sind', 'war', 'waren',
+          'wird', 'werden', 'eine', 'der', 'die', 'das', 'dem', 'den', 'des', 'von', 'im', 'in',
+          'am', 'an', 'auf', 'aus', 'bei', 'nach', 'wie', 'was', 'warum', 'wieso'
+        ]);
+        const excerptLow = String(excerpt || '').toLowerCase();
+        const tokens = String(question || '')
+          .replace(/[^\p{L}\p{N}\s-]/gu, ' ')
+          .split(/\s+/)
+          .map((token) => token.trim())
+          .filter((token) => token.length >= 4 || (/^[A-Z0-9]{3,}$/.test(token)))
+          .filter((token) => !stop.has(token.toLowerCase()));
+
+        const unique = [];
+        const seen = new Set();
+        tokens.forEach((token) => {
+          const key = token.toLowerCase();
+          if (!key || seen.has(key)) return;
+          if (excerptLow && !excerptLow.includes(key)) return;
+          seen.add(key);
+          unique.push(token);
+        });
+        return unique.slice(0, 6);
+      },
+
+      highlightSourceExcerpt: (excerpt = '', question = '') => {
+        const raw = String(excerpt || '').trim();
+        if (!raw) return '';
+        const terms = app.logic.buildSourceHighlightTerms(question, raw);
+        if (!terms.length) return app.utils.safeText(raw);
+        const pattern = terms.map((term) => app.logic.escapeRegExp(term)).join('|');
+        if (!pattern) return app.utils.safeText(raw);
+        const re = new RegExp(`(${pattern})`, 'ig');
+        const parts = raw.split(re);
+        if (parts.length <= 1) return app.utils.safeText(raw);
+        return parts
+          .map((part, idx) => {
+            if (idx % 2 === 1) return `<mark class="source-mark">${app.utils.safeText(part)}</mark>`;
+            return app.utils.safeText(part);
+          })
+          .join('');
+      },
+
+      isPdfUrl: (url = '') => /\.pdf(?:$|[?#])/i.test(String(url || '').trim()),
+
+      exportSourcePdf: ({ url = '', title = '', excerpt = '' } = {}) => {
+        if (!app.logic.isSozialrechtDomain() && !SOZIALRECHT_ONLY_MODE) return;
+        const safeUrl = String(url || '').trim();
+        const safeTitle = String(title || 'Quelle').trim() || 'Quelle';
+        const safeExcerpt = String(excerpt || '').trim();
+
+        if (safeUrl && app.logic.isPdfUrl(safeUrl)) {
+          const tab = window.open(safeUrl, '_blank', 'noopener');
+          if (!tab) app.logic.notifyPopupBlocked('PDF-Quelle');
+          return;
+        }
+
+        const win = window.open('', '_blank');
+        if (!win) {
+          app.logic.notifyPopupBlocked('PDF-Export der Quelle');
+          return;
+        }
+
+        win.document.write(`
+          <html>
+            <head>
+              <title>Sozialrecht Quelle</title>
+              <style>
+                body { font-family: 'Manrope', Arial, sans-serif; margin: 22px; color: #132236; }
+                h1 { color: #0d4d98; margin: 0 0 10px; font-size: 22px; }
+                .meta { color: #60728c; margin: 0 0 12px; }
+                .box { border: 1px solid #d8e3f3; border-radius: 12px; padding: 14px; background: #fff; }
+                a { color: #0d58ae; }
+              </style>
+            </head>
+            <body>
+              <h1>${app.utils.safeText(safeTitle)}</h1>
+              <p class="meta">Exportiert am ${app.utils.nowStamp()}</p>
+              <div class="box">
+                ${safeUrl ? `<p><strong>Quelle:</strong> <a href="${encodeURI(safeUrl)}">${app.utils.safeText(safeUrl)}</a></p>` : ''}
+                <p><strong>Relevanter Abschnitt:</strong></p>
+                <p>${app.utils.safeText(safeExcerpt || 'Kein Abschnitt vorhanden.')}</p>
+              </div>
+            </body>
+          </html>
+        `);
+        win.document.close();
+        setTimeout(() => {
+          win.focus();
+          win.print();
+        }, 220);
       },
 
       topicFromText: (text, fallback = 'das Thema') => {
@@ -7161,11 +7290,10 @@
 
         const topline = document.createElement('div');
         topline.className = 'sozialrecht-topline';
-        const model = String(meta?.model || '').trim();
         const storageState = meta?.storageUsed
           ? 'Vector Store aktiv'
           : (meta?.storageFallback ? 'Storage-Fallback' : 'Storage unklar');
-        topline.textContent = `${model ? `Modell ${model}` : 'Fachmodus Sozialrecht'} • ${storageState}`;
+        topline.textContent = `Fachmodus Sozialrecht • ${storageState}`;
 
         md.innerHTML = '';
         md.appendChild(topline);
@@ -7224,6 +7352,7 @@
           title.textContent = 'Quellen & Abschnitte';
           const ul = document.createElement('ul');
           ul.className = 'source-card-list';
+          const sozialrechtSourceCards = app.logic.isSozialrechtMeta(bubbleMeta);
           finalSources.forEach((s) => {
             const li = document.createElement('li');
             const metaBits = [];
@@ -7233,11 +7362,35 @@
             const anchorHtml = s.url
               ? `<a href="${encodeURI(s.url)}">${app.utils.safeText(s.title)}</a>`
               : `<span>${app.utils.safeText(s.title)}</span>`;
+            const highlightedSnippet = s.excerpt
+              ? (
+                sozialrechtSourceCards
+                  ? app.logic.highlightSourceExcerpt(s.excerpt, bubbleMeta.question || '')
+                  : app.utils.safeText(s.excerpt)
+              )
+              : '';
             const snippetHtml = s.excerpt
-              ? `<p class="source-card-snippet">${app.utils.safeText(s.excerpt)}</p>`
+              ? `<p class="source-card-snippet">${highlightedSnippet}</p>`
               : '<p class="source-card-snippet">Kein markierter Abschnitt vorhanden.</p>';
             const noteHtml = s.note
               ? `<div class="source-card-note">${app.utils.safeText(s.note)}</div>`
+              : '';
+            const canExportPdf = sozialrechtSourceCards && (String(s.url || '').trim() || String(s.excerpt || '').trim());
+            const pdfActionHtml = canExportPdf
+              ? `
+                <div class="source-card-tools">
+                  <button
+                    type="button"
+                    class="source-card-btn"
+                    data-source-pdf="1"
+                    data-source-pdf-url="${encodeURIComponent(String(s.url || ''))}"
+                    data-source-pdf-title="${encodeURIComponent(String(s.title || 'Quelle'))}"
+                    data-source-pdf-excerpt="${encodeURIComponent(String(s.excerpt || ''))}"
+                  >
+                    Quelle als PDF
+                  </button>
+                </div>
+              `
               : '';
             li.innerHTML = `
               <div class="source-card">
@@ -7247,6 +7400,7 @@
                 </div>
                 ${snippetHtml}
                 ${noteHtml}
+                ${pdfActionHtml}
               </div>
             `;
             ul.appendChild(li);
@@ -7372,6 +7526,14 @@
         if (!skipClarificationCheck && app.state.settings.guardrails?.clarificationMode) {
           const clarificationPrompts = app.logic.buildClarificationPrompts(text, s);
           if (clarificationPrompts.length) {
+            const tokenCount = text.split(/\s+/).filter(Boolean).length;
+            const strongClarifyNeed =
+              tokenCount <= 4 ||
+              text.length < 26 ||
+              clarificationPrompts.length >= 2;
+            if (!strongClarifyNeed) {
+              // Einzelne schwache Rueckfrage blockiert die Antwort nicht.
+            } else {
             const clarificationIntro = app.logic.isSozialrechtDomain()
               ? 'Fuer eine praezise Sozialrecht-Antwort brauche ich noch kurze Eckdaten. Dann antworte ich direkt strukturiert.'
               : 'Ich vermute ein moegliches Missverstaendnis und haette gern noch etwas Kontext, bevor ich antworte.';
@@ -7400,6 +7562,7 @@
               source: 'frontend'
             });
             return;
+            }
           }
         }
 
@@ -7444,6 +7607,10 @@
           const effectiveFastMode = mobileReaderActive
             ? false
             : Boolean(app.state.settings.fastMode && app.state.settings.fastMode.enabled);
+          const compareEnabled = (opts?.autoSpeak || mobileReaderActive)
+            ? false
+            : Boolean(app.state.settings.compareMode && app.state.settings.compareMode.enabled);
+          const deepseekRoutingActive = Boolean(effectiveFastMode || compareEnabled);
           const effectiveSources = mobileReaderActive
             ? { ...app.state.settings.sources, ...MAKEFLOW_ONLY_SOURCES }
             : app.state.settings.sources;
@@ -7458,11 +7625,11 @@
           const payload = {
             question: app.utils.truncate(payloadQuestion, 1600),
             fachmodus: SOZIALRECHT_ONLY_MODE ? SOZIALRECHT_DOMAIN_KEY : (app.state.settings.domain || ''),
-            schnellmodus: effectiveFastMode,
+            schnellmodus: deepseekRoutingActive,
             history: historyForApi,
             sources: effectiveSources,
             routing: {
-              preferred_model: effectiveFastMode ? 'deepseek' : 'default'
+              preferred_model: deepseekRoutingActive ? 'deepseek' : 'default'
             },
             ilias: {
               enabled: mobileReaderActive
@@ -7494,31 +7661,54 @@
           };
           lastPayload = payload;
 
-          const compareEnabled = (opts?.autoSpeak || mobileReaderActive)
-            ? false
-            : Boolean(app.state.settings.compareMode && app.state.settings.compareMode.enabled);
           if (compareEnabled) {
             let makeParsed = { answer: '', sources: [] };
             let deepParsed = { answer: '', sources: [] };
-
-            try {
-              makeParsed = await app.logic.requestAnswer(API_ENDPOINT, payload, controller.signal);
-              makeParsed.answer = app.logic.stripRepeatedIntro(makeParsed.answer, allowIntroForThisTurn);
-              makeParsed = app.logic.enrichAssistantResponse(makeParsed, text, payload, { channel: 'default' });
-            } catch (e) {
-              makeParsed = { answer: `❌ Linda 3.0 Fehler: ${e?.message || 'unbekannt'}`, sources: [], meta: {} };
-            }
-
-            await new Promise((resolve) => setTimeout(resolve, 1000));
-
-            const deepseekPayload = {
+            const canvasPayload = {
               ...payload,
+              schnellmodus: true,
               routing: {
                 ...(payload.routing || {}),
                 preferred_model: 'deepseek'
               },
               clientMeta: {
                 ...(payload.clientMeta || {}),
+                channel: 'canvas'
+              }
+            };
+
+            try {
+              makeParsed = await app.logic.requestAnswer(DEEPSEEK_API_ENDPOINT, canvasPayload, controller.signal);
+              makeParsed.answer = app.logic.stripRepeatedIntro(makeParsed.answer, allowIntroForThisTurn);
+              makeParsed = app.logic.enrichAssistantResponse(makeParsed, text, canvasPayload, { channel: 'canvas' });
+              makeParsed.meta = { ...(makeParsed.meta || {}), panelTitle: 'Canvas' };
+            } catch (e) {
+              const msg = String(e?.message || '');
+              const missingDeepseekRoute = msg.includes('HTTP 404') && DEEPSEEK_API_ENDPOINT !== API_ENDPOINT;
+              if (missingDeepseekRoute) {
+                try {
+                  makeParsed = await app.logic.requestAnswer(API_ENDPOINT, canvasPayload, controller.signal);
+                  makeParsed.answer = app.logic.stripRepeatedIntro(makeParsed.answer, allowIntroForThisTurn);
+                  makeParsed = app.logic.enrichAssistantResponse(makeParsed, text, canvasPayload, { channel: 'canvas-fallback' });
+                  makeParsed.meta = { ...(makeParsed.meta || {}), panelTitle: 'Canvas' };
+                } catch (fallbackErr) {
+                  makeParsed = { answer: `❌ Canvas Fehler: ${fallbackErr?.message || 'unbekannt'}`, sources: [], meta: { panelTitle: 'Canvas' } };
+                }
+              } else {
+                makeParsed = { answer: `❌ Canvas Fehler: ${e?.message || 'unbekannt'}`, sources: [], meta: { panelTitle: 'Canvas' } };
+              }
+            }
+
+            await new Promise((resolve) => setTimeout(resolve, 1000));
+
+            const deepseekPayload = {
+              ...canvasPayload,
+              routing: {
+                ...(canvasPayload.routing || {}),
+                preferred_model: 'deepseek'
+              },
+              clientMeta: {
+                ...(canvasPayload.clientMeta || {}),
                 channel: 'deepseek'
               }
             };
@@ -7531,6 +7721,7 @@
               );
               deepParsed.answer = app.logic.stripRepeatedIntro(deepParsed.answer, allowIntroForThisTurn);
               deepParsed = app.logic.enrichAssistantResponse(deepParsed, text, deepseekPayload, { channel: 'deepseek' });
+              deepParsed.meta = { ...(deepParsed.meta || {}), panelTitle: 'Schnellmodus' };
             } catch (e) {
               const msg = String(e?.message || '');
               const missingDeepseekRoute = msg.includes('HTTP 404') && DEEPSEEK_API_ENDPOINT !== API_ENDPOINT;
@@ -7543,17 +7734,18 @@
                   );
                   deepParsed.answer = app.logic.stripRepeatedIntro(deepParsed.answer, allowIntroForThisTurn);
                   deepParsed = app.logic.enrichAssistantResponse(deepParsed, text, deepseekPayload, { channel: 'deepseek-fallback' });
+                  deepParsed.meta = { ...(deepParsed.meta || {}), panelTitle: 'Schnellmodus' };
                 } catch (fallbackErr) {
-                  deepParsed = { answer: `❌ Schnellmodus Fehler: ${fallbackErr?.message || 'unbekannt'}`, sources: [], meta: {} };
+                  deepParsed = { answer: `❌ Schnellmodus Fehler: ${fallbackErr?.message || 'unbekannt'}`, sources: [], meta: { panelTitle: 'Schnellmodus' } };
                 }
               } else {
-                deepParsed = { answer: `❌ Schnellmodus Fehler: ${e?.message || 'unbekannt'}`, sources: [], meta: {} };
+                deepParsed = { answer: `❌ Schnellmodus Fehler: ${e?.message || 'unbekannt'}`, sources: [], meta: { panelTitle: 'Schnellmodus' } };
               }
             }
 
             s.messages.push({
               role: 'assistant',
-              content: `Linda 3.0:\n${makeParsed.answer}\n\nSchnellmodus:\n${deepParsed.answer}`,
+              content: `Canvas:\n${makeParsed.answer}\n\nSchnellmodus:\n${deepParsed.answer}`,
               sources: [],
               compare: {
                 make: makeParsed,
@@ -7583,11 +7775,11 @@
               speaking.remove();
             }
           } else {
-            const primaryEndpoint = effectiveFastMode ? DEEPSEEK_API_ENDPOINT : API_ENDPOINT;
+            const primaryEndpoint = deepseekRoutingActive ? DEEPSEEK_API_ENDPOINT : API_ENDPOINT;
             const parsed = await app.logic.requestAnswer(primaryEndpoint, payload, controller.signal);
             parsed.answer = app.logic.stripRepeatedIntro(parsed.answer, allowIntroForThisTurn);
             const enriched = app.logic.enrichAssistantResponse(parsed, text, payload, {
-              channel: effectiveFastMode ? 'deepseek' : 'default'
+              channel: deepseekRoutingActive ? 'deepseek' : 'default'
             });
             if (opts?.autoSpeak) {
               const spokenText = app.logic.buildSpokenAnswer(enriched?.answer || '');
@@ -7616,7 +7808,12 @@
               app.state.settings.guardrails?.clarificationMode
             ) {
               const backendPrompts = app.logic.sanitizeAssistantFollowups(enriched?.meta?.followups || []);
-              if (backendPrompts.length) {
+              const tokenCount = text.split(/\s+/).filter(Boolean).length;
+              const strongClarifyNeed =
+                tokenCount <= 4 ||
+                text.length < 26 ||
+                backendPrompts.length >= 2;
+              if (backendPrompts.length && strongClarifyNeed) {
                 app.logic.openClaudeClarifier({
                   question: text,
                   prompts: backendPrompts,
@@ -8513,6 +8710,16 @@
       if (followupBtn) {
         const prompt = decodeURIComponent(followupBtn.getAttribute('data-followup') || '');
         if (prompt) app.logic.sendMessage({ textOverride: prompt });
+        return;
+      }
+
+      const sourcePdfBtn = e.target.closest('[data-source-pdf]');
+      if (sourcePdfBtn) {
+        app.logic.exportSourcePdf({
+          url: decodeURIComponent(sourcePdfBtn.getAttribute('data-source-pdf-url') || ''),
+          title: decodeURIComponent(sourcePdfBtn.getAttribute('data-source-pdf-title') || ''),
+          excerpt: decodeURIComponent(sourcePdfBtn.getAttribute('data-source-pdf-excerpt') || '')
+        });
         return;
       }
 

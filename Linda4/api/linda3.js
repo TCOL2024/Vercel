@@ -174,11 +174,18 @@ function buildSozialrechtSignalProfile(question, history, cfg) {
 
   const shortQuestion = text.length < minChars || tokens.length <= maxTokens;
   const lowSignal = tokens.length <= (maxTokens + 1) && !hasLegalAnchor && !hasCaseFacts;
-  const shouldClarify =
+  const onlyFormatMissing =
+    missingDimensions.length === 1 &&
+    missingDimensions[0] === 'output_intent';
+  const shouldClarifyBase =
     shortQuestion ||
-    (ambiguousPronouns && missingDimensions.length >= 1) ||
     (!hasContext && missingDimensions.length >= 2) ||
+    (ambiguousPronouns && missingDimensions.length >= 2 && tokens.length <= 12) ||
     lowSignal;
+  const shouldClarify =
+    (onlyFormatMissing && !shortQuestion && !lowSignal)
+      ? false
+      : shouldClarifyBase;
 
   const reasons = [];
   if (shortQuestion) reasons.push('Frage ist noch zu knapp fuer eine rechtssichere Einordnung.');
