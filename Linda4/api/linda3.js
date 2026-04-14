@@ -10,6 +10,8 @@ const DEFAULT_SOCIALRECHT_CONFIG = {
   routing: {
     default_model: 'gpt-4.1',
     fast_model: 'gpt-4.1-mini',
+    judgment_model: 'gpt-5.1',
+    judgment_max_output_tokens: 520,
     temperature: 0.1,
     max_output_tokens: 1200
   },
@@ -25,8 +27,8 @@ const DEFAULT_SOCIALRECHT_CONFIG = {
     max_tokens_without_context: 5,
     ambiguous_patterns: ['ist das richtig', 'stimmt das', 'wie ist das', 'geht das', 'was meinst du'],
     default_followups: [
-      'Auf welches SGB-Buch (I bis XII) bezieht sich deine Frage?',
-      'Geht es um einen konkreten Personalfall oder um Pruefungstheorie?',
+      'Worum geht es genau (Leistung, Anspruch oder Verfahren)?',
+      'Fuer wen soll ich den Fall pruefen (Arbeitnehmer, Arbeitgeber, Azubi, Krankenkasse)?',
       'Soll ich die Antwort als Kurzschema, Praxisfall oder Lernkarte aufbauen?'
     ]
   },
@@ -144,6 +146,15 @@ function topicFromQuestion(question) {
   return text.split(/\s+/).slice(0, 9).join(' ');
 }
 
+function isJudgmentQuestion(question) {
+  const low = normalizeText(question).toLowerCase();
+  if (!low) return false;
+  return (
+    /\b(urteil|urteile|beschluss|beschluesse|beschlüsse|aktenzeichen|az\.?|az:|bsg|bag|bverfg|eu-?gh|egmr|rechtsprechung)\b/i.test(low) ||
+    /\b(?:[a-z]{1,4}\s*\d+\s*\/\s*\d+)\b/i.test(low)
+  );
+}
+
 function buildSozialrechtSignalProfile(question, history, cfg) {
   const text = normalizeText(question);
   const low = text.toLowerCase();
@@ -153,10 +164,10 @@ function buildSozialrechtSignalProfile(question, history, cfg) {
   const maxTokens = Number(policy.max_tokens_without_context || 5);
 
   const hasContext = hasMeaningfulContext(history);
-  const hasLegalAnchor = (
+  const hasTopicAnchor = (
     /\bsgb\s*(?:i{1,3}|iv|v|vi{0,3}|ix|x|xi|xii|\d{1,2})\b/i.test(low) ||
     /§+\s*\d+[a-z]?(?:\s*abs\.?\s*\d+)?/i.test(low) ||
-    /\b(krankengeld|entgeltfortzahlung|arbeitsunfaehig|arbeitslosengeld|buergergeld|pflegegeld|elterngeld|mutterschaftsgeld|sozialhilfe|grundsicherung|rehabilitation)\b/i.test(low)
+    /\b(krankengeld|entgeltfortzahlung|arbeitsunfaehig|arbeitslosengeld|buergergeld|pflegegeld|elterngeld|mutterschaftsgeld|sozialhilfe|grundsicherung|rehabilitation|pflegeversicherung|beitrag|leistung)\b/i.test(low)
   );
   const hasActorContext = /\b(arbeitnehmer|arbeitgeber|azubi|auszubild|personalfachkauf|krankenkasse|jobcenter|versicherte|versicherungspflicht|leistungsberechtigt|kind|eltern|pflegeperson|rentner)\b/i.test(low);
   const hasCaseFacts = (
@@ -164,23 +175,29 @@ function buildSozialrechtSignalProfile(question, history, cfg) {
     /\b(seit|ab|von|bis|frist|datum|zeitraum|beginn|ende|beispiel|fall)\b/i.test(low)
   );
   const hasOutputIntent = /\b(kurz|detaill|schema|pruef|praxis|beispiel|stichpunkt|tabelle|rechn|schritt|vergleich)\b/i.test(low);
+  const hasTravelSignal = /\b(ausland|reise|urlaub|ehic|eu\/ewr|schweiz|drittland|oesterreich|österreich|grossbritannien|uk)\b/i.test(low);
+  const hasCountry =
+    /\b(oesterreich|österreich|austria|deutschland|germany|schweiz|switzerland|frankreich|france|italien|italy|spanien|spain|niederlande|holland|belgien|belgium|portugal|griechenland|greece|grossbritannien|großbritannien|uk|vereinigtes koenigreich|united kingdom|usa|vereinigte staaten|united states|tuerkei|türkei|turkey)\b/i.test(low);
   const ambiguousPronouns = /\b(das|dies|diese|dieses|dazu|damit|hierzu|so|stimmt das|ist das richtig|wie ist das|geht das)\b/i.test(low);
 
   const missingDimensions = [];
-  if (!hasLegalAnchor) missingDimensions.push('legal_anchor');
+  if (!hasTopicAnchor) missingDimensions.push('topic_scope');
   if (!hasActorContext) missingDimensions.push('actor_context');
   if (!hasCaseFacts) missingDimensions.push('case_facts');
   if (!hasOutputIntent) missingDimensions.push('output_intent');
+  if (hasTravelSignal && !hasCountry) missingDimensions.push('travel_country');
 
-  const shortQuestion = text.length < minChars || tokens.length <= maxTokens;
-  const lowSignal = tokens.length <= (maxTokens + 1) && !hasLegalAnchor && !hasCaseFacts;
+  const shortQuestion = (text.length < minChars || tokens.length <= maxTokens) && !hasTopicAnchor;
+  const lowSignal = tokens.length <= (maxTokens + 1) && !hasTopicAnchor && !hasCaseFacts;
   const onlyFormatMissing =
     missingDimensions.length === 1 &&
     missingDimensions[0] === 'output_intent';
+  const coreMissingCount = missingDimensions.filter((item) => item !== 'output_intent').length;
   const shouldClarifyBase =
     shortQuestion ||
-    (!hasContext && missingDimensions.length >= 2) ||
-    (ambiguousPronouns && missingDimensions.length >= 2 && tokens.length <= 12) ||
+    (!hasContext && coreMissingCount >= 2) ||
+    (ambiguousPronouns && coreMissingCount >= 1 && tokens.length <= 12) ||
+    (hasTravelSignal && !hasCountry) ||
     lowSignal;
   const shouldClarify =
     (onlyFormatMissing && !shortQuestion && !lowSignal)
@@ -189,19 +206,22 @@ function buildSozialrechtSignalProfile(question, history, cfg) {
 
   const reasons = [];
   if (shortQuestion) reasons.push('Frage ist noch zu knapp fuer eine rechtssichere Einordnung.');
-  if (!hasLegalAnchor) reasons.push('Rechtsbezug (SGB/Paragraph/Thema) ist nicht eindeutig.');
+  if (!hasTopicAnchor) reasons.push('Das konkrete Thema oder der Leistungsbezug ist noch nicht klar.');
   if (!hasActorContext) reasons.push('Rollenkontext (z. B. Arbeitnehmer/Arbeitgeber) fehlt.');
   if (!hasCaseFacts) reasons.push('Fallkontext (Zeitraum, Werte oder Ausgangssituation) fehlt.');
+  if (hasTravelSignal && !hasCountry) reasons.push('Zielland bzw. Aufenthaltsland ist noch offen.');
   if (!hasOutputIntent) reasons.push('Gewuenschtes Antwortformat ist nicht klar.');
 
   return {
     text,
     tokens,
     hasContext,
-    hasLegalAnchor,
+    hasTopicAnchor,
     hasActorContext,
     hasCaseFacts,
     hasOutputIntent,
+    hasTravelSignal,
+    hasCountry,
     ambiguousPronouns,
     missingDimensions,
     shortQuestion,
@@ -213,9 +233,10 @@ function buildSozialrechtSignalProfile(question, history, cfg) {
 
 function buildClarificationFollowups(profile, cfg) {
   const map = {
-    legal_anchor: 'Auf welches SGB-Buch oder welchen Paragraphen soll ich mich beziehen (z. B. SGB V, § 47)?',
+    topic_scope: 'Worum geht es konkret (Leistung, Anspruch oder Verfahren)?',
     actor_context: 'Fuer wen soll ich den Fall beantworten (Arbeitnehmer, Arbeitgeber, Azubi, Krankenkasse)?',
     case_facts: 'Gibt es konkrete Fallangaben (Zeitraum, Brutto/Netto, Fristen oder Ausgangslage)?',
+    travel_country: 'In welches Land geht die Reise bzw. wo findet der Aufenthalt statt?',
     output_intent: 'Wie soll ich antworten: Kurzschema, Rechenweg, Praxisfall oder Pruefungskarte?'
   };
   const out = [];
@@ -226,7 +247,9 @@ function buildClarificationFollowups(profile, cfg) {
   const defaults = Array.isArray(cfg?.clarification_policy?.default_followups)
     ? cfg.clarification_policy.default_followups.map((item) => normalizeText(item)).filter(Boolean)
     : [];
-  defaults.forEach((q) => out.push(q));
+  defaults
+    .filter((q) => !/\bauf welches sgb|sgb-buch|i bis xii\b/i.test(q))
+    .forEach((q) => out.push(q));
   const unique = [];
   const seen = new Set();
   out.forEach((q) => {
@@ -271,7 +294,11 @@ function buildClarificationPayload(cfg, decision = {}, question = '') {
   const followups = Array.isArray(decision?.followups) && decision.followups.length
     ? decision.followups
     : (Array.isArray(cfg?.clarification_policy?.default_followups)
-        ? cfg.clarification_policy.default_followups.map((item) => normalizeText(item)).filter(Boolean).slice(0, 4)
+        ? cfg.clarification_policy.default_followups
+            .map((item) => normalizeText(item))
+            .filter(Boolean)
+            .filter((q) => !/\bauf welches sgb|sgb-buch|i bis xii\b/i.test(q))
+            .slice(0, 4)
         : []);
   const reasons = Array.isArray(decision?.reasons) ? decision.reasons.filter(Boolean).slice(0, 3) : [];
   const topic = topicFromQuestion(question);
@@ -320,7 +347,11 @@ function normalizeSources(rawSources) {
 
 function normalizeModelPayload(rawText, cfg) {
   const fallbackFollowups = Array.isArray(cfg?.clarification_policy?.default_followups)
-    ? cfg.clarification_policy.default_followups.slice(0, 3)
+    ? cfg.clarification_policy.default_followups
+        .map((q) => normalizeText(q))
+        .filter(Boolean)
+        .filter((q) => !/\bauf welches sgb|sgb-buch|i bis xii\b/i.test(q))
+        .slice(0, 3)
     : [];
   const parsed = parseJsonSafe(rawText, null);
   if (!parsed || typeof parsed !== 'object') {
@@ -363,6 +394,24 @@ function buildSozialrechtSystemPrompt(cfg, hasStorage) {
     '### Stolperfallen fuer die IHK-Pruefung',
     'Nutze im Pruefschema eine nummerierte Liste mit 3 bis 6 Schritten.',
     'Zitiere konkrete Fundstellen nur, wenn sie belastbar sind.',
+    'Gib ausschliesslich JSON zurueck, exakt im Format:',
+    '{"answer":"...","followups":["..."],"sources":[{"title":"...","excerpt":"...","section":"...","page":"","note":"","confidence":0.0}],"confidence":0.0,"evidence_note":"..."}'
+  ].filter(Boolean).join('\n');
+}
+
+function buildSozialrechtJudgmentSystemPrompt(cfg, hasStorage) {
+  const policy = cfg?.accuracy_policy || {};
+  return [
+    'Du bist LINDA im Fachmodus Sozialrecht fuer angehende Personalfachkaufleute (IHK).',
+    'Spezialmodus Rechtsprechung: antworte kurz, praezise und tokensparend.',
+    'Wenn Urteil/Beschluss oder Aktenzeichen unklar sind: frage knapp nach oder sage "Ich weiss es nicht sicher".',
+    policy.require_legal_basis_references ? 'Nenne nur belastbare Gerichts- und Normbezuge.' : '',
+    hasStorage ? 'Priorisiere Treffer aus dem Storage und nutze sie als Evidenz.' : '',
+    'Antwortstruktur (kompakt):',
+    '### Kernaussage',
+    '### Relevantes Urteil / Stand',
+    '### Bedeutung fuer den Personalfall',
+    '### Pruefungshinweis',
     'Gib ausschliesslich JSON zurueck, exakt im Format:',
     '{"answer":"...","followups":["..."],"sources":[{"title":"...","excerpt":"...","section":"...","page":"","note":"","confidence":0.0}],"confidence":0.0,"evidence_note":"..."}'
   ].filter(Boolean).join('\n');
@@ -540,6 +589,37 @@ async function callOpenAIResponsesWithStorage({ apiKey, model, messages, tempera
   };
 }
 
+async function callLegacyDeepseek(payload) {
+  const upstream = new URL('/api/linda3?action=deepseek', LEGACY_ORIGIN);
+  const body = {
+    ...(payload && typeof payload === 'object' ? payload : {}),
+    fachmodus: 'SOZIALRECHT',
+    schnellmodus: true,
+    routing: {
+      ...((payload && payload.routing && typeof payload.routing === 'object') ? payload.routing : {}),
+      preferred_model: 'deepseek'
+    }
+  };
+  const res = await fetch(upstream.toString(), {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json'
+    },
+    body: JSON.stringify(body)
+  });
+  const raw = await res.text();
+  if (!res.ok) {
+    const parsed = parseJsonSafe(raw, {});
+    const detail = normalizeText(parsed?.error || parsed?.message || raw);
+    throw new Error(`Legacy Deepseek Fehler (${res.status}): ${detail || 'unbekannt'}`);
+  }
+  const parsed = parseJsonSafe(raw, null);
+  if (!parsed || typeof parsed !== 'object') {
+    throw new Error('Legacy Deepseek lieferte kein gueltiges JSON.');
+  }
+  return parsed;
+}
+
 async function proxyToLegacy(req, res) {
   const reqUrl = new URL(req.url || '/api/linda3', 'http://localhost');
   const upstream = new URL('/api/linda3', LEGACY_ORIGIN);
@@ -590,10 +670,15 @@ async function handleSozialrechtChat(req, res, action) {
 
   const history = sanitizeHistory(payload.history || []);
   const forceFast = action === 'deepseek';
-  const fastMode = forceFast || Boolean(payload.schnellmodus) || String(payload?.routing?.preferred_model || '').toLowerCase() === 'deepseek';
-  const model = fastMode
-    ? String(cfg?.routing?.fast_model || DEFAULT_SOCIALRECHT_CONFIG.routing.fast_model)
-    : String(cfg?.routing?.default_model || DEFAULT_SOCIALRECHT_CONFIG.routing.default_model);
+  const fastRequested = forceFast || Boolean(payload.schnellmodus) || String(payload?.routing?.preferred_model || '').toLowerCase() === 'deepseek';
+  const judgmentMode = isJudgmentQuestion(question);
+  const fastMode = fastRequested && !judgmentMode;
+  const defaultModel = String(cfg?.routing?.default_model || DEFAULT_SOCIALRECHT_CONFIG.routing.default_model);
+  const fastModel = String(cfg?.routing?.fast_model || DEFAULT_SOCIALRECHT_CONFIG.routing.fast_model);
+  const judgmentModel = String(cfg?.routing?.judgment_model || DEFAULT_SOCIALRECHT_CONFIG.routing.judgment_model || defaultModel);
+  const model = judgmentMode
+    ? judgmentModel
+    : (fastMode ? fastModel : defaultModel);
 
   const socialKey = process.env.Sozialrecht2026 || process.env.SOZIALRECHT2026;
   if (!socialKey) {
@@ -624,21 +709,71 @@ async function handleSozialrechtChat(req, res, action) {
     return;
   }
 
+  let legacyDeepseekError = '';
+  if (fastMode) {
+    try {
+      const legacyRaw = await callLegacyDeepseek({
+        question,
+        fachmodus: 'SOZIALRECHT',
+        history,
+        sources: payload?.sources || {},
+        routing: payload?.routing || {},
+        guardrails: payload?.guardrails || {},
+        assistantPrefs: payload?.assistantPrefs || {},
+        clientMeta: payload?.clientMeta || {}
+      });
+      const normalizedLegacy = normalizeModelPayload(JSON.stringify(legacyRaw), cfg);
+      const legacySources = normalizeSources(legacyRaw?.sources || normalizedLegacy.sources || []);
+      const evidenceParts = [];
+      if (normalizedLegacy.evidence_note) evidenceParts.push(normalizedLegacy.evidence_note);
+      evidenceParts.push('Deepseek-Routing ueber Legacy-Endpoint aktiv.');
+      if (!legacySources.length) evidenceParts.push('Im Schnellmodus koennen Quellen begrenzt sein.');
+
+      res.status(200).json({
+        answer: normalizedLegacy.answer,
+        followups: normalizedLegacy.followups,
+        sources: legacySources,
+        confidence: normalizedLegacy.confidence,
+        evidence_note: evidenceParts.join(' ').trim(),
+        meta: {
+          domain: 'SOZIALRECHT',
+          model: 'deepseek',
+          fast_mode: true,
+          judgment_mode: false,
+          deepseek_via_legacy: true,
+          storage_used: false,
+          storage_fallback: false,
+          storage_error: ''
+        }
+      });
+      return;
+    } catch (legacyErr) {
+      legacyDeepseekError = normalizeText(legacyErr?.message || 'unbekannt');
+    }
+  }
+
   const storageEnvKey = String(cfg?.storage?.vector_store_env_key || 'OPENAI_VECTOR_STORE_ID_SOZIALRECHT');
   const vectorStoreId = normalizeText(process.env[storageEnvKey] || '');
-  const useStorage = Boolean(vectorStoreId && cfg?.storage?.enabled_when_env_present !== false);
+  const useStorage = Boolean(vectorStoreId && cfg?.storage?.enabled_when_env_present !== false && (!fastMode || judgmentMode));
   const temperature = Number.isFinite(Number(cfg?.routing?.temperature))
     ? Number(cfg.routing.temperature)
     : DEFAULT_SOCIALRECHT_CONFIG.routing.temperature;
-  const maxOutputTokens = Number.isFinite(Number(cfg?.routing?.max_output_tokens))
+  const defaultMaxOutputTokens = Number.isFinite(Number(cfg?.routing?.max_output_tokens))
     ? Number(cfg.routing.max_output_tokens)
     : DEFAULT_SOCIALRECHT_CONFIG.routing.max_output_tokens;
+  const judgmentMaxOutputTokens = Number.isFinite(Number(cfg?.routing?.judgment_max_output_tokens))
+    ? Number(cfg.routing.judgment_max_output_tokens)
+    : Number(DEFAULT_SOCIALRECHT_CONFIG.routing.judgment_max_output_tokens || 520);
+  const maxOutputTokens = judgmentMode
+    ? Math.max(260, Math.min(900, judgmentMaxOutputTokens))
+    : defaultMaxOutputTokens;
 
-  const systemPrompt = buildSozialrechtSystemPrompt(cfg, useStorage);
+  const systemPrompt = judgmentMode
+    ? buildSozialrechtJudgmentSystemPrompt(cfg, useStorage)
+    : buildSozialrechtSystemPrompt(cfg, useStorage);
   const messages = toOpenAIMessages(systemPrompt, history, question);
 
   try {
-    const defaultModel = String(cfg?.routing?.default_model || DEFAULT_SOCIALRECHT_CONFIG.routing.default_model);
     let activeModel = model;
     let modelRaw = '';
     let storageSources = [];
@@ -663,7 +798,7 @@ async function handleSozialrechtChat(req, res, action) {
         const firstErr = normalizeText(storageErr?.message || 'unbekannt');
         storageError = firstErr;
 
-        if (fastMode && defaultModel && defaultModel !== activeModel) {
+        if ((fastMode || judgmentMode) && defaultModel && defaultModel !== activeModel) {
           try {
             activeModel = defaultModel;
             const retryResult = await callOpenAIResponsesWithStorage({
@@ -709,9 +844,10 @@ async function handleSozialrechtChat(req, res, action) {
     const normalized = normalizeModelPayload(modelRaw, cfg);
     const mergedSources = normalizeSources([...(normalized.sources || []), ...storageSources]);
     const strictUnknown = Boolean(cfg?.accuracy_policy?.strict_unknown_on_missing_basis);
+    const enforceStrictUnknown = strictUnknown && !fastMode;
     const finalAnswer =
-      strictUnknown && mergedSources.length === 0
-        ? 'Ich weiss es nicht sicher. Ohne belastbare Quelle antworte ich im Fachmodus Sozialrecht bewusst nicht spekulativ. Bitte frage enger oder nenne ein konkretes SGB-Thema.'
+      enforceStrictUnknown && mergedSources.length === 0
+        ? 'Ich weiss es nicht sicher. Ohne belastbare Quelle antworte ich im Fachmodus Sozialrecht bewusst nicht spekulativ. Bitte frage enger oder nenne das konkrete Leistungsthema.'
         : normalized.answer;
     const evidenceNotes = [];
     if (normalized.evidence_note) evidenceNotes.push(normalized.evidence_note);
@@ -722,6 +858,12 @@ async function handleSozialrechtChat(req, res, action) {
     }
     if (storageFallback) {
       evidenceNotes.push('Storage-Abfrage war nicht stabil; Antwort wurde ersatzweise ohne Storage erstellt.');
+    }
+    if (legacyDeepseekError) {
+      evidenceNotes.push(`Deepseek-Fallback-Hinweis: ${legacyDeepseekError}`);
+    }
+    if (judgmentMode) {
+      evidenceNotes.push('Urteilsmodus aktiv: Antwort wurde mit kompakter, tokensparender Rechtsprechungslogik erstellt.');
     }
 
     res.status(200).json({
@@ -734,6 +876,9 @@ async function handleSozialrechtChat(req, res, action) {
         domain: 'SOZIALRECHT',
         model: activeModel,
         fast_mode: fastMode,
+        judgment_mode: judgmentMode,
+        deepseek_via_legacy: false,
+        deepseek_legacy_error: legacyDeepseekError,
         storage_used: storageUsed,
         storage_fallback: storageFallback,
         storage_error: storageFallback ? storageError : ''
@@ -795,7 +940,7 @@ module.exports = async (req, res) => {
           'Ich weiss es nicht sicher. Es gab gerade ein technisches Verarbeitungsproblem, ' +
           'deshalb liefere ich vorsichtshalber keine spekulative Antwort.',
         followups: [
-          'Nenne bitte das konkrete SGB-Buch oder den Paragraphen.',
+          'Worum geht es konkret (Leistung, Anspruch oder Verfahren)?',
           'Soll ich die Antwort als Kurzschema oder Praxisfall aufbauen?'
         ],
         sources: [],

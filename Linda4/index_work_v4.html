@@ -4116,8 +4116,11 @@
       },
 
       syncPrivacyModeControls: () => {
-        const locked = false;
-        const enabled = Boolean(app.state.settings.privacy && app.state.settings.privacy.ephemeral);
+        const locked = SOZIALRECHT_ONLY_MODE || app.logic.isSozialrechtDomain();
+        if (locked) app.state.settings.privacy.ephemeral = false;
+        const enabled = locked
+          ? false
+          : Boolean(app.state.settings.privacy && app.state.settings.privacy.ephemeral);
         const on = document.getElementById('privacy-main-on');
         const off = document.getElementById('privacy-main-off');
         if (on) on.checked = enabled;
@@ -4128,8 +4131,12 @@
         if (privacySetting) {
           privacySetting.checked = enabled;
           privacySetting.disabled = locked;
-          privacySetting.title = '';
+          privacySetting.title = locked
+            ? 'Im Fachmodus Sozialrecht bleibt Privatmodus standardmaessig auf Aus.'
+            : '';
         }
+        if (on) on.title = locked ? 'Im Fachmodus Sozialrecht bleibt Privatmodus auf Aus.' : '';
+        if (off) off.title = locked ? 'Im Fachmodus Sozialrecht bleibt Privatmodus auf Aus.' : '';
       },
 
       syncMobileReaderControls: () => {
@@ -4773,7 +4780,7 @@
         const focus = app.logic.getSozialrechtContext(`${question || ''} ${topic || ''}`);
         if (!focus) {
           return [
-            'Soll ich das Thema zuerst dem passenden SGB-Buch (I-XII) zuordnen?',
+            'Soll ich das Thema zuerst als kompaktes Anspruchs- und Leistungsschema einordnen?',
             'Moechtest du dazu drei IHK-Pruefungsfragen mit Loesungsskizze?'
           ];
         }
@@ -4898,6 +4905,7 @@
         app.state.settings.guardrails.clarificationMode = true;
         app.state.settings.guardrails.piiShield = true;
         app.state.settings.assistant.showLearningPath = false;
+        app.state.settings.privacy.ephemeral = false;
         app.ui.syncGroundedModeControls();
         app.ui.syncPrivacyModeControls();
         app.ui.syncSozialrechtOnlyControls();
@@ -5027,17 +5035,36 @@
         if (!raw) return '';
         const terms = app.logic.buildSourceHighlightTerms(question, raw);
         if (!terms.length) return app.utils.safeText(raw);
-        const pattern = terms.map((term) => app.logic.escapeRegExp(term)).join('|');
+        const pattern = terms
+          .map((term) => String(term || '').trim())
+          .filter(Boolean)
+          .sort((a, b) => b.length - a.length)
+          .map((term) => app.logic.escapeRegExp(term))
+          .join('|');
         if (!pattern) return app.utils.safeText(raw);
-        const re = new RegExp(`(${pattern})`, 'ig');
-        const parts = raw.split(re);
-        if (parts.length <= 1) return app.utils.safeText(raw);
-        return parts
-          .map((part, idx) => {
-            if (idx % 2 === 1) return `<mark class="source-mark">${app.utils.safeText(part)}</mark>`;
-            return app.utils.safeText(part);
-          })
-          .join('');
+        const re = new RegExp(`(^|[^\\p{L}\\p{N}])(${pattern})(?=$|[^\\p{L}\\p{N}])`, 'giu');
+        let out = '';
+        let lastIndex = 0;
+        let found = false;
+
+        for (const match of raw.matchAll(re)) {
+          const fullMatch = String(match[0] || '');
+          const prefix = String(match[1] || '');
+          const token = String(match[2] || '');
+          const idx = Number(match.index || 0);
+          const tokenStart = idx + prefix.length;
+          const tokenEnd = tokenStart + token.length;
+          if (!fullMatch || !token) continue;
+
+          out += app.utils.safeText(raw.slice(lastIndex, tokenStart));
+          out += `<mark class="source-mark">${app.utils.safeText(token)}</mark>`;
+          lastIndex = tokenEnd;
+          found = true;
+        }
+
+        if (!found) return app.utils.safeText(raw);
+        out += app.utils.safeText(raw.slice(lastIndex));
+        return out;
       },
 
       isPdfUrl: (url = '') => /\.pdf(?:$|[?#])/i.test(String(url || '').trim()),
@@ -5122,10 +5149,10 @@
         const vague = /\b(das|dies|diese|dieses|dazu|damit|hierzu|so|stimmt das|ist das richtig|wie ist das|geht das)\b/i.test(raw);
 
         if (app.logic.isSozialrechtDomain()) {
-          const hasLegalAnchor = (
+          const hasTopicAnchor = (
             /\bsgb\s*(?:i{1,3}|iv|v|vi{0,3}|ix|x|xi|xii|\d{1,2})\b/i.test(low) ||
             /§+\s*\d+[a-z]?(?:\s*abs\.?\s*\d+)?/i.test(low) ||
-            /\b(krankengeld|entgeltfortzahlung|arbeitsunfaehig|arbeitslosengeld|buergergeld|pflegegeld|elterngeld|mutterschaftsgeld|sozialhilfe|grundsicherung)\b/i.test(low)
+            /\b(krankengeld|entgeltfortzahlung|arbeitsunfaehig|arbeitslosengeld|buergergeld|pflegegeld|elterngeld|mutterschaftsgeld|sozialhilfe|grundsicherung|rehabilitation|pflegeversicherung|beitrag|leistung)\b/i.test(low)
           );
           const hasActorContext = /\b(arbeitnehmer|arbeitgeber|azubi|auszubild|krankenkasse|jobcenter|versicherte|leistungsberechtigt|kind|eltern|pflegeperson)\b/i.test(low);
           const hasCaseFacts = (
@@ -5133,27 +5160,38 @@
             /\b(seit|ab|von|bis|frist|datum|zeitraum|beginn|ende|beispiel|fall)\b/i.test(low)
           );
           const hasOutputIntent = /\b(kurz|detaill|schema|pruef|praxis|beispiel|stichpunkt|tabelle|rechn|schritt|vergleich)\b/i.test(low);
+          const travelSignal = /\b(ausland|reise|urlaub|ehic|eu\/ewr|schweiz|drittland|sozialversicherungsabkommen)\b/i.test(low);
+          const hasCountry = Boolean(app.logic.detectTravelCountryContext(raw));
           const missing = [];
-          if (!hasLegalAnchor) missing.push('legal');
+          if (!hasTopicAnchor) missing.push('topic');
           if (!hasActorContext) missing.push('actor');
           if (!hasCaseFacts) missing.push('facts');
           if (!hasOutputIntent) missing.push('format');
+          const coreMissingCount = missing.filter((key) => key !== 'format').length;
+          const shortWithoutAnchor = (tokenCount <= 4 || raw.length < 18) && !hasTopicAnchor;
           const shouldAsk =
-            tokenCount <= 4 ||
-            raw.length < 18 ||
-            (missing.length >= 2 && !hasPriorContext) ||
-            (vague && missing.length >= 1);
+            shortWithoutAnchor ||
+            (!hasPriorContext && coreMissingCount >= 2) ||
+            (vague && missing.length >= 1) ||
+            (travelSignal && (!hasCountry || !hasCaseFacts));
           if (!shouldAsk) return [];
 
           const prompts = [];
-          if (missing.includes('legal')) {
-            prompts.push('Auf welches SGB-Buch oder welchen Paragraphen soll ich mich beziehen (z. B. SGB V, § 47)?');
+          if (missing.includes('topic')) {
+            prompts.push('Worum geht es konkret (z. B. Krankengeld, Entgeltfortzahlung, Reha oder Pflegeleistung)?');
           }
           if (missing.includes('actor')) {
             prompts.push('Fuer wen soll ich den Fall beantworten (Arbeitnehmer, Arbeitgeber, Azubi, Krankenkasse)?');
           }
+          if (travelSignal && !hasCountry) {
+            prompts.push('In welches Land geht die Reise bzw. wo findet der Aufenthalt statt?');
+          }
           if (missing.includes('facts')) {
-            prompts.push('Welche konkreten Fallangaben liegen vor (Zeitraum, Werte, Fristen, Ausgangslage)?');
+            prompts.push(
+              travelSignal
+                ? 'Ist es ein akuter Notfall, eine geplante Behandlung oder eine allgemeine Leistungsfrage vorab?'
+                : 'Welche konkreten Fallangaben liegen vor (Zeitraum, Werte, Fristen, Ausgangslage)?'
+            );
           }
           if (missing.includes('format')) {
             prompts.push('Wie soll ich antworten: Kurzschema, Rechenweg, Praxisfall oder Pruefungskarte?');
@@ -5181,38 +5219,83 @@
         return 'die Person';
       },
 
+      detectTravelCountryContext: (question = '') => {
+        const raw = String(question || '').toLowerCase();
+        if (!raw) return null;
+        const aliases = [
+          { keys: ['oesterreich', 'österreich', 'austria'], name: 'Oesterreich', zone: 'eu' },
+          { keys: ['deutschland', 'germany'], name: 'Deutschland', zone: 'eu' },
+          { keys: ['schweiz', 'switzerland'], name: 'Schweiz', zone: 'ch' },
+          { keys: ['frankreich', 'france'], name: 'Frankreich', zone: 'eu' },
+          { keys: ['italien', 'italy'], name: 'Italien', zone: 'eu' },
+          { keys: ['spanien', 'spain'], name: 'Spanien', zone: 'eu' },
+          { keys: ['niederlande', 'holland'], name: 'Niederlande', zone: 'eu' },
+          { keys: ['belgien', 'belgium'], name: 'Belgien', zone: 'eu' },
+          { keys: ['portugal'], name: 'Portugal', zone: 'eu' },
+          { keys: ['griechenland', 'greece'], name: 'Griechenland', zone: 'eu' },
+          { keys: ['grossbritannien', 'großbritannien', 'uk', 'vereinigtes koenigreich', 'united kingdom'], name: 'Grossbritannien', zone: 'uk' },
+          { keys: ['usa', 'vereinigte staaten', 'united states'], name: 'USA', zone: 'abkommen' },
+          { keys: ['tuerkei', 'türkei', 'turkey'], name: 'Tuerkei', zone: 'abkommen' }
+        ];
+
+        for (const entry of aliases) {
+          if (entry.keys.some((key) => raw.includes(key))) return { name: entry.name, zone: entry.zone };
+        }
+        if (/\beu\/ewr\b|\beu\b|\bewr\b/.test(raw)) return { name: 'EU/EWR', zone: 'eu' };
+        return null;
+      },
+
       deriveClarificationOptions: (prompt, question = '') => {
+        const promptLow = String(prompt || '').toLowerCase();
         const low = `${prompt || ''} ${question || ''}`.toLowerCase();
-        if (/\bland\b|\bausland\b|\breis/.test(low)) {
+        const countryCtx = app.logic.detectTravelCountryContext(question);
+
+        if (/\bleistung\b|\bthema\b|\banspruch\b|\bkonkret\b/.test(promptLow)) {
           return [
-            'EU/EWR oder Schweiz',
-            'Grossbritannien',
-            'Land mit Sozialversicherungsabkommen (z.B. USA, Tuerkei)',
-            'Sonstiges Drittland'
+            'Krankenbehandlung im Ausland',
+            'Krankengeld / Arbeitsunfaehigkeit',
+            'Entgeltfortzahlung durch Arbeitgeber',
+            'Anderes sozialrechtliches Thema'
           ];
         }
-        if (/\bworum\b|\banlass\b|\bzweck\b|\bfallangaben\b|\bfallkontext\b/.test(low)) {
-          return [
-            'Kurzreise / Urlaub',
-            'Laengerer Aufenthalt / Studium / Arbeit',
-            'Akuter Notfall ist bereits eingetreten',
-            'Frage zu Fristen oder Berechnung'
-          ];
-        }
-        if (/\bsgb\b|\bparagraph\b|\brechtsbezug\b/.test(low)) {
-          return [
-            'SGB V (Krankenversicherung, Krankengeld)',
-            'SGB III (Arbeitslosenversicherung)',
-            'SGB II (Buergergeld)',
-            'Anderes SGB-Buch'
-          ];
-        }
-        if (/\bfuer wen\b|\brollenkontext\b|\barbeitnehmer\b|\barbeitgeber\b/.test(low)) {
+        if (/\bfuer wen\b|\brolle\b|\bbetroffen\b|\barbeitnehmer\b|\barbeitgeber\b/.test(promptLow)) {
           return [
             'Arbeitnehmer / versicherte Person',
             'Arbeitgeber / Personalabteilung',
             'Auszubildende / Azubi',
-            'Krankenkasse / Leistungstraeger'
+            'Familienangehoerige / Sonstige'
+          ];
+        }
+        if (/\bfallangaben\b|\bfakten\b|\bzeitraum\b|\bfrist\b|\bausgangslage\b/.test(promptLow)) {
+          return [
+            'Es gibt konkrete Daten und Betragsangaben',
+            'Es gibt nur einen allgemeinen Fall ohne Zahlen',
+            'Es geht um einen akuten Notfall',
+            'Es geht um geplante Schritte fuer spaeter'
+          ];
+        }
+        if (/\bworum\b|\banlass\b|\bzweck\b/.test(promptLow)) {
+          return [
+            'Kurzreise / Urlaub',
+            'Laengerer Aufenthalt / Studium / Arbeit',
+            'Akuter Notfall ist bereits eingetreten',
+            'Geplante Behandlung im Ausland'
+          ];
+        }
+        if (/\bland\b|\bausland\b|\breis/.test(promptLow)) {
+          if (countryCtx) {
+            return [
+              'Kurzreise / Urlaub',
+              'Laengerer Aufenthalt / Studium / Arbeit',
+              'Akuter Notfall ist bereits eingetreten',
+              'Geplante Behandlung im Ausland'
+            ];
+          }
+          return [
+            'Oesterreich',
+            'Schweiz',
+            'Grossbritannien',
+            'Anderes Land / noch unklar'
           ];
         }
         if (/\bwie soll ich antworten\b|\bkurzschema\b|\bformat\b/.test(low)) {
@@ -5234,30 +5317,43 @@
         const person = app.logic.detectClarificationPerson(question);
         const merged = `${question || ''} ${(Array.isArray(prompts) ? prompts.join(' ') : '')}`.toLowerCase();
         const travelMode = /\b(ausland|reise|urlaub|ehic|eu\/ewr|schweiz|drittland|sozialversicherungsabkommen)\b/i.test(merged);
+        const countryCtx = app.logic.detectTravelCountryContext(question);
 
         if (travelMode) {
+          const travelSteps = [];
+          if (!countryCtx) {
+            travelSteps.push({
+              question: `In welches Land reist ${person}?`,
+              options: [
+                'Oesterreich',
+                'Schweiz',
+                'Grossbritannien',
+                'Anderes Land / noch unklar'
+              ]
+            });
+          }
+          travelSteps.push({
+            question: 'Worum geht es konkret?',
+            options: [
+              'Akuter Notfall / sofortige Behandlung',
+              'Geplante Behandlung im Ausland',
+              'Krankengeld bei Arbeitsunfaehigkeit',
+              'Allgemeine Leistungsfrage vor Reisebeginn'
+            ]
+          });
+          travelSteps.push({
+            question: 'Welcher Aufenthalt liegt vor?',
+            options: [
+              'Kurzreise / Urlaub',
+              'Laengerer Aufenthalt / Studium / Arbeit',
+              'Grenzfall mit wiederholten Aufenthalten',
+              'Noch unklar'
+            ]
+          });
+
           return {
             intro: introText || 'Damit ich das fundiert beantworten kann, brauche ich zwei Angaben:',
-            steps: [
-              {
-                question: `In welches Land reist ${person}?`,
-                options: [
-                  'EU/EWR oder Schweiz',
-                  'Grossbritannien',
-                  'Land mit Sozialversicherungsabkommen (z.B. USA, Tuerkei)',
-                  'Sonstiges Drittland'
-                ]
-              },
-              {
-                question: 'Worum geht es?',
-                options: [
-                  'Kurzreise / Urlaub',
-                  'Laengerer Aufenthalt / Studium / Arbeit',
-                  'Akuter Notfall ist bereits eingetreten',
-                  'Frage zu Fristen oder Berechnung'
-                ]
-              }
-            ]
+            steps: travelSteps.slice(0, 2)
           };
         }
 
@@ -5557,7 +5653,8 @@
 
       applyPrivacyMode: (enabled, opts = {}) => {
         const prev = Boolean(app.state.settings.privacy?.ephemeral);
-        const next = Boolean(enabled);
+        const locked = SOZIALRECHT_ONLY_MODE || app.logic.isSozialrechtDomain();
+        const next = locked ? false : Boolean(enabled);
         app.state.settings.privacy.ephemeral = next;
         if (next) {
           app.state.requestMemory = structuredClone(DEFAULT_REQUEST_MEMORY);
@@ -7683,9 +7780,8 @@
               makeParsed = app.logic.enrichAssistantResponse(makeParsed, text, canvasPayload, { channel: 'canvas' });
               makeParsed.meta = { ...(makeParsed.meta || {}), panelTitle: 'Canvas' };
             } catch (e) {
-              const msg = String(e?.message || '');
-              const missingDeepseekRoute = msg.includes('HTTP 404') && DEEPSEEK_API_ENDPOINT !== API_ENDPOINT;
-              if (missingDeepseekRoute) {
+              const shouldFallbackToDefault = DEEPSEEK_API_ENDPOINT !== API_ENDPOINT;
+              if (shouldFallbackToDefault) {
                 try {
                   makeParsed = await app.logic.requestAnswer(API_ENDPOINT, canvasPayload, controller.signal);
                   makeParsed.answer = app.logic.stripRepeatedIntro(makeParsed.answer, allowIntroForThisTurn);
@@ -7723,9 +7819,8 @@
               deepParsed = app.logic.enrichAssistantResponse(deepParsed, text, deepseekPayload, { channel: 'deepseek' });
               deepParsed.meta = { ...(deepParsed.meta || {}), panelTitle: 'Schnellmodus' };
             } catch (e) {
-              const msg = String(e?.message || '');
-              const missingDeepseekRoute = msg.includes('HTTP 404') && DEEPSEEK_API_ENDPOINT !== API_ENDPOINT;
-              if (missingDeepseekRoute) {
+              const shouldFallbackToDefault = DEEPSEEK_API_ENDPOINT !== API_ENDPOINT;
+              if (shouldFallbackToDefault) {
                 try {
                   deepParsed = await app.logic.requestAnswer(
                     API_ENDPOINT,
@@ -7776,7 +7871,21 @@
             }
           } else {
             const primaryEndpoint = deepseekRoutingActive ? DEEPSEEK_API_ENDPOINT : API_ENDPOINT;
-            const parsed = await app.logic.requestAnswer(primaryEndpoint, payload, controller.signal);
+            let parsed;
+            try {
+              parsed = await app.logic.requestAnswer(primaryEndpoint, payload, controller.signal);
+            } catch (primaryErr) {
+              const shouldFallbackToDefault =
+                deepseekRoutingActive &&
+                DEEPSEEK_API_ENDPOINT !== API_ENDPOINT;
+              if (!shouldFallbackToDefault) throw primaryErr;
+              parsed = await app.logic.requestAnswer(API_ENDPOINT, payload, controller.signal);
+              parsed.meta = {
+                ...(parsed.meta || {}),
+                deepseek_fallback: true,
+                evidence_note: `${String(parsed?.meta?.evidence_note || '').trim()} Schnellmodus-Route war instabil; Antwort kommt aus Fallback-Routing.`.trim()
+              };
+            }
             parsed.answer = app.logic.stripRepeatedIntro(parsed.answer, allowIntroForThisTurn);
             const enriched = app.logic.enrichAssistantResponse(parsed, text, payload, {
               channel: deepseekRoutingActive ? 'deepseek' : 'default'
