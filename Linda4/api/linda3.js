@@ -29,7 +29,7 @@ const DEFAULT_SOCIALRECHT_CONFIG = {
     default_followups: [
       'Worum geht es genau (Leistung, Anspruch oder Verfahren)?',
       'Fuer wen soll ich den Fall pruefen (Arbeitnehmer, Arbeitgeber, Azubi, Krankenkasse)?',
-      'Soll ich die Antwort als Kurzschema, Praxisfall oder Lernkarte aufbauen?'
+      'Geht es um akuten Notfall, geplante Behandlung oder allgemeine Leistungsklaerung?'
     ]
   },
   storage: {
@@ -174,7 +174,6 @@ function buildSozialrechtSignalProfile(question, history, cfg) {
     /\b\d{1,4}(?:[.,]\d+)?\s*(?:euro|eur|%|tage|tag|wochen|woche|monate|monat|jahre|jahr)\b/i.test(low) ||
     /\b(seit|ab|von|bis|frist|datum|zeitraum|beginn|ende|beispiel|fall)\b/i.test(low)
   );
-  const hasOutputIntent = /\b(kurz|detaill|schema|pruef|praxis|beispiel|stichpunkt|tabelle|rechn|schritt|vergleich)\b/i.test(low);
   const hasTravelSignal = /\b(ausland|reise|urlaub|ehic|eu\/ewr|schweiz|drittland|oesterreich|österreich|grossbritannien|uk)\b/i.test(low);
   const hasCountry =
     /\b(oesterreich|österreich|austria|deutschland|germany|schweiz|switzerland|frankreich|france|italien|italy|spanien|spain|niederlande|holland|belgien|belgium|portugal|griechenland|greece|grossbritannien|großbritannien|uk|vereinigtes koenigreich|united kingdom|usa|vereinigte staaten|united states|tuerkei|türkei|turkey)\b/i.test(low);
@@ -184,25 +183,18 @@ function buildSozialrechtSignalProfile(question, history, cfg) {
   if (!hasTopicAnchor) missingDimensions.push('topic_scope');
   if (!hasActorContext) missingDimensions.push('actor_context');
   if (!hasCaseFacts) missingDimensions.push('case_facts');
-  if (!hasOutputIntent) missingDimensions.push('output_intent');
   if (hasTravelSignal && !hasCountry) missingDimensions.push('travel_country');
 
   const shortQuestion = (text.length < minChars || tokens.length <= maxTokens) && !hasTopicAnchor;
   const lowSignal = tokens.length <= (maxTokens + 1) && !hasTopicAnchor && !hasCaseFacts;
-  const onlyFormatMissing =
-    missingDimensions.length === 1 &&
-    missingDimensions[0] === 'output_intent';
-  const coreMissingCount = missingDimensions.filter((item) => item !== 'output_intent').length;
+  const coreMissingCount = missingDimensions.length;
   const shouldClarifyBase =
     shortQuestion ||
     (!hasContext && coreMissingCount >= 2) ||
     (ambiguousPronouns && coreMissingCount >= 1 && tokens.length <= 12) ||
     (hasTravelSignal && !hasCountry) ||
     lowSignal;
-  const shouldClarify =
-    (onlyFormatMissing && !shortQuestion && !lowSignal)
-      ? false
-      : shouldClarifyBase;
+  const shouldClarify = shouldClarifyBase;
 
   const reasons = [];
   if (shortQuestion) reasons.push('Frage ist noch zu knapp fuer eine rechtssichere Einordnung.');
@@ -210,7 +202,6 @@ function buildSozialrechtSignalProfile(question, history, cfg) {
   if (!hasActorContext) reasons.push('Rollenkontext (z. B. Arbeitnehmer/Arbeitgeber) fehlt.');
   if (!hasCaseFacts) reasons.push('Fallkontext (Zeitraum, Werte oder Ausgangssituation) fehlt.');
   if (hasTravelSignal && !hasCountry) reasons.push('Zielland bzw. Aufenthaltsland ist noch offen.');
-  if (!hasOutputIntent) reasons.push('Gewuenschtes Antwortformat ist nicht klar.');
 
   return {
     text,
@@ -219,7 +210,6 @@ function buildSozialrechtSignalProfile(question, history, cfg) {
     hasTopicAnchor,
     hasActorContext,
     hasCaseFacts,
-    hasOutputIntent,
     hasTravelSignal,
     hasCountry,
     ambiguousPronouns,
@@ -235,9 +225,8 @@ function buildClarificationFollowups(profile, cfg) {
   const map = {
     topic_scope: 'Worum geht es konkret (Leistung, Anspruch oder Verfahren)?',
     actor_context: 'Fuer wen soll ich den Fall beantworten (Arbeitnehmer, Arbeitgeber, Azubi, Krankenkasse)?',
-    case_facts: 'Gibt es konkrete Fallangaben (Zeitraum, Brutto/Netto, Fristen oder Ausgangslage)?',
-    travel_country: 'In welches Land geht die Reise bzw. wo findet der Aufenthalt statt?',
-    output_intent: 'Wie soll ich antworten: Kurzschema, Rechenweg, Praxisfall oder Pruefungskarte?'
+    case_facts: 'Geht es um akuten Notfall, geplante Behandlung oder allgemeine Leistungsklaerung?',
+    travel_country: 'In welches Land geht die Reise bzw. wo findet der Aufenthalt statt?'
   };
   const out = [];
   profile.missingDimensions.forEach((key) => {
@@ -249,6 +238,7 @@ function buildClarificationFollowups(profile, cfg) {
     : [];
   defaults
     .filter((q) => !/\bauf welches sgb|sgb-buch|i bis xii\b/i.test(q))
+    .filter((q) => !/\bkurzschema|praxisfall|lernkarte|wie soll ich antworten\b/i.test(q))
     .forEach((q) => out.push(q));
   const unique = [];
   const seen = new Set();
@@ -265,6 +255,15 @@ function shouldClarifyQuestion(question, history, cfg) {
   const policy = cfg?.clarification_policy || {};
   const profile = buildSozialrechtSignalProfile(question, history, cfg);
   if (!policy.enabled) {
+    return {
+      shouldClarify: false,
+      followups: [],
+      reasons: [],
+      profile
+    };
+  }
+
+  if (!profile.hasTravelSignal) {
     return {
       shouldClarify: false,
       followups: [],
@@ -298,6 +297,7 @@ function buildClarificationPayload(cfg, decision = {}, question = '') {
             .map((item) => normalizeText(item))
             .filter(Boolean)
             .filter((q) => !/\bauf welches sgb|sgb-buch|i bis xii\b/i.test(q))
+            .filter((q) => !/\bkurzschema|praxisfall|lernkarte|wie soll ich antworten\b/i.test(q))
             .slice(0, 4)
         : []);
   const reasons = Array.isArray(decision?.reasons) ? decision.reasons.filter(Boolean).slice(0, 3) : [];
@@ -351,6 +351,7 @@ function normalizeModelPayload(rawText, cfg) {
         .map((q) => normalizeText(q))
         .filter(Boolean)
         .filter((q) => !/\bauf welches sgb|sgb-buch|i bis xii\b/i.test(q))
+        .filter((q) => !/\bkurzschema|praxisfall|lernkarte|wie soll ich antworten\b/i.test(q))
         .slice(0, 3)
     : [];
   const parsed = parseJsonSafe(rawText, null);
@@ -844,11 +845,17 @@ async function handleSozialrechtChat(req, res, action) {
     const normalized = normalizeModelPayload(modelRaw, cfg);
     const mergedSources = normalizeSources([...(normalized.sources || []), ...storageSources]);
     const strictUnknown = Boolean(cfg?.accuracy_policy?.strict_unknown_on_missing_basis);
-    const enforceStrictUnknown = strictUnknown && !fastMode;
-    const finalAnswer =
+    const groundedModeActive = payload?.guardrails?.grounded_mode !== false;
+    const strictUnknownClient = payload?.guardrails?.strict_unknown !== false;
+    const enforceStrictUnknown = strictUnknown && strictUnknownClient && groundedModeActive && !fastMode;
+    const resolvedAnswer =
       enforceStrictUnknown && mergedSources.length === 0
         ? 'Ich weiss es nicht sicher. Ohne belastbare Quelle antworte ich im Fachmodus Sozialrecht bewusst nicht spekulativ. Bitte frage enger oder nenne das konkrete Leistungsthema.'
         : normalized.answer;
+    const gpt5FooterActive = judgmentMode && /gpt-5/i.test(String(activeModel || ''));
+    const finalAnswer = gpt5FooterActive
+      ? `${resolvedAnswer}\n\n> Diese Antwort wurde mit GPT5 erstellt.`
+      : resolvedAnswer;
     const evidenceNotes = [];
     if (normalized.evidence_note) evidenceNotes.push(normalized.evidence_note);
     if (storageUsed && mergedSources.length) {
@@ -877,6 +884,7 @@ async function handleSozialrechtChat(req, res, action) {
         model: activeModel,
         fast_mode: fastMode,
         judgment_mode: judgmentMode,
+        gpt5_footer: gpt5FooterActive,
         deepseek_via_legacy: false,
         deepseek_legacy_error: legacyDeepseekError,
         storage_used: storageUsed,
@@ -922,9 +930,7 @@ module.exports = async (req, res) => {
 
     const payload = readRequestBodyObject(req);
     const domain = String(payload?.fachmodus || '').trim().toUpperCase();
-    const sozialrecht =
-      domain === 'SOZIALRECHT' ||
-      (!domain && (action === 'bot' || action === 'deepseek'));
+    const sozialrecht = domain === 'SOZIALRECHT';
 
     if (sozialrecht && (action === 'bot' || action === 'deepseek')) {
       await handleSozialrechtChat(req, res, action);
@@ -934,14 +940,16 @@ module.exports = async (req, res) => {
     await proxyToLegacy(req, res);
   } catch (err) {
     const detail = normalizeText(err?.message || 'unbekannt');
-    if (action === 'bot' || action === 'deepseek') {
+    const payload = readRequestBodyObject(req);
+    const domain = String(payload?.fachmodus || '').trim().toUpperCase();
+    if ((action === 'bot' || action === 'deepseek') && domain === 'SOZIALRECHT') {
       res.status(200).json({
         answer:
           'Ich weiss es nicht sicher. Es gab gerade ein technisches Verarbeitungsproblem, ' +
           'deshalb liefere ich vorsichtshalber keine spekulative Antwort.',
         followups: [
           'Worum geht es konkret (Leistung, Anspruch oder Verfahren)?',
-          'Soll ich die Antwort als Kurzschema oder Praxisfall aufbauen?'
+          'Geht es um akuten Notfall, geplante Behandlung oder allgemeine Leistungsklaerung?'
         ],
         sources: [],
         confidence: 0.05,

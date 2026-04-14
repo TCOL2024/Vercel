@@ -3156,9 +3156,10 @@
       <div class="field">
         <label for="inp-domain">Fachmodus</label>
         <select id="inp-domain">
+          <option value="">Standard</option>
           <option value="SOZIALRECHT">Sozialrecht (SGB I-XII)</option>
         </select>
-        <p class="mini">Diese Version arbeitet ausschliesslich im Fachmodus Sozialrecht.</p>
+        <p class="mini">Fachmodus ist hier frei waehlbar.</p>
       </div>
     </div>
 
@@ -3358,7 +3359,7 @@
   const REWRITE_API_ENDPOINT = '/api/linda3?action=rewrite';
   const TTS_API_ENDPOINT = '/api/linda3?action=tts';
   const STT_API_ENDPOINT = '/api/linda3?action=stt';
-  const SOZIALRECHT_ONLY_MODE = true;
+  const SOZIALRECHT_ONLY_MODE = false;
   const SOZIALRECHT_DOMAIN_KEY = 'SOZIALRECHT';
   const LEARNING_TEMPLATES_PATH = './docs/learning_templates.json';
   const SOZIALRECHT_CURRICULUM_PATH = './docs/sozialrecht_sgb_i_xii.json';
@@ -3506,7 +3507,7 @@
     },
     settings: {
         name: '',
-        domain: SOZIALRECHT_ONLY_MODE ? SOZIALRECHT_DOMAIN_KEY : '',
+        domain: SOZIALRECHT_ONLY_MODE ? SOZIALRECHT_DOMAIN_KEY : SOZIALRECHT_DOMAIN_KEY,
         snippets: [],
       sources: SOURCE_DEFS.reduce((acc, s) => {
         acc[s.key] = s.default;
@@ -3754,7 +3755,7 @@
 
         const newWelcome =
           'Willkommen bei **LINDA**.\n\n' +
-          'Diese Version arbeitet ausschliesslich im **Fachmodus Sozialrecht (SGB I-XII)**.\n' +
+          'Du kannst den **Fachmodus** jederzeit in den Einstellungen waehlen.\n' +
           'Lernkarten werden aus den **Inhalten der Antwort** erstellt.\n' +
           'ILIAS kann bei Bedarf über den Schalter **Kursraum (ILIAS)** aktiviert werden.';
 
@@ -4348,7 +4349,7 @@
 
       updateDomainUI: () => {
         if (SOZIALRECHT_ONLY_MODE) app.state.settings.domain = SOZIALRECHT_DOMAIN_KEY;
-        const domain = app.state.settings.domain || SOZIALRECHT_DOMAIN_KEY;
+        const domain = String(app.state.settings.domain || '').trim() || 'STANDARD';
         const activeCount = app.utils.activeSources().length;
         const isFast = Boolean(app.state.settings.fastMode && app.state.settings.fastMode.enabled);
         const isCompare = Boolean(app.state.settings.compareMode && app.state.settings.compareMode.enabled);
@@ -4900,8 +4901,6 @@
       enforceSozialrechtMode: (opts = {}) => {
         if (SOZIALRECHT_ONLY_MODE) app.state.settings.domain = SOZIALRECHT_DOMAIN_KEY;
         if (!app.logic.isSozialrechtDomain()) return false;
-        app.state.settings.guardrails.groundedMode = true;
-        app.state.settings.guardrails.strictUnknown = true;
         app.state.settings.guardrails.clarificationMode = true;
         app.state.settings.guardrails.piiShield = true;
         app.state.settings.assistant.showLearningPath = false;
@@ -4915,10 +4914,6 @@
       },
 
       setGroundedMode: (enabled, opts = {}) => {
-        if (app.logic.isSozialrechtDomain() && !enabled) {
-          app.logic.enforceSozialrechtMode({ save: true });
-          return;
-        }
         const prev = Boolean(app.state.settings.guardrails?.groundedMode);
         const next = Boolean(enabled);
         app.state.settings.guardrails.groundedMode = next;
@@ -5149,6 +5144,9 @@
         const vague = /\b(das|dies|diese|dieses|dazu|damit|hierzu|so|stimmt das|ist das richtig|wie ist das|geht das)\b/i.test(raw);
 
         if (app.logic.isSozialrechtDomain()) {
+          const travelSignal = /\b(ausland|reise|urlaub|ehic|eu\/ewr|schweiz|drittland|sozialversicherungsabkommen|oesterreich|österreich|austria|grossbritannien|großbritannien|uk)\b/i.test(low);
+          if (!travelSignal) return [];
+
           const hasTopicAnchor = (
             /\bsgb\s*(?:i{1,3}|iv|v|vi{0,3}|ix|x|xi|xii|\d{1,2})\b/i.test(low) ||
             /§+\s*\d+[a-z]?(?:\s*abs\.?\s*\d+)?/i.test(low) ||
@@ -5159,15 +5157,12 @@
             /\b\d{1,4}(?:[.,]\d+)?\s*(?:euro|eur|%|tage|tag|wochen|woche|monate|monat|jahre|jahr)\b/i.test(low) ||
             /\b(seit|ab|von|bis|frist|datum|zeitraum|beginn|ende|beispiel|fall)\b/i.test(low)
           );
-          const hasOutputIntent = /\b(kurz|detaill|schema|pruef|praxis|beispiel|stichpunkt|tabelle|rechn|schritt|vergleich)\b/i.test(low);
-          const travelSignal = /\b(ausland|reise|urlaub|ehic|eu\/ewr|schweiz|drittland|sozialversicherungsabkommen)\b/i.test(low);
           const hasCountry = Boolean(app.logic.detectTravelCountryContext(raw));
           const missing = [];
           if (!hasTopicAnchor) missing.push('topic');
           if (!hasActorContext) missing.push('actor');
           if (!hasCaseFacts) missing.push('facts');
-          if (!hasOutputIntent) missing.push('format');
-          const coreMissingCount = missing.filter((key) => key !== 'format').length;
+          const coreMissingCount = missing.length;
           const shortWithoutAnchor = (tokenCount <= 4 || raw.length < 18) && !hasTopicAnchor;
           const shouldAsk =
             shortWithoutAnchor ||
@@ -5192,9 +5187,6 @@
                 ? 'Ist es ein akuter Notfall, eine geplante Behandlung oder eine allgemeine Leistungsfrage vorab?'
                 : 'Welche konkreten Fallangaben liegen vor (Zeitraum, Werte, Fristen, Ausgangslage)?'
             );
-          }
-          if (missing.includes('format')) {
-            prompts.push('Wie soll ich antworten: Kurzschema, Rechenweg, Praxisfall oder Pruefungskarte?');
           }
           return app.logic.sanitizeAssistantFollowups(prompts);
         }
@@ -5243,6 +5235,12 @@
         }
         if (/\beu\/ewr\b|\beu\b|\bewr\b/.test(raw)) return { name: 'EU/EWR', zone: 'eu' };
         return null;
+      },
+
+      isClaudeClarificationCase: (question = '', prompts = []) => {
+        if (!CLAUDE_CLARIFY_MODE) return false;
+        const merged = `${String(question || '')} ${(Array.isArray(prompts) ? prompts.join(' ') : '')}`.toLowerCase();
+        return /\b(ausland|reise|urlaub|ehic|eu\/ewr|schweiz|drittland|sozialversicherungsabkommen|oesterreich|österreich|austria|grossbritannien|großbritannien|uk)\b/i.test(merged);
       },
 
       deriveClarificationOptions: (prompt, question = '') => {
@@ -5372,6 +5370,7 @@
 
       openClaudeClarifier: ({ question, prompts = [], introText = '', source = 'frontend' } = {}) => {
         if (!CLAUDE_CLARIFY_MODE) return false;
+        if (!app.logic.isClaudeClarificationCase(question, prompts)) return false;
         const flow = app.logic.buildClaudeClarificationFlow(question, prompts, introText);
         if (!flow || !Array.isArray(flow.steps) || !flow.steps.length) return false;
         app.state.clarifier = {
@@ -5816,7 +5815,7 @@
         if (!app.state.welcomeShown) {
           app.logic.sendSystemMessage(
             'Willkommen bei **LINDA**.\n\n' +
-            'Diese Version arbeitet ausschliesslich im **Fachmodus Sozialrecht (SGB I-XII)**.\n' +
+            'Du kannst den **Fachmodus** jederzeit in den Einstellungen waehlen.\n' +
             'Lernkarten werden aus den **Inhalten der Antwort** erstellt.\n' +
             'ILIAS kann bei Bedarf über den Schalter **Kursraum (ILIAS)** aktiviert werden.'
           );
@@ -5878,9 +5877,7 @@
 
         app.state.settings.ilias.enabled = Boolean(app.state.settings.sources.ilias);
         app.state.settings.prompting.enabled = document.getElementById('inp-prompting-enabled').checked;
-        const nextGrounded = sozialrechtLocked
-          ? true
-          : document.getElementById('inp-grounded-mode').checked;
+        const nextGrounded = document.getElementById('inp-grounded-mode').checked;
         app.state.settings.guardrails.strictUnknown = document.getElementById('inp-strict-unknown').checked;
         app.state.settings.guardrails.clarificationMode = document.getElementById('inp-clarification-mode').checked;
         app.state.settings.guardrails.piiShield = document.getElementById('inp-pii-shield').checked;
@@ -7628,7 +7625,8 @@
               tokenCount <= 4 ||
               text.length < 26 ||
               clarificationPrompts.length >= 2;
-            if (!strongClarifyNeed) {
+            const claudeCase = app.logic.isClaudeClarificationCase(text, clarificationPrompts);
+            if (!strongClarifyNeed || !claudeCase) {
               // Einzelne schwache Rueckfrage blockiert die Antwort nicht.
             } else {
             const clarificationIntro = app.logic.isSozialrechtDomain()
@@ -7778,7 +7776,7 @@
               makeParsed = await app.logic.requestAnswer(DEEPSEEK_API_ENDPOINT, canvasPayload, controller.signal);
               makeParsed.answer = app.logic.stripRepeatedIntro(makeParsed.answer, allowIntroForThisTurn);
               makeParsed = app.logic.enrichAssistantResponse(makeParsed, text, canvasPayload, { channel: 'canvas' });
-              makeParsed.meta = { ...(makeParsed.meta || {}), panelTitle: 'Canvas' };
+              makeParsed.meta = { ...(makeParsed.meta || {}), panelTitle: 'Canvas (DeepSeek)' };
             } catch (e) {
               const shouldFallbackToDefault = DEEPSEEK_API_ENDPOINT !== API_ENDPOINT;
               if (shouldFallbackToDefault) {
@@ -7786,7 +7784,7 @@
                   makeParsed = await app.logic.requestAnswer(API_ENDPOINT, canvasPayload, controller.signal);
                   makeParsed.answer = app.logic.stripRepeatedIntro(makeParsed.answer, allowIntroForThisTurn);
                   makeParsed = app.logic.enrichAssistantResponse(makeParsed, text, canvasPayload, { channel: 'canvas-fallback' });
-                  makeParsed.meta = { ...(makeParsed.meta || {}), panelTitle: 'Canvas' };
+                  makeParsed.meta = { ...(makeParsed.meta || {}), panelTitle: 'Canvas (Fallback)' };
                 } catch (fallbackErr) {
                   makeParsed = { answer: `❌ Canvas Fehler: ${fallbackErr?.message || 'unbekannt'}`, sources: [], meta: { panelTitle: 'Canvas' } };
                 }
@@ -7817,7 +7815,7 @@
               );
               deepParsed.answer = app.logic.stripRepeatedIntro(deepParsed.answer, allowIntroForThisTurn);
               deepParsed = app.logic.enrichAssistantResponse(deepParsed, text, deepseekPayload, { channel: 'deepseek' });
-              deepParsed.meta = { ...(deepParsed.meta || {}), panelTitle: 'Schnellmodus' };
+              deepParsed.meta = { ...(deepParsed.meta || {}), panelTitle: 'Schnellmodus (DeepSeek)' };
             } catch (e) {
               const shouldFallbackToDefault = DEEPSEEK_API_ENDPOINT !== API_ENDPOINT;
               if (shouldFallbackToDefault) {
@@ -7829,7 +7827,7 @@
                   );
                   deepParsed.answer = app.logic.stripRepeatedIntro(deepParsed.answer, allowIntroForThisTurn);
                   deepParsed = app.logic.enrichAssistantResponse(deepParsed, text, deepseekPayload, { channel: 'deepseek-fallback' });
-                  deepParsed.meta = { ...(deepParsed.meta || {}), panelTitle: 'Schnellmodus' };
+                  deepParsed.meta = { ...(deepParsed.meta || {}), panelTitle: 'Schnellmodus (Fallback)' };
                 } catch (fallbackErr) {
                   deepParsed = { answer: `❌ Schnellmodus Fehler: ${fallbackErr?.message || 'unbekannt'}`, sources: [], meta: { panelTitle: 'Schnellmodus' } };
                 }
@@ -7922,7 +7920,7 @@
                 tokenCount <= 4 ||
                 text.length < 26 ||
                 backendPrompts.length >= 2;
-              if (backendPrompts.length && strongClarifyNeed) {
+              if (backendPrompts.length && strongClarifyNeed && app.logic.isClaudeClarificationCase(text, backendPrompts)) {
                 app.logic.openClaudeClarifier({
                   question: text,
                   prompts: backendPrompts,
@@ -8632,10 +8630,6 @@
       }
 
       app.state.settings.fastMode.enabled = wantsOn;
-      if (wantsOn) {
-        app.state.settings.compareMode.enabled = false;
-        app.ui.syncCompareModeControls();
-      }
       app.utils.save();
       app.ui.updateDomainUI();
     };
@@ -8646,12 +8640,6 @@
     const compareMainOff = document.getElementById('compare-main-off');
     const syncCompareMode = () => {
       const wantsOn = Boolean(compareMainOn && compareMainOn.checked);
-      if (wantsOn && app.state.settings.fastMode?.enabled) {
-        alert('Canvas ist deaktiviert, solange Schnellmodus aktiv ist.');
-        app.state.settings.compareMode.enabled = false;
-        app.ui.syncCompareModeControls();
-        return;
-      }
       app.state.settings.compareMode.enabled = wantsOn;
       app.utils.save();
       app.ui.updateDomainUI();
