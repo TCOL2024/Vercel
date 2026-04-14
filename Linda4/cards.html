@@ -188,7 +188,9 @@
     { id:'bbig_eignung', title:'BBIG Eignung', area:'AEVO', target:4, cards:[] },
     { id:'vwl_grundlagen', title:'VWL Grundlagen', area:'VWL', target:4, cards:[] },
     { id:'motivation', title:'Motivation', area:'Personal', target:4, cards:[] },
-    { id:'personalgespraeche', title:'Personalgespräche', area:'Personal', target:4, cards:[] }
+    { id:'personalgespraeche', title:'Personalgespräche', area:'Personal', target:4, cards:[] },
+    { id:'sgb_grundlagen', title:'SGB Grundlagen', area:'Sozialrecht', target:4, cards:[] },
+    { id:'sgb_leistungen', title:'Leistungen und Ansprueche', area:'Sozialrecht', target:4, cards:[] }
   ];
   const params = new URLSearchParams(location.search);
   const payload = JSON.parse(localStorage.getItem(CARDS_KEY) || '{}');
@@ -197,8 +199,24 @@
   const stats = JSON.parse(localStorage.getItem(CARDS_STATS_KEY) || '{}');
   const collections = (() => {
     const raw = JSON.parse(localStorage.getItem(COLLECTIONS_KEY) || 'null');
-    const source = Array.isArray(raw) ? raw : DEFAULT_COLLECTIONS;
-    const normalized = source.map(entry => ({...entry, cards: Array.isArray(entry.cards) ? entry.cards : []}));
+    const source = Array.isArray(raw) ? raw : [];
+    const byId = new Map(source.map(entry => [String(entry?.id || ''), entry]));
+    const merged = DEFAULT_COLLECTIONS.map((def) => {
+      const existing = byId.get(String(def.id || ''));
+      if (!existing || typeof existing !== 'object') return { ...def, cards: [] };
+      return {
+        ...def,
+        ...existing,
+        cards: Array.isArray(existing.cards) ? existing.cards : []
+      };
+    });
+    source.forEach((entry) => {
+      if (!entry || typeof entry !== 'object') return;
+      const id = String(entry.id || '');
+      if (!id || merged.some((item) => String(item.id || '') === id)) return;
+      merged.push({ ...entry, cards: Array.isArray(entry.cards) ? entry.cards : [] });
+    });
+    const normalized = merged;
     localStorage.setItem(COLLECTIONS_KEY, JSON.stringify(normalized));
     return normalized;
   })();
@@ -221,11 +239,27 @@
   const showToast = (msg) => { toast.textContent = msg; toast.classList.add('show'); setTimeout(()=>toast.classList.remove('show'), 1500); };
   const writeCollections = () => localStorage.setItem(COLLECTIONS_KEY, JSON.stringify(collections));
   const openSelf = (qs='') => { location.href = `cards.html${qs}`; };
-  const openCollections = () => { window.location.href = 'collections.html'; };
+  const openCollections = () => { window.location.href = 'collections_clickable.html'; };
+  const closeCardsView = () => {
+    let fallback = 'index_work_v4.html';
+    try {
+      const ref = String(document.referrer || '').trim();
+      if (ref) {
+        const refUrl = new URL(ref, window.location.href);
+        if (refUrl.origin === window.location.origin) fallback = refUrl.href;
+      }
+    } catch (_) {}
+
+    window.close();
+    window.setTimeout(() => {
+      if (!window.closed) window.location.href = fallback;
+    }, 120);
+  };
   const inferArea = () => {
     const t = `${deck.deckTitle || ''} ${cards.map(c => c.question).join(' ')}`.toLowerCase();
     if (/bbig|aevo|ausbild|eignung/.test(t)) return 'AEVO';
     if (/markt|preis|nachfrage|angebot|inflation|bip/.test(t)) return 'VWL';
+    if (/sgb|sozialrecht|grundsicherung|krankenversicherung|rente|pflegeversicherung|arbeitsfoerderung|buergergeld/.test(t)) return 'Sozialrecht';
     if (/motivation|führung|personal|gespräch/.test(t)) return 'Personal';
     return 'Lernen';
   };
@@ -277,7 +311,7 @@
             <span class="pill gold">Sammlung wächst</span>
           </div>
           <h2 class="deck-title" style="font-size:1.65rem">Erst lernen, dann sammeln.</h2>
-          <p class="sub">Bewerte die Karte und ordne sie danach bewusst einer Kollektion zu, zum Beispiel <strong>BBIG Eignung</strong> oder <strong>VWL Grundlagen</strong>.</p>
+          <p class="sub">Bewerte die Karte und ordne sie danach bewusst einer Kollektion zu, zum Beispiel <strong>BBIG Eignung</strong>, <strong>VWL Grundlagen</strong> oder <strong>SGB Grundlagen</strong>.</p>
         </section>
       </div>`;
   }
@@ -497,7 +531,7 @@
   $('#btnLibrary').addEventListener('click', () => openSelf('?library=1'));
   $('#btnCurrent').addEventListener('click', () => openSelf(''));
   $('#btnCollections').addEventListener('click', openCollections);
-  $('#btnClose').addEventListener('click', () => window.close());
+  $('#btnClose').addEventListener('click', closeCardsView);
 
   renderHero();
   if (libraryMode) renderLibrary(); else renderDeck();

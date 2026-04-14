@@ -2872,6 +2872,7 @@
           <option value="AEVO">Ausbilder (AEVO)</option>
           <option value="VWL">VWL / Betriebswirtschaft</option>
           <option value="PERSONAL">Personalwesen</option>
+          <option value="SOZIALRECHT">Sozialrecht (SGB I-XII)</option>
         </select>
       </div>
     </div>
@@ -3073,6 +3074,7 @@
   const TTS_API_ENDPOINT = '/api/linda3?action=tts';
   const STT_API_ENDPOINT = '/api/linda3?action=stt';
   const LEARNING_TEMPLATES_PATH = './docs/learning_templates.json';
+  const SOZIALRECHT_CURRICULUM_PATH = './docs/sozialrecht_sgb_i_xii.json';
   const APP_VERSION = 3;
   const REQUEST_MEMORY_VERSION = 1;
 
@@ -3096,7 +3098,8 @@
     modeCards: [
       { key: "AEVO", label: "AEVO", hint: "Ausbilder-Themen" },
       { key: "VWL", label: "VWL/BWL", hint: "Wirtschaftsbezug" },
-      { key: "PERSONAL", label: "Personal", hint: "Personalwesen" }
+      { key: "PERSONAL", label: "Personal", hint: "Personalwesen" },
+      { key: "SOZIALRECHT", label: "Sozialrecht", hint: "SGB I-XII" }
     ]
   };
 
@@ -3153,6 +3156,12 @@
     }
   };
   let learningTemplatesCache = structuredClone(DEFAULT_LEARNING_TEMPLATES);
+  const DEFAULT_SOZIALRECHT_CURRICULUM = {
+    version: '1.0',
+    target_group: 'Angehende Personalfachkaufleute (IHK)',
+    modules: []
+  };
+  let sozialrechtCurriculumCache = structuredClone(DEFAULT_SOZIALRECHT_CURRICULUM);
   let activeTtsAudio = null;
   let activeTtsAudioUrl = '';
   let activePlaybackCtx = null;
@@ -3441,7 +3450,7 @@
 
         const newWelcome =
           'Willkommen bei **LINDA**.\n\n' +
-          'Ich unterstütze dich bei **AEVO**, **BWL/VWL** und **Personalwesen**.\n' +
+          'Ich unterstütze dich bei **AEVO**, **BWL/VWL**, **Personalwesen** und **Sozialrecht (SGB I-XII)**.\n' +
           'Lernkarten werden aus den **Inhalten der Antwort** erstellt.\n' +
           'ILIAS kann bei Bedarf über den Schalter **Kursraum (ILIAS)** aktiviert werden.';
 
@@ -4238,6 +4247,117 @@
         return learningTemplatesCache || structuredClone(DEFAULT_LEARNING_TEMPLATES);
       },
 
+      loadSozialrechtCurriculum: async () => {
+        try {
+          const res = await fetch(SOZIALRECHT_CURRICULUM_PATH, { cache: 'no-store' });
+          if (!res.ok) return;
+          const parsed = await res.json();
+          if (!parsed || typeof parsed !== 'object') return;
+          const modules = (Array.isArray(parsed.modules) ? parsed.modules : [])
+            .map((module) => {
+              if (!module || typeof module !== 'object') return null;
+              const sgb = String(module.sgb || '').trim();
+              const title = String(module.title || '').trim();
+              if (!sgb || !title) return null;
+              const topics = (Array.isArray(module.topics) ? module.topics : [])
+                .map((topic) => {
+                  if (!topic || typeof topic !== 'object') return null;
+                  const topicTitle = String(topic.title || '').trim();
+                  if (!topicTitle) return null;
+                  return {
+                    id: String(topic.id || '').trim(),
+                    title: topicTitle.slice(0, 120),
+                    keywords: (Array.isArray(topic.keywords) ? topic.keywords : [])
+                      .map((k) => app.utils.normalizeForKeyword(k))
+                      .filter(Boolean)
+                      .slice(0, 16),
+                    follow_up_questions: (Array.isArray(topic.follow_up_questions) ? topic.follow_up_questions : [])
+                      .map((q) => String(q || '').trim())
+                      .filter(Boolean)
+                      .slice(0, 6)
+                  };
+                })
+                .filter(Boolean)
+                .slice(0, 20);
+              return {
+                sgb: sgb.slice(0, 24),
+                title: title.slice(0, 120),
+                relevance_for_hr: String(module.relevance_for_hr || '').trim().slice(0, 200),
+                topics
+              };
+            })
+            .filter(Boolean)
+            .slice(0, 24);
+
+          sozialrechtCurriculumCache = {
+            version: String(parsed.version || DEFAULT_SOZIALRECHT_CURRICULUM.version || '1.0'),
+            target_group:
+              String(parsed.target_group || DEFAULT_SOZIALRECHT_CURRICULUM.target_group || '').trim() ||
+              DEFAULT_SOZIALRECHT_CURRICULUM.target_group,
+            modules
+          };
+        } catch (_) {}
+      },
+
+      getSozialrechtCurriculum: () => {
+        return sozialrechtCurriculumCache || structuredClone(DEFAULT_SOZIALRECHT_CURRICULUM);
+      },
+
+      getSozialrechtContext: (text) => {
+        const curriculum = app.logic.getSozialrechtCurriculum();
+        const modules = Array.isArray(curriculum?.modules) ? curriculum.modules : [];
+        if (!modules.length) return null;
+
+        const normalizedText = app.utils.normalizeForKeyword(text || '');
+        if (!normalizedText) return null;
+        const terms = Array.from(new Set(
+          normalizedText
+            .split(/\s+/)
+            .map((t) => t.trim())
+            .filter((t) => t.length >= 4)
+            .slice(0, 10)
+        ));
+        if (!terms.length) return null;
+
+        let best = null;
+        modules.forEach((module) => {
+          const moduleHay = app.utils.normalizeForKeyword(`${module.sgb || ''} ${module.title || ''} ${module.relevance_for_hr || ''}`);
+          (Array.isArray(module.topics) ? module.topics : []).forEach((topic) => {
+            const topicHay = app.utils.normalizeForKeyword(
+              `${topic.title || ''} ${(topic.keywords || []).join(' ')} ${(topic.follow_up_questions || []).join(' ')}`
+            );
+            let score = 0;
+            terms.forEach((term) => {
+              if (topicHay.includes(term)) score += 3;
+              if (moduleHay.includes(term)) score += 1;
+            });
+            if (!score) return;
+            if (!best || score > best.score) {
+              best = { score, module, topic };
+            }
+          });
+        });
+        return best;
+      },
+
+      buildSozialrechtFollowups: (topic, question) => {
+        if (String(app.state.settings.domain || '').toUpperCase() !== 'SOZIALRECHT') return [];
+        const focus = app.logic.getSozialrechtContext(`${question || ''} ${topic || ''}`);
+        if (!focus) {
+          return [
+            'Soll ich das Thema zuerst dem passenden SGB-Buch (I-XII) zuordnen?',
+            'Moechtest du dazu drei IHK-Pruefungsfragen mit Loesungsskizze?'
+          ];
+        }
+        const out = [];
+        const sgbLabel = String(focus.module?.sgb || 'SGB');
+        const topicLabel = String(focus.topic?.title || topic || 'dem Thema');
+        out.push(`Soll ich ${topicLabel} im Kontext von ${sgbLabel} als Lernzettel strukturieren?`);
+        out.push(`Moechtest du einen typischen Praxisfall fuer Personalfachkaufleute zu ${topicLabel}?`);
+        out.push(...app.logic.sanitizeAssistantFollowups(focus.topic?.follow_up_questions || []));
+        return app.logic.sanitizeAssistantFollowups(out);
+      },
+
       fillTemplateVars: (template, vars) => {
         let out = String(template || '');
         Object.entries(vars || {}).forEach(([k, v]) => {
@@ -4459,7 +4579,7 @@
           prompts.push('Beziehst du dich auf ein Dokument, einen Gesetzestext oder eine konkrete Situation?');
         }
         if (!app.state.settings.domain && (tokenCount <= 3 || vague)) {
-          prompts.push('Soll ich die Antwort auf AEVO, VWL/BWL oder Personalwesen zuschneiden?');
+          prompts.push('Soll ich die Antwort auf AEVO, VWL/BWL, Personalwesen oder Sozialrecht zuschneiden?');
         }
         return app.logic.sanitizeAssistantFollowups(prompts);
       },
@@ -4548,6 +4668,7 @@
           out.push(`Gib mir ein kurzes Praxisbeispiel zu ${topic}.`);
           out.push(`Fasse ${topic} in drei Stichpunkten zusammen.`);
           if (domain) out.push(`Erstelle drei Pruefungsfragen zu ${topic} im Fachmodus ${domain}.`);
+          out.push(...app.logic.buildSozialrechtFollowups(topic, question || answer));
           if (goal) out.push(`Verbinde ${topic} mit meinem Lernziel "${goal}".`);
         }
 
@@ -4791,7 +4912,7 @@
         if (!app.state.welcomeShown) {
           app.logic.sendSystemMessage(
             'Willkommen bei **LINDA**.\n\n' +
-            'Ich unterstütze dich bei **AEVO**, **BWL/VWL** und **Personalwesen**.\n' +
+            'Ich unterstütze dich bei **AEVO**, **BWL/VWL**, **Personalwesen** und **Sozialrecht (SGB I-XII)**.\n' +
             'Lernkarten werden aus den **Inhalten der Antwort** erstellt.\n' +
             'ILIAS kann bei Bedarf über den Schalter **Kursraum (ILIAS)** aktiviert werden.'
           );
@@ -5082,6 +5203,57 @@
         return triggers.some((k) => t.includes(k));
       },
 
+      detectPopupBrowser: () => {
+        const ua = String(navigator.userAgent || '').toLowerCase();
+        if (ua.includes('edg/')) return 'edge';
+        if (ua.includes('opr/') || ua.includes('opera')) return 'opera';
+        if (ua.includes('firefox/') || ua.includes('fxios')) return 'firefox';
+        if (ua.includes('safari') && !ua.includes('chrome') && !ua.includes('crios') && !ua.includes('chromium') && !ua.includes('edg/')) {
+          return 'safari';
+        }
+        if (ua.includes('chrome') || ua.includes('crios') || ua.includes('chromium')) return 'chrome';
+        return 'other';
+      },
+
+      getPopupBlockedHelp: (featureLabel = 'diese Funktion') => {
+        const browser = app.logic.detectPopupBrowser();
+        let steps = '';
+        if (browser === 'chrome' || browser === 'edge' || browser === 'opera') {
+          steps =
+            'Chrome/Edge/Opera:\n' +
+            '1) Klicke auf das Popup-Symbol rechts in der Adressleiste.\n' +
+            '2) Waehle "Popups immer zulassen" fuer diese Website.\n' +
+            '3) Lade die Seite neu und starte den Vorgang erneut.';
+        } else if (browser === 'firefox') {
+          steps =
+            'Firefox:\n' +
+            '1) Klicke auf das Popup-Symbol neben der URL.\n' +
+            '2) Erlaube Popups fuer diese Website.\n' +
+            '3) Lade die Seite neu und starte den Vorgang erneut.';
+        } else if (browser === 'safari') {
+          steps =
+            'Safari:\n' +
+            '1) Gehe zu Safari > Einstellungen > Websites > Pop-up-Fenster.\n' +
+            '2) Setze diese Website auf "Erlauben".\n' +
+            '3) Lade die Seite neu und starte den Vorgang erneut.';
+        } else {
+          steps =
+            'Browser-Hinweis:\n' +
+            '1) Oeffne die Website-Berechtigungen in der Adressleiste.\n' +
+            '2) Erlaube Popups fuer diese Website.\n' +
+            '3) Lade die Seite neu und starte den Vorgang erneut.';
+        }
+        return (
+          `Popup blockiert: ${featureLabel} benoetigt ein erlaubtes neues Fenster.\n\n` +
+          `${steps}\n\n` +
+          'Ohne erlaubte Popups kann diese Funktion nicht korrekt starten.'
+        );
+      },
+
+      notifyPopupBlocked: (featureLabel = 'diese Funktion') => {
+        alert(app.logic.getPopupBlockedHelp(featureLabel));
+      },
+
       sanitizeCardsInputText: (text, maxLen = 9000) => {
         return String(text || '')
           .replace(/\r/g, '\n')
@@ -5225,7 +5397,7 @@
         const target = new URL('cards.html', window.location.href).href;
         const tab = window.open('', '_blank', 'noopener');
         if (!tab) {
-          alert('Popup blockiert. Bitte Popups erlauben, um Karten in neuem Tab zu öffnen.');
+          app.logic.notifyPopupBlocked('Lernkarten');
           return null;
         }
         try {
@@ -5251,19 +5423,19 @@
           } catch (_) {}
         }
         const tab = window.open(target, '_blank', 'noopener');
-        if (!tab) alert('Popup blockiert. Bitte Popups erlauben, um Karten in neuem Tab zu öffnen.');
+        if (!tab) app.logic.notifyPopupBlocked('Lernkarten im neuen Tab');
       },
 
       openSavedCardsLibrary: () => {
         const target = new URL('cards.html?library=1', window.location.href).href;
         const tab = window.open(target, '_blank', 'noopener');
-        if (!tab) alert('Popup blockiert. Bitte Popups erlauben, um gespeicherte Lernkarten im neuen Tab zu öffnen.');
+        if (!tab) app.logic.notifyPopupBlocked('gespeicherte Lernkarten');
       },
 
       openCollectionsPage: () => {
-        const target = new URL('collections.html', window.location.href).href;
+        const target = new URL('collections_clickable.html', window.location.href).href;
         const tab = window.open(target, '_blank', 'noopener');
-        if (!tab) alert('Popup blockiert. Bitte Popups erlauben, um Kollektionen im neuen Tab zu öffnen.');
+        if (!tab) app.logic.notifyPopupBlocked('Kollektionen');
       },
 
       openPracticeTabWithPayload: (payload) => {
@@ -5274,7 +5446,7 @@
         localStorage.setItem(PRACTICE_KEY, JSON.stringify(nextPayload));
         const target = `${window.location.pathname}?view=practice`;
         const tab = window.open(target, '_blank', 'noopener');
-        if (!tab) alert('Popup blockiert. Bitte Popups erlauben, um Uebungsaufgaben in neuem Tab zu öffnen.');
+        if (!tab) app.logic.notifyPopupBlocked('Uebungsaufgaben im neuen Tab');
       },
 
       prepareSelectionDraftFromEvent: (evt) => {
@@ -7227,6 +7399,7 @@
     app.utils.load();
     app.logic.loadKeywordLinks();
     app.logic.loadLearningTemplates();
+    app.logic.loadSozialrechtCurriculum();
     app.ui.updateDomainUI();
     app.ui.renderSourceToolbar();
     app.ui.syncFastModeControls();
@@ -7302,8 +7475,9 @@
     const openCardsLibraryBtn = document.getElementById('open-cards-library-btn');
     if (openCardsLibraryBtn) {
       openCardsLibraryBtn.addEventListener('click', () => {
-        const tab = window.open(`${window.location.pathname}?view=cards&library=1`, '_blank', 'noopener');
-        if (!tab) alert('Popup blockiert. Bitte Popups erlauben, um gespeicherte Karten zu öffnen.');
+        const target = `${window.location.pathname}?view=cards&library=1`;
+        const tab = window.open(target, '_blank', 'noopener');
+        if (!tab) app.logic.notifyPopupBlocked('gespeicherte Lernkarten');
       });
     }
 

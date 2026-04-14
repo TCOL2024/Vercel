@@ -99,16 +99,35 @@
     { id:'bbig_eignung', title:'BBIG Eignung', area:'AEVO', target:4, cards:[] },
     { id:'vwl_grundlagen', title:'VWL Grundlagen', area:'VWL', target:4, cards:[] },
     { id:'motivation', title:'Motivation', area:'Personal', target:4, cards:[] },
-    { id:'personalgespraeche', title:'Personalgespräche', area:'Personal', target:4, cards:[] }
+    { id:'personalgespraeche', title:'Personalgespräche', area:'Personal', target:4, cards:[] },
+    { id:'sgb_grundlagen', title:'SGB Grundlagen', area:'Sozialrecht', target:4, cards:[] },
+    { id:'sgb_leistungen', title:'Leistungen und Ansprueche', area:'Sozialrecht', target:4, cards:[] }
   ];
   const listEl=document.getElementById('collectionList');
   const detailEl=document.getElementById('detail');
   const modalEl=document.getElementById('cardModal');
   const modalContentEl=document.getElementById('cardModalContent');
   const escapeHtml=(v='')=>String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-  const collections=(()=>{const raw=JSON.parse(localStorage.getItem(COLLECTIONS_KEY)||'null');const source=Array.isArray(raw)?raw:DEFAULT_COLLECTIONS;const normalized=source.map(e=>({...e,cards:Array.isArray(e.cards)?e.cards:[]}));localStorage.setItem(COLLECTIONS_KEY,JSON.stringify(normalized));return normalized;})();
+  const collections=(()=>{
+    const raw=JSON.parse(localStorage.getItem(COLLECTIONS_KEY)||'null');
+    const source=Array.isArray(raw)?raw:[];
+    const byId=new Map(source.map((entry)=>[String(entry?.id||''),entry]));
+    const merged=DEFAULT_COLLECTIONS.map((def)=>{
+      const existing=byId.get(String(def.id||''));
+      if(!existing || typeof existing!=='object') return {...def,cards:[]};
+      return {...def,...existing,cards:Array.isArray(existing.cards)?existing.cards:[]};
+    });
+    source.forEach((entry)=>{
+      if(!entry || typeof entry!=='object') return;
+      const id=String(entry.id||'');
+      if(!id || merged.some((item)=>String(item.id||'')===id)) return;
+      merged.push({...entry,cards:Array.isArray(entry.cards)?entry.cards:[]});
+    });
+    localStorage.setItem(COLLECTIONS_KEY,JSON.stringify(merged));
+    return merged;
+  })();
   let activeId=collections[0]?.id||'';
-  function icon(area){ if(area==='VWL') return '₿'; if(area==='AEVO') return '§'; if(area==='Personal') return '◎'; return '✦'; }
+  function icon(area){ if(area==='VWL') return '₿'; if(area==='AEVO') return '§'; if(area==='Personal') return '◎'; if(area==='Sozialrecht') return '⚖'; return '✦'; }
   function renderList(){
     listEl.innerHTML=collections.map(col=>{const count=(col.cards||[]).length; const pct=Math.min(100, Math.round((count/Math.max(col.target,1))*100)); return `
       <article class="collection" data-id="${escapeHtml(col.id)}" style="outline:${col.id===activeId?'2px solid #d2ae38':'none'}">
