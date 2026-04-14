@@ -60,21 +60,29 @@
 
   #app {
     width: 100%;
+    max-width: 100vw;
     height: 100dvh;
     background: linear-gradient(180deg, #fafdff 0%, #f2f7ff 100%);
     display: grid;
     grid-template-rows: var(--header-h) auto 1fr auto;
     overflow: hidden;
     position: relative;
+    box-sizing: border-box;
+  }
+
+  #app > * {
+    min-width: 0;
   }
 
   @media (min-width: 980px) {
     body {
-      padding: 20px;
+      padding: 16px;
     }
 
     #app {
+      width: min(1160px, 100%);
       max-width: 1160px;
+      margin-inline: auto;
       border-radius: 26px;
       box-shadow: 0 24px 70px rgba(4, 20, 45, 0.25);
       height: min(96vh, 960px);
@@ -130,6 +138,9 @@
     display: flex;
     gap: 6px;
     overflow-x: auto;
+    min-width: 0;
+    flex: 0 1 auto;
+    max-width: 54%;
   }
 
   .mobile-reader-toggle {
@@ -209,7 +220,7 @@
     background: #f7fbff;
     padding: 8px 12px;
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
     gap: 8px;
     font-size: 0.84rem;
     color: #23466f;
@@ -224,18 +235,20 @@
     flex-wrap: wrap;
     align-items: center;
     gap: 8px;
+    min-width: 0;
   }
 
   .smart-control .label {
     font-weight: 800;
     color: #0d4c96;
-    white-space: nowrap;
+    white-space: normal;
   }
 
   .fastmode-choice {
     display: inline-flex;
     align-items: center;
     gap: 6px;
+    min-width: 0;
   }
 
   .compare-canvas {
@@ -391,6 +404,59 @@
 
   .md th {
     background: #edf5ff;
+  }
+
+  .md.sozialrecht-md {
+    display: grid;
+    gap: 10px;
+  }
+
+  .sozialrecht-topline {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    width: fit-content;
+    max-width: 100%;
+    border-radius: 999px;
+    border: 1px solid #b9d8cb;
+    background: linear-gradient(135deg, #eaf7f1 0%, #f5fcf8 100%);
+    color: #0f5a4b;
+    padding: 5px 10px;
+    font-size: 0.75rem;
+    font-weight: 800;
+    letter-spacing: 0.01em;
+  }
+
+  .sozialrecht-stack {
+    display: grid;
+    gap: 10px;
+  }
+
+  .sozialrecht-section {
+    border: 1px solid #c8ddd4;
+    border-radius: 13px;
+    background: linear-gradient(180deg, #ffffff 0%, #f8fcfa 100%);
+    padding: 10px 11px;
+  }
+
+  .sozialrecht-section.intro {
+    border-color: #a6cfbf;
+    box-shadow: 0 10px 22px rgba(4, 81, 68, 0.08);
+  }
+
+  .sozialrecht-section-head {
+    margin: 0 0 8px;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #0a5b4b;
+  }
+
+  .sozialrecht-section p:last-child,
+  .sozialrecht-section ul:last-child,
+  .sozialrecht-section ol:last-child {
+    margin-bottom: 0;
   }
 
   .table-wrap {
@@ -574,33 +640,173 @@
     color: #29405f;
   }
 
-  .plausibility-panel {
-    margin-top: 8px;
-    border-radius: 11px;
+  .clarify-dock {
+    position: sticky;
+    bottom: calc(var(--input-h) + 8px + env(safe-area-inset-bottom));
+    z-index: 18;
+    padding: 0 12px 8px;
+    pointer-events: none;
+  }
+
+  .clarify-dock[hidden] {
+    display: none !important;
+  }
+
+  .clarify-card {
+    pointer-events: auto;
+    width: min(100%, 760px);
+    margin: 0 auto;
+    border: 1px solid #c6d6ef;
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.96);
+    box-shadow: 0 20px 44px rgba(7, 26, 52, 0.2);
     overflow: hidden;
-    border: 1px solid #f0d7a3;
-    background: #fff8eb;
   }
 
-  .plausibility-head {
-    margin: 0;
-    padding: 8px 10px;
+  .clarify-head {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    align-items: center;
+    padding: 10px 12px 8px;
+    border-bottom: 1px solid #d9e4f4;
+    background: linear-gradient(180deg, #f8fbff 0%, #f2f7ff 100%);
+  }
+
+  .clarify-kicker {
     font-size: 0.78rem;
-    color: #8a5700;
-    border-bottom: 1px solid #f3e2bd;
-    background: rgba(255, 255, 255, 0.72);
+    color: #37526f;
+    font-weight: 700;
   }
 
-  .plausibility-body {
-    padding: 10px;
-    color: #5d470d;
+  .clarify-progress {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    border-radius: 999px;
+    border: 1px solid #c7d9f1;
+    background: #eef5ff;
+    padding: 4px 8px;
+    font-size: 0.72rem;
+    font-weight: 800;
+    color: #1e4d8a;
+  }
+
+  .clarify-cancel {
+    border: none;
+    background: transparent;
+    color: #5f748e;
+    font-size: 1.15rem;
+    line-height: 1;
+    cursor: pointer;
+  }
+
+  .clarify-body {
+    padding: 12px;
+    display: grid;
+    gap: 10px;
+  }
+
+  .clarify-intro {
+    margin: 0;
     font-size: 0.9rem;
+    color: #2f4866;
   }
 
-  .plausibility-meta {
-    margin-top: 8px;
-    font-size: 0.8rem;
-    color: #7a6020;
+  .clarify-question {
+    margin: 0;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 1.04rem;
+    color: #163557;
+  }
+
+  .clarify-options {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 8px;
+  }
+
+  .clarify-option {
+    width: 100%;
+    border: 1px solid #d6e3f4;
+    background: #ffffff;
+    border-radius: 11px;
+    padding: 10px 12px;
+    text-align: left;
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    font: inherit;
+    color: #1e3654;
+    cursor: pointer;
+  }
+
+  .clarify-option:hover,
+  .clarify-option:focus-visible {
+    border-color: #9fc0ea;
+    background: #eef5ff;
+    outline: none;
+  }
+
+  .clarify-option-index {
+    flex: 0 0 auto;
+    width: 24px;
+    height: 24px;
+    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #d0def3;
+    background: #f7fbff;
+    color: #4a6380;
+    font-size: 0.75rem;
+    font-weight: 800;
+  }
+
+  .clarify-free {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .clarify-free input {
+    flex: 1;
+    min-width: 0;
+    border: 1px solid #d3deed;
+    border-radius: 10px;
+    padding: 10px 11px;
+    font: inherit;
+    color: #1f3755;
+    background: #fbfdff;
+  }
+
+  .clarify-free button,
+  .clarify-actions button {
+    border: 1px solid #d2deee;
+    border-radius: 10px;
+    padding: 9px 11px;
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+    background: #ffffff;
+    color: #2a486b;
+  }
+
+  .clarify-free button:hover,
+  .clarify-actions button:hover,
+  .clarify-free button:focus-visible,
+  .clarify-actions button:focus-visible {
+    border-color: #9fc0ea;
+    background: #eef5ff;
+    outline: none;
+  }
+
+  .clarify-actions {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
   }
 
   .source-missing {
@@ -687,11 +893,14 @@
     align-items: flex-end;
     padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
     z-index: 7;
+    width: 100%;
+    min-width: 0;
   }
 
   .input-wrap {
     flex: 1;
     position: relative;
+    min-width: 0;
   }
 
   #chat-input {
@@ -1165,9 +1374,9 @@
   .cards-layout {
     min-height: 100dvh;
     background:
-      radial-gradient(600px 300px at 10% 0%, #d8f6ff 0%, transparent 64%),
-      radial-gradient(800px 460px at 100% 100%, #dce7ff 0%, transparent 58%),
-      #edf4ff;
+      radial-gradient(760px 360px at 12% 0%, rgba(0, 109, 92, 0.12) 0%, transparent 62%),
+      radial-gradient(780px 420px at 100% 100%, rgba(10, 92, 132, 0.11) 0%, transparent 56%),
+      linear-gradient(140deg, #f4f1e7 0%, #edf4f1 34%, #e1efea 100%);
     display: flex;
     flex-direction: column;
     color: #0f2138;
@@ -1175,45 +1384,53 @@
 
   .cards-top {
     display: flex;
-    gap: 8px;
+    gap: 14px;
     align-items: center;
     justify-content: space-between;
-    padding: 14px;
-    border-bottom: 1px solid #cfe0f8;
-    background: rgba(255,255,255,0.75);
-    backdrop-filter: blur(8px);
+    padding: 18px 18px 16px;
+    border-bottom: 1px solid rgba(4, 81, 68, 0.12);
+    background: rgba(255,255,255,0.72);
+    backdrop-filter: blur(12px);
+    box-shadow: 0 16px 36px rgba(9, 35, 29, 0.08);
   }
 
   .cards-title {
     margin: 0;
     font-family: 'Space Grotesk', sans-serif;
-    font-size: 1.14rem;
-    color: #0c4f98;
+    font-size: clamp(1.2rem, 2vw, 1.8rem);
+    color: #0d493f;
+    letter-spacing: 0.01em;
   }
 
   .cards-sub {
-    margin: 2px 0 0;
-    font-size: 0.8rem;
-    color: #4f637f;
+    margin: 6px 0 0;
+    font-size: 0.86rem;
+    color: #587067;
   }
 
   .cards-body {
-    width: min(960px, 100%);
+    width: min(1240px, 100%);
     margin: 0 auto;
-    padding: 16px 14px 28px;
+    padding: 28px 20px 40px;
     display: grid;
-    gap: 14px;
-    grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+    gap: 28px;
+    grid-template-columns: repeat(auto-fit, minmax(420px, 520px));
+    justify-content: center;
+    align-items: start;
   }
 
   .flash {
-    perspective: 1000px;
-    min-height: 190px;
+    perspective: 1400px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    min-height: 0;
   }
 
   .flash-toggle {
     width: 100%;
-    min-height: 190px;
+    min-height: 410px;
+    height: 410px;
     border: none;
     background: none;
     padding: 0;
@@ -1224,9 +1441,10 @@
 
   .flash-inner {
     position: relative;
-    min-height: 190px;
+    width: 100%;
+    height: 100%;
     transform-style: preserve-3d;
-    transition: transform 0.5s ease;
+    transition: transform 0.58s cubic-bezier(.2,.78,.25,1);
   }
 
   .flash.flipped .flash-inner {
@@ -1237,45 +1455,236 @@
     position: absolute;
     inset: 0;
     backface-visibility: hidden;
-    border-radius: 14px;
-    box-shadow: 0 10px 28px rgba(11, 26, 43, 0.13);
-    border: 1px solid #d4e3f8;
-    padding: 12px;
+    border-radius: 28px;
+    box-shadow: 0 24px 60px rgba(8, 33, 28, 0.14), inset 0 1px 0 rgba(255,255,255,0.6);
+    border: 1px solid rgba(255,255,255,0.62);
+    padding: 18px 18px 20px;
     display: flex;
     flex-direction: column;
-    gap: 8px;
-    overflow: auto;
+    gap: 14px;
+    overflow: hidden;
+    isolation: isolate;
   }
 
-  .flash-face.front {
-    background: linear-gradient(135deg, #ffffff 0%, #f4f9ff 100%);
+  .flash-face::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    opacity: 0.95;
+  }
+
+  .flash-face.front::before {
+    background:
+      radial-gradient(180px 120px at 100% 0%, rgba(226, 250, 240, 0.92) 0%, transparent 64%),
+      linear-gradient(160deg, rgba(255,255,255,0.98) 0%, rgba(248,252,250,0.98) 44%, rgba(237,246,242,0.98) 100%);
+  }
+
+  .flash-face.back::before {
+    background:
+      radial-gradient(220px 120px at 100% 0%, rgba(0, 109, 92, 0.14) 0%, transparent 66%),
+      linear-gradient(165deg, rgba(247,252,250,0.98) 0%, rgba(230,243,239,0.98) 100%);
   }
 
   .flash-face.back {
-    background: linear-gradient(135deg, #e9f5ff 0%, #ddedff 100%);
     transform: rotateY(180deg);
+  }
+
+  .flash-meta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+  }
+
+  .flash-index,
+  .flash-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    border-radius: 999px;
+    padding: 7px 11px;
+    font-size: 0.73rem;
+    font-weight: 800;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+
+  .flash-index {
+    background: rgba(4, 81, 68, 0.08);
+    color: #0b4e43;
+    border: 1px solid rgba(4, 81, 68, 0.14);
+  }
+
+  .flash-chip {
+    background: rgba(255,255,255,0.7);
+    color: #4f665d;
+    border: 1px solid rgba(4, 81, 68, 0.1);
   }
 
   .flash-kicker {
     margin: 0;
-    font-size: 0.68rem;
-    color: #4a6587;
+    font-size: 0.7rem;
+    color: #5e776f;
     text-transform: uppercase;
-    letter-spacing: 0.08em;
-    font-weight: 800;
+    letter-spacing: 0.11em;
+    font-weight: 900;
+  }
+
+  .flash-question,
+  .flash-answer-panel {
+    border-radius: 22px;
+    padding: 18px;
+    border: 1px solid rgba(13, 73, 63, 0.08);
+    background: rgba(255,255,255,0.72);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.8);
+  }
+
+  .flash-question {
+    min-height: 210px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 14px;
   }
 
   .flash h4 {
     margin: 0;
-    font-size: 1.03rem;
-    line-height: 1.35;
-    color: #103766;
+    font-size: clamp(1.2rem, 2vw, 1.55rem);
+    line-height: 1.28;
+    color: #143e36;
+    letter-spacing: -0.01em;
   }
 
   .flash p {
     margin: 0;
-    font-size: 0.94rem;
-    color: #18395f;
+    font-size: 1rem;
+    line-height: 1.62;
+    color: #24473f;
+  }
+
+  .flash-hint {
+    margin-top: auto;
+    font-size: 0.9rem;
+    color: #5f756d;
+  }
+
+  .flash-answer-panel {
+    flex: 1;
+    min-height: 212px;
+    overflow: auto;
+  }
+
+  .flash-answer-copy {
+    white-space: pre-wrap;
+    font-size: 1rem;
+    line-height: 1.68;
+    color: #143e36;
+  }
+
+  .flash-status-row {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: auto;
+  }
+
+  .flash-status-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    border-radius: 999px;
+    padding: 8px 12px;
+    font-size: 0.76rem;
+    font-weight: 800;
+    background: rgba(255,255,255,0.74);
+    border: 1px solid rgba(4, 81, 68, 0.12);
+    color: #194f44;
+  }
+
+  .flash-actions {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .flash-rate-btn {
+    min-height: 52px;
+    border-radius: 18px;
+    font-size: 0.96rem;
+    font-weight: 800;
+    border: 1px solid rgba(4, 81, 68, 0.14);
+    background: rgba(255,255,255,0.78);
+    color: #155448;
+    box-shadow: 0 10px 26px rgba(8, 33, 28, 0.08);
+  }
+
+  .flash-rate-btn.is-primary {
+    background: linear-gradient(135deg, #0b5e52 0%, #0d7563 100%);
+    color: #fff;
+    border: none;
+  }
+
+  .cards-toolbar {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+
+  .cards-toolbar select,
+  .cards-toolbar .btn-icon {
+    min-height: 44px;
+    border-radius: 15px;
+  }
+
+  .cards-library-panel {
+    width: min(1240px, 100%);
+    margin: 0 auto;
+    padding: 18px 20px 0;
+  }
+
+  .cards-library-item {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    align-items: center;
+    padding: 18px;
+    border-radius: 22px;
+    border: 1px solid rgba(4, 81, 68, 0.1);
+    background: rgba(255,255,255,0.72);
+    box-shadow: 0 18px 40px rgba(8, 33, 28, 0.08);
+  }
+
+  .cards-library-meta {
+    font-size: 0.86rem;
+    color: #60766e;
+  }
+
+  .cards-library-panel {
+    width: min(1240px, 100%);
+    margin: 0 auto;
+    padding: 0 18px 10px;
+    display: grid;
+    gap: 10px;
+  }
+
+  .cards-library-item {
+    border: 1px solid #cfe0f7;
+    border-radius: 16px;
+    background: rgba(255,255,255,0.92);
+    padding: 14px 16px;
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    align-items: center;
+  }
+
+  .cards-library-meta {
+    color: #3d5876;
+    font-size: 0.9rem;
+    line-height: 1.45;
   }
 
   .state-msg {
@@ -1894,32 +2303,31 @@
     }
 
     .smart-controls-bar {
-      display: flex;
-      grid-template-columns: unset;
-      overflow-x: auto;
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      overflow-x: visible;
       gap: 10px;
       padding: 10px;
       border-top: 1px solid #d5e2f5;
       border-bottom: 1px solid #d5e2f5;
       background: linear-gradient(180deg, #f8fbff 0%, #f1f7ff 100%);
-      scroll-snap-type: x proximity;
-      -webkit-overflow-scrolling: touch;
     }
 
     .smart-control {
-      flex: 0 0 min(82vw, 300px);
+      min-width: 0;
+      flex: 1 1 auto;
       border-radius: 14px;
       padding: 10px;
       gap: 8px;
       border-color: #cadcf4;
       box-shadow: 0 8px 18px rgba(14, 42, 78, 0.09);
-      scroll-snap-align: start;
     }
 
     .smart-control .label {
       width: 100%;
       font-size: 0.77rem;
       letter-spacing: 0.02em;
+      white-space: normal;
     }
 
     #chat-log {
@@ -1979,6 +2387,20 @@
       padding: 9px 10px calc(10px + env(safe-area-inset-bottom));
     }
 
+    .clarify-dock {
+      bottom: calc(var(--input-h) + 8px + env(safe-area-inset-bottom));
+      padding: 0 10px 8px;
+    }
+
+    .clarify-card {
+      border-radius: 14px;
+    }
+
+    .clarify-body {
+      padding: 10px;
+      gap: 8px;
+    }
+
     #chat-input {
       min-height: 60px;
       max-height: 34dvh;
@@ -2035,14 +2457,26 @@
 
     .cards-body {
       grid-template-columns: 1fr;
-      gap: 12px;
+      gap: 14px;
       padding: 14px 10px 28px;
     }
 
-    .flash,
-    .flash-toggle,
-    .flash-inner {
-      min-height: 210px;
+    .cards-library-panel {
+      padding: 0 10px 10px;
+    }
+
+    .cards-library-item {
+      align-items: flex-start;
+      flex-direction: column;
+    }
+
+    .flash-toggle {
+      height: 380px;
+      min-height: 380px;
+    }
+
+    .flash-actions {
+      grid-template-columns: 1fr;
     }
   }
 
@@ -2066,6 +2500,10 @@
     .source-chip {
       font-size: 0.75rem;
       padding: 8px 11px;
+    }
+
+    .smart-controls-bar {
+      grid-template-columns: 1fr;
     }
 
     .bubble {
@@ -2569,6 +3007,7 @@
     <div class="header-actions">
       <button class="btn-icon btn-primary" title="Neuer Chat" onclick="app.logic.resetHistoryAndNewChat()">Neu</button>
       <button class="btn-icon" title="Verlauf" onclick="app.ui.openModal('modal-sessions')">Verlauf</button>
+      <button class="btn-icon" title="Gespeicherte Lernkarten" onclick="app.logic.openSavedCardsLibrary()">Lernkarten</button><button class="btn-icon" title="Kollektionen" onclick="app.logic.openCollectionsPage()">Kollektionen</button>
       <button class="btn-icon" title="Einstellungen" onclick="app.ui.openModal('modal-settings')">Einstellungen</button>
     </div>
   </header>
@@ -2635,6 +3074,8 @@
     </div>
   </div>
 
+  <div id="clarify-dock" class="clarify-dock" hidden></div>
+
   <div class="input-area">
     <div class="input-wrap">
       <div id="snippet-popup"></div>
@@ -2684,11 +3125,9 @@
       <div class="field">
         <label for="inp-domain">Fachmodus</label>
         <select id="inp-domain">
-          <option value="">Standard</option>
-          <option value="AEVO">Ausbilder (AEVO)</option>
-          <option value="VWL">VWL / Betriebswirtschaft</option>
-          <option value="PERSONAL">Personalwesen</option>
+          <option value="SOZIALRECHT">Sozialrecht (SGB I-XII)</option>
         </select>
+        <p class="mini">Diese Version arbeitet ausschliesslich im Fachmodus Sozialrecht.</p>
       </div>
     </div>
 
@@ -2882,12 +3321,17 @@
   const CARDS_KEY = 'linda3_cards';
   const PRACTICE_KEY = 'linda3_practice';
   const CARDS_STATS_KEY = 'linda3_cards_stats';
+  const CARDS_LIBRARY_KEY = 'linda3_cards_library';
   const FLASHCARDS_API_ENDPOINT = '/api/linda3?action=flashcards';
   const TRANSLATE_API_ENDPOINT = '/api/linda3?action=translate';
   const REWRITE_API_ENDPOINT = '/api/linda3?action=rewrite';
   const TTS_API_ENDPOINT = '/api/linda3?action=tts';
   const STT_API_ENDPOINT = '/api/linda3?action=stt';
+  const SOZIALRECHT_ONLY_MODE = true;
+  const SOZIALRECHT_DOMAIN_KEY = 'SOZIALRECHT';
   const LEARNING_TEMPLATES_PATH = './docs/learning_templates.json';
+  const SOZIALRECHT_CURRICULUM_PATH = './docs/sozialrecht_sgb_i_xii.json';
+  const CLAUDE_CLARIFY_MODE = true;
   const APP_VERSION = 3;
   const REQUEST_MEMORY_VERSION = 1;
 
@@ -2898,21 +3342,6 @@
     { key: 'ilias', label: 'Kursraum (ILIAS) BETA', default: false },
     { key: 'directory', label: 'Lernverzeichnis BETA', default: false }
   ];
-
-  const DOMAIN_PLAUSIBILITY = {
-    VWL: {
-      strong: ['markt', 'angebot', 'nachfrage', 'preis', 'preiselast', 'inflation', 'bip', 'konjunktur', 'arbeitslosigkeit', 'monopol', 'wettbewerb', 'ordnungspolit', 'humankapital'],
-      foreign: ['bbig', 'berufsbildungsgesetz', 'aevo', 'ausbildung', 'ausbildender', 'auszubild', 'ausbildungsvertrag', 'eignung', 'probezeit', 'pruefungsausschuss', 'paragraph', '§']
-    },
-    AEVO: {
-      strong: ['bbig', 'berufsbildungsgesetz', 'aevo', 'ausbildung', 'ausbildender', 'auszubild', 'ausbildungsvertrag', 'eignung', 'probezeit', 'pflicht', 'rechte', 'paragraph', '§'],
-      foreign: ['inflation', 'bip', 'konjunktur', 'marktgleichgewicht', 'preiselast', 'angebot', 'nachfrage', 'monopol', 'wettbewerb', 'volkswirtschaft']
-    },
-    PERSONAL: {
-      strong: ['personal', 'rekrutierung', 'bewerbung', 'arbeitsvertrag', 'fuehrung', 'führung', 'motivation', 'personalentwicklung', 'feedback', 'arbeitszeugnis'],
-      foreign: ['bbig', 'berufsbildungsgesetz', 'aevo', 'preiselast', 'marktgleichgewicht', 'bip', 'konjunktur']
-    }
-  };
 
   const DEFAULT_PROMPTING_JSON = {
     inlineExpansions: [
@@ -2926,7 +3355,8 @@
     modeCards: [
       { key: "AEVO", label: "AEVO", hint: "Ausbilder-Themen" },
       { key: "VWL", label: "VWL/BWL", hint: "Wirtschaftsbezug" },
-      { key: "PERSONAL", label: "Personal", hint: "Personalwesen" }
+      { key: "PERSONAL", label: "Personal", hint: "Personalwesen" },
+      { key: "SOZIALRECHT", label: "Sozialrecht", hint: "SGB I-XII" }
     ]
   };
 
@@ -2934,7 +3364,7 @@
     enabled: true,
     endpointPath: "/api/linda3?action=bot",
     minSelectionChars: 24,
-    targetCount: 8,
+    targetCount: 4,
     requireConfirmation: true,
     adaptive: true
   };
@@ -2949,7 +3379,7 @@
   const DEFAULT_ASSISTANT_PREFS = {
     showEvidence: true,
     showFollowups: true,
-    showLearningPath: true,
+    showLearningPath: false,
     learningGoal: '',
     feedbackIncludeTranscript: false
   };
@@ -2962,10 +3392,10 @@
     version: '1.0',
     flashcards: {
       instruction_template:
-        'Erstelle aus dem folgenden Inhalt genau {{count}} hochwertige Lernkarten. ' +
+        'Erstelle aus dem folgenden Volltext genau {{count}} hochwertige Lernkarten. ' +
         'Antwort ausschliesslich als JSON ohne Markdown im Format {"deckTitle":"...","cards":[{"question":"...","answer":"..."}]}. ' +
-        'Regeln: Nur fachlich relevante Inhalte, keine Meta-Hinweise, kurze und pruefungsorientierte Antworten. ' +
-        'Fachmodus: {{domain}}. Inhalt: {{content}}'
+        'Regeln: Verwende den gesamten Text als Grundlage, formuliere praezise und pruefungsorientierte Fragen, keine generischen Fragen wie "Welche Kernaussage..." oder "Was laesst sich ableiten?", keine Meta-Hinweise, jede Antwort muss konkret aus dem Text belegbar sein. ' +
+        'Nutze nur 2 oder 4 Karten, keine anderen Anzahlen. Fachmodus: {{domain}}. Volltext: {{content}}'
     },
     practice: {
       title_prefix: 'Uebungsaufgaben',
@@ -2983,6 +3413,12 @@
     }
   };
   let learningTemplatesCache = structuredClone(DEFAULT_LEARNING_TEMPLATES);
+  const DEFAULT_SOZIALRECHT_CURRICULUM = {
+    version: '1.0',
+    target_group: 'Angehende Personalfachkaufleute (IHK)',
+    modules: []
+  };
+  let sozialrechtCurriculumCache = structuredClone(DEFAULT_SOZIALRECHT_CURRICULUM);
   let activeTtsAudio = null;
   let activeTtsAudioUrl = '';
   let activePlaybackCtx = null;
@@ -3028,9 +3464,18 @@
     requestController: null,
     isCardsRequestRunning: false,
     selectionDraft: null,
+    clarifier: {
+      active: false,
+      originQuestion: '',
+      intro: '',
+      steps: [],
+      answers: [],
+      currentStep: 0,
+      source: ''
+    },
     settings: {
         name: '',
-        domain: '',
+        domain: SOZIALRECHT_ONLY_MODE ? SOZIALRECHT_DOMAIN_KEY : '',
         snippets: [],
       sources: SOURCE_DEFS.reduce((acc, s) => {
         acc[s.key] = s.default;
@@ -3163,7 +3608,8 @@
           ...app.state,
           requestController: null,
           isSending: false,
-          requestMemory: undefined
+          requestMemory: undefined,
+          clarifier: structuredClone(DEFAULT_STATE.clarifier)
         };
         if (privacyMode) {
           clone.sessions = [];
@@ -3268,10 +3714,16 @@
         if (String(app.state.settings.domain || '').toUpperCase() === 'IT') {
           app.state.settings.domain = '';
         }
+        if (SOZIALRECHT_ONLY_MODE) {
+          app.state.settings.domain = SOZIALRECHT_DOMAIN_KEY;
+          app.state.settings.assistant.showLearningPath = false;
+          app.state.settings.privacy.ephemeral = false;
+        }
+        app.state.clarifier = structuredClone(DEFAULT_STATE.clarifier);
 
         const newWelcome =
           'Willkommen bei **LINDA**.\n\n' +
-          'Ich unterstütze dich bei **AEVO**, **BWL/VWL** und **Personalwesen**.\n' +
+          'Diese Version arbeitet ausschliesslich im **Fachmodus Sozialrecht (SGB I-XII)**.\n' +
           'Lernkarten werden aus den **Inhalten der Antwort** erstellt.\n' +
           'ILIAS kann bei Bedarf über den Schalter **Kursraum (ILIAS)** aktiviert werden.';
 
@@ -3281,6 +3733,14 @@
             const txt = String(msg.content || '');
             if (/willkommen bei\s*\*?\*?linda3/i.test(txt)) msg.content = newWelcome;
             if (/willkommen bei\s*\*?\*?linda/i.test(txt)) app.state.welcomeShown = true;
+            if (
+              SOZIALRECHT_ONLY_MODE &&
+              msg.meta &&
+              typeof msg.meta === 'object' &&
+              'learningStep' in msg.meta
+            ) {
+              msg.meta.learningStep = null;
+            }
           });
         });
       },
@@ -3306,27 +3766,47 @@
         const parsed = parseJSON(rawText, null);
         if (!parsed) return { answer: rawText, sources: [], meta: {} };
         if (typeof parsed === 'string') return { answer: parsed, sources: [], meta: {} };
+        const backendMeta = (parsed.meta && typeof parsed.meta === 'object') ? parsed.meta : {};
         const altSources =
           parsed.sources ||
           parsed.quellen ||
           parsed.references ||
           parsed.citations ||
           parsed.links ||
+          backendMeta.sources ||
           (parsed.metadata && parsed.metadata.sources) ||
           [];
         const followups =
           parsed.followups ||
           parsed.next_questions ||
           parsed.suggestions ||
+          backendMeta.followups ||
           parsed.recommended_questions ||
           [];
+        const confidence =
+          Number.isFinite(Number(parsed.confidence))
+            ? Number(parsed.confidence)
+            : (Number.isFinite(Number(backendMeta.confidence)) ? Number(backendMeta.confidence) : null);
+        const evidenceNote = String(
+          parsed.evidence_note ||
+          parsed.reasoning_note ||
+          backendMeta.evidence_note ||
+          backendMeta.evidenceNote ||
+          ''
+        ).trim();
         return {
           answer: String(parsed.answer || parsed.response || parsed.text || parsed.output || rawText),
           sources: Array.isArray(altSources) ? altSources : [],
           meta: {
             followups: Array.isArray(followups) ? followups : [],
-            confidence: Number.isFinite(Number(parsed.confidence)) ? Number(parsed.confidence) : null,
-            evidenceNote: String(parsed.evidence_note || parsed.reasoning_note || '').trim()
+            confidence,
+            evidenceNote,
+            domain: String(backendMeta.domain || parsed.domain || '').trim().toUpperCase(),
+            clarificationRequested: Boolean(backendMeta.clarification_requested || backendMeta.clarificationRequested),
+            storageUsed: Boolean(backendMeta.storage_used ?? backendMeta.storageUsed),
+            storageFallback: Boolean(backendMeta.storage_fallback ?? backendMeta.storageFallback),
+            storageError: String(backendMeta.storage_error || backendMeta.storageError || '').trim(),
+            model: String(backendMeta.model || parsed.model || '').trim()
           }
         };
       },
@@ -3347,6 +3827,7 @@
       input: document.getElementById('chat-input'),
       micBtn: document.getElementById('mic-btn'),
       sendBtn: document.getElementById('send-btn'),
+      clarifyDock: document.getElementById('clarify-dock'),
 
       openModal: (id) => {
         document.querySelectorAll('.modal-overlay').forEach((m) => m.classList.remove('open'));
@@ -3364,6 +3845,63 @@
 
       closeModals: () => {
         document.querySelectorAll('.modal-overlay').forEach((m) => m.classList.remove('open'));
+      },
+
+      renderClarifierDock: () => {
+        const dock = app.ui.clarifyDock;
+        if (!dock) return;
+        const clarifier = app.state.clarifier || {};
+        if (!clarifier.active) {
+          dock.hidden = true;
+          dock.innerHTML = '';
+          return;
+        }
+
+        const steps = Array.isArray(clarifier.steps) ? clarifier.steps : [];
+        const index = Math.max(0, Math.min(steps.length - 1, Number(clarifier.currentStep) || 0));
+        const step = steps[index];
+        if (!step) {
+          dock.hidden = true;
+          dock.innerHTML = '';
+          return;
+        }
+
+        const options = (Array.isArray(step.options) ? step.options : []).slice(0, 4);
+        const introText = String(clarifier.intro || '').trim() || 'Bitte beantworte kurz die Rueckfrage:';
+        const freeDraft = String((clarifier.answers || [])[index] || '').trim();
+        const progress = `${index + 1} von ${steps.length}`;
+
+        dock.innerHTML = `
+          <section class="clarify-card" role="group" aria-label="Rueckfragen">
+            <div class="clarify-head">
+              <span class="clarify-kicker">Rueckfragenmodus</span>
+              <span class="clarify-progress">${app.utils.safeText(progress)}</span>
+              <button type="button" class="clarify-cancel" data-clarify-cancel aria-label="Rueckfragen schliessen">×</button>
+            </div>
+            <div class="clarify-body">
+              <p class="clarify-intro">${app.utils.safeText(introText)}</p>
+              <h4 class="clarify-question">${app.utils.safeText(String(step.question || 'Rueckfrage'))}</h4>
+              <ul class="clarify-options">
+                ${options.map((option, i) => `
+                  <li>
+                    <button type="button" class="clarify-option" data-clarify-option="${encodeURIComponent(option)}">
+                      <span class="clarify-option-index">${i + 1}</span>
+                      <span>${app.utils.safeText(option)}</span>
+                    </button>
+                  </li>
+                `).join('')}
+              </ul>
+              <div class="clarify-free">
+                <input type="text" data-clarify-free-input value="${app.utils.safeText(freeDraft).replace(/"/g, '&quot;')}" placeholder="Etwas anderes..." aria-label="Eigene Antwort">
+                <button type="button" data-clarify-free>Uebernehmen</button>
+              </div>
+              <div class="clarify-actions">
+                <button type="button" data-clarify-skip>Ueberspringen</button>
+              </div>
+            </div>
+          </section>
+        `;
+        dock.hidden = false;
       },
 
       openModeInfo: (kind) => {
@@ -3391,7 +3929,7 @@
           <div class="feature-hero">
             <span class="feature-kicker">So arbeitet LINDA</span>
             <h2 class="feature-title">Guardrails, Quellen und Lernhilfe auf einen Blick</h2>
-            <p class="feature-copy">Nach dem Start zeigt dir LINDA hier die wichtigsten Schutz- und Assistenzfunktionen. Du kannst direkt nachlesen, was Privatmodus, Quellenmodus, Evidenzkarten und Lernpfade konkret bewirken.</p>
+            <p class="feature-copy">Nach dem Start zeigt dir LINDA hier die wichtigsten Schutz- und Assistenzfunktionen fuer Sozialrecht. Du kannst direkt nachlesen, was Privatmodus, Quellenmodus, Evidenzkarten und Rueckfragenlogik konkret bewirken.</p>
           </div>
           <div class="feature-grid">
             <article class="feature-card">
@@ -3413,8 +3951,8 @@
               <p>Antworten zeigen sichtbare Evidenzstufen, klickbare Quellen und direkt lesbare Ausschnitte statt nur einer bloßen Linkliste.</p>
             </article>
             <article class="feature-card">
-              <h4>Follow-ups & Lernpfad</h4>
-              <p>LINDA schlägt passende Anschlussfragen vor und zeigt dir einen nächsten Lernschritt, damit aus einer Antwort ein echter Lernfluss wird.</p>
+              <h4>Follow-ups & Rueckfragen</h4>
+              <p>LINDA stellt bei unklaren Angaben praezise Rueckfragen und bietet passende Anschlussfragen, damit Antworten fachlich eng und pruefungstauglich bleiben.</p>
             </article>
           </div>
         `;
@@ -3440,7 +3978,7 @@
       fillSettingsForm: () => {
         const { settings } = app.state;
         document.getElementById('inp-name').value = settings.name || '';
-        document.getElementById('inp-domain').value = settings.domain || '';
+        document.getElementById('inp-domain').value = settings.domain || SOZIALRECHT_DOMAIN_KEY;
         document.getElementById('inp-prompting-enabled').checked = Boolean(settings.prompting && settings.prompting.enabled);
         document.getElementById('inp-grounded-mode').checked = Boolean(settings.guardrails && settings.guardrails.groundedMode);
         document.getElementById('inp-strict-unknown').checked = Boolean(settings.guardrails && settings.guardrails.strictUnknown);
@@ -3462,6 +4000,7 @@
           null,
           2
         );
+        app.ui.syncSozialrechtOnlyControls();
         app.ui.renderApiHealthStatus(app.state.apiHealth);
       },
 
@@ -3479,6 +4018,12 @@
         Object.entries(h.checks).forEach(([k, v]) => {
           lines.push(`${v ? '✓' : '✗'} ${k}`);
         });
+        if (h.storageEnvKey) {
+          lines.push(`Storage-ENV: ${h.storageEnvKey}`);
+        }
+        if (typeof h.storageConfigured === 'boolean') {
+          lines.push(`${h.storageConfigured ? '✓' : '✗'} Vector Store konfiguriert`);
+        }
         if (h.baseUrl) {
           lines.push(`API-Basis: ${h.baseUrl}`);
         }
@@ -3488,6 +4033,23 @@
         }
         box.textContent = lines.join('\n');
         box.style.color = h.ok ? '#1f6b2a' : '#8a3b00';
+      },
+
+      syncSozialrechtOnlyControls: () => {
+        const domainInput = document.getElementById('inp-domain');
+        if (domainInput) {
+          if (SOZIALRECHT_ONLY_MODE) domainInput.value = SOZIALRECHT_DOMAIN_KEY;
+          domainInput.disabled = SOZIALRECHT_ONLY_MODE;
+          domainInput.title = SOZIALRECHT_ONLY_MODE ? 'In dieser Version ist nur Fachmodus Sozialrecht aktiv.' : '';
+        }
+
+        const learningToggle = document.getElementById('inp-show-learning-path');
+        if (learningToggle) {
+          const lockedLearning = SOZIALRECHT_ONLY_MODE || app.logic.isSozialrechtDomain();
+          if (lockedLearning) learningToggle.checked = false;
+          learningToggle.disabled = lockedLearning;
+          learningToggle.title = lockedLearning ? 'Lernpfad ist im Fachmodus Sozialrecht deaktiviert.' : '';
+        }
       },
 
       syncFastModeControls: () => {
@@ -3523,11 +4085,20 @@
       },
 
       syncPrivacyModeControls: () => {
+        const locked = false;
         const enabled = Boolean(app.state.settings.privacy && app.state.settings.privacy.ephemeral);
         const on = document.getElementById('privacy-main-on');
         const off = document.getElementById('privacy-main-off');
         if (on) on.checked = enabled;
         if (off) off.checked = !enabled;
+        if (on) on.disabled = locked;
+        if (off) off.disabled = locked;
+        const privacySetting = document.getElementById('inp-privacy-ephemeral');
+        if (privacySetting) {
+          privacySetting.checked = enabled;
+          privacySetting.disabled = locked;
+          privacySetting.title = '';
+        }
       },
 
       syncMobileReaderControls: () => {
@@ -3738,7 +4309,8 @@
       },
 
       updateDomainUI: () => {
-        const domain = app.state.settings.domain || 'Standard';
+        if (SOZIALRECHT_ONLY_MODE) app.state.settings.domain = SOZIALRECHT_DOMAIN_KEY;
+        const domain = app.state.settings.domain || SOZIALRECHT_DOMAIN_KEY;
         const activeCount = app.utils.activeSources().length;
         const isFast = Boolean(app.state.settings.fastMode && app.state.settings.fastMode.enabled);
         const isCompare = Boolean(app.state.settings.compareMode && app.state.settings.compareMode.enabled);
@@ -3747,6 +4319,7 @@
         const privacy = Boolean(app.state.settings.privacy && app.state.settings.privacy.ephemeral);
         document.getElementById('domain-badge').textContent = isFast ? `${domain} ⚡` : domain;
         document.getElementById('domain-summary').textContent = `Fachmodus: ${domain}${isFast ? ' • Schnellmodus aktiv' : ''}${isCompare ? ' • Vergleich aktiv' : ''}${hasDirectory ? ' • Lernverzeichnis (Beta) aktiv' : ''}${grounded ? ' • Quellenmodus strikt' : ''}${privacy ? ' • Privatmodus aktiv' : ''} • Wissensbereiche: ${activeCount} aktiv`;
+        app.ui.syncSozialrechtOnlyControls();
       },
 
       loadingRow: () => {
@@ -3882,7 +4455,10 @@
 
       renderModeCards: () => {
         const cfg = app.utils.getPromptingConfig();
-        const cards = Array.isArray(cfg.modeCards) ? cfg.modeCards : [];
+        const cardsRaw = Array.isArray(cfg.modeCards) ? cfg.modeCards : [];
+        const cards = SOZIALRECHT_ONLY_MODE
+          ? cardsRaw.filter((c) => String(c?.key || '').trim().toUpperCase() === SOZIALRECHT_DOMAIN_KEY)
+          : cardsRaw;
         if (!cards.length) return null;
 
         const row = document.createElement('div');
@@ -4068,6 +4644,117 @@
         return learningTemplatesCache || structuredClone(DEFAULT_LEARNING_TEMPLATES);
       },
 
+      loadSozialrechtCurriculum: async () => {
+        try {
+          const res = await fetch(SOZIALRECHT_CURRICULUM_PATH, { cache: 'no-store' });
+          if (!res.ok) return;
+          const parsed = await res.json();
+          if (!parsed || typeof parsed !== 'object') return;
+          const modules = (Array.isArray(parsed.modules) ? parsed.modules : [])
+            .map((module) => {
+              if (!module || typeof module !== 'object') return null;
+              const sgb = String(module.sgb || '').trim();
+              const title = String(module.title || '').trim();
+              if (!sgb || !title) return null;
+              const topics = (Array.isArray(module.topics) ? module.topics : [])
+                .map((topic) => {
+                  if (!topic || typeof topic !== 'object') return null;
+                  const topicTitle = String(topic.title || '').trim();
+                  if (!topicTitle) return null;
+                  return {
+                    id: String(topic.id || '').trim(),
+                    title: topicTitle.slice(0, 120),
+                    keywords: (Array.isArray(topic.keywords) ? topic.keywords : [])
+                      .map((k) => app.utils.normalizeForKeyword(k))
+                      .filter(Boolean)
+                      .slice(0, 16),
+                    follow_up_questions: (Array.isArray(topic.follow_up_questions) ? topic.follow_up_questions : [])
+                      .map((q) => String(q || '').trim())
+                      .filter(Boolean)
+                      .slice(0, 6)
+                  };
+                })
+                .filter(Boolean)
+                .slice(0, 20);
+              return {
+                sgb: sgb.slice(0, 24),
+                title: title.slice(0, 120),
+                relevance_for_hr: String(module.relevance_for_hr || '').trim().slice(0, 200),
+                topics
+              };
+            })
+            .filter(Boolean)
+            .slice(0, 24);
+
+          sozialrechtCurriculumCache = {
+            version: String(parsed.version || DEFAULT_SOZIALRECHT_CURRICULUM.version || '1.0'),
+            target_group:
+              String(parsed.target_group || DEFAULT_SOZIALRECHT_CURRICULUM.target_group || '').trim() ||
+              DEFAULT_SOZIALRECHT_CURRICULUM.target_group,
+            modules
+          };
+        } catch (_) {}
+      },
+
+      getSozialrechtCurriculum: () => {
+        return sozialrechtCurriculumCache || structuredClone(DEFAULT_SOZIALRECHT_CURRICULUM);
+      },
+
+      getSozialrechtContext: (text) => {
+        const curriculum = app.logic.getSozialrechtCurriculum();
+        const modules = Array.isArray(curriculum?.modules) ? curriculum.modules : [];
+        if (!modules.length) return null;
+
+        const normalizedText = app.utils.normalizeForKeyword(text || '');
+        if (!normalizedText) return null;
+        const terms = Array.from(new Set(
+          normalizedText
+            .split(/\s+/)
+            .map((t) => t.trim())
+            .filter((t) => t.length >= 4)
+            .slice(0, 10)
+        ));
+        if (!terms.length) return null;
+
+        let best = null;
+        modules.forEach((module) => {
+          const moduleHay = app.utils.normalizeForKeyword(`${module.sgb || ''} ${module.title || ''} ${module.relevance_for_hr || ''}`);
+          (Array.isArray(module.topics) ? module.topics : []).forEach((topic) => {
+            const topicHay = app.utils.normalizeForKeyword(
+              `${topic.title || ''} ${(topic.keywords || []).join(' ')} ${(topic.follow_up_questions || []).join(' ')}`
+            );
+            let score = 0;
+            terms.forEach((term) => {
+              if (topicHay.includes(term)) score += 3;
+              if (moduleHay.includes(term)) score += 1;
+            });
+            if (!score) return;
+            if (!best || score > best.score) {
+              best = { score, module, topic };
+            }
+          });
+        });
+        return best;
+      },
+
+      buildSozialrechtFollowups: (topic, question) => {
+        if (String(app.state.settings.domain || '').toUpperCase() !== 'SOZIALRECHT') return [];
+        const focus = app.logic.getSozialrechtContext(`${question || ''} ${topic || ''}`);
+        if (!focus) {
+          return [
+            'Soll ich das Thema zuerst dem passenden SGB-Buch (I-XII) zuordnen?',
+            'Moechtest du dazu drei IHK-Pruefungsfragen mit Loesungsskizze?'
+          ];
+        }
+        const out = [];
+        const sgbLabel = String(focus.module?.sgb || 'SGB');
+        const topicLabel = String(focus.topic?.title || topic || 'dem Thema');
+        out.push(`Soll ich ${topicLabel} im Kontext von ${sgbLabel} als Lernzettel strukturieren?`);
+        out.push(`Moechtest du einen typischen Praxisfall fuer Personalfachkaufleute zu ${topicLabel}?`);
+        out.push(...app.logic.sanitizeAssistantFollowups(focus.topic?.follow_up_questions || []));
+        return app.logic.sanitizeAssistantFollowups(out);
+      },
+
       fillTemplateVars: (template, vars) => {
         let out = String(template || '');
         Object.entries(vars || {}).forEach(([k, v]) => {
@@ -4168,7 +4855,31 @@
         return map[kind] || null;
       },
 
+      isSozialrechtDomain: (domain = app.state.settings?.domain) => {
+        return String(domain || '').trim().toUpperCase() === SOZIALRECHT_DOMAIN_KEY;
+      },
+
+      enforceSozialrechtMode: (opts = {}) => {
+        if (SOZIALRECHT_ONLY_MODE) app.state.settings.domain = SOZIALRECHT_DOMAIN_KEY;
+        if (!app.logic.isSozialrechtDomain()) return false;
+        app.state.settings.guardrails.groundedMode = true;
+        app.state.settings.guardrails.strictUnknown = true;
+        app.state.settings.guardrails.clarificationMode = true;
+        app.state.settings.guardrails.piiShield = true;
+        app.state.settings.assistant.showLearningPath = false;
+        app.ui.syncGroundedModeControls();
+        app.ui.syncPrivacyModeControls();
+        app.ui.syncSozialrechtOnlyControls();
+        app.ui.updateDomainUI();
+        if (opts.save !== false) app.utils.save();
+        return true;
+      },
+
       setGroundedMode: (enabled, opts = {}) => {
+        if (app.logic.isSozialrechtDomain() && !enabled) {
+          app.logic.enforceSozialrechtMode({ save: true });
+          return;
+        }
         const prev = Boolean(app.state.settings.guardrails?.groundedMode);
         const next = Boolean(enabled);
         app.state.settings.guardrails.groundedMode = next;
@@ -4276,22 +4987,245 @@
       buildClarificationPrompts: (text, session) => {
         const raw = String(text || '').trim();
         if (!raw) return [];
-        const prompts = [];
+        const low = raw.toLowerCase();
         const tokenCount = raw.split(/\s+/).filter(Boolean).length;
         const hasPriorContext = Boolean((session?.messages || []).length);
-        const vague =
-          /\b(das|dies|diese|dieses|dazu|damit|hierzu|so|stimmt das|ist das richtig|wie ist das)\b/i.test(raw);
+        const vague = /\b(das|dies|diese|dieses|dazu|damit|hierzu|so|stimmt das|ist das richtig|wie ist das|geht das)\b/i.test(raw);
 
+        if (app.logic.isSozialrechtDomain()) {
+          const hasLegalAnchor = (
+            /\bsgb\s*(?:i{1,3}|iv|v|vi{0,3}|ix|x|xi|xii|\d{1,2})\b/i.test(low) ||
+            /§+\s*\d+[a-z]?(?:\s*abs\.?\s*\d+)?/i.test(low) ||
+            /\b(krankengeld|entgeltfortzahlung|arbeitsunfaehig|arbeitslosengeld|buergergeld|pflegegeld|elterngeld|mutterschaftsgeld|sozialhilfe|grundsicherung)\b/i.test(low)
+          );
+          const hasActorContext = /\b(arbeitnehmer|arbeitgeber|azubi|auszubild|krankenkasse|jobcenter|versicherte|leistungsberechtigt|kind|eltern|pflegeperson)\b/i.test(low);
+          const hasCaseFacts = (
+            /\b\d{1,4}(?:[.,]\d+)?\s*(?:euro|eur|%|tage|tag|wochen|woche|monate|monat|jahre|jahr)\b/i.test(low) ||
+            /\b(seit|ab|von|bis|frist|datum|zeitraum|beginn|ende|beispiel|fall)\b/i.test(low)
+          );
+          const hasOutputIntent = /\b(kurz|detaill|schema|pruef|praxis|beispiel|stichpunkt|tabelle|rechn|schritt|vergleich)\b/i.test(low);
+          const missing = [];
+          if (!hasLegalAnchor) missing.push('legal');
+          if (!hasActorContext) missing.push('actor');
+          if (!hasCaseFacts) missing.push('facts');
+          if (!hasOutputIntent) missing.push('format');
+          const shouldAsk =
+            tokenCount <= 4 ||
+            raw.length < 18 ||
+            (missing.length >= 2 && !hasPriorContext) ||
+            (vague && missing.length >= 1);
+          if (!shouldAsk) return [];
+
+          const prompts = [];
+          if (missing.includes('legal')) {
+            prompts.push('Auf welches SGB-Buch oder welchen Paragraphen soll ich mich beziehen (z. B. SGB V, § 47)?');
+          }
+          if (missing.includes('actor')) {
+            prompts.push('Fuer wen soll ich den Fall beantworten (Arbeitnehmer, Arbeitgeber, Azubi, Krankenkasse)?');
+          }
+          if (missing.includes('facts')) {
+            prompts.push('Welche konkreten Fallangaben liegen vor (Zeitraum, Werte, Fristen, Ausgangslage)?');
+          }
+          if (missing.includes('format')) {
+            prompts.push('Wie soll ich antworten: Kurzschema, Rechenweg, Praxisfall oder Pruefungskarte?');
+          }
+          return app.logic.sanitizeAssistantFollowups(prompts);
+        }
+
+        const prompts = [];
         if (tokenCount <= 2 || raw.length < 12) {
           prompts.push('Welches konkrete Thema oder welchen Begriff meinst du genau?');
         }
         if (vague && !hasPriorContext) {
           prompts.push('Beziehst du dich auf ein Dokument, einen Gesetzestext oder eine konkrete Situation?');
         }
-        if (!app.state.settings.domain && (tokenCount <= 3 || vague)) {
-          prompts.push('Soll ich die Antwort auf AEVO, VWL/BWL oder Personalwesen zuschneiden?');
-        }
         return app.logic.sanitizeAssistantFollowups(prompts);
+      },
+
+      detectClarificationPerson: (question) => {
+        const raw = String(question || '').trim();
+        if (!raw) return 'die Person';
+        const matchByModal = raw.match(/\b(?:kann|darf|soll|muss|hat|ist)\s+([A-ZÄÖÜ][a-zäöüß]{1,24})\b/);
+        if (matchByModal && matchByModal[1]) return matchByModal[1];
+        const matchByContext = raw.match(/\b([A-ZÄÖÜ][a-zäöüß]{1,24})\s+(?:im|in|nach|bei)\b/);
+        if (matchByContext && matchByContext[1]) return matchByContext[1];
+        return 'die Person';
+      },
+
+      deriveClarificationOptions: (prompt, question = '') => {
+        const low = `${prompt || ''} ${question || ''}`.toLowerCase();
+        if (/\bland\b|\bausland\b|\breis/.test(low)) {
+          return [
+            'EU/EWR oder Schweiz',
+            'Grossbritannien',
+            'Land mit Sozialversicherungsabkommen (z.B. USA, Tuerkei)',
+            'Sonstiges Drittland'
+          ];
+        }
+        if (/\bworum\b|\banlass\b|\bzweck\b|\bfallangaben\b|\bfallkontext\b/.test(low)) {
+          return [
+            'Kurzreise / Urlaub',
+            'Laengerer Aufenthalt / Studium / Arbeit',
+            'Akuter Notfall ist bereits eingetreten',
+            'Frage zu Fristen oder Berechnung'
+          ];
+        }
+        if (/\bsgb\b|\bparagraph\b|\brechtsbezug\b/.test(low)) {
+          return [
+            'SGB V (Krankenversicherung, Krankengeld)',
+            'SGB III (Arbeitslosenversicherung)',
+            'SGB II (Buergergeld)',
+            'Anderes SGB-Buch'
+          ];
+        }
+        if (/\bfuer wen\b|\brollenkontext\b|\barbeitnehmer\b|\barbeitgeber\b/.test(low)) {
+          return [
+            'Arbeitnehmer / versicherte Person',
+            'Arbeitgeber / Personalabteilung',
+            'Auszubildende / Azubi',
+            'Krankenkasse / Leistungstraeger'
+          ];
+        }
+        if (/\bwie soll ich antworten\b|\bkurzschema\b|\bformat\b/.test(low)) {
+          return [
+            'Kurz und praezise',
+            'Schritt-fuer-Schritt-Schema',
+            'Praxisfall fuer IHK',
+            'Pruefungskarte / Lernkarte'
+          ];
+        }
+        return [
+          'Kurz und ueberblicksartig',
+          'Praxisnah mit Beispiel',
+          'Detailliert mit Rechtsbezug'
+        ];
+      },
+
+      buildClaudeClarificationFlow: (question, prompts = [], introText = '') => {
+        const person = app.logic.detectClarificationPerson(question);
+        const merged = `${question || ''} ${(Array.isArray(prompts) ? prompts.join(' ') : '')}`.toLowerCase();
+        const travelMode = /\b(ausland|reise|urlaub|ehic|eu\/ewr|schweiz|drittland|sozialversicherungsabkommen)\b/i.test(merged);
+
+        if (travelMode) {
+          return {
+            intro: introText || 'Damit ich das fundiert beantworten kann, brauche ich zwei Angaben:',
+            steps: [
+              {
+                question: `In welches Land reist ${person}?`,
+                options: [
+                  'EU/EWR oder Schweiz',
+                  'Grossbritannien',
+                  'Land mit Sozialversicherungsabkommen (z.B. USA, Tuerkei)',
+                  'Sonstiges Drittland'
+                ]
+              },
+              {
+                question: 'Worum geht es?',
+                options: [
+                  'Kurzreise / Urlaub',
+                  'Laengerer Aufenthalt / Studium / Arbeit',
+                  'Akuter Notfall ist bereits eingetreten',
+                  'Frage zu Fristen oder Berechnung'
+                ]
+              }
+            ]
+          };
+        }
+
+        const cleanPrompts = app.logic.sanitizeAssistantFollowups(prompts).slice(0, 3);
+        if (!cleanPrompts.length) return null;
+        const steps = cleanPrompts.map((prompt) => ({
+          question: prompt,
+          options: app.logic.deriveClarificationOptions(prompt, question)
+        }));
+
+        return {
+          intro: introText || `Damit ich das fundiert beantworten kann, brauche ich ${steps.length === 1 ? 'eine Angabe' : `${steps.length} Angaben`}:`,
+          steps
+        };
+      },
+
+      openClaudeClarifier: ({ question, prompts = [], introText = '', source = 'frontend' } = {}) => {
+        if (!CLAUDE_CLARIFY_MODE) return false;
+        const flow = app.logic.buildClaudeClarificationFlow(question, prompts, introText);
+        if (!flow || !Array.isArray(flow.steps) || !flow.steps.length) return false;
+        app.state.clarifier = {
+          active: true,
+          originQuestion: String(question || '').trim(),
+          intro: String(flow.intro || introText || '').trim(),
+          steps: flow.steps.map((step) => ({
+            question: String(step.question || '').trim(),
+            options: (Array.isArray(step.options) ? step.options : [])
+              .map((option) => String(option || '').trim())
+              .filter(Boolean)
+              .slice(0, 4)
+          })),
+          answers: new Array(flow.steps.length).fill(''),
+          currentStep: 0,
+          source: String(source || 'frontend')
+        };
+        app.ui.renderClarifierDock();
+        app.ui.scrollBottom();
+        app.utils.save();
+        return true;
+      },
+
+      closeClaudeClarifier: (opts = {}) => {
+        const hadActive = Boolean(app.state.clarifier && app.state.clarifier.active);
+        app.state.clarifier = structuredClone(DEFAULT_STATE.clarifier);
+        app.ui.renderClarifierDock();
+        if (hadActive && opts.save !== false) app.utils.save();
+      },
+
+      answerClaudeClarifierStep: (value = '', opts = {}) => {
+        if (!app.state.clarifier?.active) return;
+        const current = Math.max(0, Number(app.state.clarifier.currentStep) || 0);
+        const steps = Array.isArray(app.state.clarifier.steps) ? app.state.clarifier.steps : [];
+        if (!steps.length || current >= steps.length) {
+          app.logic.closeClaudeClarifier({ save: true });
+          return;
+        }
+
+        app.state.clarifier.answers[current] = String(value || '').trim();
+        const atLastStep = current >= steps.length - 1;
+        if (!atLastStep) {
+          app.state.clarifier.currentStep = current + 1;
+          app.ui.renderClarifierDock();
+          app.utils.save();
+          return;
+        }
+
+        const answerLines = steps.map((step, idx) => {
+          const answer = String(app.state.clarifier.answers[idx] || '').trim();
+          const safeAnswer = answer || 'nicht angegeben';
+          return `F: ${String(step.question || '').trim()}\nA: ${safeAnswer}`;
+        });
+
+        const summaryVisible = [
+          'Klare Situation - ich nutze jetzt diese Angaben:',
+          '',
+          answerLines.join('\n')
+        ].join('\n').trim();
+
+        const suffixForApi = [
+          'Zusatzangaben aus Rueckfragen:',
+          ...answerLines.map((line) => `- ${line.replace(/\n/g, ' | ')}`),
+          '',
+          'Bitte beantworte die Ausgangsfrage jetzt final, strukturiert und quellenorientiert.'
+        ].join('\n').trim();
+
+        const originQuestion = String(app.state.clarifier.originQuestion || '').trim();
+        app.logic.closeClaudeClarifier({ save: false });
+
+        if (originQuestion) {
+          app.logic.sendSystemMessage(summaryVisible);
+          app.logic.sendMessage({
+            textOverride: originQuestion,
+            apiQuestionSuffix: suffixForApi,
+            skipClarificationCheck: true,
+            fromClarifier: true
+          }).catch(() => {});
+        }
       },
 
       answerContainsSourceSignal: (answer) => {
@@ -4318,6 +5252,8 @@
         if (Number.isFinite(Number(opts.backendConfidence))) {
           score += Math.round(Math.max(0, Math.min(1, Number(opts.backendConfidence))) * 15);
         }
+        if (opts.storageUsed && sourceCount) score += 6;
+        if (opts.storageFallback) score -= 12;
         if (opts.groundedMode) score += 8;
         if (opts.fastMode) score -= 8;
 
@@ -4352,6 +5288,14 @@
         if (opts.fastMode && sourceCount) {
           note += ' Schnellmodus aktiv: bitte besonders sorgfaeltig pruefen.';
         }
+        if (opts.storageUsed) {
+          note += sourceCount
+            ? ' Vector Store aktiv.'
+            : ' Vector Store aktiv, aber ohne extrahierten Quellen-Chunk.';
+        }
+        if (opts.storageFallback) {
+          note += ' Storage-Fallback ohne Vector Store.';
+        }
 
         return { level, label, note, score, sourceCount, excerptCount, locatedCount };
       },
@@ -4367,6 +5311,7 @@
         const topic = app.logic.topicFromText(question || answer, 'das Thema');
         const goal = String(app.state.settings.assistant?.learningGoal || '').trim();
         const domain = String(app.state.settings.domain || '').trim();
+        const sozialrechtDomain = app.logic.isSozialrechtDomain(domain);
         const out = [];
 
         if (meta.blockedForMissingSources) {
@@ -4378,13 +5323,15 @@
           out.push(`Gib mir ein kurzes Praxisbeispiel zu ${topic}.`);
           out.push(`Fasse ${topic} in drei Stichpunkten zusammen.`);
           if (domain) out.push(`Erstelle drei Pruefungsfragen zu ${topic} im Fachmodus ${domain}.`);
-          if (goal) out.push(`Verbinde ${topic} mit meinem Lernziel "${goal}".`);
+          out.push(...app.logic.buildSozialrechtFollowups(topic, question || answer));
+          if (goal && !sozialrechtDomain) out.push(`Verbinde ${topic} mit meinem Lernziel "${goal}".`);
         }
 
         return app.logic.sanitizeAssistantFollowups(out);
       },
 
       buildLearningStep: (question, answer, meta = {}) => {
+        if (app.logic.isSozialrechtDomain()) return null;
         if (!app.state.settings.assistant?.showLearningPath) return null;
         const topic = app.logic.topicFromText(question || answer, 'das Thema');
         const goal = String(app.state.settings.assistant?.learningGoal || '').trim();
@@ -4410,79 +5357,16 @@
         };
       },
 
-      detectDomainPlausibility: (question, currentMode) => {
-        const mode = String(currentMode || '').trim().toUpperCase();
-        if (!mode || !DOMAIN_PLAUSIBILITY[mode]) return null;
-        const q = app.utils.normalizeForKeyword(question || '');
-        if (!q) return null;
-        const strongHits = DOMAIN_PLAUSIBILITY[mode].strong.filter((k) => q.includes(app.utils.normalizeForKeyword(k)));
-        const foreignHits = DOMAIN_PLAUSIBILITY[mode].foreign.filter((k) => q.includes(app.utils.normalizeForKeyword(k)));
-        if (!foreignHits.length) return null;
-        if (!strongHits.length || foreignHits.length > strongHits.length) {
-          return {
-            currentMode: mode,
-            strongHits,
-            foreignHits,
-            likelyDomain: app.logic.inferLikelyDomainFromHits(foreignHits)
-          };
-        }
-        return null;
-      },
-
-      inferLikelyDomainFromHits: (hits = []) => {
-        const joined = app.utils.normalizeForKeyword((Array.isArray(hits) ? hits : []).join(' '));
-        if (!joined) return '';
-        if (/bbig|berufsbildungsgesetz|aevo|ausbildung|ausbildender|auszubild|eignung|probezeit|paragraph/.test(joined)) return 'AEVO';
-        if (/markt|angebot|nachfrage|inflation|bip|konjunktur|monopol|wettbewerb|volkswirtschaft/.test(joined)) return 'VWL';
-        if (/personal|rekrutierung|arbeitsvertrag|fuehrung|motivation|personalentwicklung/.test(joined)) return 'PERSONAL';
-        return '';
-      },
-
-      domainLabel: (mode) => {
-        const labels = {
-          VWL: 'VWL',
-          AEVO: 'AEVO/BBiG',
-          PERSONAL: 'Personalwesen',
-          STANDARD: 'Standard'
-        };
-        const key = String(mode || 'STANDARD').trim().toUpperCase();
-        return labels[key] || key || 'Standard';
-      },
-
-      buildSoftGateNotice: (conflict) => {
-        if (!conflict) return null;
-        const currentLabel = app.logic.domainLabel(conflict.currentMode);
-        const likelyDomain = String(conflict.likelyDomain || '').trim().toUpperCase();
-        const likelyLabel = likelyDomain ? app.logic.domainLabel(likelyDomain) : 'einem anderen Fachbereich';
-        const hits = (conflict.foreignHits || []).slice(0, 4);
-        return {
-          title: 'Fachhinweis',
-          text: `Deine Frage gehoert inhaltlich eher zum Bereich ${likelyLabel}. Aktuell ist jedoch der Fachmodus ${currentLabel} aktiv. Ich beantworte sie deshalb bewusst aus ${currentLabel}-Perspektive und ordne fachfremde Bezüge nur ein.`,
-          meta: hits.length ? `Erkannte fachfremde Signale: ${hits.join(', ')}` : ''
-        };
-      },
-
-      detectAnswerDomainDrift: (answer, currentMode) => {
-        const mode = String(currentMode || '').trim().toUpperCase();
-        if (!mode || !DOMAIN_PLAUSIBILITY[mode]) return null;
-        const q = app.utils.normalizeForKeyword(answer || '');
-        if (!q) return null;
-        const strongHits = DOMAIN_PLAUSIBILITY[mode].strong.filter((k) => q.includes(app.utils.normalizeForKeyword(k)));
-        const foreignHits = DOMAIN_PLAUSIBILITY[mode].foreign.filter((k) => q.includes(app.utils.normalizeForKeyword(k)));
-        if (foreignHits.length >= 2 && foreignHits.length > strongHits.length) {
-          return {
-            currentMode: mode,
-            foreignHits: foreignHits.slice(0, 4),
-            likelyDomain: app.logic.inferLikelyDomainFromHits(foreignHits)
-          };
-        }
-        return null;
-      },
-
       enrichAssistantResponse: (result, question, payload, extra = {}) => {
         const backendMeta = (result && result.meta && typeof result.meta === 'object') ? result.meta : {};
         let answer = String(result?.answer || '').trim();
         let sources = app.logic.sanitizeSourceList(result?.sources || []);
+        const sozialrechtDomain = app.logic.isSozialrechtDomain(
+          String(backendMeta.domain || payload?.fachmodus || app.state.settings?.domain || '')
+        );
+        const storageUsed = Boolean(backendMeta.storageUsed || backendMeta.storage_used);
+        const storageFallback = Boolean(backendMeta.storageFallback || backendMeta.storage_fallback);
+        const storageError = String(backendMeta.storageError || backendMeta.storage_error || '').trim();
 
         const groundedMode = Boolean(app.state.settings.guardrails?.groundedMode);
         const strictUnknown = Boolean(app.state.settings.guardrails?.strictUnknown);
@@ -4503,29 +5387,24 @@
           fastMode: Boolean(payload?.schnellmodus),
           backendConfidence: backendMeta.confidence,
           blockedForMissingSources,
-          textSourceSignals: hasSourceSignals && sources.length === 0
+          textSourceSignals: hasSourceSignals && sources.length === 0,
+          storageUsed,
+          storageFallback
         });
+
+        const evidenceNoteParts = [String(backendMeta.evidenceNote || '').trim()];
+        if (storageFallback && storageError) {
+          evidenceNoteParts.push(`Storage-Hinweis: ${storageError}`);
+        }
 
         const followups = app.logic.buildFollowupSuggestions(question, answer, sources, {
           blockedForMissingSources,
           backendFollowups: backendMeta.followups || []
         });
 
-        const learningStep = app.logic.buildLearningStep(question, answer, {
-          blockedForMissingSources
-        });
-
-        const softGateNotice = payload?.softGate?.active ? {
-          title: String(payload?.softGate?.title || 'Fachhinweis').trim() || 'Fachhinweis',
-          text: String(payload?.softGate?.notice || '').trim(),
-          meta: String(payload?.softGate?.meta || '').trim()
-        } : null;
-        const drift = app.logic.detectAnswerDomainDrift(answer, payload?.fachmodus || app.state.settings.domain || '');
-        const answerPlausibility = drift ? {
-          title: 'Einordnung zur Antwort',
-          text: `Die Antwort enthaelt deutliche Bezüge zu ${app.logic.domainLabel(drift.likelyDomain || '')}. Ich lasse sie stehen, ordne sie aber dem aktiven Fachmodus ${app.logic.domainLabel(drift.currentMode)} unter.`,
-          meta: drift.foreignHits?.length ? `Auffaellige Signale in der Antwort: ${drift.foreignHits.join(', ')}` : ''
-        } : null;
+        const learningStep = (SOZIALRECHT_ONLY_MODE || sozialrechtDomain)
+          ? null
+          : app.logic.buildLearningStep(question, answer, { blockedForMissingSources });
 
         return {
           answer,
@@ -4535,10 +5414,14 @@
             evidence,
             followups,
             learningStep,
-            evidenceNote: String(backendMeta.evidenceNote || '').trim(),
+            evidenceNote: evidenceNoteParts.filter(Boolean).join(' ').trim(),
             blockedForMissingSources,
-            softGateNotice,
-            answerPlausibility
+            storageUsed,
+            storageFallback,
+            storageError,
+            clarificationRequested: Boolean(backendMeta.clarificationRequested),
+            model: String(backendMeta.model || '').trim(),
+            domain: sozialrechtDomain ? SOZIALRECHT_DOMAIN_KEY : String(backendMeta.domain || payload?.fachmodus || '').trim().toUpperCase()
           }
         };
       },
@@ -4576,7 +5459,9 @@
             ok: Boolean(parsed?.ok),
             checks: (parsed?.checks && typeof parsed.checks === 'object') ? parsed.checks : {},
             ts: String(parsed?.ts || new Date().toISOString()),
-            baseUrl: app.logic.endpointOrigin(res.url || HEALTH_API_ENDPOINT)
+            baseUrl: app.logic.endpointOrigin(res.url || HEALTH_API_ENDPOINT),
+            storageEnvKey: String(parsed?.storage_env_key || ''),
+            storageConfigured: Boolean(parsed?.storage_configured)
           };
           app.ui.renderApiHealthStatus(app.state.apiHealth);
           app.utils.save();
@@ -4689,6 +5574,7 @@
       },
 
       newChat: () => {
+        app.logic.closeClaudeClarifier({ save: false });
         const id = app.utils.uid();
         app.state.sessions.unshift({
           id,
@@ -4704,7 +5590,7 @@
         if (!app.state.welcomeShown) {
           app.logic.sendSystemMessage(
             'Willkommen bei **LINDA**.\n\n' +
-            'Ich unterstütze dich bei **AEVO**, **BWL/VWL** und **Personalwesen**.\n' +
+            'Diese Version arbeitet ausschliesslich im **Fachmodus Sozialrecht (SGB I-XII)**.\n' +
             'Lernkarten werden aus den **Inhalten der Antwort** erstellt.\n' +
             'ILIAS kann bei Bedarf über den Schalter **Kursraum (ILIAS)** aktiviert werden.'
           );
@@ -4717,6 +5603,7 @@
 
       resetHistoryAndNewChat: () => {
         if (!confirm('Verlauf und History komplett löschen und neuen Chat starten?')) return;
+        app.logic.closeClaudeClarifier({ save: false });
         app.state.sessions = [];
         app.state.activeId = null;
         app.state.requestMemory = structuredClone(DEFAULT_REQUEST_MEMORY);
@@ -4727,6 +5614,7 @@
       },
 
       switchSession: (id) => {
+        app.logic.closeClaudeClarifier({ save: false });
         app.state.activeId = id;
         app.ui.log.innerHTML = '';
         app.utils.save();
@@ -4757,11 +5645,16 @@
         const prevGrounded = Boolean(app.state.settings.guardrails?.groundedMode);
         const prevPrivacy = Boolean(app.state.settings.privacy?.ephemeral);
         app.state.settings.name = document.getElementById('inp-name').value.trim();
-        app.state.settings.domain = document.getElementById('inp-domain').value;
+        app.state.settings.domain = SOZIALRECHT_ONLY_MODE
+          ? SOZIALRECHT_DOMAIN_KEY
+          : document.getElementById('inp-domain').value;
+        const sozialrechtLocked = app.logic.isSozialrechtDomain();
 
         app.state.settings.ilias.enabled = Boolean(app.state.settings.sources.ilias);
         app.state.settings.prompting.enabled = document.getElementById('inp-prompting-enabled').checked;
-        const nextGrounded = document.getElementById('inp-grounded-mode').checked;
+        const nextGrounded = sozialrechtLocked
+          ? true
+          : document.getElementById('inp-grounded-mode').checked;
         app.state.settings.guardrails.strictUnknown = document.getElementById('inp-strict-unknown').checked;
         app.state.settings.guardrails.clarificationMode = document.getElementById('inp-clarification-mode').checked;
         app.state.settings.guardrails.piiShield = document.getElementById('inp-pii-shield').checked;
@@ -4770,7 +5663,10 @@
         }
         app.state.settings.assistant.showEvidence = document.getElementById('inp-show-evidence').checked;
         app.state.settings.assistant.showFollowups = document.getElementById('inp-show-followups').checked;
-        app.state.settings.assistant.showLearningPath = document.getElementById('inp-show-learning-path').checked;
+        app.state.settings.assistant.showLearningPath =
+          (SOZIALRECHT_ONLY_MODE || sozialrechtLocked)
+            ? false
+            : document.getElementById('inp-show-learning-path').checked;
         app.state.settings.assistant.feedbackIncludeTranscript = document.getElementById('inp-feedback-transcript').checked;
         app.state.settings.assistant.learningGoal = document.getElementById('inp-learning-goal').value.trim().slice(0, 140);
 
@@ -4799,18 +5695,21 @@
 
         app.state.settings.ilias.enabled = Boolean(app.state.settings.sources.ilias);
         app.logic.setGroundedMode(nextGrounded, { showOverlay: false });
-        app.logic.applyPrivacyMode(document.getElementById('inp-privacy-ephemeral').checked, { showOverlay: false });
+        const nextPrivacy = document.getElementById('inp-privacy-ephemeral').checked;
+        app.logic.applyPrivacyMode(nextPrivacy, { showOverlay: false, showLockHint: false });
+        if (sozialrechtLocked) app.logic.enforceSozialrechtMode({ save: false });
 
         app.utils.save();
         app.ui.updateDomainUI();
         app.ui.renderSourceToolbar();
         app.ui.syncGroundedModeControls();
         app.ui.syncPrivacyModeControls();
+        app.ui.syncSozialrechtOnlyControls();
         app.ui.syncLearningDirectoryControls();
         app.ui.closeModals();
         app.logic.maybeShowModeCards();
         if (nextGrounded && !prevGrounded) app.ui.openModeInfo('grounded');
-        if (document.getElementById('inp-privacy-ephemeral').checked && !prevPrivacy) app.ui.openModeInfo('privacy');
+        if (nextPrivacy && !prevPrivacy) app.ui.openModeInfo('privacy');
       },
 
       clearPromptConfigs: () => {
@@ -4946,6 +5845,7 @@
       },
 
       maybeShowModeCards: () => {
+        if (SOZIALRECHT_ONLY_MODE) return;
         if (app.state.settings.domain) return;
         const s = app.logic.activeSession();
         if (!s) return;
@@ -5046,15 +5946,188 @@
         alert(app.logic.getPopupBlockedHelp(featureLabel));
       },
 
-      openCardsTabWithPayload: (payload) => {
+      sanitizeCardsInputText: (text, maxLen = 9000) => {
+        return String(text || '')
+          .replace(/\r/g, '\n')
+          .replace(/```[\s\S]*?```/g, ' ')
+          .replace(/\[(.*?)\]\((.*?)\)/g, '$1')
+          .replace(/[\t ]+/g, ' ')
+          .replace(/\n{3,}/g, '\n\n')
+          .trim()
+          .slice(0, maxLen);
+      },
+
+      buildCardSourceContext: (fullText, focusText = '', questionText = '') => {
+        const cleanFull = app.logic.sanitizeCardsInputText(fullText, 9000);
+        const cleanFocus = app.logic.sanitizeCardsInputText(focusText, 1200);
+        const cleanQuestion = app.logic.sanitizeCardsInputText(questionText, 500);
+        return [
+          cleanQuestion ? `Vorherige Frage: ${cleanQuestion}` : '',
+          cleanFocus ? `Besonders relevanter Abschnitt: ${cleanFocus}` : '',
+          'Volltext fuer die Kartenerstellung:',
+          cleanFull
+        ].filter(Boolean).join('\n\n');
+      },
+
+      sanitizeCardCount: (count, fallback = 4) => {
+        const n = Number(count || fallback);
+        return n === 2 ? 2 : 4;
+      },
+
+      isGenericCardQuestion: (question) => {
+        const q = String(question || '').trim().toLowerCase();
+        if (!q) return true;
+        return [
+          'welche kernaussage',
+          'welche aussage',
+          'was laesst sich',
+          'was lässt sich',
+          'welche information',
+          'welcher inhalt',
+          'welcher aspekt',
+          'welcher punkt'
+        ].some((part) => q.startsWith(part) || q.includes(part));
+      },
+
+      normalizeGeneratedCards: (items, limit = 4) => {
+        const out = [];
+        const seen = new Set();
+        (Array.isArray(items) ? items : []).forEach((item) => {
+          const question = String(item?.question || item?.front || '').replace(/\s+/g, ' ').trim();
+          const answer = String(item?.answer || item?.back || '').replace(/\s+/g, ' ').trim();
+          if (!question || !answer) return;
+          if (question.length < 12 || answer.length < 18) return;
+          if (app.logic.isGenericCardQuestion(question)) return;
+          const key = `${question.toLowerCase()}|${answer.toLowerCase()}`;
+          if (seen.has(key)) return;
+          seen.add(key);
+          out.push({
+            question,
+            answer,
+            id: hashCardId(question, answer),
+            adaptive: { ease: 2, reps: 0, dueAt: 0 }
+          });
+        });
+        return out.slice(0, limit);
+      },
+
+      ensureCardCount: (cards, requestedCount, sourceText) => {
+        const want = app.logic.sanitizeCardCount(requestedCount);
+        const next = Array.isArray(cards) ? cards.slice(0, want) : [];
+        if (next.length >= want) return next;
+        const fallback = app.logic.normalizeGeneratedCards(app.logic.buildFlashcardsFromText(sourceText), want);
+        for (const card of fallback) {
+          if (next.length >= want) break;
+          const exists = next.some((c) => c.question === card.question && c.answer === card.answer);
+          if (!exists) next.push(card);
+        }
+        return next.slice(0, want);
+      },
+
+      buildCardsWebhookQuestion: (text, targetCount, domain) => {
+        const safeText = app.logic.sanitizeCardsInputText(text, 9000);
+        const tpl = app.logic.getLearningTemplates();
+        const pattern =
+          String(tpl?.flashcards?.instruction_template || '').trim() ||
+          DEFAULT_LEARNING_TEMPLATES.flashcards.instruction_template;
+        return app.logic.fillTemplateVars(pattern, {
+          count: app.logic.sanitizeCardCount(targetCount),
+          domain: domain || 'Standard',
+          content: safeText
+        });
+      },
+
+      requestCardsViaWebhook: async (rawText, sourceType = 'manual', count = 4) => {
+        const domain = app.state.settings.domain || '';
+        const targetCount = app.logic.sanitizeCardCount(count, app.state.settings.cardsWebhook?.targetCount || 4);
+        const endpoint = app.logic.resolveSafeCardsEndpoint();
+        const question = app.logic.buildCardsWebhookQuestion(rawText, targetCount, domain);
+
+        const res = await app.logic.fetchApi(endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            question: app.utils.truncate(question, 12000),
+            fachmodus: domain,
+            schnellmodus: false,
+            routing: {
+              preferred_model: 'default'
+            },
+            history: []
+          })
+        });
+
+        if (!res.ok) {
+          let detail = '';
+          try {
+            const err = await res.json();
+            const errMsg = String(err?.error || '').trim();
+            const errDetail = String(err?.detail || '').trim();
+            detail = errMsg ? `: ${errMsg}${errDetail ? ` (${errDetail})` : ''}` : '';
+          } catch (_) {}
+          throw new Error(`HTTP ${res.status}${detail}`);
+        }
+
+        const raw = await res.text();
+        const parsed = parseCardsWebhookResponse(raw);
+        const cards = app.logic.ensureCardCount(
+          app.logic.normalizeGeneratedCards(parsed?.cards || [], targetCount),
+          targetCount,
+          rawText
+        );
+        if (!cards.length) {
+          throw new Error('Keine hochwertigen Lernkarten erzeugt');
+        }
+        return {
+          deckTitle: String(parsed?.deckTitle || 'Lernkarten').trim() || 'Lernkarten',
+          cards,
+          sourceType: `${sourceType}-webhook`
+        };
+      },
+
+      openPreparedCardsTab: () => {
+        const target = new URL('cards.html', window.location.href).href;
+        const tab = window.open('', '_blank', 'noopener');
+        if (!tab) {
+          app.logic.notifyPopupBlocked('Lernkarten');
+          return null;
+        }
+        try {
+          tab.document.write(`<!doctype html><html lang="de"><head><meta charset="utf-8"><title>LINDA3 Lernkarten</title><style>body{font-family:Arial,sans-serif;padding:24px;color:#163526} .box{max-width:680px;margin:40px auto;border:1px solid #bfd5cc;border-radius:16px;padding:20px;background:#fff} h1{margin:0 0 12px;color:#045144;font-size:24px} p{margin:0;color:#35564d;line-height:1.5}</style></head><body><div class="box"><h1>LINDA3 Lernkarten</h1><p>Lernkarten werden vorbereitet…</p></div></body></html>`);
+          tab.document.close();
+        } catch (_) {}
+        tab.__lindaCardsTarget = target;
+        return tab;
+      },
+
+      openCardsTabWithPayload: (payload, targetTab = null) => {
         const nextPayload = {
           ...(payload || {}),
-          transient: Boolean(app.utils.privacyModeEnabled())
+          transient: Boolean(app.utils.privacyModeEnabled()),
+          cards: app.logic.ensureCardCount(payload?.cards || [], payload?.requestedCount || payload?.cards?.length || 4, payload?.sourceText || '')
         };
         localStorage.setItem(CARDS_KEY, JSON.stringify(nextPayload));
-        const target = `${window.location.pathname}?view=cards`;
+        const target = new URL('cards.html', window.location.href).href;
+        if (targetTab && !targetTab.closed) {
+          try {
+            targetTab.location.href = target;
+            return;
+          } catch (_) {}
+        }
         const tab = window.open(target, '_blank', 'noopener');
         if (!tab) app.logic.notifyPopupBlocked('Lernkarten im neuen Tab');
+      },
+
+      openSavedCardsLibrary: () => {
+        const target = new URL('cards.html?library=1', window.location.href).href;
+        const tab = window.open(target, '_blank', 'noopener');
+        if (!tab) app.logic.notifyPopupBlocked('gespeicherte Lernkarten');
+      },
+
+      openCollectionsPage: () => {
+        const target = new URL('collections_clickable.html', window.location.href).href;
+        const tab = window.open(target, '_blank', 'noopener');
+        if (!tab) app.logic.notifyPopupBlocked('Kollektionen');
       },
 
       openPracticeTabWithPayload: (payload) => {
@@ -5076,7 +6149,18 @@
         const txt = String(sel.toString() || '').trim();
         if (!txt || txt.length < 2) return false;
         if (!md.contains(sel.anchorNode) || !md.contains(sel.focusNode)) return false;
-        app.state.selectionDraft = { text: txt, textLength: txt.length, ts: app.utils.now() };
+        const row = md.closest('.msg-row');
+        const items = Array.from(app.ui.log.children);
+        const idx = items.indexOf(row);
+        let questionText = '';
+        for (let i = idx - 1; i >= 0; i -= 1) {
+          if (items[i].classList.contains('user')) {
+            questionText = items[i].querySelector('.md')?.innerText || '';
+            break;
+          }
+        }
+        const fullText = md.innerText || txt;
+        app.state.selectionDraft = { text: txt, textLength: txt.length, ts: app.utils.now(), fullText, questionText };
         return true;
       },
 
@@ -5098,82 +6182,6 @@
         }
       },
 
-      sanitizeCardsInputText: (text, maxLen = 1400) => {
-        return String(text || '')
-          .replace(/\r/g, ' ')
-          .replace(/[^\S\n]+/g, ' ')
-          .replace(/\n{3,}/g, '\n\n')
-          .trim()
-          .slice(0, maxLen);
-      },
-
-      buildCardsWebhookQuestion: (text, targetCount, domain) => {
-        const safeText = app.logic.sanitizeCardsInputText(text, 1400);
-        const tpl = app.logic.getLearningTemplates();
-        const pattern =
-          String(tpl?.flashcards?.instruction_template || '').trim() ||
-          DEFAULT_LEARNING_TEMPLATES.flashcards.instruction_template;
-        return app.logic.fillTemplateVars(pattern, {
-          count: targetCount,
-          domain: domain || 'Standard',
-          content: safeText
-        });
-      },
-
-      requestCardsViaWebhook: async (rawText, sourceType = 'manual') => {
-        const cfg = app.state.settings.cardsWebhook || DEFAULT_CARDS_WEBHOOK_JSON;
-        const domain = app.state.settings.domain || '';
-        const targetCount = Math.max(3, Math.min(24, Number(cfg.targetCount || 8)));
-        const endpoint = app.logic.resolveSafeCardsEndpoint();
-        const question = app.logic.buildCardsWebhookQuestion(rawText, targetCount, domain);
-
-        const res = await app.logic.fetchApi(endpoint, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            question: app.utils.truncate(question, 2400),
-            fachmodus: domain,
-            schnellmodus: Boolean(app.state.settings.fastMode && app.state.settings.fastMode.enabled),
-            routing: {
-              preferred_model: (app.state.settings.fastMode && app.state.settings.fastMode.enabled) ? 'deepseek' : 'default'
-            },
-            history: []
-          })
-        });
-
-        if (!res.ok) {
-          let detail = '';
-          try {
-            const err = await res.json();
-            const errMsg = String(err?.error || '').trim();
-            const errDetail = String(err?.detail || '').trim();
-            detail = errMsg ? `: ${errMsg}${errDetail ? ` (${errDetail})` : ''}` : '';
-          } catch (_) {}
-          throw new Error(`HTTP ${res.status}${detail}`);
-        }
-
-        const raw = await res.text();
-        const parsed = parseCardsWebhookResponse(raw);
-        const cards = (parsed?.cards || []).slice(0, targetCount);
-        if (!cards.length) {
-          const fallbackCards = app.logic.buildFlashcardsFromText(rawText).map((c) => ({
-            ...c,
-            id: hashCardId(c.question, c.answer),
-            adaptive: { ease: 2, reps: 0, dueAt: 0 }
-          }));
-          return {
-            deckTitle: 'Lernkarten',
-            cards: fallbackCards.slice(0, targetCount),
-            sourceType: `${sourceType}-local-fallback`
-          };
-        }
-        return {
-          deckTitle: parsed?.deckTitle || 'Lernkarten',
-          cards,
-          sourceType: `${sourceType}-webhook`
-        };
-      },
-
       requestAnswer: async (endpoint, payload, signal) => {
         const safeQuestion = String(
           payload?.question ||
@@ -5184,9 +6192,6 @@
           ...(payload && typeof payload === 'object' ? payload : {}),
           question: app.utils.truncate(safeQuestion, 1300)
         };
-        safePayload.prompt = safePayload.question;
-        safePayload.input = safePayload.question;
-        safePayload.text = safePayload.question;
         if (!safePayload.question) {
           throw new Error('Frage ist leer');
         }
@@ -5197,15 +6202,22 @@
           body: JSON.stringify(safePayload),
           signal
         });
+        let lastErrorDetail = '';
+        let lastErrorText = '';
 
         if (!res.ok) {
           let detail = '';
           let errText = '';
           try {
             const err = await res.json();
-            detail = err?.error ? `: ${err.error}` : '';
-            errText = String(err?.error || err?.detail || '').toLowerCase();
+            const errMsg = String(err?.error || err?.message || '').trim();
+            const errDetail = String(err?.detail || '').trim();
+            const parts = [errMsg, errDetail].filter(Boolean);
+            detail = parts.length ? `: ${parts.join(' – ')}` : '';
+            errText = parts.join(' ').toLowerCase();
           } catch (_) {}
+          lastErrorDetail = detail;
+          lastErrorText = errText;
 
           const missingQuestionError =
             res.status === 400 &&
@@ -5228,11 +6240,15 @@
         }
 
         if (!res.ok) {
-          let detail = '';
+          let detail = lastErrorDetail || '';
           try {
             const err = await res.json();
-            detail = err?.error ? `: ${err.error}` : '';
+            const errMsg = String(err?.error || err?.message || '').trim();
+            const errDetail = String(err?.detail || '').trim();
+            const parts = [errMsg, errDetail].filter(Boolean);
+            detail = parts.length ? `: ${parts.join(' – ')}` : detail;
           } catch (_) {}
+          if (!detail && lastErrorText) detail = `: ${lastErrorText}`;
           throw new Error(app.logic.describeApiStatus(res.status, endpoint, detail, res.url || ''));
         }
 
@@ -5245,85 +6261,67 @@
         if (!draft || !draft.text) return;
         if (app.state.isCardsRequestRunning) return;
         if (String(draft.text || '').length < 24) {
-          alert('Für Lernkarten bitte mindestens 24 Zeichen markieren.');
+          alert('Fuer Lernkarten bitte mindestens 24 Zeichen markieren.');
           return;
         }
 
         app.state.isCardsRequestRunning = true;
         app.ui.hideSelectionMenu();
+        const preparedTab = app.logic.openPreparedCardsTab();
 
         try {
-          const result = await app.logic.requestSelectionFlashcards(draft.text);
+          const result = await app.logic.requestSelectionFlashcards({
+            selectedText: draft.text,
+            fullText: draft.fullText || draft.text,
+            questionText: draft.questionText || '',
+            count: 4
+          });
           const cards = result.cards || [];
 
           app.logic.openCardsTabWithPayload({
             cards,
             generatedAt: app.utils.nowStamp(),
-            sourceLength: draft.text.length,
+            sourceLength: (draft.fullText || draft.text).length,
             adaptive: true,
             deckTitle: result.deckTitle || 'Lernkarten aus Auswahl',
-            sourceType: result.sourceType || 'selection-api'
-          });
+            sourceType: result.sourceType || 'selection-api',
+            sourceText: draft.fullText || draft.text,
+            requestedCount: result.requestedCount || 4
+          }, preparedTab);
         } catch (e) {
+          if (preparedTab && !preparedTab.closed) preparedTab.close();
           alert(`Lernkarten-Fehler: ${e.message || 'unbekannt'}`);
         } finally {
           app.state.isCardsRequestRunning = false;
         }
       },
 
-      requestSelectionFlashcards: async (selectedText, count = 8) => {
+      requestSelectionFlashcards: async ({ selectedText, fullText = '', questionText = '', count = 4 } = {}) => {
         const domain = app.state.settings.domain || 'Standard';
-        const safeCount = Math.max(4, Math.min(20, Number(count || 8)));
-        const localFallback = () => {
-          const cards = app.logic.buildFlashcardsFromText(selectedText)
-            .slice(0, safeCount)
-            .map((c) => ({
-              ...c,
-              id: hashCardId(c.question, c.answer),
-              adaptive: { ease: 2, reps: 0, dueAt: 0 }
-            }));
+        const safeCount = app.logic.sanitizeCardCount(count, 4);
+        const sourceText = app.logic.buildCardSourceContext(fullText || selectedText, selectedText, questionText);
 
+        const localFallback = () => {
+          const cards = app.logic.ensureCardCount(
+            app.logic.normalizeGeneratedCards(app.logic.buildFlashcardsFromText(sourceText), safeCount),
+            safeCount,
+            sourceText
+          );
           if (!cards.length) throw new Error('Keine Lernkarten erzeugt');
           return {
             cards,
-            deckTitle: 'Lernkarten aus Markierung',
-            sourceType: 'selection-local-fallback'
+            deckTitle: 'Lernkarten aus Auswahl',
+            sourceType: 'selection-local-fallback',
+            requestedCount: safeCount
           };
         };
 
         try {
-          const res = await app.logic.fetchApi(FLASHCARDS_API_ENDPOINT, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              title: `LINDA Auswahl ${domain}`,
-              source: `Markierter Text (${domain})`,
-              context: app.logic.sanitizeCardsInputText(selectedText, 1400),
-              count: safeCount,
-              economyMode: true
-            })
-          });
-
-          if (!res.ok) return localFallback();
-
-          const parsed = await res.json();
-          const cards = (Array.isArray(parsed?.cards) ? parsed.cards : [])
-            .map((c) => ({
-              question: String(c.front || c.question || '').trim(),
-              answer: String(c.back || c.answer || '').trim()
-            }))
-            .filter((c) => c.question && c.answer)
-            .map((c) => ({
-              ...c,
-              id: hashCardId(c.question, c.answer),
-              adaptive: { ease: 2, reps: 0, dueAt: 0 }
-            }));
-
-          if (!cards.length) return localFallback();
+          const result = await app.logic.requestCardsViaWebhook(sourceText, 'selection', safeCount);
           return {
-            cards,
-            deckTitle: 'Lernkarten aus Markierung',
-            sourceType: 'selection-flashcards-api'
+            ...result,
+            requestedCount: safeCount,
+            deckTitle: result.deckTitle || `Lernkarten ${domain}`
           };
         } catch (_) {
           return localFallback();
@@ -6124,6 +7122,56 @@
         return unique.slice(0, 10);
       },
 
+      isSozialrechtMeta: (meta = {}) => {
+        const domain = String(meta?.domain || '').trim().toUpperCase();
+        return domain === SOZIALRECHT_DOMAIN_KEY || app.logic.isSozialrechtDomain();
+      },
+
+      stylizeSozialrechtAnswer: (md, meta = {}) => {
+        if (!md || md.dataset.styledSozialrecht === 'true') return;
+        md.dataset.styledSozialrecht = 'true';
+        md.classList.add('sozialrecht-md');
+
+        const contentNodes = Array.from(md.childNodes);
+        const stack = document.createElement('div');
+        stack.className = 'sozialrecht-stack';
+
+        let section = null;
+        const openSection = (title) => {
+          section = document.createElement('section');
+          section.className = 'sozialrecht-section';
+          const head = document.createElement('h4');
+          head.className = 'sozialrecht-section-head';
+          head.textContent = title || 'Abschnitt';
+          section.appendChild(head);
+          stack.appendChild(section);
+        };
+
+        contentNodes.forEach((node) => {
+          if (node.nodeType === 1 && /^(H2|H3)$/i.test(node.tagName)) {
+            openSection(String(node.textContent || '').trim() || 'Abschnitt');
+            return;
+          }
+          if (!section) {
+            openSection('Antwortkern');
+            section.classList.add('intro');
+          }
+          section.appendChild(node);
+        });
+
+        const topline = document.createElement('div');
+        topline.className = 'sozialrecht-topline';
+        const model = String(meta?.model || '').trim();
+        const storageState = meta?.storageUsed
+          ? 'Vector Store aktiv'
+          : (meta?.storageFallback ? 'Storage-Fallback' : 'Storage unklar');
+        topline.textContent = `${model ? `Modell ${model}` : 'Fachmodus Sozialrecht'} • ${storageState}`;
+
+        md.innerHTML = '';
+        md.appendChild(topline);
+        if (stack.childNodes.length) md.appendChild(stack);
+      },
+
       decorateBubble: (md, sources, meta = {}) => {
         md.querySelectorAll('table').forEach((table) => {
           const wrap = document.createElement('div');
@@ -6148,30 +7196,11 @@
           }
         }
 
-        if (bubbleMeta.softGateNotice && bubbleMeta.softGateNotice.text) {
-          const panel = document.createElement('section');
-          panel.className = 'plausibility-panel';
-          panel.innerHTML = `
-            <h4 class="plausibility-head">${app.utils.safeText(bubbleMeta.softGateNotice.title || 'Fachhinweis')}</h4>
-            <div class="plausibility-body">
-              <div>${app.utils.safeText(bubbleMeta.softGateNotice.text || '')}</div>
-              ${bubbleMeta.softGateNotice.meta ? `<div class="plausibility-meta">${app.utils.safeText(bubbleMeta.softGateNotice.meta)}</div>` : ''}
-            </div>
-          `;
-          md.appendChild(panel);
-        }
-
-        if (bubbleMeta.answerPlausibility && bubbleMeta.answerPlausibility.text) {
-          const panel = document.createElement('section');
-          panel.className = 'plausibility-panel';
-          panel.innerHTML = `
-            <h4 class="plausibility-head">${app.utils.safeText(bubbleMeta.answerPlausibility.title || 'Einordnung')}</h4>
-            <div class="plausibility-body">
-              <div>${app.utils.safeText(bubbleMeta.answerPlausibility.text || '')}</div>
-              ${bubbleMeta.answerPlausibility.meta ? `<div class="plausibility-meta">${app.utils.safeText(bubbleMeta.answerPlausibility.meta)}</div>` : ''}
-            </div>
-          `;
-          md.appendChild(panel);
+        const socialStructured =
+          app.logic.isSozialrechtMeta(bubbleMeta) &&
+          !app.logic.isOperationalAnswer(String(md.innerText || ''));
+        if (socialStructured) {
+          app.logic.stylizeSozialrechtAnswer(md, bubbleMeta);
         }
 
         if (app.state.settings.assistant?.showEvidence && bubbleMeta.evidence) {
@@ -6266,7 +7295,7 @@
           md.appendChild(followupPanel);
         }
 
-        if (bubbleMeta.learningStep && app.state.settings.assistant?.showLearningPath) {
+        if (!SOZIALRECHT_ONLY_MODE && bubbleMeta.learningStep && app.state.settings.assistant?.showLearningPath && !app.logic.isSozialrechtMeta(bubbleMeta)) {
           const learningPanel = document.createElement('section');
           learningPanel.className = 'learning-panel';
           learningPanel.innerHTML = `
@@ -6295,6 +7324,9 @@
 
         const forcedText = String(opts?.textOverride || '').trim();
         const text = forcedText || app.ui.input.value.trim();
+        const skipClarificationCheck = Boolean(opts?.skipClarificationCheck);
+        const fromClarifier = Boolean(opts?.fromClarifier);
+        const apiQuestionSuffix = String(opts?.apiQuestionSuffix || '').trim();
         if (!text) return;
 
         let s = app.logic.activeSession();
@@ -6302,6 +7334,19 @@
           app.logic.newChat();
           s = app.logic.activeSession();
           if (!s) return;
+        }
+
+        if (SOZIALRECHT_ONLY_MODE) {
+          app.logic.enforceSozialrechtMode({ save: false });
+        }
+
+        if (CLAUDE_CLARIFY_MODE && app.state.clarifier?.active && !fromClarifier) {
+          if (!forcedText) {
+            app.ui.input.value = '';
+            app.ui.input.dispatchEvent(new Event('input'));
+          }
+          app.logic.answerClaudeClarifierStep(text);
+          return;
         }
 
         if (app.state.settings.guardrails?.piiShield) {
@@ -6324,13 +7369,36 @@
           }
         }
 
-        if (app.state.settings.guardrails?.clarificationMode) {
+        if (!skipClarificationCheck && app.state.settings.guardrails?.clarificationMode) {
           const clarificationPrompts = app.logic.buildClarificationPrompts(text, s);
           if (clarificationPrompts.length) {
+            const clarificationIntro = app.logic.isSozialrechtDomain()
+              ? 'Fuer eine praezise Sozialrecht-Antwort brauche ich noch kurze Eckdaten. Dann antworte ich direkt strukturiert.'
+              : 'Ich vermute ein moegliches Missverstaendnis und haette gern noch etwas Kontext, bevor ich antworte.';
+
+            if (!forcedText) {
+              app.ui.input.value = '';
+              app.ui.input.dispatchEvent(new Event('input'));
+            }
+            app.state.lastQuestion = text;
+            app.logic.rememberQuestion(text);
+            const displayText = app.state.settings.name
+              ? `${app.state.settings.name}: ${text}`
+              : text;
+            app.ui.removeFeatureShowcase();
+            s.messages.push({ role: 'user', content: displayText, sources: [] });
+            if (!s.name || s.name === 'Neuer Chat') s.name = text.slice(0, 48);
+            app.ui.log.appendChild(app.ui.createBubble('user', displayText));
             app.logic.sendSystemMessage(
-              'Ich vermute ein moegliches Missverstaendnis und haette gern noch etwas Kontext, bevor ich antworte.',
-              { followups: clarificationPrompts }
+              clarificationIntro,
+              { followups: clarificationPrompts, clarificationRequested: true }
             );
+            app.logic.openClaudeClarifier({
+              question: text,
+              prompts: clarificationPrompts,
+              introText: clarificationIntro,
+              source: 'frontend'
+            });
             return;
           }
         }
@@ -6347,8 +7415,6 @@
         app.state.lastQuestion = text;
         app.logic.rememberQuestion(text);
         const allowIntroForThisTurn = false;
-        const plausibilityConflict = app.logic.detectDomainPlausibility(text, app.state.settings.domain || '');
-        const softGateNotice = app.logic.buildSoftGateNotice(plausibilityConflict);
 
         const displayText = app.state.settings.name
           ? `${app.state.settings.name}: ${text}`
@@ -6373,18 +7439,27 @@
 
         try {
           const mobileReaderActive = app.logic.isMobileReaderEnabled();
+          const sozialrechtDomain = app.logic.isSozialrechtDomain();
+          if (sozialrechtDomain) app.logic.enforceSozialrechtMode({ save: false });
           const effectiveFastMode = mobileReaderActive
             ? false
             : Boolean(app.state.settings.fastMode && app.state.settings.fastMode.enabled);
           const effectiveSources = mobileReaderActive
             ? { ...app.state.settings.sources, ...MAKEFLOW_ONLY_SOURCES }
             : app.state.settings.sources;
+          const contextWindow = app.utils.chatContext(s);
+          const historyForApi = app.utils.privacyModeEnabled()
+            ? []
+            : (sozialrechtDomain ? contextWindow.slice(-4) : contextWindow);
 
+          const payloadQuestion = apiQuestionSuffix
+            ? `${text}\n\n${apiQuestionSuffix}`
+            : text;
           const payload = {
-            question: app.utils.truncate(text, 1300),
-            fachmodus: app.state.settings.domain || '',
+            question: app.utils.truncate(payloadQuestion, 1600),
+            fachmodus: SOZIALRECHT_ONLY_MODE ? SOZIALRECHT_DOMAIN_KEY : (app.state.settings.domain || ''),
             schnellmodus: effectiveFastMode,
-            history: app.utils.privacyModeEnabled() ? [] : app.utils.chatContext(s),
+            history: historyForApi,
             sources: effectiveSources,
             routing: {
               preferred_model: effectiveFastMode ? 'deepseek' : 'default'
@@ -6401,7 +7476,8 @@
               app: 'LINDA3',
               version: APP_VERSION,
               ts: new Date().toISOString(),
-              privacyMode: app.utils.privacyModeEnabled()
+              privacyMode: app.utils.privacyModeEnabled(),
+              sozialrecht_mode: sozialrechtDomain
             },
             guardrails: {
               grounded_mode: Boolean(app.state.settings.guardrails?.groundedMode),
@@ -6412,17 +7488,9 @@
             assistantPrefs: {
               show_evidence: Boolean(app.state.settings.assistant?.showEvidence),
               show_followups: Boolean(app.state.settings.assistant?.showFollowups),
-              show_learning_path: Boolean(app.state.settings.assistant?.showLearningPath),
+              show_learning_path: sozialrechtDomain ? false : Boolean(app.state.settings.assistant?.showLearningPath),
               learning_goal: String(app.state.settings.assistant?.learningGoal || '').trim()
-            },
-            softGate: softGateNotice ? {
-              active: true,
-              title: softGateNotice.title,
-              notice: softGateNotice.text,
-              meta: softGateNotice.meta,
-              current_mode: String(app.state.settings.domain || '').trim(),
-              likely_domain: String(plausibilityConflict?.likelyDomain || '').trim()
-            } : { active: false }
+            }
           };
           lastPayload = payload;
 
@@ -6542,6 +7610,21 @@
             }
             s.messages.push({ role: 'assistant', content: enriched.answer, sources: enriched.sources, meta: enriched.meta });
             app.ui.log.appendChild(app.ui.createBubble('assistant', enriched.answer, enriched.sources, enriched.meta));
+            if (
+              CLAUDE_CLARIFY_MODE &&
+              enriched?.meta?.clarificationRequested &&
+              app.state.settings.guardrails?.clarificationMode
+            ) {
+              const backendPrompts = app.logic.sanitizeAssistantFollowups(enriched?.meta?.followups || []);
+              if (backendPrompts.length) {
+                app.logic.openClaudeClarifier({
+                  question: text,
+                  prompts: backendPrompts,
+                  introText: 'Damit ich das fundiert beantworten kann, brauche ich noch ein paar Angaben.',
+                  source: 'backend'
+                });
+              }
+            }
           }
           loading.remove();
           if (!app.state.telemetry.firstSelectionHintShown) {
@@ -6685,161 +7768,84 @@
 
       buildFlashcardsFromText: (text) => {
         const clean = String(text || '')
-          .replace(/\r/g, '')
-          .replace(/`{1,3}[^`]*`{1,3}/g, '')
+          .replace(/\r/g, '\n')
+          .replace(/```[\s\S]*?```/g, ' ')
           .replace(/\*\*|__/g, '')
           .replace(/\[(.*?)\]\((.*?)\)/g, '$1')
           .replace(/^Frage:\s*/gim, '')
           .replace(/^Anfrage:\s*/gim, '')
+          .replace(/^Quellen\s*(?:&|und).*/gim, '')
+          .replace(/^Naechste Fragen.*$/gim, '')
+          .replace(/^Persoenlicher Lernpfad.*$/gim, '')
           .trim();
 
+        const compact = (v) => String(v || '').replace(/\s+/g, ' ').trim();
         const lines = clean
           .split('\n')
           .map((l) => l.trim())
           .filter(Boolean)
           .filter((l) => !/^quellen?\s*:?\s*$/i.test(l))
           .filter((l) => !/^hinweis\s*:/i.test(l))
-          .filter((l) => !/^nutze die schalter/i.test(l))
-          .filter((l) => !/^öffne lernkarten/i.test(l))
-          .filter((l) => !/^ilias kann/i.test(l));
+          .filter((l) => !/^evidenz/i.test(l))
+          .filter((l) => !/^naechste fragen/i.test(l))
+          .filter((l) => !/^persoenlicher lernpfad/i.test(l))
+          .filter((l) => !/^https?:\/\//i.test(l));
 
+        const heading = lines.find((l) => /^[A-ZÄÖÜ0-9].{6,80}$/.test(l) && !/[.!?]$/.test(l)) || '';
         const bullets = lines
           .filter((l) => /^[-*]|^\d+\./.test(l))
           .map((l) => l.replace(/^[-*]\s*/, '').replace(/^\d+\.\s*/, '').trim())
-          .filter((l) => l.length > 10);
+          .filter((l) => l.length > 18);
 
         const sentences = clean
           .split(/(?<=[.!?])\s+/)
-          .map((s) => s.trim())
-          .filter((s) => s.length > 24)
+          .map((s) => compact(s))
+          .filter((s) => s.length > 28)
           .filter((s) => !/^quellen?\s*:?\s*$/i.test(s));
 
-        const compact = (v) => String(v || '').replace(/\s+/g, ' ').trim();
-        const clauses = [...bullets, ...sentences]
-          .flatMap((s) => compact(s).split(/\s*[;•]\s+/))
-          .map(compact)
-          .filter((s) => s.length >= 18);
-
-        const seeds = clauses.slice(0, 36);
+        const seeds = [...bullets, ...sentences].slice(0, 24);
         const cards = [];
         const used = new Set();
 
         const addCard = (question, answer) => {
-          const q = String(question || '').trim();
-          const a = String(answer || '').trim();
+          const q = compact(question);
+          const a = compact(answer);
           if (!q || !a) return;
-          if (q.length < 8 || a.length < 8) return;
+          if (q.length < 12 || a.length < 18) return;
+          if (app.logic.isGenericCardQuestion(q)) return;
           const key = `${q.toLowerCase()}|${a.toLowerCase()}`;
           if (used.has(key)) return;
           used.add(key);
           cards.push({ question: q, answer: a });
         };
 
-        const extractTopic = (txt) => {
+        const inferPrompt = (txt) => {
           const t = compact(txt);
-          const withParenRemoved = t.replace(/\([^)]{1,80}\)/g, '').trim();
+          const def = t.match(/^(.{3,90}?)\s+(ist|sind)\s+(.{12,})$/i);
+          if (def) return [`Was ist ${compact(def[1])}?`, `${compact(def[1])} ${def[2]} ${compact(def[3])}`];
 
-          const m1 = withParenRemoved.match(/^(.{4,90}?)\s+(muss|müssen|darf|dürfen|kann|können|soll|sollen|ist|sind|gilt|gelten|beträgt|betragen)\b/i);
-          if (m1) return compact(m1[1]).replace(/[,:;.-]+$/, '');
+          const contrast = t.match(/^(.{4,80}?)\s+(unterscheidet sich|unterscheiden sich)\s+zwischen\s+(.{8,})$/i);
+          if (contrast) return [`Worin besteht die Unterscheidung bei ${compact(contrast[1])}?`, t];
 
-          const m2 = withParenRemoved.match(/^bei\s+(.{4,90}?)(?:\s+gilt|\s+ist|\s+muss|\s+soll|,)/i);
-          if (m2) return `bei ${compact(m2[1])}`;
+          const rule = t.match(/^(.{4,90}?)\s+(muss|müssen|darf|dürfen|kann|können|soll|sollen|gilt|gelten|regelt|regeln)\s+(.{8,})$/i);
+          if (rule) return [`Was regelt oder verlangt der Text zu ${compact(rule[1])}?`, t];
 
-          const m3 = withParenRemoved.match(/für\s+(.{4,80}?)(?:\s+gilt|\s+ist|\s+sind|\s+muss|\s+soll|,|\.|$)/i);
-          if (m3) return `für ${compact(m3[1])}`;
+          const colon = t.match(/^([^:]{4,80}):\s+(.{12,})$/);
+          if (colon) return [`Wie wird ${compact(colon[1])} konkret beschrieben?`, compact(colon[2])];
 
-          return compact(withParenRemoved.split(/\s+/).slice(0, 9).join(' '));
-        };
-
-        const toQuestionFromFact = (part) => {
-          const txt = compact(part);
-          const topic = extractTopic(txt);
-
-          if (/\b§\s*\d+[a-z]?\b/i.test(txt)) {
-            return {
-              question: `Welche Regelung beschreibt ${topic}?`,
-              answer: txt
-            };
-          }
-
-          const colon = txt.match(/^([^:]{3,80}):\s+(.{8,})$/);
-          if (colon) {
-            return {
-              question: `Wie wird ${colon[1].trim()} im Text konkret beschrieben?`,
-              answer: colon[2].trim()
-            };
-          }
-
-          const isDef = txt.match(/^(.{3,80}?)\s+(ist|sind)\s+(.{10,})$/i);
-          if (isDef) {
-            return {
-              question: `Was ist ${isDef[1].trim()}?`,
-              answer: `${isDef[1].trim()} ${isDef[2]} ${isDef[3].trim()}`
-            };
-          }
-
-          const condition = txt.match(/^(Bei|Wenn|Falls|Sobald)\s+(.{6,140})$/i);
-          if (condition) {
-            return {
-              question: `Was gilt, ${condition[1].toLowerCase()} ${condition[2].replace(/[.;]+$/, '')}?`,
-              answer: txt
-            };
-          }
-
-          const hasRuleVerb = /\b(muss|müssen|darf|dürfen|kann|können|soll|sollen|ist verpflichtet|gilt|gelten)\b/i.test(txt);
-          if (hasRuleVerb) {
-            return {
-              question: `Welche Regel gilt ${topic.startsWith('für') ? topic : `für ${topic}`}?`,
-              answer: txt
-            };
-          }
-
-          const hasNumber = /\b\d+\s*(?:%|UE|Stunden?|Tage|Wochen?|Monate|Jahre|Uhr)\b/i.test(txt);
-          if (hasNumber) {
-            return {
-              question: `Welche konkrete Vorgabe nennt der Text ${topic.startsWith('für') ? topic : `für ${topic}`}?`,
-              answer: txt
-            };
-          }
-
-          const hasBecause = txt.match(/^(.{8,120}?)\s+(weil|da)\s+(.{8,})$/i);
-          if (hasBecause) {
-            return {
-              question: `Warum ${hasBecause[1].trim()}?`,
-              answer: `${hasBecause[2]} ${hasBecause[3].trim()}`
-            };
-          }
-
-          const startsWithVerb = txt.match(/^(Nutze|Verwende|Beachte|Prüfe|Aktiviere|Deaktiviere|Wähle|Öffne|Plane|Dokumentiere)\s+(.{6,})$/i);
-          if (startsWithVerb) {
-            return {
-              question: `Welche konkrete Handlung wird empfohlen?`,
-              answer: `${startsWithVerb[1]} ${startsWithVerb[2].trim()}`
-            };
-          }
-
-          return {
-            question: `Welche Kernaussage enthält der Text zu ${topic}?`,
-            answer: txt
-          };
+          if (heading) return [`Was ist die wichtigste Aussage zu ${heading}?`, t];
+          return [`Was ist die wichtigste Aussage dieses Abschnitts?`, t];
         };
 
         seeds.forEach((seed) => {
-          const qa = toQuestionFromFact(seed);
-          addCard(qa.question, qa.answer);
+          const [question, answer] = inferPrompt(seed);
+          addCard(question, answer);
         });
 
-        if (!cards.length) {
-          return [{
-            question: 'Keine Lernfragen erkannt',
-            answer: 'Bitte zuerst eine fachliche Antwort erzeugen und dann Lernkarten öffnen.'
-          }];
-        }
-
-        return cards.slice(0, 18);
+        return cards.slice(0, 8);
       },
 
-      openFlashcardsTab: (forcedText) => {
+      openFlashcardsTab: async (forcedText, requestedCount = 4) => {
         const text = forcedText || (() => {
           const s = app.logic.activeSession();
           if (!s) return '';
@@ -6847,37 +7853,24 @@
           return msg ? msg.content : '';
         })();
 
-        const baseCards = app.logic.buildFlashcardsFromText(text);
-        const stats = parseJSON(localStorage.getItem(CARDS_STATS_KEY) || '{}', {});
-        const cardId = (c) => btoa(unescape(encodeURIComponent(`${c.question}|${c.answer}`))).slice(0, 24);
-        const cards = baseCards
-          .map((c) => {
-            const id = cardId(c);
-            const st = stats[id] || {};
-            return {
-              ...c,
-              id,
-              adaptive: {
-                ease: Number(st.ease || 2),
-                reps: Number(st.reps || 0),
-                dueAt: Number(st.dueAt || 0)
-              }
-            };
-          })
-          .sort((a, b) => a.adaptive.dueAt - b.adaptive.dueAt);
-
-        const payload = {
-          cards,
-          generatedAt: app.utils.nowStamp(),
-          sourceLength: String(text || '').length,
-          adaptive: true,
-          transient: Boolean(app.utils.privacyModeEnabled())
-        };
-
-        localStorage.setItem(CARDS_KEY, JSON.stringify(payload));
-        const target = `${window.location.pathname}?view=cards`;
-        const tab = window.open(target, '_blank', 'noopener');
-        if (!tab) app.logic.notifyPopupBlocked('Lernkarten im neuen Tab');
+        const preparedTab = app.logic.openPreparedCardsTab();
+        try {
+          const result = await app.logic.requestCardsViaWebhook(text, 'last-answer', requestedCount);
+          app.logic.openCardsTabWithPayload({
+            cards: result.cards || [],
+            generatedAt: app.utils.nowStamp(),
+            sourceLength: String(text || '').length,
+            adaptive: true,
+            transient: Boolean(app.utils.privacyModeEnabled()),
+            deckTitle: result.deckTitle || 'Lernkarten',
+            sourceType: result.sourceType || 'last-answer-webhook',
+            sourceText: text,
+            requestedCount
+          }, preparedTab);
+        } catch (e) {
+          if (preparedTab && !preparedTab.closed) preparedTab.close();
+          alert(`Lernkarten-Fehler: ${e.message || 'unbekannt'}`);
+        }
       },
 
       clearAll: () => {
@@ -6913,58 +7906,187 @@
 
   const initCardTab = () => {
     const root = document.body;
+    const params = new URLSearchParams(window.location.search);
     const payload = parseJSON(localStorage.getItem(CARDS_KEY) || '{}', {});
     if (payload?.transient) {
       try { localStorage.removeItem(CARDS_KEY); } catch (_) {}
     }
-    const cards = Array.isArray(payload.cards) ? payload.cards : [];
     const stats = parseJSON(localStorage.getItem(CARDS_STATS_KEY) || '{}', {});
+    const library = parseJSON(localStorage.getItem(CARDS_LIBRARY_KEY) || '[]', []);
+    const libraryMode = params.get('library') === '1';
+    const selectedDeckId = params.get('deck') || '';
+    const selectedDeck = Array.isArray(library) ? library.find((entry) => String(entry.id) === String(selectedDeckId)) : null;
+    const deckPayload = selectedDeck || payload;
+    const baseCards = Array.isArray(deckPayload.cards) ? deckPayload.cards : [];
     const now = Date.now();
+
+    const sortCards = (cards, mode) => {
+      const list = [...cards];
+      if (mode === 'alpha') {
+        return list.sort((a, b) => String(a.question || '').localeCompare(String(b.question || ''), 'de'));
+      }
+      if (mode === 'reps') {
+        return list.sort((a, b) => Number(stats[b.id]?.reps || b.adaptive?.reps || 0) - Number(stats[a.id]?.reps || a.adaptive?.reps || 0));
+      }
+      return list.sort((a, b) => Number(stats[a.id]?.dueAt || a.adaptive?.dueAt || 0) - Number(stats[b.id]?.dueAt || b.adaptive?.dueAt || 0));
+    };
 
     root.innerHTML = `
       <div class="cards-layout">
         <div class="cards-top">
           <div>
             <h1 class="cards-title">LINDA3 Lernkarten</h1>
-            <p class="cards-sub">Generiert: ${app.utils.safeText(payload.generatedAt || 'unbekannt')} • Karten: ${cards.length} • Adaptiv: ${payload.adaptive ? 'an' : 'aus'}</p>
+            <p class="cards-sub">${libraryMode ? `Gespeicherte Decks: ${Array.isArray(library) ? library.length : 0}` : `Deck: ${app.utils.safeText(deckPayload.deckTitle || 'Lernkarten')} • Generiert: ${app.utils.safeText(deckPayload.generatedAt || 'unbekannt')} • Karten: ${baseCards.length}`}</p>
           </div>
-          <button class="btn-icon" onclick="window.close()">Schließen</button>
+          <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+            ${libraryMode ? '' : `<label class="mini" for="cards-sort" style="font-weight:700;color:#f6e7a8;">Sortierung</label>
+            <select id="cards-sort" style="padding:8px 10px; border-radius:12px; border:1px solid rgba(242,214,125,0.32); background:rgba(255,255,255,0.06); color:#fff4cb;">
+              <option value="due">Faelligkeit</option>
+              <option value="alpha">A-Z</option>
+              <option value="reps">Wiederholungen</option>
+            </select>
+            <button class="btn-icon" id="cards-save-btn" type="button">Deck speichern</button>`}
+            <button class="btn-icon" id="cards-library-btn" type="button">Gespeicherte Decks</button>
+            ${selectedDeck ? `<button class="btn-icon" id="cards-current-btn" type="button">Aktuelles Deck</button>` : ''}
+            <button class="btn-icon" type="button" onclick="window.close()">Schließen</button>
+          </div>
         </div>
         <main class="cards-body" id="cards-body"></main>
       </div>
     `;
 
     const body = document.getElementById('cards-body');
-      if (!cards.length) {
-      body.innerHTML = '<div class="state-msg">Keine Lernkarten vorhanden. Markiere im Haupttab eine Textpassage und nutze den Rechtsklick für Lernkarten.</div>';
+    const sortSelect = document.getElementById('cards-sort');
+    const saveBtn = document.getElementById('cards-save-btn');
+    const libraryBtn = document.getElementById('cards-library-btn');
+    const currentBtn = document.getElementById('cards-current-btn');
+
+    if (libraryBtn) {
+      libraryBtn.addEventListener('click', () => {
+        window.location.href = `${window.location.pathname}?view=cards&library=1`;
+      });
+    }
+    if (currentBtn) {
+      currentBtn.addEventListener('click', () => {
+        window.location.href = `${window.location.pathname}?view=cards`;
+      });
+    }
+
+    if (libraryMode) {
+      if (!Array.isArray(library) || !library.length) {
+        body.innerHTML = '<div class="state-msg">Noch keine gespeicherten Decks vorhanden. Speichere zuerst ein Kartendeck aus dem Haupttab.</div>';
+        return;
+      }
+      body.innerHTML = `<section class="deck-grid">
+        ${library.map((entry) => `
+          <article class="deck-card">
+            <div class="flash-chip-row">
+              <span class="flash-chip">Deck</span>
+              <span class="flash-chip soft">${Array.isArray(entry.cards) ? entry.cards.length : 0} Karten</span>
+            </div>
+            <h3>${app.utils.safeText(entry.title || 'LINDA3 Deck')}</h3>
+            <p>Erstellt: ${app.utils.safeText(entry.generatedAt || 'unbekannt')}</p>
+            <div class="deck-actions">
+              <button class="deck-btn primary" type="button" data-open-deck="${app.utils.safeText(entry.id)}">Öffnen</button>
+              <button class="deck-btn" type="button" data-delete-deck="${app.utils.safeText(entry.id)}">Löschen</button>
+            </div>
+          </article>
+        `).join('')}
+      </section>`;
+
+      body.addEventListener('click', (e) => {
+        const openDeckBtn = e.target.closest('[data-open-deck]');
+        if (openDeckBtn) {
+          const deckId = openDeckBtn.getAttribute('data-open-deck');
+          window.location.href = `${window.location.pathname}?view=cards&deck=${encodeURIComponent(deckId)}`;
+          return;
+        }
+        const deleteDeckBtn = e.target.closest('[data-delete-deck]');
+        if (deleteDeckBtn) {
+          const deckId = deleteDeckBtn.getAttribute('data-delete-deck');
+          const next = (Array.isArray(library) ? library : []).filter((entry) => String(entry.id) !== String(deckId));
+          localStorage.setItem(CARDS_LIBRARY_KEY, JSON.stringify(next));
+          window.location.reload();
+        }
+      });
       return;
     }
 
-    body.innerHTML = cards.map((card, idx) => `
-      <article class="flash" data-card="${idx}">
-        <div role="button" tabindex="0" aria-label="Karte ${idx + 1} umdrehen" class="flash-toggle">
-          <div class="flash-inner">
-            <div class="flash-face front">
-              <p class="flash-kicker">Frage</p>
-              <h4>${app.utils.safeText(card.question)}</h4>
-              <p>Tippen zum Umdrehen</p>
+    const renderCards = () => {
+      const cards = sortCards(baseCards, sortSelect?.value || 'due');
+      if (!cards.length) {
+        body.innerHTML = '<div class="state-msg">Keine Lernkarten vorhanden. Markiere im Haupttab eine Textpassage und nutze Lernkarten erstellen.</div>';
+        return;
+      }
+
+      body.innerHTML = cards.map((card, idx) => {
+        const dueAt = Number(stats[card.id]?.dueAt || card.adaptive?.dueAt || 0);
+        const reps = Number(stats[card.id]?.reps || card.adaptive?.reps || 0);
+        const dueLabel = dueAt <= now ? 'Jetzt faellig' : new Date(dueAt).toLocaleDateString('de-DE');
+        return `
+          <article class="flash" data-card="${idx}">
+            <div role="button" tabindex="0" aria-label="Karte ${idx + 1} umdrehen" class="flash-toggle">
+              <div class="flash-inner">
+                <div class="flash-face front">
+                  <div class="flash-chip-row">
+                    <span class="flash-chip">Karte ${idx + 1}</span>
+                    <span class="flash-chip soft">${app.utils.safeText(deckPayload.deckTitle || 'LINDA3 Deck')}</span>
+                  </div>
+                  <p class="flash-kicker">Frage</p>
+                  <h4>${app.utils.safeText(card.question)}</h4>
+                  <p class="flash-hint">Tippen zum Umdrehen</p>
+                </div>
+                <div class="flash-face back">
+                  <div class="flash-chip-row">
+                    <span class="flash-chip">Antwort</span>
+                    <span class="flash-chip soft">${reps} Wiederholungen</span>
+                  </div>
+                  <div class="flash-answer">${app.utils.safeText(card.answer)}</div>
+                  <div class="flash-meta">
+                    <div class="flash-meta-item">
+                      <span class="flash-meta-label">Status</span>
+                      <span class="flash-meta-value">${dueAt <= now ? 'Faellig' : 'Geplant'}</span>
+                    </div>
+                    <div class="flash-meta-item">
+                      <span class="flash-meta-label">Naechster Termin</span>
+                      <span class="flash-meta-value">${app.utils.safeText(dueLabel)}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
-            <div class="flash-face back">
-              <p class="flash-kicker">Antwort</p>
-              <p>${app.utils.safeText(card.answer)}</p>
-              <p style="margin-top:8px; font-size:0.78rem; color:#31567f;">
-                Status: ${((stats[card.id]?.dueAt || card.adaptive?.dueAt || 0) <= now) ? 'fällig' : 'geplant'} • Wiederholungen: ${Number(stats[card.id]?.reps || card.adaptive?.reps || 0)}
-              </p>
+            <div class="flash-actions">
+              <button type="button" class="flash-rate-btn" data-rate="hard" data-card-id="${card.id}">Schwer</button>
+              <button type="button" class="flash-rate-btn" data-rate="mid" data-card-id="${card.id}">Mittel</button>
+              <button type="button" class="flash-rate-btn easy" data-rate="easy" data-card-id="${card.id}">Leicht</button>
             </div>
-          </div>
-        </div>
-        <div style="display:flex; gap:6px; margin-top:8px; flex-wrap:wrap;">
-          <button type="button" class="btn-icon" style="height:34px; min-width:90px;" data-rate="hard" data-card-id="${card.id}">Schwer</button>
-          <button type="button" class="btn-icon" style="height:34px; min-width:90px;" data-rate="mid" data-card-id="${card.id}">Mittel</button>
-          <button type="button" class="btn-icon btn-primary" style="height:34px; min-width:90px;" data-rate="easy" data-card-id="${card.id}">Leicht</button>
-        </div>
-      </article>
-    `).join('');
+          </article>
+        `;
+      }).join('');
+    };
+
+    renderCards();
+
+    if (sortSelect) {
+      sortSelect.addEventListener('change', () => renderCards());
+    }
+
+    if (saveBtn) {
+      saveBtn.addEventListener('click', () => {
+        const current = Array.isArray(library) ? library : [];
+        const entry = {
+          id: `deck_${Date.now()}`,
+          title: String(deckPayload.deckTitle || 'LINDA3 Lernkarten'),
+          generatedAt: String(deckPayload.generatedAt || app.utils.nowStamp()),
+          cards: baseCards,
+          sortMode: String(sortSelect?.value || 'due')
+        };
+        const next = [entry, ...current].slice(0, 30);
+        localStorage.setItem(CARDS_LIBRARY_KEY, JSON.stringify(next));
+        saveBtn.textContent = 'Deck gespeichert';
+        setTimeout(() => { saveBtn.textContent = 'Deck speichern'; }, 1000);
+      });
+    }
 
     body.addEventListener('click', (e) => {
       const rateBtn = e.target.closest('[data-rate][data-card-id]');
@@ -6987,6 +8109,7 @@
           if (rate === 'easy') rateBtn.textContent = 'Leicht';
           if (rate === 'mid') rateBtn.textContent = 'Mittel';
           if (rate === 'hard') rateBtn.textContent = 'Schwer';
+          renderCards();
         }, 900);
         return;
       }
@@ -7095,8 +8218,10 @@
     }
 
     app.utils.load();
+    app.logic.enforceSozialrechtMode({ save: false });
     app.logic.loadKeywordLinks();
     app.logic.loadLearningTemplates();
+    app.logic.loadSozialrechtCurriculum();
     app.ui.updateDomainUI();
     app.ui.renderSourceToolbar();
     app.ui.syncFastModeControls();
@@ -7106,6 +8231,7 @@
     app.ui.syncPrivacyModeControls();
     app.ui.syncMobileReaderControls();
     app.ui.applyMobileReaderClass();
+    app.ui.renderClarifierDock();
     if (app.logic.isMobileReaderEnabled()) {
       app.logic.setMobileReader(true);
     }
@@ -7169,6 +8295,15 @@
         });
       }
     }
+    const openCardsLibraryBtn = document.getElementById('open-cards-library-btn');
+    if (openCardsLibraryBtn) {
+      openCardsLibraryBtn.addEventListener('click', () => {
+        const target = `${window.location.pathname}?view=cards&library=1`;
+        const tab = window.open(target, '_blank', 'noopener');
+        if (!tab) app.logic.notifyPopupBlocked('gespeicherte Lernkarten');
+      });
+    }
+
 
     const fastMainOn = document.getElementById('fastmode-main-on');
     const fastMainOff = document.getElementById('fastmode-main-off');
@@ -7301,6 +8436,50 @@
       app.ui.closeModals();
     });
 
+    if (app.ui.clarifyDock) {
+      app.ui.clarifyDock.addEventListener('click', (e) => {
+        const closeBtn = e.target.closest('[data-clarify-cancel]');
+        if (closeBtn) {
+          app.logic.closeClaudeClarifier({ save: true });
+          return;
+        }
+
+        const optionBtn = e.target.closest('[data-clarify-option]');
+        if (optionBtn) {
+          const value = decodeURIComponent(optionBtn.getAttribute('data-clarify-option') || '');
+          if (value) app.logic.answerClaudeClarifierStep(value);
+          return;
+        }
+
+        const skipBtn = e.target.closest('[data-clarify-skip]');
+        if (skipBtn) {
+          app.logic.answerClaudeClarifierStep('');
+          return;
+        }
+
+        const freeBtn = e.target.closest('[data-clarify-free]');
+        if (freeBtn) {
+          const freeInput = app.ui.clarifyDock.querySelector('[data-clarify-free-input]');
+          const value = String(freeInput?.value || '').trim();
+          if (!value) {
+            alert('Bitte gib einen kurzen Hinweis ein oder waehle eine Option.');
+            return;
+          }
+          app.logic.answerClaudeClarifierStep(value);
+        }
+      });
+
+      app.ui.clarifyDock.addEventListener('keydown', (e) => {
+        if (e.key !== 'Enter') return;
+        const freeInput = e.target.closest('[data-clarify-free-input]');
+        if (!freeInput) return;
+        e.preventDefault();
+        const value = String(freeInput.value || '').trim();
+        if (!value) return;
+        app.logic.answerClaudeClarifierStep(value);
+      });
+    }
+
     app.ui.log.addEventListener('click', (e) => {
       const stageModeBtn = e.target.closest('[data-show-mode-info]');
       if (stageModeBtn) {
@@ -7311,12 +8490,21 @@
 
       const modeBtn = e.target.closest('[data-set-domain]');
       if (modeBtn) {
-        const mode = modeBtn.getAttribute('data-set-domain') || '';
+        const pickedMode = modeBtn.getAttribute('data-set-domain') || '';
+        const mode = SOZIALRECHT_ONLY_MODE ? SOZIALRECHT_DOMAIN_KEY : pickedMode;
         app.state.settings.domain = mode;
+        app.logic.enforceSozialrechtMode({ save: false });
         app.utils.save();
         app.ui.updateDomainUI();
         app.ui.log.querySelectorAll('.mode-card-row').forEach((el) => el.remove());
-        app.ui.log.appendChild(app.ui.createBubble('assistant', `Fachmodus wurde auf **${mode}** gesetzt.`));
+        app.ui.log.appendChild(
+          app.ui.createBubble(
+            'assistant',
+            SOZIALRECHT_ONLY_MODE
+              ? 'Fachmodus ist fest auf **SOZIALRECHT** gesetzt.'
+              : `Fachmodus wurde auf **${mode}** gesetzt.`
+          )
+        );
         app.ui.scrollBottom();
         return;
       }
@@ -7363,21 +8551,34 @@
       app.ui.hideSelectionMenu();
       app.ui.openSelectionActionModal({
         title: 'Lernkarten aus Markierung',
-        preview: draft.text.slice(0, 450),
+        preview: (draft.fullText || draft.text).slice(0, 600),
         fieldsHtml:
-          '<div class="selection-field"><label for="selection-cards-count">Anzahl Lernkarten</label><select id="selection-cards-count"><option value="6">6</option><option value="8" selected>8</option><option value="10">10</option><option value="12">12</option></select></div>',
+          '<div class="selection-field"><label for="selection-cards-count">Anzahl Lernkarten</label><select id="selection-cards-count"><option value="2">2</option><option value="4" selected>4</option></select></div><div class="mini">LINDA nutzt den gesamten vorherigen Antworttext als Grundlage und fokussiert dabei den markierten Abschnitt.</div>',
         confirmLabel: 'Lernkarten erstellen',
         onConfirm: async () => {
-          const count = Number(document.getElementById('selection-cards-count')?.value || 8);
-          const result = await app.logic.requestSelectionFlashcards(draft.text, count);
-          app.logic.openCardsTabWithPayload({
-            cards: result.cards || [],
-            generatedAt: app.utils.nowStamp(),
-            sourceLength: draft.text.length,
-            adaptive: true,
-            deckTitle: result.deckTitle || 'Lernkarten aus Auswahl',
-            sourceType: result.sourceType || 'selection-api'
-          });
+          const count = Number(document.getElementById('selection-cards-count')?.value || 4);
+          const preparedTab = app.logic.openPreparedCardsTab();
+          try {
+            const result = await app.logic.requestSelectionFlashcards({
+              selectedText: draft.text,
+              fullText: draft.fullText || draft.text,
+              questionText: draft.questionText || '',
+              count
+            });
+            app.logic.openCardsTabWithPayload({
+              cards: result.cards || [],
+              generatedAt: app.utils.nowStamp(),
+              sourceLength: String(draft.fullText || draft.text).length,
+              adaptive: true,
+              deckTitle: result.deckTitle || 'Lernkarten aus Auswahl',
+              sourceType: result.sourceType || 'selection-api',
+              sourceText: draft.fullText || draft.text,
+              requestedCount: count
+            }, preparedTab);
+          } catch (err) {
+            if (preparedTab && !preparedTab.closed) preparedTab.close();
+            throw err;
+          }
         }
       });
     });

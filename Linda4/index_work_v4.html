@@ -60,21 +60,29 @@
 
   #app {
     width: 100%;
+    max-width: 100vw;
     height: 100dvh;
     background: linear-gradient(180deg, #fafdff 0%, #f2f7ff 100%);
     display: grid;
     grid-template-rows: var(--header-h) auto 1fr auto;
     overflow: hidden;
     position: relative;
+    box-sizing: border-box;
+  }
+
+  #app > * {
+    min-width: 0;
   }
 
   @media (min-width: 980px) {
     body {
-      padding: 20px;
+      padding: 16px;
     }
 
     #app {
+      width: min(1160px, 100%);
       max-width: 1160px;
+      margin-inline: auto;
       border-radius: 26px;
       box-shadow: 0 24px 70px rgba(4, 20, 45, 0.25);
       height: min(96vh, 960px);
@@ -130,6 +138,9 @@
     display: flex;
     gap: 6px;
     overflow-x: auto;
+    min-width: 0;
+    flex: 0 1 auto;
+    max-width: 54%;
   }
 
   .mobile-reader-toggle {
@@ -209,7 +220,7 @@
     background: #f7fbff;
     padding: 8px 12px;
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
     gap: 8px;
     font-size: 0.84rem;
     color: #23466f;
@@ -224,18 +235,20 @@
     flex-wrap: wrap;
     align-items: center;
     gap: 8px;
+    min-width: 0;
   }
 
   .smart-control .label {
     font-weight: 800;
     color: #0d4c96;
-    white-space: nowrap;
+    white-space: normal;
   }
 
   .fastmode-choice {
     display: inline-flex;
     align-items: center;
     gap: 6px;
+    min-width: 0;
   }
 
   .compare-canvas {
@@ -391,6 +404,59 @@
 
   .md th {
     background: #edf5ff;
+  }
+
+  .md.sozialrecht-md {
+    display: grid;
+    gap: 10px;
+  }
+
+  .sozialrecht-topline {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    width: fit-content;
+    max-width: 100%;
+    border-radius: 999px;
+    border: 1px solid #b9d8cb;
+    background: linear-gradient(135deg, #eaf7f1 0%, #f5fcf8 100%);
+    color: #0f5a4b;
+    padding: 5px 10px;
+    font-size: 0.75rem;
+    font-weight: 800;
+    letter-spacing: 0.01em;
+  }
+
+  .sozialrecht-stack {
+    display: grid;
+    gap: 10px;
+  }
+
+  .sozialrecht-section {
+    border: 1px solid #c8ddd4;
+    border-radius: 13px;
+    background: linear-gradient(180deg, #ffffff 0%, #f8fcfa 100%);
+    padding: 10px 11px;
+  }
+
+  .sozialrecht-section.intro {
+    border-color: #a6cfbf;
+    box-shadow: 0 10px 22px rgba(4, 81, 68, 0.08);
+  }
+
+  .sozialrecht-section-head {
+    margin: 0 0 8px;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #0a5b4b;
+  }
+
+  .sozialrecht-section p:last-child,
+  .sozialrecht-section ul:last-child,
+  .sozialrecht-section ol:last-child {
+    margin-bottom: 0;
   }
 
   .table-wrap {
@@ -574,6 +640,175 @@
     color: #29405f;
   }
 
+  .clarify-dock {
+    position: sticky;
+    bottom: calc(var(--input-h) + 8px + env(safe-area-inset-bottom));
+    z-index: 18;
+    padding: 0 12px 8px;
+    pointer-events: none;
+  }
+
+  .clarify-dock[hidden] {
+    display: none !important;
+  }
+
+  .clarify-card {
+    pointer-events: auto;
+    width: min(100%, 760px);
+    margin: 0 auto;
+    border: 1px solid #c6d6ef;
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.96);
+    box-shadow: 0 20px 44px rgba(7, 26, 52, 0.2);
+    overflow: hidden;
+  }
+
+  .clarify-head {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    align-items: center;
+    padding: 10px 12px 8px;
+    border-bottom: 1px solid #d9e4f4;
+    background: linear-gradient(180deg, #f8fbff 0%, #f2f7ff 100%);
+  }
+
+  .clarify-kicker {
+    font-size: 0.78rem;
+    color: #37526f;
+    font-weight: 700;
+  }
+
+  .clarify-progress {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    border-radius: 999px;
+    border: 1px solid #c7d9f1;
+    background: #eef5ff;
+    padding: 4px 8px;
+    font-size: 0.72rem;
+    font-weight: 800;
+    color: #1e4d8a;
+  }
+
+  .clarify-cancel {
+    border: none;
+    background: transparent;
+    color: #5f748e;
+    font-size: 1.15rem;
+    line-height: 1;
+    cursor: pointer;
+  }
+
+  .clarify-body {
+    padding: 12px;
+    display: grid;
+    gap: 10px;
+  }
+
+  .clarify-intro {
+    margin: 0;
+    font-size: 0.9rem;
+    color: #2f4866;
+  }
+
+  .clarify-question {
+    margin: 0;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 1.04rem;
+    color: #163557;
+  }
+
+  .clarify-options {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 8px;
+  }
+
+  .clarify-option {
+    width: 100%;
+    border: 1px solid #d6e3f4;
+    background: #ffffff;
+    border-radius: 11px;
+    padding: 10px 12px;
+    text-align: left;
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    font: inherit;
+    color: #1e3654;
+    cursor: pointer;
+  }
+
+  .clarify-option:hover,
+  .clarify-option:focus-visible {
+    border-color: #9fc0ea;
+    background: #eef5ff;
+    outline: none;
+  }
+
+  .clarify-option-index {
+    flex: 0 0 auto;
+    width: 24px;
+    height: 24px;
+    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #d0def3;
+    background: #f7fbff;
+    color: #4a6380;
+    font-size: 0.75rem;
+    font-weight: 800;
+  }
+
+  .clarify-free {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .clarify-free input {
+    flex: 1;
+    min-width: 0;
+    border: 1px solid #d3deed;
+    border-radius: 10px;
+    padding: 10px 11px;
+    font: inherit;
+    color: #1f3755;
+    background: #fbfdff;
+  }
+
+  .clarify-free button,
+  .clarify-actions button {
+    border: 1px solid #d2deee;
+    border-radius: 10px;
+    padding: 9px 11px;
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+    background: #ffffff;
+    color: #2a486b;
+  }
+
+  .clarify-free button:hover,
+  .clarify-actions button:hover,
+  .clarify-free button:focus-visible,
+  .clarify-actions button:focus-visible {
+    border-color: #9fc0ea;
+    background: #eef5ff;
+    outline: none;
+  }
+
+  .clarify-actions {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+  }
+
   .source-missing {
     margin-top: 9px;
     color: #697a91;
@@ -658,11 +893,14 @@
     align-items: flex-end;
     padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
     z-index: 7;
+    width: 100%;
+    min-width: 0;
   }
 
   .input-wrap {
     flex: 1;
     position: relative;
+    min-width: 0;
   }
 
   #chat-input {
@@ -2065,32 +2303,31 @@
     }
 
     .smart-controls-bar {
-      display: flex;
-      grid-template-columns: unset;
-      overflow-x: auto;
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      overflow-x: visible;
       gap: 10px;
       padding: 10px;
       border-top: 1px solid #d5e2f5;
       border-bottom: 1px solid #d5e2f5;
       background: linear-gradient(180deg, #f8fbff 0%, #f1f7ff 100%);
-      scroll-snap-type: x proximity;
-      -webkit-overflow-scrolling: touch;
     }
 
     .smart-control {
-      flex: 0 0 min(82vw, 300px);
+      min-width: 0;
+      flex: 1 1 auto;
       border-radius: 14px;
       padding: 10px;
       gap: 8px;
       border-color: #cadcf4;
       box-shadow: 0 8px 18px rgba(14, 42, 78, 0.09);
-      scroll-snap-align: start;
     }
 
     .smart-control .label {
       width: 100%;
       font-size: 0.77rem;
       letter-spacing: 0.02em;
+      white-space: normal;
     }
 
     #chat-log {
@@ -2148,6 +2385,20 @@
       background: linear-gradient(180deg, rgba(250, 253, 255, 0.9) 0%, rgba(242, 248, 255, 0.97) 100%);
       box-shadow: 0 -10px 26px rgba(11, 35, 67, 0.12);
       padding: 9px 10px calc(10px + env(safe-area-inset-bottom));
+    }
+
+    .clarify-dock {
+      bottom: calc(var(--input-h) + 8px + env(safe-area-inset-bottom));
+      padding: 0 10px 8px;
+    }
+
+    .clarify-card {
+      border-radius: 14px;
+    }
+
+    .clarify-body {
+      padding: 10px;
+      gap: 8px;
     }
 
     #chat-input {
@@ -2249,6 +2500,10 @@
     .source-chip {
       font-size: 0.75rem;
       padding: 8px 11px;
+    }
+
+    .smart-controls-bar {
+      grid-template-columns: 1fr;
     }
 
     .bubble {
@@ -2819,6 +3074,8 @@
     </div>
   </div>
 
+  <div id="clarify-dock" class="clarify-dock" hidden></div>
+
   <div class="input-area">
     <div class="input-wrap">
       <div id="snippet-popup"></div>
@@ -2868,12 +3125,9 @@
       <div class="field">
         <label for="inp-domain">Fachmodus</label>
         <select id="inp-domain">
-          <option value="">Standard</option>
-          <option value="AEVO">Ausbilder (AEVO)</option>
-          <option value="VWL">VWL / Betriebswirtschaft</option>
-          <option value="PERSONAL">Personalwesen</option>
           <option value="SOZIALRECHT">Sozialrecht (SGB I-XII)</option>
         </select>
+        <p class="mini">Diese Version arbeitet ausschliesslich im Fachmodus Sozialrecht.</p>
       </div>
     </div>
 
@@ -3073,8 +3327,11 @@
   const REWRITE_API_ENDPOINT = '/api/linda3?action=rewrite';
   const TTS_API_ENDPOINT = '/api/linda3?action=tts';
   const STT_API_ENDPOINT = '/api/linda3?action=stt';
+  const SOZIALRECHT_ONLY_MODE = true;
+  const SOZIALRECHT_DOMAIN_KEY = 'SOZIALRECHT';
   const LEARNING_TEMPLATES_PATH = './docs/learning_templates.json';
   const SOZIALRECHT_CURRICULUM_PATH = './docs/sozialrecht_sgb_i_xii.json';
+  const CLAUDE_CLARIFY_MODE = true;
   const APP_VERSION = 3;
   const REQUEST_MEMORY_VERSION = 1;
 
@@ -3122,7 +3379,7 @@
   const DEFAULT_ASSISTANT_PREFS = {
     showEvidence: true,
     showFollowups: true,
-    showLearningPath: true,
+    showLearningPath: false,
     learningGoal: '',
     feedbackIncludeTranscript: false
   };
@@ -3207,9 +3464,18 @@
     requestController: null,
     isCardsRequestRunning: false,
     selectionDraft: null,
+    clarifier: {
+      active: false,
+      originQuestion: '',
+      intro: '',
+      steps: [],
+      answers: [],
+      currentStep: 0,
+      source: ''
+    },
     settings: {
         name: '',
-        domain: '',
+        domain: SOZIALRECHT_ONLY_MODE ? SOZIALRECHT_DOMAIN_KEY : '',
         snippets: [],
       sources: SOURCE_DEFS.reduce((acc, s) => {
         acc[s.key] = s.default;
@@ -3342,7 +3608,8 @@
           ...app.state,
           requestController: null,
           isSending: false,
-          requestMemory: undefined
+          requestMemory: undefined,
+          clarifier: structuredClone(DEFAULT_STATE.clarifier)
         };
         if (privacyMode) {
           clone.sessions = [];
@@ -3447,10 +3714,16 @@
         if (String(app.state.settings.domain || '').toUpperCase() === 'IT') {
           app.state.settings.domain = '';
         }
+        if (SOZIALRECHT_ONLY_MODE) {
+          app.state.settings.domain = SOZIALRECHT_DOMAIN_KEY;
+          app.state.settings.assistant.showLearningPath = false;
+          app.state.settings.privacy.ephemeral = false;
+        }
+        app.state.clarifier = structuredClone(DEFAULT_STATE.clarifier);
 
         const newWelcome =
           'Willkommen bei **LINDA**.\n\n' +
-          'Ich unterstütze dich bei **AEVO**, **BWL/VWL**, **Personalwesen** und **Sozialrecht (SGB I-XII)**.\n' +
+          'Diese Version arbeitet ausschliesslich im **Fachmodus Sozialrecht (SGB I-XII)**.\n' +
           'Lernkarten werden aus den **Inhalten der Antwort** erstellt.\n' +
           'ILIAS kann bei Bedarf über den Schalter **Kursraum (ILIAS)** aktiviert werden.';
 
@@ -3460,6 +3733,14 @@
             const txt = String(msg.content || '');
             if (/willkommen bei\s*\*?\*?linda3/i.test(txt)) msg.content = newWelcome;
             if (/willkommen bei\s*\*?\*?linda/i.test(txt)) app.state.welcomeShown = true;
+            if (
+              SOZIALRECHT_ONLY_MODE &&
+              msg.meta &&
+              typeof msg.meta === 'object' &&
+              'learningStep' in msg.meta
+            ) {
+              msg.meta.learningStep = null;
+            }
           });
         });
       },
@@ -3485,27 +3766,47 @@
         const parsed = parseJSON(rawText, null);
         if (!parsed) return { answer: rawText, sources: [], meta: {} };
         if (typeof parsed === 'string') return { answer: parsed, sources: [], meta: {} };
+        const backendMeta = (parsed.meta && typeof parsed.meta === 'object') ? parsed.meta : {};
         const altSources =
           parsed.sources ||
           parsed.quellen ||
           parsed.references ||
           parsed.citations ||
           parsed.links ||
+          backendMeta.sources ||
           (parsed.metadata && parsed.metadata.sources) ||
           [];
         const followups =
           parsed.followups ||
           parsed.next_questions ||
           parsed.suggestions ||
+          backendMeta.followups ||
           parsed.recommended_questions ||
           [];
+        const confidence =
+          Number.isFinite(Number(parsed.confidence))
+            ? Number(parsed.confidence)
+            : (Number.isFinite(Number(backendMeta.confidence)) ? Number(backendMeta.confidence) : null);
+        const evidenceNote = String(
+          parsed.evidence_note ||
+          parsed.reasoning_note ||
+          backendMeta.evidence_note ||
+          backendMeta.evidenceNote ||
+          ''
+        ).trim();
         return {
           answer: String(parsed.answer || parsed.response || parsed.text || parsed.output || rawText),
           sources: Array.isArray(altSources) ? altSources : [],
           meta: {
             followups: Array.isArray(followups) ? followups : [],
-            confidence: Number.isFinite(Number(parsed.confidence)) ? Number(parsed.confidence) : null,
-            evidenceNote: String(parsed.evidence_note || parsed.reasoning_note || '').trim()
+            confidence,
+            evidenceNote,
+            domain: String(backendMeta.domain || parsed.domain || '').trim().toUpperCase(),
+            clarificationRequested: Boolean(backendMeta.clarification_requested || backendMeta.clarificationRequested),
+            storageUsed: Boolean(backendMeta.storage_used ?? backendMeta.storageUsed),
+            storageFallback: Boolean(backendMeta.storage_fallback ?? backendMeta.storageFallback),
+            storageError: String(backendMeta.storage_error || backendMeta.storageError || '').trim(),
+            model: String(backendMeta.model || parsed.model || '').trim()
           }
         };
       },
@@ -3526,6 +3827,7 @@
       input: document.getElementById('chat-input'),
       micBtn: document.getElementById('mic-btn'),
       sendBtn: document.getElementById('send-btn'),
+      clarifyDock: document.getElementById('clarify-dock'),
 
       openModal: (id) => {
         document.querySelectorAll('.modal-overlay').forEach((m) => m.classList.remove('open'));
@@ -3543,6 +3845,63 @@
 
       closeModals: () => {
         document.querySelectorAll('.modal-overlay').forEach((m) => m.classList.remove('open'));
+      },
+
+      renderClarifierDock: () => {
+        const dock = app.ui.clarifyDock;
+        if (!dock) return;
+        const clarifier = app.state.clarifier || {};
+        if (!clarifier.active) {
+          dock.hidden = true;
+          dock.innerHTML = '';
+          return;
+        }
+
+        const steps = Array.isArray(clarifier.steps) ? clarifier.steps : [];
+        const index = Math.max(0, Math.min(steps.length - 1, Number(clarifier.currentStep) || 0));
+        const step = steps[index];
+        if (!step) {
+          dock.hidden = true;
+          dock.innerHTML = '';
+          return;
+        }
+
+        const options = (Array.isArray(step.options) ? step.options : []).slice(0, 4);
+        const introText = String(clarifier.intro || '').trim() || 'Bitte beantworte kurz die Rueckfrage:';
+        const freeDraft = String((clarifier.answers || [])[index] || '').trim();
+        const progress = `${index + 1} von ${steps.length}`;
+
+        dock.innerHTML = `
+          <section class="clarify-card" role="group" aria-label="Rueckfragen">
+            <div class="clarify-head">
+              <span class="clarify-kicker">Rueckfragenmodus</span>
+              <span class="clarify-progress">${app.utils.safeText(progress)}</span>
+              <button type="button" class="clarify-cancel" data-clarify-cancel aria-label="Rueckfragen schliessen">×</button>
+            </div>
+            <div class="clarify-body">
+              <p class="clarify-intro">${app.utils.safeText(introText)}</p>
+              <h4 class="clarify-question">${app.utils.safeText(String(step.question || 'Rueckfrage'))}</h4>
+              <ul class="clarify-options">
+                ${options.map((option, i) => `
+                  <li>
+                    <button type="button" class="clarify-option" data-clarify-option="${encodeURIComponent(option)}">
+                      <span class="clarify-option-index">${i + 1}</span>
+                      <span>${app.utils.safeText(option)}</span>
+                    </button>
+                  </li>
+                `).join('')}
+              </ul>
+              <div class="clarify-free">
+                <input type="text" data-clarify-free-input value="${app.utils.safeText(freeDraft).replace(/"/g, '&quot;')}" placeholder="Etwas anderes..." aria-label="Eigene Antwort">
+                <button type="button" data-clarify-free>Uebernehmen</button>
+              </div>
+              <div class="clarify-actions">
+                <button type="button" data-clarify-skip>Ueberspringen</button>
+              </div>
+            </div>
+          </section>
+        `;
+        dock.hidden = false;
       },
 
       openModeInfo: (kind) => {
@@ -3570,7 +3929,7 @@
           <div class="feature-hero">
             <span class="feature-kicker">So arbeitet LINDA</span>
             <h2 class="feature-title">Guardrails, Quellen und Lernhilfe auf einen Blick</h2>
-            <p class="feature-copy">Nach dem Start zeigt dir LINDA hier die wichtigsten Schutz- und Assistenzfunktionen. Du kannst direkt nachlesen, was Privatmodus, Quellenmodus, Evidenzkarten und Lernpfade konkret bewirken.</p>
+            <p class="feature-copy">Nach dem Start zeigt dir LINDA hier die wichtigsten Schutz- und Assistenzfunktionen fuer Sozialrecht. Du kannst direkt nachlesen, was Privatmodus, Quellenmodus, Evidenzkarten und Rueckfragenlogik konkret bewirken.</p>
           </div>
           <div class="feature-grid">
             <article class="feature-card">
@@ -3592,8 +3951,8 @@
               <p>Antworten zeigen sichtbare Evidenzstufen, klickbare Quellen und direkt lesbare Ausschnitte statt nur einer bloßen Linkliste.</p>
             </article>
             <article class="feature-card">
-              <h4>Follow-ups & Lernpfad</h4>
-              <p>LINDA schlägt passende Anschlussfragen vor und zeigt dir einen nächsten Lernschritt, damit aus einer Antwort ein echter Lernfluss wird.</p>
+              <h4>Follow-ups & Rueckfragen</h4>
+              <p>LINDA stellt bei unklaren Angaben praezise Rueckfragen und bietet passende Anschlussfragen, damit Antworten fachlich eng und pruefungstauglich bleiben.</p>
             </article>
           </div>
         `;
@@ -3619,7 +3978,7 @@
       fillSettingsForm: () => {
         const { settings } = app.state;
         document.getElementById('inp-name').value = settings.name || '';
-        document.getElementById('inp-domain').value = settings.domain || '';
+        document.getElementById('inp-domain').value = settings.domain || SOZIALRECHT_DOMAIN_KEY;
         document.getElementById('inp-prompting-enabled').checked = Boolean(settings.prompting && settings.prompting.enabled);
         document.getElementById('inp-grounded-mode').checked = Boolean(settings.guardrails && settings.guardrails.groundedMode);
         document.getElementById('inp-strict-unknown').checked = Boolean(settings.guardrails && settings.guardrails.strictUnknown);
@@ -3641,6 +4000,7 @@
           null,
           2
         );
+        app.ui.syncSozialrechtOnlyControls();
         app.ui.renderApiHealthStatus(app.state.apiHealth);
       },
 
@@ -3658,6 +4018,12 @@
         Object.entries(h.checks).forEach(([k, v]) => {
           lines.push(`${v ? '✓' : '✗'} ${k}`);
         });
+        if (h.storageEnvKey) {
+          lines.push(`Storage-ENV: ${h.storageEnvKey}`);
+        }
+        if (typeof h.storageConfigured === 'boolean') {
+          lines.push(`${h.storageConfigured ? '✓' : '✗'} Vector Store konfiguriert`);
+        }
         if (h.baseUrl) {
           lines.push(`API-Basis: ${h.baseUrl}`);
         }
@@ -3667,6 +4033,23 @@
         }
         box.textContent = lines.join('\n');
         box.style.color = h.ok ? '#1f6b2a' : '#8a3b00';
+      },
+
+      syncSozialrechtOnlyControls: () => {
+        const domainInput = document.getElementById('inp-domain');
+        if (domainInput) {
+          if (SOZIALRECHT_ONLY_MODE) domainInput.value = SOZIALRECHT_DOMAIN_KEY;
+          domainInput.disabled = SOZIALRECHT_ONLY_MODE;
+          domainInput.title = SOZIALRECHT_ONLY_MODE ? 'In dieser Version ist nur Fachmodus Sozialrecht aktiv.' : '';
+        }
+
+        const learningToggle = document.getElementById('inp-show-learning-path');
+        if (learningToggle) {
+          const lockedLearning = SOZIALRECHT_ONLY_MODE || app.logic.isSozialrechtDomain();
+          if (lockedLearning) learningToggle.checked = false;
+          learningToggle.disabled = lockedLearning;
+          learningToggle.title = lockedLearning ? 'Lernpfad ist im Fachmodus Sozialrecht deaktiviert.' : '';
+        }
       },
 
       syncFastModeControls: () => {
@@ -3702,11 +4085,8 @@
       },
 
       syncPrivacyModeControls: () => {
-        const locked = app.logic.isSozialrechtDomain();
-        if (locked && app.state.settings?.privacy) app.state.settings.privacy.ephemeral = true;
-        const enabled = locked
-          ? true
-          : Boolean(app.state.settings.privacy && app.state.settings.privacy.ephemeral);
+        const locked = false;
+        const enabled = Boolean(app.state.settings.privacy && app.state.settings.privacy.ephemeral);
         const on = document.getElementById('privacy-main-on');
         const off = document.getElementById('privacy-main-off');
         if (on) on.checked = enabled;
@@ -3717,7 +4097,7 @@
         if (privacySetting) {
           privacySetting.checked = enabled;
           privacySetting.disabled = locked;
-          privacySetting.title = locked ? 'Im Fachmodus Sozialrecht ist Privatmodus fest aktiv.' : '';
+          privacySetting.title = '';
         }
       },
 
@@ -3929,7 +4309,8 @@
       },
 
       updateDomainUI: () => {
-        const domain = app.state.settings.domain || 'Standard';
+        if (SOZIALRECHT_ONLY_MODE) app.state.settings.domain = SOZIALRECHT_DOMAIN_KEY;
+        const domain = app.state.settings.domain || SOZIALRECHT_DOMAIN_KEY;
         const activeCount = app.utils.activeSources().length;
         const isFast = Boolean(app.state.settings.fastMode && app.state.settings.fastMode.enabled);
         const isCompare = Boolean(app.state.settings.compareMode && app.state.settings.compareMode.enabled);
@@ -3938,6 +4319,7 @@
         const privacy = Boolean(app.state.settings.privacy && app.state.settings.privacy.ephemeral);
         document.getElementById('domain-badge').textContent = isFast ? `${domain} ⚡` : domain;
         document.getElementById('domain-summary').textContent = `Fachmodus: ${domain}${isFast ? ' • Schnellmodus aktiv' : ''}${isCompare ? ' • Vergleich aktiv' : ''}${hasDirectory ? ' • Lernverzeichnis (Beta) aktiv' : ''}${grounded ? ' • Quellenmodus strikt' : ''}${privacy ? ' • Privatmodus aktiv' : ''} • Wissensbereiche: ${activeCount} aktiv`;
+        app.ui.syncSozialrechtOnlyControls();
       },
 
       loadingRow: () => {
@@ -4073,7 +4455,10 @@
 
       renderModeCards: () => {
         const cfg = app.utils.getPromptingConfig();
-        const cards = Array.isArray(cfg.modeCards) ? cfg.modeCards : [];
+        const cardsRaw = Array.isArray(cfg.modeCards) ? cfg.modeCards : [];
+        const cards = SOZIALRECHT_ONLY_MODE
+          ? cardsRaw.filter((c) => String(c?.key || '').trim().toUpperCase() === SOZIALRECHT_DOMAIN_KEY)
+          : cardsRaw;
         if (!cards.length) return null;
 
         const row = document.createElement('div');
@@ -4471,23 +4856,20 @@
       },
 
       isSozialrechtDomain: (domain = app.state.settings?.domain) => {
-        return String(domain || '').trim().toUpperCase() === 'SOZIALRECHT';
+        return String(domain || '').trim().toUpperCase() === SOZIALRECHT_DOMAIN_KEY;
       },
 
       enforceSozialrechtMode: (opts = {}) => {
+        if (SOZIALRECHT_ONLY_MODE) app.state.settings.domain = SOZIALRECHT_DOMAIN_KEY;
         if (!app.logic.isSozialrechtDomain()) return false;
-        const prevPrivacy = Boolean(app.state.settings.privacy?.ephemeral);
-        app.state.settings.privacy.ephemeral = true;
         app.state.settings.guardrails.groundedMode = true;
         app.state.settings.guardrails.strictUnknown = true;
         app.state.settings.guardrails.clarificationMode = true;
         app.state.settings.guardrails.piiShield = true;
-        if (!prevPrivacy) {
-          app.state.requestMemory = structuredClone(DEFAULT_REQUEST_MEMORY);
-          try { localStorage.removeItem(REQUEST_MEMORY_KEY); } catch (_) {}
-        }
+        app.state.settings.assistant.showLearningPath = false;
         app.ui.syncGroundedModeControls();
         app.ui.syncPrivacyModeControls();
+        app.ui.syncSozialrechtOnlyControls();
         app.ui.updateDomainUI();
         if (opts.save !== false) app.utils.save();
         return true;
@@ -4605,22 +4987,245 @@
       buildClarificationPrompts: (text, session) => {
         const raw = String(text || '').trim();
         if (!raw) return [];
-        const prompts = [];
+        const low = raw.toLowerCase();
         const tokenCount = raw.split(/\s+/).filter(Boolean).length;
         const hasPriorContext = Boolean((session?.messages || []).length);
-        const vague =
-          /\b(das|dies|diese|dieses|dazu|damit|hierzu|so|stimmt das|ist das richtig|wie ist das)\b/i.test(raw);
+        const vague = /\b(das|dies|diese|dieses|dazu|damit|hierzu|so|stimmt das|ist das richtig|wie ist das|geht das)\b/i.test(raw);
 
+        if (app.logic.isSozialrechtDomain()) {
+          const hasLegalAnchor = (
+            /\bsgb\s*(?:i{1,3}|iv|v|vi{0,3}|ix|x|xi|xii|\d{1,2})\b/i.test(low) ||
+            /§+\s*\d+[a-z]?(?:\s*abs\.?\s*\d+)?/i.test(low) ||
+            /\b(krankengeld|entgeltfortzahlung|arbeitsunfaehig|arbeitslosengeld|buergergeld|pflegegeld|elterngeld|mutterschaftsgeld|sozialhilfe|grundsicherung)\b/i.test(low)
+          );
+          const hasActorContext = /\b(arbeitnehmer|arbeitgeber|azubi|auszubild|krankenkasse|jobcenter|versicherte|leistungsberechtigt|kind|eltern|pflegeperson)\b/i.test(low);
+          const hasCaseFacts = (
+            /\b\d{1,4}(?:[.,]\d+)?\s*(?:euro|eur|%|tage|tag|wochen|woche|monate|monat|jahre|jahr)\b/i.test(low) ||
+            /\b(seit|ab|von|bis|frist|datum|zeitraum|beginn|ende|beispiel|fall)\b/i.test(low)
+          );
+          const hasOutputIntent = /\b(kurz|detaill|schema|pruef|praxis|beispiel|stichpunkt|tabelle|rechn|schritt|vergleich)\b/i.test(low);
+          const missing = [];
+          if (!hasLegalAnchor) missing.push('legal');
+          if (!hasActorContext) missing.push('actor');
+          if (!hasCaseFacts) missing.push('facts');
+          if (!hasOutputIntent) missing.push('format');
+          const shouldAsk =
+            tokenCount <= 4 ||
+            raw.length < 18 ||
+            (missing.length >= 2 && !hasPriorContext) ||
+            (vague && missing.length >= 1);
+          if (!shouldAsk) return [];
+
+          const prompts = [];
+          if (missing.includes('legal')) {
+            prompts.push('Auf welches SGB-Buch oder welchen Paragraphen soll ich mich beziehen (z. B. SGB V, § 47)?');
+          }
+          if (missing.includes('actor')) {
+            prompts.push('Fuer wen soll ich den Fall beantworten (Arbeitnehmer, Arbeitgeber, Azubi, Krankenkasse)?');
+          }
+          if (missing.includes('facts')) {
+            prompts.push('Welche konkreten Fallangaben liegen vor (Zeitraum, Werte, Fristen, Ausgangslage)?');
+          }
+          if (missing.includes('format')) {
+            prompts.push('Wie soll ich antworten: Kurzschema, Rechenweg, Praxisfall oder Pruefungskarte?');
+          }
+          return app.logic.sanitizeAssistantFollowups(prompts);
+        }
+
+        const prompts = [];
         if (tokenCount <= 2 || raw.length < 12) {
           prompts.push('Welches konkrete Thema oder welchen Begriff meinst du genau?');
         }
         if (vague && !hasPriorContext) {
           prompts.push('Beziehst du dich auf ein Dokument, einen Gesetzestext oder eine konkrete Situation?');
         }
-        if (!app.state.settings.domain && (tokenCount <= 3 || vague)) {
-          prompts.push('Soll ich die Antwort auf AEVO, VWL/BWL, Personalwesen oder Sozialrecht zuschneiden?');
-        }
         return app.logic.sanitizeAssistantFollowups(prompts);
+      },
+
+      detectClarificationPerson: (question) => {
+        const raw = String(question || '').trim();
+        if (!raw) return 'die Person';
+        const matchByModal = raw.match(/\b(?:kann|darf|soll|muss|hat|ist)\s+([A-ZÄÖÜ][a-zäöüß]{1,24})\b/);
+        if (matchByModal && matchByModal[1]) return matchByModal[1];
+        const matchByContext = raw.match(/\b([A-ZÄÖÜ][a-zäöüß]{1,24})\s+(?:im|in|nach|bei)\b/);
+        if (matchByContext && matchByContext[1]) return matchByContext[1];
+        return 'die Person';
+      },
+
+      deriveClarificationOptions: (prompt, question = '') => {
+        const low = `${prompt || ''} ${question || ''}`.toLowerCase();
+        if (/\bland\b|\bausland\b|\breis/.test(low)) {
+          return [
+            'EU/EWR oder Schweiz',
+            'Grossbritannien',
+            'Land mit Sozialversicherungsabkommen (z.B. USA, Tuerkei)',
+            'Sonstiges Drittland'
+          ];
+        }
+        if (/\bworum\b|\banlass\b|\bzweck\b|\bfallangaben\b|\bfallkontext\b/.test(low)) {
+          return [
+            'Kurzreise / Urlaub',
+            'Laengerer Aufenthalt / Studium / Arbeit',
+            'Akuter Notfall ist bereits eingetreten',
+            'Frage zu Fristen oder Berechnung'
+          ];
+        }
+        if (/\bsgb\b|\bparagraph\b|\brechtsbezug\b/.test(low)) {
+          return [
+            'SGB V (Krankenversicherung, Krankengeld)',
+            'SGB III (Arbeitslosenversicherung)',
+            'SGB II (Buergergeld)',
+            'Anderes SGB-Buch'
+          ];
+        }
+        if (/\bfuer wen\b|\brollenkontext\b|\barbeitnehmer\b|\barbeitgeber\b/.test(low)) {
+          return [
+            'Arbeitnehmer / versicherte Person',
+            'Arbeitgeber / Personalabteilung',
+            'Auszubildende / Azubi',
+            'Krankenkasse / Leistungstraeger'
+          ];
+        }
+        if (/\bwie soll ich antworten\b|\bkurzschema\b|\bformat\b/.test(low)) {
+          return [
+            'Kurz und praezise',
+            'Schritt-fuer-Schritt-Schema',
+            'Praxisfall fuer IHK',
+            'Pruefungskarte / Lernkarte'
+          ];
+        }
+        return [
+          'Kurz und ueberblicksartig',
+          'Praxisnah mit Beispiel',
+          'Detailliert mit Rechtsbezug'
+        ];
+      },
+
+      buildClaudeClarificationFlow: (question, prompts = [], introText = '') => {
+        const person = app.logic.detectClarificationPerson(question);
+        const merged = `${question || ''} ${(Array.isArray(prompts) ? prompts.join(' ') : '')}`.toLowerCase();
+        const travelMode = /\b(ausland|reise|urlaub|ehic|eu\/ewr|schweiz|drittland|sozialversicherungsabkommen)\b/i.test(merged);
+
+        if (travelMode) {
+          return {
+            intro: introText || 'Damit ich das fundiert beantworten kann, brauche ich zwei Angaben:',
+            steps: [
+              {
+                question: `In welches Land reist ${person}?`,
+                options: [
+                  'EU/EWR oder Schweiz',
+                  'Grossbritannien',
+                  'Land mit Sozialversicherungsabkommen (z.B. USA, Tuerkei)',
+                  'Sonstiges Drittland'
+                ]
+              },
+              {
+                question: 'Worum geht es?',
+                options: [
+                  'Kurzreise / Urlaub',
+                  'Laengerer Aufenthalt / Studium / Arbeit',
+                  'Akuter Notfall ist bereits eingetreten',
+                  'Frage zu Fristen oder Berechnung'
+                ]
+              }
+            ]
+          };
+        }
+
+        const cleanPrompts = app.logic.sanitizeAssistantFollowups(prompts).slice(0, 3);
+        if (!cleanPrompts.length) return null;
+        const steps = cleanPrompts.map((prompt) => ({
+          question: prompt,
+          options: app.logic.deriveClarificationOptions(prompt, question)
+        }));
+
+        return {
+          intro: introText || `Damit ich das fundiert beantworten kann, brauche ich ${steps.length === 1 ? 'eine Angabe' : `${steps.length} Angaben`}:`,
+          steps
+        };
+      },
+
+      openClaudeClarifier: ({ question, prompts = [], introText = '', source = 'frontend' } = {}) => {
+        if (!CLAUDE_CLARIFY_MODE) return false;
+        const flow = app.logic.buildClaudeClarificationFlow(question, prompts, introText);
+        if (!flow || !Array.isArray(flow.steps) || !flow.steps.length) return false;
+        app.state.clarifier = {
+          active: true,
+          originQuestion: String(question || '').trim(),
+          intro: String(flow.intro || introText || '').trim(),
+          steps: flow.steps.map((step) => ({
+            question: String(step.question || '').trim(),
+            options: (Array.isArray(step.options) ? step.options : [])
+              .map((option) => String(option || '').trim())
+              .filter(Boolean)
+              .slice(0, 4)
+          })),
+          answers: new Array(flow.steps.length).fill(''),
+          currentStep: 0,
+          source: String(source || 'frontend')
+        };
+        app.ui.renderClarifierDock();
+        app.ui.scrollBottom();
+        app.utils.save();
+        return true;
+      },
+
+      closeClaudeClarifier: (opts = {}) => {
+        const hadActive = Boolean(app.state.clarifier && app.state.clarifier.active);
+        app.state.clarifier = structuredClone(DEFAULT_STATE.clarifier);
+        app.ui.renderClarifierDock();
+        if (hadActive && opts.save !== false) app.utils.save();
+      },
+
+      answerClaudeClarifierStep: (value = '', opts = {}) => {
+        if (!app.state.clarifier?.active) return;
+        const current = Math.max(0, Number(app.state.clarifier.currentStep) || 0);
+        const steps = Array.isArray(app.state.clarifier.steps) ? app.state.clarifier.steps : [];
+        if (!steps.length || current >= steps.length) {
+          app.logic.closeClaudeClarifier({ save: true });
+          return;
+        }
+
+        app.state.clarifier.answers[current] = String(value || '').trim();
+        const atLastStep = current >= steps.length - 1;
+        if (!atLastStep) {
+          app.state.clarifier.currentStep = current + 1;
+          app.ui.renderClarifierDock();
+          app.utils.save();
+          return;
+        }
+
+        const answerLines = steps.map((step, idx) => {
+          const answer = String(app.state.clarifier.answers[idx] || '').trim();
+          const safeAnswer = answer || 'nicht angegeben';
+          return `F: ${String(step.question || '').trim()}\nA: ${safeAnswer}`;
+        });
+
+        const summaryVisible = [
+          'Klare Situation - ich nutze jetzt diese Angaben:',
+          '',
+          answerLines.join('\n')
+        ].join('\n').trim();
+
+        const suffixForApi = [
+          'Zusatzangaben aus Rueckfragen:',
+          ...answerLines.map((line) => `- ${line.replace(/\n/g, ' | ')}`),
+          '',
+          'Bitte beantworte die Ausgangsfrage jetzt final, strukturiert und quellenorientiert.'
+        ].join('\n').trim();
+
+        const originQuestion = String(app.state.clarifier.originQuestion || '').trim();
+        app.logic.closeClaudeClarifier({ save: false });
+
+        if (originQuestion) {
+          app.logic.sendSystemMessage(summaryVisible);
+          app.logic.sendMessage({
+            textOverride: originQuestion,
+            apiQuestionSuffix: suffixForApi,
+            skipClarificationCheck: true,
+            fromClarifier: true
+          }).catch(() => {});
+        }
       },
 
       answerContainsSourceSignal: (answer) => {
@@ -4647,6 +5252,8 @@
         if (Number.isFinite(Number(opts.backendConfidence))) {
           score += Math.round(Math.max(0, Math.min(1, Number(opts.backendConfidence))) * 15);
         }
+        if (opts.storageUsed && sourceCount) score += 6;
+        if (opts.storageFallback) score -= 12;
         if (opts.groundedMode) score += 8;
         if (opts.fastMode) score -= 8;
 
@@ -4681,6 +5288,14 @@
         if (opts.fastMode && sourceCount) {
           note += ' Schnellmodus aktiv: bitte besonders sorgfaeltig pruefen.';
         }
+        if (opts.storageUsed) {
+          note += sourceCount
+            ? ' Vector Store aktiv.'
+            : ' Vector Store aktiv, aber ohne extrahierten Quellen-Chunk.';
+        }
+        if (opts.storageFallback) {
+          note += ' Storage-Fallback ohne Vector Store.';
+        }
 
         return { level, label, note, score, sourceCount, excerptCount, locatedCount };
       },
@@ -4696,6 +5311,7 @@
         const topic = app.logic.topicFromText(question || answer, 'das Thema');
         const goal = String(app.state.settings.assistant?.learningGoal || '').trim();
         const domain = String(app.state.settings.domain || '').trim();
+        const sozialrechtDomain = app.logic.isSozialrechtDomain(domain);
         const out = [];
 
         if (meta.blockedForMissingSources) {
@@ -4708,13 +5324,14 @@
           out.push(`Fasse ${topic} in drei Stichpunkten zusammen.`);
           if (domain) out.push(`Erstelle drei Pruefungsfragen zu ${topic} im Fachmodus ${domain}.`);
           out.push(...app.logic.buildSozialrechtFollowups(topic, question || answer));
-          if (goal) out.push(`Verbinde ${topic} mit meinem Lernziel "${goal}".`);
+          if (goal && !sozialrechtDomain) out.push(`Verbinde ${topic} mit meinem Lernziel "${goal}".`);
         }
 
         return app.logic.sanitizeAssistantFollowups(out);
       },
 
       buildLearningStep: (question, answer, meta = {}) => {
+        if (app.logic.isSozialrechtDomain()) return null;
         if (!app.state.settings.assistant?.showLearningPath) return null;
         const topic = app.logic.topicFromText(question || answer, 'das Thema');
         const goal = String(app.state.settings.assistant?.learningGoal || '').trim();
@@ -4744,6 +5361,12 @@
         const backendMeta = (result && result.meta && typeof result.meta === 'object') ? result.meta : {};
         let answer = String(result?.answer || '').trim();
         let sources = app.logic.sanitizeSourceList(result?.sources || []);
+        const sozialrechtDomain = app.logic.isSozialrechtDomain(
+          String(backendMeta.domain || payload?.fachmodus || app.state.settings?.domain || '')
+        );
+        const storageUsed = Boolean(backendMeta.storageUsed || backendMeta.storage_used);
+        const storageFallback = Boolean(backendMeta.storageFallback || backendMeta.storage_fallback);
+        const storageError = String(backendMeta.storageError || backendMeta.storage_error || '').trim();
 
         const groundedMode = Boolean(app.state.settings.guardrails?.groundedMode);
         const strictUnknown = Boolean(app.state.settings.guardrails?.strictUnknown);
@@ -4764,17 +5387,24 @@
           fastMode: Boolean(payload?.schnellmodus),
           backendConfidence: backendMeta.confidence,
           blockedForMissingSources,
-          textSourceSignals: hasSourceSignals && sources.length === 0
+          textSourceSignals: hasSourceSignals && sources.length === 0,
+          storageUsed,
+          storageFallback
         });
+
+        const evidenceNoteParts = [String(backendMeta.evidenceNote || '').trim()];
+        if (storageFallback && storageError) {
+          evidenceNoteParts.push(`Storage-Hinweis: ${storageError}`);
+        }
 
         const followups = app.logic.buildFollowupSuggestions(question, answer, sources, {
           blockedForMissingSources,
           backendFollowups: backendMeta.followups || []
         });
 
-        const learningStep = app.logic.buildLearningStep(question, answer, {
-          blockedForMissingSources
-        });
+        const learningStep = (SOZIALRECHT_ONLY_MODE || sozialrechtDomain)
+          ? null
+          : app.logic.buildLearningStep(question, answer, { blockedForMissingSources });
 
         return {
           answer,
@@ -4784,19 +5414,21 @@
             evidence,
             followups,
             learningStep,
-            evidenceNote: String(backendMeta.evidenceNote || '').trim(),
-            blockedForMissingSources
+            evidenceNote: evidenceNoteParts.filter(Boolean).join(' ').trim(),
+            blockedForMissingSources,
+            storageUsed,
+            storageFallback,
+            storageError,
+            clarificationRequested: Boolean(backendMeta.clarificationRequested),
+            model: String(backendMeta.model || '').trim(),
+            domain: sozialrechtDomain ? SOZIALRECHT_DOMAIN_KEY : String(backendMeta.domain || payload?.fachmodus || '').trim().toUpperCase()
           }
         };
       },
 
       applyPrivacyMode: (enabled, opts = {}) => {
-        if (app.logic.isSozialrechtDomain() && !enabled) {
-          app.logic.enforceSozialrechtMode({ save: true });
-          return;
-        }
         const prev = Boolean(app.state.settings.privacy?.ephemeral);
-        const next = app.logic.isSozialrechtDomain() ? true : Boolean(enabled);
+        const next = Boolean(enabled);
         app.state.settings.privacy.ephemeral = next;
         if (next) {
           app.state.requestMemory = structuredClone(DEFAULT_REQUEST_MEMORY);
@@ -4827,7 +5459,9 @@
             ok: Boolean(parsed?.ok),
             checks: (parsed?.checks && typeof parsed.checks === 'object') ? parsed.checks : {},
             ts: String(parsed?.ts || new Date().toISOString()),
-            baseUrl: app.logic.endpointOrigin(res.url || HEALTH_API_ENDPOINT)
+            baseUrl: app.logic.endpointOrigin(res.url || HEALTH_API_ENDPOINT),
+            storageEnvKey: String(parsed?.storage_env_key || ''),
+            storageConfigured: Boolean(parsed?.storage_configured)
           };
           app.ui.renderApiHealthStatus(app.state.apiHealth);
           app.utils.save();
@@ -4940,6 +5574,7 @@
       },
 
       newChat: () => {
+        app.logic.closeClaudeClarifier({ save: false });
         const id = app.utils.uid();
         app.state.sessions.unshift({
           id,
@@ -4955,7 +5590,7 @@
         if (!app.state.welcomeShown) {
           app.logic.sendSystemMessage(
             'Willkommen bei **LINDA**.\n\n' +
-            'Ich unterstütze dich bei **AEVO**, **BWL/VWL**, **Personalwesen** und **Sozialrecht (SGB I-XII)**.\n' +
+            'Diese Version arbeitet ausschliesslich im **Fachmodus Sozialrecht (SGB I-XII)**.\n' +
             'Lernkarten werden aus den **Inhalten der Antwort** erstellt.\n' +
             'ILIAS kann bei Bedarf über den Schalter **Kursraum (ILIAS)** aktiviert werden.'
           );
@@ -4968,6 +5603,7 @@
 
       resetHistoryAndNewChat: () => {
         if (!confirm('Verlauf und History komplett löschen und neuen Chat starten?')) return;
+        app.logic.closeClaudeClarifier({ save: false });
         app.state.sessions = [];
         app.state.activeId = null;
         app.state.requestMemory = structuredClone(DEFAULT_REQUEST_MEMORY);
@@ -4978,6 +5614,7 @@
       },
 
       switchSession: (id) => {
+        app.logic.closeClaudeClarifier({ save: false });
         app.state.activeId = id;
         app.ui.log.innerHTML = '';
         app.utils.save();
@@ -5008,12 +5645,10 @@
         const prevGrounded = Boolean(app.state.settings.guardrails?.groundedMode);
         const prevPrivacy = Boolean(app.state.settings.privacy?.ephemeral);
         app.state.settings.name = document.getElementById('inp-name').value.trim();
-        app.state.settings.domain = document.getElementById('inp-domain').value;
+        app.state.settings.domain = SOZIALRECHT_ONLY_MODE
+          ? SOZIALRECHT_DOMAIN_KEY
+          : document.getElementById('inp-domain').value;
         const sozialrechtLocked = app.logic.isSozialrechtDomain();
-        if (sozialrechtLocked) {
-          const privacyInput = document.getElementById('inp-privacy-ephemeral');
-          if (privacyInput) privacyInput.checked = true;
-        }
 
         app.state.settings.ilias.enabled = Boolean(app.state.settings.sources.ilias);
         app.state.settings.prompting.enabled = document.getElementById('inp-prompting-enabled').checked;
@@ -5028,7 +5663,10 @@
         }
         app.state.settings.assistant.showEvidence = document.getElementById('inp-show-evidence').checked;
         app.state.settings.assistant.showFollowups = document.getElementById('inp-show-followups').checked;
-        app.state.settings.assistant.showLearningPath = document.getElementById('inp-show-learning-path').checked;
+        app.state.settings.assistant.showLearningPath =
+          (SOZIALRECHT_ONLY_MODE || sozialrechtLocked)
+            ? false
+            : document.getElementById('inp-show-learning-path').checked;
         app.state.settings.assistant.feedbackIncludeTranscript = document.getElementById('inp-feedback-transcript').checked;
         app.state.settings.assistant.learningGoal = document.getElementById('inp-learning-goal').value.trim().slice(0, 140);
 
@@ -5057,9 +5695,7 @@
 
         app.state.settings.ilias.enabled = Boolean(app.state.settings.sources.ilias);
         app.logic.setGroundedMode(nextGrounded, { showOverlay: false });
-        const nextPrivacy = sozialrechtLocked
-          ? true
-          : document.getElementById('inp-privacy-ephemeral').checked;
+        const nextPrivacy = document.getElementById('inp-privacy-ephemeral').checked;
         app.logic.applyPrivacyMode(nextPrivacy, { showOverlay: false, showLockHint: false });
         if (sozialrechtLocked) app.logic.enforceSozialrechtMode({ save: false });
 
@@ -5068,6 +5704,7 @@
         app.ui.renderSourceToolbar();
         app.ui.syncGroundedModeControls();
         app.ui.syncPrivacyModeControls();
+        app.ui.syncSozialrechtOnlyControls();
         app.ui.syncLearningDirectoryControls();
         app.ui.closeModals();
         app.logic.maybeShowModeCards();
@@ -5208,6 +5845,7 @@
       },
 
       maybeShowModeCards: () => {
+        if (SOZIALRECHT_ONLY_MODE) return;
         if (app.state.settings.domain) return;
         const s = app.logic.activeSession();
         if (!s) return;
@@ -5564,15 +6202,22 @@
           body: JSON.stringify(safePayload),
           signal
         });
+        let lastErrorDetail = '';
+        let lastErrorText = '';
 
         if (!res.ok) {
           let detail = '';
           let errText = '';
           try {
             const err = await res.json();
-            detail = err?.error ? `: ${err.error}` : '';
-            errText = String(err?.error || err?.detail || '').toLowerCase();
+            const errMsg = String(err?.error || err?.message || '').trim();
+            const errDetail = String(err?.detail || '').trim();
+            const parts = [errMsg, errDetail].filter(Boolean);
+            detail = parts.length ? `: ${parts.join(' – ')}` : '';
+            errText = parts.join(' ').toLowerCase();
           } catch (_) {}
+          lastErrorDetail = detail;
+          lastErrorText = errText;
 
           const missingQuestionError =
             res.status === 400 &&
@@ -5595,11 +6240,15 @@
         }
 
         if (!res.ok) {
-          let detail = '';
+          let detail = lastErrorDetail || '';
           try {
             const err = await res.json();
-            detail = err?.error ? `: ${err.error}` : '';
+            const errMsg = String(err?.error || err?.message || '').trim();
+            const errDetail = String(err?.detail || '').trim();
+            const parts = [errMsg, errDetail].filter(Boolean);
+            detail = parts.length ? `: ${parts.join(' – ')}` : detail;
           } catch (_) {}
+          if (!detail && lastErrorText) detail = `: ${lastErrorText}`;
           throw new Error(app.logic.describeApiStatus(res.status, endpoint, detail, res.url || ''));
         }
 
@@ -6473,6 +7122,56 @@
         return unique.slice(0, 10);
       },
 
+      isSozialrechtMeta: (meta = {}) => {
+        const domain = String(meta?.domain || '').trim().toUpperCase();
+        return domain === SOZIALRECHT_DOMAIN_KEY || app.logic.isSozialrechtDomain();
+      },
+
+      stylizeSozialrechtAnswer: (md, meta = {}) => {
+        if (!md || md.dataset.styledSozialrecht === 'true') return;
+        md.dataset.styledSozialrecht = 'true';
+        md.classList.add('sozialrecht-md');
+
+        const contentNodes = Array.from(md.childNodes);
+        const stack = document.createElement('div');
+        stack.className = 'sozialrecht-stack';
+
+        let section = null;
+        const openSection = (title) => {
+          section = document.createElement('section');
+          section.className = 'sozialrecht-section';
+          const head = document.createElement('h4');
+          head.className = 'sozialrecht-section-head';
+          head.textContent = title || 'Abschnitt';
+          section.appendChild(head);
+          stack.appendChild(section);
+        };
+
+        contentNodes.forEach((node) => {
+          if (node.nodeType === 1 && /^(H2|H3)$/i.test(node.tagName)) {
+            openSection(String(node.textContent || '').trim() || 'Abschnitt');
+            return;
+          }
+          if (!section) {
+            openSection('Antwortkern');
+            section.classList.add('intro');
+          }
+          section.appendChild(node);
+        });
+
+        const topline = document.createElement('div');
+        topline.className = 'sozialrecht-topline';
+        const model = String(meta?.model || '').trim();
+        const storageState = meta?.storageUsed
+          ? 'Vector Store aktiv'
+          : (meta?.storageFallback ? 'Storage-Fallback' : 'Storage unklar');
+        topline.textContent = `${model ? `Modell ${model}` : 'Fachmodus Sozialrecht'} • ${storageState}`;
+
+        md.innerHTML = '';
+        md.appendChild(topline);
+        if (stack.childNodes.length) md.appendChild(stack);
+      },
+
       decorateBubble: (md, sources, meta = {}) => {
         md.querySelectorAll('table').forEach((table) => {
           const wrap = document.createElement('div');
@@ -6495,6 +7194,13 @@
               url: BBIG_PDF_PATH
             });
           }
+        }
+
+        const socialStructured =
+          app.logic.isSozialrechtMeta(bubbleMeta) &&
+          !app.logic.isOperationalAnswer(String(md.innerText || ''));
+        if (socialStructured) {
+          app.logic.stylizeSozialrechtAnswer(md, bubbleMeta);
         }
 
         if (app.state.settings.assistant?.showEvidence && bubbleMeta.evidence) {
@@ -6589,7 +7295,7 @@
           md.appendChild(followupPanel);
         }
 
-        if (bubbleMeta.learningStep && app.state.settings.assistant?.showLearningPath) {
+        if (!SOZIALRECHT_ONLY_MODE && bubbleMeta.learningStep && app.state.settings.assistant?.showLearningPath && !app.logic.isSozialrechtMeta(bubbleMeta)) {
           const learningPanel = document.createElement('section');
           learningPanel.className = 'learning-panel';
           learningPanel.innerHTML = `
@@ -6618,6 +7324,9 @@
 
         const forcedText = String(opts?.textOverride || '').trim();
         const text = forcedText || app.ui.input.value.trim();
+        const skipClarificationCheck = Boolean(opts?.skipClarificationCheck);
+        const fromClarifier = Boolean(opts?.fromClarifier);
+        const apiQuestionSuffix = String(opts?.apiQuestionSuffix || '').trim();
         if (!text) return;
 
         let s = app.logic.activeSession();
@@ -6625,6 +7334,19 @@
           app.logic.newChat();
           s = app.logic.activeSession();
           if (!s) return;
+        }
+
+        if (SOZIALRECHT_ONLY_MODE) {
+          app.logic.enforceSozialrechtMode({ save: false });
+        }
+
+        if (CLAUDE_CLARIFY_MODE && app.state.clarifier?.active && !fromClarifier) {
+          if (!forcedText) {
+            app.ui.input.value = '';
+            app.ui.input.dispatchEvent(new Event('input'));
+          }
+          app.logic.answerClaudeClarifierStep(text);
+          return;
         }
 
         if (app.state.settings.guardrails?.piiShield) {
@@ -6647,13 +7369,36 @@
           }
         }
 
-        if (app.state.settings.guardrails?.clarificationMode) {
+        if (!skipClarificationCheck && app.state.settings.guardrails?.clarificationMode) {
           const clarificationPrompts = app.logic.buildClarificationPrompts(text, s);
           if (clarificationPrompts.length) {
+            const clarificationIntro = app.logic.isSozialrechtDomain()
+              ? 'Fuer eine praezise Sozialrecht-Antwort brauche ich noch kurze Eckdaten. Dann antworte ich direkt strukturiert.'
+              : 'Ich vermute ein moegliches Missverstaendnis und haette gern noch etwas Kontext, bevor ich antworte.';
+
+            if (!forcedText) {
+              app.ui.input.value = '';
+              app.ui.input.dispatchEvent(new Event('input'));
+            }
+            app.state.lastQuestion = text;
+            app.logic.rememberQuestion(text);
+            const displayText = app.state.settings.name
+              ? `${app.state.settings.name}: ${text}`
+              : text;
+            app.ui.removeFeatureShowcase();
+            s.messages.push({ role: 'user', content: displayText, sources: [] });
+            if (!s.name || s.name === 'Neuer Chat') s.name = text.slice(0, 48);
+            app.ui.log.appendChild(app.ui.createBubble('user', displayText));
             app.logic.sendSystemMessage(
-              'Ich vermute ein moegliches Missverstaendnis und haette gern noch etwas Kontext, bevor ich antworte.',
-              { followups: clarificationPrompts }
+              clarificationIntro,
+              { followups: clarificationPrompts, clarificationRequested: true }
             );
+            app.logic.openClaudeClarifier({
+              question: text,
+              prompts: clarificationPrompts,
+              introText: clarificationIntro,
+              source: 'frontend'
+            });
             return;
           }
         }
@@ -6703,13 +7448,16 @@
             ? { ...app.state.settings.sources, ...MAKEFLOW_ONLY_SOURCES }
             : app.state.settings.sources;
           const contextWindow = app.utils.chatContext(s);
-          const historyForApi = sozialrechtDomain
-            ? contextWindow.slice(-4)
-            : (app.utils.privacyModeEnabled() ? [] : contextWindow);
+          const historyForApi = app.utils.privacyModeEnabled()
+            ? []
+            : (sozialrechtDomain ? contextWindow.slice(-4) : contextWindow);
 
+          const payloadQuestion = apiQuestionSuffix
+            ? `${text}\n\n${apiQuestionSuffix}`
+            : text;
           const payload = {
-            question: app.utils.truncate(text, 1300),
-            fachmodus: app.state.settings.domain || '',
+            question: app.utils.truncate(payloadQuestion, 1600),
+            fachmodus: SOZIALRECHT_ONLY_MODE ? SOZIALRECHT_DOMAIN_KEY : (app.state.settings.domain || ''),
             schnellmodus: effectiveFastMode,
             history: historyForApi,
             sources: effectiveSources,
@@ -6728,7 +7476,7 @@
               app: 'LINDA3',
               version: APP_VERSION,
               ts: new Date().toISOString(),
-              privacyMode: sozialrechtDomain ? true : app.utils.privacyModeEnabled(),
+              privacyMode: app.utils.privacyModeEnabled(),
               sozialrecht_mode: sozialrechtDomain
             },
             guardrails: {
@@ -6740,7 +7488,7 @@
             assistantPrefs: {
               show_evidence: Boolean(app.state.settings.assistant?.showEvidence),
               show_followups: Boolean(app.state.settings.assistant?.showFollowups),
-              show_learning_path: Boolean(app.state.settings.assistant?.showLearningPath),
+              show_learning_path: sozialrechtDomain ? false : Boolean(app.state.settings.assistant?.showLearningPath),
               learning_goal: String(app.state.settings.assistant?.learningGoal || '').trim()
             }
           };
@@ -6862,6 +7610,21 @@
             }
             s.messages.push({ role: 'assistant', content: enriched.answer, sources: enriched.sources, meta: enriched.meta });
             app.ui.log.appendChild(app.ui.createBubble('assistant', enriched.answer, enriched.sources, enriched.meta));
+            if (
+              CLAUDE_CLARIFY_MODE &&
+              enriched?.meta?.clarificationRequested &&
+              app.state.settings.guardrails?.clarificationMode
+            ) {
+              const backendPrompts = app.logic.sanitizeAssistantFollowups(enriched?.meta?.followups || []);
+              if (backendPrompts.length) {
+                app.logic.openClaudeClarifier({
+                  question: text,
+                  prompts: backendPrompts,
+                  introText: 'Damit ich das fundiert beantworten kann, brauche ich noch ein paar Angaben.',
+                  source: 'backend'
+                });
+              }
+            }
           }
           loading.remove();
           if (!app.state.telemetry.firstSelectionHintShown) {
@@ -7468,6 +8231,7 @@
     app.ui.syncPrivacyModeControls();
     app.ui.syncMobileReaderControls();
     app.ui.applyMobileReaderClass();
+    app.ui.renderClarifierDock();
     if (app.logic.isMobileReaderEnabled()) {
       app.logic.setMobileReader(true);
     }
@@ -7672,6 +8436,50 @@
       app.ui.closeModals();
     });
 
+    if (app.ui.clarifyDock) {
+      app.ui.clarifyDock.addEventListener('click', (e) => {
+        const closeBtn = e.target.closest('[data-clarify-cancel]');
+        if (closeBtn) {
+          app.logic.closeClaudeClarifier({ save: true });
+          return;
+        }
+
+        const optionBtn = e.target.closest('[data-clarify-option]');
+        if (optionBtn) {
+          const value = decodeURIComponent(optionBtn.getAttribute('data-clarify-option') || '');
+          if (value) app.logic.answerClaudeClarifierStep(value);
+          return;
+        }
+
+        const skipBtn = e.target.closest('[data-clarify-skip]');
+        if (skipBtn) {
+          app.logic.answerClaudeClarifierStep('');
+          return;
+        }
+
+        const freeBtn = e.target.closest('[data-clarify-free]');
+        if (freeBtn) {
+          const freeInput = app.ui.clarifyDock.querySelector('[data-clarify-free-input]');
+          const value = String(freeInput?.value || '').trim();
+          if (!value) {
+            alert('Bitte gib einen kurzen Hinweis ein oder waehle eine Option.');
+            return;
+          }
+          app.logic.answerClaudeClarifierStep(value);
+        }
+      });
+
+      app.ui.clarifyDock.addEventListener('keydown', (e) => {
+        if (e.key !== 'Enter') return;
+        const freeInput = e.target.closest('[data-clarify-free-input]');
+        if (!freeInput) return;
+        e.preventDefault();
+        const value = String(freeInput.value || '').trim();
+        if (!value) return;
+        app.logic.answerClaudeClarifierStep(value);
+      });
+    }
+
     app.ui.log.addEventListener('click', (e) => {
       const stageModeBtn = e.target.closest('[data-show-mode-info]');
       if (stageModeBtn) {
@@ -7682,13 +8490,21 @@
 
       const modeBtn = e.target.closest('[data-set-domain]');
       if (modeBtn) {
-        const mode = modeBtn.getAttribute('data-set-domain') || '';
+        const pickedMode = modeBtn.getAttribute('data-set-domain') || '';
+        const mode = SOZIALRECHT_ONLY_MODE ? SOZIALRECHT_DOMAIN_KEY : pickedMode;
         app.state.settings.domain = mode;
         app.logic.enforceSozialrechtMode({ save: false });
         app.utils.save();
         app.ui.updateDomainUI();
         app.ui.log.querySelectorAll('.mode-card-row').forEach((el) => el.remove());
-        app.ui.log.appendChild(app.ui.createBubble('assistant', `Fachmodus wurde auf **${mode}** gesetzt.`));
+        app.ui.log.appendChild(
+          app.ui.createBubble(
+            'assistant',
+            SOZIALRECHT_ONLY_MODE
+              ? 'Fachmodus ist fest auf **SOZIALRECHT** gesetzt.'
+              : `Fachmodus wurde auf **${mode}** gesetzt.`
+          )
+        );
         app.ui.scrollBottom();
         return;
       }
