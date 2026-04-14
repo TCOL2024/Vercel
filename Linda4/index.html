@@ -4995,6 +4995,57 @@
         return triggers.some((k) => t.includes(k));
       },
 
+      detectPopupBrowser: () => {
+        const ua = String(navigator.userAgent || '').toLowerCase();
+        if (ua.includes('edg/')) return 'edge';
+        if (ua.includes('opr/') || ua.includes('opera')) return 'opera';
+        if (ua.includes('firefox/') || ua.includes('fxios')) return 'firefox';
+        if (ua.includes('safari') && !ua.includes('chrome') && !ua.includes('crios') && !ua.includes('chromium') && !ua.includes('edg/')) {
+          return 'safari';
+        }
+        if (ua.includes('chrome') || ua.includes('crios') || ua.includes('chromium')) return 'chrome';
+        return 'other';
+      },
+
+      getPopupBlockedHelp: (featureLabel = 'diese Funktion') => {
+        const browser = app.logic.detectPopupBrowser();
+        let steps = '';
+        if (browser === 'chrome' || browser === 'edge' || browser === 'opera') {
+          steps =
+            'Chrome/Edge/Opera:\n' +
+            '1) Klicke auf das Popup-Symbol rechts in der Adressleiste.\n' +
+            '2) Waehle "Popups immer zulassen" fuer diese Website.\n' +
+            '3) Lade die Seite neu und starte den Vorgang erneut.';
+        } else if (browser === 'firefox') {
+          steps =
+            'Firefox:\n' +
+            '1) Klicke auf das Popup-Symbol neben der URL.\n' +
+            '2) Erlaube Popups fuer diese Website.\n' +
+            '3) Lade die Seite neu und starte den Vorgang erneut.';
+        } else if (browser === 'safari') {
+          steps =
+            'Safari:\n' +
+            '1) Gehe zu Safari > Einstellungen > Websites > Pop-up-Fenster.\n' +
+            '2) Setze diese Website auf "Erlauben".\n' +
+            '3) Lade die Seite neu und starte den Vorgang erneut.';
+        } else {
+          steps =
+            'Browser-Hinweis:\n' +
+            '1) Oeffne die Website-Berechtigungen in der Adressleiste.\n' +
+            '2) Erlaube Popups fuer diese Website.\n' +
+            '3) Lade die Seite neu und starte den Vorgang erneut.';
+        }
+        return (
+          `Popup blockiert: ${featureLabel} benoetigt ein erlaubtes neues Fenster.\n\n` +
+          `${steps}\n\n` +
+          'Ohne erlaubte Popups kann diese Funktion nicht korrekt starten.'
+        );
+      },
+
+      notifyPopupBlocked: (featureLabel = 'diese Funktion') => {
+        alert(app.logic.getPopupBlockedHelp(featureLabel));
+      },
+
       openCardsTabWithPayload: (payload) => {
         const nextPayload = {
           ...(payload || {}),
@@ -5003,7 +5054,7 @@
         localStorage.setItem(CARDS_KEY, JSON.stringify(nextPayload));
         const target = `${window.location.pathname}?view=cards`;
         const tab = window.open(target, '_blank', 'noopener');
-        if (!tab) alert('Popup blockiert. Bitte Popups erlauben, um Karten in neuem Tab zu öffnen.');
+        if (!tab) app.logic.notifyPopupBlocked('Lernkarten im neuen Tab');
       },
 
       openPracticeTabWithPayload: (payload) => {
@@ -5014,7 +5065,7 @@
         localStorage.setItem(PRACTICE_KEY, JSON.stringify(nextPayload));
         const target = `${window.location.pathname}?view=practice`;
         const tab = window.open(target, '_blank', 'noopener');
-        if (!tab) alert('Popup blockiert. Bitte Popups erlauben, um Uebungsaufgaben in neuem Tab zu öffnen.');
+        if (!tab) app.logic.notifyPopupBlocked('Uebungsaufgaben im neuen Tab');
       },
 
       prepareSelectionDraftFromEvent: (evt) => {
@@ -6826,7 +6877,7 @@
         localStorage.setItem(CARDS_KEY, JSON.stringify(payload));
         const target = `${window.location.pathname}?view=cards`;
         const tab = window.open(target, '_blank', 'noopener');
-        if (!tab) alert('Popup blockiert. Bitte Popups erlauben, um Karten in neuem Tab zu öffnen.');
+        if (!tab) app.logic.notifyPopupBlocked('Lernkarten im neuen Tab');
       },
 
       clearAll: () => {
