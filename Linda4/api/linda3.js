@@ -55,6 +55,17 @@ function normalizeText(value) {
   return String(value || '').replace(/\s+/g, ' ').trim();
 }
 
+function normalizeMultilineText(value) {
+  const raw = String(value || '').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+  if (!raw) return '';
+  return raw
+    .split('\n')
+    .map((line) => line.replace(/\t+/g, ' ').replace(/ {2,}/g, ' ').trimEnd())
+    .join('\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
+
 function readRequestBodyObject(req) {
   if (req.body && typeof req.body === 'object' && !Buffer.isBuffer(req.body)) return req.body;
   if (Buffer.isBuffer(req.body)) return parseJsonSafe(req.body.toString('utf8'), {});
@@ -127,40 +138,152 @@ function hasMeaningfulContext(history) {
   return sanitizeHistory(history, 2).length > 0;
 }
 
+function topicFromQuestion(question) {
+  const text = normalizeText(question);
+  if (!text) return 'dein Thema';
+  return text.split(/\s+/).slice(0, 9).join(' ');
+}
+
+function buildSozialrechtSignalProfile(question, history, cfg) {
+  const text = normalizeText(question);
+  const low = text.toLowerCase();
+  const tokens = text.split(/\s+/).filter(Boolean);
+  const policy = cfg?.clarification_policy || {};
+  const minChars = Number(policy.min_question_chars || 18);
+  const maxTokens = Number(policy.max_tokens_without_context || 5);
+
+  const hasContext = hasMeaningfulContext(history);
+  const hasLegalAnchor = (
+    /\bsgb\s*(?:i{1,3}|iv|v|vi{0,3}|ix|x|xi|xii|\d{1,2})\b/i.test(low) ||
+    /§+\s*\d+[a-z]?(?:\s*abs\.?\s*\d+)?/i.test(low) ||
+    /\b(krankengeld|entgeltfortzahlung|arbeitsunfaehig|arbeitslosengeld|buergergeld|pflegegeld|elterngeld|mutterschaftsgeld|sozialhilfe|grundsicherung|rehabilitation)\b/i.test(low)
+  );
+  const hasActorContext = /\b(arbeitnehmer|arbeitgeber|azubi|auszubild|personalfachkauf|krankenkasse|jobcenter|versicherte|versicherungspflicht|leistungsberechtigt|kind|eltern|pflegeperson|rentner)\b/i.test(low);
+  const hasCaseFacts = (
+    /\b\d{1,4}(?:[.,]\d+)?\s*(?:euro|eur|%|tage|tag|wochen|woche|monate|monat|jahre|jahr)\b/i.test(low) ||
+    /\b(seit|ab|von|bis|frist|datum|zeitraum|beginn|ende|beispiel|fall)\b/i.test(low)
+  );
+  const hasOutputIntent = /\b(kurz|detaill|schema|pruef|praxis|beispiel|stichpunkt|tabelle|rechn|schritt|vergleich)\b/i.test(low);
+  const ambiguousPronouns = /\b(das|dies|diese|dieses|dazu|damit|hierzu|so|stimmt das|ist das richtig|wie ist das|geht das)\b/i.test(low);
+
+  const missingDimensions = [];
+  if (!hasLegalAnchor) missingDimensions.push('legal_anchor');
+  if (!hasActorContext) missingDimensions.push('actor_context');
+  if (!hasCaseFacts) missingDimensions.push('case_facts');
+  if (!hasOutputIntent) missingDimensions.push('output_intent');
+
+  const shortQuestion = text.length < minChars || tokens.length <= maxTokens;
+  const lowSignal = tokens.length <= (maxTokens + 1) && !hasLegalAnchor && !hasCaseFacts;
+  const shouldClarify =
+    shortQuestion ||
+    (ambiguousPronouns && missingDimensions.length >= 1) ||
+    (!hasContext && missingDimensions.length >= 2) ||
+    lowSignal;
+
+  const reasons = [];
+  if (shortQuestion) reasons.push('Frage ist noch zu knapp fuer eine rechtssichere Einordnung.');
+  if (!hasLegalAnchor) reasons.push('Rechtsbezug (SGB/Paragraph/Thema) ist nicht eindeutig.');
+  if (!hasActorContext) reasons.push('Rollenkontext (z. B. Arbeitnehmer/Arbeitgeber) fehlt.');
+  if (!hasCaseFacts) reasons.push('Fallkontext (Zeitraum, Werte oder Ausgangssituation) fehlt.');
+  if (!hasOutputIntent) reasons.push('Gewuenschtes Antwortformat ist nicht klar.');
+
+  return {
+    text,
+    tokens,
+    hasContext,
+    hasLegalAnchor,
+    hasActorContext,
+    hasCaseFacts,
+    hasOutputIntent,
+    ambiguousPronouns,
+    missingDimensions,
+    shortQuestion,
+    lowSignal,
+    shouldClarify,
+    reasons
+  };
+}
+
+function buildClarificationFollowups(profile, cfg) {
+  const map = {
+    legal_anchor: 'Auf welches SGB-Buch oder welchen Paragraphen soll ich mich beziehen (z. B. SGB V, § 47)?',
+    actor_context: 'Fuer wen soll ich den Fall beantworten (Arbeitnehmer, Arbeitgeber, Azubi, Krankenkasse)?',
+    case_facts: 'Gibt es konkrete Fallangaben (Zeitraum, Brutto/Netto, Fristen oder Ausgangslage)?',
+    output_intent: 'Wie soll ich antworten: Kurzschema, Rechenweg, Praxisfall oder Pruefungskarte?'
+  };
+  const out = [];
+  profile.missingDimensions.forEach((key) => {
+    const q = map[key];
+    if (q) out.push(q);
+  });
+  const defaults = Array.isArray(cfg?.clarification_policy?.default_followups)
+    ? cfg.clarification_policy.default_followups.map((item) => normalizeText(item)).filter(Boolean)
+    : [];
+  defaults.forEach((q) => out.push(q));
+  const unique = [];
+  const seen = new Set();
+  out.forEach((q) => {
+    const key = q.toLowerCase();
+    if (!q || seen.has(key)) return;
+    seen.add(key);
+    unique.push(q);
+  });
+  return unique.slice(0, 4);
+}
+
 function shouldClarifyQuestion(question, history, cfg) {
   const policy = cfg?.clarification_policy || {};
-  if (!policy.enabled) return false;
-  const text = normalizeText(question);
-  if (!text) return true;
-  if (text.length < Number(policy.min_question_chars || 18)) return true;
+  const profile = buildSozialrechtSignalProfile(question, history, cfg);
+  if (!policy.enabled) {
+    return {
+      shouldClarify: false,
+      followups: [],
+      reasons: [],
+      profile
+    };
+  }
 
-  const tokens = text.split(/\s+/).filter(Boolean);
-  const maxTokens = Number(policy.max_tokens_without_context || 5);
-  if (tokens.length <= maxTokens && !hasMeaningfulContext(history)) return true;
-
-  const low = text.toLowerCase();
+  const low = profile.text.toLowerCase();
   const patterns = Array.isArray(policy.ambiguous_patterns) ? policy.ambiguous_patterns : [];
-  return patterns.some((p) => {
+  const patternHit = patterns.some((p) => {
     const needle = normalizeText(p).toLowerCase();
     return needle && low.includes(needle);
   });
+
+  const shouldClarify = Boolean(profile.shouldClarify || patternHit);
+  const followups = shouldClarify ? buildClarificationFollowups(profile, cfg) : [];
+  return {
+    shouldClarify,
+    followups,
+    reasons: profile.reasons.slice(0, 4),
+    profile
+  };
 }
 
-function buildClarificationPayload(cfg) {
-  const followups = Array.isArray(cfg?.clarification_policy?.default_followups)
-    ? cfg.clarification_policy.default_followups.map((item) => normalizeText(item)).filter(Boolean).slice(0, 4)
-    : [];
+function buildClarificationPayload(cfg, decision = {}, question = '') {
+  const followups = Array.isArray(decision?.followups) && decision.followups.length
+    ? decision.followups
+    : (Array.isArray(cfg?.clarification_policy?.default_followups)
+        ? cfg.clarification_policy.default_followups.map((item) => normalizeText(item)).filter(Boolean).slice(0, 4)
+        : []);
+  const reasons = Array.isArray(decision?.reasons) ? decision.reasons.filter(Boolean).slice(0, 3) : [];
+  const topic = topicFromQuestion(question);
+  const reasonLine = reasons.length ? `\n\nGrund: ${reasons.join(' ')}` : '';
   return {
-    answer:
-      'Damit ich im Fachmodus Sozialrecht praezise antworte, brauche ich noch etwas Kontext. ' +
-      'Bitte konkretisiere kurz, damit ich sauber eingrenzen kann.',
+    answer: [
+      '### Rueckfrage benoetigt',
+      `Damit ich zu "${topic}" fachlich praezise und pruefungstauglich antworte, brauche ich noch kurze Eckdaten.${reasonLine}`,
+      'Bitte beantworte kurz die folgenden Rueckfragen, dann liefere ich dir direkt die strukturierte Endantwort.'
+    ].join('\n\n'),
     followups,
     sources: [],
     confidence: 0.2,
     evidence_note: 'Rueckfrage gestellt, um Fehlinterpretationen zu vermeiden.',
     meta: {
       clarification_requested: true,
-      domain: 'SOZIALRECHT'
+      domain: 'SOZIALRECHT',
+      clarification_reasons: reasons,
+      clarification_profile: decision?.profile || {}
     }
   };
 }
@@ -195,7 +318,7 @@ function normalizeModelPayload(rawText, cfg) {
   const parsed = parseJsonSafe(rawText, null);
   if (!parsed || typeof parsed !== 'object') {
     return {
-      answer: normalizeText(rawText) || 'Ich weiss es nicht sicher.',
+      answer: normalizeMultilineText(rawText) || 'Ich weiss es nicht sicher.',
       followups: fallbackFollowups,
       sources: [],
       confidence: null,
@@ -207,7 +330,7 @@ function normalizeModelPayload(rawText, cfg) {
     .filter(Boolean)
     .slice(0, 4);
   return {
-    answer: normalizeText(parsed.answer || parsed.response || parsed.text || '') || 'Ich weiss es nicht sicher.',
+    answer: normalizeMultilineText(parsed.answer || parsed.response || parsed.text || '') || 'Ich weiss es nicht sicher.',
     followups: followups.length ? followups : fallbackFollowups,
     sources: normalizeSources(parsed.sources || parsed.quellen || parsed.references || []),
     confidence: clamp01(parsed.confidence, null),
@@ -219,13 +342,21 @@ function buildSozialrechtSystemPrompt(cfg, hasStorage) {
   const policy = cfg?.accuracy_policy || {};
   return [
     'Du bist LINDA im Fachmodus Sozialrecht fuer angehende Personalfachkaufleute (IHK).',
-    'Arbeite strikt fachlich, knapp, nachvollziehbar und ohne Spekulation.',
+    'Arbeite strikt fachlich, nachvollziehbar, ohne Spekulation und mit klarer Struktur.',
     policy.high_accuracy_required ? 'Hohe Genauigkeit ist Pflicht.' : '',
     policy.prefer_clarification_over_guessing ? 'Wenn Informationen fehlen oder unklar sind: erst Rueckfrage, keine Vermutung.' : '',
     policy.strict_unknown_on_missing_basis ? 'Wenn keine belastbare Grundlage vorhanden ist: sage klar "Ich weiss es nicht sicher".' : '',
     policy.require_legal_basis_references ? 'Nenne, wenn moeglich, SGB-Buch und Rechtsbezug als Quelle.' : '',
     hasStorage ? 'Wenn Storage-Treffer vorhanden sind, priorisiere diese Evidenz.' : '',
-    'Gib ausschliesslich JSON zurueck, ohne Markdown, exakt im Format:',
+    'Das Feld "answer" muss als gut lesbares Markdown mit dieser Struktur kommen (wenn fachlich passend):',
+    '### Kurzantwort',
+    '### Rechtsgrundlage (SGB)',
+    '### Pruefschema',
+    '### Praxisbeispiel',
+    '### Stolperfallen fuer die IHK-Pruefung',
+    'Nutze im Pruefschema eine nummerierte Liste mit 3 bis 6 Schritten.',
+    'Zitiere konkrete Fundstellen nur, wenn sie belastbar sind.',
+    'Gib ausschliesslich JSON zurueck, exakt im Format:',
     '{"answer":"...","followups":["..."],"sources":[{"title":"...","excerpt":"...","section":"...","page":"","note":"","confidence":0.0}],"confidence":0.0,"evidence_note":"..."}'
   ].filter(Boolean).join('\n');
 }
@@ -260,7 +391,7 @@ async function callOpenAIChatCompletions({ apiKey, model, messages, temperature,
   }
   const data = parseJsonSafe(raw, {});
   const content = data?.choices?.[0]?.message?.content;
-  return normalizeText(content || '');
+  return normalizeMultilineText(content || '');
 }
 
 function extractResponsesText(parsed) {
@@ -274,6 +405,99 @@ function extractResponsesText(parsed) {
     }
   }
   return '';
+}
+
+function asArray(value) {
+  return Array.isArray(value) ? value : [];
+}
+
+function extractResponseAnnotationEntries(part) {
+  return [
+    ...asArray(part?.annotations),
+    ...asArray(part?.citations),
+    ...asArray(part?.references),
+    ...asArray(part?.sources),
+    ...asArray(part?.text?.annotations),
+    ...asArray(part?.text?.citations),
+    ...asArray(part?.text?.references),
+    ...asArray(part?.text?.sources)
+  ];
+}
+
+function normalizeResponseAnnotationSource(entry) {
+  if (!entry || typeof entry !== 'object') return null;
+  const file = entry.file && typeof entry.file === 'object' ? entry.file : {};
+  const fileCitation = entry.file_citation && typeof entry.file_citation === 'object' ? entry.file_citation : {};
+  const fileId = normalizeText(entry.file_id || file.id || fileCitation.file_id || '');
+  const title = normalizeText(
+    entry.title ||
+    entry.filename ||
+    file.filename ||
+    fileCitation.filename ||
+    entry.label ||
+    entry.document ||
+    (fileId ? `Datei ${fileId}` : '')
+  );
+  const url = normalizeText(entry.url || entry.link || file.url || '');
+  const excerpt = normalizeText(
+    entry.excerpt ||
+    entry.quote ||
+    entry.snippet ||
+    entry.chunk ||
+    entry.text ||
+    fileCitation.quote ||
+    fileCitation.text ||
+    ''
+  );
+  const section = normalizeText(
+    entry.section ||
+    entry.heading ||
+    fileCitation.section ||
+    entry.locator ||
+    entry.type ||
+    ''
+  );
+  const page = normalizeText(
+    entry.page ||
+    entry.pageNumber ||
+    entry.page_number ||
+    fileCitation.page ||
+    fileCitation.page_number ||
+    ''
+  );
+  const note = normalizeText(
+    entry.note ||
+    entry.reason ||
+    entry.description ||
+    (entry.type ? `Quelle (${String(entry.type)})` : 'Quelle aus Vector Store')
+  );
+  const confidence = clamp01(entry.confidence, null);
+  if (!title && !url && !excerpt && !fileId) return null;
+  return {
+    title: title || (fileId ? `Datei ${fileId}` : 'Storage-Quelle'),
+    url,
+    excerpt,
+    section,
+    page,
+    note,
+    confidence
+  };
+}
+
+function extractResponsesSources(parsed) {
+  const found = [];
+  const output = asArray(parsed?.output);
+  for (const item of output) {
+    const content = asArray(item?.content);
+    for (const part of content) {
+      const entries = extractResponseAnnotationEntries(part);
+      for (const entry of entries) {
+        const src = normalizeResponseAnnotationSource(entry);
+        if (src) found.push(src);
+      }
+    }
+  }
+  return normalizeSources(found);
 }
 
 async function callOpenAIResponsesWithStorage({ apiKey, model, messages, temperature, maxOutputTokens, vectorStoreId }) {
@@ -303,7 +527,10 @@ async function callOpenAIResponsesWithStorage({ apiKey, model, messages, tempera
     throw new Error(`OpenAI responses Fehler (${res.status}): ${detail || 'unbekannt'}`);
   }
   const parsed = parseJsonSafe(raw, {});
-  return extractResponsesText(parsed);
+  return {
+    text: extractResponsesText(parsed),
+    sources: extractResponsesSources(parsed)
+  };
 }
 
 async function proxyToLegacy(req, res) {
@@ -337,6 +564,8 @@ async function handleHealth(req, res) {
   res.status(200).json({
     ok: Boolean(checks.Sozialrecht2026 && checks.LEGACY_API_ORIGIN),
     checks,
+    storage_env_key: storageEnvKey,
+    storage_configured: Boolean(checks[storageEnvKey]),
     baseUrl: '/api/linda3',
     ts: new Date().toISOString(),
     mode: 'sozialrecht-targeted-openai'
@@ -361,14 +590,30 @@ async function handleSozialrechtChat(req, res, action) {
 
   const socialKey = process.env.Sozialrecht2026 || process.env.SOZIALRECHT2026;
   if (!socialKey) {
-    res.status(500).json({
-      error: 'Sozialrecht API-Key fehlt. Bitte Vercel-Variable "Sozialrecht2026" (oder SOZIALRECHT2026) setzen.'
+    const fallbackFollowups = buildClarificationFollowups(
+      buildSozialrechtSignalProfile(question, history, cfg),
+      cfg
+    );
+    res.status(200).json({
+      answer:
+        'Ich weiss es nicht sicher. Die Sozialrecht-API ist noch nicht vollstaendig konfiguriert, ' +
+        'deshalb antworte ich vorsichtshalber nicht spekulativ.',
+      followups: fallbackFollowups,
+      sources: [],
+      confidence: 0.05,
+      evidence_note: 'Technischer Hinweis: API-Key fuer Sozialrecht fehlt.',
+      meta: {
+        domain: 'SOZIALRECHT',
+        runtime_error: true,
+        runtime_detail: 'Sozialrecht API-Key fehlt. Bitte Vercel-Variable "Sozialrecht2026" (oder SOZIALRECHT2026) setzen.'
+      }
     });
     return;
   }
 
-  if (shouldClarifyQuestion(question, history, cfg)) {
-    res.status(200).json(buildClarificationPayload(cfg));
+  const clarificationDecision = shouldClarifyQuestion(question, history, cfg);
+  if (clarificationDecision.shouldClarify) {
+    res.status(200).json(buildClarificationPayload(cfg, clarificationDecision, question));
     return;
   }
 
@@ -386,65 +631,177 @@ async function handleSozialrechtChat(req, res, action) {
   const messages = toOpenAIMessages(systemPrompt, history, question);
 
   try {
-    const modelRaw = useStorage
-      ? await callOpenAIResponsesWithStorage({
+    const defaultModel = String(cfg?.routing?.default_model || DEFAULT_SOCIALRECHT_CONFIG.routing.default_model);
+    let activeModel = model;
+    let modelRaw = '';
+    let storageSources = [];
+    let storageUsed = false;
+    let storageFallback = false;
+    let storageError = '';
+
+    if (useStorage) {
+      try {
+        const storageResult = await callOpenAIResponsesWithStorage({
           apiKey: socialKey,
-          model,
+          model: activeModel,
           messages,
           temperature,
           maxOutputTokens,
           vectorStoreId
-        })
-      : await callOpenAIChatCompletions({
-          apiKey: socialKey,
-          model,
-          messages,
-          temperature,
-          maxOutputTokens
         });
+        modelRaw = storageResult.text;
+        storageSources = storageResult.sources;
+        storageUsed = true;
+      } catch (storageErr) {
+        const firstErr = normalizeText(storageErr?.message || 'unbekannt');
+        storageError = firstErr;
+
+        if (fastMode && defaultModel && defaultModel !== activeModel) {
+          try {
+            activeModel = defaultModel;
+            const retryResult = await callOpenAIResponsesWithStorage({
+              apiKey: socialKey,
+              model: activeModel,
+              messages,
+              temperature,
+              maxOutputTokens,
+              vectorStoreId
+            });
+            modelRaw = retryResult.text;
+            storageSources = retryResult.sources;
+            storageUsed = true;
+          } catch (retryErr) {
+            const retryDetail = normalizeText(retryErr?.message || 'unbekannt');
+            storageError = [firstErr, `Retry mit ${defaultModel} fehlgeschlagen: ${retryDetail}`]
+              .filter(Boolean)
+              .join(' | ');
+          }
+        }
+
+        if (!storageUsed) {
+          storageFallback = true;
+          modelRaw = await callOpenAIChatCompletions({
+            apiKey: socialKey,
+            model: activeModel,
+            messages,
+            temperature,
+            maxOutputTokens
+          });
+        }
+      }
+    } else {
+      modelRaw = await callOpenAIChatCompletions({
+        apiKey: socialKey,
+        model: activeModel,
+        messages,
+        temperature,
+        maxOutputTokens
+      });
+    }
 
     const normalized = normalizeModelPayload(modelRaw, cfg);
+    const mergedSources = normalizeSources([...(normalized.sources || []), ...storageSources]);
+    const strictUnknown = Boolean(cfg?.accuracy_policy?.strict_unknown_on_missing_basis);
+    const finalAnswer =
+      strictUnknown && mergedSources.length === 0
+        ? 'Ich weiss es nicht sicher. Ohne belastbare Quelle antworte ich im Fachmodus Sozialrecht bewusst nicht spekulativ. Bitte frage enger oder nenne ein konkretes SGB-Thema.'
+        : normalized.answer;
+    const evidenceNotes = [];
+    if (normalized.evidence_note) evidenceNotes.push(normalized.evidence_note);
+    if (storageUsed && mergedSources.length) {
+      evidenceNotes.push('Vector-Store-Treffer wurden als Quellen-Chunks eingebunden.');
+    } else if (storageUsed && !mergedSources.length) {
+      evidenceNotes.push('Vector Store war aktiv, aber es wurden keine zitierbaren Quellen-Chunks erkannt.');
+    }
+    if (storageFallback) {
+      evidenceNotes.push('Storage-Abfrage war nicht stabil; Antwort wurde ersatzweise ohne Storage erstellt.');
+    }
+
     res.status(200).json({
-      answer: normalized.answer,
+      answer: finalAnswer,
       followups: normalized.followups,
-      sources: normalized.sources,
+      sources: mergedSources,
       confidence: normalized.confidence,
-      evidence_note: normalized.evidence_note,
+      evidence_note: evidenceNotes.join(' ').trim(),
       meta: {
         domain: 'SOZIALRECHT',
-        model,
+        model: activeModel,
         fast_mode: fastMode,
-        storage_used: useStorage
+        storage_used: storageUsed,
+        storage_fallback: storageFallback,
+        storage_error: storageFallback ? storageError : ''
       }
     });
   } catch (err) {
-    res.status(500).json({
-      error: 'Sozialrecht-Antwort fehlgeschlagen',
-      detail: normalizeText(err?.message || 'unbekannt')
+    const detail = normalizeText(err?.message || 'unbekannt');
+    const fallbackFollowups = buildClarificationFollowups(
+      buildSozialrechtSignalProfile(question, history, cfg),
+      cfg
+    );
+    res.status(200).json({
+      answer:
+        'Ich weiss es nicht sicher. Es gab gerade ein technisches Verarbeitungsproblem, ' +
+        'deshalb liefere ich vorsichtshalber keine spekulative Antwort.',
+      followups: fallbackFollowups,
+      sources: [],
+      confidence: 0.05,
+      evidence_note: `Technischer Hinweis: ${detail}`,
+      meta: {
+        domain: 'SOZIALRECHT',
+        runtime_error: true,
+        runtime_detail: detail
+      }
     });
   }
 }
 
 module.exports = async (req, res) => {
-  if (req.method === 'OPTIONS') {
-    res.status(204).end();
-    return;
-  }
-
   const action = getAction(req);
-  if (action === 'health') {
-    await handleHealth(req, res);
-    return;
+  try {
+    if (req.method === 'OPTIONS') {
+      res.status(204).end();
+      return;
+    }
+
+    if (action === 'health') {
+      await handleHealth(req, res);
+      return;
+    }
+
+    const payload = readRequestBodyObject(req);
+    const domain = String(payload?.fachmodus || '').trim().toUpperCase();
+    const sozialrecht =
+      domain === 'SOZIALRECHT' ||
+      (!domain && (action === 'bot' || action === 'deepseek'));
+
+    if (sozialrecht && (action === 'bot' || action === 'deepseek')) {
+      await handleSozialrechtChat(req, res, action);
+      return;
+    }
+
+    await proxyToLegacy(req, res);
+  } catch (err) {
+    const detail = normalizeText(err?.message || 'unbekannt');
+    if (action === 'bot' || action === 'deepseek') {
+      res.status(200).json({
+        answer:
+          'Ich weiss es nicht sicher. Es gab gerade ein technisches Verarbeitungsproblem, ' +
+          'deshalb liefere ich vorsichtshalber keine spekulative Antwort.',
+        followups: [
+          'Nenne bitte das konkrete SGB-Buch oder den Paragraphen.',
+          'Soll ich die Antwort als Kurzschema oder Praxisfall aufbauen?'
+        ],
+        sources: [],
+        confidence: 0.05,
+        evidence_note: `Technischer Hinweis: ${detail}`,
+        meta: {
+          domain: 'SOZIALRECHT',
+          runtime_error: true,
+          runtime_detail: detail
+        }
+      });
+      return;
+    }
+    res.status(502).json({ error: `Legacy-Proxy Fehler: ${detail}` });
   }
-
-  const payload = readRequestBodyObject(req);
-  const domain = String(payload?.fachmodus || '').trim().toUpperCase();
-  const sozialrecht = domain === 'SOZIALRECHT';
-
-  if (sozialrecht && (action === 'bot' || action === 'deepseek')) {
-    await handleSozialrechtChat(req, res, action);
-    return;
-  }
-
-  await proxyToLegacy(req, res);
 };
