@@ -5959,6 +5959,15 @@
           const loginUrl = normalized.loginUrl || app.logic.buildIliasConnectUrl();
           if (res.status === 401 || normalized.loginRequired) {
             const msg = String(parsedRaw?.message || normalized.message || 'ILIAS-Anmeldung erforderlich.').trim();
+            app.state.iliasStatus = {
+              ok: false,
+              configured: normalized.configured !== false,
+              connected: false,
+              checkedAt: new Date().toISOString(),
+              message: msg,
+              loginUrl
+            };
+            app.utils.save();
             return {
               ...normalized,
               ok: false,
@@ -9061,7 +9070,10 @@
       if (!cb) return;
       const key = cb.getAttribute('data-source-cb');
       app.state.settings.sources[key] = cb.checked;
-      if (key === 'ilias') app.state.settings.ilias.enabled = cb.checked;
+      if (key === 'ilias') {
+        app.state.settings.ilias.enabled = cb.checked;
+        if (cb.checked) app.logic.checkIliasStatus({ save: false }).catch(() => {});
+      }
       app.utils.save();
       app.ui.updateDomainUI();
       app.ui.renderSourceToolbar();
@@ -9073,7 +9085,10 @@
       if (!cb) return;
       const key = cb.getAttribute('data-source-setting');
       app.state.settings.sources[key] = cb.checked;
-      if (key === 'ilias') app.state.settings.ilias.enabled = cb.checked;
+      if (key === 'ilias') {
+        app.state.settings.ilias.enabled = cb.checked;
+        if (cb.checked) app.logic.checkIliasStatus({ save: false }).catch(() => {});
+      }
       if (key === 'directory') app.ui.syncLearningDirectoryControls();
     });
 
