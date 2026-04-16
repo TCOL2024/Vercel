@@ -3174,7 +3174,7 @@
 
     <div class="section" style="margin-top:10px;">
       <h4>ILIAS (BETA)</h4>
-      <p class="mini">ILIAS wird nur zugeschaltet, wenn die Quelle "Kursraum (ILIAS)" aktiv ist. Keine Benutzername-/Passwort-Eingabe im Frontend-Chat.</p>
+      <p class="mini">ILIAS wird nur zugeschaltet, wenn die Quelle "Kursraum (ILIAS)" aktiv ist. Zielhost ist fest: ihk-campus-oldenburg.de. Keine Benutzername-/Passwort-Eingabe im Frontend-Chat.</p>
       <div class="grid cols-2" style="margin-top:8px;">
         <div class="field">
           <label for="inp-ilias-course-id">ILIAS-Kurs-ID (optional)</label>
@@ -3380,6 +3380,7 @@
   const ILIAS_STATUS_API_ENDPOINT = '/api/ilias?action=status';
   const ILIAS_CONNECT_API_ENDPOINT = '/api/ilias?action=connect';
   const ILIAS_SEARCH_API_ENDPOINT = '/api/ilias?action=search';
+  const ILIAS_TARGET_ORIGIN_HINT = 'https://ihk-campus-oldenburg.de';
   const SOZIALRECHT_ONLY_MODE = false;
   const SOZIALRECHT_DOMAIN_KEY = 'SOZIALRECHT';
   const LEARNING_TEMPLATES_PATH = './docs/learning_templates.json';
@@ -3575,7 +3576,8 @@
       connected: false,
       checkedAt: '',
       message: 'Noch nicht geprüft.',
-      loginUrl: ''
+      loginUrl: '',
+      targetOrigin: ILIAS_TARGET_ORIGIN_HINT
     },
     keywordLinks: structuredClone(DEFAULT_DIRECTORY_LINKS),
     telemetry: {
@@ -3779,6 +3781,9 @@
           app.state.iliasStatus = structuredClone(DEFAULT_STATE.iliasStatus);
         } else if (!String(app.state.iliasStatus.message || '').trim()) {
           app.state.iliasStatus.message = 'Noch nicht geprüft.';
+        }
+        if (!String(app.state.iliasStatus.targetOrigin || '').trim()) {
+          app.state.iliasStatus.targetOrigin = ILIAS_TARGET_ORIGIN_HINT;
         }
         if (!app.state.keywordLinks || typeof app.state.keywordLinks !== 'object') {
           app.state.keywordLinks = structuredClone(DEFAULT_DIRECTORY_LINKS);
@@ -4116,8 +4121,9 @@
         const box = document.getElementById('ilias-status');
         if (!box) return;
         const s = (status && typeof status === 'object') ? status : null;
+        const targetOrigin = String(s?.targetOrigin || ILIAS_TARGET_ORIGIN_HINT).trim();
         if (!s) {
-          box.textContent = 'Noch nicht geprüft.';
+          box.textContent = `Noch nicht geprüft.\nZiel: ${targetOrigin}`;
           box.style.color = '#37526f';
           return;
         }
@@ -4127,6 +4133,7 @@
         } else {
           lines.push('Status: Noch nicht geprüft');
         }
+        lines.push(`Ziel: ${targetOrigin}`);
         lines.push(`${s.configured ? '✓' : '✗'} ILIAS-Suche konfiguriert`);
         lines.push(`${s.connected ? '✓' : '✗'} Anmeldung vorhanden`);
         if (s.message) lines.push(`Hinweis: ${String(s.message).trim()}`);
@@ -5860,6 +5867,7 @@
           connected: data.connected !== false,
           loginRequired: Boolean(data.login_required || data.loginRequired),
           loginUrl: String(data.login_url || data.loginUrl || '').trim(),
+          targetOrigin: String(data.target_origin || data.targetOrigin || ILIAS_TARGET_ORIGIN_HINT).trim(),
           message: String(data.message || '').trim(),
           sources,
           chunks
@@ -5890,7 +5898,8 @@
             connected: Boolean(parsed?.connected),
             checkedAt: String(parsed?.ts || new Date().toISOString()),
             message: String(parsed?.message || '').trim() || 'Status erfolgreich geprüft.',
-            loginUrl: String(parsed?.login_url || '').trim() || app.logic.buildIliasConnectUrl()
+            loginUrl: String(parsed?.login_url || '').trim() || app.logic.buildIliasConnectUrl(),
+            targetOrigin: String(parsed?.target_origin || ILIAS_TARGET_ORIGIN_HINT).trim()
           };
           app.ui.renderIliasStatus(app.state.iliasStatus);
           if (opts.save !== false) app.utils.save();
@@ -5902,7 +5911,8 @@
             connected: false,
             checkedAt: new Date().toISOString(),
             message: String(err?.message || 'ILIAS-Status konnte nicht geprüft werden.'),
-            loginUrl: app.logic.buildIliasConnectUrl()
+            loginUrl: app.logic.buildIliasConnectUrl(),
+            targetOrigin: ILIAS_TARGET_ORIGIN_HINT
           };
           app.ui.renderIliasStatus(app.state.iliasStatus);
           if (opts.save !== false) app.utils.save();
@@ -5932,7 +5942,8 @@
             message: 'Leere Suchanfrage.',
             sources: [],
             chunks: [],
-            loginUrl: app.logic.buildIliasConnectUrl()
+            loginUrl: app.logic.buildIliasConnectUrl(),
+            targetOrigin: ILIAS_TARGET_ORIGIN_HINT
           };
         }
 
@@ -5965,7 +5976,8 @@
               connected: false,
               checkedAt: new Date().toISOString(),
               message: msg,
-              loginUrl
+              loginUrl,
+              targetOrigin: normalized.targetOrigin || ILIAS_TARGET_ORIGIN_HINT
             };
             app.utils.save();
             return {
@@ -5989,7 +6001,8 @@
           connected: Boolean(normalized.connected),
           checkedAt: new Date().toISOString(),
           message: normalized.message || `ILIAS-Suche erfolgreich (${normalized.sources.length} Treffer).`,
-          loginUrl: normalized.loginUrl || app.logic.buildIliasConnectUrl()
+          loginUrl: normalized.loginUrl || app.logic.buildIliasConnectUrl(),
+          targetOrigin: normalized.targetOrigin || ILIAS_TARGET_ORIGIN_HINT
         };
         app.utils.save();
         return normalized;

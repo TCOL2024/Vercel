@@ -1,4 +1,5 @@
-const ILIAS_API_ORIGIN = String(process.env.ILIAS_API_ORIGIN || process.env.ILIAS_ORIGIN || '').trim();
+const ILIAS_TARGET_HOST = 'ihk-campus-oldenburg.de';
+const ILIAS_TARGET_ORIGIN = `https://${ILIAS_TARGET_HOST}`;
 const ILIAS_SEARCH_URL = String(process.env.ILIAS_SEARCH_URL || '').trim();
 const ILIAS_SEARCH_PATH = String(process.env.ILIAS_SEARCH_PATH || '/search').trim();
 const ILIAS_CONNECT_URL = String(process.env.ILIAS_CONNECT_URL || '').trim();
@@ -64,8 +65,27 @@ function sanitizeReturnTo(req, value) {
   }
 }
 
+function buildCampusUrl(raw, fallbackPath = '/') {
+  const fallback = String(fallbackPath || '/').trim() || '/';
+  const safeFallback = fallback.startsWith('/') ? fallback : `/${fallback}`;
+  if (!raw) return new URL(safeFallback, ILIAS_TARGET_ORIGIN);
+  const cleaned = normalizeText(raw);
+  if (!cleaned) return new URL(safeFallback, ILIAS_TARGET_ORIGIN);
+  try {
+    const inUrl = new URL(cleaned, ILIAS_TARGET_ORIGIN);
+    const outUrl = new URL(ILIAS_TARGET_ORIGIN);
+    outUrl.pathname = inUrl.pathname || safeFallback;
+    outUrl.search = inUrl.search || '';
+    outUrl.hash = inUrl.hash || '';
+    return outUrl;
+  } catch (_) {
+    const asPath = cleaned.startsWith('/') ? cleaned : `/${cleaned}`;
+    return new URL(asPath, ILIAS_TARGET_ORIGIN);
+  }
+}
+
 function isConfigured() {
-  return Boolean(ILIAS_SEARCH_URL || ILIAS_API_ORIGIN);
+  return Boolean(ILIAS_TARGET_ORIGIN);
 }
 
 function hasAuth() {
@@ -73,8 +93,7 @@ function hasAuth() {
 }
 
 function resolveSearchUrl() {
-  if (ILIAS_SEARCH_URL) return new URL(ILIAS_SEARCH_URL);
-  return new URL(ILIAS_SEARCH_PATH || '/search', ILIAS_API_ORIGIN);
+  return buildCampusUrl(ILIAS_SEARCH_URL || ILIAS_SEARCH_PATH || '/search', '/search');
 }
 
 function resolveConnectUrl(req) {
@@ -82,9 +101,7 @@ function resolveConnectUrl(req) {
   const returnToPath = sanitizeReturnTo(req, returnToRaw);
   const origin = getRequestOrigin(req);
 
-  if (!ILIAS_CONNECT_URL && !ILIAS_API_ORIGIN) return '';
-
-  const base = ILIAS_CONNECT_URL || new URL('/login', ILIAS_API_ORIGIN).toString();
+  const base = buildCampusUrl(ILIAS_CONNECT_URL || '/login', '/login').toString();
   let u;
   try {
     u = new URL(base);
@@ -171,6 +188,7 @@ async function handleStatus(req, res) {
     ok,
     configured,
     connected,
+    target_origin: ILIAS_TARGET_ORIGIN,
     login_url: loginUrl,
     message,
     ts: new Date().toISOString()
@@ -182,6 +200,7 @@ async function handleConnect(req, res) {
   if (!url) {
     res.status(503).json({
       error: 'ILIAS-Login ist nicht konfiguriert.',
+      target_origin: ILIAS_TARGET_ORIGIN,
       configured: false,
       connected: false
     });
@@ -196,6 +215,7 @@ async function handleSearch(req, res) {
   if (!isConfigured()) {
     res.status(503).json({
       error: 'ILIAS-Suche ist nicht konfiguriert.',
+      target_origin: ILIAS_TARGET_ORIGIN,
       configured: false,
       connected: false,
       login_required: false,
@@ -206,6 +226,7 @@ async function handleSearch(req, res) {
   if (!hasAuth()) {
     res.status(401).json({
       error: 'ILIAS-Anmeldung erforderlich.',
+      target_origin: ILIAS_TARGET_ORIGIN,
       configured: true,
       connected: false,
       login_required: true,
@@ -245,6 +266,7 @@ async function handleSearch(req, res) {
     if (upstreamRes.status === 401 || upstreamRes.status === 403) {
       res.status(401).json({
         error: detail || 'ILIAS-Anmeldung abgelaufen.',
+        target_origin: ILIAS_TARGET_ORIGIN,
         configured: true,
         connected: false,
         login_required: true,
@@ -254,6 +276,7 @@ async function handleSearch(req, res) {
     }
     res.status(502).json({
       error: detail || `ILIAS-Suche fehlgeschlagen (HTTP ${upstreamRes.status}).`,
+      target_origin: ILIAS_TARGET_ORIGIN,
       configured: true,
       connected: true,
       login_required: false
@@ -280,6 +303,7 @@ async function handleSearch(req, res) {
     ok: true,
     configured: true,
     connected: true,
+    target_origin: ILIAS_TARGET_ORIGIN,
     login_required: false,
     login_url: resolveConnectUrl(req),
     message: normalizedHits.length
@@ -313,6 +337,7 @@ module.exports = async (req, res) => {
   } catch (err) {
     res.status(500).json({
       error: normalizeText(err?.message || 'ILIAS-Adapter Fehler'),
+      target_origin: ILIAS_TARGET_ORIGIN,
       configured: isConfigured(),
       connected: hasAuth(),
       login_required: !hasAuth(),
