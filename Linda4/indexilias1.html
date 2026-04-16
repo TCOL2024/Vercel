@@ -8071,11 +8071,26 @@
           };
 
           if (payload.ilias.enabled) {
-            const iliasSearch = await app.logic.searchIliasContext(text, {
-              signal: controller.signal,
-              courseId: payload.ilias.courseId,
-              topK: payload.ilias.topK
-            });
+            let iliasSearch;
+            try {
+              iliasSearch = await app.logic.searchIliasContext(text, {
+                signal: controller.signal,
+                courseId: payload.ilias.courseId,
+                topK: payload.ilias.topK
+              });
+            } catch (iliasErr) {
+              loading.remove();
+              app.logic.sendSystemMessage(
+                `ILIAS ist aktiviert, aber die Suche war nicht erreichbar (${String(iliasErr?.message || 'unbekannt')}).\n\nBitte pruefe die ILIAS-Verbindung in den Einstellungen und starte dann die Anfrage erneut.`,
+                {
+                  followups: [
+                    'ILIAS-Verbindung in den Einstellungen prüfen.',
+                    'Optional ohne ILIAS-Quelle erneut fragen.'
+                  ]
+                }
+              );
+              return;
+            }
 
             if (iliasSearch.loginRequired) {
               loading.remove();
