@@ -3071,7 +3071,7 @@
       </label>
     </div>
     <div class="smart-control">
-      <span class="label">Lernverzeichnis (BETA)</span>
+      <span class="label">ILIAS Sprungziele</span>
       <label class="fastmode-choice">
         <input id="directory-main-on" type="radio" name="directory-main" value="on">
         <span>Ein</span>
@@ -3365,7 +3365,7 @@
   const LEGACY_API_ORIGIN = 'https://vercel-kappa-seven-33.vercel.app';
   const BBIG_PDF_PATH = 'https://vercel-kappa-seven-33.vercel.app/2026/document/BBIG_V20022026.pdf';
   const DIRECTORY_LINKS_PATH = './directory_links.json';
-  const DIRECTORY_KEYWORD_MATCHING_ENABLED = false;
+  const DIRECTORY_KEYWORD_MATCHING_ENABLED = true;
   const STORAGE_KEY = 'linda3_state';
   const REQUEST_MEMORY_KEY = 'linda3_request_memory';
   const CARDS_KEY = 'linda3_cards';
@@ -3394,7 +3394,7 @@
     { key: 'web', label: 'Aktuelle Informationen', default: true },
     { key: 'script', label: 'Ihre Unterlagen', default: true },
     { key: 'ilias', label: 'Kursraum (ILIAS) BETA', default: false },
-    { key: 'directory', label: 'Lernverzeichnis BETA', default: false }
+    { key: 'directory', label: 'ILIAS Sprungziele', default: true }
   ];
 
   const DEFAULT_PROMPTING_JSON = {
@@ -4436,7 +4436,7 @@
         const grounded = Boolean(app.state.settings.guardrails && app.state.settings.guardrails.groundedMode);
         const privacy = Boolean(app.state.settings.privacy && app.state.settings.privacy.ephemeral);
         document.getElementById('domain-badge').textContent = isFast ? `${domain} ⚡` : domain;
-        document.getElementById('domain-summary').textContent = `Fachmodus: ${domain}${isFast ? ' • Schnellmodus aktiv' : ''}${isCompare ? ' • Vergleich aktiv' : ''}${hasDirectory ? ' • Lernverzeichnis (Beta) aktiv' : ''}${grounded ? ' • Quellenmodus strikt' : ''}${privacy ? ' • Privatmodus aktiv' : ''} • Wissensbereiche: ${activeCount} aktiv`;
+        document.getElementById('domain-summary').textContent = `Fachmodus: ${domain}${isFast ? ' • Schnellmodus aktiv' : ''}${isCompare ? ' • Vergleich aktiv' : ''}${hasDirectory ? ' • ILIAS Sprungziele aktiv' : ''}${grounded ? ' • Quellenmodus strikt' : ''}${privacy ? ' • Privatmodus aktiv' : ''} • Wissensbereiche: ${activeCount} aktiv`;
         app.ui.syncSozialrechtOnlyControls();
       },
 
@@ -4648,16 +4648,22 @@
             entries: []
           };
 
-          // New format: { entries: [{ title, url, keywords: [] }] }
+          // New format: { entries: [{ title/thema, url, keywords/schlagworte/themen: [] }] }
           if (Array.isArray(parsed.entries)) {
             out.entries = parsed.entries
               .map((entry) => {
                 if (!entry || typeof entry !== 'object') return null;
-                const title = String(entry.title || '').trim();
+                const title = String(entry.title || entry.thema || '').trim();
                 const url = String(entry.url || '').trim();
                 const note = String(entry.note || '').trim();
                 const enabled = entry.enabled !== false;
-                const keywords = (Array.isArray(entry.keywords) ? entry.keywords : [])
+                const keywordsRaw = [
+                  ...(Array.isArray(entry.keywords) ? entry.keywords : []),
+                  ...(Array.isArray(entry.schlagworte) ? entry.schlagworte : []),
+                  ...(Array.isArray(entry.themen) ? entry.themen : []),
+                  ...(Array.isArray(entry.topics) ? entry.topics : [])
+                ];
+                const keywords = keywordsRaw
                   .map((k) => app.utils.normalizeForKeyword(k))
                   .filter(Boolean);
                 if (!title || !url || !keywords.length) return null;
@@ -7830,13 +7836,13 @@
           md.appendChild(panel);
         }
 
-        const keywordLinks = app.logic.findKeywordLinks(md.innerText || '');
+        const keywordLinks = app.logic.findKeywordLinks(`${String(md.innerText || '')}\n${String(bubbleMeta.question || '')}`);
         if (keywordLinks.length) {
           const keywordPanel = document.createElement('section');
           keywordPanel.className = 'keyword-panel';
           const keywordTitle = document.createElement('h4');
           keywordTitle.className = 'keyword-head';
-          keywordTitle.textContent = 'Lernverzeichnis';
+          keywordTitle.textContent = 'ILIAS Sprungziele';
           const keywordList = document.createElement('ul');
           keywordList.className = 'keyword-list';
           keywordLinks.forEach((entry) => {
