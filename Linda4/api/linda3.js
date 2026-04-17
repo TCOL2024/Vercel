@@ -1,7 +1,8 @@
 const fs = require('fs');
 const path = require('path');
 
-const LEGACY_ORIGIN = process.env.LINDA3_LEGACY_API_ORIGIN || 'https://vercel-kappa-seven-33.vercel.app';
+const DEFAULT_LEGACY_ORIGIN = 'https://vercel-kappa-seven-33.vercel.app';
+const LEGACY_ORIGIN = process.env.LINDA3_LEGACY_API_ORIGIN || DEFAULT_LEGACY_ORIGIN;
 const SOCIALRECHT_CONFIG_PATH = path.join(process.cwd(), 'docs', 'sozialrecht_runtime.json');
 
 const DEFAULT_SOCIALRECHT_CONFIG = {
@@ -90,6 +91,32 @@ function getAction(req) {
   } catch (_) {
     return 'bot';
   }
+}
+
+function parseOriginSafe(value, fallback = '') {
+  const raw = normalizeText(value);
+  if (!raw) return fallback;
+  try {
+    return new URL(raw).origin;
+  } catch (_) {
+    return fallback;
+  }
+}
+
+function requestOrigin(req) {
+  const host = normalizeText(req?.headers?.['x-forwarded-host'] || req?.headers?.host || '');
+  const protoRaw = String(req?.headers?.['x-forwarded-proto'] || 'https');
+  const proto = normalizeText(protoRaw.split(',')[0] || 'https').replace(/[^a-z]/gi, '') || 'https';
+  if (!host) return '';
+  return `${proto}://${host}`;
+}
+
+function resolveLegacyOriginForRequest(req) {
+  const configured = parseOriginSafe(LEGACY_ORIGIN, DEFAULT_LEGACY_ORIGIN);
+  const reqOrigin = parseOriginSafe(requestOrigin(req), '');
+  if (!configured) return DEFAULT_LEGACY_ORIGIN;
+  if (reqOrigin && configured === reqOrigin) return DEFAULT_LEGACY_ORIGIN;
+  return configured;
 }
 
 function loadSozialrechtConfig() {
@@ -590,8 +617,9 @@ async function callOpenAIResponsesWithStorage({ apiKey, model, messages, tempera
   };
 }
 
-async function callLegacyDeepseek(payload) {
-  const upstream = new URL('/api/linda3?action=deepseek', LEGACY_ORIGIN);
+async function callLegacyDeepseek(payload, req) {
+  const legacyOrigin = resolveLegacyOriginForRequest(req);
+  const upstream = new URL('/api/linda3?action=deepseek', legacyOrigin);
   const body = {
     ...(payload && typeof payload === 'object' ? payload : {}),
     fachmodus: 'SOZIALRECHT',
@@ -623,7 +651,8 @@ async function callLegacyDeepseek(payload) {
 
 async function proxyToLegacy(req, res) {
   const reqUrl = new URL(req.url || '/api/linda3', 'http://localhost');
-  const upstream = new URL('/api/linda3', LEGACY_ORIGIN);
+  const legacyOrigin = resolveLegacyOriginForRequest(req);
+  const upstream = new URL('/api/linda3', legacyOrigin);
   reqUrl.searchParams.forEach((value, key) => upstream.searchParams.set(key, value));
 
   const headers = {};
@@ -647,7 +676,7 @@ async function handleHealth(req, res) {
     OPENAI_API_KEY: Boolean(process.env.OPENAI_API_KEY),
     Sozialrecht2026: Boolean(process.env.Sozialrecht2026 || process.env.SOZIALRECHT2026),
     [storageEnvKey]: Boolean(process.env[storageEnvKey]),
-    LEGACY_API_ORIGIN: Boolean(LEGACY_ORIGIN)
+    LEGACY_API_ORIGIN: Boolean(parseOriginSafe(LEGACY_ORIGIN, ''))
   };
   res.status(200).json({
     ok: Boolean(checks.Sozialrecht2026 && checks.LEGACY_API_ORIGIN),
@@ -656,7 +685,8 @@ async function handleHealth(req, res) {
     storage_configured: Boolean(checks[storageEnvKey]),
     baseUrl: '/api/linda3',
     ts: new Date().toISOString(),
-    mode: 'sozialrecht-targeted-openai'
+    mode: 'sozialrecht-targeted-openai',
+    legacy_origin_effective: resolveLegacyOriginForRequest(req)
   });
 }
 
@@ -722,7 +752,7 @@ async function handleSozialrechtChat(req, res, action) {
         guardrails: payload?.guardrails || {},
         assistantPrefs: payload?.assistantPrefs || {},
         clientMeta: payload?.clientMeta || {}
-      });
+      }, req);
       const normalizedLegacy = normalizeModelPayload(JSON.stringify(legacyRaw), cfg);
       const legacySources = normalizeSources(legacyRaw?.sources || normalizedLegacy.sources || []);
       const evidenceParts = [];
