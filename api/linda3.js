@@ -8,7 +8,7 @@ const DEFAULT_SOCIALRECHT_CONFIG = {
   version: '1.0',
   domain: 'SOZIALRECHT',
   routing: {
-    default_model: 'gpt-4.1',
+    default_model: 'gpt-5.1',
     fast_model: 'gpt-4.1-mini',
     judgment_model: 'gpt-5.1',
     judgment_max_output_tokens: 520,
@@ -671,6 +671,8 @@ async function handleSozialrechtChat(req, res, action) {
 
   const history = sanitizeHistory(payload.history || []);
   const forceFast = action === 'deepseek';
+  const requestedResponseMode = String(payload?.routing?.response_mode || '').toLowerCase();
+  const expertRequested = requestedResponseMode === 'expert';
   const fastRequested = forceFast || Boolean(payload.schnellmodus) || String(payload?.routing?.preferred_model || '').toLowerCase() === 'deepseek';
   const judgmentMode = isJudgmentQuestion(question);
   const fastMode = fastRequested && !judgmentMode;
@@ -739,6 +741,7 @@ async function handleSozialrechtChat(req, res, action) {
         meta: {
           domain: 'SOZIALRECHT',
           model: 'deepseek',
+          response_mode: expertRequested ? 'expert' : (requestedResponseMode || 'schnell'),
           fast_mode: true,
           judgment_mode: false,
           deepseek_via_legacy: true,
@@ -767,7 +770,7 @@ async function handleSozialrechtChat(req, res, action) {
     : Number(DEFAULT_SOCIALRECHT_CONFIG.routing.judgment_max_output_tokens || 520);
   const maxOutputTokens = judgmentMode
     ? Math.max(260, Math.min(900, judgmentMaxOutputTokens))
-    : defaultMaxOutputTokens;
+    : (fastMode && expertRequested ? 12000 : defaultMaxOutputTokens);
 
   const systemPrompt = judgmentMode
     ? buildSozialrechtJudgmentSystemPrompt(cfg, useStorage)
@@ -882,6 +885,7 @@ async function handleSozialrechtChat(req, res, action) {
       meta: {
         domain: 'SOZIALRECHT',
         model: activeModel,
+        response_mode: expertRequested ? 'expert' : (requestedResponseMode || (fastMode ? 'schnell' : 'genau')),
         fast_mode: fastMode,
         judgment_mode: judgmentMode,
         gpt5_footer: gpt5FooterActive,

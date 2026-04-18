@@ -3063,11 +3063,11 @@
       <span class="label">Antwortmodus</span>
       <label class="fastmode-choice">
         <input id="compare-main-off" type="radio" name="compare-main" value="off">
-        <span>Standard</span>
+        <span>Genau</span>
       </label>
       <label class="fastmode-choice">
         <input id="compare-main-on" type="radio" name="compare-main" value="on">
-        <span>Canvas</span>
+        <span>Experte</span>
       </label>
     </div>
     <div class="smart-control">
@@ -3362,7 +3362,7 @@
   const REWRITE_API_ENDPOINT = '/api/linda3?action=rewrite';
   const TTS_API_ENDPOINT = '/api/linda3?action=tts';
   const STT_API_ENDPOINT = '/api/linda3?action=stt';
-  const SOZIALRECHT_ONLY_MODE = false;
+  const SOZIALRECHT_ONLY_MODE = true;
   const SOZIALRECHT_DOMAIN_KEY = 'SOZIALRECHT';
   const LEARNING_TEMPLATES_PATH = './docs/learning_templates.json';
   const SOZIALRECHT_CURRICULUM_PATH = './docs/sozialrecht_sgb_i_xii.json';
@@ -7705,10 +7705,10 @@
           const effectiveFastMode = mobileReaderActive
             ? false
             : Boolean(app.state.settings.fastMode && app.state.settings.fastMode.enabled);
-          const compareEnabled = (opts?.autoSpeak || mobileReaderActive)
+          const expertModeEnabled = (opts?.autoSpeak || mobileReaderActive)
             ? false
             : Boolean(app.state.settings.compareMode && app.state.settings.compareMode.enabled);
-          const deepseekRoutingActive = Boolean(effectiveFastMode || compareEnabled);
+          const deepseekRoutingActive = Boolean(effectiveFastMode || expertModeEnabled);
           const effectiveSources = mobileReaderActive
             ? { ...app.state.settings.sources, ...MAKEFLOW_ONLY_SOURCES }
             : app.state.settings.sources;
@@ -7727,7 +7727,8 @@
             history: historyForApi,
             sources: effectiveSources,
             routing: {
-              preferred_model: deepseekRoutingActive ? 'deepseek' : 'default'
+              preferred_model: deepseekRoutingActive ? 'deepseek' : 'gpt-5.1',
+              response_mode: expertModeEnabled ? 'expert' : 'genau'
             },
             ilias: {
               enabled: mobileReaderActive
@@ -7759,99 +7760,53 @@
           };
           lastPayload = payload;
 
-          if (compareEnabled) {
+          if (expertModeEnabled) {
             let makeParsed = { answer: '', sources: [] };
-            let deepParsed = { answer: '', sources: [] };
-            const canvasPayload = {
+            const expertPayload = {
               ...payload,
               schnellmodus: true,
               routing: {
                 ...(payload.routing || {}),
-                preferred_model: 'deepseek'
+                preferred_model: 'deepseek',
+                response_mode: 'expert'
               },
               clientMeta: {
                 ...(payload.clientMeta || {}),
-                channel: 'canvas'
+                channel: 'expert'
               }
             };
 
             try {
-              makeParsed = await app.logic.requestAnswer(DEEPSEEK_API_ENDPOINT, canvasPayload, controller.signal);
+              makeParsed = await app.logic.requestAnswer(DEEPSEEK_API_ENDPOINT, expertPayload, controller.signal);
               makeParsed.answer = app.logic.stripRepeatedIntro(makeParsed.answer, allowIntroForThisTurn);
-              makeParsed = app.logic.enrichAssistantResponse(makeParsed, text, canvasPayload, { channel: 'canvas' });
-              makeParsed.meta = { ...(makeParsed.meta || {}), panelTitle: 'Canvas (DeepSeek)' };
+              makeParsed = app.logic.enrichAssistantResponse(makeParsed, text, expertPayload, { channel: 'expert' });
+              makeParsed.meta = { ...(makeParsed.meta || {}), panelTitle: 'Expertenmodus (DeepSeek)' };
             } catch (e) {
               const shouldFallbackToDefault = DEEPSEEK_API_ENDPOINT !== API_ENDPOINT;
               if (shouldFallbackToDefault) {
                 try {
-                  makeParsed = await app.logic.requestAnswer(API_ENDPOINT, canvasPayload, controller.signal);
+                  makeParsed = await app.logic.requestAnswer(API_ENDPOINT, expertPayload, controller.signal);
                   makeParsed.answer = app.logic.stripRepeatedIntro(makeParsed.answer, allowIntroForThisTurn);
-                  makeParsed = app.logic.enrichAssistantResponse(makeParsed, text, canvasPayload, { channel: 'canvas-fallback' });
-                  makeParsed.meta = { ...(makeParsed.meta || {}), panelTitle: 'Canvas (Fallback)' };
+                  makeParsed = app.logic.enrichAssistantResponse(makeParsed, text, expertPayload, { channel: 'expert-fallback' });
+                  makeParsed.meta = { ...(makeParsed.meta || {}), panelTitle: 'Expertenmodus (Fallback)' };
                 } catch (fallbackErr) {
-                  makeParsed = { answer: `❌ Canvas Fehler: ${fallbackErr?.message || 'unbekannt'}`, sources: [], meta: { panelTitle: 'Canvas' } };
+                  makeParsed = { answer: `❌ Expertenmodus Fehler: ${fallbackErr?.message || 'unbekannt'}`, sources: [], meta: { panelTitle: 'Expertenmodus' } };
                 }
               } else {
-                makeParsed = { answer: `❌ Canvas Fehler: ${e?.message || 'unbekannt'}`, sources: [], meta: { panelTitle: 'Canvas' } };
-              }
-            }
-
-            await new Promise((resolve) => setTimeout(resolve, 1000));
-
-            const deepseekPayload = {
-              ...canvasPayload,
-              routing: {
-                ...(canvasPayload.routing || {}),
-                preferred_model: 'deepseek'
-              },
-              clientMeta: {
-                ...(canvasPayload.clientMeta || {}),
-                channel: 'deepseek'
-              }
-            };
-
-            try {
-              deepParsed = await app.logic.requestAnswer(
-                DEEPSEEK_API_ENDPOINT,
-                deepseekPayload,
-                controller.signal
-              );
-              deepParsed.answer = app.logic.stripRepeatedIntro(deepParsed.answer, allowIntroForThisTurn);
-              deepParsed = app.logic.enrichAssistantResponse(deepParsed, text, deepseekPayload, { channel: 'deepseek' });
-              deepParsed.meta = { ...(deepParsed.meta || {}), panelTitle: 'Schnellmodus (DeepSeek)' };
-            } catch (e) {
-              const shouldFallbackToDefault = DEEPSEEK_API_ENDPOINT !== API_ENDPOINT;
-              if (shouldFallbackToDefault) {
-                try {
-                  deepParsed = await app.logic.requestAnswer(
-                    API_ENDPOINT,
-                    deepseekPayload,
-                    controller.signal
-                  );
-                  deepParsed.answer = app.logic.stripRepeatedIntro(deepParsed.answer, allowIntroForThisTurn);
-                  deepParsed = app.logic.enrichAssistantResponse(deepParsed, text, deepseekPayload, { channel: 'deepseek-fallback' });
-                  deepParsed.meta = { ...(deepParsed.meta || {}), panelTitle: 'Schnellmodus (Fallback)' };
-                } catch (fallbackErr) {
-                  deepParsed = { answer: `❌ Schnellmodus Fehler: ${fallbackErr?.message || 'unbekannt'}`, sources: [], meta: { panelTitle: 'Schnellmodus' } };
-                }
-              } else {
-                deepParsed = { answer: `❌ Schnellmodus Fehler: ${e?.message || 'unbekannt'}`, sources: [], meta: { panelTitle: 'Schnellmodus' } };
+                makeParsed = { answer: `❌ Expertenmodus Fehler: ${e?.message || 'unbekannt'}`, sources: [], meta: { panelTitle: 'Expertenmodus' } };
               }
             }
 
             s.messages.push({
               role: 'assistant',
-              content: `Canvas:\n${makeParsed.answer}\n\nSchnellmodus:\n${deepParsed.answer}`,
-              sources: [],
-              compare: {
-                make: makeParsed,
-                deepseek: deepParsed
-              },
+              content: makeParsed.answer,
+              sources: makeParsed.sources || [],
               meta: {
+                ...(makeParsed.meta || {}),
                 question: text
               }
             });
-            app.ui.log.appendChild(app.ui.createCompareBubble(makeParsed, deepParsed));
+            app.ui.log.appendChild(app.ui.createBubble('assistant', makeParsed.answer, makeParsed.sources, makeParsed.meta));
             if (opts?.autoSpeak) {
               const speaking = app.ui.voicePlaybackRow();
               app.ui.log.appendChild(speaking);
