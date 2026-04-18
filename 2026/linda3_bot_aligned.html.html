@@ -1,0 +1,1815 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>LINDA3 – Lernassistenz</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.8/purify.min.js"></script>
+<style>
+  :root{
+    --bg:#eaf2fb;
+    --bg2:#f8fbff;
+    --card:#ffffff;
+    --ink:#122033;
+    --muted:#51637a;
+    --line:#d7e1ef;
+    --brand:#0059b8;
+    --brand2:#1773d1;
+    --brandSoft:#e9f4ff;
+    --danger:#c92a3d;
+    --ok:#0e8b63;
+    --shadow:0 18px 45px rgba(10,22,40,.12);
+    --r-xl:24px;
+    --r-lg:18px;
+    --r-md:14px;
+    --header-h:72px;
+    --input-h:98px;
+    --kb:0px;
+  }
+
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{
+    margin:0;height:100%;
+    font-family:'Manrope',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+    color:var(--ink);
+    background:
+      radial-gradient(1100px 560px at 110% -10%, #d8ebff 0%, transparent 55%),
+      radial-gradient(900px 520px at -10% 110%, #ddfff6 0%, transparent 58%),
+      var(--bg);
+    font-size:16px; line-height:1.55;
+    text-size-adjust:100%; -webkit-text-size-adjust:100%;
+  }
+  body{
+    display:flex; align-items:stretch; justify-content:center; padding:0;
+  }
+
+  #app{
+    width:100%;
+    height:100dvh;
+    background:linear-gradient(180deg,#fbfdff 0%,#f4f8ff 100%);
+    display:grid;
+    grid-template-rows:var(--header-h) auto 1fr auto;
+    overflow:hidden;
+    position:relative;
+  }
+
+  @media (min-width:980px){
+    body{padding:20px}
+    #app{
+      max-width:1180px;
+      height:min(96vh,960px);
+      border-radius:28px;
+      box-shadow:0 25px 70px rgba(5,20,44,.22);
+    }
+  }
+
+  header{
+    background:rgba(255,255,255,.94);
+    border-bottom:1px solid var(--line);
+    backdrop-filter:blur(12px);
+    display:flex; align-items:center; gap:12px;
+    padding:10px 12px;
+    z-index:8;
+  }
+  .logo-wrap{min-width:0;flex:1}
+  .logo{
+    margin:0;
+    font-family:'Space Grotesk',sans-serif;
+    font-size:1.3rem;
+    color:#0b3f80;
+    letter-spacing:.02em;
+  }
+  .logo-sub{
+    font-size:.76rem;
+    color:var(--muted);
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+    margin-top:2px;
+  }
+  .pill{
+    border-radius:999px;
+    padding:6px 10px;
+    border:1px solid #bdd7fa;
+    background:#ebf4ff;
+    color:#0f4c98;
+    font-size:.72rem;
+    font-weight:800;
+    white-space:nowrap;
+  }
+  .header-actions{display:flex; gap:6px; overflow-x:auto}
+  .btn-icon{
+    border:1px solid var(--line);
+    background:#fff;
+    color:#114688;
+    border-radius:12px;
+    height:44px; min-width:44px;
+    padding:0 11px;
+    font-size:.95rem;
+    font-weight:800;
+    cursor:pointer;
+    display:inline-flex; align-items:center; justify-content:center;
+  }
+  .btn-icon:hover,.btn-icon:focus-visible{background:#eef6ff;border-color:#9fc4f3;outline:none}
+  .btn-primary{background:linear-gradient(135deg,var(--brand) 0%, var(--brand2) 100%); border:none; color:#fff}
+  .toolbar{
+    background:rgba(255,255,255,.88);
+    border-bottom:1px solid var(--line);
+    display:flex; gap:8px; align-items:center;
+    padding:8px 10px;
+    overflow-x:auto;
+    min-height:50px;
+  }
+  .chip{
+    border:1px solid #d0dceb;
+    background:#fff;
+    color:#28415e;
+    border-radius:999px;
+    padding:7px 10px;
+    display:inline-flex; align-items:center; gap:6px;
+    font-size:.76rem; font-weight:800;
+    white-space:nowrap;
+    cursor:pointer;
+  }
+  .chip.on{background:#eaf4ff;border-color:#8cb9ef;color:#094992}
+  .chip input{position:absolute;opacity:0;pointer-events:none}
+  #chat-log{
+    overflow-y:auto;
+    padding:14px;
+    display:flex; flex-direction:column; gap:12px;
+    background:
+      radial-gradient(520px 220px at 100% 0%, rgba(217,234,255,.68) 0%, transparent 80%),
+      linear-gradient(180deg,#fafcff 0%,#f2f7ff 100%);
+    padding-bottom:calc(var(--input-h) + 18px + var(--kb));
+  }
+  .msg-row{display:flex; width:100%; animation:fadeIn .24s ease}
+  .msg-row.user{justify-content:flex-end}
+  .msg-row.assistant{justify-content:flex-start}
+  .msg-wrap{width:min(100%,840px)}
+  .bubble{
+    border-radius:18px; padding:13px 15px;
+    box-shadow:0 3px 12px rgba(8,24,47,.08);
+    word-break:break-word;
+  }
+  .bubble.user{
+    background:linear-gradient(135deg,#0d58ae 0%,#257bd9 100%);
+    color:#fff;
+    border-radius:18px 18px 6px 18px;
+  }
+  .bubble.assistant{
+    background:#fff;
+    border:1px solid #d8e3f1;
+    border-radius:18px 18px 18px 6px;
+  }
+  .meta-note{
+    margin-top:8px;
+    padding:9px 10px;
+    background:#f5f9ff;
+    border:1px solid #d7e7fb;
+    border-radius:10px;
+    color:#45607f;
+    font-size:.84rem;
+  }
+
+  .md h1,.md h2,.md h3,.md h4{
+    margin:0 0 8px;
+    font-family:'Space Grotesk',sans-serif;
+    line-height:1.25;
+    color:#0d4b99;
+  }
+  .md p,.md ul,.md ol,.md pre,.md blockquote,.md table{margin:0 0 10px}
+  .md ul,.md ol{padding-left:20px}
+  .md pre{
+    background:#eff5ff;
+    border:1px solid #d8e6fa;
+    border-radius:10px;
+    padding:10px;
+    overflow:auto;
+  }
+  .md code{
+    background:#eff5ff;
+    border-radius:6px;
+    padding:2px 6px;
+    font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  }
+  .md table{width:100%; border-collapse:collapse; min-width:340px}
+  .md th,.md td{border:1px solid #dbe7f7; padding:8px; text-align:left}
+  .md th{background:#edf5ff}
+  .table-wrap{
+    overflow-x:auto;
+    border-radius:10px;
+    border:1px solid #dbe7f7;
+  }
+  .source-panel{
+    margin-top:8px;
+    border:1px solid #c7dcf8;
+    border-radius:11px;
+    overflow:hidden;
+    background:#f3f9ff;
+  }
+  .source-head{
+    margin:0;
+    padding:8px 10px;
+    font-size:.78rem;
+    color:#0e4e9d;
+    border-bottom:1px solid #d3e4fb;
+  }
+  .source-list{
+    margin:0;
+    padding:8px 10px 10px 24px;
+    font-size:.9rem;
+  }
+  .source-list a{color:#0d58ae}
+  .msg-actions{
+    margin-top:6px;
+    display:flex; flex-wrap:wrap; gap:6px;
+  }
+  .action-btn{
+    border-radius:999px;
+    border:1px solid #d2dceb;
+    background:#fff;
+    color:#2d4560;
+    padding:7px 11px;
+    font-size:.77rem;
+    font-weight:800;
+    cursor:pointer;
+  }
+  .action-btn:hover{background:#edf5ff}
+  .action-btn.strong{background:#e8f4ff;border-color:#9ec4f5;color:#0b4f9e}
+  .input-area{
+    position:sticky;
+    bottom:0;
+    border-top:1px solid var(--line);
+    background:rgba(255,255,255,.95);
+    backdrop-filter:blur(9px);
+    min-height:var(--input-h);
+    display:flex; gap:10px; align-items:flex-end;
+    padding:10px 12px calc(10px + env(safe-area-inset-bottom));
+    z-index:7;
+  }
+  .input-wrap{flex:1; position:relative}
+  #chat-input{
+    width:100%;
+    min-height:54px; max-height:180px;
+    resize:none;
+    border:2px solid #d9e2f1;
+    background:#fcfdff;
+    border-radius:14px;
+    padding:12px 14px;
+    font:inherit;
+    outline:none;
+  }
+  #chat-input:focus{
+    border-color:#3f88de;
+    box-shadow:0 0 0 4px #e8f3ff;
+    background:#fff;
+  }
+  #send-btn{
+    border:none;
+    min-width:50px; height:50px;
+    border-radius:14px;
+    background:linear-gradient(135deg,#0c63c5 0%,#0060bc 100%);
+    color:#fff;
+    font-size:1rem; font-weight:800;
+    cursor:pointer;
+  }
+  #send-btn.stop{background:linear-gradient(135deg,#da2f45 0%,#b92434 100%)}
+  #suggestion-popup{
+    position:absolute;
+    left:0; right:0; bottom:calc(100% + 8px);
+    border:1px solid #d5dfef;
+    background:#fff;
+    border-radius:12px;
+    overflow:auto;
+    max-height:230px;
+    box-shadow:var(--shadow);
+    display:none;
+    z-index:15;
+  }
+  #suggestion-popup.active{display:block}
+  .suggestion-item{
+    padding:10px 12px;
+    border-bottom:1px solid #edf1f7;
+    cursor:pointer;
+  }
+  .suggestion-item:hover{background:#f2f8ff}
+  .suggestion-item:last-child{border-bottom:none}
+  .loading{display:inline-flex; gap:6px}
+  .loading span{
+    width:9px; height:9px; border-radius:999px; background:#0f61c1;
+    animation:pulse .95s ease-in-out infinite;
+  }
+  .loading span:nth-child(2){animation-delay:.12s}
+  .loading span:nth-child(3){animation-delay:.24s}
+
+  .modal-overlay{
+    position:fixed; inset:0; z-index:50;
+    background:rgba(8,21,41,.56);
+    display:flex; justify-content:center; align-items:center;
+    padding:14px;
+    opacity:0; pointer-events:none; transition:opacity .2s ease;
+  }
+  .modal-overlay.open{opacity:1; pointer-events:auto}
+  .modal{
+    background:#fff;
+    width:min(100%,680px);
+    border-radius:18px;
+    max-height:90vh;
+    overflow:auto;
+    padding:18px;
+    box-shadow:0 22px 58px rgba(2,15,32,.38);
+  }
+  .modal h3{
+    margin:0 0 12px;
+    font-family:'Space Grotesk',sans-serif;
+    color:#0d4a94;
+  }
+  .grid{display:grid; gap:10px}
+  .grid.cols-2{grid-template-columns:1fr 1fr}
+  .field label{
+    display:block; margin-bottom:4px;
+    font-size:.84rem; font-weight:700; color:#3e536e;
+  }
+  .field input,.field select,.field textarea{
+    width:100%;
+    border:2px solid #d9e3f2;
+    border-radius:10px;
+    padding:10px 11px;
+    font:inherit;
+    background:#fdfeff;
+  }
+  .field textarea{min-height:82px; resize:vertical}
+  .field input:focus,.field select:focus,.field textarea:focus{
+    outline:none;
+    border-color:#2f80d8;
+    box-shadow:0 0 0 3px #eaf4ff;
+  }
+  .section{
+    border:1px solid #dce5f3;
+    background:#f8fbff;
+    border-radius:12px;
+    padding:12px;
+    margin-top:10px;
+  }
+  .section h4{margin:0 0 8px; font-size:.92rem; color:#124a8f}
+  .mini{margin:0; font-size:.8rem; color:#5c6f86}
+  .toggle-list{display:grid; gap:8px}
+  .toggle-row{
+    display:flex; justify-content:space-between; align-items:center; gap:12px;
+    border:1px solid #d7e2f2; border-radius:10px;
+    background:#fff; padding:9px 10px;
+  }
+  .toggle-row label{font-size:.9rem; font-weight:700; color:#22415f}
+  .toggle-row input{width:18px; height:18px; margin:0; accent-color:#0f65c8}
+  .btn-row{margin-top:14px; display:flex; gap:8px}
+  .btn{
+    flex:1;
+    border:none;
+    border-radius:11px;
+    padding:10px 12px;
+    font:inherit;
+    font-weight:800;
+    cursor:pointer;
+  }
+  .btn.save{background:linear-gradient(130deg,#0c63c5 0%,#1676d2 100%); color:#fff}
+  .btn.cancel{background:#e8edf6; color:#1f3047}
+  .btn.warn{background:#ffeff1; color:#8c1f2c; border:1px solid #ffd3d8}
+  .list{
+    border:1px solid #d7e2f2;
+    border-radius:11px;
+    overflow:hidden;
+    background:#fff;
+  }
+  .list-item{
+    display:flex; justify-content:space-between; align-items:center; gap:10px;
+    padding:10px 12px;
+    border-bottom:1px solid #e8eef7;
+    cursor:pointer;
+  }
+  .list-item:last-child{border-bottom:none}
+  .list-item.active{background:#eaf4ff;color:#08488f;font-weight:700}
+  .consent{border-top:5px solid #0c61c2}
+  .check-row{display:flex; align-items:flex-start; gap:10px; margin:10px 0}
+  .check-row input{margin-top:3px; width:18px; height:18px; accent-color:#0f66c8}
+  .cards-layout{
+    min-height:100dvh;
+    background:
+      radial-gradient(600px 300px at 10% 0%, #d8f6ff 0%, transparent 64%),
+      radial-gradient(800px 460px at 100% 100%, #dce7ff 0%, transparent 58%),
+      #edf4ff;
+    display:flex; flex-direction:column;
+    color:#0f2138;
+  }
+  .cards-top{
+    display:flex; gap:8px; align-items:center; justify-content:space-between;
+    padding:14px;
+    border-bottom:1px solid #cfe0f8;
+    background:rgba(255,255,255,.76);
+  }
+  .cards-title{margin:0; font-family:'Space Grotesk',sans-serif; font-size:1.14rem; color:#0c4f98}
+  .cards-sub{margin:2px 0 0; font-size:.8rem; color:#4f637f}
+  .cards-body{
+    width:min(960px,100%);
+    margin:0 auto;
+    padding:16px 14px 28px;
+    display:grid; gap:14px;
+    grid-template-columns:repeat(auto-fill,minmax(230px,1fr));
+  }
+  .flash{perspective:1000px; min-height:190px}
+  .flash-toggle{
+    width:100%; min-height:190px;
+    border:none; background:none; padding:0; display:block; text-align:left;
+    cursor:pointer;
+  }
+  .flash-inner{
+    position:relative; min-height:190px;
+    transform-style:preserve-3d;
+    transition:transform .5s ease;
+  }
+  .flash.flipped .flash-inner{transform:rotateY(180deg)}
+  .flash-face{
+    position:absolute; inset:0;
+    backface-visibility:hidden;
+    border-radius:14px;
+    box-shadow:0 10px 28px rgba(11,26,43,.13);
+    border:1px solid #d4e3f8;
+    padding:12px;
+    display:flex; flex-direction:column; gap:8px;
+    overflow:auto;
+  }
+  .flash-face.front{background:linear-gradient(135deg,#ffffff 0%,#f4f9ff 100%)}
+  .flash-face.back{background:linear-gradient(135deg,#e9f5ff 0%,#ddedff 100%); transform:rotateY(180deg)}
+  .flash-kicker{
+    margin:0;
+    font-size:.68rem;
+    color:#4a6587;
+    text-transform:uppercase;
+    letter-spacing:.08em;
+    font-weight:800;
+  }
+  .flash h4{margin:0; font-size:1.03rem; line-height:1.35; color:#103766}
+  .flash p{margin:0; font-size:.94rem; color:#18395f}
+  .state-msg{
+    padding:16px;
+    border:1px dashed #b7cae8;
+    border-radius:12px;
+    background:#f8fbff;
+    color:#415b79;
+  }
+  #selection-menu{
+    position:fixed;
+    z-index:1300;
+    background:#fff;
+    border:1px solid #cddcf2;
+    border-radius:12px;
+    box-shadow:0 14px 30px rgba(8,26,53,.18);
+    padding:8px;
+    min-width:230px;
+    display:none;
+  }
+  #selection-menu.active{display:block}
+  #selection-menu .title{font-size:.74rem; color:#4f6280; margin-bottom:6px}
+  #selection-menu .sel-btn{
+    width:100%;
+    border:1px solid #b7cff0;
+    background:#f1f8ff;
+    color:#0a4d99;
+    border-radius:10px;
+    padding:9px 10px;
+    font-weight:800;
+    font-size:.83rem;
+    cursor:pointer;
+    text-align:left;
+  }
+
+  @keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+  @keyframes pulse{0%,100%{opacity:.4;transform:scale(.8)}50%{opacity:1;transform:scale(1)}}
+
+  @media (max-width:920px){
+    :root{--header-h:66px; --input-h:102px}
+    html,body{font-size:18px}
+    .bubble{font-size:1.05rem; line-height:1.62; padding:14px 16px}
+    #chat-input{font-size:18px; min-height:64px; line-height:1.5}
+    .grid.cols-2{grid-template-columns:1fr}
+    .header-actions .btn-icon span{display:none}
+    .logo-sub{max-width:38vw}
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    *,*::before,*::after{
+      animation:none !important;
+      transition:none !important;
+      scroll-behavior:auto !important;
+    }
+  }
+</style>
+</head>
+<body>
+<div id="app" aria-live="polite">
+  <header>
+    <div class="logo-wrap">
+      <h1 class="logo">LINDA3</h1>
+      <div class="logo-sub" id="domain-summary">Lernassistenz für AEVO, VWL und Personal</div>
+    </div>
+    <div id="domain-badge" class="pill">Standard</div>
+    <div class="header-actions">
+      <button class="btn-icon btn-primary" type="button" title="Neuer Chat" onclick="app.logic.newChat()">Neu</button>
+      <button class="btn-icon" type="button" title="Lernkarten im neuen Tab" onclick="app.logic.openFlashcardsTab()">Karten</button>
+      <button class="btn-icon" type="button" title="Verlauf" onclick="app.ui.openModal('modal-sessions')">Verlauf</button>
+      <button class="btn-icon" type="button" title="Einstellungen" onclick="app.ui.openModal('modal-settings')">Einstellungen</button>
+    </div>
+  </header>
+
+  <div class="toolbar" id="source-toolbar"></div>
+  <div id="chat-log"></div>
+
+  <div class="input-area">
+    <div class="input-wrap">
+      <div id="suggestion-popup"></div>
+      <textarea id="chat-input" rows="1" placeholder="Frage eingeben … (Shift+Enter für Zeilenumbruch)"></textarea>
+    </div>
+    <button id="send-btn" type="button" aria-label="Senden">➤</button>
+  </div>
+</div>
+
+<div id="modal-disclaimer" class="modal-overlay open">
+  <div class="modal consent">
+    <h3>Hinweis vor dem Start</h3>
+    <p>Bitte keine vertraulichen personenbezogenen Daten eingeben. Anfragen werden an den bestehenden Bot-Flow übertragen.</p>
+    <ul>
+      <li>Fachmodi im aktuellen Setup: AEVO, VWL, Personal</li>
+      <li>Schnellmodus ist optional und nutzt – sofern vorhanden – den bestehenden DeepSeek-Flow</li>
+      <li>Antworten können je nach Backend als Text oder als JSON zurückkommen</li>
+    </ul>
+    <div class="check-row">
+      <input type="checkbox" id="consent-data">
+      <label for="consent-data">Ich gebe keine sensiblen personenbezogenen Daten ein.</label>
+    </div>
+    <div class="check-row">
+      <input type="checkbox" id="consent-forward">
+      <label for="consent-forward">Ich stimme der Weiterleitung an den bestehenden Bot-Flow zu.</label>
+    </div>
+    <div class="btn-row">
+      <button class="btn save" id="btn-start-disclaimer" disabled type="button" onclick="app.logic.startApp()">Akzeptieren und starten</button>
+    </div>
+  </div>
+</div>
+
+<div id="modal-settings" class="modal-overlay">
+  <div class="modal">
+    <h3>Einstellungen</h3>
+
+    <div class="grid cols-2">
+      <div class="field">
+        <label for="inp-name">Name (optional)</label>
+        <input id="inp-name" type="text" placeholder="z. B. Jens">
+      </div>
+      <div class="field">
+        <label for="inp-domain">Fachmodus</label>
+        <select id="inp-domain">
+          <option value="">Standard</option>
+          <option value="AEVO">AEVO</option>
+          <option value="VWL">VWL / BWL</option>
+          <option value="PERSONAL">Personal</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="section">
+      <h4>Antwortmodus</h4>
+      <p class="mini">Der Schnellmodus setzt nur die bereits in <code>bot.js</code> vorhandenen Parameter. Es werden keine Backend-Dateien benötigt oder verändert.</p>
+      <div class="toggle-list" id="mode-toggle-list">
+        <div class="toggle-row">
+          <label for="inp-fast-mode">Schnellmodus bevorzugen</label>
+          <input id="inp-fast-mode" type="checkbox">
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <h4>Quellhinweise für den Bot-Flow</h4>
+      <p class="mini">Diese Schalter erzeugen Frontend-Kontext für den bestehenden Make-/Bot-Flow. Sie ändern kein Backend-Verhalten direkt, helfen aber beim Routing im Inhalt.</p>
+      <div class="toggle-list" id="source-toggle-list"></div>
+    </div>
+
+    <div class="section">
+      <h4>Snippets</h4>
+      <div style="display:flex; gap:8px;">
+        <input id="inp-snippet" type="text" placeholder="Snippet hinzufügen" style="flex:1; border:2px solid #d9e3f2; border-radius:10px; padding:10px 11px;">
+        <button class="btn save" style="flex:0 0 60px;" type="button" onclick="app.logic.addSnippet()">+</button>
+      </div>
+      <div id="snippet-list-container" style="display:flex; flex-wrap:wrap; gap:6px; margin-top:8px;"></div>
+      <p class="mini" style="margin-top:8px;">Im Chat mit <code>/</code> starten, um Snippets vorzuschlagen.</p>
+    </div>
+
+    <div class="section">
+      <h4>Lernkarten aus markiertem Text</h4>
+      <p class="mini">Markierte Antwortbereiche können direkt lokal als Lernkarten aufbereitet werden. Das funktioniert ohne Backend-Änderung.</p>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn cancel" type="button" onclick="app.ui.closeModals()">Abbrechen</button>
+      <button class="btn save" type="button" onclick="app.logic.saveSettings()">Speichern</button>
+    </div>
+  </div>
+</div>
+
+<div id="modal-sessions" class="modal-overlay">
+  <div class="modal">
+    <h3>Verlauf</h3>
+    <div id="session-list" class="list"></div>
+    <p class="mini" style="margin-top:8px;">Es werden bis zu 12 Sitzungen angezeigt.</p>
+    <div class="btn-row">
+      <button class="btn warn" type="button" onclick="app.logic.clearAll()">Alle löschen</button>
+      <button class="btn cancel" type="button" onclick="app.ui.closeModals()">Schließen</button>
+    </div>
+  </div>
+</div>
+
+<div id="modal-feedback" class="modal-overlay">
+  <div class="modal">
+    <h3>Feedback</h3>
+    <p>Feedback per E-Mail senden?</p>
+    <div class="btn-row">
+      <button class="btn cancel" type="button" onclick="app.ui.closeModals()">Nein</button>
+      <button class="btn save" type="button" onclick="app.logic.openFeedback()">Ja</button>
+    </div>
+  </div>
+</div>
+
+<div id="selection-menu" role="menu" aria-label="Auswahlmenü">
+  <div class="title">Markierter Bereich erkannt</div>
+  <button id="selection-cards-btn" class="sel-btn" type="button">Lernkarten lokal erstellen</button>
+</div>
+
+<script>
+(() => {
+  'use strict';
+
+  const API_ENDPOINT = window.LINDA_API_ENDPOINT || '/api/bot';
+  const STORAGE_KEY = 'linda3_state_v4';
+  const CARDS_KEY = 'linda3_cards';
+  const CARDS_STATS_KEY = 'linda3_cards_stats';
+  const APP_VERSION = 4;
+
+  const SOURCE_DEFS = [
+    { key: 'llm', label: 'Basiswissen', default: true },
+    { key: 'web', label: 'Aktuelle Informationen', default: true },
+    { key: 'script', label: 'Eigene Unterlagen', default: true },
+    { key: 'examples', label: 'Praxisbeispiele', default: true }
+  ];
+
+  const DEFAULT_STATE = {
+    version: APP_VERSION,
+    consentGiven: false,
+    isSending: false,
+    welcomeShown: false,
+    activeId: null,
+    requestController: null,
+    selectionDraft: null,
+    settings: {
+      name: '',
+      domain: '',
+      fastMode: false,
+      snippets: [],
+      sources: SOURCE_DEFS.reduce((acc, s) => {
+        acc[s.key] = s.default;
+        return acc;
+      }, {})
+    },
+    sessions: []
+  };
+
+  const parseJSON = (raw, fallback = null) => {
+    try { return JSON.parse(raw); } catch { return fallback; }
+  };
+
+  const hashCardId = (q, a) => {
+    try {
+      return btoa(unescape(encodeURIComponent(`${q}|${a}`))).slice(0, 24);
+    } catch (_) {
+      return String(`${q}|${a}`).slice(0, 24);
+    }
+  };
+
+  const app = {
+    state: structuredClone(DEFAULT_STATE),
+
+    utils: {
+      uid: () => 's_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7),
+      now: () => Date.now(),
+      safeText: (v) => String(v || '').replace(/</g, '&lt;').replace(/>/g, '&gt;'),
+      truncate: (text, max = 1900) => {
+        if (!text || text.length <= max) return text;
+        return text.slice(0, Math.max(0, max - 3)) + '...';
+      },
+      normalizeQuestion: (text) => String(text || '')
+        .toLowerCase()
+        .replace(/[^a-z0-9äöüß\s]/gi, ' ')
+        .replace(/\s+/g, ' ')
+        .trim(),
+      questionTokens: (text) => app.utils.normalizeQuestion(text)
+        .split(' ')
+        .filter((t) => t.length >= 3)
+        .slice(0, 20),
+      save: () => {
+        const clone = {
+          ...app.state,
+          requestController: null,
+          isSending: false
+        };
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(clone));
+      },
+      load: () => {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) return;
+        const parsed = parseJSON(raw, null);
+        if (!parsed || typeof parsed !== 'object') return;
+        app.state = {
+          ...structuredClone(DEFAULT_STATE),
+          ...parsed,
+          settings: {
+            ...structuredClone(DEFAULT_STATE.settings),
+            ...(parsed.settings || {}),
+            sources: {
+              ...structuredClone(DEFAULT_STATE.settings.sources),
+              ...((parsed.settings && parsed.settings.sources) || {})
+            }
+          },
+          sessions: Array.isArray(parsed.sessions) ? parsed.sessions : []
+        };
+        app.state.version = APP_VERSION;
+        app.state.isSending = false;
+        app.state.requestController = null;
+      },
+      sanitizeLinks: (root) => {
+        root.querySelectorAll('a').forEach((a) => {
+          const href = String(a.getAttribute('href') || '').trim();
+          if (!/^https?:\/\//i.test(href)) a.removeAttribute('href');
+          a.setAttribute('target', '_blank');
+          a.setAttribute('rel', 'noopener noreferrer nofollow');
+        });
+      },
+      activeSources: () => Object.entries(app.state.settings.sources || {})
+        .filter(([, on]) => Boolean(on))
+        .map(([k]) => k),
+      chatContext: (session) => {
+        return (session?.messages || [])
+          .slice(-6)
+          .filter((m) => !/willkommen bei/i.test(m.content || ''))
+          .map((m) => ({ role: m.role, content: app.utils.truncate(m.content, 700) }));
+      },
+      parseApiPayload: (rawText) => {
+        const parsed = parseJSON(rawText, null);
+        if (!parsed) {
+          return {
+            answer: rawText,
+            sources: [],
+            evidenceNote: '',
+            followups: []
+          };
+        }
+
+        if (typeof parsed === 'string') {
+          return { answer: parsed, sources: [], evidenceNote: '', followups: [] };
+        }
+
+        const sources = Array.isArray(parsed.sources)
+          ? parsed.sources
+          : Array.isArray(parsed.quellen)
+            ? parsed.quellen
+            : Array.isArray(parsed.references)
+              ? parsed.references
+              : [];
+
+        const followups = Array.isArray(parsed.followups) ? parsed.followups : [];
+        const evidenceNote = String(parsed.evidence_note || parsed.note || '').trim();
+
+        return {
+          answer: String(parsed.answer || parsed.response || parsed.text || rawText),
+          sources,
+          evidenceNote,
+          followups
+        };
+      },
+      nowStamp: () => new Date().toLocaleString('de-DE'),
+      isMobileClient: () => /iphone|ipad|ipod|android|mobile/i.test(navigator.userAgent || ''),
+      buildContextString: () => {
+        const lines = [];
+        const active = app.utils.activeSources();
+        if (app.state.settings.domain) lines.push(`Fachmodus im Frontend: ${app.state.settings.domain}`);
+        if (active.length) lines.push(`Aktivierte Wissenshinweise im Frontend: ${active.join(', ')}`);
+        if (app.state.settings.fastMode) lines.push('Schnellmodus im Frontend aktiviert.');
+        lines.push('Bitte antworte auf Deutsch, fachlich sauber und ohne interne Routing-Informationen.');
+        return lines.join('\n');
+      }
+    },
+
+    ui: {
+      log: document.getElementById('chat-log'),
+      input: document.getElementById('chat-input'),
+      sendBtn: document.getElementById('send-btn'),
+
+      openModal: (id) => {
+        document.querySelectorAll('.modal-overlay').forEach((m) => m.classList.remove('open'));
+        const modal = document.getElementById(id);
+        if (!modal) return;
+        modal.classList.add('open');
+
+        if (id === 'modal-settings') {
+          app.ui.fillSettingsForm();
+          app.ui.renderSourceToggleList();
+          app.ui.renderSnippetList();
+        }
+        if (id === 'modal-sessions') app.ui.renderSessionList();
+      },
+
+      closeModals: () => {
+        document.querySelectorAll('.modal-overlay').forEach((m) => m.classList.remove('open'));
+      },
+
+      fillSettingsForm: () => {
+        const s = app.state.settings;
+        document.getElementById('inp-name').value = s.name || '';
+        document.getElementById('inp-domain').value = s.domain || '';
+        document.getElementById('inp-fast-mode').checked = Boolean(s.fastMode);
+      },
+
+      renderSourceToolbar: () => {
+        const bar = document.getElementById('source-toolbar');
+        const active = app.state.settings.sources || {};
+        const fast = Boolean(app.state.settings.fastMode);
+
+        const sourceHtml = SOURCE_DEFS.map((src) => {
+          const on = Boolean(active[src.key]);
+          return `
+            <label class="chip ${on ? 'on' : ''}" data-source-chip="${src.key}">
+              <input type="checkbox" data-source-cb="${src.key}" ${on ? 'checked' : ''}>
+              <span>${src.label}</span>
+            </label>
+          `;
+        }).join('');
+
+        const fastHtml = `
+          <label class="chip ${fast ? 'on' : ''}" data-fast-chip="1">
+            <input type="checkbox" data-fast-cb="1" ${fast ? 'checked' : ''}>
+            <span>Schnellmodus</span>
+          </label>
+        `;
+
+        bar.innerHTML = fastHtml + sourceHtml;
+      },
+
+      renderSourceToggleList: () => {
+        const wrap = document.getElementById('source-toggle-list');
+        const active = app.state.settings.sources || {};
+        wrap.innerHTML = SOURCE_DEFS.map((src) => `
+          <div class="toggle-row">
+            <label for="src-${src.key}">${src.label}</label>
+            <input id="src-${src.key}" type="checkbox" data-source-setting="${src.key}" ${active[src.key] ? 'checked' : ''}>
+          </div>
+        `).join('');
+      },
+
+      renderSessionList: () => {
+        const list = document.getElementById('session-list');
+        const sessions = (app.state.sessions || []).slice(0, 12);
+        if (!sessions.length) {
+          list.innerHTML = '<div class="list-item"><span>Keine Verläufe vorhanden.</span></div>';
+          return;
+        }
+        list.innerHTML = sessions.map((s) => `
+          <div class="list-item ${s.id === app.state.activeId ? 'active' : ''}" data-session-id="${s.id}">
+            <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${app.utils.safeText(s.name || 'Neuer Chat')}</span>
+            <span class="mini">${new Date(s.ts).toLocaleDateString('de-DE')}</span>
+          </div>
+        `).join('');
+      },
+
+      renderSnippetList: () => {
+        const container = document.getElementById('snippet-list-container');
+        const snippets = app.state.settings.snippets || [];
+        if (!snippets.length) {
+          container.innerHTML = '<span class="mini">Keine Snippets hinterlegt.</span>';
+          return;
+        }
+        container.innerHTML = snippets.map((txt, i) => `
+          <span style="display:inline-flex;align-items:center;gap:6px;background:#edf4ff;border:1px solid #d4e2f6;padding:4px 8px;border-radius:999px;font-size:0.8rem;">
+            ${app.utils.safeText(txt)}
+            <button type="button" data-remove-snippet="${i}" style="border:none;background:none;color:#9c1f2e;cursor:pointer;font-size:0.9rem;">×</button>
+          </span>
+        `).join('');
+      },
+
+      showSuggestionPopup: (items) => {
+        const pop = document.getElementById('suggestion-popup');
+        if (!items.length) {
+          pop.classList.remove('active');
+          pop.innerHTML = '';
+          return;
+        }
+        pop.innerHTML = items.map((item) => `
+          <div class="suggestion-item" data-suggestion="${encodeURIComponent(item.value)}">
+            <div>${app.utils.safeText(item.label)}</div>
+            ${item.kind ? `<div class="mini" style="margin-top:3px;">${app.utils.safeText(item.kind)}</div>` : ''}
+          </div>
+        `).join('');
+        pop.classList.add('active');
+      },
+
+      createBubble: (role, content, sources = [], evidenceNote = '', followups = []) => {
+        const row = document.createElement('div');
+        row.className = `msg-row ${role}`;
+
+        if (role === 'user') {
+          row.innerHTML = `
+            <div class="msg-wrap">
+              <div class="bubble user"><div class="md">${app.utils.safeText(content)}</div></div>
+            </div>
+          `;
+          return row;
+        }
+
+        const mdRaw = marked.parse(String(content).replace(/\$(.*?)\$/g, '**$1**'));
+        const safe = DOMPurify.sanitize(mdRaw, {
+          ALLOWED_TAGS: ['p','br','strong','em','ul','ol','li','h1','h2','h3','h4','h5','pre','code','blockquote','table','thead','tbody','tr','th','td','a'],
+          ALLOWED_ATTR: ['href','target','rel']
+        });
+
+        row.innerHTML = `
+          <div class="msg-wrap">
+            <div class="bubble assistant">
+              <div class="md">${safe}</div>
+              ${evidenceNote ? `<div class="meta-note">${app.utils.safeText(evidenceNote)}</div>` : ''}
+            </div>
+            <div class="msg-actions">
+              <button class="action-btn strong" data-action="copy">Kopieren</button>
+              <button class="action-btn" data-action="share">Teilen</button>
+              <button class="action-btn" data-action="pdf">PDF</button>
+              <button class="action-btn" data-action="cards">Karten</button>
+              <button class="action-btn" data-action="feedback">Feedback</button>
+            </div>
+          </div>
+        `;
+
+        const md = row.querySelector('.md');
+        app.utils.sanitizeLinks(md);
+        app.logic.decorateBubble(md, sources, followups);
+        return row;
+      },
+
+      setSendingState: (sending) => {
+        app.state.isSending = sending;
+        app.ui.input.disabled = sending;
+        app.ui.sendBtn.classList.toggle('stop', sending);
+        app.ui.sendBtn.textContent = sending ? '■' : '➤';
+      },
+
+      scrollBottom: () => {
+        requestAnimationFrame(() => {
+          app.ui.log.scrollTop = app.ui.log.scrollHeight;
+        });
+      },
+
+      syncViewportInsets: () => {
+        if (!window.visualViewport) return;
+        const vv = window.visualViewport;
+        const kb = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
+        document.documentElement.style.setProperty('--kb', kb + 'px');
+      },
+
+      updateDomainUI: () => {
+        const domain = app.state.settings.domain || 'Standard';
+        const activeCount = app.utils.activeSources().length;
+        const fast = app.state.settings.fastMode ? ' • Schnellmodus an' : '';
+        document.getElementById('domain-badge').textContent = domain;
+        document.getElementById('domain-summary').textContent = `Fachmodus: ${domain} • Wissenshinweise: ${activeCount} aktiv${fast}`;
+      },
+
+      loadingRow: () => {
+        const row = document.createElement('div');
+        row.className = 'msg-row assistant';
+        row.innerHTML = '<div class="msg-wrap"><div class="bubble assistant"><div class="loading"><span></span><span></span><span></span></div></div></div>';
+        return row;
+      },
+
+      hideSelectionMenu: () => {
+        document.getElementById('selection-menu').classList.remove('active');
+      },
+
+      showSelectionMenu: (x, y) => {
+        const menu = document.getElementById('selection-menu');
+        const left = Math.min(Math.max(8, x), window.innerWidth - 250);
+        const top = Math.min(Math.max(8, y), window.innerHeight - 80);
+        menu.style.left = `${left}px`;
+        menu.style.top = `${top}px`;
+        menu.classList.add('active');
+      }
+    },
+
+    logic: {
+      activeSession: () => app.state.sessions.find((s) => s.id === app.state.activeId),
+
+      ensureSession: () => {
+        if (app.state.sessions.length && app.state.activeId) return;
+        app.logic.newChat();
+      },
+
+      startApp: () => {
+        const c1 = document.getElementById('consent-data').checked;
+        const c2 = document.getElementById('consent-forward').checked;
+        if (!c1 || !c2) {
+          alert('Bitte beide Zustimmungen aktivieren.');
+          return;
+        }
+        app.state.consentGiven = true;
+        app.utils.save();
+        app.ui.closeModals();
+        app.logic.ensureSession();
+        setTimeout(() => app.ui.input.focus(), 80);
+      },
+
+      sendSystemMessage: (text) => {
+        const s = app.logic.activeSession();
+        if (!s) return;
+        s.messages.push({ role: 'assistant', content: text, sources: [], evidenceNote: '', followups: [] });
+        app.utils.save();
+        app.ui.log.appendChild(app.ui.createBubble('assistant', text));
+        app.ui.scrollBottom();
+      },
+
+      newChat: () => {
+        const id = app.utils.uid();
+        app.state.sessions.unshift({
+          id,
+          name: 'Neuer Chat',
+          ts: app.utils.now(),
+          messages: []
+        });
+        app.state.activeId = id;
+        app.ui.log.innerHTML = '';
+        app.utils.save();
+        app.ui.closeModals();
+
+        if (!app.state.welcomeShown) {
+          app.logic.sendSystemMessage(
+            'Willkommen bei **LINDA**.\n\n' +
+            'Dieses Frontend ist jetzt auf deinen bestehenden **`/api/bot`-Flow** abgestimmt.\n\n' +
+            'Unterstützt werden im aktuellen Setup die Fachmodi **AEVO**, **VWL/BWL** und **Personal**.\n' +
+            'Der **Schnellmodus** setzt nur die bereits in `bot.js` vorhandenen Parameter.\n' +
+            'Lernkarten werden lokal aus Antworten erzeugt – ganz ohne Änderung an den Backend-Dateien.'
+          );
+          app.state.welcomeShown = true;
+          app.utils.save();
+        }
+      },
+
+      switchSession: (id) => {
+        app.state.activeId = id;
+        app.ui.log.innerHTML = '';
+        app.utils.save();
+        app.ui.closeModals();
+
+        const s = app.logic.activeSession();
+        if (!s) return;
+
+        s.messages.forEach((m) => {
+          app.ui.log.appendChild(
+            app.ui.createBubble(m.role, m.content, m.sources || [], m.evidenceNote || '', m.followups || [])
+          );
+        });
+        app.ui.scrollBottom();
+      },
+
+      saveSettings: () => {
+        app.state.settings.name = document.getElementById('inp-name').value.trim();
+        app.state.settings.domain = document.getElementById('inp-domain').value;
+        app.state.settings.fastMode = document.getElementById('inp-fast-mode').checked;
+
+        document.querySelectorAll('[data-source-setting]').forEach((cb) => {
+          const key = cb.getAttribute('data-source-setting');
+          app.state.settings.sources[key] = cb.checked;
+        });
+
+        app.utils.save();
+        app.ui.updateDomainUI();
+        app.ui.renderSourceToolbar();
+        app.ui.closeModals();
+      },
+
+      addSnippet: () => {
+        const inp = document.getElementById('inp-snippet');
+        const val = inp.value.trim();
+        if (!val) return;
+        app.state.settings.snippets.push(val);
+        inp.value = '';
+        app.utils.save();
+        app.ui.renderSnippetList();
+      },
+
+      removeSnippet: (idx) => {
+        app.state.settings.snippets.splice(idx, 1);
+        app.utils.save();
+        app.ui.renderSnippetList();
+      },
+
+      insertSuggestion: (txt) => {
+        app.ui.input.value = txt;
+        app.ui.input.dispatchEvent(new Event('input'));
+        document.getElementById('suggestion-popup').classList.remove('active');
+        app.ui.input.focus();
+      },
+
+      findQuestionSuggestions: (input, limit = 6) => {
+        const raw = String(input || '').trim();
+        if (raw.length < 3) return [];
+        const inputNorm = app.utils.normalizeQuestion(raw);
+        const sessions = app.state.sessions || [];
+        const scored = [];
+
+        sessions.forEach((session) => {
+          (session.messages || []).forEach((m) => {
+            if (m.role !== 'user' || !m.content) return;
+            const norm = app.utils.normalizeQuestion(m.content);
+            if (!norm) return;
+
+            let score = 0;
+            if (norm.includes(inputNorm) || inputNorm.includes(norm)) score += 40;
+            const tokenSet = new Set(app.utils.questionTokens(norm));
+            const inputTokens = new Set(app.utils.questionTokens(inputNorm));
+            let overlap = 0;
+            inputTokens.forEach((tok) => { if (tokenSet.has(tok)) overlap += 1; });
+            if (overlap) score += overlap * 6;
+            if (score > 0) scored.push({ text: m.content, score, ts: session.ts || 0 });
+          });
+        });
+
+        scored.sort((a, b) => (b.score - a.score) || (b.ts - a.ts));
+        const unique = [];
+        const seen = new Set();
+        scored.forEach((item) => {
+          const key = item.text.toLowerCase();
+          if (seen.has(key)) return;
+          seen.add(key);
+          unique.push(item.text);
+        });
+        return unique.slice(0, limit);
+      },
+
+      sanitizeSourceList: (items) => {
+        return (Array.isArray(items) ? items : [])
+          .map((item) => {
+            if (typeof item === 'string') return { title: item, url: '' };
+            if (!item || typeof item !== 'object') return null;
+            const title = String(item.title || item.name || item.label || item.url || '').trim();
+            const url = String(item.url || item.link || '').trim();
+            if (!title && !url) return null;
+            return { title: title || url, url };
+          })
+          .filter(Boolean)
+          .slice(0, 10);
+      },
+
+      extractSourcesFromRenderedMarkdown: (md) => {
+        if (!md) return [];
+        const found = [];
+        md.querySelectorAll('a[href]').forEach((a) => {
+          const href = String(a.getAttribute('href') || '').trim();
+          if (!/^https?:\/\//i.test(href)) return;
+          found.push({ title: (a.textContent || href).trim(), url: href });
+        });
+        const unique = [];
+        const seen = new Set();
+        found.forEach((s) => {
+          const key = `${s.title}|${s.url}`.toLowerCase();
+          if (seen.has(key)) return;
+          seen.add(key);
+          unique.push(s);
+        });
+        return unique.slice(0, 10);
+      },
+
+      decorateBubble: (md, sources, followups) => {
+        md.querySelectorAll('table').forEach((table) => {
+          const wrap = document.createElement('div');
+          wrap.className = 'table-wrap';
+          table.parentNode.insertBefore(wrap, table);
+          wrap.appendChild(table);
+        });
+
+        const finalSources = app.logic.sanitizeSourceList(sources);
+        const fallbackSources = finalSources.length ? [] : app.logic.extractSourcesFromRenderedMarkdown(md);
+
+        if (finalSources.length || fallbackSources.length) {
+          const panel = document.createElement('section');
+          panel.className = 'source-panel';
+          panel.innerHTML = '<h4 class="source-head">Quellen</h4><ul class="source-list"></ul>';
+          const ul = panel.querySelector('.source-list');
+          (finalSources.length ? finalSources : fallbackSources).forEach((s) => {
+            const li = document.createElement('li');
+            if (/^https?:\/\//i.test(s.url)) {
+              li.innerHTML = `<a href="${encodeURI(s.url)}">${app.utils.safeText(s.title)}</a>`;
+            } else {
+              li.textContent = s.title;
+            }
+            ul.appendChild(li);
+          });
+          md.appendChild(panel);
+        }
+
+        if (Array.isArray(followups) && followups.length) {
+          const box = document.createElement('section');
+          box.className = 'source-panel';
+          box.innerHTML = '<h4 class="source-head">Mögliche Rückfragen</h4><ul class="source-list"></ul>';
+          const ul = box.querySelector('.source-list');
+          followups.slice(0, 4).forEach((q) => {
+            const li = document.createElement('li');
+            li.textContent = q;
+            ul.appendChild(li);
+          });
+          md.appendChild(box);
+        }
+      },
+
+      sendMessage: async () => {
+        if (!app.state.consentGiven) {
+          app.ui.openModal('modal-disclaimer');
+          return;
+        }
+
+        if (app.state.isSending) {
+          if (app.state.requestController) app.state.requestController.abort();
+          return;
+        }
+
+        const text = app.ui.input.value.trim();
+        if (!text) return;
+        app.ui.input.value = '';
+        app.ui.input.dispatchEvent(new Event('input'));
+
+        let s = app.logic.activeSession();
+        if (!s) {
+          app.logic.newChat();
+          s = app.logic.activeSession();
+          if (!s) return;
+        }
+
+        const displayText = app.state.settings.name
+          ? `${app.state.settings.name}: ${text}`
+          : text;
+
+        s.messages.push({ role: 'user', content: displayText, sources: [], evidenceNote: '', followups: [] });
+        if (!s.name || s.name === 'Neuer Chat') s.name = text.slice(0, 48);
+
+        app.ui.log.appendChild(app.ui.createBubble('user', displayText));
+        const loading = app.ui.loadingRow();
+        app.ui.log.appendChild(loading);
+        app.ui.scrollBottom();
+
+        app.ui.setSendingState(true);
+        app.utils.save();
+
+        const controller = new AbortController();
+        app.state.requestController = controller;
+        const timeout = setTimeout(() => controller.abort(), 40000);
+
+        try {
+          const payload = {
+            question: app.utils.truncate(text, 1800),
+            fachmodus: app.state.settings.domain || '',
+            fm_user: app.state.settings.domain || '',
+            history: app.utils.chatContext(s),
+            schnellmodus: Boolean(app.state.settings.fastMode),
+            routing: app.state.settings.fastMode ? { preferred_model: 'Linda3Schnellmodus' } : {},
+            context: app.utils.buildContextString()
+          };
+
+          const res = await fetch(API_ENDPOINT, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+            signal: controller.signal
+          });
+
+          if (!res.ok) {
+            let detail = '';
+            try {
+              const err = await res.json();
+              detail = err?.error ? `: ${err.error}` : '';
+            } catch (_) {}
+            throw new Error(`HTTP ${res.status}${detail}`);
+          }
+
+          const raw = await res.text();
+          const parsed = app.utils.parseApiPayload(raw);
+
+          loading.remove();
+
+          s.messages.push({
+            role: 'assistant',
+            content: parsed.answer,
+            sources: parsed.sources,
+            evidenceNote: parsed.evidenceNote,
+            followups: parsed.followups
+          });
+
+          app.ui.log.appendChild(
+            app.ui.createBubble('assistant', parsed.answer, parsed.sources, parsed.evidenceNote, parsed.followups)
+          );
+
+          app.utils.save();
+          app.ui.scrollBottom();
+        } catch (err) {
+          loading.remove();
+          const offline = !navigator.onLine;
+          const timeoutErr = err?.name === 'AbortError';
+          const msg = offline
+            ? 'Du bist offline. Bitte Internetverbindung prüfen.'
+            : timeoutErr
+              ? 'Anfrage abgebrochen oder Timeout erreicht.'
+              : `Verbindungsfehler: ${err?.message || 'unbekannt'}`;
+
+          app.ui.log.appendChild(app.ui.createBubble('assistant', `❌ ${msg}`));
+          app.ui.scrollBottom();
+        } finally {
+          clearTimeout(timeout);
+          app.state.requestController = null;
+          app.ui.setSendingState(false);
+          app.ui.input.focus();
+          document.getElementById('suggestion-popup').classList.remove('active');
+        }
+      },
+
+      getBubbleText: (btn) => {
+        const row = btn.closest('.msg-row');
+        const items = Array.from(app.ui.log.children);
+        const idx = items.indexOf(row);
+        let q = '';
+        for (let i = idx - 1; i >= 0; i -= 1) {
+          if (items[i].classList.contains('user')) {
+            q = items[i].querySelector('.md')?.innerText || '';
+            break;
+          }
+        }
+        const a = row.querySelector('.md')?.innerText || '';
+        return { q, a };
+      },
+
+      copyBubble: (btn) => {
+        const { q, a } = app.logic.getBubbleText(btn);
+        navigator.clipboard.writeText(`Frage: ${q}\n\nAntwort: ${a}`).then(() => {
+          const old = btn.textContent;
+          btn.textContent = 'Kopiert';
+          setTimeout(() => { btn.textContent = old; }, 1100);
+        }).catch(() => alert('Kopieren nicht möglich.'));
+      },
+
+      shareBubble: (btn) => {
+        const { q, a } = app.logic.getBubbleText(btn);
+        const text = `Frage: ${q}\n\nAntwort: ${a}`;
+        if (navigator.share) {
+          navigator.share({ title: 'LINDA3', text }).catch(() => {});
+          return;
+        }
+        window.location.href = `mailto:?subject=LINDA3&body=${encodeURIComponent(text)}`;
+      },
+
+      pdfBubble: (btn) => {
+        const bubble = btn.closest('.msg-wrap')?.querySelector('.bubble.assistant');
+        if (!bubble) return;
+        const win = window.open('', '_blank');
+        if (!win) {
+          alert('Popup blockiert. Bitte Popups erlauben.');
+          return;
+        }
+        win.document.write(`
+          <html>
+            <head>
+              <title>LINDA3 Export</title>
+              <style>
+                body { font-family: Manrope, Arial, sans-serif; margin: 22px; color: #132236; }
+                h1 { color: #0d4d98; margin: 0 0 12px; }
+                .box { border: 1px solid #d8e3f3; border-radius: 12px; padding: 14px; }
+              </style>
+            </head>
+            <body>
+              <h1>LINDA3 Antwort</h1>
+              <p style="margin-top:0;color:#61738c;">Exportiert am ${app.utils.nowStamp()}</p>
+              <div class="box">${bubble.innerHTML}</div>
+            </body>
+          </html>
+        `);
+        win.document.close();
+        setTimeout(() => { win.focus(); win.print(); }, 260);
+      },
+
+      buildFlashcardsFromText: (text) => {
+        const clean = String(text || '')
+          .replace(/\r/g, '')
+          .replace(/`{1,3}[^`]*`{1,3}/g, '')
+          .replace(/\*\*|__/g, '')
+          .replace(/\[(.*?)\]\((.*?)\)/g, '$1')
+          .trim();
+
+        const lines = clean
+          .split('\n')
+          .map((l) => l.trim())
+          .filter(Boolean)
+          .filter((l) => !/^quellen?\s*:?\s*$/i.test(l))
+          .filter((l) => !/^mögliche rückfragen/i.test(l));
+
+        const bullets = lines
+          .filter((l) => /^[-*]|^\d+\./.test(l))
+          .map((l) => l.replace(/^[-*]\s*/, '').replace(/^\d+\.\s*/, '').trim())
+          .filter((l) => l.length > 10);
+
+        const sentences = clean
+          .split(/(?<=[.!?])\s+/)
+          .map((s) => s.trim())
+          .filter((s) => s.length > 24);
+
+        const seeds = [...bullets, ...sentences].slice(0, 24);
+        const cards = [];
+        const used = new Set();
+
+        const addCard = (question, answer) => {
+          const q = String(question || '').trim();
+          const a = String(answer || '').trim();
+          if (!q || !a || q.length < 8 || a.length < 8) return;
+          const key = `${q.toLowerCase()}|${a.toLowerCase()}`;
+          if (used.has(key)) return;
+          used.add(key);
+          cards.push({ question: q, answer: a });
+        };
+
+        const toQA = (txt) => {
+          const colon = txt.match(/^([^:]{3,80}):\s+(.{8,})$/);
+          if (colon) return { question: `Was bedeutet ${colon[1].trim()}?`, answer: colon[2].trim() };
+
+          const def = txt.match(/^(.{3,80}?)\s+(ist|sind)\s+(.{10,})$/i);
+          if (def) return { question: `Was ist ${def[1].trim()}?`, answer: `${def[1].trim()} ${def[2]} ${def[3].trim()}` };
+
+          const why = txt.match(/^(.{8,120}?)\s+(weil|da)\s+(.{8,})$/i);
+          if (why) return { question: `Warum ${why[1].trim()}?`, answer: `${why[2]} ${why[3].trim()}` };
+
+          return { question: 'Erkläre den folgenden Zusammenhang:', answer: txt };
+        };
+
+        seeds.forEach((seed) => {
+          const qa = toQA(seed);
+          addCard(qa.question, qa.answer);
+        });
+
+        return cards.length ? cards.slice(0, 18) : [{
+          question: 'Keine Lernfragen erkannt',
+          answer: 'Bitte zuerst eine fachliche Antwort erzeugen und dann Lernkarten öffnen.'
+        }];
+      },
+
+      openFlashcardsTab: (forcedText) => {
+        const text = forcedText || (() => {
+          const s = app.logic.activeSession();
+          if (!s) return '';
+          const msg = [...s.messages].reverse().find((m) => m.role === 'assistant' && !/^❌/.test(m.content));
+          return msg ? msg.content : '';
+        })();
+
+        const baseCards = app.logic.buildFlashcardsFromText(text);
+        const stats = parseJSON(localStorage.getItem(CARDS_STATS_KEY) || '{}', {});
+        const cards = baseCards
+          .map((c) => {
+            const id = hashCardId(c.question, c.answer);
+            const st = stats[id] || {};
+            return {
+              ...c,
+              id,
+              adaptive: {
+                ease: Number(st.ease || 2),
+                reps: Number(st.reps || 0),
+                dueAt: Number(st.dueAt || 0)
+              }
+            };
+          })
+          .sort((a, b) => a.adaptive.dueAt - b.adaptive.dueAt);
+
+        localStorage.setItem(CARDS_KEY, JSON.stringify({
+          cards,
+          generatedAt: app.utils.nowStamp(),
+          sourceLength: String(text || '').length,
+          adaptive: true
+        }));
+
+        const tab = window.open(`${window.location.pathname}?view=cards`, '_blank', 'noopener');
+        if (!tab) alert('Popup blockiert. Bitte Popups erlauben.');
+      },
+
+      prepareSelectionDraftFromEvent: (evt) => {
+        const md = evt.target.closest('.msg-row.assistant .md');
+        if (!md) return false;
+        const sel = window.getSelection();
+        if (!sel || sel.rangeCount === 0) return false;
+        const txt = String(sel.toString() || '').trim();
+        if (!txt || txt.length < 24) return false;
+        if (!md.contains(sel.anchorNode) || !md.contains(sel.focusNode)) return false;
+        app.state.selectionDraft = { text: txt, ts: app.utils.now() };
+        return true;
+      },
+
+      requestCardsFromSelection: () => {
+        const draft = app.state.selectionDraft;
+        if (!draft || !draft.text) return;
+        app.ui.hideSelectionMenu();
+        app.logic.openFlashcardsTab(draft.text);
+      },
+
+      clearAll: () => {
+        if (!confirm('Alle Verläufe wirklich löschen?')) return;
+        app.state.sessions = [];
+        app.state.activeId = null;
+        app.ui.log.innerHTML = '';
+        app.utils.save();
+        app.logic.newChat();
+      },
+
+      openFeedback: () => {
+        const s = app.logic.activeSession();
+        let body = 'Mein Feedback zu LINDA3:%0D%0A%0D%0A';
+        if (s) {
+          (s.messages || []).forEach((m) => {
+            body += `${m.role === 'user' ? 'Ich' : 'LINDA3'}: ${encodeURIComponent(m.content)}%0D%0A`;
+          });
+        }
+        window.location.href = `mailto:KI-TEST@GMX.COM?subject=Feedback LINDA3&body=${body}`;
+      }
+    }
+  };
+
+  window.app = app;
+
+  function initCardTab() {
+    const root = document.body;
+    const payload = parseJSON(localStorage.getItem(CARDS_KEY) || '{}', {});
+    const cards = Array.isArray(payload.cards) ? payload.cards : [];
+    const stats = parseJSON(localStorage.getItem(CARDS_STATS_KEY) || '{}', {});
+    const now = Date.now();
+
+    root.innerHTML = `
+      <div class="cards-layout">
+        <div class="cards-top">
+          <div>
+            <h1 class="cards-title">LINDA3 Lernkarten</h1>
+            <p class="cards-sub">Generiert: ${app.utils.safeText(payload.generatedAt || 'unbekannt')} • Karten: ${cards.length} • Adaptiv: ${payload.adaptive ? 'an' : 'aus'}</p>
+          </div>
+          <button class="btn-icon" type="button" onclick="window.close()">Schließen</button>
+        </div>
+        <main class="cards-body" id="cards-body"></main>
+      </div>
+    `;
+
+    const body = document.getElementById('cards-body');
+    if (!cards.length) {
+      body.innerHTML = '<div class="state-msg">Keine Lernkarten vorhanden. Öffne zuerst im Haupttab eine Antwort und klicke dann auf Karten.</div>';
+      return;
+    }
+
+    body.innerHTML = cards.map((card, idx) => `
+      <article class="flash" data-card="${idx}">
+        <div role="button" tabindex="0" aria-label="Karte ${idx + 1} umdrehen" class="flash-toggle">
+          <div class="flash-inner">
+            <div class="flash-face front">
+              <p class="flash-kicker">Frage</p>
+              <h4>${app.utils.safeText(card.question)}</h4>
+              <p>Tippen zum Umdrehen</p>
+            </div>
+            <div class="flash-face back">
+              <p class="flash-kicker">Antwort</p>
+              <p>${app.utils.safeText(card.answer)}</p>
+              <p style="margin-top:8px; font-size:0.78rem; color:#31567f;">
+                Status: ${((stats[card.id]?.dueAt || card.adaptive?.dueAt || 0) <= now) ? 'fällig' : 'geplant'} • Wiederholungen: ${Number(stats[card.id]?.reps || card.adaptive?.reps || 0)}
+              </p>
+            </div>
+          </div>
+        </div>
+        <div style="display:flex; gap:6px; margin-top:8px; flex-wrap:wrap;">
+          <button type="button" class="btn-icon" style="height:34px; min-width:90px;" data-rate="hard" data-card-id="${card.id}">Schwer</button>
+          <button type="button" class="btn-icon" style="height:34px; min-width:90px;" data-rate="mid" data-card-id="${card.id}">Mittel</button>
+          <button type="button" class="btn-icon btn-primary" style="height:34px; min-width:90px;" data-rate="easy" data-card-id="${card.id}">Leicht</button>
+        </div>
+      </article>
+    `).join('');
+
+    body.addEventListener('click', (e) => {
+      const rateBtn = e.target.closest('[data-rate][data-card-id]');
+      if (rateBtn) {
+        e.preventDefault();
+        e.stopPropagation();
+        const id = rateBtn.getAttribute('data-card-id');
+        const rate = rateBtn.getAttribute('data-rate');
+        const prev = stats[id] || { ease: 2, reps: 0, dueAt: 0 };
+        const nextEase = Math.max(1.3, Math.min(2.8, prev.ease + (rate === 'easy' ? 0.2 : rate === 'hard' ? -0.2 : 0)));
+        const baseHours = rate === 'easy' ? 72 : rate === 'mid' ? 24 : 8;
+        stats[id] = {
+          ease: nextEase,
+          reps: Number(prev.reps || 0) + 1,
+          dueAt: Date.now() + Math.round(baseHours * nextEase) * 3600000
+        };
+        localStorage.setItem(CARDS_STATS_KEY, JSON.stringify(stats));
+        rateBtn.textContent = 'Gespeichert';
+        setTimeout(() => {
+          if (rate === 'easy') rateBtn.textContent = 'Leicht';
+          if (rate === 'mid') rateBtn.textContent = 'Mittel';
+          if (rate === 'hard') rateBtn.textContent = 'Schwer';
+        }, 900);
+        return;
+      }
+      const card = e.target.closest('.flash');
+      if (!card) return;
+      card.classList.toggle('flipped');
+    });
+
+    body.addEventListener('keydown', (e) => {
+      const toggle = e.target.closest('.flash-toggle');
+      if (!toggle) return;
+      if (e.key !== 'Enter' && e.key !== ' ') return;
+      e.preventDefault();
+      const card = toggle.closest('.flash');
+      if (!card) return;
+      card.classList.toggle('flipped');
+    });
+  }
+
+  function initMainApp() {
+    app.utils.load();
+    app.ui.updateDomainUI();
+    app.ui.renderSourceToolbar();
+
+    if (app.state.consentGiven) {
+      document.getElementById('modal-disclaimer').classList.remove('open');
+    }
+
+    const c1 = document.getElementById('consent-data');
+    const c2 = document.getElementById('consent-forward');
+    const start = document.getElementById('btn-start-disclaimer');
+    const syncStart = () => { start.disabled = !(c1.checked && c2.checked); };
+    c1.addEventListener('change', syncStart);
+    c2.addEventListener('change', syncStart);
+
+    app.ui.input.addEventListener('input', function () {
+      this.style.height = 'auto';
+      this.style.height = Math.min(this.scrollHeight, 180) + 'px';
+
+      const val = this.value;
+      if (val.startsWith('/')) {
+        const q = val.slice(1).toLowerCase();
+        const matches = (app.state.settings.snippets || [])
+          .filter((s) => s.toLowerCase().includes(q))
+          .slice(0, 12)
+          .map((s) => ({ label: s, value: s, kind: 'Snippet' }));
+        app.ui.showSuggestionPopup(matches);
+      } else {
+        const memorySuggestions = app.logic.findQuestionSuggestions(val, 6)
+          .map((s) => ({ label: s, value: s, kind: 'Ähnliche Frage aus Verlauf' }));
+        app.ui.showSuggestionPopup(memorySuggestions);
+      }
+    });
+
+    app.ui.input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        app.logic.sendMessage();
+      }
+    });
+
+    let sendThrottle = 0;
+    const triggerSend = (e) => {
+      if (e) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+      const now = Date.now();
+      if (now - sendThrottle < 300) return;
+      sendThrottle = now;
+      app.logic.sendMessage();
+    };
+
+    app.ui.sendBtn.addEventListener('click', triggerSend);
+    app.ui.sendBtn.addEventListener('touchend', triggerSend, { passive: false });
+
+    document.getElementById('suggestion-popup').addEventListener('click', (e) => {
+      const item = e.target.closest('.suggestion-item');
+      if (!item) return;
+      app.logic.insertSuggestion(decodeURIComponent(item.dataset.suggestion || ''));
+    });
+
+    document.getElementById('source-toolbar').addEventListener('change', (e) => {
+      const fastCb = e.target.closest('[data-fast-cb]');
+      if (fastCb) {
+        app.state.settings.fastMode = fastCb.checked;
+        app.utils.save();
+        app.ui.updateDomainUI();
+        app.ui.renderSourceToolbar();
+        return;
+      }
+      const cb = e.target.closest('[data-source-cb]');
+      if (!cb) return;
+      const key = cb.getAttribute('data-source-cb');
+      app.state.settings.sources[key] = cb.checked;
+      app.utils.save();
+      app.ui.updateDomainUI();
+      app.ui.renderSourceToolbar();
+    });
+
+    document.getElementById('source-toggle-list').addEventListener('change', (e) => {
+      const cb = e.target.closest('[data-source-setting]');
+      if (!cb) return;
+      const key = cb.getAttribute('data-source-setting');
+      app.state.settings.sources[key] = cb.checked;
+    });
+
+    document.getElementById('snippet-list-container').addEventListener('click', (e) => {
+      const btn = e.target.closest('[data-remove-snippet]');
+      if (!btn) return;
+      app.logic.removeSnippet(Number(btn.getAttribute('data-remove-snippet')));
+    });
+
+    document.getElementById('session-list').addEventListener('click', (e) => {
+      const item = e.target.closest('[data-session-id]');
+      if (!item) return;
+      app.logic.switchSession(item.getAttribute('data-session-id'));
+    });
+
+    app.ui.log.addEventListener('click', (e) => {
+      const btn = e.target.closest('[data-action]');
+      if (!btn) return;
+      const action = btn.getAttribute('data-action');
+      if (action === 'copy') app.logic.copyBubble(btn);
+      if (action === 'share') app.logic.shareBubble(btn);
+      if (action === 'pdf') app.logic.pdfBubble(btn);
+      if (action === 'cards') {
+        const text = btn.closest('.msg-wrap')?.querySelector('.md')?.innerText || '';
+        app.logic.openFlashcardsTab(text);
+      }
+      if (action === 'feedback') app.ui.openModal('modal-feedback');
+    });
+
+    app.ui.log.addEventListener('contextmenu', (e) => {
+      if (!app.logic.prepareSelectionDraftFromEvent(e)) return;
+      e.preventDefault();
+      app.ui.showSelectionMenu(e.clientX + 6, e.clientY + 6);
+    });
+
+    app.ui.log.addEventListener('mouseup', (e) => {
+      if (!app.logic.prepareSelectionDraftFromEvent(e)) return;
+      if (app.utils.isMobileClient()) app.ui.showSelectionMenu(e.clientX + 6, e.clientY + 6);
+    });
+
+    document.getElementById('selection-cards-btn').addEventListener('click', () => {
+      app.logic.requestCardsFromSelection();
+    });
+
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('#suggestion-popup') && !e.target.closest('.input-wrap')) {
+        document.getElementById('suggestion-popup').classList.remove('active');
+      }
+      if (!e.target.closest('#selection-menu')) {
+        app.ui.hideSelectionMenu();
+      }
+      if (e.target.classList.contains('modal-overlay')) app.ui.closeModals();
+    });
+
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', app.ui.syncViewportInsets, { passive: true });
+      window.visualViewport.addEventListener('scroll', app.ui.syncViewportInsets, { passive: true });
+      app.ui.syncViewportInsets();
+    }
+
+    if (app.state.consentGiven && app.state.sessions.length === 0) {
+      app.logic.newChat();
+    } else if (app.state.sessions.length > 0) {
+      const activeExists = app.state.sessions.some((s) => s.id === app.state.activeId);
+      if (!activeExists) app.state.activeId = app.state.sessions[0].id;
+      app.logic.switchSession(app.state.activeId);
+    }
+
+    window.addEventListener('offline', () => {
+      app.ui.log.appendChild(app.ui.createBubble('assistant', '⚠️ Offline erkannt: Antworten über den Bot-Flow sind aktuell nicht verfügbar.'));
+      app.ui.scrollBottom();
+    });
+  }
+
+  const params = new URLSearchParams(window.location.search);
+  if (params.get('view') === 'cards') {
+    initCardTab();
+  } else {
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initMainApp);
+    } else {
+      initMainApp();
+    }
+  }
+})();
+</script>
+</body>
+</html>
