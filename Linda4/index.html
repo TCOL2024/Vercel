@@ -3110,17 +3110,6 @@
       </label>
     </div>
     <div class="smart-control">
-      <span class="label">Lernverzeichnis (BETA)</span>
-      <label class="fastmode-choice">
-        <input id="directory-main-on" type="radio" name="directory-main" value="on">
-        <span>Ein</span>
-      </label>
-      <label class="fastmode-choice">
-        <input id="directory-main-off" type="radio" name="directory-main" value="off">
-        <span>Aus</span>
-      </label>
-    </div>
-    <div class="smart-control">
       <span class="label">Quellenmodus</span>
       <label class="fastmode-choice">
         <input id="grounded-main-on" type="radio" name="grounded-main" value="on">
@@ -3207,7 +3196,7 @@
 
     <div class="section" style="margin-top:10px;">
       <h4>Wissensquellen</h4>
-      <p class="mini">Du kannst die genutzten Wissensbereiche hier ein- und ausschalten.</p>
+      <p class="mini">Du kannst die genutzten Wissensbereiche hier ein- und ausschalten. Lernverzeichnis (BETA) ist nur hier in den Einstellungen steuerbar.</p>
       <div class="toggle-list" id="source-toggle-list"></div>
     </div>
 
@@ -3227,18 +3216,18 @@
 
     <div class="section" style="margin-top:10px;">
       <h4>Prompting-Vorschläge</h4>
-      <p class="mini">Optional zuschaltbar. Vorschläge werden lokal erzeugt und nicht als feste Prompt-Vorgabe an den Bot gesendet.</p>
+      <p class="mini">Vorübergehend deaktiviert, bis die Vorschläge fachlich geschärft sind.</p>
       <div class="toggle-row" style="margin-top:8px;">
         <label for="inp-prompting-enabled">Vorschläge aktivieren</label>
-        <input id="inp-prompting-enabled" type="checkbox">
+        <input id="inp-prompting-enabled" type="checkbox" disabled>
       </div>
       <div class="field" style="margin-top:8px;">
         <label for="inp-prompting-json">Vorschlags-JSON</label>
-        <textarea id="inp-prompting-json" rows="8" style="width:100%; border:2px solid #d9e3f2; border-radius:10px; padding:10px 11px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.82rem;"></textarea>
+        <textarea id="inp-prompting-json" rows="8" style="width:100%; border:2px solid #d9e3f2; border-radius:10px; padding:10px 11px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.82rem;" disabled></textarea>
       </div>
       <div class="btn-row" style="margin-top:8px;">
-        <button class="btn warn" type="button" onclick="app.logic.clearPromptConfigs()">Alle Prompt-Vorgaben löschen</button>
-        <button class="btn cancel" type="button" onclick="app.logic.resetPromptConfigs()">Prompt-Vorgaben auf Standard</button>
+        <button class="btn warn" type="button" onclick="app.logic.clearPromptConfigs()" disabled>Alle Prompt-Vorgaben löschen</button>
+        <button class="btn cancel" type="button" onclick="app.logic.resetPromptConfigs()" disabled>Prompt-Vorgaben auf Standard</button>
       </div>
     </div>
 
@@ -3835,6 +3824,8 @@
           app.state.settings.assistant.showLearningPath = false;
           app.state.settings.privacy.ephemeral = false;
         }
+        app.state.settings.prompting.enabled = false;
+        app.state.settings.prompting.config = structuredClone(DEFAULT_PROMPTING_JSON);
         app.state.clarifier = structuredClone(DEFAULT_STATE.clarifier);
 
         const newWelcome =
@@ -4139,7 +4130,7 @@
         const { settings } = app.state;
         document.getElementById('inp-name').value = settings.name || '';
         document.getElementById('inp-domain').value = settings.domain || '';
-        document.getElementById('inp-prompting-enabled').checked = Boolean(settings.prompting && settings.prompting.enabled);
+        document.getElementById('inp-prompting-enabled').checked = false;
         document.getElementById('inp-grounded-mode').checked = Boolean(settings.guardrails && settings.guardrails.groundedMode);
         document.getElementById('inp-strict-unknown').checked = Boolean(settings.guardrails && settings.guardrails.strictUnknown);
         document.getElementById('inp-clarification-mode').checked = Boolean(settings.guardrails && settings.guardrails.clarificationMode);
@@ -4247,10 +4238,8 @@
 
       syncLearningDirectoryControls: () => {
         const enabled = Boolean(app.state.settings.sources && app.state.settings.sources.directory);
-        const on = document.getElementById('directory-main-on');
-        const off = document.getElementById('directory-main-off');
-        if (on) on.checked = enabled;
-        if (off) off.checked = !enabled;
+        const rows = document.querySelectorAll('[data-source-setting="directory"]');
+        rows.forEach((el) => { el.checked = enabled; });
       },
 
       syncGroundedModeControls: () => {
@@ -6338,7 +6327,7 @@
         const sozialrechtLocked = app.logic.isSozialrechtDomain();
 
         app.state.settings.ilias.enabled = Boolean(app.state.settings.sources.ilias);
-        app.state.settings.prompting.enabled = document.getElementById('inp-prompting-enabled').checked;
+        app.state.settings.prompting.enabled = false;
         const nextGrounded = document.getElementById('inp-grounded-mode').checked;
         app.state.settings.guardrails.strictUnknown = document.getElementById('inp-strict-unknown').checked;
         app.state.settings.guardrails.clarificationMode = document.getElementById('inp-clarification-mode').checked;
@@ -6355,14 +6344,7 @@
         app.state.settings.assistant.feedbackIncludeTranscript = document.getElementById('inp-feedback-transcript').checked;
         app.state.settings.assistant.learningGoal = document.getElementById('inp-learning-goal').value.trim().slice(0, 140);
 
-        try {
-          const rawCfg = document.getElementById('inp-prompting-json').value.trim();
-          const parsedCfg = rawCfg ? JSON.parse(rawCfg) : structuredClone(DEFAULT_PROMPTING_JSON);
-          app.state.settings.prompting.config = app.logic.sanitizePromptingConfig(parsedCfg);
-        } catch (_) {
-          alert('Prompting-JSON ist ungültig. Bitte prüfen.');
-          return;
-        }
+        app.state.settings.prompting.config = structuredClone(DEFAULT_PROMPTING_JSON);
 
         try {
           const rawCardsCfg = document.getElementById('inp-cards-webhook-json').value.trim();
@@ -8175,7 +8157,8 @@
           const expertModeEnabled = opts?.autoSpeak
             ? false
             : Boolean(app.state.settings.compareMode && app.state.settings.compareMode.enabled);
-          const deepseekRoutingActive = Boolean(effectiveFastMode || expertModeEnabled);
+          const strictSourcesActive = Boolean(app.state.settings.guardrails?.groundedMode);
+          const deepseekRoutingActive = Boolean(effectiveFastMode && !strictSourcesActive);
           const effectiveSources = app.state.settings.sources;
           const contextWindow = app.utils.chatContext(s);
           const historyForApi = app.utils.privacyModeEnabled()
@@ -8225,7 +8208,7 @@
           };
           lastPayload = payload;
 
-          if (expertModeEnabled) {
+          if (deepseekRoutingActive && expertModeEnabled) {
             let makeParsed = { answer: '', sources: [] };
             const expertPayload = {
               ...payload,
@@ -8369,8 +8352,9 @@
           loading.remove();
           const offline = !navigator.onLine;
           const timeoutErr = err?.name === 'AbortError';
+          const canUseDeepseekTimeoutFallback = !Boolean(app.state.settings.guardrails?.groundedMode);
 
-          if (timeoutErr && lastPayload && !offline) {
+          if (timeoutErr && lastPayload && !offline && canUseDeepseekTimeoutFallback) {
             try {
               const fallbackController = new AbortController();
               const fallbackTimeout = setTimeout(() => fallbackController.abort(), 25000);
@@ -9038,7 +9022,8 @@
       const wantsOn = Boolean(fastMainOn && fastMainOn.checked);
       if (wantsOn && !app.state.settings.fastMode.consentAccepted) {
         const accepted = confirm(
-          'Du aktivierst den Schnellmodus, dieser unterstützt keine Quellenangaben der hinterlegten Dokumente. ' +
+          'Du aktivierst den Schnellmodus. Bei Quellenmodus "Flexibel" wird DeepSeek priorisiert und Quellen können begrenzt sein. ' +
+          'Bei Quellenmodus "Strikt" bleibt GPT-Routing aktiv. ' +
           'Prüfe sehr intensiv die Antworten, da der Schnellmodus Fehler beinhalten kann. ' +
           'Jede KI-Antwort muss überprüft werden.\n\nBestätigen?'
         );
@@ -9078,19 +9063,6 @@
     };
     if (compareMainOn) compareMainOn.addEventListener('change', syncCompareMode);
     if (compareMainOff) compareMainOff.addEventListener('change', syncCompareMode);
-
-    const directoryMainOn = document.getElementById('directory-main-on');
-    const directoryMainOff = document.getElementById('directory-main-off');
-    const syncLearningDirectory = () => {
-      const wantsOn = Boolean(directoryMainOn && directoryMainOn.checked);
-      app.state.settings.sources.directory = wantsOn;
-      app.utils.save();
-      app.ui.updateDomainUI();
-      app.ui.renderSourceToolbar();
-      app.ui.renderSourceToggleList();
-    };
-    if (directoryMainOn) directoryMainOn.addEventListener('change', syncLearningDirectory);
-    if (directoryMainOff) directoryMainOff.addEventListener('change', syncLearningDirectory);
 
     const groundedMainOn = document.getElementById('grounded-main-on');
     const groundedMainOff = document.getElementById('grounded-main-off');

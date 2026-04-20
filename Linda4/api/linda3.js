@@ -397,6 +397,44 @@ function normalizeSources(rawSources) {
     .slice(0, 10);
 }
 
+function decodeEscapedJsonString(value) {
+  return String(value || '')
+    .replace(/\\n/g, '\n')
+    .replace(/\\r/g, '')
+    .replace(/\\t/g, ' ')
+    .replace(/\\"/g, '"')
+    .replace(/\\\\/g, '\\')
+    .trim();
+}
+
+function extractAnswerFromJsonLikeText(rawText) {
+  const raw = normalizeMultilineText(rawText || '');
+  if (!raw) return '';
+  const direct = parseJsonSafe(raw, null);
+  if (direct && typeof direct === 'object') {
+    const text = normalizeMultilineText(direct.answer || direct.response || direct.text || '');
+    if (text) return text;
+  }
+
+  const rx = /"answer"\s*:\s*"([\s\S]*?)"\s*,\s*"(?:followups|sources|confidence|meta|evidence_note|reasoning_note)"/i;
+  const m = raw.match(rx);
+  if (m && m[1]) {
+    const decoded = decodeEscapedJsonString(m[1]);
+    if (decoded) return decoded;
+  }
+
+  const open = raw.indexOf('{');
+  const close = raw.lastIndexOf('}');
+  if (open >= 0 && close > open) {
+    const inner = parseJsonSafe(raw.slice(open, close + 1), null);
+    if (inner && typeof inner === 'object') {
+      const text = normalizeMultilineText(inner.answer || inner.response || inner.text || '');
+      if (text) return text;
+    }
+  }
+  return '';
+}
+
 function extractNormReferenceSources(answerText) {
   const raw = normalizeMultilineText(answerText || '');
   if (!raw) return [];
@@ -459,8 +497,9 @@ function normalizeModelPayload(rawText, cfg) {
     : [];
   const parsed = parseJsonSafe(rawText, null);
   if (!parsed || typeof parsed !== 'object') {
+    const salvaged = extractAnswerFromJsonLikeText(rawText);
     return {
-      answer: normalizeMultilineText(rawText) || 'Ich weiss es nicht sicher.',
+      answer: salvaged || normalizeMultilineText(rawText) || 'Ich weiss es nicht sicher.',
       followups: fallbackFollowups,
       sources: [],
       confidence: null,
@@ -508,6 +547,7 @@ function buildSozialrechtJudgmentSystemPrompt(cfg, hasStorage) {
   return [
     'Du bist LINDA im Fachmodus Sozialrecht fuer angehende Personalfachkaufleute (IHK).',
     'Spezialmodus Rechtsprechung: antworte kurz, praezise und tokensparend.',
+    'Antwortlaenge strikt kurz halten (maximal ca. 220 Woerter).',
     'Wenn Urteil/Beschluss oder Aktenzeichen unklar sind: frage knapp nach oder sage "Ich weiss es nicht sicher".',
     policy.require_legal_basis_references ? 'Nenne nur belastbare Gerichts- und Normbezuge.' : '',
     hasStorage ? 'Priorisiere Treffer aus dem Storage und nutze sie als Evidenz.' : '',
@@ -812,15 +852,18 @@ async function handleSozialrechtChat(req, res, action) {
   const forceFast = action === 'deepseek';
   const requestedResponseMode = String(payload?.routing?.response_mode || '').toLowerCase();
   const expertRequested = requestedResponseMode === 'expert';
-  const fastRequested = forceFast || Boolean(payload.schnellmodus) || String(payload?.routing?.preferred_model || '').toLowerCase() === 'deepseek';
+  const preferredModel = String(payload?.routing?.preferred_model || '').toLowerCase();
+  const groundedModeActive = payload?.guardrails?.grounded_mode !== false;
+  const fastRequested = forceFast || Boolean(payload.schnellmodus) || preferredModel === 'deepseek';
   const judgmentMode = isJudgmentQuestion(question);
   const fastMode = fastRequested && !judgmentMode;
+  const deepseekMode = fastMode && !groundedModeActive;
   const defaultModel = String(cfg?.routing?.default_model || DEFAULT_SOCIALRECHT_CONFIG.routing.default_model);
   const fastModel = String(cfg?.routing?.fast_model || DEFAULT_SOCIALRECHT_CONFIG.routing.fast_model);
   const judgmentModel = String(cfg?.routing?.judgment_model || DEFAULT_SOCIALRECHT_CONFIG.routing.judgment_model || defaultModel);
   const model = judgmentMode
     ? judgmentModel
-    : (fastMode ? fastModel : defaultModel);
+    : (deepseekMode ? fastModel : defaultModel);
 
   const sozialrechtApi = resolveSozialrechtApiKey();
   const socialKey = sozialrechtApi.key;
@@ -853,7 +896,7 @@ async function handleSozialrechtChat(req, res, action) {
   }
 
   let legacyDeepseekError = '';
-  if (fastMode) {
+  if (deepseekMode) {
     try {
       const schnellKey = resolveSozialrechtSchnellKey();
       if (!schnellKey) throw new Error('SozialrechtSchnell fehlt.');
@@ -902,7 +945,7 @@ async function handleSozialrechtChat(req, res, action) {
 
   const storageEnvKey = String(cfg?.storage?.vector_store_env_key || 'OPENAI_VECTOR_STORE_ID_SOZIALRECHT');
   const vectorStoreId = normalizeText(process.env[storageEnvKey] || '');
-  const useStorage = Boolean(vectorStoreId && cfg?.storage?.enabled_when_env_present !== false && (!fastMode || judgmentMode));
+  const useStorage = Boolean(vectorStoreId && cfg?.storage?.enabled_when_env_present !== false && (!deepseekMode || judgmentMode));
   const temperature = Number.isFinite(Number(cfg?.routing?.temperature))
     ? Number(cfg.routing.temperature)
     : DEFAULT_SOCIALRECHT_CONFIG.routing.temperature;
@@ -914,7 +957,7 @@ async function handleSozialrechtChat(req, res, action) {
     : Number(DEFAULT_SOCIALRECHT_CONFIG.routing.judgment_max_output_tokens || 520);
   const maxOutputTokens = judgmentMode
     ? Math.max(260, Math.min(900, judgmentMaxOutputTokens))
-    : (fastMode && expertRequested ? 12000 : defaultMaxOutputTokens);
+    : (deepseekMode && expertRequested ? 12000 : defaultMaxOutputTokens);
 
   const systemPrompt = judgmentMode
     ? buildSozialrechtJudgmentSystemPrompt(cfg, useStorage)
@@ -946,7 +989,7 @@ async function handleSozialrechtChat(req, res, action) {
         const firstErr = normalizeText(storageErr?.message || 'unbekannt');
         storageError = firstErr;
 
-        if ((fastMode || judgmentMode) && defaultModel && defaultModel !== activeModel) {
+        if ((deepseekMode || judgmentMode) && defaultModel && defaultModel !== activeModel) {
           try {
             activeModel = defaultModel;
             const retryResult = await callOpenAIResponsesWithStorage({
@@ -994,9 +1037,8 @@ async function handleSozialrechtChat(req, res, action) {
     const normFallbackSources = mergedSources.length ? [] : extractNormReferenceSources(normalized.answer || '');
     const finalSources = normalizeSources([...(mergedSources || []), ...normFallbackSources]);
     const strictUnknown = Boolean(cfg?.accuracy_policy?.strict_unknown_on_missing_basis);
-    const groundedModeActive = payload?.guardrails?.grounded_mode !== false;
     const strictUnknownClient = payload?.guardrails?.strict_unknown !== false;
-    const enforceStrictUnknown = strictUnknown && strictUnknownClient && groundedModeActive && !fastMode;
+    const enforceStrictUnknown = strictUnknown && strictUnknownClient && groundedModeActive && !deepseekMode;
     const confidenceValue = Number(normalized.confidence);
     const lowConfidence = Number.isFinite(confidenceValue) ? confidenceValue < 0.34 : false;
     const resolvedAnswer =
@@ -1040,8 +1082,9 @@ async function handleSozialrechtChat(req, res, action) {
         domain: 'SOZIALRECHT',
         api_key_source: sozialrechtApi.source || '',
         model: activeModel,
-        response_mode: expertRequested ? 'expert' : (requestedResponseMode || (fastMode ? 'schnell' : 'genau')),
+        response_mode: expertRequested ? 'expert' : (requestedResponseMode || (deepseekMode ? 'schnell' : 'genau')),
         fast_mode: fastMode,
+        deepseek_mode: deepseekMode,
         judgment_mode: judgmentMode,
         gpt5_footer: gpt5FooterActive,
         deepseek_via_legacy: false,
