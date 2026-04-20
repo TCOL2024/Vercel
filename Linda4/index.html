@@ -2551,6 +2551,40 @@
     }
   }
 
+  @media (max-width: 768px) {
+    .header-actions {
+      flex-wrap: nowrap;
+      overflow-x: auto;
+      scrollbar-width: thin;
+      gap: 8px;
+      padding-bottom: 4px;
+    }
+
+    .header-actions .btn-icon {
+      flex: 0 0 auto;
+      min-height: 42px;
+      padding: 8px 12px;
+      font-size: 1rem;
+      line-height: 1.1;
+    }
+
+    .smart-controls-bar {
+      grid-template-columns: 1fr;
+      gap: 10px;
+      padding: 12px;
+    }
+
+    .smart-control {
+      min-width: 0;
+    }
+
+    .source-toolbar {
+      overflow-x: auto;
+      flex-wrap: nowrap;
+      white-space: nowrap;
+    }
+  }
+
   @keyframes slide-up {
     from {
       opacity: 0;
@@ -3801,13 +3835,27 @@
         const parsed = parseJSON(rawText, null);
         if (!parsed) return { answer: rawText, sources: [], meta: {} };
         if (typeof parsed === 'string') return { answer: parsed, sources: [], meta: {} };
+        const nestedAnswerPayload = (() => {
+          const nestedRaw = String(parsed.answer || parsed.response || parsed.text || '').trim();
+          if (!nestedRaw || nestedRaw[0] !== '{') return null;
+          const nested = parseJSON(nestedRaw, null);
+          return (nested && typeof nested === 'object') ? nested : null;
+        })();
         const backendMeta = (parsed.meta && typeof parsed.meta === 'object') ? parsed.meta : {};
+        const nestedMeta = (nestedAnswerPayload?.meta && typeof nestedAnswerPayload.meta === 'object')
+          ? nestedAnswerPayload.meta
+          : {};
         const altSources =
           parsed.sources ||
           parsed.quellen ||
           parsed.references ||
           parsed.citations ||
           parsed.links ||
+          nestedAnswerPayload?.sources ||
+          nestedAnswerPayload?.quellen ||
+          nestedAnswerPayload?.references ||
+          nestedAnswerPayload?.citations ||
+          nestedAnswerPayload?.links ||
           backendMeta.sources ||
           (parsed.metadata && parsed.metadata.sources) ||
           [];
@@ -3815,33 +3863,66 @@
           parsed.followups ||
           parsed.next_questions ||
           parsed.suggestions ||
+          nestedAnswerPayload?.followups ||
+          nestedAnswerPayload?.next_questions ||
+          nestedAnswerPayload?.suggestions ||
           backendMeta.followups ||
           parsed.recommended_questions ||
           [];
         const confidence =
           Number.isFinite(Number(parsed.confidence))
             ? Number(parsed.confidence)
-            : (Number.isFinite(Number(backendMeta.confidence)) ? Number(backendMeta.confidence) : null);
+            : (Number.isFinite(Number(nestedAnswerPayload?.confidence))
+                ? Number(nestedAnswerPayload.confidence)
+                : (Number.isFinite(Number(backendMeta.confidence)) ? Number(backendMeta.confidence) : null));
         const evidenceNote = String(
           parsed.evidence_note ||
           parsed.reasoning_note ||
+          nestedAnswerPayload?.evidence_note ||
+          nestedAnswerPayload?.reasoning_note ||
           backendMeta.evidence_note ||
+          nestedMeta.evidence_note ||
           backendMeta.evidenceNote ||
+          nestedMeta.evidenceNote ||
+          ''
+        ).trim();
+        const parsedAnswerText = String(parsed.answer || parsed.response || parsed.text || parsed.output || rawText);
+        const nestedAnswerText = String(
+          nestedAnswerPayload?.answer ||
+          nestedAnswerPayload?.response ||
+          nestedAnswerPayload?.text ||
           ''
         ).trim();
         return {
-          answer: String(parsed.answer || parsed.response || parsed.text || parsed.output || rawText),
+          answer: nestedAnswerText || parsedAnswerText,
           sources: Array.isArray(altSources) ? altSources : [],
           meta: {
             followups: Array.isArray(followups) ? followups : [],
             confidence,
             evidenceNote,
-            domain: String(backendMeta.domain || parsed.domain || '').trim().toUpperCase(),
-            clarificationRequested: Boolean(backendMeta.clarification_requested || backendMeta.clarificationRequested),
-            storageUsed: Boolean(backendMeta.storage_used ?? backendMeta.storageUsed),
-            storageFallback: Boolean(backendMeta.storage_fallback ?? backendMeta.storageFallback),
-            storageError: String(backendMeta.storage_error || backendMeta.storageError || '').trim(),
-            model: String(backendMeta.model || parsed.model || '').trim()
+            domain: String(backendMeta.domain || nestedMeta.domain || parsed.domain || nestedAnswerPayload?.domain || '').trim().toUpperCase(),
+            clarificationRequested: Boolean(
+              backendMeta.clarification_requested ||
+              backendMeta.clarificationRequested ||
+              nestedMeta.clarification_requested ||
+              nestedMeta.clarificationRequested
+            ),
+            storageUsed: Boolean(
+              (backendMeta.storage_used ?? backendMeta.storageUsed) ??
+              (nestedMeta.storage_used ?? nestedMeta.storageUsed)
+            ),
+            storageFallback: Boolean(
+              (backendMeta.storage_fallback ?? backendMeta.storageFallback) ??
+              (nestedMeta.storage_fallback ?? nestedMeta.storageFallback)
+            ),
+            storageError: String(
+              backendMeta.storage_error ||
+              backendMeta.storageError ||
+              nestedMeta.storage_error ||
+              nestedMeta.storageError ||
+              ''
+            ).trim(),
+            model: String(backendMeta.model || nestedMeta.model || parsed.model || nestedAnswerPayload?.model || '').trim()
           }
         };
       },
@@ -7702,16 +7783,12 @@
           const mobileReaderActive = app.logic.isMobileReaderEnabled();
           const sozialrechtDomain = app.logic.isSozialrechtDomain();
           if (sozialrechtDomain) app.logic.enforceSozialrechtMode({ save: false });
-          const effectiveFastMode = mobileReaderActive
-            ? false
-            : Boolean(app.state.settings.fastMode && app.state.settings.fastMode.enabled);
-          const expertModeEnabled = (opts?.autoSpeak || mobileReaderActive)
+          const effectiveFastMode = Boolean(app.state.settings.fastMode && app.state.settings.fastMode.enabled);
+          const expertModeEnabled = opts?.autoSpeak
             ? false
             : Boolean(app.state.settings.compareMode && app.state.settings.compareMode.enabled);
           const deepseekRoutingActive = Boolean(effectiveFastMode || expertModeEnabled);
-          const effectiveSources = mobileReaderActive
-            ? { ...app.state.settings.sources, ...MAKEFLOW_ONLY_SOURCES }
-            : app.state.settings.sources;
+          const effectiveSources = app.state.settings.sources;
           const contextWindow = app.utils.chatContext(s);
           const historyForApi = app.utils.privacyModeEnabled()
             ? []
