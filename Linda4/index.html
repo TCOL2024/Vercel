@@ -6108,6 +6108,7 @@
 
       openFvCheck: ({ source = 'frontend' } = {}) => {
         if (!app.logic.isFvEligibleMode()) return false;
+        app.logic.ensureSession();
         app.logic.closeClaudeClarifier({ save: false });
         fvState = { active: true, step: 0, answers: {}, freeTextUsed: false, source: String(source || 'frontend') };
         app.ui.renderClarifierDock();
@@ -6203,8 +6204,11 @@
               feature: 'familienversicherung-check'
             }
           });
-          const html = String(parsed?.answer || '').trim() || app.logic.buildFvHtml('unklar');
-          app.logic.appendAssistantMessage(html, { module: 'fv-check', status: 'unklar' }, parsed?.sources || []);
+          const rawAnswer = String(parsed?.answer || '').trim();
+          const html = /class=["'][^"']*sozialrecht-stack/i.test(rawAnswer)
+            ? rawAnswer
+            : app.logic.buildFvHtml('unklar', rawAnswer);
+          app.logic.appendAssistantMessage(html, { module: 'fv-check', status: 'unklar' }, []);
         } catch (_) {
           app.logic.appendAssistantMessage(
             app.logic.buildFvHtml('unklar'),
@@ -8338,6 +8342,7 @@
 
         const socialStructured =
           app.logic.isSozialrechtMeta(bubbleMeta) &&
+          String(bubbleMeta?.module || '') !== 'fv-check' &&
           !app.logic.isOperationalAnswer(String(md.innerText || ''));
         if (socialStructured) {
           app.logic.stylizeSozialrechtAnswer(md, bubbleMeta);
@@ -8528,9 +8533,14 @@
         }
 
         const fvTriggerText = app.utils.normalizeForKeyword(text);
+        const fvIntentMarker = /\b(pruef|prüf|check|testen|ob|moeglich|möglich|anspruch|voraussetzung|voraussetzungen)\b/i.test(text);
         const fvTriggerMatch =
-          /\bfamilienversicherung\b|\bfamilienversichert\b|sgb\s*v|gkv\s*familie|\bfamilienversicherung\s+pruefen\b/.test(fvTriggerText) ||
-          /\bfamilienversicherung\b|\bfamilienversichert\b|§\s*10\s*sgb\s*v|gkv\s+familie|familienversicherung\s+prüfen/i.test(text);
+          /\bfamilienversicherung\s+(pruef|prüf|check)\b/.test(fvTriggerText) ||
+          /\bpruef(?:e|en)?\s+die\s+familienversicherung\b|\bcheck(?:e|en)?\s+familienversicherung\b/i.test(text) ||
+          /\bfamilienversichert\b/i.test(text) ||
+          /§\s*10\s*sgb\s*v/i.test(text) ||
+          (/\bfamilienversicherung\b/i.test(text) && fvIntentMarker) ||
+          (/\bgkv\s+familie\b/i.test(fvTriggerText) && fvIntentMarker);
         if (fvTriggerMatch && app.logic.isFvEligibleMode()) {
           if (!forcedText) {
             app.ui.input.value = '';
