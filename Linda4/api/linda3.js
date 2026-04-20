@@ -393,6 +393,43 @@ function normalizeSources(rawSources) {
     .slice(0, 10);
 }
 
+function extractNormReferenceSources(answerText) {
+  const raw = normalizeMultilineText(answerText || '');
+  if (!raw) return [];
+  const lines = raw
+    .split('\n')
+    .map((line) => normalizeText(line))
+    .filter(Boolean)
+    .slice(0, 80);
+  const found = [];
+  const seen = new Set();
+  const re = /(§\s*\d+[a-z]?(?:\s*abs\.?\s*\d+)?(?:\s*s\.?\s*\d+)?(?:\s*nr\.?\s*\d+)?)\s*(efzg|aag|sgb\s*[ivx0-9]+|sgg|bgb)?/ig;
+
+  for (const line of lines) {
+    let match;
+    while ((match = re.exec(line)) !== null) {
+      const para = normalizeText(match[1] || '');
+      const law = normalizeText((match[2] || '').toUpperCase());
+      if (!para) continue;
+      const title = law ? `${para} ${law}` : para;
+      const key = title.toLowerCase();
+      if (seen.has(key)) continue;
+      seen.add(key);
+      found.push({
+        title: `Normbezug: ${title}`,
+        url: '',
+        excerpt: line,
+        section: 'Rechtsgrundlage',
+        page: '',
+        note: 'Automatisch aus der Antwort extrahiert (kein direkter Dokument-Chunk).',
+        confidence: 0.36
+      });
+      if (found.length >= 6) return found;
+    }
+  }
+  return found;
+}
+
 function isLegacyDeepseekRuntimeFailure(rawResult, normalizedResult) {
   const runtimeError = Boolean(rawResult?.meta?.runtime_error || rawResult?.runtime_error);
   const rawDetail = normalizeText(rawResult?.meta?.runtime_detail || rawResult?.runtime_detail || '');
@@ -929,6 +966,8 @@ async function handleSozialrechtChat(req, res, action) {
 
     const normalized = normalizeModelPayload(modelRaw, cfg);
     const mergedSources = normalizeSources([...(normalized.sources || []), ...storageSources]);
+    const normFallbackSources = mergedSources.length ? [] : extractNormReferenceSources(normalized.answer || '');
+    const finalSources = normalizeSources([...(mergedSources || []), ...normFallbackSources]);
     const strictUnknown = Boolean(cfg?.accuracy_policy?.strict_unknown_on_missing_basis);
     const groundedModeActive = payload?.guardrails?.grounded_mode !== false;
     const strictUnknownClient = payload?.guardrails?.strict_unknown !== false;
@@ -936,7 +975,7 @@ async function handleSozialrechtChat(req, res, action) {
     const confidenceValue = Number(normalized.confidence);
     const lowConfidence = Number.isFinite(confidenceValue) ? confidenceValue < 0.34 : false;
     const resolvedAnswer =
-      enforceStrictUnknown && mergedSources.length === 0 && lowConfidence
+      enforceStrictUnknown && finalSources.length === 0 && lowConfidence
         ? 'Ich weiss es nicht sicher. Ohne belastbare Quelle antworte ich im Fachmodus Sozialrecht bewusst nicht spekulativ. Bitte frage enger oder nenne das konkrete Leistungsthema.'
         : normalized.answer;
     const gpt5FooterActive = judgmentMode && /gpt-5/i.test(String(activeModel || ''));
@@ -945,12 +984,15 @@ async function handleSozialrechtChat(req, res, action) {
       : resolvedAnswer;
     const evidenceNotes = [];
     if (normalized.evidence_note) evidenceNotes.push(normalized.evidence_note);
-    if (storageUsed && mergedSources.length) {
+    if (storageUsed && finalSources.length) {
       evidenceNotes.push('Vector-Store-Treffer wurden als Quellen-Chunks eingebunden.');
-    } else if (storageUsed && !mergedSources.length) {
+    } else if (storageUsed && !finalSources.length) {
       evidenceNotes.push('Vector Store war aktiv, aber es wurden keine zitierbaren Quellen-Chunks erkannt.');
     }
-    if (!mergedSources.length && !lowConfidence) {
+    if (normFallbackSources.length) {
+      evidenceNotes.push('Normbezüge wurden als Quellen-Fallback aus der Antwort extrahiert.');
+    }
+    if (!finalSources.length && !lowConfidence) {
       evidenceNotes.push('Hinweis: Antwort ohne extrahierte Quellen-Chunks, bitte fachlich gegenpruefen.');
     }
     if (storageFallback) {
@@ -966,7 +1008,7 @@ async function handleSozialrechtChat(req, res, action) {
     res.status(200).json({
       answer: finalAnswer,
       followups: normalized.followups,
-      sources: mergedSources,
+      sources: finalSources,
       confidence: normalized.confidence,
       evidence_note: evidenceNotes.join(' ').trim(),
       meta: {
