@@ -1,0 +1,541 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>LINDA3 Lernkarten</title>
+<style>
+  :root{
+    --navy:#071d55;
+    --navy-2:#0c2f7c;
+    --ink:#0f2344;
+    --muted:#7485a3;
+    --paper:#f4f7fb;
+    --card:#ffffff;
+    --line:#d9e1ee;
+    --gold:#d4af37;
+    --gold-2:#f3df92;
+    --mint:#0c6c5c;
+    --danger:#b23a48;
+    --shadow:0 24px 60px rgba(8,27,76,.16);
+    --shadow-soft:0 12px 30px rgba(8,27,76,.12);
+    --radius-xl:28px;
+    --radius-lg:22px;
+    --radius-md:16px;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0;
+    font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    color:var(--ink);
+    background:radial-gradient(circle at top,#eef4ff 0,#e7f0ff 28%,#f6f8fc 68%,#f8fafc 100%);
+  }
+  .shell{min-height:100vh;display:grid;grid-template-rows:auto auto 1fr;}
+  .topbar{
+    background:linear-gradient(180deg,var(--navy) 0%, #082867 100%);
+    color:#fff;padding:24px 28px 18px;position:sticky;top:0;z-index:20;
+    box-shadow:0 10px 30px rgba(7,29,85,.22);
+  }
+  .topbar-row{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+  .brand{display:flex;align-items:center;gap:14px}
+  .brand-mark{width:44px;height:44px;border-radius:14px;background:linear-gradient(135deg,#fff 0%,#dfe9ff 100%);display:grid;place-items:center;color:var(--navy);font-size:24px;font-weight:900}
+  .brand h1{margin:0;font-size:clamp(1.5rem,2vw,2.3rem);letter-spacing:.01em}
+  .brand p{margin:4px 0 0;color:rgba(255,255,255,.78)}
+  .toolbar{display:flex;gap:10px;flex-wrap:wrap}
+  .btn{
+    appearance:none;border:none;border-radius:999px;padding:12px 18px;font:inherit;font-weight:800;
+    cursor:pointer;transition:transform .15s ease, box-shadow .2s ease, background .2s ease;
+  }
+  .btn:hover{transform:translateY(-1px)}
+  .btn.primary{background:linear-gradient(135deg,#fff 0%,#eef4ff 100%);color:var(--navy);box-shadow:0 10px 24px rgba(0,0,0,.12)}
+  .btn.ghost{background:rgba(255,255,255,.12);color:#fff;border:1px solid rgba(255,255,255,.18)}
+  .btn.gold{background:linear-gradient(135deg,#e9c968 0%,#f7ebbb 100%);color:#594109;box-shadow:0 12px 24px rgba(173,127,20,.22)}
+  .hero{padding:24px 28px 0}
+  .hero-grid{display:grid;grid-template-columns:minmax(280px,460px) 1fr;gap:24px;align-items:start}
+  .panel{background:rgba(255,255,255,.8);backdrop-filter:blur(14px);border:1px solid rgba(255,255,255,.9);border-radius:28px;box-shadow:var(--shadow);padding:22px}
+  .meta-line{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+  .pill{display:inline-flex;align-items:center;gap:8px;border-radius:999px;padding:8px 12px;font-size:.82rem;font-weight:800;border:1px solid var(--line);background:#fff;color:#536786}
+  .pill.gold{background:linear-gradient(135deg,#fff4cb 0%,#f2d56c 100%);border-color:#e7c85f;color:#5b4307}
+  .deck-title{margin:14px 0 8px;font-size:clamp(1.6rem,2.4vw,2.3rem);line-height:1.08}
+  .sub{margin:0;color:#60738f;line-height:1.55}
+  .stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:18px}
+  .stat{background:#fff;border:1px solid var(--line);border-radius:18px;padding:14px 14px 12px;box-shadow:var(--shadow-soft)}
+  .stat-label{font-size:.76rem;text-transform:uppercase;letter-spacing:.06em;color:#8192ab;font-weight:800}
+  .stat-value{margin-top:6px;font-size:1.4rem;font-weight:900;color:var(--navy)}
+  .content{padding:24px 28px 32px;display:grid;grid-template-columns:minmax(320px,460px) 1fr;gap:24px;align-items:start}
+  .card-stage{display:flex;justify-content:center}
+  .uptrip-card{position:relative;width:min(100%,420px);aspect-ratio:0.72;perspective:1400px}
+  .uptrip-inner{position:relative;width:100%;height:100%;transform-style:preserve-3d;transition:transform .65s cubic-bezier(.2,.8,.2,1)}
+  .uptrip-card.flipped .uptrip-inner{transform:rotateY(180deg)}
+  .face{
+    position:absolute;inset:0;backface-visibility:hidden;border-radius:34px;overflow:hidden;
+    background:linear-gradient(180deg,#ffffff 0%,#f7f8fc 100%);
+    border:1px solid rgba(255,255,255,.95);box-shadow:0 30px 80px rgba(10,27,67,.22), inset 0 0 0 1px rgba(255,255,255,.7);
+    display:flex;flex-direction:column;isolation:isolate;
+  }
+  .face::before{content:"";position:absolute;inset:0;padding:2px;border-radius:34px;background:linear-gradient(135deg,#f5e7b0 0%,#c89d29 18%,#fff7d2 45%,#ba8d17 72%,#f4dfa2 100%);-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;pointer-events:none}
+  .face.back{transform:rotateY(180deg)}
+  .card-head{padding:20px 22px 10px;display:flex;justify-content:space-between;gap:10px;color:#7b87a2;font-weight:800;font-size:.78rem;letter-spacing:.04em;text-transform:uppercase}
+  .head-item{display:flex;align-items:center;gap:8px;white-space:nowrap}
+  .hero-pane{margin:0 18px 0;border-radius:28px;background:linear-gradient(180deg,#edf4ff 0%,#dfe8ff 38%,#f9fafc 100%);padding:18px 18px 20px;display:flex;flex-direction:column;justify-content:flex-start;position:relative;overflow:hidden;flex:1;min-height:0}
+  .hero-pane::after{content:"";position:absolute;left:0;right:0;bottom:0;height:34%;background:linear-gradient(180deg,rgba(255,255,255,0) 0%,rgba(255,255,255,.86) 58%,#fff 100%)}
+  .orbit{width:72px;height:72px;border-radius:50%;background:linear-gradient(135deg,var(--navy) 0%,#103d95 100%);display:grid;place-items:center;color:#fff;font-size:1.7rem;box-shadow:0 20px 34px rgba(12,47,124,.25);flex:0 0 auto}
+  .hero-copy{position:relative;z-index:1;padding:8px 12px 12px;text-align:center;margin-top:auto;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;min-height:0;gap:10px}
+  .hero-copy .badge{display:inline-flex;align-items:center;justify-content:center;min-width:74px;height:74px;border-radius:50%;background:linear-gradient(135deg,#fff6cf 0%,#f0cf66 100%);border:4px solid #fff;box-shadow:0 10px 18px rgba(165,120,23,.2);font-size:1.65rem;margin-bottom:2px;flex:0 0 auto}
+  .hero-copy h2{margin:0 auto;max-width:100%;font-size:clamp(1.35rem,1.8vw,2.2rem);line-height:1.04;color:#082867;letter-spacing:-.03em;word-break:normal;overflow-wrap:break-word;hyphens:auto;text-wrap:pretty}
+  .hero-copy p{margin:0;color:#8290a7;font-size:.9rem;text-transform:uppercase;letter-spacing:.08em;flex:0 0 auto}
+  .card-footer{margin-top:auto;padding:16px 24px 18px;display:flex;justify-content:space-between;gap:10px;color:#7f8ca6;font-weight:800;text-transform:uppercase;letter-spacing:.06em;background:linear-gradient(180deg,rgba(255,255,255,0) 0%,rgba(255,255,255,.84) 35%,rgba(255,255,255,.98) 100%);position:relative;z-index:2;flex:0 0 auto}
+  .answer-scroll{margin:14px 18px 0;border-radius:28px;background:linear-gradient(180deg,#f3f6fb 0%,#fff 100%);padding:18px 18px 20px;overflow:auto;position:relative;z-index:2;flex:1;min-height:0;box-shadow:inset 0 1px 0 rgba(255,255,255,.75)}
+  .answer-scroll h3{margin:0 0 10px;font-size:1.1rem;color:#082867}
+  .answer-scroll p{margin:0;color:#2b3d5d;line-height:1.6;font-size:1rem;white-space:pre-wrap;word-break:break-word;overflow-wrap:anywhere}
+  .front-question{font-size:clamp(1.35rem,1.8vw,2.2rem)!important;line-height:1.03!important;max-width:100%;word-break:normal;overflow-wrap:break-word;hyphens:auto;text-wrap:pretty}
+  .front-question.size-s{font-size:2.35rem!important}
+  .front-question.size-m{font-size:2rem!important}
+  .front-question.size-l{font-size:1.75rem!important}
+  .front-question.size-xl{font-size:1.48rem!important}
+  .front-question.size-xxl{font-size:1.26rem!important;line-height:1.08!important}
+  .back-title{font-size:clamp(1.45rem,2vw,2rem)!important;line-height:1.08!important}
+  .back-kicker{font-size:.86rem!important;letter-spacing:.12em!important}
+  .guide{margin-top:16px;text-align:center;color:#7c8ca6;font-weight:700}
+  .back-summary{display:grid;place-items:center;text-align:center;padding:6px 10px 4px;min-height:170px}
+  .back-summary .badge{margin-bottom:10px}
+  .back-summary p{margin:8px 0 0;color:#7d8ba4;text-transform:uppercase;letter-spacing:.1em;font-size:.82rem}
+
+  .side-panel{display:grid;gap:18px}
+  .side-card{background:rgba(255,255,255,.92);border:1px solid rgba(255,255,255,.95);border-radius:28px;box-shadow:var(--shadow);padding:22px}
+  .section-title{margin:0 0 8px;font-size:1.2rem;color:#0a2256}
+  .section-copy{margin:0;color:#60738f;line-height:1.55}
+  .ratings{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:18px}
+  .rate{border-radius:18px;padding:14px 12px;border:1px solid var(--line);font-weight:900;background:#fff;color:#12335e;box-shadow:var(--shadow-soft)}
+  .rate.easy{background:linear-gradient(135deg,#0f7a67 0%,#18a389 100%);border:none;color:#fff}
+  .assign-row{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
+  .assign-row .btn{padding:12px 16px}
+  .library-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:16px}
+  .mini-deck{border-radius:24px;background:#fff;border:1px solid var(--line);box-shadow:var(--shadow-soft);padding:16px;display:grid;gap:12px}
+  .mini-top{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+  .mini-deck h3{margin:0;font-size:1.1rem;line-height:1.2}
+  .mini-deck p{margin:0;color:#6d7d95;line-height:1.45;font-size:.94rem}
+  .mini-actions{display:flex;gap:8px;flex-wrap:wrap}
+  .mini-btn{flex:1;border:none;border-radius:14px;padding:11px 12px;font-weight:800;cursor:pointer}
+  .mini-btn.primary{background:#0c2f7c;color:#fff}
+  .mini-btn.soft{background:#eef2f8;color:#21385e}
+  .toast{position:fixed;right:20px;bottom:20px;background:#0b245c;color:#fff;padding:14px 18px;border-radius:16px;box-shadow:var(--shadow);opacity:0;transform:translateY(10px);pointer-events:none;transition:.2s}
+  .toast.show{opacity:1;transform:none}
+  dialog{border:none;border-radius:26px;padding:0;box-shadow:0 40px 90px rgba(7,29,85,.24);width:min(640px,calc(100vw - 24px))}
+  dialog::backdrop{background:rgba(7,29,85,.36);backdrop-filter:blur(4px)}
+  .modal{padding:24px;background:#fff}
+  .collection-list{display:grid;gap:12px;margin-top:16px}
+  .collection-option{display:flex;justify-content:space-between;align-items:center;gap:14px;border:1px solid var(--line);border-radius:18px;padding:14px;background:#fbfcff;cursor:pointer}
+  .collection-option strong{display:block;font-size:1rem}
+  .collection-option span{color:#6b7c95;font-size:.92rem}
+  @media (max-width:980px){
+    .hero-grid,.content{grid-template-columns:1fr}
+    .uptrip-card{width:min(100%,430px)}
+  }
+  @media (max-width:620px){
+    .topbar,.hero,.content{padding-left:14px;padding-right:14px}
+    .stats,.ratings{grid-template-columns:1fr}
+    .card-head{font-size:.7rem;padding:16px 16px 8px}
+    .hero-pane{margin:0 12px 0;border-radius:24px;padding:16px}
+    .answer-scroll{margin:12px 12px 0;border-radius:24px}
+    .card-footer{padding:14px 18px 16px;font-size:.7rem}
+    .front-question{font-size:clamp(1.2rem,7.2vw,1.95rem)!important}
+    .back-title{font-size:clamp(1.25rem,8vw,1.8rem)!important}
+  }
+</style>
+</head>
+<body>
+<div class="shell">
+  <header class="topbar">
+    <div class="topbar-row">
+      <div class="brand">
+        <div class="brand-mark">✦</div>
+        <div>
+          <h1>LINDA3 Lernkarten</h1>
+          <p>Cleanes Sammelkarten-Layout mit Decks und Kollektionen.</p>
+        </div>
+      </div>
+      <div class="toolbar">
+        <button class="btn ghost" id="btnCurrent">Aktuelles Deck</button>
+        <button class="btn ghost" id="btnLibrary">Gespeicherte Decks</button>
+        <button class="btn ghost" id="btnCollections">Kollektionen</button>
+        <button class="btn primary" id="btnClose">Schließen</button>
+      </div>
+    </div>
+  </header>
+  <section class="hero" id="hero"></section>
+  <main class="content" id="content"></main>
+</div>
+<div class="toast" id="toast"></div>
+<dialog id="assignDialog">
+  <div class="modal">
+    <h2 style="margin:0 0 8px;color:#0a2256">Karte zu Kollektion zuordnen</h2>
+    <p style="margin:0;color:#60738f;line-height:1.55">Ordne erledigte Karten aktiv einer Kollektion zu. So wächst deine Sammlung Schritt für Schritt.</p>
+    <div class="collection-list" id="collectionList"></div>
+    <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:18px">
+      <button class="btn" id="cancelAssign" style="background:#edf2f8;color:#173358">Abbrechen</button>
+    </div>
+  </div>
+</dialog>
+<script>
+(() => {
+  'use strict';
+  const CARDS_KEY = 'linda3_cards';
+  const CARDS_LIBRARY_KEY = 'linda3_cards_library';
+  const CARDS_STATS_KEY = 'linda3_cards_stats';
+  const COLLECTIONS_KEY = 'linda3_collections';
+  const DEFAULT_COLLECTIONS = [
+    { id:'bbig_eignung', title:'BBIG Eignung', area:'AEVO', target:4, cards:[] },
+    { id:'vwl_grundlagen', title:'VWL Grundlagen', area:'VWL', target:4, cards:[] },
+    { id:'motivation', title:'Motivation', area:'Personal', target:4, cards:[] },
+    { id:'personalgespraeche', title:'Personalgespräche', area:'Personal', target:4, cards:[] },
+    { id:'sgb_grundlagen', title:'SGB Grundlagen', area:'Sozialrecht', target:4, cards:[] },
+    { id:'sgb_leistungen', title:'Leistungen und Ansprueche', area:'Sozialrecht', target:4, cards:[] }
+  ];
+  const params = new URLSearchParams(location.search);
+  const payload = JSON.parse(localStorage.getItem(CARDS_KEY) || '{}');
+  if (payload && payload.transient) { try { localStorage.removeItem(CARDS_KEY); } catch(_){} }
+  const library = JSON.parse(localStorage.getItem(CARDS_LIBRARY_KEY) || '[]');
+  const stats = JSON.parse(localStorage.getItem(CARDS_STATS_KEY) || '{}');
+  const collections = (() => {
+    const raw = JSON.parse(localStorage.getItem(COLLECTIONS_KEY) || 'null');
+    const source = Array.isArray(raw) ? raw : [];
+    const byId = new Map(source.map(entry => [String(entry?.id || ''), entry]));
+    const merged = DEFAULT_COLLECTIONS.map((def) => {
+      const existing = byId.get(String(def.id || ''));
+      if (!existing || typeof existing !== 'object') return { ...def, cards: [] };
+      return {
+        ...def,
+        ...existing,
+        cards: Array.isArray(existing.cards) ? existing.cards : []
+      };
+    });
+    source.forEach((entry) => {
+      if (!entry || typeof entry !== 'object') return;
+      const id = String(entry.id || '');
+      if (!id || merged.some((item) => String(item.id || '') === id)) return;
+      merged.push({ ...entry, cards: Array.isArray(entry.cards) ? entry.cards : [] });
+    });
+    const normalized = merged;
+    localStorage.setItem(COLLECTIONS_KEY, JSON.stringify(normalized));
+    return normalized;
+  })();
+  const selectedDeckId = params.get('deck') || '';
+  const libraryMode = params.get('library') === '1';
+  const selectedDeck = library.find(entry => String(entry.id) === String(selectedDeckId));
+  let deck = selectedDeck || payload || {};
+  let cards = Array.isArray(deck.cards) ? deck.cards : [];
+  let currentIndex = 0;
+  let activeAssignCard = null;
+
+  const $ = (sel, root=document) => root.querySelector(sel);
+  const hero = $('#hero');
+  const content = $('#content');
+  const toast = $('#toast');
+  const dialog = $('#assignDialog');
+  const collectionList = $('#collectionList');
+  const escapeHtml = (v='') => String(v).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const nowStamp = () => new Date().toLocaleString('de-DE');
+  const showToast = (msg) => { toast.textContent = msg; toast.classList.add('show'); setTimeout(()=>toast.classList.remove('show'), 1500); };
+  const writeCollections = () => localStorage.setItem(COLLECTIONS_KEY, JSON.stringify(collections));
+  const openSelf = (qs='') => { location.href = `cards.html${qs}`; };
+  const openCollections = () => { window.location.href = 'collections_clickable.html'; };
+  const closeCardsView = () => {
+    let fallback = 'index_work_v4.html';
+    try {
+      const ref = String(document.referrer || '').trim();
+      if (ref) {
+        const refUrl = new URL(ref, window.location.href);
+        if (refUrl.origin === window.location.origin) fallback = refUrl.href;
+      }
+    } catch (_) {}
+
+    window.close();
+    window.setTimeout(() => {
+      if (!window.closed) window.location.href = fallback;
+    }, 120);
+  };
+  const inferArea = () => {
+    const t = `${deck.deckTitle || ''} ${cards.map(c => c.question).join(' ')}`.toLowerCase();
+    if (/bbig|aevo|ausbild|eignung/.test(t)) return 'AEVO';
+    if (/markt|preis|nachfrage|angebot|inflation|bip/.test(t)) return 'VWL';
+    if (/sgb|sozialrecht|grundsicherung|krankenversicherung|rente|pflegeversicherung|arbeitsfoerderung|buergergeld/.test(t)) return 'Sozialrecht';
+    if (/motivation|führung|personal|gespräch/.test(t)) return 'Personal';
+    return 'Lernen';
+  };
+  const area = inferArea();
+  const completedCount = cards.filter(c => stats[c.id]?.reps > 0).length;
+  const assignedCount = cards.filter(c => collections.some(col => col.cards.some(x => x.id === c.id))).length;
+
+  function renderHero() {
+    if (libraryMode) {
+      hero.innerHTML = `
+        <div class="hero-grid">
+          <section class="panel">
+            <div class="meta-line">
+              <span class="pill gold">Deck-Bibliothek</span>
+              <span class="pill">${library.length} gespeicherte Decks</span>
+            </div>
+            <h2 class="deck-title">Gespeicherte Lernkarten direkt wieder öffnen.</h2>
+            <p class="sub">Hier liegen deine Decks gesammelt. Öffnen, weiterlernen oder bei Bedarf löschen.</p>
+          </section>
+          <section class="panel">
+            <div class="stats">
+              <div class="stat"><div class="stat-label">Decks</div><div class="stat-value">${library.length}</div></div>
+              <div class="stat"><div class="stat-label">Kollektionen</div><div class="stat-value">${collections.length}</div></div>
+              <div class="stat"><div class="stat-label">Heute</div><div class="stat-value">${new Date().toLocaleDateString('de-DE')}</div></div>
+            </div>
+          </section>
+        </div>`;
+      return;
+    }
+    hero.innerHTML = `
+      <div class="hero-grid">
+        <section class="panel">
+          <div class="meta-line">
+            <span class="pill gold">${escapeHtml(area)}</span>
+            <span class="pill">${cards.length} Karten</span>
+            <span class="pill">${escapeHtml(deck.generatedAt || nowStamp())}</span>
+          </div>
+          <h2 class="deck-title">${escapeHtml(deck.deckTitle || 'LINDA3 Deck')}</h2>
+          <p class="sub">Fragen aus dem vollständigen Antworttext, sauber verdichtet für schnelles Wiederholen im Sammelkarten-Stil.</p>
+          <div class="stats">
+            <div class="stat"><div class="stat-label">Erledigt</div><div class="stat-value">${completedCount}/${cards.length}</div></div>
+            <div class="stat"><div class="stat-label">Zugeordnet</div><div class="stat-value">${assignedCount}</div></div>
+            <div class="stat"><div class="stat-label">Bereich</div><div class="stat-value">${escapeHtml(area)}</div></div>
+          </div>
+        </section>
+        <section class="panel">
+          <div class="meta-line">
+            <span class="pill">Aktive Karte ${Math.min(currentIndex + 1, Math.max(cards.length,1))}</span>
+            <span class="pill gold">Sammlung wächst</span>
+          </div>
+          <h2 class="deck-title" style="font-size:1.65rem">Erst lernen, dann sammeln.</h2>
+          <p class="sub">Bewerte die Karte und ordne sie danach bewusst einer Kollektion zu, zum Beispiel <strong>BBIG Eignung</strong>, <strong>VWL Grundlagen</strong> oder <strong>SGB Grundlagen</strong>.</p>
+        </section>
+      </div>`;
+  }
+
+  function renderLibrary() {
+    content.innerHTML = !library.length ? `<section class="side-card" style="grid-column:1/-1"><h2 class="section-title">Noch keine gespeicherten Decks</h2><p class="section-copy">Speichere zuerst ein Deck im Lernkartenfenster. Danach taucht es hier direkt auf.</p></section>` : `
+      <section class="side-card" style="grid-column:1/-1">
+        <h2 class="section-title">Gespeicherte Decks</h2>
+        <p class="section-copy">Öffne ein bestehendes Deck oder lösche es aus deiner Bibliothek.</p>
+        <div class="library-grid" style="margin-top:18px">
+          ${library.map(entry => `
+            <article class="mini-deck">
+              <div class="mini-top">
+                <div>
+                  <div class="pill gold" style="display:inline-flex">${escapeHtml((entry.cards||[]).length)} Karten</div>
+                  <h3 style="margin-top:10px">${escapeHtml(entry.title || 'LINDA3 Deck')}</h3>
+                </div>
+              </div>
+              <p>Erstellt: ${escapeHtml(entry.generatedAt || 'unbekannt')}</p>
+              <div class="mini-actions">
+                <button class="mini-btn primary" data-open="${escapeHtml(entry.id)}">Öffnen</button>
+                <button class="mini-btn soft" data-delete="${escapeHtml(entry.id)}">Löschen</button>
+              </div>
+            </article>`).join('')}
+        </div>
+      </section>`;
+  }
+
+  function currentCard() { return cards[currentIndex] || null; }
+
+  function fitFrontQuestion() {
+    const cardRoot = document.getElementById('flipCard');
+    if (!cardRoot) return;
+    const q = cardRoot.querySelector('.front-question');
+    const heroCopy = cardRoot.querySelector('.front .hero-copy');
+    if (!q || !heroCopy) return;
+
+    q.style.fontSize = '';
+    q.style.lineHeight = '';
+    q.classList.remove('size-s', 'size-m', 'size-l', 'size-xl', 'size-xxl');
+
+    const len = String(q.textContent || '').trim().length;
+    const sizeClass = len > 115 ? 'size-xxl' : len > 90 ? 'size-xl' : len > 68 ? 'size-l' : len > 44 ? 'size-m' : 'size-s';
+    q.classList.add(sizeClass);
+
+    let size = parseFloat(getComputedStyle(q).fontSize);
+    let guard = 0;
+    while (heroCopy.scrollHeight > heroCopy.clientHeight && size > 18 && guard < 24) {
+      size -= 1;
+      q.style.fontSize = `${size}px`;
+      q.style.lineHeight = size <= 22 ? '1.08' : '1.03';
+      guard += 1;
+    }
+  }
+
+  function renderDeck() {
+    const card = currentCard();
+    if (!card) {
+      content.innerHTML = `<section class="side-card" style="grid-column:1/-1"><h2 class="section-title">Keine Karten vorhanden</h2><p class="section-copy">Dieses Deck enthält noch keine Karten.</p></section>`;
+      return;
+    }
+    const reps = Number(stats[card.id]?.reps || 0);
+    const dueAt = Number(stats[card.id]?.dueAt || 0);
+    const dueLabel = dueAt && dueAt > Date.now() ? new Date(dueAt).toLocaleDateString('de-DE') : 'Jetzt';
+    const alreadyAssigned = collections.find(col => col.cards.some(x => x.id === card.id));
+    content.innerHTML = `
+      <section class="card-stage">
+        <article class="uptrip-card" id="flipCard">
+          <div class="uptrip-inner">
+            <section class="face front">
+              <div class="card-head">
+                <span class="head-item">✈ ${escapeHtml(area)}</span>
+                <span class="head-item">#${currentIndex + 1}</span>
+                <span class="head-item">${escapeHtml(new Date().toLocaleDateString('de-DE'))}</span>
+              </div>
+              <div class="hero-pane">
+                <div class="orbit">✦</div>
+                <div class="hero-copy">
+                  <div class="badge">?</div>
+                  <h2 class="front-question">${escapeHtml(card.question)}</h2>
+                  <p>Fragekarte</p>
+                </div>
+              </div>
+              <div class="card-footer"><span>common</span><span>LINDA3</span><span>1st edition</span></div>
+            </section>
+            <section class="face back">
+              <div class="card-head">
+                <span class="head-item">✦ Antwort</span>
+                <span class="head-item">${reps} Wiederholungen</span>
+                <span class="head-item">${escapeHtml(dueLabel)}</span>
+              </div>
+              <div class="hero-pane">
+                <div class="back-summary">
+                  <div class="badge">✓</div>
+                  <h2 class="back-title">${escapeHtml(area)}</h2>
+                  <p class="back-kicker">${alreadyAssigned ? `Zugeordnet: ${escapeHtml(alreadyAssigned.title)}` : 'Bereit für Sammlung'}</p>
+                </div>
+              </div>
+              <div class="answer-scroll">
+                <h3>Antwort</h3>
+                <p>${escapeHtml(card.answer)}</p>
+              </div>
+              <div class="card-footer"><span>${alreadyAssigned ? 'collected' : 'unassigned'}</span><span>premium clean</span><span>${reps > 0 ? 'reviewed' : 'fresh'}</span></div>
+            </section>
+          </div>
+        </article>
+      </section>
+      <section class="side-panel">
+        <article class="side-card">
+          <h2 class="section-title">Karte bewerten</h2>
+          <p class="section-copy">Mit einer Bewertung speicherst du den Lernfortschritt. Danach kannst du die Karte einer Kollektion zuordnen.</p>
+          <div class="ratings">
+            <button class="rate" data-rate="hard">Schwer</button>
+            <button class="rate" data-rate="mid">Mittel</button>
+            <button class="rate easy" data-rate="easy">Leicht</button>
+          </div>
+          <div class="assign-row">
+            <button class="btn gold" id="assignBtn">Zu Kollektion zuordnen</button>
+            <button class="btn" id="saveBtn" style="background:#eef2f8;color:#173358">Deck speichern</button>
+          </div>
+          <div class="guide">Tippen auf die Karte zum Umdrehen. Über die Pfeile unten wechselst du weiter.</div>
+        </article>
+        <article class="side-card">
+          <h2 class="section-title">Navigation</h2>
+          <p class="section-copy">Bewege dich durch das Deck und arbeite Karten nacheinander ab.</p>
+          <div class="assign-row">
+            <button class="btn" id="prevBtn" style="background:#eef2f8;color:#173358">← Vorherige</button>
+            <button class="btn primary" id="nextBtn">Nächste →</button>
+          </div>
+        </article>
+      </section>`;
+
+    $('#flipCard').addEventListener('click', () => $('#flipCard').classList.toggle('flipped'));
+    $('#prevBtn').addEventListener('click', () => { currentIndex = (currentIndex - 1 + cards.length) % cards.length; renderHero(); renderDeck(); });
+    $('#nextBtn').addEventListener('click', () => { currentIndex = (currentIndex + 1) % cards.length; renderHero(); renderDeck(); });
+    $('#saveBtn').addEventListener('click', saveDeck);
+    $('#assignBtn').addEventListener('click', () => openAssign(card));
+    document.querySelectorAll('[data-rate]').forEach(btn => btn.addEventListener('click', () => rateCard(card.id, btn.dataset.rate)));
+    requestAnimationFrame(fitFrontQuestion);
+  }
+
+  function saveDeck() {
+    if (!cards.length) return;
+    const entry = {
+      id: selectedDeck?.id || `deck_${Date.now()}`,
+      title: String(deck.deckTitle || 'LINDA3 Lernkarten'),
+      generatedAt: String(deck.generatedAt || nowStamp()),
+      cards
+    };
+    const next = [entry, ...library.filter(item => item.id !== entry.id)].slice(0, 40);
+    localStorage.setItem(CARDS_LIBRARY_KEY, JSON.stringify(next));
+    showToast('Deck gespeichert');
+  }
+
+  function rateCard(id, level) {
+    const prev = stats[id] || { ease: 2, reps: 0, dueAt: 0 };
+    const ease = Math.max(1.3, Math.min(2.8, prev.ease + (level === 'easy' ? 0.22 : level === 'hard' ? -0.2 : 0)));
+    const baseHours = level === 'easy' ? 72 : level === 'mid' ? 24 : 8;
+    stats[id] = { ease, reps: Number(prev.reps || 0) + 1, dueAt: Date.now() + Math.round(baseHours * ease) * 3600000 };
+    localStorage.setItem(CARDS_STATS_KEY, JSON.stringify(stats));
+    renderHero();
+    renderDeck();
+    showToast('Bewertung gespeichert');
+  }
+
+  function openAssign(card) {
+    activeAssignCard = card;
+    collectionList.innerHTML = collections.map(col => {
+      const count = (col.cards || []).length;
+      const assigned = col.cards.some(x => x.id === card.id);
+      return `<button class="collection-option" data-col="${escapeHtml(col.id)}">
+        <div><strong>${escapeHtml(col.title)}</strong><span>${escapeHtml(col.area)} · ${count}/${col.target} Karten</span></div>
+        <div class="pill ${assigned ? 'gold' : ''}">${assigned ? 'Schon drin' : 'Hinzufügen'}</div>
+      </button>`;
+    }).join('');
+    dialog.showModal();
+  }
+
+  collectionList.addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-col]');
+    if (!btn || !activeAssignCard) return;
+    const col = collections.find(item => item.id === btn.dataset.col);
+    if (!col) return;
+    if (!col.cards.some(x => x.id === activeAssignCard.id)) {
+      col.cards.push({
+        id: activeAssignCard.id,
+        question: activeAssignCard.question,
+        answer: activeAssignCard.answer,
+        deckTitle: deck.deckTitle || 'LINDA3 Deck',
+        addedAt: nowStamp(),
+        area
+      });
+      writeCollections();
+      showToast('Karte zugeordnet');
+    } else {
+      showToast('Karte ist schon in der Kollektion');
+    }
+    dialog.close();
+    renderHero();
+    renderDeck();
+  });
+  $('#cancelAssign').addEventListener('click', () => dialog.close());
+
+  content.addEventListener('click', (e) => {
+    const openBtn = e.target.closest('[data-open]');
+    if (openBtn) openSelf(`?deck=${encodeURIComponent(openBtn.dataset.open)}`);
+    const delBtn = e.target.closest('[data-delete]');
+    if (delBtn) {
+      const id = delBtn.dataset.delete;
+      const next = library.filter(entry => String(entry.id) !== String(id));
+      localStorage.setItem(CARDS_LIBRARY_KEY, JSON.stringify(next));
+      showToast('Deck gelöscht');
+      setTimeout(() => location.reload(), 300);
+    }
+  });
+
+  $('#btnLibrary').addEventListener('click', () => openSelf('?library=1'));
+  $('#btnCurrent').addEventListener('click', () => openSelf(''));
+  $('#btnCollections').addEventListener('click', openCollections);
+  $('#btnClose').addEventListener('click', closeCardsView);
+
+  renderHero();
+  if (libraryMode) renderLibrary(); else renderDeck();
+})();
+</script>
+</body>
+</html>

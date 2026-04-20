@@ -1,0 +1,212 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>LINDA3 Kollektionen</title>
+<style>
+  :root{
+    --navy:#071d55;--navy2:#0c2f7c;--ink:#0d2246;--muted:#6d7e98;--paper:#f5f8fd;--line:#dbe3ef;--card:#fff;--gold:#d2ae38;--shadow:0 24px 60px rgba(7,29,85,.16);--soft:0 12px 28px rgba(7,29,85,.1)
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:linear-gradient(180deg,#0a2465 0%,#0a2f7a 18%,#eef4ff 18%,#f7f9fc 100%);color:var(--ink)}
+  .top{padding:28px 20px 24px;color:#fff;display:flex;justify-content:space-between;gap:14px;align-items:flex-start;flex-wrap:wrap}
+  .top h1{margin:0;font-size:clamp(2rem,4vw,3rem);letter-spacing:.01em}
+  .top p{margin:8px 0 0;color:rgba(255,255,255,.78)}
+  .btn{appearance:none;border:none;border-radius:999px;padding:12px 18px;font:inherit;font-weight:800;cursor:pointer}
+  .btn.primary{background:#fff;color:#0a2465}.btn.ghost{background:rgba(255,255,255,.14);color:#fff;border:1px solid rgba(255,255,255,.18)}
+  .wrap{padding:0 20px 28px;max-width:1180px;margin:0 auto}
+  .grid{display:grid;grid-template-columns:380px 1fr;gap:22px;align-items:start}
+  .stack{display:grid;gap:16px}
+  .collection{background:#fff;border:1px solid var(--line);border-radius:22px;box-shadow:var(--soft);padding:14px;display:flex;gap:14px;align-items:center;cursor:pointer}
+  .thumb{width:82px;height:82px;border-radius:18px;background:linear-gradient(135deg,#dce7ff 0%,#f8fbff 100%);display:grid;place-items:center;font-size:1.8rem;color:#0a2f7a;font-weight:900;box-shadow:inset 0 0 0 1px rgba(255,255,255,.92)}
+  .collection strong{display:block;font-size:1.15rem}
+  .collection small{display:block;color:var(--muted);margin-top:6px}
+  .progress{margin-top:8px;height:10px;background:#edf1f6;border-radius:999px;overflow:hidden}
+  .bar{height:100%;background:linear-gradient(135deg,#e3c86a 0%,#c69a20 100%);border-radius:999px}
+  .detail{background:rgba(255,255,255,.85);backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,.92);border-radius:28px;box-shadow:var(--shadow);padding:22px;min-height:560px}
+  .detail-head{display:flex;justify-content:space-between;gap:14px;align-items:flex-start;flex-wrap:wrap}
+  .detail h2{margin:0;font-size:clamp(1.7rem,3vw,2.5rem)}
+  .muted{color:var(--muted);line-height:1.55}
+  .pills{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+  .pill{display:inline-flex;align-items:center;gap:8px;border-radius:999px;padding:8px 12px;border:1px solid var(--line);background:#fff;color:#5f7391;font-weight:800;font-size:.82rem}
+  .pill.gold{background:linear-gradient(135deg,#fff4cb 0%,#f0cf66 100%);border-color:#e8c966;color:#5b4307}
+  .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;margin-top:20px}
+  .mini-card{position:relative;background:linear-gradient(180deg,#ffffff 0%,#f7f9fd 100%);border-radius:28px;min-height:330px;overflow:hidden;border:1px solid rgba(255,255,255,.96);box-shadow:0 26px 60px rgba(7,29,85,.14)}
+  .mini-card:before{content:"";position:absolute;inset:0;padding:2px;border-radius:28px;background:linear-gradient(135deg,#f5e7b0 0%,#c89d29 18%,#fff7d2 45%,#ba8d17 72%,#f4dfa2 100%);-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;pointer-events:none}
+  .mini-top{padding:16px 16px 10px;display:flex;justify-content:space-between;gap:10px;color:#7a88a0;font-size:.76rem;font-weight:800;text-transform:uppercase}
+  .mini-body{margin:0 14px;border-radius:22px;background:linear-gradient(180deg,#edf4ff 0%,#dfe8ff 40%,#f9fafc 100%);padding:18px;min-height:210px;display:flex;flex-direction:column;justify-content:flex-end;position:relative;overflow:hidden}
+  .mini-body:after{content:"";position:absolute;left:0;right:0;bottom:0;height:35%;background:linear-gradient(180deg,rgba(255,255,255,0) 0%,rgba(255,255,255,.92) 58%,#fff 100%)}
+  .mini-badge{width:62px;height:62px;border-radius:50%;background:linear-gradient(135deg,#fff6cf 0%,#f0cf66 100%);border:3px solid #fff;display:grid;place-items:center;font-size:1.35rem;position:relative;z-index:1}
+  .mini-title{position:relative;z-index:1;text-align:center;padding:10px 8px 4px}
+  .mini-title h3{margin:0;font-size:1.5rem;line-height:1.08;color:#082867}
+  .mini-title p{margin:8px 0 0;color:#7f8ca6;text-transform:uppercase;letter-spacing:.08em}
+  .mini-foot{position:absolute;left:0;right:0;bottom:0;padding:14px 18px 16px;display:flex;justify-content:space-between;color:#7f8ca6;font-weight:800;text-transform:uppercase;font-size:.72rem;background:linear-gradient(180deg,rgba(255,255,255,0) 0%,rgba(255,255,255,.84) 35%,rgba(255,255,255,.98) 100%)}
+  .mini-answer{padding:14px 16px 18px;color:#304260;line-height:1.55;font-size:.93rem}
+  .mini-card.clickable{cursor:pointer;transition:transform .18s ease, box-shadow .2s ease}
+  .mini-card.clickable:hover{transform:translateY(-3px);box-shadow:0 32px 72px rgba(7,29,85,.18)}
+  .mini-card.clickable:focus-visible{outline:3px solid rgba(12,47,124,.22);outline-offset:3px}
+  .mini-hint{padding:0 16px 14px;color:#7b89a1;font-size:.76rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em}
+  .card-modal{position:fixed;inset:0;background:rgba(7,29,85,.42);backdrop-filter:blur(6px);display:none;align-items:center;justify-content:center;padding:22px;z-index:50}
+  .card-modal.open{display:flex}
+  .card-modal-panel{width:min(720px,100%);max-height:min(92vh,980px);overflow:auto;background:#fff;border-radius:30px;box-shadow:0 36px 90px rgba(7,29,85,.28);padding:22px;position:relative}
+  .card-modal-close{position:absolute;top:16px;right:16px;border:none;background:#eef4ff;color:#0d2246;width:42px;height:42px;border-radius:999px;font:inherit;font-size:1.3rem;font-weight:800;cursor:pointer}
+  .card-modal-close:hover{background:#dfe9ff}
+  .card-view{position:relative;background:linear-gradient(180deg,#ffffff 0%,#f7f9fd 100%);border-radius:32px;min-height:520px;overflow:hidden;border:1px solid rgba(255,255,255,.96);box-shadow:0 26px 60px rgba(7,29,85,.14)}
+  .card-view:before{content:"";position:absolute;inset:0;padding:2px;border-radius:32px;background:linear-gradient(135deg,#f5e7b0 0%,#c89d29 18%,#fff7d2 45%,#ba8d17 72%,#f4dfa2 100%);-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;pointer-events:none}
+  .card-view-top{padding:18px 22px 10px;display:flex;justify-content:space-between;gap:12px;color:#7a88a0;font-size:.82rem;font-weight:800;text-transform:uppercase}
+  .card-view-body{margin:0 18px;border-radius:28px;background:linear-gradient(180deg,#edf4ff 0%,#dfe8ff 45%,#fbfcff 100%);padding:26px 24px 24px;min-height:300px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;position:relative;overflow:hidden}
+  .card-view-body:after{content:"";position:absolute;left:0;right:0;bottom:0;height:42%;background:linear-gradient(180deg,rgba(255,255,255,0) 0%,rgba(255,255,255,.88) 78%,rgba(255,255,255,.96) 100%)}
+  .card-view-icon{position:absolute;left:22px;top:22px;width:86px;height:86px;border-radius:999px;background:linear-gradient(180deg,#16398d 0%,#14347f 100%);display:grid;place-items:center;color:#fff;font-size:2rem;font-weight:900;box-shadow:0 18px 32px rgba(20,52,127,.28);z-index:1}
+  .card-view-badge{position:relative;z-index:2;width:86px;height:86px;border-radius:999px;background:linear-gradient(180deg,#f8e9aa 0%,#efd46e 100%);display:grid;place-items:center;color:#14347f;font-size:2rem;font-weight:900;border:6px solid rgba(255,255,255,.85);box-shadow:0 14px 26px rgba(210,174,56,.28);margin-bottom:18px}
+  .card-view-question{position:relative;z-index:2;max-width:92%;font-size:clamp(1.7rem,4vw,2.6rem);line-height:1.08;font-weight:900;letter-spacing:-.04em;color:#14347f;text-wrap:balance}
+  .card-view-sub{position:relative;z-index:2;margin-top:10px;color:#7a88a0;font-size:1rem;font-weight:800;text-transform:uppercase;letter-spacing:.09em}
+  .card-view-answer{padding:20px 22px 22px;color:#304260;line-height:1.62;font-size:1.04rem}
+  .card-view-foot{padding:0 22px 22px;display:flex;justify-content:space-between;gap:12px;color:#7a88a0;font-size:.86rem;font-weight:800;text-transform:uppercase}
+  .empty{margin-top:18px;border:1px dashed #bfd0e8;border-radius:20px;padding:18px;background:#f9fbff;color:#60738f}
+  @media (max-width:980px){.grid{grid-template-columns:1fr}.detail{min-height:auto}.card-modal{padding:10px}.card-modal-panel{padding:16px;border-radius:24px}.card-view{min-height:480px}.card-view-question{max-width:100%;font-size:clamp(1.45rem,8vw,2.1rem)}.card-view-icon{width:74px;height:74px;font-size:1.7rem}.card-view-badge{width:78px;height:78px;font-size:1.7rem}}
+</style>
+</head>
+<body>
+<header class="top">
+  <div>
+    <h1>KOLLEKTIONEN</h1>
+    <p>Ordne erledigte Karten bewusst Themenbereichen zu und fülle deine Sammlung nach und nach.</p>
+  </div>
+  <div style="display:flex;gap:10px;flex-wrap:wrap">
+    <button class="btn ghost" id="btnCards">Lernkarten</button>
+    <button class="btn primary" id="btnClose">Schließen</button>
+  </div>
+</header>
+<div class="wrap">
+  <div class="grid">
+    <section class="stack" id="collectionList"></section>
+    <section class="detail" id="detail"></section>
+  </div>
+</div>
+
+<div class="card-modal" id="cardModal" aria-hidden="true">
+  <div class="card-modal-panel">
+    <button class="card-modal-close" id="cardModalClose" type="button" aria-label="Schließen">×</button>
+    <div id="cardModalContent"></div>
+  </div>
+</div>
+
+<script>
+(() => {
+  const COLLECTIONS_KEY='linda3_collections';
+  const DEFAULT_COLLECTIONS=[
+    { id:'bbig_eignung', title:'BBIG Eignung', area:'AEVO', target:4, cards:[] },
+    { id:'vwl_grundlagen', title:'VWL Grundlagen', area:'VWL', target:4, cards:[] },
+    { id:'motivation', title:'Motivation', area:'Personal', target:4, cards:[] },
+    { id:'personalgespraeche', title:'Personalgespräche', area:'Personal', target:4, cards:[] },
+    { id:'sgb_grundlagen', title:'SGB Grundlagen', area:'Sozialrecht', target:4, cards:[] },
+    { id:'sgb_leistungen', title:'Leistungen und Ansprueche', area:'Sozialrecht', target:4, cards:[] }
+  ];
+  const listEl=document.getElementById('collectionList');
+  const detailEl=document.getElementById('detail');
+  const modalEl=document.getElementById('cardModal');
+  const modalContentEl=document.getElementById('cardModalContent');
+  const escapeHtml=(v='')=>String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const collections=(()=>{
+    const raw=JSON.parse(localStorage.getItem(COLLECTIONS_KEY)||'null');
+    const source=Array.isArray(raw)?raw:[];
+    const byId=new Map(source.map((entry)=>[String(entry?.id||''),entry]));
+    const merged=DEFAULT_COLLECTIONS.map((def)=>{
+      const existing=byId.get(String(def.id||''));
+      if(!existing || typeof existing!=='object') return {...def,cards:[]};
+      return {...def,...existing,cards:Array.isArray(existing.cards)?existing.cards:[]};
+    });
+    source.forEach((entry)=>{
+      if(!entry || typeof entry!=='object') return;
+      const id=String(entry.id||'');
+      if(!id || merged.some((item)=>String(item.id||'')===id)) return;
+      merged.push({...entry,cards:Array.isArray(entry.cards)?entry.cards:[]});
+    });
+    localStorage.setItem(COLLECTIONS_KEY,JSON.stringify(merged));
+    return merged;
+  })();
+  let activeId=collections[0]?.id||'';
+  function icon(area){ if(area==='VWL') return '₿'; if(area==='AEVO') return '§'; if(area==='Personal') return '◎'; if(area==='Sozialrecht') return '⚖'; return '✦'; }
+  function renderList(){
+    listEl.innerHTML=collections.map(col=>{const count=(col.cards||[]).length; const pct=Math.min(100, Math.round((count/Math.max(col.target,1))*100)); return `
+      <article class="collection" data-id="${escapeHtml(col.id)}" style="outline:${col.id===activeId?'2px solid #d2ae38':'none'}">
+        <div class="thumb">${icon(col.area)}</div>
+        <div style="flex:1;min-width:0">
+          <strong>${escapeHtml(col.title)}</strong>
+          <small>${escapeHtml(col.area)} · ${count}/${col.target} Karten</small>
+          <div class="progress"><div class="bar" style="width:${pct}%"></div></div>
+        </div>
+      </article>`}).join('');
+  }
+
+  function cardMarkup(card,col){
+    return `
+      <article class="card-view">
+        <div class="card-view-top"><span>${escapeHtml(col.area)}</span><span>#${escapeHtml(card.id || '')}</span><span>${new Date(card.completedAt || Date.now()).toLocaleDateString('de-DE')}</span></div>
+        <div class="card-view-body">
+          <div class="card-view-icon">${icon(col.area)}</div>
+          <div class="card-view-badge">?</div>
+          <div class="card-view-question">${escapeHtml(card.question)}</div>
+          <div class="card-view-sub">${escapeHtml(col.title)}</div>
+        </div>
+        <div class="card-view-answer">${escapeHtml(card.answer)}</div>
+        <div class="card-view-foot"><span>Collected</span><span>LINDA3</span><span>Gold</span></div>
+      </article>`;
+  }
+  function openCard(cardId){
+    const col=collections.find(c=>c.id===activeId) || collections[0];
+    if(!col) return;
+    const card=(col.cards||[]).find(c=>String(c.id||'')===String(cardId||''));
+    if(!card) return;
+    modalContentEl.innerHTML=cardMarkup(card,col);
+    modalEl.classList.add('open');
+    modalEl.setAttribute('aria-hidden','false');
+  }
+  function closeCard(){
+    modalEl.classList.remove('open');
+    modalEl.setAttribute('aria-hidden','true');
+    modalContentEl.innerHTML='';
+  }
+
+  function renderDetail(){
+    const col=collections.find(c=>c.id===activeId) || collections[0];
+    if(!col){ detailEl.innerHTML=''; return; }
+    const count=(col.cards||[]).length;
+    detailEl.innerHTML=`
+      <div class="detail-head">
+        <div>
+          <h2>${escapeHtml(col.title)}</h2>
+          <p class="muted">${escapeHtml(col.area)}-Sammlung für sauber zugeordnete Lernkarten. Ziel: ${col.target} coole Karten vollenden.</p>
+          <div class="pills">
+            <span class="pill gold">${count}/${col.target} gesammelt</span>
+            <span class="pill">Bereich ${escapeHtml(col.area)}</span>
+            <span class="pill">manuelle Zuordnung</span>
+          </div>
+        </div>
+      </div>
+      ${count ? `<div class="cards">${col.cards.map(card=>`
+        <article class="mini-card clickable" tabindex="0" role="button" data-card-id="${escapeHtml(card.id || '')}" aria-label="Karte öffnen">
+          <div class="mini-top"><span>${escapeHtml(col.area)}</span><span>#${escapeHtml(card.id || '')}</span></div>
+          <div class="mini-body">
+            <div class="mini-badge">${icon(col.area)}</div>
+            <div class="mini-title"><h3>${escapeHtml(card.question)}</h3><p>${escapeHtml(col.title)}</p></div>
+          </div>
+          <div class="mini-answer">${escapeHtml(card.answer)}</div>
+          <div class="mini-hint">Tippen zum Öffnen</div><div class="mini-foot"><span>collected</span><span>LINDA3</span><span>gold</span></div>
+        </article>`).join('')}</div>` : `<div class="empty">Noch keine Karten zugeordnet. Öffne <strong>Lernkarten</strong>, erledige eine Karte und ordne sie dann bewusst dieser Kollektion zu.</div>`}
+    `;
+  }
+  listEl.addEventListener('click',e=>{const item=e.target.closest('[data-id]'); if(!item) return; activeId=item.dataset.id; renderList(); renderDetail();});
+  detailEl.addEventListener('click',e=>{const card=e.target.closest('[data-card-id]'); if(!card) return; openCard(card.dataset.cardId);});
+  detailEl.addEventListener('keydown',e=>{const card=e.target.closest('[data-card-id]'); if(!card) return; if(e.key==='Enter' || e.key===' '){e.preventDefault(); openCard(card.dataset.cardId);}});
+  document.getElementById('cardModalClose').addEventListener('click',closeCard);
+  modalEl.addEventListener('click',e=>{if(e.target===modalEl) closeCard();});
+  document.addEventListener('keydown',e=>{if(e.key==='Escape') closeCard();});
+  document.getElementById('btnCards').addEventListener('click',()=>{window.location.href='cards.html?library=1';});
+  document.getElementById('btnClose').addEventListener('click',()=>window.close());
+  renderList(); renderDetail();
+})();
+</script>
+</body>
+</html>
