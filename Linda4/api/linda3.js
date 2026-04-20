@@ -60,6 +60,10 @@ function resolveSozialrechtApiKey() {
   };
 }
 
+function resolveSozialrechtSchnellKey() {
+  return normalizeText(process.env.SozialrechtSchnell || process.env.SOZIALRECHT_SCHNELL || '');
+}
+
 function clamp01(value, fallback = null) {
   const num = Number(value);
   if (!Number.isFinite(num)) return fallback;
@@ -689,6 +693,34 @@ async function callOpenAIResponsesWithStorage({ apiKey, model, messages, tempera
   };
 }
 
+async function callDeepseekReasoner({ apiKey, messages, maxOutputTokens }) {
+  const deepseekMaxTokens = Math.max(256, Math.min(4000, Number(maxOutputTokens) || 1200));
+  const res = await fetch('https://api.deepseek.com/chat/completions', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      model: 'deepseek-reasoner',
+      messages,
+      temperature: 1.0,
+      max_tokens: deepseekMaxTokens,
+      response_format: { type: 'json_object' }
+    })
+  });
+  const raw = await res.text();
+  if (!res.ok) {
+    const parsed = parseJsonSafe(raw, {});
+    const detail = normalizeText(parsed?.error?.message || parsed?.error || raw);
+    throw new Error(`Deepseek Fehler (${res.status}): ${detail || 'unbekannt'}`);
+  }
+  const parsed = parseJsonSafe(raw, {});
+  const content = normalizeMultilineText(parsed?.choices?.[0]?.message?.content || '');
+  if (!content) throw new Error('Deepseek lieferte keinen Inhalt.');
+  return content;
+}
+
 async function callLegacyDeepseek(payload, req) {
   const legacyOrigin = resolveLegacyOriginForRequest(req);
   const upstream = new URL('/api/linda3?action=deepseek', legacyOrigin);
@@ -745,9 +777,11 @@ async function handleHealth(req, res) {
   const cfg = loadSozialrechtConfig();
   const storageEnvKey = String(cfg?.storage?.vector_store_env_key || 'OPENAI_VECTOR_STORE_ID_SOZIALRECHT');
   const sozialrechtApi = resolveSozialrechtApiKey();
+  const sozialrechtSchnell = resolveSozialrechtSchnellKey();
   const checks = {
     OPENAI_API_KEY: Boolean(process.env.OPENAI_API_KEY),
     Sozialrecht2026: Boolean(process.env.Sozialrecht2026 || process.env.SOZIALRECHT2026),
+    SozialrechtSchnell: Boolean(sozialrechtSchnell),
     SOZIALRECHT_API_KEY_EFFECTIVE: Boolean(sozialrechtApi.key),
     [storageEnvKey]: Boolean(process.env[storageEnvKey]),
     LEGACY_API_ORIGIN: Boolean(parseOriginSafe(LEGACY_ORIGIN, ''))
@@ -821,57 +855,48 @@ async function handleSozialrechtChat(req, res, action) {
   let legacyDeepseekError = '';
   if (fastMode) {
     try {
-      const legacyRaw = await callLegacyDeepseek({
-        question,
-        fachmodus: 'SOZIALRECHT',
-        history,
-        sources: payload?.sources || {},
-        routing: payload?.routing || {},
-        guardrails: payload?.guardrails || {},
-        assistantPrefs: payload?.assistantPrefs || {},
-        clientMeta: payload?.clientMeta || {}
-      }, req);
-      const normalizedLegacy = normalizeModelPayload(JSON.stringify(legacyRaw), cfg);
-      const legacySources = normalizeSources(legacyRaw?.sources || normalizedLegacy.sources || []);
-      const legacyRuntimeFailure = isLegacyDeepseekRuntimeFailure(legacyRaw, normalizedLegacy);
-      if (legacyRuntimeFailure) {
-        const legacyMsg = normalizeText(
-          legacyRaw?.meta?.runtime_detail ||
-          legacyRaw?.error ||
-          normalizedLegacy.evidence_note ||
-          normalizedLegacy.answer ||
-          'Deepseek-Legacy Runtime-Fehler'
-        );
-        legacyDeepseekError = legacyMsg;
-      } else {
+      const schnellKey = resolveSozialrechtSchnellKey();
+      if (!schnellKey) throw new Error('SozialrechtSchnell fehlt.');
+
+      const deepseekMaxOutputTokens = expertRequested ? 4000 : 1600;
+      const systemPrompt = buildSozialrechtSystemPrompt(cfg, false);
+      const messages = toOpenAIMessages(systemPrompt, history, question);
+      const deepseekRaw = await callDeepseekReasoner({
+        apiKey: schnellKey,
+        messages,
+        maxOutputTokens: deepseekMaxOutputTokens
+      });
+      const normalizedDeepseek = normalizeModelPayload(deepseekRaw, cfg);
+      const deepseekSources = normalizeSources(normalizedDeepseek.sources || []);
       const evidenceParts = [];
-      if (normalizedLegacy.evidence_note) evidenceParts.push(normalizedLegacy.evidence_note);
-      evidenceParts.push('Deepseek-Routing ueber Legacy-Endpoint aktiv.');
-      if (!legacySources.length) evidenceParts.push('Im Schnellmodus koennen Quellen begrenzt sein.');
+      if (normalizedDeepseek.evidence_note) evidenceParts.push(normalizedDeepseek.evidence_note);
+      evidenceParts.push('Deepseek-Schnellrouting ueber Variable SozialrechtSchnell aktiv.');
+      if (!deepseekSources.length) evidenceParts.push('Im Schnellmodus koennen Quellen begrenzt sein.');
 
       res.status(200).json({
-        answer: normalizedLegacy.answer,
-        followups: normalizedLegacy.followups,
-        sources: legacySources,
-        confidence: normalizedLegacy.confidence,
+        answer: normalizedDeepseek.answer,
+        followups: normalizedDeepseek.followups,
+        sources: deepseekSources,
+        confidence: normalizedDeepseek.confidence,
         evidence_note: evidenceParts.join(' ').trim(),
-      meta: {
-        domain: 'SOZIALRECHT',
-        api_key_source: sozialrechtApi.source || '',
-        model: 'deepseek',
-        response_mode: expertRequested ? 'expert' : (requestedResponseMode || 'schnell'),
-        fast_mode: true,
+        meta: {
+          domain: 'SOZIALRECHT',
+          api_key_source: sozialrechtApi.source || '',
+          model: 'deepseek-reasoner',
+          response_mode: expertRequested ? 'expert' : (requestedResponseMode || 'schnell'),
+          fast_mode: true,
           judgment_mode: false,
-          deepseek_via_legacy: true,
+          deepseek_via_legacy: false,
+          deepseek_legacy_error: '',
+          deepseek_direct: true,
           storage_used: false,
           storage_fallback: false,
           storage_error: ''
         }
       });
       return;
-      }
-    } catch (legacyErr) {
-      legacyDeepseekError = normalizeText(legacyErr?.message || 'unbekannt');
+    } catch (deepseekErr) {
+      legacyDeepseekError = normalizeText(deepseekErr?.message || 'unbekannt');
     }
   }
 
