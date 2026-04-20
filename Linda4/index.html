@@ -9,6 +9,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.8/purify.min.js"></script>
+<script src="./sgb_direct_links.js"></script>
 <style>
   :root {
     --ink: #111d2e;
@@ -652,6 +653,11 @@
     font-weight: 700;
     padding: 6px 10px;
     cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    line-height: 1.2;
   }
 
   .source-card-btn:hover,
@@ -7864,6 +7870,7 @@
         const fallbackSources = sourceList.length ? [] : app.logic.extractSourcesFromRenderedMarkdown(md);
         const finalSources = sourceList.length ? sourceList.slice() : fallbackSources.slice();
         const renderedAnswerText = String(md.innerText || '').trim();
+        const sgbLinkResolver = window.LINDA_SGB_DIRECT_LINKS || window.SGB_DIRECT_LINKS || null;
         const plainText = String(md.innerText || '').toLowerCase();
         const mentionsBBIG = /(?:\bbbig\b|berufsbildungsgesetz)/i.test(plainText);
         if (mentionsBBIG) {
@@ -7912,9 +7919,14 @@
             if (s.section) metaBits.push(s.section);
             if (s.page) metaBits.push(/^s\./i.test(s.page) ? s.page : `S. ${s.page}`);
             if (Number.isFinite(s.confidence)) metaBits.push(`Evidenz ${Math.round(Math.max(0, Math.min(1, s.confidence)) * 100)}%`);
-            const anchorHtml = s.url
-              ? `<a href="${encodeURI(s.url)}">${app.utils.safeText(s.title)}</a>`
-              : `<span>${app.utils.safeText(s.title)}</span>`;
+            const directJump = sgbLinkResolver && typeof sgbLinkResolver.resolveSource === 'function'
+              ? sgbLinkResolver.resolveSource(s, { question: bubbleMeta.question || '', answerText: renderedAnswerText })
+              : null;
+            const sourceHref = directJump?.url || s.url;
+            const sourceLabel = s.title || directJump?.book || 'Quelle';
+            const anchorHtml = sourceHref
+              ? `<a href="${encodeURI(sourceHref)}" target="_blank" rel="noopener">${app.utils.safeText(sourceLabel)}</a>`
+              : `<span>${app.utils.safeText(sourceLabel)}</span>`;
             const rawExcerpt = String(s.excerpt || '').trim();
             const jsonExcerptUnwrapped = extractAnswerTextFromJsonLike(rawExcerpt);
             const effectiveExcerpt = jsonExcerptUnwrapped ||
@@ -7934,10 +7946,23 @@
             const noteHtml = s.note
               ? `<div class="source-card-note">${app.utils.safeText(s.note)}</div>`
               : '';
-            const canExportPdf = sozialrechtSourceCards && (String(s.url || '').trim() || String(effectiveExcerpt || '').trim());
-            const pdfActionHtml = canExportPdf
+            const directJumpHtml = directJump?.url
               ? `
-                <div class="source-card-tools">
+                <a
+                  class="source-card-btn"
+                  href="${encodeURI(directJump.url)}"
+                  target="_blank"
+                  rel="noopener"
+                >
+                  ${app.utils.safeText(directJump.label || 'Direktabsprung')}
+                </a>
+              `
+              : '';
+            const canExportPdf = sozialrechtSourceCards && (String(s.url || '').trim() || String(effectiveExcerpt || '').trim());
+            const sourceToolsHtml = [
+              directJumpHtml,
+              canExportPdf
+                ? `
                   <button
                     type="button"
                     class="source-card-btn"
@@ -7948,9 +7973,9 @@
                   >
                     Quelle als PDF
                   </button>
-                </div>
-              `
-              : '';
+                `
+                : ''
+            ].filter(Boolean).join('');
             li.innerHTML = `
               <div class="source-card">
                 <div class="source-card-head">
@@ -7959,7 +7984,7 @@
                 </div>
                 ${snippetHtml}
                 ${noteHtml}
-                ${pdfActionHtml}
+                ${sourceToolsHtml ? `<div class="source-card-tools">${sourceToolsHtml}</div>` : ''}
               </div>
             `;
             ul.appendChild(li);
