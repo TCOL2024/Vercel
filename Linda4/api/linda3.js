@@ -460,32 +460,170 @@ function decodeEscapedJsonString(value) {
     .trim();
 }
 
+function extractTruncatedAnswerFragment(text) {
+  const raw = normalizeMultilineText(text || '');
+  if (!raw) return '';
+  const match = raw.match(/^\s*\{\s*"answer"\s*:\s*"([\s\S]*)$/i);
+  if (!match || !match[1]) return '';
+  return decodeEscapedJsonString(match[1]);
+}
+
 function extractAnswerFromJsonLikeText(rawText) {
   const raw = normalizeMultilineText(rawText || '');
   if (!raw) return '';
-  const direct = parseJsonSafe(raw, null);
-  if (direct && typeof direct === 'object') {
-    const text = normalizeMultilineText(direct.answer || direct.response || direct.text || '');
-    if (text) return text;
-  }
 
-  const rx = /"answer"\s*:\s*"([\s\S]*?)"\s*,\s*"(?:followups|sources|confidence|meta|evidence_note|reasoning_note)"/i;
-  const m = raw.match(rx);
-  if (m && m[1]) {
-    const decoded = decodeEscapedJsonString(m[1]);
-    if (decoded) return decoded;
-  }
+  const unwrap = (value, depth = 0) => {
+    const text = normalizeMultilineText(value || '');
+    if (!text || depth > 4) return text;
 
-  const open = raw.indexOf('{');
-  const close = raw.lastIndexOf('}');
-  if (open >= 0 && close > open) {
-    const inner = parseJsonSafe(raw.slice(open, close + 1), null);
-    if (inner && typeof inner === 'object') {
-      const text = normalizeMultilineText(inner.answer || inner.response || inner.text || '');
-      if (text) return text;
+    const direct = parseJsonSafe(text, null);
+    if (typeof direct === 'string') {
+      const nestedString = normalizeMultilineText(direct);
+      if (nestedString && nestedString !== text) {
+        const unwrappedString = unwrap(nestedString, depth + 1);
+        if (unwrappedString) return unwrappedString;
+      }
     }
-  }
-  return '';
+
+    if (direct && typeof direct === 'object') {
+      const nestedObjectText = normalizeMultilineText(
+        direct.answer ||
+        direct.response ||
+        direct.text ||
+        direct.output ||
+        direct.content ||
+        direct.excerpt ||
+        ''
+      );
+      if (nestedObjectText) {
+        const unwrappedObjectText = unwrap(nestedObjectText, depth + 1);
+        if (unwrappedObjectText) return unwrappedObjectText;
+        return nestedObjectText;
+      }
+    }
+
+    const quotedMatch = text.match(/^[\s\r\n]*"([\s\S]*)"[\s\r\n]*$/);
+    if (quotedMatch && quotedMatch[1]) {
+      const decodedQuoted = decodeEscapedJsonString(quotedMatch[1]);
+      if (decodedQuoted && decodedQuoted !== text) {
+        const unwrappedQuoted = unwrap(decodedQuoted, depth + 1);
+        if (unwrappedQuoted) return unwrappedQuoted;
+      }
+    }
+
+    const rx = /"answer"\s*:\s*"([\s\S]*?)"(?:\s*,\s*"(?:followups|sources|confidence|meta|evidence_note|reasoning_note|recommended_questions|next_questions|suggestions)\b|[\s\r\n]*})/i;
+    const m = text.match(rx);
+    if (m && m[1]) {
+      const decoded = decodeEscapedJsonString(m[1]);
+      if (decoded) {
+        const unwrappedDecoded = unwrap(decoded, depth + 1);
+        if (unwrappedDecoded) return unwrappedDecoded;
+        return decoded;
+      }
+    }
+
+    const truncatedDecoded = extractTruncatedAnswerFragment(text);
+    if (truncatedDecoded) {
+      const unwrappedTruncated = unwrap(truncatedDecoded, depth + 1);
+      if (unwrappedTruncated) return unwrappedTruncated;
+      return truncatedDecoded;
+    }
+
+    const open = text.indexOf('{');
+    const close = text.lastIndexOf('}');
+    if (open >= 0 && close > open) {
+      const inner = parseJsonSafe(text.slice(open, close + 1), null);
+      if (inner && typeof inner === 'object') {
+        const innerText = normalizeMultilineText(inner.answer || inner.response || inner.text || inner.output || '');
+        if (innerText) {
+          const unwrappedInner = unwrap(innerText, depth + 1);
+          if (unwrappedInner) return unwrappedInner;
+          return innerText;
+        }
+      }
+    }
+
+    return '';
+  };
+
+  return unwrap(raw);
+}
+
+function extractStructuredPayloadFromJsonLikeText(rawText) {
+  const unwrapObject = (obj, depth = 0) => {
+    if (!obj || typeof obj !== 'object' || depth > 4) return null;
+
+    const nestedFromAnswer = unwrap(obj.answer || obj.response || obj.text || obj.output || obj.content || '', depth + 1);
+    if (nestedFromAnswer && nestedFromAnswer.answer) return nestedFromAnswer;
+
+    const answer = normalizeMultilineText(obj.answer || obj.response || obj.text || obj.output || obj.content || '');
+    const followups = (Array.isArray(obj.followups) ? obj.followups : [])
+      .map((q) => normalizeText(q))
+      .filter(Boolean)
+      .slice(0, 4);
+    const sources = normalizeSources(obj.sources || obj.quellen || obj.references || obj.citations || []);
+    const confidence = clamp01(obj.confidence, null);
+    const evidence_note = normalizeText(obj.evidence_note || obj.reasoning_note || '');
+
+    if (!answer && !followups.length && !sources.length && !Number.isFinite(confidence) && !evidence_note) {
+      return null;
+    }
+
+    return { answer, followups, sources, confidence, evidence_note };
+  };
+
+  const unwrap = (value, depth = 0) => {
+    const text = normalizeMultilineText(value || '');
+    if (!text || depth > 4) return null;
+
+    const direct = parseJsonSafe(text, null);
+    if (typeof direct === 'string') {
+      const nestedString = normalizeMultilineText(direct);
+      if (nestedString && nestedString !== text) {
+        const nestedParsed = unwrap(nestedString, depth + 1);
+        if (nestedParsed) return nestedParsed;
+      }
+    }
+
+    if (direct && typeof direct === 'object') {
+      const parsedObject = unwrapObject(direct, depth + 1);
+      if (parsedObject) return parsedObject;
+    }
+
+    const quotedMatch = text.match(/^[\s\r\n]*"([\s\S]*)"[\s\r\n]*$/);
+    if (quotedMatch && quotedMatch[1]) {
+      const decodedQuoted = decodeEscapedJsonString(quotedMatch[1]);
+      if (decodedQuoted && decodedQuoted !== text) {
+        const nestedQuoted = unwrap(decodedQuoted, depth + 1);
+        if (nestedQuoted) return nestedQuoted;
+      }
+    }
+
+    const open = text.indexOf('{');
+    const close = text.lastIndexOf('}');
+    if (open >= 0 && close > open) {
+      const inner = parseJsonSafe(text.slice(open, close + 1), null);
+      if (inner && typeof inner === 'object') {
+        const parsedInner = unwrapObject(inner, depth + 1);
+        if (parsedInner) return parsedInner;
+      }
+    }
+
+    const truncatedAnswer = extractTruncatedAnswerFragment(text);
+    if (truncatedAnswer) {
+      return {
+        answer: truncatedAnswer,
+        followups: [],
+        sources: [],
+        confidence: null,
+        evidence_note: ''
+      };
+    }
+
+    return null;
+  };
+
+  return unwrap(rawText, 0);
 }
 
 function extractNormReferenceSources(answerText) {
@@ -548,6 +686,16 @@ function normalizeModelPayload(rawText, cfg) {
         .filter((q) => !/\bkurzschema|praxisfall|lernkarte|wie soll ich antworten\b/i.test(q))
         .slice(0, 3)
     : [];
+  const structured = extractStructuredPayloadFromJsonLikeText(rawText);
+  if (structured) {
+    return {
+      answer: structured.answer || 'Ich weiss es nicht sicher.',
+      followups: structured.followups && structured.followups.length ? structured.followups : fallbackFollowups,
+      sources: normalizeSources(structured.sources || []),
+      confidence: structured.confidence,
+      evidence_note: normalizeText(structured.evidence_note || '')
+    };
+  }
   const parsed = parseJsonSafe(rawText, null);
   if (!parsed || typeof parsed !== 'object') {
     const salvaged = extractAnswerFromJsonLikeText(rawText);
@@ -563,14 +711,19 @@ function normalizeModelPayload(rawText, cfg) {
     .map((q) => normalizeText(q))
     .filter(Boolean)
     .slice(0, 4);
+  const nestedStructured = extractStructuredPayloadFromJsonLikeText(parsed.answer || parsed.response || parsed.text || parsed.output || '');
   const parsedAnswerRaw = parsed.answer || parsed.response || parsed.text || parsed.output || '';
-  const parsedAnswerText = extractAnswerFromJsonLikeText(parsedAnswerRaw) || normalizeMultilineText(parsedAnswerRaw) || 'Ich weiss es nicht sicher.';
+  const parsedAnswerText = nestedStructured?.answer || extractAnswerFromJsonLikeText(parsedAnswerRaw) || normalizeMultilineText(parsedAnswerRaw) || 'Ich weiss es nicht sicher.';
   return {
     answer: parsedAnswerText,
-    followups: followups.length ? followups : fallbackFollowups,
-    sources: normalizeSources(parsed.sources || parsed.quellen || parsed.references || []),
-    confidence: clamp01(parsed.confidence, null),
-    evidence_note: normalizeText(parsed.evidence_note || parsed.reasoning_note || '')
+    followups: (nestedStructured?.followups && nestedStructured.followups.length)
+      ? nestedStructured.followups
+      : (followups.length ? followups : fallbackFollowups),
+    sources: (nestedStructured?.sources && nestedStructured.sources.length)
+      ? normalizeSources(nestedStructured.sources)
+      : normalizeSources(parsed.sources || parsed.quellen || parsed.references || []),
+    confidence: nestedStructured?.confidence ?? clamp01(parsed.confidence, null),
+    evidence_note: normalizeText(nestedStructured?.evidence_note || parsed.evidence_note || parsed.reasoning_note || '')
   };
 }
 
@@ -592,8 +745,8 @@ function buildSozialrechtSystemPrompt(cfg, hasStorage) {
     '### Stolperfallen fuer die IHK-Pruefung',
     'Nutze im Pruefschema eine nummerierte Liste mit 3 bis 6 Schritten.',
     'Zitiere konkrete Fundstellen nur, wenn sie belastbar sind.',
-    'Gib ausschliesslich JSON zurueck, exakt im Format:',
-    '{"answer":"...","followups":["..."],"sources":[{"title":"...","excerpt":"...","section":"...","page":"","note":"","confidence":0.0}],"confidence":0.0,"evidence_note":"..."}'
+    'Antworte direkt als gut lesbares Markdown.',
+    'Gib keine JSON-Huelle, keine Code-Fences und keine technischen Metadaten aus.'
   ].filter(Boolean).join('\n');
 }
 
@@ -611,8 +764,8 @@ function buildSozialrechtJudgmentSystemPrompt(cfg, hasStorage) {
     '### Relevantes Urteil / Stand',
     '### Bedeutung fuer den Personalfall',
     '### Pruefungshinweis',
-    'Gib ausschliesslich JSON zurueck, exakt im Format:',
-    '{"answer":"...","followups":["..."],"sources":[{"title":"...","excerpt":"...","section":"...","page":"","note":"","confidence":0.0}],"confidence":0.0,"evidence_note":"..."}'
+    'Antworte direkt als gut lesbares Markdown.',
+    'Gib keine JSON-Huelle, keine Code-Fences und keine technischen Metadaten aus.'
   ].filter(Boolean).join('\n');
 }
 
@@ -755,14 +908,55 @@ function extractResponsesSources(parsed) {
   return normalizeSources(found);
 }
 
-async function callOpenAIResponsesWithStorage({ apiKey, model, messages, temperature, maxOutputTokens, vectorStoreId }) {
-  const input = messages.map((m) => ({
-    role: m.role,
-    content: [{ type: 'input_text', text: m.content }]
-  }));
+function toResponsesInput(messages) {
+  return (Array.isArray(messages) ? messages : []).map((msg) => {
+    const roleRaw = String(msg?.role || '').toLowerCase();
+    const text = normalizeText(msg?.content || '');
+    if (roleRaw === 'assistant') {
+      return {
+        role: 'user',
+        content: [{ type: 'input_text', text: `Bisherige Antwort von LINDA zur Einordnung:\n${text}` }]
+      };
+    }
+    return {
+      role: roleRaw === 'system' ? 'system' : 'user',
+      content: [{ type: 'input_text', text }]
+    };
+  }).filter((item) => String(item?.content?.[0]?.text || '').trim());
+}
+
+async function callOpenAIResponsesTextOnly({ apiKey, model, messages, temperature, maxOutputTokens }) {
   const body = {
     model,
-    input,
+    input: toResponsesInput(messages),
+    temperature,
+    max_output_tokens: maxOutputTokens
+  };
+  const res = await fetch('https://api.openai.com/v1/responses', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(body)
+  });
+  const raw = await res.text();
+  if (!res.ok) {
+    const parsed = parseJsonSafe(raw, {});
+    const detail = normalizeText(parsed?.error?.message || parsed?.error || raw);
+    throw new Error(`OpenAI responses Fehler (${res.status}): ${detail || 'unbekannt'}`);
+  }
+  const parsed = parseJsonSafe(raw, {});
+  return {
+    text: extractResponsesText(parsed),
+    sources: extractResponsesSources(parsed)
+  };
+}
+
+async function callOpenAIResponsesWithStorage({ apiKey, model, messages, temperature, maxOutputTokens, vectorStoreId }) {
+  const body = {
+    model,
+    input: toResponsesInput(messages),
     temperature,
     max_output_tokens: maxOutputTokens,
     tools: [{ type: 'file_search', vector_store_ids: [vectorStoreId] }]
@@ -1076,23 +1270,27 @@ async function handleSozialrechtChat(req, res, action) {
 
         if (!storageUsed) {
           storageFallback = true;
-          modelRaw = await callOpenAIChatCompletions({
+          const fallbackResult = await callOpenAIResponsesTextOnly({
             apiKey: socialKey,
             model: activeModel,
             messages,
             temperature,
             maxOutputTokens
           });
+          modelRaw = fallbackResult.text;
+          storageSources = fallbackResult.sources;
         }
       }
     } else {
-      modelRaw = await callOpenAIChatCompletions({
+      const directResult = await callOpenAIResponsesTextOnly({
         apiKey: socialKey,
         model: activeModel,
         messages,
         temperature,
         maxOutputTokens
       });
+      modelRaw = directResult.text;
+      storageSources = directResult.sources;
     }
 
     const normalized = normalizeModelPayload(modelRaw, cfg);

@@ -3529,6 +3529,43 @@
   let activeMicAnalyserBuffer = null;
   let activeMicSilenceTimer = null;
   let activeMicStartedAt = 0;
+  let fvState = { active: false, step: 0, answers: {}, freeTextUsed: false };
+
+  const FV_CHECK_STEPS = [
+    {
+      key: 'alter',
+      question: 'Wie alt ist die Person?',
+      progress: '1 von 3',
+      freePlaceholder: 'Alter eingeben…',
+      options: [
+        { value: 'unter18', label: 'Unter 18 Jahre' },
+        { value: '18-23-azubi', label: '18–23 Jahre (in Ausbildung oder Studium)' },
+        { value: '18-23-kein-azubi', label: '18–23 Jahre (nicht in Ausbildung/Studium)' },
+        { value: '25+', label: '25 Jahre oder älter' }
+      ]
+    },
+    {
+      key: 'einkommen',
+      question: 'Hat die Person regelmäßiges eigenes Einkommen?',
+      progress: '2 von 3',
+      freePlaceholder: 'Einkommenssituation beschreiben…',
+      options: [
+        { value: 'unter505', label: 'Nein / unter 505 €/Monat (Geringfügigkeitsgrenze 2024)' },
+        { value: 'ueber505', label: 'Ja, über 505 €/Monat' }
+      ]
+    },
+    {
+      key: 'elternteil',
+      question: 'Ist das Elternteil (Hauptversicherter) Mitglied einer gesetzlichen Krankenversicherung (GKV)?',
+      progress: '3 von 3',
+      freePlaceholder: 'Krankenversicherung nennen…',
+      options: [
+        { value: 'gkv', label: 'Ja, gesetzlich versichert (GKV)' },
+        { value: 'pkv', label: 'Nein, privat versichert (PKV)' },
+        { value: 'unbekannt', label: 'Nicht bekannt' }
+      ]
+    }
+  ];
 
   const DEFAULT_REQUEST_MEMORY = {
     version: REQUEST_MEMORY_VERSION,
@@ -3682,6 +3719,20 @@
     return null;
   };
 
+  const extractTruncatedAnswerFragment = (rawText) => {
+    const text = String(rawText || '').trim();
+    if (!text) return '';
+    const match = text.match(/^\s*\{\s*"answer"\s*:\s*"([\s\S]*)$/i);
+    if (!match || !match[1]) return '';
+    return String(match[1])
+      .replace(/\\n/g, '\n')
+      .replace(/\\r/g, '')
+      .replace(/\\t/g, ' ')
+      .replace(/\\"/g, '"')
+      .replace(/\\\\/g, '\\')
+      .trim();
+  };
+
   const extractAnswerTextFromJsonLike = (rawText) => {
     const raw = String(rawText || '').trim();
     if (!raw) return '';
@@ -3736,6 +3787,12 @@
           .replace(/\\\\/g, '\\');
         const decodedUnwrapped = unwrapJsonText(decoded, depth + 1);
         return decodedUnwrapped || decoded.trim();
+      }
+
+      const truncatedDecoded = extractTruncatedAnswerFragment(text);
+      if (truncatedDecoded) {
+        const truncatedUnwrapped = unwrapJsonText(truncatedDecoded, depth + 1);
+        return truncatedUnwrapped || truncatedDecoded.trim();
       }
 
       return text;
@@ -4111,6 +4168,49 @@
       renderClarifierDock: () => {
         const dock = app.ui.clarifyDock;
         if (!dock) return;
+        if (fvState.active) {
+          const stepIndex = Math.max(0, Math.min(FV_CHECK_STEPS.length - 1, Number(fvState.step) || 0));
+          const step = FV_CHECK_STEPS[stepIndex];
+          if (!step) {
+            dock.hidden = true;
+            dock.innerHTML = '';
+            return;
+          }
+
+          const freeDraft = String((fvState.answers || {})[step.key] || '').trim();
+          dock.innerHTML = `
+            <section class="clarify-card" role="group" aria-label="Familienversicherung prüfen">
+              <div class="clarify-head">
+                <span class="clarify-kicker">Familienversicherung prüfen</span>
+                <span class="clarify-progress">${app.utils.safeText(step.progress)}</span>
+                <button type="button" class="clarify-cancel" data-fv-cancel aria-label="Prüfung schliessen">×</button>
+              </div>
+              <div class="clarify-body">
+                <p class="clarify-intro">Bitte beantworte die folgenden Angaben zur Familienversicherung.</p>
+                <h4 class="clarify-question">${app.utils.safeText(step.question)}</h4>
+                <ul class="clarify-options">
+                  ${step.options.map((option, i) => `
+                    <li>
+                      <button type="button" class="clarify-option" data-fv-option="${app.utils.safeText(option.value)}">
+                        <span class="clarify-option-index">${i + 1}</span>
+                        <span>${app.utils.safeText(option.label)}</span>
+                      </button>
+                    </li>
+                  `).join('')}
+                </ul>
+                <div class="clarify-free">
+                  <input type="text" data-fv-free-input value="${app.utils.safeText(freeDraft).replace(/"/g, '&quot;')}" placeholder="${app.utils.safeText(step.freePlaceholder)}" aria-label="Eigene Antwort">
+                  <button type="button" data-fv-free>Uebernehmen</button>
+                </div>
+                <div class="clarify-actions">
+                  <button type="button" data-fv-skip>Ueberspringen</button>
+                </div>
+              </div>
+            </section>
+          `;
+          dock.hidden = false;
+          return;
+        }
         const clarifier = app.state.clarifier || {};
         if (!clarifier.active) {
           dock.hidden = true;
@@ -5897,11 +5997,230 @@
         };
       },
 
+      appendAssistantMessage: (content, meta = {}, sources = []) => {
+        const s = app.logic.activeSession();
+        if (!s) return null;
+        const nextSources = Array.isArray(sources) ? sources : [];
+        s.messages.push({ role: 'assistant', content, sources: nextSources, meta });
+        const bubble = app.ui.createBubble('assistant', content, nextSources, meta);
+        app.ui.log.appendChild(bubble);
+        app.ui.scrollBottom();
+        app.utils.save();
+        return bubble;
+      },
+
+      isFvEligibleMode: () => {
+        const mode = String(app.state.settings?.domain || '').trim().toLowerCase();
+        return mode === 'sozialrecht' || mode === 'standard';
+      },
+
+      buildFvAnswerLabel: (key, value) => {
+        const step = FV_CHECK_STEPS.find((item) => item.key === key);
+        const entry = step ? step.options.find((option) => option.value === value) : null;
+        return entry ? entry.label : String(value || '').trim();
+      },
+
+      buildFvAnswerLines: () => {
+        const answers = fvState.answers || {};
+        return FV_CHECK_STEPS.map((step) => {
+          const value = String(answers[step.key] || '').trim();
+          const label = value ? app.logic.buildFvAnswerLabel(step.key, value) : 'nicht angegeben';
+          return `${step.question}: ${label}`;
+        });
+      },
+
+      evaluateFvCheck: () => {
+        const answers = fvState.answers || {};
+        const alter = String(answers.alter || '').trim();
+        const einkommen = String(answers.einkommen || '').trim();
+        const elternteil = String(answers.elternteil || '').trim();
+        const freeTextUsed = Boolean(fvState.freeTextUsed);
+        const summary = app.logic.buildFvAnswerLines();
+
+        if (freeTextUsed || elternteil === 'unbekannt') {
+          return { status: 'unklar', summary };
+        }
+
+        const notPossibleReasons = [];
+        if (alter === '25+') {
+          notPossibleReasons.push('Die Person ist 25 Jahre oder älter.');
+        }
+        if (alter === '18-23-kein-azubi') {
+          notPossibleReasons.push('Die Person ist 18 bis 23 Jahre alt, befindet sich aber nicht in Ausbildung oder Studium.');
+        }
+        if (einkommen === 'ueber505') {
+          notPossibleReasons.push('Die Person hat regelmäßiges eigenes Einkommen über 505 Euro im Monat.');
+        }
+        if (elternteil === 'pkv') {
+          notPossibleReasons.push('Das Elternteil ist privat versichert und damit nicht gesetzlich krankenversichert.');
+        }
+        if (notPossibleReasons.length) {
+          return { status: 'nicht-moeglich', reason: notPossibleReasons.join(' '), summary };
+        }
+
+        const possible =
+          (alter === 'unter18' || alter === '18-23-azubi') &&
+          einkommen === 'unter505' &&
+          elternteil === 'gkv';
+        if (possible) {
+          return { status: 'moeglich', summary };
+        }
+
+        return { status: 'unklar', summary };
+      },
+
+      buildFvHtml: (status, detail = '') => {
+        const cleanDetail = String(detail || '').trim();
+        if (status === 'moeglich') {
+          return `
+            <div class="sozialrecht-stack">
+              <span class="sozialrecht-topline">✓ Familienversicherung (GKV) möglich</span>
+              <div class="sozialrecht-section intro">
+                <p class="sozialrecht-section-head">Voraussetzungen erfüllt</p>
+                <p>${app.utils.safeText(cleanDetail || 'Die Angaben sprechen für eine Familienversicherung in der gesetzlichen Krankenversicherung (GKV).')} — Bitte Anmeldung direkt bei der GKV des Elternteils vornehmen.</p>
+              </div>
+            </div>
+          `;
+        }
+
+        if (status === 'nicht-moeglich') {
+          return `
+            <div class="sozialrecht-stack">
+              <span class="sozialrecht-topline">✗ Familienversicherung nicht möglich</span>
+              <div class="sozialrecht-section intro">
+                <p class="sozialrecht-section-head">Grund</p>
+                <p>${app.utils.safeText(cleanDetail || 'Nach den Angaben liegt keine Familienversicherung in der gesetzlichen Krankenversicherung (GKV) vor.')}</p>
+              </div>
+            </div>
+          `;
+        }
+
+        return `
+          <div class="sozialrecht-stack">
+            <span class="sozialrecht-topline">? Prüfung erforderlich</span>
+            <div class="sozialrecht-section intro">
+              <p class="sozialrecht-section-head">Hinweis</p>
+              <p>${app.utils.safeText(cleanDetail || 'Aufgrund der Angaben kann keine eindeutige Aussage getroffen werden. Linda prüft weiter…')}</p>
+            </div>
+          </div>
+        `;
+      },
+
+      openFvCheck: ({ source = 'frontend' } = {}) => {
+        if (!app.logic.isFvEligibleMode()) return false;
+        app.logic.closeClaudeClarifier({ save: false });
+        fvState = { active: true, step: 0, answers: {}, freeTextUsed: false, source: String(source || 'frontend') };
+        app.ui.renderClarifierDock();
+        app.ui.scrollBottom();
+        app.utils.save();
+        return true;
+      },
+
+      closeFvCheck: (opts = {}) => {
+        const hadActive = Boolean(fvState && fvState.active);
+        fvState = { active: false, step: 0, answers: {}, freeTextUsed: false };
+        app.ui.renderClarifierDock();
+        if (hadActive && opts.save !== false) app.utils.save();
+      },
+
+      answerFvCheckStep: (value = '', opts = {}) => {
+        if (!fvState.active) return;
+        const stepIndex = Math.max(0, Math.min(FV_CHECK_STEPS.length - 1, Number(fvState.step) || 0));
+        const step = FV_CHECK_STEPS[stepIndex];
+        if (!step) {
+          app.logic.closeFvCheck({ save: true });
+          return;
+        }
+
+        const cleanValue = String(value || '').trim();
+        if (!cleanValue && opts.skip !== true) return;
+
+        fvState.answers[step.key] = cleanValue;
+        if (opts.freeText || opts.source === 'chat') {
+          fvState.freeTextUsed = true;
+        }
+
+        const atLastStep = stepIndex >= FV_CHECK_STEPS.length - 1;
+        if (!atLastStep) {
+          fvState.step = stepIndex + 1;
+          app.ui.renderClarifierDock();
+          app.utils.save();
+          return;
+        }
+
+        app.logic.finishFvCheck();
+      },
+
+      finishFvCheck: async () => {
+        const result = app.logic.evaluateFvCheck();
+        if (result.status === 'moeglich') {
+          app.logic.appendAssistantMessage(
+            app.logic.buildFvHtml('moeglich', result.summary.join(' — ')),
+            { module: 'fv-check', status: 'moeglich' }
+          );
+          app.logic.closeFvCheck({ save: false });
+          return;
+        }
+
+        if (result.status === 'nicht-moeglich') {
+          app.logic.appendAssistantMessage(
+            app.logic.buildFvHtml('nicht-moeglich', result.reason),
+            { module: 'fv-check', status: 'nicht-moeglich' }
+          );
+          app.logic.closeFvCheck({ save: false });
+          return;
+        }
+
+        const answersText = result.summary.map((line) => `- ${line}`).join('\n');
+        const prompt = [
+          'Prüfe Familienversicherung nach § 10 SGB V anhand dieser Angaben:',
+          answersText,
+          '',
+          'Gib ein klares Fazit.',
+          'Beziehe dich nicht auf eine bestimmte Krankenkasse, sondern auf die gesetzliche Krankenversicherung (GKV) allgemein.',
+          'Antworte ausschließlich als HTML mit der Struktur der Sozialrecht-Ansicht.'
+        ].join('\n').trim();
+
+        try {
+          const s = app.logic.activeSession();
+          const historyForApi = app.utils.privacyModeEnabled()
+            ? []
+            : app.utils.chatContext(s || { messages: [] });
+          const parsed = await app.logic.requestAnswer(API_ENDPOINT, {
+            question: prompt,
+            fachmodus: SOZIALRECHT_ONLY_MODE ? SOZIALRECHT_DOMAIN_KEY : (app.state.settings.domain || ''),
+            schnellmodus: false,
+            history: historyForApi,
+            sources: app.state.settings.sources,
+            routing: {
+              preferred_model: 'gpt-5.1',
+              response_mode: 'genau'
+            },
+            clientMeta: {
+              app: 'LINDA3',
+              version: APP_VERSION,
+              ts: new Date().toISOString(),
+              feature: 'familienversicherung-check'
+            }
+          });
+          const html = String(parsed?.answer || '').trim() || app.logic.buildFvHtml('unklar');
+          app.logic.appendAssistantMessage(html, { module: 'fv-check', status: 'unklar' }, parsed?.sources || []);
+        } catch (_) {
+          app.logic.appendAssistantMessage(
+            app.logic.buildFvHtml('unklar'),
+            { module: 'fv-check', status: 'unklar' }
+          );
+        } finally {
+          app.logic.closeFvCheck({ save: false });
+        }
+      },
+
       openClaudeClarifier: ({ question, prompts = [], introText = '', source = 'frontend' } = {}) => {
         if (!CLAUDE_CLARIFY_MODE) return false;
         if (!app.logic.isClaudeClarificationCase(question, prompts)) return false;
         const flow = app.logic.buildClaudeClarificationFlow(question, prompts, introText);
         if (!flow || !Array.isArray(flow.steps) || !flow.steps.length) return false;
+        app.logic.closeFvCheck({ save: false });
         app.state.clarifier = {
           active: true,
           originQuestion: String(question || '').trim(),
@@ -6380,17 +6699,12 @@
       },
 
       sendSystemMessage: (text, meta = {}) => {
-        const s = app.logic.activeSession();
-        if (!s) return;
-        s.messages.push({ role: 'assistant', content: text, sources: [], meta });
-        app.utils.save();
-        const bubble = app.ui.createBubble('assistant', text, [], meta);
-        app.ui.log.appendChild(bubble);
-        app.ui.scrollBottom();
+        app.logic.appendAssistantMessage(text, meta, []);
       },
 
       newChat: () => {
         app.logic.closeClaudeClarifier({ save: false });
+        app.logic.closeFvCheck({ save: false });
         const id = app.utils.uid();
         app.state.sessions.unshift({
           id,
@@ -6420,6 +6734,7 @@
       resetHistoryAndNewChat: () => {
         if (!confirm('Verlauf und History komplett löschen und neuen Chat starten?')) return;
         app.logic.closeClaudeClarifier({ save: false });
+        app.logic.closeFvCheck({ save: false });
         app.state.sessions = [];
         app.state.activeId = null;
         app.state.requestMemory = structuredClone(DEFAULT_REQUEST_MEMORY);
@@ -6431,6 +6746,7 @@
 
       switchSession: (id) => {
         app.logic.closeClaudeClarifier({ save: false });
+        app.logic.closeFvCheck({ save: false });
         app.state.activeId = id;
         app.ui.log.innerHTML = '';
         app.utils.save();
@@ -6561,6 +6877,20 @@
       },
 
       insertSnippet: (txt) => {
+        if (String(txt || '') === 'fv-check') {
+          const started = app.logic.openFvCheck({ source: 'snippet' });
+          document.getElementById('snippet-popup').classList.remove('active');
+          if (started) {
+            app.ui.input.value = '';
+            app.ui.input.dispatchEvent(new Event('input'));
+            app.ui.input.focus();
+            return;
+          }
+          app.ui.input.value = 'Familienversicherung prüfen';
+          app.ui.input.dispatchEvent(new Event('input'));
+          app.ui.input.focus();
+          return;
+        }
         app.ui.input.value = txt;
         app.ui.input.dispatchEvent(new Event('input'));
         document.getElementById('snippet-popup').classList.remove('active');
@@ -8188,6 +8518,28 @@
         const apiQuestionSuffix = String(opts?.apiQuestionSuffix || '').trim();
         if (!text) return;
 
+        if (fvState.active) {
+          if (!forcedText) {
+            app.ui.input.value = '';
+            app.ui.input.dispatchEvent(new Event('input'));
+          }
+          app.logic.answerFvCheckStep(text, { freeText: true, source: 'chat' });
+          return;
+        }
+
+        const fvTriggerText = app.utils.normalizeForKeyword(text);
+        const fvTriggerMatch =
+          /\bfamilienversicherung\b|\bfamilienversichert\b|sgb\s*v|gkv\s*familie|\bfamilienversicherung\s+pruefen\b/.test(fvTriggerText) ||
+          /\bfamilienversicherung\b|\bfamilienversichert\b|§\s*10\s*sgb\s*v|gkv\s+familie|familienversicherung\s+prüfen/i.test(text);
+        if (fvTriggerMatch && app.logic.isFvEligibleMode()) {
+          if (!forcedText) {
+            app.ui.input.value = '';
+            app.ui.input.dispatchEvent(new Event('input'));
+          }
+          app.logic.openFvCheck({ source: 'keyword' });
+          return;
+        }
+
         let s = app.logic.activeSession();
         if (!s) {
           app.logic.newChat();
@@ -8317,7 +8669,8 @@
           const strictSourcesActive = Boolean(app.state.settings.guardrails?.groundedMode);
           const deepseekRoutingActive = Boolean(effectiveFastMode && !strictSourcesActive);
           const effectiveSources = app.state.settings.sources;
-          const contextWindow = app.utils.chatContext(s);
+          const priorMessages = Array.isArray(s.messages) ? s.messages.slice(0, -1) : [];
+          const contextWindow = app.utils.chatContext({ ...s, messages: priorMessages });
           const historyForApi = app.utils.privacyModeEnabled()
             ? []
             : contextWindow;
@@ -8766,6 +9119,8 @@
 
       clearAll: () => {
         if (!confirm('Alle Verläufe wirklich löschen?')) return;
+        app.logic.closeClaudeClarifier({ save: false });
+        app.logic.closeFvCheck({ save: false });
         app.state.sessions = [];
         app.state.activeId = null;
         app.state.requestMemory = structuredClone(DEFAULT_REQUEST_MEMORY);
@@ -9140,7 +9495,9 @@
           .filter((s) => s.toLowerCase().includes(q))
           .slice(0, 12)
           .map((s) => ({ label: s, value: s, kind: 'Snippet' }));
-        app.ui.showSnippetPopup(matches);
+        const fvEntry = { label: 'Familienversicherung prüfen', value: 'fv-check', kind: 'Modul' };
+        const allMatches = [fvEntry, ...matches].filter((item, idx, arr) => arr.findIndex((x) => x.value === item.value) === idx);
+        app.ui.showSnippetPopup(allMatches);
       } else {
         const memorySuggestions = app.logic.findQuestionSuggestions(val, 6)
           .map((s) => ({ label: s, value: s, kind: 'Aehnliche Frage aus Verlauf' }));
@@ -9317,8 +9674,13 @@
     if (app.ui.clarifyDock) {
       app.ui.clarifyDock.addEventListener('click', (e) => {
         const closeBtn = e.target.closest('[data-clarify-cancel]');
+        const fvCloseBtn = e.target.closest('[data-fv-cancel]');
         if (closeBtn) {
           app.logic.closeClaudeClarifier({ save: true });
+          return;
+        }
+        if (fvCloseBtn) {
+          app.logic.closeFvCheck({ save: true });
           return;
         }
 
@@ -9329,9 +9691,22 @@
           return;
         }
 
+        const fvOptionBtn = e.target.closest('[data-fv-option]');
+        if (fvOptionBtn) {
+          const value = String(fvOptionBtn.getAttribute('data-fv-option') || '').trim();
+          if (value) app.logic.answerFvCheckStep(value);
+          return;
+        }
+
         const skipBtn = e.target.closest('[data-clarify-skip]');
         if (skipBtn) {
           app.logic.answerClaudeClarifierStep('');
+          return;
+        }
+
+        const fvSkipBtn = e.target.closest('[data-fv-skip]');
+        if (fvSkipBtn) {
+          app.logic.answerFvCheckStep('', { skip: true });
           return;
         }
 
@@ -9345,16 +9720,35 @@
           }
           app.logic.answerClaudeClarifierStep(value);
         }
+
+        const fvFreeBtn = e.target.closest('[data-fv-free]');
+        if (fvFreeBtn) {
+          const freeInput = app.ui.clarifyDock.querySelector('[data-fv-free-input]');
+          const value = String(freeInput?.value || '').trim();
+          if (!value) {
+            alert('Bitte gib einen kurzen Hinweis ein oder wähle eine Option.');
+            return;
+          }
+          app.logic.answerFvCheckStep(value, { freeText: true });
+        }
       });
 
       app.ui.clarifyDock.addEventListener('keydown', (e) => {
         if (e.key !== 'Enter') return;
         const freeInput = e.target.closest('[data-clarify-free-input]');
-        if (!freeInput) return;
+        if (freeInput) {
+          e.preventDefault();
+          const value = String(freeInput.value || '').trim();
+          if (!value) return;
+          app.logic.answerClaudeClarifierStep(value);
+          return;
+        }
+        const fvFreeInput = e.target.closest('[data-fv-free-input]');
+        if (!fvFreeInput) return;
         e.preventDefault();
-        const value = String(freeInput.value || '').trim();
+        const value = String(fvFreeInput.value || '').trim();
         if (!value) return;
-        app.logic.answerClaudeClarifierStep(value);
+        app.logic.answerFvCheckStep(value, { freeText: true });
       });
     }
 
