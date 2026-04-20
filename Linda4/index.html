@@ -8243,34 +8243,7 @@
               makeParsed = app.logic.enrichAssistantResponse(makeParsed, text, expertPayload, { channel: 'expert' });
               makeParsed.meta = { ...(makeParsed.meta || {}), panelTitle: 'Expertenmodus (DeepSeek)' };
             } catch (e) {
-              const shouldFallbackToDefault = DEEPSEEK_API_ENDPOINT !== API_ENDPOINT;
-              if (shouldFallbackToDefault) {
-                try {
-                  const fallbackPayload = {
-                    ...expertPayload,
-                    schnellmodus: false,
-                    routing: {
-                      ...(expertPayload.routing || {}),
-                      preferred_model: 'gpt-5.1',
-                      response_mode: 'expert'
-                    }
-                  };
-                  const fallbackController = new AbortController();
-                  const fallbackTimeout = setTimeout(() => fallbackController.abort(), 30000);
-                  try {
-                    makeParsed = await app.logic.requestAnswer(API_ENDPOINT, fallbackPayload, fallbackController.signal);
-                  } finally {
-                    clearTimeout(fallbackTimeout);
-                  }
-                  makeParsed.answer = app.logic.stripRepeatedIntro(makeParsed.answer, allowIntroForThisTurn);
-                  makeParsed = app.logic.enrichAssistantResponse(makeParsed, text, fallbackPayload, { channel: 'expert-fallback' });
-                  makeParsed.meta = { ...(makeParsed.meta || {}), panelTitle: 'Expertenmodus (Fallback)' };
-                } catch (fallbackErr) {
-                  makeParsed = { answer: `❌ Expertenmodus Fehler: ${fallbackErr?.message || 'unbekannt'}`, sources: [], meta: { panelTitle: 'Expertenmodus' } };
-                }
-              } else {
-                makeParsed = { answer: `❌ Expertenmodus Fehler: ${e?.message || 'unbekannt'}`, sources: [], meta: { panelTitle: 'Expertenmodus' } };
-              }
+              makeParsed = { answer: `❌ Expertenmodus Fehler: ${e?.message || 'unbekannt'}`, sources: [], meta: { panelTitle: 'Expertenmodus' } };
             } finally {
               clearTimeout(expertTimeout);
             }
@@ -8309,31 +8282,7 @@
             try {
               parsed = await app.logic.requestAnswer(primaryEndpoint, payload, controller.signal);
             } catch (primaryErr) {
-              const shouldFallbackToDefault =
-                deepseekRoutingActive &&
-                DEEPSEEK_API_ENDPOINT !== API_ENDPOINT;
-              if (!shouldFallbackToDefault) throw primaryErr;
-              const fallbackController = new AbortController();
-              const fallbackTimeout = setTimeout(() => fallbackController.abort(), 30000);
-              try {
-                const fallbackPayload = {
-                  ...payload,
-                  schnellmodus: false,
-                  routing: {
-                    ...(payload.routing || {}),
-                    preferred_model: 'gpt-5.1',
-                    response_mode: 'genau'
-                  }
-                };
-                parsed = await app.logic.requestAnswer(API_ENDPOINT, fallbackPayload, fallbackController.signal);
-              } finally {
-                clearTimeout(fallbackTimeout);
-              }
-              parsed.meta = {
-                ...(parsed.meta || {}),
-                deepseek_fallback: true,
-                evidence_note: `${String(parsed?.meta?.evidence_note || '').trim()} Schnellmodus-Route war instabil; Antwort kommt aus Fallback-Routing.`.trim()
-              };
+              throw primaryErr;
             }
             parsed.answer = app.logic.stripRepeatedIntro(parsed.answer, allowIntroForThisTurn);
             const enriched = app.logic.enrichAssistantResponse(parsed, text, payload, {
@@ -8397,7 +8346,7 @@
           loading.remove();
           const offline = !navigator.onLine;
           const timeoutErr = err?.name === 'AbortError';
-          const canUseDeepseekTimeoutFallback = !Boolean(app.state.settings.guardrails?.groundedMode);
+          const canUseDeepseekTimeoutFallback = false;
 
           if (timeoutErr && lastPayload && !offline && canUseDeepseekTimeoutFallback) {
             try {

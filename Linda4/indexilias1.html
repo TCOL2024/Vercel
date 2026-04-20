@@ -8167,20 +8167,7 @@
               makeParsed = app.logic.enrichAssistantResponse(makeParsed, text, canvasPayload, { channel: 'canvas' });
               makeParsed.meta = { ...(makeParsed.meta || {}), panelTitle: 'Canvas (DeepSeek)' };
             } catch (e) {
-              const shouldFallbackToDefault = DEEPSEEK_API_ENDPOINT !== API_ENDPOINT;
-              if (shouldFallbackToDefault) {
-                try {
-                  makeParsed = await app.logic.requestAnswer(API_ENDPOINT, canvasPayload, controller.signal);
-                  makeParsed = app.logic.mergeIliasSearchIntoParsed(makeParsed, iliasContext);
-                  makeParsed.answer = app.logic.stripRepeatedIntro(makeParsed.answer, allowIntroForThisTurn);
-                  makeParsed = app.logic.enrichAssistantResponse(makeParsed, text, canvasPayload, { channel: 'canvas-fallback' });
-                  makeParsed.meta = { ...(makeParsed.meta || {}), panelTitle: 'Canvas (Fallback)' };
-                } catch (fallbackErr) {
-                  makeParsed = { answer: `❌ Canvas Fehler: ${fallbackErr?.message || 'unbekannt'}`, sources: [], meta: { panelTitle: 'Canvas' } };
-                }
-              } else {
-                makeParsed = { answer: `❌ Canvas Fehler: ${e?.message || 'unbekannt'}`, sources: [], meta: { panelTitle: 'Canvas' } };
-              }
+              makeParsed = { answer: `❌ Canvas Fehler: ${e?.message || 'unbekannt'}`, sources: [], meta: { panelTitle: 'Canvas' } };
             }
 
             await new Promise((resolve) => setTimeout(resolve, 1000));
@@ -8208,24 +8195,7 @@
               deepParsed = app.logic.enrichAssistantResponse(deepParsed, text, deepseekPayload, { channel: 'deepseek' });
               deepParsed.meta = { ...(deepParsed.meta || {}), panelTitle: 'Schnellmodus (DeepSeek)' };
             } catch (e) {
-              const shouldFallbackToDefault = DEEPSEEK_API_ENDPOINT !== API_ENDPOINT;
-              if (shouldFallbackToDefault) {
-                try {
-                  deepParsed = await app.logic.requestAnswer(
-                    API_ENDPOINT,
-                    deepseekPayload,
-                    controller.signal
-                  );
-                  deepParsed = app.logic.mergeIliasSearchIntoParsed(deepParsed, iliasContext);
-                  deepParsed.answer = app.logic.stripRepeatedIntro(deepParsed.answer, allowIntroForThisTurn);
-                  deepParsed = app.logic.enrichAssistantResponse(deepParsed, text, deepseekPayload, { channel: 'deepseek-fallback' });
-                  deepParsed.meta = { ...(deepParsed.meta || {}), panelTitle: 'Schnellmodus (Fallback)' };
-                } catch (fallbackErr) {
-                  deepParsed = { answer: `❌ Schnellmodus Fehler: ${fallbackErr?.message || 'unbekannt'}`, sources: [], meta: { panelTitle: 'Schnellmodus' } };
-                }
-              } else {
-                deepParsed = { answer: `❌ Schnellmodus Fehler: ${e?.message || 'unbekannt'}`, sources: [], meta: { panelTitle: 'Schnellmodus' } };
-              }
+              deepParsed = { answer: `❌ Schnellmodus Fehler: ${e?.message || 'unbekannt'}`, sources: [], meta: { panelTitle: 'Schnellmodus' } };
             }
 
             s.messages.push({
@@ -8260,18 +8230,16 @@
               speaking.remove();
             }
           } else {
-            const primaryEndpoint = deepseekRoutingActive ? DEEPSEEK_API_ENDPOINT : API_ENDPOINT;
-            let parsed;
-            try {
-              parsed = await app.logic.requestAnswer(primaryEndpoint, payload, controller.signal);
-            } catch (primaryErr) {
-              const shouldFallbackToDefault =
-                deepseekRoutingActive &&
-                DEEPSEEK_API_ENDPOINT !== API_ENDPOINT;
-              if (!shouldFallbackToDefault) throw primaryErr;
-              parsed = await app.logic.requestAnswer(API_ENDPOINT, payload, controller.signal);
-              parsed.meta = {
-                ...(parsed.meta || {}),
+          const primaryEndpoint = deepseekRoutingActive ? DEEPSEEK_API_ENDPOINT : API_ENDPOINT;
+          let parsed;
+          try {
+            parsed = await app.logic.requestAnswer(primaryEndpoint, payload, controller.signal);
+          } catch (primaryErr) {
+            const shouldFallbackToDefault = false;
+            if (!shouldFallbackToDefault) throw primaryErr;
+            parsed = await app.logic.requestAnswer(API_ENDPOINT, payload, controller.signal);
+            parsed.meta = {
+              ...(parsed.meta || {}),
                 deepseek_fallback: true,
                 evidence_note: `${String(parsed?.meta?.evidence_note || '').trim()} Schnellmodus-Route war instabil; Antwort kommt aus Fallback-Routing.`.trim()
               };
