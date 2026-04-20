@@ -7392,7 +7392,7 @@
         }
         // LINDA TIMEOUT HANDLER
         const requestController = new AbortController();
-        const timeoutMs = app.logic.getLindaRequestTimeoutMs();
+        const timeoutMs = app.utils.getLindaRequestTimeoutMs();
         let charsReceived = 0;
         let partialBuffer = '';
         let timeoutTriggered = false;
@@ -7474,7 +7474,7 @@
 
           if (sentinelState.timeout) {
             logLindaFailure('linda_timeout', charsReceived);
-            throw app.logic.createLindaRequestError({ kind: 'timeout', partialText: partialBuffer, charsReceived });
+            throw app.utils.createLindaRequestError({ kind: 'timeout', partialText: partialBuffer, charsReceived });
           }
 
           const truncatedRawAnswer = extractTruncatedAnswerFragment(raw);
@@ -7482,7 +7482,7 @@
             const normalizedTruncated = normalizeAnswerTextForRender(truncatedRawAnswer);
             const truncatedChars = normalizedTruncated.length;
             logLindaFailure('linda_timeout', truncatedChars);
-            throw app.logic.createLindaRequestError({
+            throw app.utils.createLindaRequestError({
               kind: 'timeout',
               partialText: normalizedTruncated,
               charsReceived: truncatedChars
@@ -7497,7 +7497,7 @@
             timeoutTriggered = true;
             requestController.abort();
             logLindaFailure('linda_timeout', charsReceived);
-            reject(app.logic.createLindaRequestError({ kind: 'timeout', partialText: partialBuffer, charsReceived }));
+            reject(app.utils.createLindaRequestError({ kind: 'timeout', partialText: partialBuffer, charsReceived }));
           }, timeoutMs);
         });
 
@@ -7510,7 +7510,7 @@
           if (requestController.signal.aborted && (err?.name === 'AbortError' || /aborted/i.test(String(err?.message || '')))) {
             const event = timeoutTriggered ? 'linda_timeout' : 'linda_abort';
             logLindaFailure(event, charsReceived);
-            throw app.logic.createLindaRequestError({
+            throw app.utils.createLindaRequestError({
               kind: timeoutTriggered ? 'timeout' : 'abort',
               partialText: partialBuffer,
               charsReceived
@@ -9970,7 +9970,7 @@
           textOverride: originalQuestion,
           skipClarificationCheck: true,
           retryCount: currentRetryCount + 1,
-          apiQuestionPrefix: app.logic.buildLindaRetryPrefix(partialTail)
+          apiQuestionPrefix: app.utils.buildLindaRetryPrefix(partialTail)
         });
         return;
       }
