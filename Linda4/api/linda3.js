@@ -39,6 +39,27 @@ const DEFAULT_SOCIALRECHT_CONFIG = {
   }
 };
 
+function resolveSozialrechtApiKey() {
+  const dedicated = normalizeText(process.env.Sozialrecht2026 || process.env.SOZIALRECHT2026 || '');
+  if (dedicated) {
+    return {
+      key: dedicated,
+      source: 'Sozialrecht2026'
+    };
+  }
+  const globalKey = normalizeText(process.env.OPENAI_API_KEY || '');
+  if (globalKey) {
+    return {
+      key: globalKey,
+      source: 'OPENAI_API_KEY'
+    };
+  }
+  return {
+    key: '',
+    source: ''
+  };
+}
+
 function clamp01(value, fallback = null) {
   const num = Number(value);
   if (!Number.isFinite(num)) return fallback;
@@ -672,15 +693,18 @@ async function proxyToLegacy(req, res) {
 async function handleHealth(req, res) {
   const cfg = loadSozialrechtConfig();
   const storageEnvKey = String(cfg?.storage?.vector_store_env_key || 'OPENAI_VECTOR_STORE_ID_SOZIALRECHT');
+  const sozialrechtApi = resolveSozialrechtApiKey();
   const checks = {
     OPENAI_API_KEY: Boolean(process.env.OPENAI_API_KEY),
     Sozialrecht2026: Boolean(process.env.Sozialrecht2026 || process.env.SOZIALRECHT2026),
+    SOZIALRECHT_API_KEY_EFFECTIVE: Boolean(sozialrechtApi.key),
     [storageEnvKey]: Boolean(process.env[storageEnvKey]),
     LEGACY_API_ORIGIN: Boolean(parseOriginSafe(LEGACY_ORIGIN, ''))
   };
   res.status(200).json({
-    ok: Boolean(checks.Sozialrecht2026 && checks.LEGACY_API_ORIGIN),
+    ok: Boolean(checks.SOZIALRECHT_API_KEY_EFFECTIVE && checks.LEGACY_API_ORIGIN),
     checks,
+    sozialrecht_api_key_source: sozialrechtApi.source || '',
     storage_env_key: storageEnvKey,
     storage_configured: Boolean(checks[storageEnvKey]),
     baseUrl: '/api/linda3',
@@ -713,7 +737,8 @@ async function handleSozialrechtChat(req, res, action) {
     ? judgmentModel
     : (fastMode ? fastModel : defaultModel);
 
-  const socialKey = process.env.Sozialrecht2026 || process.env.SOZIALRECHT2026;
+  const sozialrechtApi = resolveSozialrechtApiKey();
+  const socialKey = sozialrechtApi.key;
   if (!socialKey) {
     const fallbackFollowups = buildClarificationFollowups(
       buildSozialrechtSignalProfile(question, history, cfg),
@@ -730,7 +755,7 @@ async function handleSozialrechtChat(req, res, action) {
       meta: {
         domain: 'SOZIALRECHT',
         runtime_error: true,
-        runtime_detail: 'Sozialrecht API-Key fehlt. Bitte Vercel-Variable "Sozialrecht2026" (oder SOZIALRECHT2026) setzen.'
+        runtime_detail: 'Sozialrecht API-Key fehlt. Bitte Vercel-Variable "Sozialrecht2026" (oder SOZIALRECHT2026) setzen; alternativ wird OPENAI_API_KEY verwendet.'
       }
     });
     return;
@@ -768,11 +793,12 @@ async function handleSozialrechtChat(req, res, action) {
         sources: legacySources,
         confidence: normalizedLegacy.confidence,
         evidence_note: evidenceParts.join(' ').trim(),
-        meta: {
-          domain: 'SOZIALRECHT',
-          model: 'deepseek',
-          response_mode: expertRequested ? 'expert' : (requestedResponseMode || 'schnell'),
-          fast_mode: true,
+      meta: {
+        domain: 'SOZIALRECHT',
+        api_key_source: sozialrechtApi.source || '',
+        model: 'deepseek',
+        response_mode: expertRequested ? 'expert' : (requestedResponseMode || 'schnell'),
+        fast_mode: true,
           judgment_mode: false,
           deepseek_via_legacy: true,
           storage_used: false,
@@ -881,8 +907,10 @@ async function handleSozialrechtChat(req, res, action) {
     const groundedModeActive = payload?.guardrails?.grounded_mode !== false;
     const strictUnknownClient = payload?.guardrails?.strict_unknown !== false;
     const enforceStrictUnknown = strictUnknown && strictUnknownClient && groundedModeActive && !fastMode;
+    const confidenceValue = Number(normalized.confidence);
+    const lowConfidence = Number.isFinite(confidenceValue) ? confidenceValue < 0.34 : false;
     const resolvedAnswer =
-      enforceStrictUnknown && mergedSources.length === 0
+      enforceStrictUnknown && mergedSources.length === 0 && lowConfidence
         ? 'Ich weiss es nicht sicher. Ohne belastbare Quelle antworte ich im Fachmodus Sozialrecht bewusst nicht spekulativ. Bitte frage enger oder nenne das konkrete Leistungsthema.'
         : normalized.answer;
     const gpt5FooterActive = judgmentMode && /gpt-5/i.test(String(activeModel || ''));
@@ -895,6 +923,9 @@ async function handleSozialrechtChat(req, res, action) {
       evidenceNotes.push('Vector-Store-Treffer wurden als Quellen-Chunks eingebunden.');
     } else if (storageUsed && !mergedSources.length) {
       evidenceNotes.push('Vector Store war aktiv, aber es wurden keine zitierbaren Quellen-Chunks erkannt.');
+    }
+    if (!mergedSources.length && !lowConfidence) {
+      evidenceNotes.push('Hinweis: Antwort ohne extrahierte Quellen-Chunks, bitte fachlich gegenpruefen.');
     }
     if (storageFallback) {
       evidenceNotes.push('Storage-Abfrage war nicht stabil; Antwort wurde ersatzweise ohne Storage erstellt.');
@@ -914,6 +945,7 @@ async function handleSozialrechtChat(req, res, action) {
       evidence_note: evidenceNotes.join(' ').trim(),
       meta: {
         domain: 'SOZIALRECHT',
+        api_key_source: sozialrechtApi.source || '',
         model: activeModel,
         response_mode: expertRequested ? 'expert' : (requestedResponseMode || (fastMode ? 'schnell' : 'genau')),
         fast_mode: fastMode,
@@ -942,6 +974,7 @@ async function handleSozialrechtChat(req, res, action) {
       evidence_note: `Technischer Hinweis: ${detail}`,
       meta: {
         domain: 'SOZIALRECHT',
+        api_key_source: sozialrechtApi.source || '',
         runtime_error: true,
         runtime_detail: detail
       }
