@@ -3305,6 +3305,7 @@
       <button class="btn cancel" onclick="app.ui.closeModals()">Abbrechen</button>
       <button class="btn save" onclick="app.logic.saveSettings()">Speichern</button>
     </div>
+    <p id="settings-version-stamp" class="mini" style="margin-top:8px; color:#4a607b;">Version wird geladen…</p>
   </div>
 </div>
 
@@ -3401,7 +3402,7 @@
   const LEARNING_TEMPLATES_PATH = './docs/learning_templates.json';
   const SOZIALRECHT_CURRICULUM_PATH = './docs/sozialrecht_sgb_i_xii.json';
   const CLAUDE_CLARIFY_MODE = true;
-  const APP_VERSION = 3;
+  const APP_VERSION = 4;
   const REQUEST_MEMORY_VERSION = 1;
 
   const SOURCE_DEFS = [
@@ -3449,8 +3450,8 @@
     showEvidence: true,
     showFollowups: true,
     showLearningPath: false,
-    learningGoal: '',
-    feedbackIncludeTranscript: false
+      learningGoal: '',
+      feedbackIncludeTranscript: false
   };
 
   const DEFAULT_PRIVACY_SETTINGS = {
@@ -3545,6 +3546,7 @@
     settings: {
         name: '',
         domain: SOZIALRECHT_ONLY_MODE ? SOZIALRECHT_DOMAIN_KEY : '',
+        lastSettingsUpdate: '',
         snippets: [],
       sources: SOURCE_DEFS.reduce((acc, s) => {
         acc[s.key] = s.default;
@@ -3632,6 +3634,24 @@
     } catch (_) {
       return fallback;
     }
+  };
+
+  const parseEmbeddedJSONObject = (rawText) => {
+    const text = String(rawText || '')
+      .replace(/```json/gi, '```')
+      .replace(/```/g, '')
+      .trim();
+    if (!text) return null;
+    const direct = parseJSON(text, null);
+    if (direct && typeof direct === 'object') return direct;
+    const firstBrace = text.indexOf('{');
+    const lastBrace = text.lastIndexOf('}');
+    if (firstBrace >= 0 && lastBrace > firstBrace) {
+      const candidate = text.slice(firstBrace, lastBrace + 1).trim();
+      const parsed = parseJSON(candidate, null);
+      if (parsed && typeof parsed === 'object') return parsed;
+    }
+    return null;
   };
 
   const app = {
@@ -3835,12 +3855,7 @@
         const parsed = parseJSON(rawText, null);
         if (!parsed) return { answer: rawText, sources: [], meta: {} };
         if (typeof parsed === 'string') return { answer: parsed, sources: [], meta: {} };
-        const nestedAnswerPayload = (() => {
-          const nestedRaw = String(parsed.answer || parsed.response || parsed.text || '').trim();
-          if (!nestedRaw || nestedRaw[0] !== '{') return null;
-          const nested = parseJSON(nestedRaw, null);
-          return (nested && typeof nested === 'object') ? nested : null;
-        })();
+        const nestedAnswerPayload = parseEmbeddedJSONObject(parsed.answer || parsed.response || parsed.text || '');
         const backendMeta = (parsed.meta && typeof parsed.meta === 'object') ? parsed.meta : {};
         const nestedMeta = (nestedAnswerPayload?.meta && typeof nestedAnswerPayload.meta === 'object')
           ? nestedAnswerPayload.meta
@@ -4118,6 +4133,23 @@
         );
         app.ui.syncSozialrechtOnlyControls();
         app.ui.renderApiHealthStatus(app.state.apiHealth);
+        app.ui.renderSettingsVersionStamp();
+      },
+
+      renderSettingsVersionStamp: () => {
+        const target = document.getElementById('settings-version-stamp');
+        if (!target) return;
+        const updatedAtRaw = String(app.state.settings?.lastSettingsUpdate || '').trim();
+        let updatedAtLabel = 'noch nicht gespeichert';
+        if (updatedAtRaw) {
+          const dt = new Date(updatedAtRaw);
+          if (!Number.isNaN(dt.getTime())) {
+            updatedAtLabel = dt.toLocaleString('de-DE');
+          } else {
+            updatedAtLabel = updatedAtRaw;
+          }
+        }
+        target.textContent = `Version v${APP_VERSION} • Letzte Einstellungsänderung: ${updatedAtLabel}`;
       },
 
       renderApiHealthStatus: (health) => {
@@ -5207,6 +5239,70 @@
         return tokens.slice(0, 5).join(' ');
       },
 
+      deriveAnswerExcerptForSource: (answerText = '', question = '', sourceTitle = '') => {
+        const plain = String(answerText || '').replace(/\s+/g, ' ').trim();
+        if (!plain) return '';
+        const sentences = plain
+          .split(/(?<=[.!?])\s+/)
+          .map((s) => s.trim())
+          .filter((s) => s.length >= 45);
+        if (!sentences.length) return '';
+
+        const tokens = Array.from(new Set(
+          `${question || ''} ${sourceTitle || ''}`
+            .toLowerCase()
+            .replace(/[^\p{L}\p{N}\s-]/gu, ' ')
+            .split(/\s+/)
+            .map((t) => t.trim())
+            .filter((t) => t.length >= 5)
+        ));
+        const stop = new Set(['quelle', 'quellen', 'answer', 'antwort', 'sozialrecht', 'fachmodus', 'arbeitsentgelt']);
+        const filtered = tokens.filter((t) => !stop.has(t));
+        let pick = sentences[0];
+        let bestScore = -1;
+
+        sentences.slice(0, 12).forEach((sentence) => {
+          const low = sentence.toLowerCase();
+          let score = 0;
+          filtered.forEach((token) => {
+            if (low.includes(token)) score += 2;
+          });
+          if (/§\s*\d+|sgb|efzg|krankengeld|entgeltfortzahlung|anspruch|voraussetzung/i.test(sentence)) score += 1;
+          if (score > bestScore) {
+            bestScore = score;
+            pick = sentence;
+          }
+        });
+
+        return app.utils.truncate(pick, 280);
+      },
+
+      buildContextFollowups: (question, answer, topic, opts = {}) => {
+        const text = `${question || ''} ${answer || ''}`.toLowerCase();
+        const sozialrechtDomain = Boolean(opts.sozialrechtDomain);
+        const suggestions = [];
+
+        if (/\b(entgeltfortzahlung|krankengeld|arbeitsunf|au\b)\b/i.test(text)) {
+          suggestions.push('Zeige mir den Unterschied zwischen Entgeltfortzahlung (Arbeitgeber) und Krankengeld (Krankenkasse) in 5 Punkten.');
+          suggestions.push('Pruefe einen kurzen Fall: Wann endet Entgeltfortzahlung und ab wann beginnt Krankengeld?');
+        }
+        if (/\b(friste|frist|woche|wochen|tage|dauer|zeitraum)\b/i.test(text)) {
+          suggestions.push(`Welche Fristen und Nachweise muss ich bei ${topic} sicher beachten?`);
+        }
+        if (/\b(arbeitgeber|personalabteilung|betrieb|azubi|arbeitnehmer)\b/i.test(text)) {
+          suggestions.push(`Erstelle mir eine Checkliste fuer die Personalpraxis zu ${topic}.`);
+        }
+        if (/\b(urteil|beschluss|aktenzeichen|rechtsprechung)\b/i.test(text)) {
+          suggestions.push(`Nenne mir ein relevantes Urteil zu ${topic} mit kurzer Einordnung.`);
+        }
+        if (sozialrechtDomain) {
+          suggestions.push(`Erstelle drei IHK-typische Pruefungsfragen mit Loesung zu ${topic}.`);
+        } else {
+          suggestions.push(`Gib mir ein kurzes Praxisbeispiel zu ${topic}.`);
+        }
+        return app.logic.sanitizeAssistantFollowups(suggestions);
+      },
+
       detectSensitiveSignals: (text) => {
         const raw = String(text || '');
         const checks = [
@@ -5626,12 +5722,14 @@
           out.push('Welche Quelle oder welches Dokument soll ich dafuer gezielt nutzen?');
           out.push(`Formuliere mir eine praezisere Frage zu ${topic}.`);
         } else {
-          out.push(...app.logic.sanitizeAssistantFollowups(meta.backendFollowups || []));
-          if (sources.length) out.push(`Zeige mir die wichtigste Quelle zu ${topic}.`);
-          out.push(`Gib mir ein kurzes Praxisbeispiel zu ${topic}.`);
-          out.push(`Fasse ${topic} in drei Stichpunkten zusammen.`);
-          if (domain) out.push(`Erstelle drei Pruefungsfragen zu ${topic} im Fachmodus ${domain}.`);
-          out.push(...app.logic.buildSozialrechtFollowups(topic, question || answer));
+          const backend = app.logic.sanitizeAssistantFollowups(meta.backendFollowups || []);
+          const contextual = app.logic.buildContextFollowups(question, answer, topic, { sozialrechtDomain });
+          if (sources.length) out.push(`Zeige mir die wichtigste Quelle mit Abschnitt zu ${topic}.`);
+          out.push(...contextual);
+          if (!sozialrechtDomain) out.push(`Fasse ${topic} in drei Stichpunkten zusammen.`);
+          if (domain && !sozialrechtDomain) out.push(`Erstelle drei Pruefungsfragen zu ${topic} im Fachmodus ${domain}.`);
+          if (sozialrechtDomain) out.push(...app.logic.buildSozialrechtFollowups(topic, question || answer));
+          if (backend.length) out.push(...backend.slice(0, 1));
           if (goal && !sozialrechtDomain) out.push(`Verbinde ${topic} mit meinem Lernziel "${goal}".`);
         }
 
@@ -6006,7 +6104,9 @@
         app.logic.applyPrivacyMode(nextPrivacy, { showOverlay: false, showLockHint: false });
         if (sozialrechtLocked) app.logic.enforceSozialrechtMode({ save: false });
 
+        app.state.settings.lastSettingsUpdate = new Date().toISOString();
         app.utils.save();
+        app.ui.renderSettingsVersionStamp();
         app.ui.updateDomainUI();
         app.ui.renderSourceToolbar();
         app.ui.syncGroundedModeControls();
@@ -7490,6 +7590,7 @@
         const sourceList = app.logic.sanitizeSourceList(sources);
         const fallbackSources = sourceList.length ? [] : app.logic.extractSourcesFromRenderedMarkdown(md);
         const finalSources = sourceList.length ? sourceList.slice() : fallbackSources.slice();
+        const renderedAnswerText = String(md.innerText || '').trim();
         const plainText = String(md.innerText || '').toLowerCase();
         const mentionsBBIG = /(?:\bbbig\b|berufsbildungsgesetz)/i.test(plainText);
         if (mentionsBBIG) {
@@ -7540,14 +7641,16 @@
             const anchorHtml = s.url
               ? `<a href="${encodeURI(s.url)}">${app.utils.safeText(s.title)}</a>`
               : `<span>${app.utils.safeText(s.title)}</span>`;
-            const highlightedSnippet = s.excerpt
+            const effectiveExcerpt = String(s.excerpt || '').trim() ||
+              app.logic.deriveAnswerExcerptForSource(renderedAnswerText, bubbleMeta.question || '', s.title || '');
+            const highlightedSnippet = effectiveExcerpt
               ? (
                 sozialrechtSourceCards
-                  ? app.logic.highlightSourceExcerpt(s.excerpt, bubbleMeta.question || '')
-                  : app.utils.safeText(s.excerpt)
+                  ? app.logic.highlightSourceExcerpt(effectiveExcerpt, bubbleMeta.question || '')
+                  : app.utils.safeText(effectiveExcerpt)
               )
               : '';
-            const snippetHtml = s.excerpt
+            const snippetHtml = effectiveExcerpt
               ? `<p class="source-card-snippet">${highlightedSnippet}</p>`
               : '<p class="source-card-snippet">Kein markierter Abschnitt vorhanden.</p>';
             const noteHtml = s.note
