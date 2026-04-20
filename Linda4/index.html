@@ -3485,6 +3485,8 @@
   const DEFAULT_PRIVACY_SETTINGS = {
     ephemeral: false
   };
+  const LINDA_TIMEOUT_NOTICE = '\n\n[Antwort unvollständig – Linda hat das Zeitlimit erreicht. Bitte erneut versuchen oder Schnellmodus aktivieren.]';
+  const LINDA_RETRY_FAILED_NOTICE = '\n\n[Erneut unterbrochen. Bitte versuche es später erneut.]';
 
   const DEFAULT_LEARNING_TEMPLATES = {
     version: '1.0',
@@ -3731,6 +3733,21 @@
       .replace(/\\"/g, '"')
       .replace(/\\\\/g, '\\')
       .trim();
+  };
+
+  const stripLindaSentinels = (rawText) => {
+    const raw = String(rawText || '');
+    return {
+      text: raw.replace(/__LINDA_DONE__/g, '').replace(/__LINDA_TIMEOUT__/g, '').trim(),
+      done: raw.includes('__LINDA_DONE__'),
+      timeout: raw.includes('__LINDA_TIMEOUT__')
+    };
+  };
+
+  const isCompleteLindaBuffer = (rawText) => {
+    const text = String(rawText || '').trim();
+    if (!text) return false;
+    return /[.!?]$/.test(text) || /```$/.test(text);
   };
 
   const extractAnswerTextFromJsonLike = (rawText) => {
@@ -4137,7 +4154,26 @@
           ...cfg
         };
       },
-      isMobileClient: () => /iphone|ipad|ipod|android|mobile/i.test(navigator.userAgent || '')
+      isMobileClient: () => /iphone|ipad|ipod|android|mobile/i.test(navigator.userAgent || ''),
+      // LINDA TIMEOUT HANDLER
+      getLindaRequestTimeoutMs: () => Boolean(app.state.settings.fastMode?.enabled) ? 12000 : 25000,
+      createLindaRequestError: ({ kind = 'timeout', partialText = '', charsReceived = 0 } = {}) => {
+        const err = new Error(kind === 'timeout' ? 'Linda-Zeitlimit erreicht.' : 'Linda-Anfrage abgebrochen.');
+        err.name = kind === 'timeout' ? 'LindaTimeoutError' : 'AbortError';
+        err.lindaEvent = kind;
+        err.partialText = normalizeAnswerTextForRender(String(partialText || ''));
+        err.charsReceived = Number(charsReceived) || 0;
+        err.isLindaRequestError = true;
+        return err;
+      },
+      buildLindaRetryPrefix: (partialText) => {
+        const tail = String(partialText || '').trim().slice(-80);
+        return (
+          'Bitte vervollständige die folgende unvollständige Antwort ' +
+          '(fahre nahtlos fort, ohne Wiederholung):\n' +
+          `[${tail}]`
+        );
+      }
     },
 
     ui: {
@@ -4667,6 +4703,22 @@
           app.logic.decorateBubble(md, deepseekData?.sources || [], deepseekData?.meta || {});
         }
         return row;
+      },
+
+      appendLindaRetryButton: (row, retryMeta = {}) => {
+        if (!row || Number(retryMeta.retryCount || 0) >= 1) return;
+        const actions = row.querySelector('.msg-actions');
+        if (!actions) return;
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'action-btn strong';
+        btn.textContent = '↺ Erneut versuchen';
+        btn.setAttribute('data-timeout-retry', '1');
+        btn.setAttribute('data-retry-question', encodeURIComponent(String(retryMeta.question || '')));
+        btn.setAttribute('data-retry-tail', encodeURIComponent(String(retryMeta.partialText || '').slice(-80)));
+        btn.setAttribute('data-retry-count', String(Number(retryMeta.retryCount || 0)));
+        btn.setAttribute('data-retry-chars', String(Number(retryMeta.charsReceived || 0)));
+        actions.appendChild(btn);
       },
 
       setSendingState: (sending) => {
@@ -7338,65 +7390,139 @@
         if (!safePayload.question) {
           throw new Error('Frage ist leer');
         }
+        // LINDA TIMEOUT HANDLER
+        const requestController = new AbortController();
+        const timeoutMs = app.logic.getLindaRequestTimeoutMs();
+        let charsReceived = 0;
+        let partialBuffer = '';
+        let timeoutTriggered = false;
+        let timeoutId = 0;
+        let failureLogged = false;
+        const externalAbortHandler = () => requestController.abort();
+        const logLindaFailure = (event, count = charsReceived) => {
+          if (failureLogged) return;
+          failureLogged = true;
+          console.warn({ event, timestamp: new Date().toISOString(), charsReceived: Number(count) || 0 });
+        };
 
-        let res = await app.logic.fetchApi(endpoint, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(safePayload),
-          signal
-        });
-        let lastErrorDetail = '';
-        let lastErrorText = '';
+        if (signal) {
+          if (signal.aborted) requestController.abort();
+          else signal.addEventListener('abort', externalAbortHandler, { once: true });
+        }
 
-        if (!res.ok) {
-          let detail = '';
-          let errText = '';
-          try {
-            const err = await res.json();
-            const errMsg = String(err?.error || err?.message || '').trim();
-            const errDetail = String(err?.detail || '').trim();
-            const parts = [errMsg, errDetail].filter(Boolean);
-            detail = parts.length ? `: ${parts.join(' – ')}` : '';
-            errText = parts.join(' ').toLowerCase();
-          } catch (_) {}
-          lastErrorDetail = detail;
-          lastErrorText = errText;
+        const requestFlow = async (activePayload) => {
+          let res = await app.logic.fetchApi(endpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(activePayload),
+            signal: requestController.signal
+          });
+          let lastErrorDetail = '';
+          let lastErrorText = '';
 
-          const missingQuestionError =
-            res.status === 400 &&
-            (errText.includes('question') || detail.toLowerCase().includes('question'));
+          if (!res.ok) {
+            let detail = '';
+            let errText = '';
+            try {
+              const err = await res.json();
+              const errMsg = String(err?.error || err?.message || '').trim();
+              const errDetail = String(err?.detail || '').trim();
+              const parts = [errMsg, errDetail].filter(Boolean);
+              detail = parts.length ? `: ${parts.join(' – ')}` : '';
+              errText = parts.join(' ').toLowerCase();
+            } catch (_) {}
+            lastErrorDetail = detail;
+            lastErrorText = errText;
 
-          if (missingQuestionError) {
-            const retryPayload = {
-              question: safePayload.question,
-              fachmodus: String(safePayload.fachmodus || ''),
-              history: Array.isArray(safePayload.history) ? safePayload.history : [],
-              routing: safePayload.routing || {}
-            };
-            res = await app.logic.fetchApi(endpoint, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(retryPayload),
-              signal
+            const missingQuestionError =
+              res.status === 400 &&
+              (errText.includes('question') || detail.toLowerCase().includes('question'));
+
+            if (missingQuestionError) {
+              const retryPayload = {
+                question: activePayload.question,
+                fachmodus: String(activePayload.fachmodus || ''),
+                history: Array.isArray(activePayload.history) ? activePayload.history : [],
+                routing: activePayload.routing || {}
+              };
+              res = await app.logic.fetchApi(endpoint, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(retryPayload),
+                signal: requestController.signal
+              });
+            }
+          }
+
+          if (!res.ok) {
+            let detail = lastErrorDetail || '';
+            try {
+              const err = await res.json();
+              const errMsg = String(err?.error || err?.message || '').trim();
+              const errDetail = String(err?.detail || '').trim();
+              const parts = [errMsg, errDetail].filter(Boolean);
+              detail = parts.length ? `: ${parts.join(' – ')}` : detail;
+            } catch (_) {}
+            if (!detail && lastErrorText) detail = `: ${lastErrorText}`;
+            throw new Error(app.logic.describeApiStatus(res.status, endpoint, detail, res.url || ''));
+          }
+
+          const raw = await res.text();
+          const sentinelState = stripLindaSentinels(raw);
+          partialBuffer = normalizeAnswerTextForRender(sentinelState.text || extractTruncatedAnswerFragment(raw));
+          charsReceived = String(partialBuffer || sentinelState.text || '').length;
+
+          if (sentinelState.timeout) {
+            logLindaFailure('linda_timeout', charsReceived);
+            throw app.logic.createLindaRequestError({ kind: 'timeout', partialText: partialBuffer, charsReceived });
+          }
+
+          const truncatedRawAnswer = extractTruncatedAnswerFragment(raw);
+          if (!sentinelState.done && truncatedRawAnswer) {
+            const normalizedTruncated = normalizeAnswerTextForRender(truncatedRawAnswer);
+            const truncatedChars = normalizedTruncated.length;
+            logLindaFailure('linda_timeout', truncatedChars);
+            throw app.logic.createLindaRequestError({
+              kind: 'timeout',
+              partialText: normalizedTruncated,
+              charsReceived: truncatedChars
             });
           }
-        }
 
-        if (!res.ok) {
-          let detail = lastErrorDetail || '';
-          try {
-            const err = await res.json();
-            const errMsg = String(err?.error || err?.message || '').trim();
-            const errDetail = String(err?.detail || '').trim();
-            const parts = [errMsg, errDetail].filter(Boolean);
-            detail = parts.length ? `: ${parts.join(' – ')}` : detail;
-          } catch (_) {}
-          if (!detail && lastErrorText) detail = `: ${lastErrorText}`;
-          throw new Error(app.logic.describeApiStatus(res.status, endpoint, detail, res.url || ''));
-        }
+          return app.utils.parseApiAnswer(sentinelState.text || raw);
+        };
 
-        const raw = await res.text();
-        return app.utils.parseApiAnswer(raw);
+        const timeoutPromise = new Promise((_, reject) => {
+          timeoutId = window.setTimeout(() => {
+            timeoutTriggered = true;
+            requestController.abort();
+            logLindaFailure('linda_timeout', charsReceived);
+            reject(app.logic.createLindaRequestError({ kind: 'timeout', partialText: partialBuffer, charsReceived }));
+          }, timeoutMs);
+        });
+
+        try {
+          return await Promise.race([
+            requestFlow(safePayload),
+            timeoutPromise
+          ]);
+        } catch (err) {
+          if (requestController.signal.aborted && (err?.name === 'AbortError' || /aborted/i.test(String(err?.message || '')))) {
+            const event = timeoutTriggered ? 'linda_timeout' : 'linda_abort';
+            logLindaFailure(event, charsReceived);
+            throw app.logic.createLindaRequestError({
+              kind: timeoutTriggered ? 'timeout' : 'abort',
+              partialText: partialBuffer,
+              charsReceived
+            });
+          }
+          throw err;
+        } finally {
+          if (timeoutId) window.clearTimeout(timeoutId);
+          if (signal) {
+            try { signal.removeEventListener('abort', externalAbortHandler); } catch (_) {}
+          }
+        }
       },
 
       requestCardsFromSelection: async () => {
@@ -8520,6 +8646,8 @@
         const text = forcedText || app.ui.input.value.trim();
         const skipClarificationCheck = Boolean(opts?.skipClarificationCheck);
         const fromClarifier = Boolean(opts?.fromClarifier);
+        const retryCount = Number(opts?.retryCount || 0);
+        const apiQuestionPrefix = String(opts?.apiQuestionPrefix || '').trim();
         const apiQuestionSuffix = String(opts?.apiQuestionSuffix || '').trim();
         if (!text) return;
 
@@ -8685,9 +8813,13 @@
             ? []
             : contextWindow;
 
-          const payloadQuestion = apiQuestionSuffix
-            ? `${text}\n\n${apiQuestionSuffix}`
-            : text;
+          const payloadQuestion = apiQuestionPrefix
+            ? `${apiQuestionPrefix}\n\n${text}`
+            : (
+              apiQuestionSuffix
+                ? `${text}\n\n${apiQuestionSuffix}`
+                : text
+            );
           const payload = {
             question: app.utils.truncate(payloadQuestion, 1600),
             fachmodus: SOZIALRECHT_ONLY_MODE ? SOZIALRECHT_DOMAIN_KEY : (app.state.settings.domain || ''),
@@ -8893,8 +9025,34 @@
         } catch (err) {
           loading.remove();
           const offline = !navigator.onLine;
-          const timeoutErr = err?.name === 'AbortError';
+          const timeoutErr = err?.name === 'AbortError' || err?.name === 'LindaTimeoutError';
           const canUseDeepseekTimeoutFallback = false;
+          const partialText = normalizeAnswerTextForRender(String(err?.partialText || ''));
+          const charsReceived = Number(err?.charsReceived || partialText.length || 0);
+          const incompleteBuffer = partialText && !isCompleteLindaBuffer(partialText);
+
+          if ((err?.lindaEvent === 'timeout' || err?.lindaEvent === 'abort') && !offline) {
+            const notice = retryCount >= 1 ? LINDA_RETRY_FAILED_NOTICE : LINDA_TIMEOUT_NOTICE;
+            const renderedText = partialText
+              ? `${partialText}${incompleteBuffer || !partialText ? notice : ''}`
+              : notice.trim();
+            const retryRow = app.ui.createBubble('assistant', renderedText, [], {
+              question: text,
+              timeoutRetry: true
+            });
+            app.ui.log.appendChild(retryRow);
+            if ((incompleteBuffer || !partialText) && retryCount < 1) {
+              app.ui.appendLindaRetryButton(retryRow, {
+                question: text,
+                partialText,
+                retryCount,
+                charsReceived
+              });
+            }
+            app.utils.save();
+            app.ui.scrollBottom();
+            return;
+          }
 
           if (timeoutErr && lastPayload && !offline && canUseDeepseekTimeoutFallback) {
             try {
@@ -9795,6 +9953,25 @@
       if (followupBtn) {
         const prompt = decodeURIComponent(followupBtn.getAttribute('data-followup') || '');
         if (prompt) app.logic.sendMessage({ textOverride: prompt });
+        return;
+      }
+
+      const timeoutRetryBtn = e.target.closest('[data-timeout-retry]');
+      if (timeoutRetryBtn) {
+        const originalQuestion = decodeURIComponent(timeoutRetryBtn.getAttribute('data-retry-question') || '');
+        const partialTail = decodeURIComponent(timeoutRetryBtn.getAttribute('data-retry-tail') || '');
+        const currentRetryCount = Number(timeoutRetryBtn.getAttribute('data-retry-count') || 0);
+        const charsReceived = Number(timeoutRetryBtn.getAttribute('data-retry-chars') || partialTail.length || 0);
+        if (!originalQuestion) return;
+        console.warn({ event: 'linda_retry', timestamp: new Date().toISOString(), charsReceived });
+        timeoutRetryBtn.disabled = true;
+        timeoutRetryBtn.hidden = true;
+        app.logic.sendMessage({
+          textOverride: originalQuestion,
+          skipClarificationCheck: true,
+          retryCount: currentRetryCount + 1,
+          apiQuestionPrefix: app.logic.buildLindaRetryPrefix(partialTail)
+        });
         return;
       }
 
