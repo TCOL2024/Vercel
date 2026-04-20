@@ -733,32 +733,39 @@ async function callOpenAIResponsesWithStorage({ apiKey, model, messages, tempera
   };
 }
 
-async function callDeepseekReasoner({ apiKey, messages, maxOutputTokens }) {
+async function callDeepseekReasoner({ apiKey, messages, maxOutputTokens, timeoutMs = 22000 }) {
   const deepseekMaxTokens = Math.max(256, Math.min(4000, Number(maxOutputTokens) || 1200));
-  const res = await fetch('https://api.deepseek.com/chat/completions', {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({
-      model: 'deepseek-reasoner',
-      messages,
-      temperature: 1.0,
-      max_tokens: deepseekMaxTokens,
-      response_format: { type: 'json_object' }
-    })
-  });
-  const raw = await res.text();
-  if (!res.ok) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(new Error('Deepseek timeout')), timeoutMs);
+  try {
+    const res = await fetch('https://api.deepseek.com/chat/completions', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        'Content-Type': 'application/json'
+      },
+      signal: controller.signal,
+      body: JSON.stringify({
+        model: 'deepseek-reasoner',
+        messages,
+        temperature: 1.0,
+        max_tokens: deepseekMaxTokens,
+        response_format: { type: 'json_object' }
+      })
+    });
+    const raw = await res.text();
+    if (!res.ok) {
+      const parsed = parseJsonSafe(raw, {});
+      const detail = normalizeText(parsed?.error?.message || parsed?.error || raw);
+      throw new Error(`Deepseek Fehler (${res.status}): ${detail || 'unbekannt'}`);
+    }
     const parsed = parseJsonSafe(raw, {});
-    const detail = normalizeText(parsed?.error?.message || parsed?.error || raw);
-    throw new Error(`Deepseek Fehler (${res.status}): ${detail || 'unbekannt'}`);
+    const content = normalizeMultilineText(parsed?.choices?.[0]?.message?.content || '');
+    if (!content) throw new Error('Deepseek lieferte keinen Inhalt.');
+    return content;
+  } finally {
+    clearTimeout(timer);
   }
-  const parsed = parseJsonSafe(raw, {});
-  const content = normalizeMultilineText(parsed?.choices?.[0]?.message?.content || '');
-  if (!content) throw new Error('Deepseek lieferte keinen Inhalt.');
-  return content;
 }
 
 async function callLegacyDeepseek(payload, req) {
@@ -901,13 +908,14 @@ async function handleSozialrechtChat(req, res, action) {
       const schnellKey = resolveSozialrechtSchnellKey();
       if (!schnellKey) throw new Error('SozialrechtSchnell fehlt.');
 
-      const deepseekMaxOutputTokens = expertRequested ? 4000 : 1600;
+      const deepseekMaxOutputTokens = expertRequested ? 2400 : 1600;
       const systemPrompt = buildSozialrechtSystemPrompt(cfg, false);
       const messages = toOpenAIMessages(systemPrompt, history, question);
       const deepseekRaw = await callDeepseekReasoner({
         apiKey: schnellKey,
         messages,
-        maxOutputTokens: deepseekMaxOutputTokens
+        maxOutputTokens: deepseekMaxOutputTokens,
+        timeoutMs: expertRequested ? 18000 : 14000
       });
       const normalizedDeepseek = normalizeModelPayload(deepseekRaw, cfg);
       const deepseekSources = normalizeSources(normalizedDeepseek.sources || []);

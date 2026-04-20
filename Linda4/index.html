@@ -8223,9 +8223,11 @@
                 channel: 'expert'
               }
             };
+            const expertController = new AbortController();
+            const expertTimeout = setTimeout(() => expertController.abort(), 24000);
 
             try {
-              makeParsed = await app.logic.requestAnswer(DEEPSEEK_API_ENDPOINT, expertPayload, controller.signal);
+              makeParsed = await app.logic.requestAnswer(DEEPSEEK_API_ENDPOINT, expertPayload, expertController.signal);
               makeParsed.answer = app.logic.stripRepeatedIntro(makeParsed.answer, allowIntroForThisTurn);
               makeParsed = app.logic.enrichAssistantResponse(makeParsed, text, expertPayload, { channel: 'expert' });
               makeParsed.meta = { ...(makeParsed.meta || {}), panelTitle: 'Expertenmodus (DeepSeek)' };
@@ -8233,9 +8235,24 @@
               const shouldFallbackToDefault = DEEPSEEK_API_ENDPOINT !== API_ENDPOINT;
               if (shouldFallbackToDefault) {
                 try {
-                  makeParsed = await app.logic.requestAnswer(API_ENDPOINT, expertPayload, controller.signal);
+                  const fallbackPayload = {
+                    ...expertPayload,
+                    schnellmodus: false,
+                    routing: {
+                      ...(expertPayload.routing || {}),
+                      preferred_model: 'gpt-5.1',
+                      response_mode: 'expert'
+                    }
+                  };
+                  const fallbackController = new AbortController();
+                  const fallbackTimeout = setTimeout(() => fallbackController.abort(), 30000);
+                  try {
+                    makeParsed = await app.logic.requestAnswer(API_ENDPOINT, fallbackPayload, fallbackController.signal);
+                  } finally {
+                    clearTimeout(fallbackTimeout);
+                  }
                   makeParsed.answer = app.logic.stripRepeatedIntro(makeParsed.answer, allowIntroForThisTurn);
-                  makeParsed = app.logic.enrichAssistantResponse(makeParsed, text, expertPayload, { channel: 'expert-fallback' });
+                  makeParsed = app.logic.enrichAssistantResponse(makeParsed, text, fallbackPayload, { channel: 'expert-fallback' });
                   makeParsed.meta = { ...(makeParsed.meta || {}), panelTitle: 'Expertenmodus (Fallback)' };
                 } catch (fallbackErr) {
                   makeParsed = { answer: `❌ Expertenmodus Fehler: ${fallbackErr?.message || 'unbekannt'}`, sources: [], meta: { panelTitle: 'Expertenmodus' } };
@@ -8243,6 +8260,8 @@
               } else {
                 makeParsed = { answer: `❌ Expertenmodus Fehler: ${e?.message || 'unbekannt'}`, sources: [], meta: { panelTitle: 'Expertenmodus' } };
               }
+            } finally {
+              clearTimeout(expertTimeout);
             }
 
             s.messages.push({
@@ -8283,7 +8302,22 @@
                 deepseekRoutingActive &&
                 DEEPSEEK_API_ENDPOINT !== API_ENDPOINT;
               if (!shouldFallbackToDefault) throw primaryErr;
-              parsed = await app.logic.requestAnswer(API_ENDPOINT, payload, controller.signal);
+              const fallbackController = new AbortController();
+              const fallbackTimeout = setTimeout(() => fallbackController.abort(), 30000);
+              try {
+                const fallbackPayload = {
+                  ...payload,
+                  schnellmodus: false,
+                  routing: {
+                    ...(payload.routing || {}),
+                    preferred_model: 'gpt-5.1',
+                    response_mode: 'genau'
+                  }
+                };
+                parsed = await app.logic.requestAnswer(API_ENDPOINT, fallbackPayload, fallbackController.signal);
+              } finally {
+                clearTimeout(fallbackTimeout);
+              }
               parsed.meta = {
                 ...(parsed.meta || {}),
                 deepseek_fallback: true,
@@ -8360,14 +8394,15 @@
               const fallbackTimeout = setTimeout(() => fallbackController.abort(), 25000);
               const fallbackPayload = {
                 ...lastPayload,
-                schnellmodus: true,
+                schnellmodus: false,
                 routing: {
                   ...(lastPayload.routing || {}),
-                  preferred_model: 'deepseek'
+                  preferred_model: 'gpt-5.1',
+                  response_mode: 'genau'
                 }
               };
               const fallbackParsed = await app.logic.requestAnswer(
-                DEEPSEEK_API_ENDPOINT,
+                API_ENDPOINT,
                 fallbackPayload,
                 fallbackController.signal
               );
