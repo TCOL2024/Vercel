@@ -1,7 +1,8 @@
 const fs = require('fs');
 const path = require('path');
 
-const LEGACY_ORIGIN = process.env.LINDA3_LEGACY_API_ORIGIN || 'https://vercel-kappa-seven-33.vercel.app';
+const DEFAULT_LEGACY_ORIGIN = 'https://vercel-kappa-seven-33.vercel.app';
+const LEGACY_ORIGIN = process.env.LINDA3_LEGACY_API_ORIGIN || DEFAULT_LEGACY_ORIGIN;
 const SOCIALRECHT_CONFIG_PATH = path.join(process.cwd(), 'docs', 'sozialrecht_runtime.json');
 
 const DEFAULT_SOCIALRECHT_CONFIG = {
@@ -37,6 +38,27 @@ const DEFAULT_SOCIALRECHT_CONFIG = {
     enabled_when_env_present: true
   }
 };
+
+function resolveSozialrechtApiKey() {
+  const dedicated = normalizeText(process.env.Sozialrecht2026 || process.env.SOZIALRECHT2026 || '');
+  if (dedicated) {
+    return {
+      key: dedicated,
+      source: 'Sozialrecht2026'
+    };
+  }
+  const globalKey = normalizeText(process.env.OPENAI_API_KEY || '');
+  if (globalKey) {
+    return {
+      key: globalKey,
+      source: 'OPENAI_API_KEY'
+    };
+  }
+  return {
+    key: '',
+    source: ''
+  };
+}
 
 function clamp01(value, fallback = null) {
   const num = Number(value);
@@ -90,6 +112,32 @@ function getAction(req) {
   } catch (_) {
     return 'bot';
   }
+}
+
+function parseOriginSafe(value, fallback = '') {
+  const raw = normalizeText(value);
+  if (!raw) return fallback;
+  try {
+    return new URL(raw).origin;
+  } catch (_) {
+    return fallback;
+  }
+}
+
+function requestOrigin(req) {
+  const host = normalizeText(req?.headers?.['x-forwarded-host'] || req?.headers?.host || '');
+  const protoRaw = String(req?.headers?.['x-forwarded-proto'] || 'https');
+  const proto = normalizeText(protoRaw.split(',')[0] || 'https').replace(/[^a-z]/gi, '') || 'https';
+  if (!host) return '';
+  return `${proto}://${host}`;
+}
+
+function resolveLegacyOriginForRequest(req) {
+  const configured = parseOriginSafe(LEGACY_ORIGIN, DEFAULT_LEGACY_ORIGIN);
+  const reqOrigin = parseOriginSafe(requestOrigin(req), '');
+  if (!configured) return DEFAULT_LEGACY_ORIGIN;
+  if (reqOrigin && configured === reqOrigin) return DEFAULT_LEGACY_ORIGIN;
+  return configured;
 }
 
 function loadSozialrechtConfig() {
@@ -345,6 +393,57 @@ function normalizeSources(rawSources) {
     .slice(0, 10);
 }
 
+function extractNormReferenceSources(answerText) {
+  const raw = normalizeMultilineText(answerText || '');
+  if (!raw) return [];
+  const lines = raw
+    .split('\n')
+    .map((line) => normalizeText(line))
+    .filter(Boolean)
+    .slice(0, 80);
+  const found = [];
+  const seen = new Set();
+  const re = /(§\s*\d+[a-z]?(?:\s*abs\.?\s*\d+)?(?:\s*s\.?\s*\d+)?(?:\s*nr\.?\s*\d+)?)\s*(efzg|aag|sgb\s*[ivx0-9]+|sgg|bgb)?/ig;
+
+  for (const line of lines) {
+    let match;
+    while ((match = re.exec(line)) !== null) {
+      const para = normalizeText(match[1] || '');
+      const law = normalizeText((match[2] || '').toUpperCase());
+      if (!para) continue;
+      const title = law ? `${para} ${law}` : para;
+      const key = title.toLowerCase();
+      if (seen.has(key)) continue;
+      seen.add(key);
+      found.push({
+        title: `Normbezug: ${title}`,
+        url: '',
+        excerpt: line,
+        section: 'Rechtsgrundlage',
+        page: '',
+        note: 'Automatisch aus der Antwort extrahiert (kein direkter Dokument-Chunk).',
+        confidence: 0.36
+      });
+      if (found.length >= 6) return found;
+    }
+  }
+  return found;
+}
+
+function isLegacyDeepseekRuntimeFailure(rawResult, normalizedResult) {
+  const runtimeError = Boolean(rawResult?.meta?.runtime_error || rawResult?.runtime_error);
+  const rawDetail = normalizeText(rawResult?.meta?.runtime_detail || rawResult?.runtime_detail || '');
+  const answerText = normalizeText(normalizedResult?.answer || rawResult?.answer || rawResult?.response || '');
+  const low = `${answerText} ${rawDetail}`.toLowerCase();
+  if (runtimeError) return true;
+  return (
+    low.includes('nicht vollstaendig konfiguriert') ||
+    low.includes('api-key') ||
+    low.includes('technisches verarbeitungsproblem') ||
+    low.includes('verbindungsfehler')
+  );
+}
+
 function normalizeModelPayload(rawText, cfg) {
   const fallbackFollowups = Array.isArray(cfg?.clarification_policy?.default_followups)
     ? cfg.clarification_policy.default_followups
@@ -590,8 +689,9 @@ async function callOpenAIResponsesWithStorage({ apiKey, model, messages, tempera
   };
 }
 
-async function callLegacyDeepseek(payload) {
-  const upstream = new URL('/api/linda3?action=deepseek', LEGACY_ORIGIN);
+async function callLegacyDeepseek(payload, req) {
+  const legacyOrigin = resolveLegacyOriginForRequest(req);
+  const upstream = new URL('/api/linda3?action=deepseek', legacyOrigin);
   const body = {
     ...(payload && typeof payload === 'object' ? payload : {}),
     fachmodus: 'SOZIALRECHT',
@@ -623,7 +723,8 @@ async function callLegacyDeepseek(payload) {
 
 async function proxyToLegacy(req, res) {
   const reqUrl = new URL(req.url || '/api/linda3', 'http://localhost');
-  const upstream = new URL('/api/linda3', LEGACY_ORIGIN);
+  const legacyOrigin = resolveLegacyOriginForRequest(req);
+  const upstream = new URL('/api/linda3', legacyOrigin);
   reqUrl.searchParams.forEach((value, key) => upstream.searchParams.set(key, value));
 
   const headers = {};
@@ -643,20 +744,24 @@ async function proxyToLegacy(req, res) {
 async function handleHealth(req, res) {
   const cfg = loadSozialrechtConfig();
   const storageEnvKey = String(cfg?.storage?.vector_store_env_key || 'OPENAI_VECTOR_STORE_ID_SOZIALRECHT');
+  const sozialrechtApi = resolveSozialrechtApiKey();
   const checks = {
     OPENAI_API_KEY: Boolean(process.env.OPENAI_API_KEY),
     Sozialrecht2026: Boolean(process.env.Sozialrecht2026 || process.env.SOZIALRECHT2026),
+    SOZIALRECHT_API_KEY_EFFECTIVE: Boolean(sozialrechtApi.key),
     [storageEnvKey]: Boolean(process.env[storageEnvKey]),
-    LEGACY_API_ORIGIN: Boolean(LEGACY_ORIGIN)
+    LEGACY_API_ORIGIN: Boolean(parseOriginSafe(LEGACY_ORIGIN, ''))
   };
   res.status(200).json({
-    ok: Boolean(checks.Sozialrecht2026 && checks.LEGACY_API_ORIGIN),
+    ok: Boolean(checks.SOZIALRECHT_API_KEY_EFFECTIVE && checks.LEGACY_API_ORIGIN),
     checks,
+    sozialrecht_api_key_source: sozialrechtApi.source || '',
     storage_env_key: storageEnvKey,
     storage_configured: Boolean(checks[storageEnvKey]),
     baseUrl: '/api/linda3',
     ts: new Date().toISOString(),
-    mode: 'sozialrecht-targeted-openai'
+    mode: 'sozialrecht-targeted-openai',
+    legacy_origin_effective: resolveLegacyOriginForRequest(req)
   });
 }
 
@@ -676,6 +781,12 @@ async function handleSozialrechtChat(req, res, action) {
   const fastRequested = forceFast || Boolean(payload.schnellmodus) || String(payload?.routing?.preferred_model || '').toLowerCase() === 'deepseek';
   const judgmentMode = isJudgmentQuestion(question);
   const fastMode = fastRequested && !judgmentMode;
+  const deepseekModeSetting = String(process.env.SOCIALRECHT_DEEPSEEK_MODE || '').trim().toLowerCase();
+  const deepseekLegacyMode = (() => {
+    if (deepseekModeSetting === 'off' || deepseekModeSetting === 'disabled' || deepseekModeSetting === '0') return false;
+    if (deepseekModeSetting === 'legacy' || deepseekModeSetting === 'all' || deepseekModeSetting === 'always') return true;
+    return Boolean(expertRequested);
+  })();
   const defaultModel = String(cfg?.routing?.default_model || DEFAULT_SOCIALRECHT_CONFIG.routing.default_model);
   const fastModel = String(cfg?.routing?.fast_model || DEFAULT_SOCIALRECHT_CONFIG.routing.fast_model);
   const judgmentModel = String(cfg?.routing?.judgment_model || DEFAULT_SOCIALRECHT_CONFIG.routing.judgment_model || defaultModel);
@@ -683,7 +794,8 @@ async function handleSozialrechtChat(req, res, action) {
     ? judgmentModel
     : (fastMode ? fastModel : defaultModel);
 
-  const socialKey = process.env.Sozialrecht2026 || process.env.SOZIALRECHT2026;
+  const sozialrechtApi = resolveSozialrechtApiKey();
+  const socialKey = sozialrechtApi.key;
   if (!socialKey) {
     const fallbackFollowups = buildClarificationFollowups(
       buildSozialrechtSignalProfile(question, history, cfg),
@@ -700,7 +812,7 @@ async function handleSozialrechtChat(req, res, action) {
       meta: {
         domain: 'SOZIALRECHT',
         runtime_error: true,
-        runtime_detail: 'Sozialrecht API-Key fehlt. Bitte Vercel-Variable "Sozialrecht2026" (oder SOZIALRECHT2026) setzen.'
+        runtime_detail: 'Sozialrecht API-Key fehlt. Bitte Vercel-Variable "Sozialrecht2026" (oder SOZIALRECHT2026) setzen; alternativ wird OPENAI_API_KEY verwendet.'
       }
     });
     return;
@@ -713,7 +825,7 @@ async function handleSozialrechtChat(req, res, action) {
   }
 
   let legacyDeepseekError = '';
-  if (fastMode) {
+  if (fastMode && deepseekLegacyMode) {
     try {
       const legacyRaw = await callLegacyDeepseek({
         question,
@@ -724,9 +836,20 @@ async function handleSozialrechtChat(req, res, action) {
         guardrails: payload?.guardrails || {},
         assistantPrefs: payload?.assistantPrefs || {},
         clientMeta: payload?.clientMeta || {}
-      });
+      }, req);
       const normalizedLegacy = normalizeModelPayload(JSON.stringify(legacyRaw), cfg);
       const legacySources = normalizeSources(legacyRaw?.sources || normalizedLegacy.sources || []);
+      const legacyRuntimeFailure = isLegacyDeepseekRuntimeFailure(legacyRaw, normalizedLegacy);
+      if (legacyRuntimeFailure) {
+        const legacyMsg = normalizeText(
+          legacyRaw?.meta?.runtime_detail ||
+          legacyRaw?.error ||
+          normalizedLegacy.evidence_note ||
+          normalizedLegacy.answer ||
+          'Deepseek-Legacy Runtime-Fehler'
+        );
+        legacyDeepseekError = legacyMsg;
+      } else {
       const evidenceParts = [];
       if (normalizedLegacy.evidence_note) evidenceParts.push(normalizedLegacy.evidence_note);
       evidenceParts.push('Deepseek-Routing ueber Legacy-Endpoint aktiv.');
@@ -738,11 +861,12 @@ async function handleSozialrechtChat(req, res, action) {
         sources: legacySources,
         confidence: normalizedLegacy.confidence,
         evidence_note: evidenceParts.join(' ').trim(),
-        meta: {
-          domain: 'SOZIALRECHT',
-          model: 'deepseek',
-          response_mode: expertRequested ? 'expert' : (requestedResponseMode || 'schnell'),
-          fast_mode: true,
+      meta: {
+        domain: 'SOZIALRECHT',
+        api_key_source: sozialrechtApi.source || '',
+        model: 'deepseek',
+        response_mode: expertRequested ? 'expert' : (requestedResponseMode || 'schnell'),
+        fast_mode: true,
           judgment_mode: false,
           deepseek_via_legacy: true,
           storage_used: false,
@@ -751,9 +875,12 @@ async function handleSozialrechtChat(req, res, action) {
         }
       });
       return;
+      }
     } catch (legacyErr) {
       legacyDeepseekError = normalizeText(legacyErr?.message || 'unbekannt');
     }
+  } else if (fastMode) {
+    legacyDeepseekError = 'Deepseek-Legacy deaktiviert (deterministischer Schnellmodus aktiv).';
   }
 
   const storageEnvKey = String(cfg?.storage?.vector_store_env_key || 'OPENAI_VECTOR_STORE_ID_SOZIALRECHT');
@@ -847,12 +974,16 @@ async function handleSozialrechtChat(req, res, action) {
 
     const normalized = normalizeModelPayload(modelRaw, cfg);
     const mergedSources = normalizeSources([...(normalized.sources || []), ...storageSources]);
+    const normFallbackSources = mergedSources.length ? [] : extractNormReferenceSources(normalized.answer || '');
+    const finalSources = normalizeSources([...(mergedSources || []), ...normFallbackSources]);
     const strictUnknown = Boolean(cfg?.accuracy_policy?.strict_unknown_on_missing_basis);
     const groundedModeActive = payload?.guardrails?.grounded_mode !== false;
     const strictUnknownClient = payload?.guardrails?.strict_unknown !== false;
     const enforceStrictUnknown = strictUnknown && strictUnknownClient && groundedModeActive && !fastMode;
+    const confidenceValue = Number(normalized.confidence);
+    const lowConfidence = Number.isFinite(confidenceValue) ? confidenceValue < 0.34 : false;
     const resolvedAnswer =
-      enforceStrictUnknown && mergedSources.length === 0
+      enforceStrictUnknown && finalSources.length === 0 && lowConfidence
         ? 'Ich weiss es nicht sicher. Ohne belastbare Quelle antworte ich im Fachmodus Sozialrecht bewusst nicht spekulativ. Bitte frage enger oder nenne das konkrete Leistungsthema.'
         : normalized.answer;
     const gpt5FooterActive = judgmentMode && /gpt-5/i.test(String(activeModel || ''));
@@ -861,10 +992,16 @@ async function handleSozialrechtChat(req, res, action) {
       : resolvedAnswer;
     const evidenceNotes = [];
     if (normalized.evidence_note) evidenceNotes.push(normalized.evidence_note);
-    if (storageUsed && mergedSources.length) {
+    if (storageUsed && finalSources.length) {
       evidenceNotes.push('Vector-Store-Treffer wurden als Quellen-Chunks eingebunden.');
-    } else if (storageUsed && !mergedSources.length) {
+    } else if (storageUsed && !finalSources.length) {
       evidenceNotes.push('Vector Store war aktiv, aber es wurden keine zitierbaren Quellen-Chunks erkannt.');
+    }
+    if (normFallbackSources.length) {
+      evidenceNotes.push('Normbezüge wurden als Quellen-Fallback aus der Antwort extrahiert.');
+    }
+    if (!finalSources.length && !lowConfidence) {
+      evidenceNotes.push('Hinweis: Antwort ohne extrahierte Quellen-Chunks, bitte fachlich gegenpruefen.');
     }
     if (storageFallback) {
       evidenceNotes.push('Storage-Abfrage war nicht stabil; Antwort wurde ersatzweise ohne Storage erstellt.');
@@ -879,11 +1016,12 @@ async function handleSozialrechtChat(req, res, action) {
     res.status(200).json({
       answer: finalAnswer,
       followups: normalized.followups,
-      sources: mergedSources,
+      sources: finalSources,
       confidence: normalized.confidence,
       evidence_note: evidenceNotes.join(' ').trim(),
       meta: {
         domain: 'SOZIALRECHT',
+        api_key_source: sozialrechtApi.source || '',
         model: activeModel,
         response_mode: expertRequested ? 'expert' : (requestedResponseMode || (fastMode ? 'schnell' : 'genau')),
         fast_mode: fastMode,
@@ -912,6 +1050,7 @@ async function handleSozialrechtChat(req, res, action) {
       evidence_note: `Technischer Hinweis: ${detail}`,
       meta: {
         domain: 'SOZIALRECHT',
+        api_key_source: sozialrechtApi.source || '',
         runtime_error: true,
         runtime_detail: detail
       }
