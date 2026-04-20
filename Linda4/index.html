@@ -3408,7 +3408,7 @@
   const SOZIALRECHT_CURRICULUM_PATH = './docs/sozialrecht_sgb_i_xii.json';
   const CLAUDE_CLARIFY_MODE = true;
   const APP_VERSION = 5;
-  const APP_BUILD_AT = '20.04.2026, 08:15';
+  const APP_BUILD_AT = '20.04.2026, 09:12';
   const REQUEST_MEMORY_VERSION = 1;
 
   const SOURCE_DEFS = [
@@ -3660,6 +3660,27 @@
     return null;
   };
 
+  const extractAnswerTextFromJsonLike = (rawText) => {
+    const raw = String(rawText || '').trim();
+    if (!raw) return '';
+    const parsed = parseEmbeddedJSONObject(raw);
+    if (parsed && typeof parsed === 'object') {
+      const nestedAnswer = String(parsed.answer || parsed.response || parsed.text || '').trim();
+      if (nestedAnswer) return nestedAnswer;
+    }
+
+    const answerMatch = raw.match(/"answer"\s*:\s*"([\s\S]*?)"\s*,\s*"(?:followups|sources|confidence|meta|evidence_note|reasoning_note)"/i);
+    if (!answerMatch || !answerMatch[1]) return '';
+    const encoded = String(answerMatch[1]);
+    const decoded = encoded
+      .replace(/\\n/g, '\n')
+      .replace(/\\r/g, '')
+      .replace(/\\t/g, ' ')
+      .replace(/\\"/g, '"')
+      .replace(/\\\\/g, '\\');
+    return decoded.trim();
+  };
+
   const app = {
     state: structuredClone(DEFAULT_STATE),
 
@@ -3907,7 +3928,9 @@
           nestedMeta.evidenceNote ||
           ''
         ).trim();
-        const parsedAnswerText = String(parsed.answer || parsed.response || parsed.text || parsed.output || rawText);
+        const parsedAnswerTextRaw = String(parsed.answer || parsed.response || parsed.text || parsed.output || rawText);
+        const parsedAnswerTextUnwrapped = extractAnswerTextFromJsonLike(parsedAnswerTextRaw);
+        const parsedAnswerText = parsedAnswerTextUnwrapped || parsedAnswerTextRaw;
         const nestedAnswerText = String(
           nestedAnswerPayload?.answer ||
           nestedAnswerPayload?.response ||
@@ -7899,7 +7922,10 @@
             const anchorHtml = s.url
               ? `<a href="${encodeURI(s.url)}">${app.utils.safeText(s.title)}</a>`
               : `<span>${app.utils.safeText(s.title)}</span>`;
-            const effectiveExcerpt = String(s.excerpt || '').trim() ||
+            const rawExcerpt = String(s.excerpt || '').trim();
+            const jsonExcerptUnwrapped = extractAnswerTextFromJsonLike(rawExcerpt);
+            const effectiveExcerpt = jsonExcerptUnwrapped ||
+              rawExcerpt ||
               app.logic.deriveAnswerExcerptForSourceTitle(renderedAnswerText, s.title || '') ||
               app.logic.deriveAnswerExcerptForSource(renderedAnswerText, bubbleMeta.question || '', s.title || '');
             const highlightedSnippet = effectiveExcerpt
