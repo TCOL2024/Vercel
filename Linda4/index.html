@@ -3943,11 +3943,42 @@
         const sources = app.state.settings.sources || {};
         return Object.entries(sources).filter(([, on]) => Boolean(on)).map(([k]) => k);
       },
+      serializeHistoryMessage: (message) => {
+        const entry = (message && typeof message === 'object') ? message : {};
+        const base = String(entry.content || '').trim();
+        if (!base) return '';
+        if (String(entry.role || '') !== 'assistant') {
+          return app.utils.truncate(base, 700);
+        }
+
+        const metaQuestion = String(entry?.meta?.question || '').trim();
+        const sourceHints = (app.logic?.sanitizeSourceList ? app.logic.sanitizeSourceList(entry.sources || []) : [])
+          .slice(0, 2)
+          .map((src) => {
+            const parts = [
+              String(src.title || '').trim(),
+              String(src.section || '').trim(),
+              String(src.page || '').trim() ? `S. ${String(src.page || '').trim()}` : ''
+            ].filter(Boolean);
+            return parts.join(' - ');
+          })
+          .filter(Boolean);
+
+        const parts = [];
+        if (metaQuestion) parts.push(`Bezug der vorherigen Antwort: ${metaQuestion}`);
+        parts.push(base);
+        if (sourceHints.length) {
+          parts.push(`Quellenkontext: ${sourceHints.join(' | ')}`);
+        }
+
+        return app.utils.truncate(parts.join('\n'), 1100);
+      },
       chatContext: (session) => {
         return (session?.messages || [])
           .slice(-6)
           .filter((m) => !/willkommen/i.test(m.content || ''))
-          .map((m) => ({ role: m.role, content: app.utils.truncate(m.content, 700) }));
+          .map((m) => ({ role: m.role, content: app.utils.serializeHistoryMessage(m) }))
+          .filter((m) => String(m.content || '').trim());
       },
       parseApiAnswer: (rawText) => {
         const parsed = parseJSON(rawText, null);
@@ -4000,16 +4031,15 @@
           ''
         ).trim();
         const parsedAnswerTextRaw = String(parsed.answer || parsed.response || parsed.text || parsed.output || rawText);
-        const parsedAnswerTextUnwrapped = extractAnswerTextFromJsonLike(parsedAnswerTextRaw);
-        const parsedAnswerText = parsedAnswerTextUnwrapped || parsedAnswerTextRaw;
-        const nestedAnswerText = String(
+        const parsedAnswerText = normalizeAnswerTextForRender(parsedAnswerTextRaw);
+        const nestedAnswerText = normalizeAnswerTextForRender(
           nestedAnswerPayload?.answer ||
           nestedAnswerPayload?.response ||
           nestedAnswerPayload?.text ||
           ''
-        ).trim();
+        );
         return {
-          answer: nestedAnswerText || parsedAnswerText,
+          answer: nestedAnswerText || parsedAnswerText || parsedAnswerTextRaw,
           sources: Array.isArray(altSources) ? altSources : [],
           meta: {
             followups: Array.isArray(followups) ? followups : [],
@@ -5955,6 +5985,32 @@
         return /https?:\/\/|\bquellen?\b|\bsource\b|\bcitation\b|\[[^\]]{1,8}\]/i.test(String(answer || ''));
       },
 
+      isContextualFollowupQuestion: (question = '') => {
+        const raw = String(question || '').trim();
+        const low = raw.toLowerCase();
+        if (!low) return false;
+        if (/\b(was steht|was sagen|steht dazu|steht dort|steht in den unterlagen|was ist damit|wie ist das damit)\b/i.test(low)) return true;
+        if (/\b(das|diese|dieses|diesen|dazu|darin|darauf|dort|hierzu|unterlagen|quelle|abschnitt)\b/i.test(low) && low.split(/\s+/).length <= 10) return true;
+        if (/^(und|wie|was|welche|welcher|welches)\b/i.test(low) && low.split(/\s+/).length <= 8) return true;
+        return false;
+      },
+
+      findRecentGroundedAssistantContext: (session) => {
+        const messages = Array.isArray(session?.messages) ? session.messages : [];
+        for (let i = messages.length - 1; i >= 0; i -= 1) {
+          const msg = messages[i];
+          if (!msg || msg.role !== 'assistant') continue;
+          const sources = app.logic.sanitizeSourceList(msg.sources || []);
+          if (!sources.length) continue;
+          return {
+            answer: String(msg.content || '').trim(),
+            question: String(msg?.meta?.question || '').trim(),
+            sources
+          };
+        }
+        return null;
+      },
+
       isOperationalAnswer: (answer) => {
         const raw = String(answer || '').trim();
         if (!raw) return true;
@@ -6110,6 +6166,19 @@
           }
         }
 
+        const recentGroundedContext = sozialrechtDomain
+          ? app.logic.findRecentGroundedAssistantContext(app.logic.activeSession())
+          : null;
+        const contextualFollowup =
+          sozialrechtDomain &&
+          app.logic.isContextualFollowupQuestion(question) &&
+          recentGroundedContext &&
+          recentGroundedContext.sources.length;
+
+        if (contextualFollowup && !sources.length && !app.logic.isOperationalAnswer(answer)) {
+          sources = app.logic.sanitizeSourceList(recentGroundedContext.sources || []).slice(0, 3);
+        }
+
         const groundedMode = Boolean(app.state.settings.guardrails?.groundedMode);
         const strictUnknown = Boolean(app.state.settings.guardrails?.strictUnknown);
         const hasSourceSignals = sources.length > 0 || app.logic.answerContainsSourceSignal(answer);
@@ -6117,7 +6186,8 @@
           groundedMode &&
           strictUnknown &&
           !hasSourceSignals &&
-          !app.logic.isOperationalAnswer(answer);
+          !app.logic.isOperationalAnswer(answer) &&
+          !contextualFollowup;
 
         if (blockedForMissingSources) {
           answer = app.logic.buildUnknownAnswer(question);
@@ -6137,6 +6207,9 @@
         const evidenceNoteParts = [String(backendMeta.evidenceNote || '').trim()];
         if (storageFallback && storageError) {
           evidenceNoteParts.push(`Storage-Hinweis: ${storageError}`);
+        }
+        if (contextualFollowup && sources.length) {
+          evidenceNoteParts.push('Anschlussfrage erkannt: Quellenkontext aus der vorherigen Antwort wurde mitberuecksichtigt.');
         }
 
         const followups = app.logic.buildFollowupSuggestions(question, answer, sources, {
@@ -8247,7 +8320,7 @@
           const contextWindow = app.utils.chatContext(s);
           const historyForApi = app.utils.privacyModeEnabled()
             ? []
-            : (sozialrechtDomain ? contextWindow.slice(-4) : contextWindow);
+            : contextWindow;
 
           const payloadQuestion = apiQuestionSuffix
             ? `${text}\n\n${apiQuestionSuffix}`
