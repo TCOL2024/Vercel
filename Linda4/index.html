@@ -9027,6 +9027,10 @@
       }
 
       app.state.settings.fastMode.enabled = wantsOn;
+      if (wantsOn) {
+        app.state.settings.compareMode.enabled = true;
+        app.ui.syncCompareModeControls();
+      }
       app.utils.save();
       app.ui.updateDomainUI();
     };
@@ -9037,7 +9041,12 @@
     const compareMainOff = document.getElementById('compare-main-off');
     const syncCompareMode = () => {
       const wantsOn = Boolean(compareMainOn && compareMainOn.checked);
-      app.state.settings.compareMode.enabled = wantsOn;
+      if (app.state.settings.fastMode?.enabled && !wantsOn) {
+        app.state.settings.compareMode.enabled = true;
+        app.ui.syncCompareModeControls();
+      } else {
+        app.state.settings.compareMode.enabled = wantsOn;
+      }
       app.utils.save();
       app.ui.updateDomainUI();
     };
