@@ -374,6 +374,59 @@ function buildClarificationPayload(cfg, decision = {}, question = '') {
   };
 }
 
+function buildSozialrechtTechnicalFallback({
+  cfg,
+  question,
+  detail = '',
+  answerText = '',
+  sources = [],
+  storageUsed = false,
+  storageFallback = false,
+  storageError = '',
+  apiKeySource = ''
+}) {
+  const fallbackFollowups = buildClarificationFollowups(
+    buildSozialrechtSignalProfile(question, [], cfg),
+    cfg
+  );
+  const normalizedAnswer = normalizeMultilineText(answerText || '');
+  const sourceList = normalizeSources(sources || []);
+  const normFallbackSources = sourceList.length ? [] : extractNormReferenceSources(normalizedAnswer || question || '');
+  const finalSources = normalizeSources([...(sourceList || []), ...normFallbackSources]);
+  const answer = normalizedAnswer || [
+    'Ich weiss es nicht sicher.',
+    'Die Verarbeitung ist gerade instabil, deshalb liefere ich vorsichtshalber keine spekulative Antwort.',
+    'Bitte frage enger oder versuche es noch einmal.'
+  ].join(' ');
+  const evidenceBits = [];
+  if (detail) evidenceBits.push(`Technischer Hinweis: ${detail}`);
+  if (storageUsed && finalSources.length) {
+    evidenceBits.push('Vector-Store-Treffer wurden in die Fallback-Antwort übernommen.');
+  }
+  if (storageFallback) {
+    evidenceBits.push('Storage-Abfrage war nicht stabil; es wurde ohne Storage weitergearbeitet.');
+  }
+  if (storageError) {
+    evidenceBits.push(`Storage-Fehler: ${storageError}`);
+  }
+  if (!finalSources.length && normalizedAnswer) {
+    evidenceBits.push('Fallback-Antwort ohne zitierbare Quellen-Chunks.');
+  }
+  return {
+    answer,
+    followups: fallbackFollowups,
+    sources: finalSources,
+    confidence: finalSources.length ? 0.25 : 0.08,
+    evidence_note: evidenceBits.join(' ').trim(),
+    meta: {
+      domain: 'SOZIALRECHT',
+      api_key_source: apiKeySource || '',
+      runtime_error: true,
+      runtime_detail: detail || 'unbekannt'
+    }
+  };
+}
+
 function normalizeSources(rawSources) {
   return (Array.isArray(rawSources) ? rawSources : [])
     .map((item) => {
@@ -510,8 +563,10 @@ function normalizeModelPayload(rawText, cfg) {
     .map((q) => normalizeText(q))
     .filter(Boolean)
     .slice(0, 4);
+  const parsedAnswerRaw = parsed.answer || parsed.response || parsed.text || parsed.output || '';
+  const parsedAnswerText = extractAnswerFromJsonLikeText(parsedAnswerRaw) || normalizeMultilineText(parsedAnswerRaw) || 'Ich weiss es nicht sicher.';
   return {
-    answer: normalizeMultilineText(parsed.answer || parsed.response || parsed.text || '') || 'Ich weiss es nicht sicher.',
+    answer: parsedAnswerText,
     followups: followups.length ? followups : fallbackFollowups,
     sources: normalizeSources(parsed.sources || parsed.quellen || parsed.references || []),
     confidence: clamp01(parsed.confidence, null),
@@ -972,14 +1027,14 @@ async function handleSozialrechtChat(req, res, action) {
     : buildSozialrechtSystemPrompt(cfg, useStorage);
   const messages = toOpenAIMessages(systemPrompt, history, question);
 
-  try {
-    let activeModel = model;
-    let modelRaw = '';
-    let storageSources = [];
-    let storageUsed = false;
-    let storageFallback = false;
-    let storageError = '';
+  let activeModel = model;
+  let modelRaw = '';
+  let storageSources = [];
+  let storageUsed = false;
+  let storageFallback = false;
+  let storageError = '';
 
+  try {
     if (useStorage) {
       try {
         const storageResult = await callOpenAIResponsesWithStorage({
@@ -1104,25 +1159,22 @@ async function handleSozialrechtChat(req, res, action) {
     });
   } catch (err) {
     const detail = normalizeText(err?.message || 'unbekannt');
-    const fallbackFollowups = buildClarificationFollowups(
-      buildSozialrechtSignalProfile(question, history, cfg),
-      cfg
-    );
-    res.status(200).json({
-      answer:
-        'Ich weiss es nicht sicher. Es gab gerade ein technisches Verarbeitungsproblem, ' +
-        'deshalb liefere ich vorsichtshalber keine spekulative Antwort.',
-      followups: fallbackFollowups,
-      sources: [],
-      confidence: 0.05,
-      evidence_note: `Technischer Hinweis: ${detail}`,
-      meta: {
-        domain: 'SOZIALRECHT',
-        api_key_source: sozialrechtApi.source || '',
-        runtime_error: true,
-        runtime_detail: detail
-      }
+    const salvaged = modelRaw ? normalizeModelPayload(modelRaw, cfg) : null;
+    const fallback = buildSozialrechtTechnicalFallback({
+      cfg,
+      question,
+      detail,
+      answerText: salvaged?.answer || '',
+      sources: [
+        ...(Array.isArray(salvaged?.sources) ? salvaged.sources : []),
+        ...storageSources
+      ],
+      storageUsed,
+      storageFallback,
+      storageError,
+      apiKeySource: sozialrechtApi.source || ''
     });
+    res.status(200).json(fallback);
   }
 }
 
@@ -1154,23 +1206,12 @@ module.exports = async (req, res) => {
     const payload = readRequestBodyObject(req);
     const domain = String(payload?.fachmodus || '').trim().toUpperCase();
     if ((action === 'bot' || action === 'deepseek') && domain === 'SOZIALRECHT') {
-      res.status(200).json({
-        answer:
-          'Ich weiss es nicht sicher. Es gab gerade ein technisches Verarbeitungsproblem, ' +
-          'deshalb liefere ich vorsichtshalber keine spekulative Antwort.',
-        followups: [
-          'Worum geht es konkret (Leistung, Anspruch oder Verfahren)?',
-          'Geht es um akuten Notfall, geplante Behandlung oder allgemeine Leistungsklaerung?'
-        ],
-        sources: [],
-        confidence: 0.05,
-        evidence_note: `Technischer Hinweis: ${detail}`,
-        meta: {
-          domain: 'SOZIALRECHT',
-          runtime_error: true,
-          runtime_detail: detail
-        }
+      const fallback = buildSozialrechtTechnicalFallback({
+        cfg: loadSozialrechtConfig(),
+        question: normalizeText(payload.question || payload.prompt || payload.input || payload.text || ''),
+        detail
       });
+      res.status(200).json(fallback);
       return;
     }
     res.status(502).json({ error: `Legacy-Proxy Fehler: ${detail}` });
