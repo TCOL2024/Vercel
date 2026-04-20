@@ -5303,6 +5303,54 @@
         return app.logic.sanitizeAssistantFollowups(suggestions);
       },
 
+      unwrapStructuredAnswerPayload: (answerText = '', currentSources = [], currentMeta = {}) => {
+        const embedded = parseEmbeddedJSONObject(answerText);
+        if (!embedded || typeof embedded !== 'object') return null;
+        const nestedAnswer = String(
+          embedded.answer ||
+          embedded.response ||
+          embedded.text ||
+          ''
+        ).trim();
+        if (!nestedAnswer) return null;
+        const nestedSourcesRaw =
+          embedded.sources ||
+          embedded.quellen ||
+          embedded.references ||
+          embedded.citations ||
+          [];
+        const nestedSources = app.logic.sanitizeSourceList(nestedSourcesRaw);
+        const nestedFollowups = app.logic.sanitizeAssistantFollowups(
+          embedded.followups ||
+          embedded.next_questions ||
+          embedded.suggestions ||
+          []
+        );
+        const nestedMeta = (embedded.meta && typeof embedded.meta === 'object') ? embedded.meta : {};
+        return {
+          answer: nestedAnswer,
+          sources: nestedSources.length ? nestedSources : app.logic.sanitizeSourceList(currentSources || []),
+          meta: {
+            ...currentMeta,
+            ...nestedMeta,
+            followups: nestedFollowups.length
+              ? nestedFollowups
+              : app.logic.sanitizeAssistantFollowups(currentMeta?.followups || []),
+            confidence: Number.isFinite(Number(embedded.confidence))
+              ? Number(embedded.confidence)
+              : currentMeta?.confidence,
+            evidenceNote: String(
+              embedded.evidence_note ||
+              embedded.reasoning_note ||
+              nestedMeta.evidence_note ||
+              nestedMeta.evidenceNote ||
+              currentMeta?.evidenceNote ||
+              ''
+            ).trim()
+          }
+        };
+      },
+
       detectSensitiveSignals: (text) => {
         const raw = String(text || '');
         const checks = [
@@ -5764,9 +5812,19 @@
       },
 
       enrichAssistantResponse: (result, question, payload, extra = {}) => {
-        const backendMeta = (result && result.meta && typeof result.meta === 'object') ? result.meta : {};
+        let backendMeta = (result && result.meta && typeof result.meta === 'object') ? result.meta : {};
         let answer = String(result?.answer || '').trim();
         let sources = app.logic.sanitizeSourceList(result?.sources || []);
+
+        const unwrapped = app.logic.unwrapStructuredAnswerPayload(answer, sources, backendMeta);
+        if (unwrapped) {
+          answer = String(unwrapped.answer || '').trim() || answer;
+          sources = app.logic.sanitizeSourceList(unwrapped.sources || sources);
+          backendMeta = (unwrapped.meta && typeof unwrapped.meta === 'object')
+            ? { ...backendMeta, ...unwrapped.meta }
+            : backendMeta;
+        }
+
         const sozialrechtDomain = app.logic.isSozialrechtDomain(
           String(backendMeta.domain || payload?.fachmodus || app.state.settings?.domain || '')
         );
