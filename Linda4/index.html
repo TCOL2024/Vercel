@@ -3685,22 +3685,63 @@
   const extractAnswerTextFromJsonLike = (rawText) => {
     const raw = String(rawText || '').trim();
     if (!raw) return '';
-    const parsed = parseEmbeddedJSONObject(raw);
-    if (parsed && typeof parsed === 'object') {
-      const nestedAnswer = String(parsed.answer || parsed.response || parsed.text || '').trim();
-      if (nestedAnswer) return nestedAnswer;
-    }
 
-    const answerMatch = raw.match(/"answer"\s*:\s*"([\s\S]*?)"\s*,\s*"(?:followups|sources|confidence|meta|evidence_note|reasoning_note)"/i);
-    if (!answerMatch || !answerMatch[1]) return '';
-    const encoded = String(answerMatch[1]);
-    const decoded = encoded
-      .replace(/\\n/g, '\n')
-      .replace(/\\r/g, '')
-      .replace(/\\t/g, ' ')
-      .replace(/\\"/g, '"')
-      .replace(/\\\\/g, '\\');
-    return decoded.trim();
+    const unwrapJsonText = (value, depth = 0) => {
+      if (depth > 4) return String(value || '').trim();
+      const text = String(value || '').trim();
+      if (!text) return '';
+
+      const parsed = parseEmbeddedJSONObject(text);
+      if (parsed && typeof parsed === 'object') {
+        const nested = String(
+          parsed.answer ||
+          parsed.response ||
+          parsed.text ||
+          parsed.output ||
+          parsed.content ||
+          parsed.excerpt ||
+          parsed.snippet ||
+          ''
+        ).trim();
+        if (nested && nested !== text) {
+          const nestedUnwrapped = unwrapJsonText(nested, depth + 1);
+          if (nestedUnwrapped) return nestedUnwrapped;
+          return nested;
+        }
+      }
+
+      const quotedMatch = text.match(/^[\s\r\n]*"([\s\S]*)"[\s\r\n]*$/);
+      if (quotedMatch && quotedMatch[1]) {
+        const decodedQuoted = quotedMatch[1]
+          .replace(/\\n/g, '\n')
+          .replace(/\\r/g, '')
+          .replace(/\\t/g, ' ')
+          .replace(/\\"/g, '"')
+          .replace(/\\\\/g, '\\');
+        if (decodedQuoted && decodedQuoted !== text) {
+          const decodedUnwrapped = unwrapJsonText(decodedQuoted, depth + 1);
+          if (decodedUnwrapped) return decodedUnwrapped;
+          return decodedQuoted.trim();
+        }
+      }
+
+      const answerMatch = text.match(/"answer"\s*:\s*"([\s\S]*?)"(?:\s*,\s*"(?:followups|sources|confidence|meta|evidence_note|reasoning_note|recommended_questions|next_questions|suggestions)\b|[\s\r\n]*})/i);
+      if (answerMatch && answerMatch[1]) {
+        const encoded = String(answerMatch[1]);
+        const decoded = encoded
+          .replace(/\\n/g, '\n')
+          .replace(/\\r/g, '')
+          .replace(/\\t/g, ' ')
+          .replace(/\\"/g, '"')
+          .replace(/\\\\/g, '\\');
+        const decodedUnwrapped = unwrapJsonText(decoded, depth + 1);
+        return decodedUnwrapped || decoded.trim();
+      }
+
+      return text;
+    };
+
+    return unwrapJsonText(raw);
   };
 
   const normalizeAnswerTextForRender = (rawText) => {
@@ -7740,10 +7781,10 @@
           } else if (item && typeof item === 'object') {
             const title = String(item.title || item.name || item.label || item.url || 'Quelle').trim();
             const url = String(item.url || item.link || '').trim();
-            const excerpt = String(item.excerpt || item.quote || item.snippet || item.text || item.chunk || '').trim();
+            const excerpt = normalizeAnswerTextForRender(String(item.excerpt || item.quote || item.snippet || item.text || item.chunk || '').trim());
             const section = String(item.section || item.heading || item.chapter || '').trim();
             const page = String(item.page || item.pageNumber || item.seite || '').trim();
-            const note = String(item.note || item.reason || item.description || '').trim();
+            const note = normalizeAnswerTextForRender(String(item.note || item.reason || item.description || '').trim());
             const confidence = Number.isFinite(Number(item.confidence)) ? Number(item.confidence) : null;
             if (title || url || excerpt) {
               next = { title: title || url || 'Quelle', url, excerpt, section, page, note, confidence };
@@ -7937,9 +7978,7 @@
               ? `<a href="${encodeURI(sourceHref)}" target="_blank" rel="noopener">${app.utils.safeText(sourceLabel)}</a>`
               : `<span>${app.utils.safeText(sourceLabel)}</span>`;
             const rawExcerpt = normalizeAnswerTextForRender(s.excerpt || '');
-            const jsonExcerptUnwrapped = extractAnswerTextFromJsonLike(rawExcerpt);
-            const effectiveExcerpt = jsonExcerptUnwrapped ||
-              rawExcerpt ||
+            const effectiveExcerpt = rawExcerpt ||
               app.logic.deriveAnswerExcerptForSourceTitle(renderedAnswerText, s.title || '') ||
               app.logic.deriveAnswerExcerptForSource(renderedAnswerText, bubbleMeta.question || '', s.title || '');
             const highlightedSnippet = effectiveExcerpt
