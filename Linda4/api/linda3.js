@@ -393,6 +393,20 @@ function normalizeSources(rawSources) {
     .slice(0, 10);
 }
 
+function isLegacyDeepseekRuntimeFailure(rawResult, normalizedResult) {
+  const runtimeError = Boolean(rawResult?.meta?.runtime_error || rawResult?.runtime_error);
+  const rawDetail = normalizeText(rawResult?.meta?.runtime_detail || rawResult?.runtime_detail || '');
+  const answerText = normalizeText(normalizedResult?.answer || rawResult?.answer || rawResult?.response || '');
+  const low = `${answerText} ${rawDetail}`.toLowerCase();
+  if (runtimeError) return true;
+  return (
+    low.includes('nicht vollstaendig konfiguriert') ||
+    low.includes('api-key') ||
+    low.includes('technisches verarbeitungsproblem') ||
+    low.includes('verbindungsfehler')
+  );
+}
+
 function normalizeModelPayload(rawText, cfg) {
   const fallbackFollowups = Array.isArray(cfg?.clarification_policy?.default_followups)
     ? cfg.clarification_policy.default_followups
@@ -782,6 +796,17 @@ async function handleSozialrechtChat(req, res, action) {
       }, req);
       const normalizedLegacy = normalizeModelPayload(JSON.stringify(legacyRaw), cfg);
       const legacySources = normalizeSources(legacyRaw?.sources || normalizedLegacy.sources || []);
+      const legacyRuntimeFailure = isLegacyDeepseekRuntimeFailure(legacyRaw, normalizedLegacy);
+      if (legacyRuntimeFailure) {
+        const legacyMsg = normalizeText(
+          legacyRaw?.meta?.runtime_detail ||
+          legacyRaw?.error ||
+          normalizedLegacy.evidence_note ||
+          normalizedLegacy.answer ||
+          'Deepseek-Legacy Runtime-Fehler'
+        );
+        legacyDeepseekError = legacyMsg;
+      } else {
       const evidenceParts = [];
       if (normalizedLegacy.evidence_note) evidenceParts.push(normalizedLegacy.evidence_note);
       evidenceParts.push('Deepseek-Routing ueber Legacy-Endpoint aktiv.');
@@ -807,6 +832,7 @@ async function handleSozialrechtChat(req, res, action) {
         }
       });
       return;
+      }
     } catch (legacyErr) {
       legacyDeepseekError = normalizeText(legacyErr?.message || 'unbekannt');
     }
