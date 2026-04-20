@@ -623,6 +623,8 @@
     border-radius: 0;
     padding: 0;
     white-space: pre-wrap;
+    max-height: 18rem;
+    overflow: auto;
   }
 
   .source-card-note {
@@ -3701,6 +3703,12 @@
     return decoded.trim();
   };
 
+  const normalizeAnswerTextForRender = (rawText) => {
+    const raw = String(rawText || '').trim();
+    if (!raw) return '';
+    return String(extractAnswerTextFromJsonLike(raw) || raw).trim();
+  };
+
   const app = {
     state: structuredClone(DEFAULT_STATE),
 
@@ -4410,12 +4418,13 @@
           return row;
         }
 
-        const mdRaw = marked.parse(String(content).replace(/\$(.*?)\$/g, '**$1**'));
+        const renderContent = normalizeAnswerTextForRender(content);
+        const mdRaw = marked.parse(String(renderContent).replace(/\$(.*?)\$/g, '**$1**'));
         const safe = DOMPurify.sanitize(mdRaw, {
           ALLOWED_TAGS: ['p','br','strong','em','ul','ol','li','h1','h2','h3','h4','h5','pre','code','blockquote','table','thead','tbody','tr','th','td','a'],
           ALLOWED_ATTR: ['href','target','rel']
         });
-        const plainContent = String(content || '');
+        const plainContent = String(renderContent || '');
         const hasJudgmentSignal =
           /(?:\burteil(?:e|en)?\b|\bbeschluss(?:e|es|en)?\b|\baktenzeichen\b|\baz\.\s*[:\-]?)/i.test(plainContent);
         const disclaimerHtml = hasJudgmentSignal
@@ -4445,7 +4454,7 @@
         row.className = 'msg-row assistant';
 
         const renderSection = (title, data) => {
-          const answer = String(data?.answer || '');
+          const answer = normalizeAnswerTextForRender(data?.answer || '');
           const mdRaw = marked.parse(answer.replace(/\$(.*?)\$/g, '**$1**'));
           const safe = DOMPurify.sanitize(mdRaw, {
             ALLOWED_TAGS: ['p','br','strong','em','ul','ol','li','h1','h2','h3','h4','h5','pre','code','blockquote','table','thead','tbody','tr','th','td','a'],
@@ -5488,7 +5497,7 @@
       },
 
       buildNormReferenceSources: (answer = '') => {
-        const raw = String(answer || '').trim();
+        const raw = normalizeAnswerTextForRender(answer);
         if (!raw) return [];
         const lines = raw
           .split(/\n+/)
@@ -6034,7 +6043,7 @@
 
       enrichAssistantResponse: (result, question, payload, extra = {}) => {
         let backendMeta = (result && result.meta && typeof result.meta === 'object') ? result.meta : {};
-        let answer = String(result?.answer || '').trim();
+        let answer = normalizeAnswerTextForRender(result?.answer || '');
         let sources = app.logic.sanitizeSourceList(result?.sources || []);
 
         const unwrapped = app.logic.unwrapStructuredAnswerPayload(answer, sources, backendMeta);
@@ -7927,7 +7936,7 @@
             const anchorHtml = sourceHref
               ? `<a href="${encodeURI(sourceHref)}" target="_blank" rel="noopener">${app.utils.safeText(sourceLabel)}</a>`
               : `<span>${app.utils.safeText(sourceLabel)}</span>`;
-            const rawExcerpt = String(s.excerpt || '').trim();
+            const rawExcerpt = normalizeAnswerTextForRender(s.excerpt || '');
             const jsonExcerptUnwrapped = extractAnswerTextFromJsonLike(rawExcerpt);
             const effectiveExcerpt = jsonExcerptUnwrapped ||
               rawExcerpt ||
@@ -8260,7 +8269,7 @@
               }
             };
             const expertController = new AbortController();
-            const expertTimeout = setTimeout(() => expertController.abort(), 24000);
+            const expertTimeout = setTimeout(() => expertController.abort(), 42000);
 
             try {
               makeParsed = await app.logic.requestAnswer(DEEPSEEK_API_ENDPOINT, expertPayload, expertController.signal);
@@ -8268,7 +8277,46 @@
               makeParsed = app.logic.enrichAssistantResponse(makeParsed, text, expertPayload, { channel: 'expert' });
               makeParsed.meta = { ...(makeParsed.meta || {}), panelTitle: 'Expertenmodus (DeepSeek)' };
             } catch (e) {
-              makeParsed = { answer: `❌ Expertenmodus Fehler: ${e?.message || 'unbekannt'}`, sources: [], meta: { panelTitle: 'Expertenmodus' } };
+              const aborted = e?.name === 'AbortError' || /aborted/i.test(String(e?.message || ''));
+              if (aborted) {
+                try {
+                  const fallbackController = new AbortController();
+                  const fallbackTimeout = setTimeout(() => fallbackController.abort(), 30000);
+                  const fallbackPayload = {
+                    ...expertPayload,
+                    schnellmodus: false,
+                    routing: {
+                      ...(expertPayload.routing || {}),
+                      preferred_model: 'gpt-5.1',
+                      response_mode: 'expert'
+                    },
+                    clientMeta: {
+                      ...(expertPayload.clientMeta || {}),
+                      channel: 'expert-fallback'
+                    }
+                  };
+                  try {
+                    makeParsed = await app.logic.requestAnswer(API_ENDPOINT, fallbackPayload, fallbackController.signal);
+                  } finally {
+                    clearTimeout(fallbackTimeout);
+                  }
+                  makeParsed.answer = app.logic.stripRepeatedIntro(makeParsed.answer, allowIntroForThisTurn);
+                  makeParsed = app.logic.enrichAssistantResponse(makeParsed, text, fallbackPayload, { channel: 'expert-fallback' });
+                  makeParsed.meta = {
+                    ...(makeParsed.meta || {}),
+                    panelTitle: 'Expertenmodus (Fallback)',
+                    deepseek_timeout: true
+                  };
+                } catch (fallbackErr) {
+                  makeParsed = {
+                    answer: `❌ Expertenmodus Fehler: ${fallbackErr?.message || 'unbekannt'}`,
+                    sources: [],
+                    meta: { panelTitle: 'Expertenmodus' }
+                  };
+                }
+              } else {
+                makeParsed = { answer: `❌ Expertenmodus Fehler: ${e?.message || 'unbekannt'}`, sources: [], meta: { panelTitle: 'Expertenmodus' } };
+              }
             } finally {
               clearTimeout(expertTimeout);
             }

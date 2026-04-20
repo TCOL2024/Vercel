@@ -915,7 +915,7 @@ async function handleSozialrechtChat(req, res, action) {
         apiKey: schnellKey,
         messages,
         maxOutputTokens: deepseekMaxOutputTokens,
-        timeoutMs: expertRequested ? 18000 : 14000
+        timeoutMs: expertRequested ? 36000 : 22000
       });
       const normalizedDeepseek = normalizeModelPayload(deepseekRaw, cfg);
       const deepseekSources = normalizeSources(normalizedDeepseek.sources || []);
