@@ -615,7 +615,7 @@ function normalizeSources(rawSources) {
       if (typeof item === 'string') {
         const title = normalizeText(item);
         if (!title) return null;
-        return { title, url: '', excerpt: '', section: '', page: '', note: '', confidence: null };
+        return { title, url: '', excerpt: '', section: '', page: '', note: '', confidence: null, kind: '' };
       }
       if (!item || typeof item !== 'object') return null;
       const title = normalizeText(item.title || item.name || item.label || item.url || 'Quelle');
@@ -625,8 +625,9 @@ function normalizeSources(rawSources) {
       const page = normalizeText(item.page || item.pageNumber || item.seite || '');
       const note = normalizeText(item.note || item.reason || item.description || '');
       const confidence = clamp01(item.confidence, null);
+      const kind = normalizeText(item.kind || item.evidence_type || item.source_kind || '');
       if (!title && !url && !excerpt) return null;
-      return { title: title || url || 'Quelle', url, excerpt, section, page, note, confidence };
+      return { title: title || url || 'Quelle', url, excerpt, section, page, note, confidence, kind };
     })
     .filter(Boolean)
     .slice(0, 10);
@@ -1065,6 +1066,13 @@ function normalizeResponseAnnotationSource(entry) {
     (entry.type ? `Quelle (${String(entry.type)})` : 'Quelle aus Vector Store')
   );
   const confidence = clamp01(entry.confidence, null);
+  const kind = normalizeText(
+    entry.kind ||
+    entry.evidence_type ||
+    entry.source_kind ||
+    fileCitation.kind ||
+    ''
+  ) || (excerpt ? 'excerpt' : (fileId ? 'document' : ''));
   if (!title && !url && !excerpt && !fileId) return null;
   return {
     title: title || (fileId ? `Datei ${fileId}` : 'Storage-Quelle'),
@@ -1073,7 +1081,8 @@ function normalizeResponseAnnotationSource(entry) {
     section,
     page,
     note,
-    confidence
+    confidence,
+    kind
   };
 }
 

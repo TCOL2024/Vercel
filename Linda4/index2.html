@@ -8483,6 +8483,13 @@
               : `<span>${app.utils.safeText(sourceLabel)}</span>`;
             const rawExcerpt = normalizeAnswerTextForRender(s.excerpt || '');
             const effectiveExcerpt = rawExcerpt;
+            const sourceKind = String(s.kind || '').toLowerCase();
+            const sourceKindLabel = effectiveExcerpt
+              ? 'Wörtlicher Auszug'
+              : (sourceKind === 'norm' || /normbezug/i.test(String(s.title || '') + ' ' + String(s.note || ''))
+                  ? 'Normbezug aus Antwort'
+                  : 'Dokumenttreffer');
+            metaBits.unshift(sourceKindLabel);
             const highlightedSnippet = effectiveExcerpt
               ? (
                 sozialrechtSourceCards
@@ -8492,7 +8499,7 @@
               : '';
             const snippetHtml = effectiveExcerpt
               ? `<p class="source-card-snippet">${highlightedSnippet}</p>`
-              : '<p class="source-card-snippet">Kein direkter Dokumentauszug geliefert.</p>';
+              : `<p class="source-card-snippet">${app.utils.safeText(sourceKindLabel === 'Normbezug aus Antwort' ? 'Normbezug aus Antwort, kein wörtlicher Dokumentauszug.' : 'Dokumenttreffer ohne Textauszug geliefert.')}</p>`;
             const noteHtml = s.note
               ? `<div class="source-card-note">${app.utils.safeText(s.note)}</div>`
               : '';
