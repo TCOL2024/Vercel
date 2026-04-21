@@ -1167,7 +1167,7 @@ async function callOpenAIResponsesWithStorage({ apiKey, model, messages, tempera
   };
 }
 
-async function callDeepseekReasoner({ apiKey, messages, maxOutputTokens, timeoutMs = 22000 }) {
+async function callDeepseekReasoner({ apiKey, messages, maxOutputTokens, timeoutMs = 12000 }) {
   const deepseekMaxTokens = Math.max(256, Math.min(4000, Number(maxOutputTokens) || 1200));
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(new Error('Deepseek timeout')), timeoutMs);
@@ -1379,7 +1379,7 @@ async function handleSozialrechtChat(req, res, action) {
         apiKey: schnellKey,
         messages,
         maxOutputTokens: deepseekMaxOutputTokens,
-        timeoutMs: expertRequested ? 36000 : 22000
+        timeoutMs: expertRequested ? 18000 : 12000
       });
       const normalizedDeepseek = normalizeModelPayload(deepseekRaw, cfg);
       const deepseekSources = normalizeSources(normalizedDeepseek.sources || []);
