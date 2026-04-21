@@ -393,8 +393,7 @@ function buildSozialrechtTechnicalFallback({
   );
   const normalizedAnswer = normalizeMultilineText(answerText || '');
   const sourceList = normalizeSources(sources || []);
-  const normFallbackSources = sourceList.length ? [] : extractNormReferenceSources(normalizedAnswer || question || '');
-  const finalSources = normalizeSources([...(sourceList || []), ...normFallbackSources]);
+  const finalSources = normalizeSources(sourceList || []);
   const answer = normalizedAnswer || [
     'Ich weiss es nicht sicher.',
     'Die Verarbeitung ist gerade instabil, deshalb liefere ich vorsichtshalber keine spekulative Antwort.',
@@ -412,7 +411,7 @@ function buildSozialrechtTechnicalFallback({
     evidenceBits.push(`Storage-Fehler: ${storageError}`);
   }
   if (!finalSources.length && normalizedAnswer) {
-    evidenceBits.push('Fallback-Antwort ohne zitierbare Quellen-Chunks.');
+    evidenceBits.push('Fallback-Antwort ohne direkt zitierbare Quellen-Chunks.');
   }
   return {
     answer,
@@ -452,6 +451,13 @@ function normalizeSources(rawSources) {
     .slice(0, 10);
 }
 
+const MAX_JSON_UNWRAP_DEPTH = 2;
+const MAX_JSON_LIKE_SCAN_CHARS = 16000;
+
+function canDeepScanJsonLikeText(value) {
+  return normalizeMultilineText(value || '').length <= MAX_JSON_LIKE_SCAN_CHARS;
+}
+
 function decodeEscapedJsonString(value) {
   return String(value || '')
     .replace(/\\n/g, '\n')
@@ -465,6 +471,7 @@ function decodeEscapedJsonString(value) {
 function extractTruncatedAnswerFragment(text) {
   const raw = normalizeMultilineText(text || '');
   if (!raw) return '';
+  if (/\}\s*$/.test(raw)) return '';
   const match = raw.match(/^\s*\{\s*"answer"\s*:\s*"([\s\S]*)$/i);
   if (!match || !match[1]) return '';
   return decodeEscapedJsonString(match[1]);
@@ -476,15 +483,17 @@ function extractAnswerFromJsonLikeText(rawText) {
 
   const unwrap = (value, depth = 0) => {
     const text = normalizeMultilineText(value || '');
-    if (!text || depth > 4) return text;
+    if (!text || depth > MAX_JSON_UNWRAP_DEPTH) return text;
+    const allowDeepScan = canDeepScanJsonLikeText(text);
 
     const direct = parseJsonSafe(text, null);
     if (typeof direct === 'string') {
       const nestedString = normalizeMultilineText(direct);
-      if (nestedString && nestedString !== text) {
+      if (allowDeepScan && nestedString && nestedString !== text) {
         const unwrappedString = unwrap(nestedString, depth + 1);
         if (unwrappedString) return unwrappedString;
       }
+      if (nestedString) return nestedString;
     }
 
     if (direct && typeof direct === 'object') {
@@ -498,8 +507,10 @@ function extractAnswerFromJsonLikeText(rawText) {
         ''
       );
       if (nestedObjectText) {
-        const unwrappedObjectText = unwrap(nestedObjectText, depth + 1);
-        if (unwrappedObjectText) return unwrappedObjectText;
+        if (allowDeepScan) {
+          const unwrappedObjectText = unwrap(nestedObjectText, depth + 1);
+          if (unwrappedObjectText) return unwrappedObjectText;
+        }
         return nestedObjectText;
       }
     }
@@ -507,10 +518,11 @@ function extractAnswerFromJsonLikeText(rawText) {
     const quotedMatch = text.match(/^[\s\r\n]*"([\s\S]*)"[\s\r\n]*$/);
     if (quotedMatch && quotedMatch[1]) {
       const decodedQuoted = decodeEscapedJsonString(quotedMatch[1]);
-      if (decodedQuoted && decodedQuoted !== text) {
+      if (allowDeepScan && decodedQuoted && decodedQuoted !== text) {
         const unwrappedQuoted = unwrap(decodedQuoted, depth + 1);
         if (unwrappedQuoted) return unwrappedQuoted;
       }
+      if (decodedQuoted) return decodedQuoted;
     }
 
     const rx = /"answer"\s*:\s*"([\s\S]*?)"(?:\s*,\s*"(?:followups|sources|confidence|meta|evidence_note|reasoning_note|recommended_questions|next_questions|suggestions)\b|[\s\r\n]*})/i;
@@ -518,29 +530,33 @@ function extractAnswerFromJsonLikeText(rawText) {
     if (m && m[1]) {
       const decoded = decodeEscapedJsonString(m[1]);
       if (decoded) {
-        const unwrappedDecoded = unwrap(decoded, depth + 1);
-        if (unwrappedDecoded) return unwrappedDecoded;
+        if (allowDeepScan) {
+          const unwrappedDecoded = unwrap(decoded, depth + 1);
+          if (unwrappedDecoded) return unwrappedDecoded;
+        }
         return decoded;
       }
     }
 
-    const truncatedDecoded = extractTruncatedAnswerFragment(text);
-    if (truncatedDecoded) {
-      const unwrappedTruncated = unwrap(truncatedDecoded, depth + 1);
-      if (unwrappedTruncated) return unwrappedTruncated;
-      return truncatedDecoded;
-    }
+    if (allowDeepScan) {
+      const truncatedDecoded = extractTruncatedAnswerFragment(text);
+      if (truncatedDecoded) {
+        const unwrappedTruncated = unwrap(truncatedDecoded, depth + 1);
+        if (unwrappedTruncated) return unwrappedTruncated;
+        return truncatedDecoded;
+      }
 
-    const open = text.indexOf('{');
-    const close = text.lastIndexOf('}');
-    if (open >= 0 && close > open) {
-      const inner = parseJsonSafe(text.slice(open, close + 1), null);
-      if (inner && typeof inner === 'object') {
-        const innerText = normalizeMultilineText(inner.answer || inner.response || inner.text || inner.output || '');
-        if (innerText) {
-          const unwrappedInner = unwrap(innerText, depth + 1);
-          if (unwrappedInner) return unwrappedInner;
-          return innerText;
+      const open = text.indexOf('{');
+      const close = text.lastIndexOf('}');
+      if (open >= 0 && close > open) {
+        const inner = parseJsonSafe(text.slice(open, close + 1), null);
+        if (inner && typeof inner === 'object') {
+          const innerText = normalizeMultilineText(inner.answer || inner.response || inner.text || inner.output || '');
+          if (innerText) {
+            const unwrappedInner = unwrap(innerText, depth + 1);
+            if (unwrappedInner) return unwrappedInner;
+            return innerText;
+          }
         }
       }
     }
@@ -553,7 +569,7 @@ function extractAnswerFromJsonLikeText(rawText) {
 
 function extractStructuredPayloadFromJsonLikeText(rawText) {
   const unwrapObject = (obj, depth = 0) => {
-    if (!obj || typeof obj !== 'object' || depth > 4) return null;
+    if (!obj || typeof obj !== 'object' || depth > MAX_JSON_UNWRAP_DEPTH) return null;
 
     const nestedFromAnswer = unwrap(obj.answer || obj.response || obj.text || obj.output || obj.content || '', depth + 1);
     if (nestedFromAnswer && nestedFromAnswer.answer) return nestedFromAnswer;
@@ -576,12 +592,13 @@ function extractStructuredPayloadFromJsonLikeText(rawText) {
 
   const unwrap = (value, depth = 0) => {
     const text = normalizeMultilineText(value || '');
-    if (!text || depth > 4) return null;
+    if (!text || depth > MAX_JSON_UNWRAP_DEPTH) return null;
+    const allowDeepScan = canDeepScanJsonLikeText(text);
 
     const direct = parseJsonSafe(text, null);
     if (typeof direct === 'string') {
       const nestedString = normalizeMultilineText(direct);
-      if (nestedString && nestedString !== text) {
+      if (allowDeepScan && nestedString && nestedString !== text) {
         const nestedParsed = unwrap(nestedString, depth + 1);
         if (nestedParsed) return nestedParsed;
       }
@@ -595,23 +612,25 @@ function extractStructuredPayloadFromJsonLikeText(rawText) {
     const quotedMatch = text.match(/^[\s\r\n]*"([\s\S]*)"[\s\r\n]*$/);
     if (quotedMatch && quotedMatch[1]) {
       const decodedQuoted = decodeEscapedJsonString(quotedMatch[1]);
-      if (decodedQuoted && decodedQuoted !== text) {
+      if (allowDeepScan && decodedQuoted && decodedQuoted !== text) {
         const nestedQuoted = unwrap(decodedQuoted, depth + 1);
         if (nestedQuoted) return nestedQuoted;
       }
     }
 
-    const open = text.indexOf('{');
-    const close = text.lastIndexOf('}');
-    if (open >= 0 && close > open) {
-      const inner = parseJsonSafe(text.slice(open, close + 1), null);
-      if (inner && typeof inner === 'object') {
-        const parsedInner = unwrapObject(inner, depth + 1);
-        if (parsedInner) return parsedInner;
+    if (allowDeepScan) {
+      const open = text.indexOf('{');
+      const close = text.lastIndexOf('}');
+      if (open >= 0 && close > open) {
+        const inner = parseJsonSafe(text.slice(open, close + 1), null);
+        if (inner && typeof inner === 'object') {
+          const parsedInner = unwrapObject(inner, depth + 1);
+          if (parsedInner) return parsedInner;
+        }
       }
     }
 
-    const truncatedAnswer = extractTruncatedAnswerFragment(text);
+    const truncatedAnswer = allowDeepScan ? extractTruncatedAnswerFragment(text) : '';
     if (truncatedAnswer) {
       return {
         answer: truncatedAnswer,
@@ -626,43 +645,6 @@ function extractStructuredPayloadFromJsonLikeText(rawText) {
   };
 
   return unwrap(rawText, 0);
-}
-
-function extractNormReferenceSources(answerText) {
-  const raw = normalizeMultilineText(answerText || '');
-  if (!raw) return [];
-  const lines = raw
-    .split('\n')
-    .map((line) => normalizeText(line))
-    .filter(Boolean)
-    .slice(0, 80);
-  const found = [];
-  const seen = new Set();
-  const re = /(§\s*\d+[a-z]?(?:\s*abs\.?\s*\d+)?(?:\s*s\.?\s*\d+)?(?:\s*nr\.?\s*\d+)?)\s*(efzg|aag|sgb\s*[ivx0-9]+|sgg|bgb)?/ig;
-
-  for (const line of lines) {
-    let match;
-    while ((match = re.exec(line)) !== null) {
-      const para = normalizeText(match[1] || '');
-      const law = normalizeText((match[2] || '').toUpperCase());
-      if (!para) continue;
-      const title = law ? `${para} ${law}` : para;
-      const key = title.toLowerCase();
-      if (seen.has(key)) continue;
-      seen.add(key);
-      found.push({
-        title: `Normbezug: ${title}`,
-        url: '',
-        excerpt: line,
-        section: 'Rechtsgrundlage',
-        page: '',
-        note: 'Automatisch aus der Antwort extrahiert (kein direkter Dokument-Chunk).',
-        confidence: 0.36
-      });
-      if (found.length >= 6) return found;
-    }
-  }
-  return found;
 }
 
 function isLegacyDeepseekRuntimeFailure(rawResult, normalizedResult) {
@@ -1354,8 +1336,7 @@ async function handleSozialrechtChat(req, res, action) {
 
     const normalized = normalizeModelPayload(modelRaw, cfg);
     const mergedSources = normalizeSources([...(normalized.sources || []), ...storageSources]);
-    const normFallbackSources = mergedSources.length ? [] : extractNormReferenceSources(normalized.answer || '');
-    const finalSources = normalizeSources([...(mergedSources || []), ...normFallbackSources]);
+    const finalSources = normalizeSources(mergedSources);
     const strictUnknown = Boolean(cfg?.accuracy_policy?.strict_unknown_on_missing_basis);
     const strictUnknownClient = payload?.guardrails?.strict_unknown !== false;
     const enforceStrictUnknown = strictUnknown && strictUnknownClient && groundedModeActive && !deepseekMode;
@@ -1375,9 +1356,6 @@ async function handleSozialrechtChat(req, res, action) {
       evidenceNotes.push('Vector-Store-Treffer wurden als Quellen-Chunks eingebunden.');
     } else if (storageUsed && !finalSources.length) {
       evidenceNotes.push('Vector Store war aktiv, aber es wurden keine zitierbaren Quellen-Chunks erkannt.');
-    }
-    if (normFallbackSources.length) {
-      evidenceNotes.push('Normbezüge wurden als Quellen-Fallback aus der Antwort extrahiert.');
     }
     if (!finalSources.length && !lowConfidence) {
       evidenceNotes.push('Hinweis: Antwort ohne extrahierte Quellen-Chunks, bitte fachlich gegenpruefen.');
