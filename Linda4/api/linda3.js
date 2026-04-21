@@ -10,7 +10,7 @@ const DEFAULT_SOCIALRECHT_CONFIG = {
   domain: 'SOZIALRECHT',
   routing: {
     default_model: 'gpt-5.1',
-    fast_model: 'deepseek-reasoner',
+    fast_model: 'deepseek-chat',
     overview_model: 'gpt-4.1',
     judgment_model: 'gpt-5.1',
     judgment_max_output_tokens: 520,
@@ -1167,7 +1167,7 @@ async function callOpenAIResponsesWithStorage({ apiKey, model, messages, tempera
   };
 }
 
-async function callDeepseekReasoner({ apiKey, messages, maxOutputTokens, timeoutMs = 12000 }) {
+async function callDeepseekReasoner({ apiKey, messages, maxOutputTokens, timeoutMs = 30000 }) {
   const deepseekMaxTokens = Math.max(256, Math.min(4000, Number(maxOutputTokens) || 1200));
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(new Error('Deepseek timeout')), timeoutMs);
@@ -1180,7 +1180,7 @@ async function callDeepseekReasoner({ apiKey, messages, maxOutputTokens, timeout
       },
       signal: controller.signal,
       body: JSON.stringify({
-        model: 'deepseek-reasoner',
+        model: 'deepseek-chat',
         messages,
         temperature: 1.0,
         max_tokens: deepseekMaxTokens,
@@ -1379,7 +1379,7 @@ async function handleSozialrechtChat(req, res, action) {
         apiKey: schnellKey,
         messages,
         maxOutputTokens: deepseekMaxOutputTokens,
-        timeoutMs: expertRequested ? 18000 : 12000
+        timeoutMs: expertRequested ? 45000 : 30000
       });
       const normalizedDeepseek = normalizeModelPayload(deepseekRaw, cfg);
       const deepseekSources = normalizeSources(normalizedDeepseek.sources || []);
@@ -1400,7 +1400,7 @@ async function handleSozialrechtChat(req, res, action) {
         meta: {
           domain: 'SOZIALRECHT',
           api_key_source: sozialrechtApi.source || '',
-          model: 'deepseek-reasoner',
+          model: 'deepseek-chat',
           response_mode: expertRequested ? 'expert' : (requestedResponseMode || 'schnell'),
           fast_mode: true,
           judgment_mode: false,
