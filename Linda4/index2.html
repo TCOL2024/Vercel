@@ -4123,7 +4123,7 @@
       },
       isMobileClient: () => /iphone|ipad|ipod|android|mobile/i.test(navigator.userAgent || ''),
       // LINDA TIMEOUT HANDLER
-      getLindaRequestTimeoutMs: () => Boolean(app.state.settings.fastMode?.enabled) ? 25000 : 30000,
+      getLindaRequestTimeoutMs: () => Boolean(app.state.settings.fastMode?.enabled) ? 70000 : 90000,
       createLindaRequestError: ({ kind = 'timeout', partialText = '', charsReceived = 0 } = {}) => {
         const err = new Error(kind === 'timeout' ? 'Linda-Zeitlimit erreicht.' : 'Linda-Anfrage abgebrochen.');
         err.name = kind === 'timeout' ? 'LindaTimeoutError' : 'AbortError';
@@ -7419,8 +7419,25 @@
           }
 
           const raw = await res.text();
+          const parsedRawJson = parseJSON(raw, null);
+          const embeddedRawJson = parseEmbeddedJSONObject(raw);
+          const structuredJsonResponse = Boolean(
+            (
+              parsedRawJson &&
+              typeof parsedRawJson === 'object' &&
+              !Array.isArray(parsedRawJson) &&
+              (
+                Object.prototype.hasOwnProperty.call(parsedRawJson, 'answer') ||
+                Object.prototype.hasOwnProperty.call(parsedRawJson, 'meta') ||
+                Object.prototype.hasOwnProperty.call(parsedRawJson, 'sources')
+              )
+            ) ||
+            (embeddedRawJson && typeof embeddedRawJson === 'object')
+          );
           const sentinelState = stripLindaSentinels(raw);
-          partialBuffer = normalizeAnswerTextForRender(sentinelState.text || extractTruncatedAnswerFragment(raw));
+          partialBuffer = normalizeAnswerTextForRender(
+            sentinelState.text || (structuredJsonResponse ? raw : extractTruncatedAnswerFragment(raw))
+          );
           charsReceived = String(partialBuffer || sentinelState.text || '').length;
 
           if (sentinelState.timeout) {
@@ -7428,7 +7445,7 @@
             throw app.logic.createLindaRequestError({ kind: 'timeout', partialText: partialBuffer, charsReceived });
           }
 
-          const truncatedRawAnswer = extractTruncatedAnswerFragment(raw);
+          const truncatedRawAnswer = structuredJsonResponse ? '' : extractTruncatedAnswerFragment(raw);
           if (!sentinelState.done && truncatedRawAnswer) {
             const normalizedTruncated = normalizeAnswerTextForRender(truncatedRawAnswer);
             const truncatedChars = normalizedTruncated.length;
@@ -8717,6 +8734,18 @@
             app.logic.sendSystemMessage('Alles klar, dann prüfe ich die Familienversicherung nicht weiter.');
             return;
           }
+        }
+
+        if (!fvState.active && fvHelper && typeof fvHelper.isRelatedFollowup === 'function' && fvHelper.isRelatedFollowup(text)) {
+          if (!forcedText) {
+            app.ui.input.value = '';
+            app.ui.input.dispatchEvent(new Event('input'));
+          }
+          const followupAnswer = fvHelper.buildRelatedFollowupAnswer
+            ? fvHelper.buildRelatedFollowupAnswer(text)
+            : 'Ich prüfe die Familienversicherung weiter.';
+          app.logic.sendSystemMessage(followupAnswer);
+          return;
         }
 
         const fvTriggerMatch = fvHelper && typeof fvHelper.isTriggerQuestion === 'function'
