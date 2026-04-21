@@ -10,6 +10,7 @@
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.8/purify.min.js"></script>
 <script src="./sgb_direct_links.js"></script>
+<script src="./fv_check_2026.js"></script>
 <style>
   :root {
     --ink: #111d2e;
@@ -3531,43 +3532,9 @@
   let activeMicAnalyserBuffer = null;
   let activeMicSilenceTimer = null;
   let activeMicStartedAt = 0;
-  let fvState = { active: false, step: 0, answers: {}, freeTextUsed: false };
+  let fvState = { active: false, step: 0, answers: {}, freeTextUsed: false, pendingConfirm: false, pendingQuestion: '' };
 
-  const FV_CHECK_STEPS = [
-    {
-      key: 'alter',
-      question: 'Wie alt ist die Person?',
-      progress: '1 von 3',
-      freePlaceholder: 'Alter eingeben…',
-      options: [
-        { value: 'unter18', label: 'Unter 18 Jahre' },
-        { value: '18-23-azubi', label: '18–23 Jahre (in Ausbildung oder Studium)' },
-        { value: '18-23-kein-azubi', label: '18–23 Jahre (nicht in Ausbildung/Studium)' },
-        { value: '25+', label: '25 Jahre oder älter' }
-      ]
-    },
-    {
-      key: 'einkommen',
-      question: 'Hat die Person regelmäßiges eigenes Einkommen?',
-      progress: '2 von 3',
-      freePlaceholder: 'Einkommenssituation beschreiben…',
-      options: [
-        { value: 'unter505', label: 'Nein / unter 505 €/Monat (Geringfügigkeitsgrenze 2024)' },
-        { value: 'ueber505', label: 'Ja, über 505 €/Monat' }
-      ]
-    },
-    {
-      key: 'elternteil',
-      question: 'Ist das Elternteil (Hauptversicherter) Mitglied einer gesetzlichen Krankenversicherung (GKV)?',
-      progress: '3 von 3',
-      freePlaceholder: 'Krankenversicherung nennen…',
-      options: [
-        { value: 'gkv', label: 'Ja, gesetzlich versichert (GKV)' },
-        { value: 'pkv', label: 'Nein, privat versichert (PKV)' },
-        { value: 'unbekannt', label: 'Nicht bekannt' }
-      ]
-    }
-  ];
+  const FV_CHECK_STEPS = window.FV_CHECK_STEPS || [];
 
   const DEFAULT_REQUEST_MEMORY = {
     version: REQUEST_MEMORY_VERSION,
@@ -4156,7 +4123,7 @@
       },
       isMobileClient: () => /iphone|ipad|ipod|android|mobile/i.test(navigator.userAgent || ''),
       // LINDA TIMEOUT HANDLER
-      getLindaRequestTimeoutMs: () => Boolean(app.state.settings.fastMode?.enabled) ? 12000 : 25000,
+      getLindaRequestTimeoutMs: () => Boolean(app.state.settings.fastMode?.enabled) ? 25000 : 30000,
       createLindaRequestError: ({ kind = 'timeout', partialText = '', charsReceived = 0 } = {}) => {
         const err = new Error(kind === 'timeout' ? 'Linda-Zeitlimit erreicht.' : 'Linda-Anfrage abgebrochen.');
         err.name = kind === 'timeout' ? 'LindaTimeoutError' : 'AbortError';
@@ -4427,16 +4394,24 @@
           box.style.color = '#37526f';
           return;
         }
+        const storageEnvKey = String(h.storageEnvKey || h.storage_env_key || '').trim();
+        const storageEnvValue = String(h.storageEnvValue || h.storage_env_value || '').trim();
+        const storageConfigured = typeof h.storageConfigured === 'boolean'
+          ? h.storageConfigured
+          : (typeof h.storage_configured === 'boolean' ? h.storage_configured : null);
         const lines = [];
         lines.push(`Status: ${h.ok ? 'OK' : 'Unvollständig'}`);
         Object.entries(h.checks).forEach(([k, v]) => {
           lines.push(`${v ? '✓' : '✗'} ${k}`);
         });
-        if (h.storageEnvKey) {
-          lines.push(`Storage-ENV: ${h.storageEnvKey}`);
+        if (storageEnvKey) {
+          lines.push(`Storage-ENV: ${storageEnvKey}`);
         }
-        if (typeof h.storageConfigured === 'boolean') {
-          lines.push(`${h.storageConfigured ? '✓' : '✗'} Vector Store konfiguriert`);
+        if (storageEnvValue) {
+          lines.push(`Storage-ID: ${storageEnvValue}`);
+        }
+        if (typeof storageConfigured === 'boolean') {
+          lines.push(`${storageConfigured ? '✓' : '✗'} Vector Store konfiguriert`);
         }
         if (h.baseUrl) {
           lines.push(`API-Basis: ${h.baseUrl}`);
@@ -4771,7 +4746,7 @@
         const grounded = Boolean(app.state.settings.guardrails && app.state.settings.guardrails.groundedMode);
         const privacy = Boolean(app.state.settings.privacy && app.state.settings.privacy.ephemeral);
         document.getElementById('domain-badge').textContent = isFast ? `${domain} ⚡` : domain;
-        document.getElementById('domain-summary').textContent = `Fachmodus: ${domain}${isFast ? ' • Schnellmodus aktiv' : ''}${isCompare ? ' • Vergleich aktiv' : ''}${hasDirectory ? ' • Lernverzeichnis (Beta) aktiv' : ''}${grounded ? ' • Quellenmodus strikt' : ''}${privacy ? ' • Privatmodus aktiv' : ''} • Wissensbereiche: ${activeCount} aktiv`;
+        document.getElementById('domain-summary').textContent = `Fachmodus: ${domain}${isFast ? ' • Schnellmodus aktiv' : ''}${isCompare ? ' • Überblickmodus aktiv' : ''}${hasDirectory ? ' • Lernverzeichnis (Beta) aktiv' : ''}${grounded ? ' • Quellenmodus strikt' : ''}${privacy ? ' • Privatmodus aktiv' : ''} • Wissensbereiche: ${activeCount} aktiv`;
         app.ui.syncSozialrechtOnlyControls();
       },
 
@@ -5309,6 +5284,17 @@
               'Die UI macht staerker kenntlich, wie belastbar eine Antwort gerade ist.'
             ],
             note: 'Kurz gesagt: Quellenmodus schuetzt gegen Halluzinationen.'
+          },
+          overview: {
+            title: 'Überblickmodus',
+            intro: 'Überblickmodus liefert eine kurze, hilfreiche Ersteinschaetzung mit leichter Quellensuche.',
+            points: [
+              'LINDA antwortet knapp und orientiert sich an vorhandenen Quellen.',
+              'Die Einordnung bleibt oberflaechlich und ist für den ersten Überblick gedacht.',
+              'Quellen und Verweise werden weiter angezeigt, aber ohne strikte Quellenbindung.',
+              'Für tiefe Prüfung und harte Quellenkontrolle ist der Quellenmodus zustaendig.'
+            ],
+            note: 'Kurz gesagt: Überblickmodus ist die schnelle Einordnung mit Quellenbezug.'
           }
         };
         return map[kind] || null;
@@ -6085,17 +6071,22 @@
       },
 
       isFvEligibleMode: () => {
-        const mode = String(app.state.settings?.domain || '').trim().toLowerCase();
-        return mode === 'sozialrecht' || mode === 'standard';
+        return Boolean(window.LINDA_FV_CHECK?.isEligibleMode(app.state.settings?.domain || ''));
       },
 
       buildFvAnswerLabel: (key, value) => {
+        if (window.LINDA_FV_CHECK && typeof window.LINDA_FV_CHECK.buildAnswerLabel === 'function') {
+          return window.LINDA_FV_CHECK.buildAnswerLabel(key, value);
+        }
         const step = FV_CHECK_STEPS.find((item) => item.key === key);
         const entry = step ? step.options.find((option) => option.value === value) : null;
         return entry ? entry.label : String(value || '').trim();
       },
 
       buildFvAnswerLines: () => {
+        if (window.LINDA_FV_CHECK && typeof window.LINDA_FV_CHECK.buildAnswerLines === 'function') {
+          return window.LINDA_FV_CHECK.buildAnswerLines(fvState.answers || {});
+        }
         const answers = fvState.answers || {};
         return FV_CHECK_STEPS.map((step) => {
           const value = String(answers[step.key] || '').trim();
@@ -6105,87 +6096,24 @@
       },
 
       evaluateFvCheck: () => {
-        const answers = fvState.answers || {};
-        const alter = String(answers.alter || '').trim();
-        const einkommen = String(answers.einkommen || '').trim();
-        const elternteil = String(answers.elternteil || '').trim();
-        const freeTextUsed = Boolean(fvState.freeTextUsed);
-        const summary = app.logic.buildFvAnswerLines();
-
-        if (freeTextUsed || elternteil === 'unbekannt') {
-          return { status: 'unklar', summary };
+        if (window.LINDA_FV_CHECK && typeof window.LINDA_FV_CHECK.evaluate === 'function') {
+          return window.LINDA_FV_CHECK.evaluate(fvState);
         }
-
-        const notPossibleReasons = [];
-        if (alter === '25+') {
-          notPossibleReasons.push('Die Person ist 25 Jahre oder älter.');
-        }
-        if (alter === '18-23-kein-azubi') {
-          notPossibleReasons.push('Die Person ist 18 bis 23 Jahre alt, befindet sich aber nicht in Ausbildung oder Studium.');
-        }
-        if (einkommen === 'ueber505') {
-          notPossibleReasons.push('Die Person hat regelmäßiges eigenes Einkommen über 505 Euro im Monat.');
-        }
-        if (elternteil === 'pkv') {
-          notPossibleReasons.push('Das Elternteil ist privat versichert und damit nicht gesetzlich krankenversichert.');
-        }
-        if (notPossibleReasons.length) {
-          return { status: 'nicht-moeglich', reason: notPossibleReasons.join(' '), summary };
-        }
-
-        const possible =
-          (alter === 'unter18' || alter === '18-23-azubi') &&
-          einkommen === 'unter505' &&
-          elternteil === 'gkv';
-        if (possible) {
-          return { status: 'moeglich', summary };
-        }
-
-        return { status: 'unklar', summary };
+        return { status: 'unklar', summary: app.logic.buildFvAnswerLines() };
       },
 
       buildFvHtml: (status, detail = '') => {
-        const cleanDetail = String(detail || '').trim();
-        if (status === 'moeglich') {
-          return `
-            <div class="sozialrecht-stack">
-              <span class="sozialrecht-topline">✓ Familienversicherung (GKV) möglich</span>
-              <div class="sozialrecht-section intro">
-                <p class="sozialrecht-section-head">Voraussetzungen erfüllt</p>
-                <p>${app.utils.safeText(cleanDetail || 'Die Angaben sprechen für eine Familienversicherung in der gesetzlichen Krankenversicherung (GKV).')} — Bitte Anmeldung direkt bei der GKV des Elternteils vornehmen.</p>
-              </div>
-            </div>
-          `;
+        if (window.LINDA_FV_CHECK && typeof window.LINDA_FV_CHECK.buildHtml === 'function') {
+          return window.LINDA_FV_CHECK.buildHtml(status, detail);
         }
-
-        if (status === 'nicht-moeglich') {
-          return `
-            <div class="sozialrecht-stack">
-              <span class="sozialrecht-topline">✗ Familienversicherung nicht möglich</span>
-              <div class="sozialrecht-section intro">
-                <p class="sozialrecht-section-head">Grund</p>
-                <p>${app.utils.safeText(cleanDetail || 'Nach den Angaben liegt keine Familienversicherung in der gesetzlichen Krankenversicherung (GKV) vor.')}</p>
-              </div>
-            </div>
-          `;
-        }
-
-        return `
-          <div class="sozialrecht-stack">
-            <span class="sozialrecht-topline">? Prüfung erforderlich</span>
-            <div class="sozialrecht-section intro">
-              <p class="sozialrecht-section-head">Hinweis</p>
-              <p>${app.utils.safeText(cleanDetail || 'Aufgrund der Angaben kann keine eindeutige Aussage getroffen werden. Linda prüft weiter…')}</p>
-            </div>
-          </div>
-        `;
+        return app.utils.safeText(detail || '');
       },
 
       openFvCheck: ({ source = 'frontend' } = {}) => {
         if (!app.logic.isFvEligibleMode()) return false;
         app.logic.ensureSession();
         app.logic.closeClaudeClarifier({ save: false });
-        fvState = { active: true, step: 0, answers: {}, freeTextUsed: false, source: String(source || 'frontend') };
+        fvState = { active: true, step: 0, answers: {}, freeTextUsed: false, source: String(source || 'frontend'), pendingConfirm: false, pendingQuestion: '' };
         app.ui.renderClarifierDock();
         app.ui.scrollBottom();
         app.utils.save();
@@ -6194,7 +6122,7 @@
 
       closeFvCheck: (opts = {}) => {
         const hadActive = Boolean(fvState && fvState.active);
-        fvState = { active: false, step: 0, answers: {}, freeTextUsed: false };
+        fvState = { active: false, step: 0, answers: {}, freeTextUsed: false, pendingConfirm: false, pendingQuestion: '' };
         app.ui.renderClarifierDock();
         if (hadActive && opts.save !== false) app.utils.save();
       },
@@ -8472,7 +8400,9 @@
         });
 
         const bubbleMeta = (meta && typeof meta === 'object') ? meta : {};
-        const sourceList = app.logic.sanitizeSourceList(sources);
+        const sourceList = app.logic
+          .sanitizeSourceList(sources)
+          .filter((s) => !/^Normbezug:/i.test(String(s.title || '')) && !/Automatisch aus der Antwort extrahiert/i.test(String(s.note || '')));
         const fallbackSources = sourceList.length ? [] : app.logic.extractSourcesFromRenderedMarkdown(md);
         const finalSources = sourceList.length ? sourceList.slice() : fallbackSources.slice();
         const renderedAnswerText = String(md.innerText || '').trim();
@@ -8535,9 +8465,7 @@
               ? `<a href="${encodeURI(sourceHref)}" target="_blank" rel="noopener">${app.utils.safeText(sourceLabel)}</a>`
               : `<span>${app.utils.safeText(sourceLabel)}</span>`;
             const rawExcerpt = normalizeAnswerTextForRender(s.excerpt || '');
-            const effectiveExcerpt = rawExcerpt ||
-              app.logic.deriveAnswerExcerptForSourceTitle(renderedAnswerText, s.title || '') ||
-              app.logic.deriveAnswerExcerptForSource(renderedAnswerText, bubbleMeta.question || '', s.title || '');
+            const effectiveExcerpt = rawExcerpt;
             const highlightedSnippet = effectiveExcerpt
               ? (
                 sozialrechtSourceCards
@@ -8547,7 +8475,7 @@
               : '';
             const snippetHtml = effectiveExcerpt
               ? `<p class="source-card-snippet">${highlightedSnippet}</p>`
-              : '<p class="source-card-snippet">Kein markierter Abschnitt vorhanden.</p>';
+              : '<p class="source-card-snippet">Kein direkter Dokumentauszug geliefert.</p>';
             const noteHtml = s.note
               ? `<div class="source-card-note">${app.utils.safeText(s.note)}</div>`
               : '';
@@ -8683,24 +8611,6 @@
           return;
         }
 
-        const fvTriggerText = app.utils.normalizeForKeyword(text);
-        const fvIntentMarker = /\b(pruef|prüf|check|testen|ob|moeglich|möglich|anspruch|voraussetzung|voraussetzungen)\b/i.test(text);
-        const fvTriggerMatch =
-          /\bfamilienversicherung\s+(pruef|prüf|check)\b/.test(fvTriggerText) ||
-          /\bpruef(?:e|en)?\s+die\s+familienversicherung\b|\bcheck(?:e|en)?\s+familienversicherung\b/i.test(text) ||
-          /\bfamilienversichert\b/i.test(text) ||
-          /§\s*10\s*sgb\s*v/i.test(text) ||
-          (/\bfamilienversicherung\b/i.test(text) && fvIntentMarker) ||
-          (/\bgkv\s+familie\b/i.test(fvTriggerText) && fvIntentMarker);
-        if (fvTriggerMatch && app.logic.isFvEligibleMode()) {
-          if (!forcedText) {
-            app.ui.input.value = '';
-            app.ui.input.dispatchEvent(new Event('input'));
-          }
-          app.logic.openFvCheck({ source: 'keyword' });
-          return;
-        }
-
         let s = app.logic.activeSession();
         if (!s) {
           app.logic.newChat();
@@ -8785,6 +8695,48 @@
           }
         }
 
+        const fvHelper = window.LINDA_FV_CHECK;
+        if (fvState.pendingConfirm) {
+          if (fvHelper && typeof fvHelper.isAffirmative === 'function' && fvHelper.isAffirmative(text)) {
+            fvState.pendingConfirm = false;
+            fvState.pendingQuestion = '';
+            if (!forcedText) {
+              app.ui.input.value = '';
+              app.ui.input.dispatchEvent(new Event('input'));
+            }
+            app.logic.openFvCheck({ source: 'confirm' });
+            return;
+          }
+          if (fvHelper && typeof fvHelper.isNegative === 'function' && fvHelper.isNegative(text)) {
+            fvState.pendingConfirm = false;
+            fvState.pendingQuestion = '';
+            if (!forcedText) {
+              app.ui.input.value = '';
+              app.ui.input.dispatchEvent(new Event('input'));
+            }
+            app.logic.sendSystemMessage('Alles klar, dann prüfe ich die Familienversicherung nicht weiter.');
+            return;
+          }
+        }
+
+        const fvTriggerMatch = fvHelper && typeof fvHelper.isTriggerQuestion === 'function'
+          ? fvHelper.isTriggerQuestion(text)
+          : /\bfamilienversicherung\b/i.test(text);
+        if (fvTriggerMatch && app.logic.isFvEligibleMode()) {
+          if (!forcedText) {
+            app.ui.input.value = '';
+            app.ui.input.dispatchEvent(new Event('input'));
+          }
+          fvState.pendingConfirm = true;
+          fvState.pendingQuestion = text;
+          app.logic.sendSystemMessage(
+            fvHelper && typeof fvHelper.confirmationPrompt === 'function'
+              ? fvHelper.confirmationPrompt()
+              : 'Soll ich die Familienversicherung abprüfen?'
+          );
+          return;
+        }
+
         if (app.state.settings.fastMode?.enabled && app.logic.needsSlowModeHint(text)) {
           alert('Schnellmodus ist aktiv. Prüfe die Antwort bitte besonders sorgfältig.');
         }
@@ -8824,9 +8776,10 @@
           const sozialrechtDomain = app.logic.isSozialrechtDomain();
           if (sozialrechtDomain) app.logic.enforceSozialrechtMode({ save: false });
           const effectiveFastMode = Boolean(app.state.settings.fastMode && app.state.settings.fastMode.enabled);
-          const expertModeEnabled = opts?.autoSpeak
+          const overviewModeEnabled = opts?.autoSpeak
             ? false
             : Boolean(app.state.settings.compareMode && app.state.settings.compareMode.enabled);
+          const expertModeEnabled = false;
           const strictSourcesActive = Boolean(app.state.settings.guardrails?.groundedMode);
           const deepseekRoutingActive = Boolean(effectiveFastMode && !strictSourcesActive);
           const effectiveSources = app.state.settings.sources;
@@ -8850,8 +8803,8 @@
             history: historyForApi,
             sources: effectiveSources,
             routing: {
-              preferred_model: deepseekRoutingActive ? 'deepseek' : 'gpt-5.1',
-              response_mode: expertModeEnabled ? 'expert' : 'genau'
+              preferred_model: deepseekRoutingActive ? 'deepseek' : (overviewModeEnabled ? 'gpt-4.1' : 'gpt-5.1'),
+              response_mode: deepseekRoutingActive ? 'schnell' : (overviewModeEnabled ? 'overview' : 'genau')
             },
             ilias: {
               enabled: mobileReaderActive
@@ -9750,7 +9703,7 @@
       const wantsOn = Boolean(fastMainOn && fastMainOn.checked);
       if (wantsOn && !app.state.settings.fastMode.consentAccepted) {
         const accepted = confirm(
-          'Schnellmodus bedeutet: DeepSeek ohne Quellenmodus und ohne Genau-/Überblickmodus. ' +
+          'Schnellmodus bedeutet: DeepSeek ohne Quellenmodus und ohne Überblickmodus. ' +
           'Bitte prüfe jede Antwort sorgfältig.\n\nBestätigen?'
         );
         if (!accepted) {

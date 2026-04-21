@@ -11,8 +11,10 @@ const DEFAULT_SOCIALRECHT_CONFIG = {
   routing: {
     default_model: 'gpt-5.1',
     fast_model: 'gpt-4.1-mini',
+    overview_model: 'gpt-4.1',
     judgment_model: 'gpt-5.1',
     judgment_max_output_tokens: 520,
+    overview_max_output_tokens: 900,
     temperature: 0.1,
     max_output_tokens: 1200
   },
@@ -769,6 +771,26 @@ function buildSozialrechtJudgmentSystemPrompt(cfg, hasStorage) {
   ].filter(Boolean).join('\n');
 }
 
+function buildSozialrechtOverviewSystemPrompt(cfg, hasStorage) {
+  const policy = cfg?.accuracy_policy || {};
+  return [
+    'Du bist LINDA im Fachmodus Sozialrecht fuer angehende Personalfachkaufleute (IHK).',
+    'Modus: Ueberblick. Antworte kurz, klar und brauchbar fuer die erste Einordnung.',
+    'Nutze vorhandene Quellen oberflaechlich und praxistauglich, aber bleibe ehrlich bei Unsicherheiten.',
+    policy.require_legal_basis_references ? 'Nenne, wenn moeglich, den Rechtsbezug oder die relevante Norm.' : '',
+    hasStorage ? 'Suche in vorhandenen Quellen mit Prioritaet auf direkt zitierbaren Stellen.' : '',
+    'Antwortlaenge kurz halten. Erst eine knappe Einordnung, dann optional 2 bis 4 kurze Punkte.',
+    'Wenn Kontext fehlt, stelle nur eine kurze Rueckfrage statt lange zu spekulieren.',
+    'Das Feld "answer" muss als gut lesbares Markdown kommen, idealerweise mit:',
+    '### Kurzantwort',
+    '### Wichtige Einordnung',
+    '### Quellenhinweis',
+    '### Naechste sinnvolle Frage',
+    'Antworte direkt als gut lesbares Markdown.',
+    'Gib keine JSON-Huelle, keine Code-Fences und keine technischen Metadaten aus.'
+  ].filter(Boolean).join('\n');
+}
+
 function toOpenAIMessages(systemPrompt, history, question) {
   const out = [{ role: 'system', content: systemPrompt }];
   sanitizeHistory(history).forEach((msg) => out.push(msg));
@@ -1074,6 +1096,7 @@ async function handleHealth(req, res) {
   const storageEnvKey = String(cfg?.storage?.vector_store_env_key || 'OPENAI_VECTOR_STORE_ID_SOZIALRECHT');
   const sozialrechtApi = resolveSozialrechtApiKey();
   const sozialrechtSchnell = resolveSozialrechtSchnellKey();
+  const routing = cfg?.routing || {};
   const checks = {
     OPENAI_API_KEY: Boolean(process.env.OPENAI_API_KEY),
     Sozialrecht2026: Boolean(process.env.Sozialrecht2026 || process.env.SOZIALRECHT2026),
@@ -1087,11 +1110,37 @@ async function handleHealth(req, res) {
     checks,
     sozialrecht_api_key_source: sozialrechtApi.source || '',
     storage_env_key: storageEnvKey,
+    storage_env_value: normalizeText(process.env[storageEnvKey] || ''),
     storage_configured: Boolean(checks[storageEnvKey]),
     baseUrl: '/api/linda3',
     ts: new Date().toISOString(),
     mode: 'sozialrecht-targeted-openai',
-    legacy_origin_effective: resolveLegacyOriginForRequest(req)
+    legacy_origin_effective: resolveLegacyOriginForRequest(req),
+    routing: {
+      default_model: String(routing.default_model || DEFAULT_SOCIALRECHT_CONFIG.routing.default_model),
+      fast_model: String(routing.fast_model || DEFAULT_SOCIALRECHT_CONFIG.routing.fast_model),
+      overview_model: String(routing.overview_model || DEFAULT_SOCIALRECHT_CONFIG.routing.overview_model),
+      judgment_model: String(routing.judgment_model || DEFAULT_SOCIALRECHT_CONFIG.routing.judgment_model),
+      overview_max_output_tokens: Number.isFinite(Number(routing.overview_max_output_tokens))
+        ? Number(routing.overview_max_output_tokens)
+        : DEFAULT_SOCIALRECHT_CONFIG.routing.overview_max_output_tokens,
+      judgment_max_output_tokens: Number.isFinite(Number(routing.judgment_max_output_tokens))
+        ? Number(routing.judgment_max_output_tokens)
+        : DEFAULT_SOCIALRECHT_CONFIG.routing.judgment_max_output_tokens,
+      max_output_tokens: Number.isFinite(Number(routing.max_output_tokens))
+        ? Number(routing.max_output_tokens)
+        : DEFAULT_SOCIALRECHT_CONFIG.routing.max_output_tokens
+    },
+    details: {
+      env: {
+        OPENAI_API_KEY: Boolean(process.env.OPENAI_API_KEY),
+        Sozialrecht2026: Boolean(process.env.Sozialrecht2026 || process.env.SOZIALRECHT2026),
+        SozialrechtSchnell: Boolean(sozialrechtSchnell),
+        OPENAI_VECTOR_STORE_ID_SOZIALRECHT: Boolean(process.env.OPENAI_VECTOR_STORE_ID_SOZIALRECHT),
+        LINDA3_LEGACY_API_ORIGIN: Boolean(process.env.LINDA3_LEGACY_API_ORIGIN)
+      },
+      model_rules: 'Schnellmodus=DeepSeek-only; Überblickmodus=gpt-4.1 mit oberflächlicher Quellensuche; Quellenmodus=gpt-5.1 mit strikter Evidenzprüfung; Urteilsmodus=kompakt mit GPT-5.1.'
+    }
   });
 }
 
@@ -1108,6 +1157,7 @@ async function handleSozialrechtChat(req, res, action) {
   const forceFast = action === 'deepseek';
   const requestedResponseMode = String(payload?.routing?.response_mode || '').toLowerCase();
   const expertRequested = requestedResponseMode === 'expert';
+  const overviewRequested = requestedResponseMode === 'overview';
   const preferredModel = String(payload?.routing?.preferred_model || '').toLowerCase();
   const groundedModeActive = payload?.guardrails?.grounded_mode !== false;
   const fastRequested = forceFast || Boolean(payload.schnellmodus) || preferredModel === 'deepseek';
@@ -1116,10 +1166,12 @@ async function handleSozialrechtChat(req, res, action) {
   const deepseekMode = fastMode && !groundedModeActive;
   const defaultModel = String(cfg?.routing?.default_model || DEFAULT_SOCIALRECHT_CONFIG.routing.default_model);
   const fastModel = String(cfg?.routing?.fast_model || DEFAULT_SOCIALRECHT_CONFIG.routing.fast_model);
+  const overviewModel = String(cfg?.routing?.overview_model || DEFAULT_SOCIALRECHT_CONFIG.routing.overview_model);
   const judgmentModel = String(cfg?.routing?.judgment_model || DEFAULT_SOCIALRECHT_CONFIG.routing.judgment_model || defaultModel);
+  const overviewMode = !judgmentMode && !deepseekMode && (overviewRequested || preferredModel === overviewModel.toLowerCase());
   const model = judgmentMode
     ? judgmentModel
-    : (deepseekMode ? fastModel : defaultModel);
+    : (deepseekMode ? fastModel : (overviewMode ? overviewModel : defaultModel));
 
   const sozialrechtApi = resolveSozialrechtApiKey();
   const socialKey = sozialrechtApi.key;
@@ -1209,16 +1261,23 @@ async function handleSozialrechtChat(req, res, action) {
   const defaultMaxOutputTokens = Number.isFinite(Number(cfg?.routing?.max_output_tokens))
     ? Number(cfg.routing.max_output_tokens)
     : DEFAULT_SOCIALRECHT_CONFIG.routing.max_output_tokens;
+  const overviewMaxOutputTokens = Number.isFinite(Number(cfg?.routing?.overview_max_output_tokens))
+    ? Number(cfg.routing.overview_max_output_tokens)
+    : Number(DEFAULT_SOCIALRECHT_CONFIG.routing.overview_max_output_tokens || 900);
   const judgmentMaxOutputTokens = Number.isFinite(Number(cfg?.routing?.judgment_max_output_tokens))
     ? Number(cfg.routing.judgment_max_output_tokens)
     : Number(DEFAULT_SOCIALRECHT_CONFIG.routing.judgment_max_output_tokens || 520);
   const maxOutputTokens = judgmentMode
     ? Math.max(260, Math.min(900, judgmentMaxOutputTokens))
-    : (deepseekMode && expertRequested ? 12000 : defaultMaxOutputTokens);
+    : (overviewMode
+        ? Math.max(320, Math.min(1200, overviewMaxOutputTokens))
+        : (deepseekMode && expertRequested ? 12000 : defaultMaxOutputTokens));
 
   const systemPrompt = judgmentMode
     ? buildSozialrechtJudgmentSystemPrompt(cfg, useStorage)
-    : buildSozialrechtSystemPrompt(cfg, useStorage);
+    : (overviewMode
+        ? buildSozialrechtOverviewSystemPrompt(cfg, useStorage)
+        : buildSozialrechtSystemPrompt(cfg, useStorage));
   const messages = toOpenAIMessages(systemPrompt, history, question);
 
   let activeModel = model;
@@ -1329,6 +1388,9 @@ async function handleSozialrechtChat(req, res, action) {
     if (legacyDeepseekError) {
       evidenceNotes.push(`Deepseek-Fallback-Hinweis: ${legacyDeepseekError}`);
     }
+    if (overviewMode) {
+      evidenceNotes.push('Ueberblickmodus aktiv: gpt-4.1 fuehrt eine oberflaechlichere Quellensuche durch.');
+    }
     if (judgmentMode) {
       evidenceNotes.push('Urteilsmodus aktiv: Antwort wurde mit kompakter, tokensparender Rechtsprechungslogik erstellt.');
     }
@@ -1343,9 +1405,10 @@ async function handleSozialrechtChat(req, res, action) {
         domain: 'SOZIALRECHT',
         api_key_source: sozialrechtApi.source || '',
         model: activeModel,
-        response_mode: expertRequested ? 'expert' : (requestedResponseMode || (deepseekMode ? 'schnell' : 'genau')),
+        response_mode: expertRequested ? 'expert' : (overviewMode ? 'overview' : (requestedResponseMode || (deepseekMode ? 'schnell' : 'genau'))),
         fast_mode: fastMode,
         deepseek_mode: deepseekMode,
+        overview_mode: overviewMode,
         judgment_mode: judgmentMode,
         gpt5_footer: gpt5FooterActive,
         deepseek_via_legacy: false,
