@@ -10,7 +10,7 @@ const DEFAULT_SOCIALRECHT_CONFIG = {
   domain: 'SOZIALRECHT',
   routing: {
     default_model: 'gpt-5.1',
-    fast_model: 'gpt-4.1-mini',
+    fast_model: 'deepseek-reasoner',
     overview_model: 'gpt-4.1',
     judgment_model: 'gpt-5.1',
     judgment_max_output_tokens: 520,
@@ -339,6 +339,55 @@ function buildSimpleSgbOverviewFallback(question) {
       sgb_book: book.code
     }
   };
+}
+
+function isClarificationStyleAnswer(answerText) {
+  const low = normalizeText(answerText).toLowerCase();
+  if (!low) return false;
+  return (
+    /\b(brauche ich|bitte konkretisieren|bitte präzisieren|bitte prazisieren|welcher zusammenhang|in welchem zusammenhang|welches thema|was genau meinst du|meinst du)\b/i.test(low) ||
+    /\b(entgeltfortzahlung|sgb)\b/i.test(low) && /\b(meinst du|brauch(e|st)|bitte)\b/i.test(low)
+  );
+}
+
+function buildStandardSocialrechtTopicFallback(question) {
+  const low = normalizeText(question).toLowerCase();
+  if (!low) return null;
+
+  if (/entgeltfortzahlung\b/i.test(low)) {
+    return {
+      answer: [
+        '### Kurzantwort',
+        'Mit "Entgeltfortzahlung" ist im Regelfall die Lohnfortzahlung im Krankheitsfall durch den Arbeitgeber gemeint.',
+        'Der Arbeitgeber zahlt dem arbeitsunfaehig erkrankten Arbeitnehmer das vereinbarte Arbeitsentgelt bis zu 6 Wochen (42 Kalendertage) weiter, wenn die gesetzlichen Voraussetzungen erfuellt sind.',
+        'Danach greift in der Regel das Krankengeld der Krankenkasse.',
+        '',
+        '### Rechtsgrundlage (SGB / Nebengesetze)',
+        '- Entgeltfortzahlungsgesetz (EFZG) - zentrale Grundlage fuer die Entgeltfortzahlung',
+        '- SGB V - Krankengeld als Anschlussleistung nach Ende der Entgeltfortzahlung',
+        '',
+        '### Naechste sinnvolle Frage',
+        'Moechtest du das als Pruefschema, als IHK-Merksatz oder als Abgrenzung zum Krankengeld?'
+      ].join('\n'),
+      followups: [
+        'Soll ich dir dazu ein kurzes Pruefschema erstellen?',
+        'Moechtest du die Abgrenzung zwischen Entgeltfortzahlung und Krankengeld?'
+      ],
+      confidence: 0.74,
+      evidence_note: 'Stabile Grundeinordnung zu Entgeltfortzahlung verwendet; kein direkter Quellen-Chunk erforderlich.',
+      meta: {
+        canonical_topic: 'entgeltfortzahlung'
+      }
+    };
+  }
+
+  return null;
+}
+
+function buildAiReviewDisclaimer({ fastMode = false } = {}) {
+  return fastMode
+    ? 'Hinweis: KI-Antworten bitte immer mit Originalquelle oder Fachunterlagen gegenpruefen. Antwort im Schnellmodus generiert.'
+    : 'Hinweis: KI-Antworten bitte immer mit Originalquelle oder Fachunterlagen gegenpruefen.';
 }
 
 function buildSozialrechtSignalProfile(question, history, cfg) {
@@ -1253,7 +1302,7 @@ async function handleHealth(req, res) {
         OPENAI_VECTOR_STORE_ID_SOZIALRECHT: Boolean(process.env.OPENAI_VECTOR_STORE_ID_SOZIALRECHT),
         LINDA3_LEGACY_API_ORIGIN: Boolean(process.env.LINDA3_LEGACY_API_ORIGIN)
       },
-      model_rules: 'Schnellmodus=DeepSeek-only; Überblickmodus=gpt-4.1 mit oberflächlicher Quellensuche; Quellenmodus=gpt-5.1 mit strikter Evidenzprüfung; Urteilsmodus=kompakt mit GPT-5.1.'
+      model_rules: 'Schnellmodus=DeepSeek-only ohne OpenAI-Fallback; Überblickmodus=gpt-4.1 mit oberflächlicher Quellensuche; Quellenmodus=gpt-5.1 mit strikter Evidenzprüfung; Urteilsmodus=kompakt mit GPT-5.1.'
     }
   });
 }
@@ -1277,7 +1326,7 @@ async function handleSozialrechtChat(req, res, action) {
   const fastRequested = forceFast || Boolean(payload.schnellmodus) || preferredModel === 'deepseek';
   const judgmentMode = isJudgmentQuestion(question);
   const fastMode = fastRequested && !judgmentMode;
-  const deepseekMode = fastMode && !groundedModeActive;
+  const deepseekMode = fastMode;
   const defaultModel = String(cfg?.routing?.default_model || DEFAULT_SOCIALRECHT_CONFIG.routing.default_model);
   const fastModel = String(cfg?.routing?.fast_model || DEFAULT_SOCIALRECHT_CONFIG.routing.fast_model);
   const overviewModel = String(cfg?.routing?.overview_model || DEFAULT_SOCIALRECHT_CONFIG.routing.overview_model);
@@ -1337,10 +1386,13 @@ async function handleSozialrechtChat(req, res, action) {
       const evidenceParts = [];
       if (normalizedDeepseek.evidence_note) evidenceParts.push(normalizedDeepseek.evidence_note);
       evidenceParts.push('Deepseek-Schnellrouting ueber Variable SozialrechtSchnell aktiv.');
+      evidenceParts.push(buildAiReviewDisclaimer({ fastMode: true }));
       if (!deepseekSources.length) evidenceParts.push('Im Schnellmodus koennen Quellen begrenzt sein.');
 
+      const finalDeepseekAnswer = `${normalizedDeepseek.answer}\n\n> ${buildAiReviewDisclaimer({ fastMode: true })}`;
+
       res.status(200).json({
-        answer: normalizedDeepseek.answer,
+        answer: finalDeepseekAnswer,
         followups: normalizedDeepseek.followups,
         sources: deepseekSources,
         confidence: normalizedDeepseek.confidence,
@@ -1363,6 +1415,24 @@ async function handleSozialrechtChat(req, res, action) {
       return;
     } catch (deepseekErr) {
       legacyDeepseekError = normalizeText(deepseekErr?.message || 'unbekannt');
+      const fallback = buildSozialrechtTechnicalFallback({
+        cfg,
+        question,
+        detail: `Deepseek-Schnellrouting fehlgeschlagen: ${legacyDeepseekError}`,
+        answerText: `Hinweis: Antwort im Schnellmodus angefragt, DeepSeek konnte die Antwort nicht rechtzeitig liefern. ${buildAiReviewDisclaimer({ fastMode: true })}`,
+        storageUsed: false,
+        storageFallback: false,
+        apiKeySource: sozialrechtApi.source || ''
+      });
+      fallback.meta = {
+        ...(fallback.meta || {}),
+        deepseek_mode: true,
+        fast_mode: true,
+        response_mode: expertRequested ? 'expert' : (requestedResponseMode || 'schnell'),
+        deepseek_legacy_error: legacyDeepseekError
+      };
+      res.status(200).json(fallback);
+      return;
     }
   }
 
@@ -1469,27 +1539,38 @@ async function handleSozialrechtChat(req, res, action) {
     const normalized = normalizeModelPayload(modelRaw, cfg);
     const mergedSources = normalizeSources([...(normalized.sources || []), ...storageSources]);
     const finalSources = normalizeSources(mergedSources);
-    const simpleOverviewFallback = overviewMode && finalSources.length === 0
+    const simpleOverviewFallback = !deepseekMode && !judgmentMode && finalSources.length === 0
       ? buildSimpleSgbOverviewFallback(question)
+      : null;
+    const standardTopicFallback = !deepseekMode && !judgmentMode && finalSources.length === 0
+      ? buildStandardSocialrechtTopicFallback(question)
       : null;
     const strictUnknown = Boolean(cfg?.accuracy_policy?.strict_unknown_on_missing_basis);
     const strictUnknownClient = payload?.guardrails?.strict_unknown !== false;
     const enforceStrictUnknown = strictUnknown && strictUnknownClient && groundedModeActive && !deepseekMode;
-    const effectiveConfidence = simpleOverviewFallback?.confidence ?? normalized.confidence;
-    const confidenceValue = Number(effectiveConfidence);
+    const effectiveConfidence = standardTopicFallback?.confidence ?? simpleOverviewFallback?.confidence ?? normalized.confidence;
+    const hasConfidenceValue =
+      effectiveConfidence !== null &&
+      effectiveConfidence !== undefined &&
+      String(effectiveConfidence).trim() !== '';
+    const confidenceValue = hasConfidenceValue ? Number(effectiveConfidence) : null;
     const lowConfidence = Number.isFinite(confidenceValue) ? confidenceValue < 0.34 : false;
-    const resolvedAnswerBase = simpleOverviewFallback?.answer || normalized.answer;
+    const clarificationStyle = isClarificationStyleAnswer(normalized.answer);
+    const resolvedAnswerBase = standardTopicFallback?.answer || simpleOverviewFallback?.answer || normalized.answer;
     const resolvedAnswer =
-      !simpleOverviewFallback && enforceStrictUnknown && finalSources.length === 0 && lowConfidence
+      !standardTopicFallback && !simpleOverviewFallback && enforceStrictUnknown && finalSources.length === 0 && lowConfidence && clarificationStyle
         ? 'Ich weiss es nicht sicher. Ohne belastbare Quelle antworte ich im Fachmodus Sozialrecht bewusst nicht spekulativ. Bitte frage enger oder nenne das konkrete Leistungsthema.'
         : resolvedAnswerBase;
     const gpt5FooterActive = judgmentMode && /gpt-5/i.test(String(activeModel || ''));
     const finalAnswer = gpt5FooterActive
       ? `${resolvedAnswer}\n\n> Diese Antwort wurde mit GPT5 erstellt.`
       : resolvedAnswer;
+    const finalAnswerWithDisclaimer = `${finalAnswer}\n\n> ${buildAiReviewDisclaimer({ fastMode: fastMode || deepseekMode })}`;
     const evidenceNotes = [];
     if (normalized.evidence_note) evidenceNotes.push(normalized.evidence_note);
+    if (standardTopicFallback?.evidence_note) evidenceNotes.push(standardTopicFallback.evidence_note);
     if (simpleOverviewFallback?.evidence_note) evidenceNotes.push(simpleOverviewFallback.evidence_note);
+    evidenceNotes.push(buildAiReviewDisclaimer({ fastMode: fastMode || deepseekMode }));
     if (storageUsed && finalSources.length) {
       evidenceNotes.push('Vector-Store-Treffer wurden als Quellen-Chunks eingebunden.');
     } else if (storageUsed && !finalSources.length) {
@@ -1512,8 +1593,8 @@ async function handleSozialrechtChat(req, res, action) {
     }
 
     res.status(200).json({
-      answer: finalAnswer,
-      followups: simpleOverviewFallback?.followups || normalized.followups,
+      answer: finalAnswerWithDisclaimer,
+      followups: standardTopicFallback?.followups || simpleOverviewFallback?.followups || normalized.followups,
       sources: finalSources,
       confidence: effectiveConfidence,
       evidence_note: evidenceNotes.join(' ').trim(),
@@ -1533,7 +1614,8 @@ async function handleSozialrechtChat(req, res, action) {
         storage_fallback: storageFallback,
         storage_error: storageFallback ? storageError : '',
         canonical_sgb_overview: Boolean(simpleOverviewFallback?.meta?.canonical_sgb_overview),
-        sgb_book: simpleOverviewFallback?.meta?.sgb_book || ''
+        sgb_book: simpleOverviewFallback?.meta?.sgb_book || '',
+        canonical_topic: standardTopicFallback?.meta?.canonical_topic || ''
       }
     });
   } catch (err) {
