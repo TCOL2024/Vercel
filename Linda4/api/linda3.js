@@ -209,6 +209,138 @@ function isJudgmentQuestion(question) {
   );
 }
 
+const SGB_BOOK_OVERVIEW = {
+  i: {
+    code: 'SGB I',
+    title: 'Allgemeiner Teil',
+    topics: ['allgemeine Grundsaetze', 'Sozialleistungsansprueche', 'Mitwirkung und Beratung']
+  },
+  ii: {
+    code: 'SGB II',
+    title: 'Buergergeld, Grundsicherung fuer Arbeitsuchende',
+    topics: ['Leistungsanspruch', 'Bedarfsgemeinschaft', 'Einkommen und Vermittlung']
+  },
+  iii: {
+    code: 'SGB III',
+    title: 'Arbeitsfoerderung',
+    topics: ['Arbeitslosengeld', 'Foerderung der Beschaeftigung', 'Berufsberatung']
+  },
+  iv: {
+    code: 'SGB IV',
+    title: 'Gemeinsame Vorschriften fuer die Sozialversicherung',
+    topics: ['Beitragsrecht', 'Meldewesen', 'versicherungsrechtliche Grundbegriffe']
+  },
+  v: {
+    code: 'SGB V',
+    title: 'Gesetzliche Krankenversicherung',
+    topics: ['Versicherungspflicht', 'Leistungen der Krankenkassen', 'Krankengeld und Beitraege']
+  },
+  vi: {
+    code: 'SGB VI',
+    title: 'Gesetzliche Rentenversicherung',
+    topics: ['Altersrente', 'Erwerbsminderungsrente', 'Hinterbliebenenrente']
+  },
+  vii: {
+    code: 'SGB VII',
+    title: 'Gesetzliche Unfallversicherung',
+    topics: ['Arbeitsunfall', 'Berufskrankheit', 'Leistungen der Berufsgenossenschaften']
+  },
+  viii: {
+    code: 'SGB VIII',
+    title: 'Kinder- und Jugendhilfe',
+    topics: ['Jugendhilfeleistungen', 'Schutzauftrag', 'Hilfen zur Erziehung']
+  },
+  ix: {
+    code: 'SGB IX',
+    title: 'Rehabilitation und Teilhabe von Menschen mit Behinderungen',
+    topics: ['Rehabilitation', 'Teilhabe', 'Schwerbehindertenrecht']
+  },
+  x: {
+    code: 'SGB X',
+    title: 'Sozialverwaltungsverfahren und Sozialdatenschutz',
+    topics: ['Verwaltungsverfahren', 'Aufhebung von Bescheiden', 'Sozialdatenschutz']
+  },
+  xi: {
+    code: 'SGB XI',
+    title: 'Soziale Pflegeversicherung',
+    topics: ['Pflegebeduerftigkeit', 'Pflegegrade', 'Leistungen der Pflegeversicherung']
+  },
+  xii: {
+    code: 'SGB XII',
+    title: 'Sozialhilfe',
+    topics: ['Hilfe zum Lebensunterhalt', 'Grundsicherung', 'Hilfen in besonderen Lebenslagen']
+  }
+};
+
+function normalizeSgbBookKey(rawValue) {
+  const value = normalizeText(rawValue).toLowerCase().replace(/\./g, '');
+  if (!value) return '';
+  const arabicMap = {
+    '1': 'i',
+    '2': 'ii',
+    '3': 'iii',
+    '4': 'iv',
+    '5': 'v',
+    '6': 'vi',
+    '7': 'vii',
+    '8': 'viii',
+    '9': 'ix',
+    '10': 'x',
+    '11': 'xi',
+    '12': 'xii'
+  };
+  return arabicMap[value] || value;
+}
+
+function extractRequestedSgbBook(question) {
+  const match = normalizeText(question).match(/\bsgb\s*([ivx]+|\d{1,2})\b/i);
+  if (!match || !match[1]) return '';
+  return normalizeSgbBookKey(match[1]);
+}
+
+function isSimpleSgbOverviewQuestion(question) {
+  const low = normalizeText(question).toLowerCase();
+  if (!low) return false;
+  if (!/\bsgb\s*(?:[ivx]+|\d{1,2})\b/i.test(low)) return false;
+  if (low.split(/\s+/).length > 10) return false;
+  return (
+    /^(was ist|was ist das|wofuer steht|wofür steht|was regelt|kurz|erklaer|erklär)/i.test(low) ||
+    /^\bsgb\s*(?:[ivx]+|\d{1,2})\b/i.test(low)
+  );
+}
+
+function buildSimpleSgbOverviewFallback(question) {
+  if (!isSimpleSgbOverviewQuestion(question)) return null;
+  const key = extractRequestedSgbBook(question);
+  const book = SGB_BOOK_OVERVIEW[key];
+  if (!book) return null;
+  return {
+    answer: [
+      '### Kurzantwort',
+      `${book.code} ist das Buch "${book.title}" im Sozialgesetzbuch.`,
+      '',
+      '### Wichtige Einordnung',
+      `Es regelt vor allem ${book.topics.join(', ')}.`,
+      '',
+      '### Quellenhinweis',
+      `Gesetzesbezeichnung: ${book.code} - ${book.title}.`,
+      '',
+      '### Naechste sinnvolle Frage',
+      `Wenn du magst, ordne ich dir als Nächstes die wichtigsten Inhalte von ${book.code} fuer die IHK-Praxis ein.`
+    ].join('\n'),
+    followups: [
+      `Welche zentralen Inhalte aus ${book.code} sind fuer Personalfachkaufleute wichtig?`,
+      `Soll ich dir ${book.code} in 3 bis 5 pruefungsrelevanten Punkten zusammenfassen?`
+    ],
+    confidence: 0.64,
+    evidence_note: `Stabile Grundbezeichnung von ${book.code} verwendet; kein direkter Quellen-Chunk erforderlich.`,
+    meta: {
+      canonical_sgb_overview: true,
+      sgb_book: book.code
+    }
+  };
+}
+
 function buildSozialrechtSignalProfile(question, history, cfg) {
   const text = normalizeText(question);
   const low = text.toLowerCase();
@@ -1337,21 +1469,27 @@ async function handleSozialrechtChat(req, res, action) {
     const normalized = normalizeModelPayload(modelRaw, cfg);
     const mergedSources = normalizeSources([...(normalized.sources || []), ...storageSources]);
     const finalSources = normalizeSources(mergedSources);
+    const simpleOverviewFallback = overviewMode && finalSources.length === 0
+      ? buildSimpleSgbOverviewFallback(question)
+      : null;
     const strictUnknown = Boolean(cfg?.accuracy_policy?.strict_unknown_on_missing_basis);
     const strictUnknownClient = payload?.guardrails?.strict_unknown !== false;
     const enforceStrictUnknown = strictUnknown && strictUnknownClient && groundedModeActive && !deepseekMode;
-    const confidenceValue = Number(normalized.confidence);
+    const effectiveConfidence = simpleOverviewFallback?.confidence ?? normalized.confidence;
+    const confidenceValue = Number(effectiveConfidence);
     const lowConfidence = Number.isFinite(confidenceValue) ? confidenceValue < 0.34 : false;
+    const resolvedAnswerBase = simpleOverviewFallback?.answer || normalized.answer;
     const resolvedAnswer =
-      enforceStrictUnknown && finalSources.length === 0 && lowConfidence
+      !simpleOverviewFallback && enforceStrictUnknown && finalSources.length === 0 && lowConfidence
         ? 'Ich weiss es nicht sicher. Ohne belastbare Quelle antworte ich im Fachmodus Sozialrecht bewusst nicht spekulativ. Bitte frage enger oder nenne das konkrete Leistungsthema.'
-        : normalized.answer;
+        : resolvedAnswerBase;
     const gpt5FooterActive = judgmentMode && /gpt-5/i.test(String(activeModel || ''));
     const finalAnswer = gpt5FooterActive
       ? `${resolvedAnswer}\n\n> Diese Antwort wurde mit GPT5 erstellt.`
       : resolvedAnswer;
     const evidenceNotes = [];
     if (normalized.evidence_note) evidenceNotes.push(normalized.evidence_note);
+    if (simpleOverviewFallback?.evidence_note) evidenceNotes.push(simpleOverviewFallback.evidence_note);
     if (storageUsed && finalSources.length) {
       evidenceNotes.push('Vector-Store-Treffer wurden als Quellen-Chunks eingebunden.');
     } else if (storageUsed && !finalSources.length) {
@@ -1375,9 +1513,9 @@ async function handleSozialrechtChat(req, res, action) {
 
     res.status(200).json({
       answer: finalAnswer,
-      followups: normalized.followups,
+      followups: simpleOverviewFallback?.followups || normalized.followups,
       sources: finalSources,
-      confidence: normalized.confidence,
+      confidence: effectiveConfidence,
       evidence_note: evidenceNotes.join(' ').trim(),
       meta: {
         domain: 'SOZIALRECHT',
@@ -1393,7 +1531,9 @@ async function handleSozialrechtChat(req, res, action) {
         deepseek_legacy_error: legacyDeepseekError,
         storage_used: storageUsed,
         storage_fallback: storageFallback,
-        storage_error: storageFallback ? storageError : ''
+        storage_error: storageFallback ? storageError : '',
+        canonical_sgb_overview: Boolean(simpleOverviewFallback?.meta?.canonical_sgb_overview),
+        sgb_book: simpleOverviewFallback?.meta?.sgb_book || ''
       }
     });
   } catch (err) {
