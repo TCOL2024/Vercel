@@ -145,13 +145,35 @@ const KIPruefungenDialog = (() => {
     // CHOICE-KNOTEN: User wählt Option
     // ============================================================
     if (node.type === 'choice' && node.options) {
-      const matchedOption = node.options.find(opt => {
-        const textLower = userText.toLowerCase().trim();
-        // Match auf Label oder Value
-        return textLower.includes(opt.label.toLowerCase()) ||
-               textLower === opt.value ||
-               textLower.includes(opt.value);
-      });
+      const textLower = userText.toLowerCase().trim();
+      let matchedOption = null;
+
+      // Versuche auf verschiedene Weisen zu matchen
+      for (let i = 0; i < node.options.length; i++) {
+        const opt = node.options[i];
+        const optionLetter = String.fromCharCode(97 + i); // a, b, c, d...
+
+        // Match 1: Buchstabe (a, b, c, d)
+        if (textLower === optionLetter) {
+          matchedOption = opt;
+          break;
+        }
+        // Match 2: Buchstabe mit Klammer (a), b), c), d))
+        if (textLower === `${optionLetter})` || textLower === `${optionLetter})`  ) {
+          matchedOption = opt;
+          break;
+        }
+        // Match 3: Label-Text
+        if (textLower.includes(opt.label.toLowerCase())) {
+          matchedOption = opt;
+          break;
+        }
+        // Match 4: Value direkt
+        if (textLower === opt.value || textLower.includes(opt.value)) {
+          matchedOption = opt;
+          break;
+        }
+      }
 
       if (matchedOption) {
         // Rolle speichern
