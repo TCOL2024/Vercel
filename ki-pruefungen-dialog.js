@@ -11,6 +11,7 @@ const KIPruefungenDialog = (() => {
   let currentNodeId = null;
   let currentRole = null;
   let isActive = false;
+  let currentQuestionContext = null; // Speichert Kontext, wenn wir bei einer Question sind
 
   // ============================================================
   // FRAGENBAUM
@@ -187,16 +188,26 @@ const KIPruefungenDialog = (() => {
 
         if (!nextNode) return false;
 
-        // Wenn nächster Knoten eine QUESTION ist → zu Make senden
+        // Wenn nächster Knoten eine QUESTION ist → zeige Prompt, warte auf echte Antwort
         if (nextNode.type === 'question') {
-          return {
-            action: 'sendToMake',
+          currentQuestionContext = {
+            nodeId: currentNodeId,
             role: currentRole,
             category: currentNodeId,
             systemContext: nextNode.systemContext,
-            prompt: nextNode.prompt,
-            callbacks
+            prompt: nextNode.prompt
           };
+
+          // Zeige die Prompt-Frage an
+          if (callbacks && callbacks.onRender) {
+            callbacks.onRender({
+              type: 'question',
+              nodeId: currentNodeId,
+              title: nextNode.title,
+              prompt: nextNode.prompt
+            });
+          }
+          return true;
         }
 
         // Sonst: Nächste Choice anzeigen
@@ -210,13 +221,14 @@ const KIPruefungenDialog = (() => {
     // ============================================================
     // QUESTION-KNOTEN: User stellt echte Frage
     // ============================================================
-    if (node.type === 'question') {
+    if (node.type === 'question' && currentQuestionContext) {
+      // User hat eine echte Frage eingegeben → zu Make senden
       return {
         action: 'sendToMake',
         userQuestion: userText,
-        role: currentRole,
-        category: currentNodeId,
-        systemContext: node.systemContext,
+        role: currentQuestionContext.role,
+        category: currentQuestionContext.category,
+        systemContext: currentQuestionContext.systemContext,
         callbacks
       };
     }
@@ -262,6 +274,7 @@ const KIPruefungenDialog = (() => {
     isActive = false;
     currentNodeId = null;
     currentRole = null;
+    currentQuestionContext = null;
   }
 
   // ============================================================

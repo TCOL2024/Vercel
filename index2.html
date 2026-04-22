@@ -423,7 +423,116 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-  <script src="ki-pruefungen-dialog.js"></script>
+  <script src="ki-pruefungen-form.js"></script>
+
+  <style>
+    /* KI-Prüfungen Modal */
+    .ki-modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 2000;
+      padding: 20px;
+    }
+
+    .ki-modal {
+      background: white;
+      border-radius: 12px;
+      max-width: 500px;
+      width: 100%;
+      padding: 24px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+    }
+
+    .ki-modal-title {
+      font-size: 1.3rem;
+      font-weight: 600;
+      margin-bottom: 20px;
+      color: #1c273a;
+    }
+
+    .ki-options {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .ki-option-btn {
+      padding: 14px 16px;
+      border: 2px solid #e1e4e8;
+      background: #f6f8fb;
+      border-radius: 8px;
+      cursor: pointer;
+      text-align: left;
+      font-size: 1rem;
+      transition: all 0.2s;
+      font-weight: 500;
+    }
+
+    .ki-option-btn:hover {
+      border-color: #0059b3;
+      background: #e6f0ff;
+      transform: translateX(4px);
+    }
+
+    .ki-option-btn:active {
+      background: #cce5ff;
+    }
+
+    .ki-text-input {
+      width: 100%;
+      padding: 12px;
+      border: 2px solid #e1e4e8;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-family: 'Inter', sans-serif;
+      margin-bottom: 16px;
+    }
+
+    .ki-text-input:focus {
+      outline: none;
+      border-color: #0059b3;
+      box-shadow: 0 0 0 3px rgba(0, 89, 179, 0.1);
+    }
+
+    .ki-button-group {
+      display: flex;
+      gap: 12px;
+      margin-top: 20px;
+    }
+
+    .ki-btn {
+      flex: 1;
+      padding: 12px 20px;
+      border: none;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 1rem;
+      transition: all 0.2s;
+    }
+
+    .ki-btn-primary {
+      background: #0059b3;
+      color: white;
+    }
+
+    .ki-btn-primary:hover {
+      background: #003d7a;
+    }
+
+    .ki-btn-secondary {
+      background: #f0f2f5;
+      color: #1c273a;
+    }
+
+    .ki-btn-secondary:hover {
+      background: #e1e6ed;
+    }
+  </style>
 
   <script>
     document.addEventListener('DOMContentLoaded', () => {
@@ -652,10 +761,12 @@
       });
 
       // ============================================================
-      // KI-PRÜFUNGEN DIALOG HANDLER
+      // KI-PRÜFUNGEN FORM HANDLER
       // ============================================================
 
-      function startKIPruefungenDialog() {
+      let kiFormActive = false;
+
+      function startKIPruefungenForm() {
         // Neue Session starten
         const s = createSession();
         messages = s.messages.slice();
@@ -664,12 +775,7 @@
         // Hinweis anzeigen
         messages.push({
           role: 'assistant',
-          content: '🔄 **Neuer Dialog: KI-Prüfungen**\n\nDu startest einen speziellen Dialog zu KI in Prüfungen. Der bisherige Chat-Verlauf wird nicht berücksichtigt – du beginnst mit einer frischen Sitzung.'
-        });
-
-        // Dialog starten
-        window.KIPruefungenDialog.start({
-          onRender: (renderData) => renderDialogChoice(renderData)
+          content: '🔄 **Neuer Dialog: KI-Prüfungen**\n\nDu startest einen speziellen Dialog zu KI in Prüfungen. Der bisherige Chat-Verlauf wird nicht berücksichtigt – du beginnst mit einer frischen Sitzung.\n\nLos geht\'s:'
         });
 
         updateSession();
@@ -677,22 +783,118 @@
         inputEl.value = '';
         inputEl.focus();
         setTimeout(adjustChatPaddingForComposer, 120);
+
+        // Form starten
+        kiFormActive = true;
+        const stepContent = window.KIPruefungenForm.start();
+        showKIModal(stepContent);
       }
 
-      function renderDialogChoice(renderData) {
-        // Choice-Dialog anzeigen
-        if (renderData.type === 'choice') {
-          const optionsText = renderData.options
-            .map((opt, idx) => `${String.fromCharCode(97 + idx)}) ${opt.label}`)
-            .join('\n');
+      function showKIModal(stepContent) {
+        const overlay = document.createElement('div');
+        overlay.className = 'ki-modal-overlay';
+        overlay.id = 'ki-modal';
 
-          const msg = {
-            role: 'assistant',
-            content: `**${renderData.title}**\n\n${renderData.description || ''}\n\n${optionsText}`
+        const modal = document.createElement('div');
+        modal.className = 'ki-modal';
+
+        const title = document.createElement('div');
+        title.className = 'ki-modal-title';
+        title.textContent = stepContent.title;
+        modal.appendChild(title);
+
+        if (stepContent.type === 'modal') {
+          const optionsDiv = document.createElement('div');
+          optionsDiv.className = 'ki-options';
+
+          stepContent.options.forEach(opt => {
+            const btn = document.createElement('button');
+            btn.className = 'ki-option-btn';
+            btn.textContent = opt.label;
+            btn.onclick = () => {
+              handleKIFormSelection(opt.id);
+              overlay.remove();
+            };
+            optionsDiv.appendChild(btn);
+          });
+
+          if (stepContent.showOther) {
+            const otherBtn = document.createElement('button');
+            otherBtn.className = 'ki-option-btn';
+            otherBtn.textContent = stepContent.otherLabel || 'Etwas anderes';
+            otherBtn.style.fontStyle = 'italic';
+            otherBtn.onclick = () => {
+              handleKIFormSelection('other');
+              overlay.remove();
+            };
+            optionsDiv.appendChild(otherBtn);
+          }
+
+          modal.appendChild(optionsDiv);
+        }
+
+        if (stepContent.type === 'text_input') {
+          const input = document.createElement('input');
+          input.type = 'text';
+          input.className = 'ki-text-input';
+          input.placeholder = stepContent.placeholder;
+          modal.appendChild(input);
+
+          const buttonGroup = document.createElement('div');
+          buttonGroup.className = 'ki-button-group';
+
+          const submitBtn = document.createElement('button');
+          submitBtn.className = 'ki-btn ki-btn-primary';
+          submitBtn.textContent = 'Senden';
+          submitBtn.onclick = () => {
+            const text = input.value.trim();
+            if (text) {
+              handleKIFormTextInput(text);
+              overlay.remove();
+            }
           };
-          messages.push(msg);
-          updateSession();
-          renderMessages();
+
+          const cancelBtn = document.createElement('button');
+          cancelBtn.className = 'ki-btn ki-btn-secondary';
+          cancelBtn.textContent = 'Abbrechen';
+          cancelBtn.onclick = () => {
+            kiFormActive = false;
+            window.KIPruefungenForm.reset();
+            overlay.remove();
+            inputEl.focus();
+          };
+
+          buttonGroup.appendChild(submitBtn);
+          buttonGroup.appendChild(cancelBtn);
+          modal.appendChild(buttonGroup);
+
+          setTimeout(() => input.focus(), 100);
+        }
+
+        overlay.appendChild(modal);
+        document.body.appendChild(overlay);
+      }
+
+      function handleKIFormSelection(optionId) {
+        const result = window.KIPruefungenForm.handleSelection(optionId);
+
+        if (result.complete) {
+          // Formular fertig – sende an Make
+          sendKIPruefungenFormToMake(result.data);
+          kiFormActive = false;
+        } else if (result.nextStep) {
+          // Nächster Step
+          showKIModal(result.nextStep);
+        }
+      }
+
+      function handleKIFormTextInput(text) {
+        const result = window.KIPruefungenForm.handleTextInput(text);
+
+        if (result.complete) {
+          // Formular fertig – sende an Make
+          sendKIPruefungenFormToMake(result.data);
+          kiFormActive = false;
         }
       }
 
@@ -706,49 +908,15 @@
         if (!text) return;
 
         // ============================================================
-        // Prüfe: KI-Prüfungen TRIGGER
+        // KI-PRÜFUNGEN TRIGGER
         // ============================================================
-        if (window.KIPruefungenDialog && window.KIPruefungenDialog.detect(text)) {
-          startKIPruefungenDialog();
+        if (window.KIPruefungenForm && window.KIPruefungenForm.detect(text)) {
+          startKIPruefungenForm();
           return;
         }
 
-        // ============================================================
-        // Prüfe: KI-Prüfungen DIALOG AKTIV?
-        // ============================================================
-        if (window.KIPruefungenDialog && window.KIPruefungenDialog.isActive()) {
-          const result = window.KIPruefungenDialog.handleUserInput(text, {
-            onRender: (renderData) => renderDialogChoice(renderData)
-          });
-
-          // User-Input anzeigen
-          messages.push({ role: 'user', content: text });
-          updateSession();
-          renderMessages();
-          inputEl.value = '';
-
-          // Wenn Dialog weiter navigiert (Choice)
-          if (result === true) {
-            inputEl.focus();
-            setTimeout(adjustChatPaddingForComposer, 120);
-            return;
-          }
-
-          // Wenn zu Make gesendet werden soll (Question)
-          if (result && result.action === 'sendToMake') {
-            await sendKIPruefungenQuestionToMake(result);
-            return;
-          }
-
-          // Unbekannte Input – hilfreiche Nachricht
-          messages.push({
-            role: 'assistant',
-            content: 'Bitte wähle eine der angegebenen Optionen.'
-          });
-          updateSession();
-          renderMessages();
-          inputEl.focus();
-          setTimeout(adjustChatPaddingForComposer, 120);
+        // Wenn KI-Form aktiv: ignoriere normale Chat-Eingabe
+        if (kiFormActive) {
           return;
         }
 
@@ -805,16 +973,30 @@
       }
 
       // ============================================================
-      // KI-PRÜFUNGEN: SEND QUESTION TO MAKE
+      // KI-PRÜFUNGEN: FORM COMPLETE – SEND TO MAKE
       // ============================================================
 
-      async function sendKIPruefungenQuestionToMake(result) {
-        const userQuestion = result.userQuestion || '';
-        const role = result.role;
-        const category = result.category;
-        const systemContext = result.systemContext;
+      async function sendKIPruefungenFormToMake(formData) {
+        // Gebündelte Frage konstruieren
+        const questionParts = [];
+        questionParts.push(`Rolle: ${formData.role === 'prufer' ? 'Prüfer' : 'Prüfling'}`);
+        questionParts.push(`Kontext: ${formData.context}`);
+        if (formData.customQuestion) {
+          questionParts.push(`Frage: ${formData.customQuestion}`);
+        } else {
+          questionParts.push(`Frage: ${formData.question}`);
+        }
 
-        // UI placeholder
+        const bundledQuestion = questionParts.join('\n');
+
+        // User-Zusammenfassung in Chat anzeigen
+        messages.push({
+          role: 'user',
+          content: bundledQuestion
+        });
+        renderMessages();
+
+        // Placeholder
         messages.push({
           role: 'assistant',
           content: '⏳ Einen Moment bitte ...'
@@ -828,12 +1010,12 @@
 
           // STRUKTURIERTE PAYLOAD FÜR MAKE
           const payload = {
-            question: userQuestion,
+            question: bundledQuestion,
             history: payloadHistory,
             kiPruefungenMode: true,
-            kiPruefungenRole: role,
-            kiPruefungenCategory: category,
-            kiPruefungenSystemContext: systemContext
+            kiPruefungenRole: formData.role,
+            kiPruefungenContext: formData.context,
+            kiPruefungenQuestion: formData.customQuestion || formData.question
           };
 
           const res = await fetch('/api/bot', {
@@ -851,7 +1033,7 @@
               break;
             }
           }
-        } catch {
+        } catch (err) {
           messages = messages.filter(m => !(m.role === 'assistant' && (m.content || '').startsWith('⏳')));
           messages.push({
             role: 'assistant',
