@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
-  <title>Linda – Deine persönliche Assistentin (Version 16.01.2026 1000)</title>
+  <title>Linda – Deine persönliche Assistentin (Version 16.01.2026/April26 1000)</title>
 
   <!-- Manifest & Meta -->
   <link rel="manifest" href="manifest.json"/>
@@ -16,92 +16,215 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet"/>
 
   <style>
-    * { box-sizing: border-box; margin:0; padding:0 }
-    html, body {
-      height:100%;
-      font-family:'Inter',sans-serif;
-      overflow:auto;
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0
     }
+
+    html, body {
+      height: 100%;
+      font-family: 'Inter', sans-serif;
+      overflow: auto;
+    }
+
     body {
-      display:flex;
-      flex-direction:column;
-      background:#f7f7f8;
-      color:#24292e;
+      display: flex;
+      flex-direction: column;
+      background: #f7f7f8;
+      color: #24292e;
       -webkit-text-size-adjust: 100%;
     }
 
     /* Global spacing */
-    .modal-content p, .modal-content li, .chat-area header, .message p { margin-bottom:1em }
-    ol, ul { margin-left:1.5rem }
+    .modal-content p, .modal-content li, .chat-area header, .message p {
+      margin-bottom: 1em
+    }
+
+    ol, ul {
+      margin-left: 1.5rem
+    }
 
     /* Modal */
-    .modal-overlay { position:fixed; inset:0; background:rgba(0,38,90,0.45); display:flex; align-items:center; justify-content:center; z-index:3000 }
-    .modal-card { background:#fff; border-radius:16px; width:90vw; max-width:500px; box-shadow:0 8px 32px rgba(0,70,160,0.13); border:1.5px solid #0059b3; overflow:hidden }
-    .modal-head { background:#0059b3; color:#fff; padding:20px; display:flex; align-items:center; font-size:1.1rem; font-weight:600 }
-    .modal-content { padding:16px; font-size:.9rem; line-height:1.6; color:#1c273a; max-height:60vh; overflow-y:auto }
-    .modal-footer { display:flex; justify-content:flex-end; gap:14px; padding:12px 16px }
-    .modal-btn { padding:10px 20px; border:none; border-radius:20px; font-size:1rem; font-weight:600; cursor:pointer }
-    .modal-btn.accept { background:#0059b3; color:#fff }
-    .modal-btn.decline { background:#f3f4f6; color:#0059b3; border:1px solid #c7d5ea }
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 38, 90, 0.45);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 3000
+    }
+
+    .modal-card {
+      background: #fff;
+      border-radius: 16px;
+      width: 90vw;
+      max-width: 500px;
+      box-shadow: 0 8px 32px rgba(0, 70, 160, 0.13);
+      border: 1.5px solid #0059b3;
+      overflow: hidden
+    }
+
+    .modal-head {
+      background: #0059b3;
+      color: #fff;
+      padding: 20px;
+      display: flex;
+      align-items: center;
+      font-size: 1.1rem;
+      font-weight: 600
+    }
+
+    .modal-content {
+      padding: 16px;
+      font-size: .9rem;
+      line-height: 1.6;
+      color: #1c273a;
+      max-height: 60vh;
+      overflow-y: auto
+    }
+
+    .modal-footer {
+      display: flex;
+      justify-content: flex-end;
+      gap: 14px;
+      padding: 12px 16px
+    }
+
+    .modal-btn {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 20px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer
+    }
+
+    .modal-btn.accept {
+      background: #0059b3;
+      color: #fff
+    }
+
+    .modal-btn.decline {
+      background: #f3f4f6;
+      color: #0059b3;
+      border: 1px solid #c7d5ea
+    }
 
     /* Main */
-    #mainContainer { display:none; flex:1; overflow:hidden; }
-    .container { display:flex; height:100%; }
+    #mainContainer {
+      display: none;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    .container {
+      display: flex;
+      height: 100%;
+    }
 
     /* Comic */
-    .comic { flex:0 0 200px; background:#fff; display:flex; flex-direction:column; align-items:center; border-right:1px solid #e1e4e8; padding:1rem }
-    .comic img { width:100%; border-radius:.5rem }
-    .comic-name { margin-top:.5rem; font-family:'Segoe Script','Comic Sans MS',cursive; font-size:1.3rem; color:#333 }
+    .comic {
+      flex: 0 0 200px;
+      background: #fff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      border-right: 1px solid #e1e4e8;
+      padding: 1rem
+    }
+
+    .comic img {
+      width: 100%;
+      border-radius: .5rem
+    }
+
+    .comic-name {
+      margin-top: .5rem;
+      font-family: 'Segoe Script', 'Comic Sans MS', cursive;
+      font-size: 1.3rem;
+      color: #333
+    }
 
     /* Chat */
-    .chat-area { flex:1; display:flex; flex-direction:column; position:relative; min-width:0; }
-    .chat-area header { padding:1rem; font-size:1.2rem; background:#fff; border-bottom:1px solid #e1e4e8 }
+    .chat-area {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      min-width: 0;
+    }
+
+    .chat-area header {
+      padding: 1rem;
+      font-size: 1.2rem;
+      background: #fff;
+      border-bottom: 1px solid #e1e4e8
+    }
 
     /* Chat window */
     #chat {
-      flex:1;
-      overflow-y:auto;
-      padding:1rem;
-      display:flex;
-      flex-direction:column;
-      gap:1rem;
-      background:#f7f7f8;
-      min-width:0;
-      /* wird per JS dynamisch ergänzt: padding-bottom für fixed composer */
+      flex: 1;
+      overflow-y: auto;
+      padding: 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      background: #f7f7f8;
+      min-width: 0;
       padding-bottom: 90px;
     }
+
     .message {
-      max-width:78%;
-      padding:.85rem 1rem;
-      border-radius:1rem;
-      box-shadow:0 1px 2px rgba(0,0,0,0.1);
-      line-height:1.55;
-      font-size:1rem;
-      word-wrap:break-word;
-      overflow-wrap:anywhere;
+      max-width: 78%;
+      padding: .85rem 1rem;
+      border-radius: 1rem;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+      line-height: 1.55;
+      font-size: 1rem;
+      word-wrap: break-word;
+      overflow-wrap: anywhere;
     }
-    .bot { align-self:flex-start; background:#fff }
-    .user { align-self:flex-end; background:#0969da; color:#fff }
+
+    .bot {
+      align-self: flex-start;
+      background: #fff
+    }
+
+    .user {
+      align-self: flex-end;
+      background: #0969da;
+      color: #fff
+    }
 
     /* Input bar */
     .input-bar {
-      display:flex;
-      align-items:center;
-      gap:.4rem;
-      padding:.6rem .75rem;
-      background:#fff;
-      border-top:1px solid #e1e4e8;
+      display: flex;
+      align-items: center;
+      gap: .4rem;
+      padding: .6rem .75rem;
+      background: #fff;
+      border-top: 1px solid #e1e4e8;
     }
-    .input-bar button { background:none; border:none; font-size:1.35rem; cursor:pointer; color:#57606a; }
+
+    .input-bar button {
+      background: none;
+      border: none;
+      font-size: 1.35rem;
+      cursor: pointer;
+      color: #57606a;
+    }
+
     .input-bar input {
-      flex:1;
-      border:none;
-      outline:none;
-      background:#f0f4f8;
-      border-radius:.75rem;
-      padding:0.95rem 0.95rem;
-      font-size:1.05rem;
-      min-width:0;
+      flex: 1;
+      border: none;
+      outline: none;
+      background: #f0f4f8;
+      border-radius: .75rem;
+      padding: 0.95rem 0.95rem;
+      font-size: 1.05rem;
+      min-width: 0;
     }
 
     /* Toggle-Change Button */
@@ -113,23 +236,58 @@
       padding: 0.5rem 0.8rem;
       border-radius: 0.6rem;
     }
-    #toggle-change.active { background: #0059b3; color: #fff; }
+
+    #toggle-change.active {
+      background: #0059b3;
+      color: #fff;
+    }
 
     /* Sessions */
-    .session-item { display:flex; justify-content:space-between; align-items:center; padding:.6rem 0; border-bottom:1px solid #e3eefa; cursor:pointer }
-    .del-session { border:none; background:transparent; cursor:pointer; font-size:1.1rem }
+    .session-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: .6rem 0;
+      border-bottom: 1px solid #e3eefa;
+      cursor: pointer
+    }
+
+    .del-session {
+      border: none;
+      background: transparent;
+      cursor: pointer;
+      font-size: 1.1rem
+    }
 
     /* Responsive */
     @media (max-width: 768px) {
-      .container { flex-direction:column; }
-      .comic { display:none; }
-      .chat-area header { font-size:1.05rem; padding:.85rem .85rem; }
-      #chat {
-        padding:0.75rem;
-        padding-bottom: 120px; /* Fallback, wird per JS passend gesetzt */
+      .container {
+        flex-direction: column;
       }
-      .message { max-width:92%; font-size:1.08rem; }
-      html, body { overflow:auto; height:auto; }
+
+      .comic {
+        display: none;
+      }
+
+      .chat-area header {
+        font-size: 1.05rem;
+        padding: .85rem .85rem;
+      }
+
+      #chat {
+        padding: 0.75rem;
+        padding-bottom: 120px;
+      }
+
+      .message {
+        max-width: 92%;
+        font-size: 1.08rem;
+      }
+
+      html, body {
+        overflow: auto;
+        height: auto;
+      }
 
       /* iOS/Safari fix: composer fixed */
       .input-bar {
@@ -140,21 +298,32 @@
         z-index: 2000;
         padding: .65rem .6rem;
         padding-bottom: calc(.65rem + env(safe-area-inset-bottom));
-        background:#fff;
+        background: #fff;
       }
 
-      /* Buttons etwas kompakter, damit Input maximal breit bleibt */
-      .input-bar button { font-size:1.25rem; }
-      .input-bar input { font-size:1.12rem; }
+      /* Buttons etwas kompakter */
+      .input-bar button {
+        font-size: 1.25rem;
+      }
+
+      .input-bar input {
+        font-size: 1.12rem;
+      }
     }
 
     /* Changed state */
-    body.changed { text-transform: uppercase; }
+    body.changed {
+      text-transform: uppercase;
+    }
 
     /* Optional: visual feedback for disabled send */
-    .btn-disabled { opacity: .4; pointer-events:none; }
+    .btn-disabled {
+      opacity: .4;
+      pointer-events: none;
+    }
   </style>
 </head>
+
 <body>
   <!-- Datenschutzhinweis -->
   <div class="modal-overlay" id="privacy-modal">
@@ -229,7 +398,6 @@
       <section class="chat-area">
         <header>Linda – Deine persönliche Assistentin</header>
         <div id="chat"></div>
-
         <div class="input-bar" id="composer">
           <button id="btnSessions" title="Gespeicherte Chats"><i class="fa-solid fa-list"></i></button>
           <button id="btnNew" title="Neuer Chat"><i class="fa-solid fa-plus"></i></button>
@@ -255,25 +423,31 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+  <script>
+const KIPruefungen=(()=>{const t={start:{type:"role_selection",question:"👤 Wer bist du in dieser Prüfungssituation?",options:[{label:"Ich bin Prüfer",value:"prufer",next:"prufer_intro"},{label:"Ich bin Prüfling",value:"pruefling",next:"pruefling_intro"}]},prufer_intro:{type:"info",message:"Willkommen im KI-Prüfungs-Assistent für Prüfer. Ich helfe dir bei rechtlichen, didaktischen und organisatorischen Fragen zur KI-Nutzung in Prüfungen.",next:"prufer_category"},prufer_category:{type:"category",question:"📋 Welcher Bereich interessiert dich?",options:[{label:"Rechtliche Fragen",value:"prufer_legal",next:"prufer_legal_q1"},{label:"Didaktische Gestaltung",value:"prufer_didactic",next:"prufer_didactic_q1"},{label:"KI-Erkennung & Authentizität",value:"prufer_detection",next:"prufer_detection_q1"},{label:"Sicherheit & Datenschutz",value:"prufer_security",next:"prufer_security_q1"}]},prufer_legal_q1:{type:"question",question:"Hast du Fragen zur Verantwortung für KI-generierte Inhalte, zur Kommunikation mit Studierenden oder zu regulatorischen Vorgaben?",systemPrompt:"Du bist ein Experte für rechtliche Fragen rund um KI in Prüfungen. Bezug zu: Verantwortlichkeit, Haftung, DSGVO, Transparenzpflichten, institutionelle Richtlinien. Basiere deine Antwort auf aktuellen Best Practices und rechtlichen Standards. Sei konkret, aber weise auf lokale Unterschiede hin.",next:"prufer_followup"},prufer_didactic_q1:{type:"question",question:"Wie kannst du KI in deine Prüfungsgestaltung sinnvoll einbinden?",systemPrompt:"Du bist ein Experte für Didaktik und Prüfungsgestaltung mit KI. Fokus: Wie KI die Prüfung verbessert, ohne Kompetenzabfrage zu gefährden. Gib konkrete Beispiele. Berücksichtige: Assessment of Learning, Feedback-Schleifen, Formatvarianten.",next:"prufer_followup"},prufer_detection_q1:{type:"question",question:"Wie erkennst du, ob ein Prüfling KI genutzt hat?",systemPrompt:"Du bist Experte für KI-Erkennung in Prüfungsleistungen. Themen: Stilistische Marker, technische Strategien, holistisches Assessment. Sei realistisch: KI ist schwer zu erkennen, menschliches Urteil bleibt zentral. Gib praktische Handreichungen.",next:"prufer_followup"},prufer_security_q1:{type:"question",question:"Wie schützt du sensible Prüfungsdaten?",systemPrompt:"Du bist Experte für Datenschutz & IT-Sicherheit in Prüfungen. Fokus: DSGVO, Cloud vs. On-Premise, Datenlecks, Prüfungsintegrität, Vertragsdesign. Sei konkret.",next:"prufer_followup"},prufer_followup:{type:"followup",question:"Weiteres Thema oder neuer Chat?",options:[{label:"Weiteres Thema",value:"back",next:"prufer_category"},{label:"Neuen Chat starten",value:"exit",next:"exit"}]},pruefling_intro:{type:"info",message:"Willkommen! Ich helfe dir, KI verantwortungsvoll zu nutzen.",next:"pruefling_category"},pruefling_category:{type:"category",question:"📋 Welcher Bereich interessiert dich?",options:[{label:"Rechtliche & Ethische Regeln",value:"pruefling_rules",next:"pruefling_rules_q1"},{label:"Praktische Nutzung",value:"pruefling_practice",next:"pruefling_practice_q1"},{label:"Transparenz & Kennzeichnung",value:"pruefling_disclosure",next:"pruefling_disclosure_q1"},{label:"Akademische Integrität",value:"pruefling_integrity",next:"pruefling_integrity_q1"}]},pruefling_rules_q1:{type:"question",question:"Welche Regeln gelten für KI-Nutzung?",systemPrompt:"Du bist Experte für rechtliche & ethische Regeln. Erkläre klar: Was ist erlaubt, was nicht? Gib konkrete Hinweise zu Regeln und Kontexten. Sei konstruktiv.",next:"pruefling_followup"},pruefling_practice_q1:{type:"question",question:"Wie nutze ich KI sinnvoll zum Lernen?",systemPrompt:"Du bist Experte für KI im Lernprozess. Fokus: KI als Werkzeug, nicht als Lösungsmaschine. Gib konkrete Beispiele, wie KI das Lernen unterstützt.",next:"pruefling_followup"},pruefling_disclosure_q1:{type:"question",question:"Wie kennzeichne ich KI-Nutzung richtig?",systemPrompt:"Du bist Experte für Transparenz & Kennzeichnung von KI. Gib konkrete Anleitung: Wo wird dokumentiert? Verschiedene Kontexte beachten. Biete Muster an.",next:"pruefling_followup"},pruefling_integrity_q1:{type:"question",question:"Wie wahre ich akademische Integrität mit KI?",systemPrompt:"Du bist Experte für akademische Integrität mit KI. Themen: Urheberrecht, KI-Output prüfen, eigenes Urteil. Erkläre die Grenzlinie. Sei konstruktiv.",next:"pruefling_followup"},pruefling_followup:{type:"followup",question:"Weiteres Thema oder neuer Chat?",options:[{label:"Weiteres Thema",value:"back",next:"pruefling_category"},{label:"Neuen Chat starten",value:"exit",next:"exit"}]},exit:{type:"exit",message:null}};function e(e){return/\bki\s+prüfungen?\b|\bki-prüfungen?\b/.test(e.toLowerCase().trim())}function r(e,r){if(!r)return null;switch(r.type){case"role_selection":case"category":return{type:"choice",text:r.question,options:r.options};case"question":return{type:"question",text:r.question,systemPrompt:r.systemPrompt,nextNode:r.next};case"info":return{type:"info",text:r.message,nextNode:r.next};case"followup":return{type:"choice",text:r.question,options:r.options};case"exit":return{type:"exit"};default:return null}}return{detect:e,init:function(e){e&&e({hinweis:"🔄 **Neuer Dialog: KI-Prüfungen**\n\nDu startest einen speziellen Dialog. Neue Sitzung, neuer Kontext.",nodeId:"start",node:t.start})},render:r,next:function(e){for(const[r,n]of Object.entries(t))if(n.options){const o=n.options.find(t=>t.value===e);if(o)return{nodeId:o.next,node:t[o.next]}}return null},tree:t}})();void 0!==window&&(window.KIPruefungen=KIPruefungen);
+  </script>
+
   <script>
     document.addEventListener('DOMContentLoaded', () => {
-      const privacyModal  = document.getElementById('privacy-modal');
-      const usageModal    = document.getElementById('usage-modal');
+      const privacyModal = document.getElementById('privacy-modal');
+      const usageModal = document.getElementById('usage-modal');
       const mainContainer = document.getElementById('mainContainer');
       const sessionsModal = document.getElementById('sessions-modal');
-      const chatEl        = document.getElementById('chat');
-      const toggleBtn     = document.getElementById('toggle-change');
-      const inputEl       = document.getElementById('q');
-      const composerEl    = document.getElementById('composer');
-      const sendBtn       = document.getElementById('send-btn');
+      const chatEl = document.getElementById('chat');
+      const toggleBtn = document.getElementById('toggle-change');
+      const inputEl = document.getElementById('q');
+      const composerEl = document.getElementById('composer');
+      const sendBtn = document.getElementById('send-btn');
 
       // Modal sequence
       document.getElementById('acceptPrivacy').onclick = () => {
         privacyModal.style.display = 'none';
-        usageModal.style.display   = 'flex';
+        usageModal.style.display = 'flex';
       };
+
       document.getElementById('acceptUsage').onclick = () => {
-        usageModal.style.display    = 'none';
+        usageModal.style.display = 'none';
         mainContainer.style.display = 'flex';
         initChat();
         setTimeout(() => inputEl.focus(), 80);
@@ -288,7 +462,7 @@
 
       // Chat functions
       const STORAGE_KEY = 'chat-sessions';
-      const MAX_HISTORY_TO_SEND = 4;   // passt zu bot.js
+      const MAX_HISTORY_TO_SEND = 4;
       let sessions = [], activeId = null, messages = [];
       let isSending = false;
 
@@ -300,6 +474,7 @@
       function loadSessions() {
         sessions = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
       }
+
       function saveSessions() {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(sessions));
       }
@@ -316,7 +491,7 @@
 
       function createSession() {
         const id = Date.now().toString();
-        const session = { id, name: '', messages: [{...initialMsg}] };
+        const session = { id, name: '', messages: [{ ...initialMsg }] };
         sessions.unshift(session);
         activeId = id;
         saveSessions();
@@ -366,8 +541,8 @@
         chatEl.innerHTML = '';
         messages.forEach(m => {
           const d = document.createElement('div');
-          d.className = 'message ' + (m.role==='assistant' ? 'bot' : 'user');
-          d.innerHTML = `<strong>${m.role==='assistant' ? 'Linda' : 'Du'}:</strong><br>${marked.parse(m.content)}`;
+          d.className = 'message ' + (m.role === 'assistant' ? 'bot' : 'user');
+          d.innerHTML = `<strong>${m.role === 'assistant' ? 'Linda' : 'Du'}:</strong><br>${marked.parse(m.content)}`;
           chatEl.appendChild(d);
         });
         chatEl.scrollTop = chatEl.scrollHeight;
@@ -377,7 +552,7 @@
         const el = document.getElementById('sessions-list');
         el.innerHTML = sessions.map(s => `
           <div class="session-item" data-id="${s.id}">
-            <span>${s.name||'Chat'}</span>
+            <span>${s.name || 'Chat'}</span>
             <button class="del-session" data-id="${s.id}" aria-label="Chat löschen">🗑️</button>
           </div>
         `).join('');
@@ -392,6 +567,7 @@
         renderSessionList();
         sessionsModal.style.display = 'flex';
       }
+
       function hideSessionsModal() {
         sessionsModal.style.display = 'none';
       }
@@ -410,7 +586,7 @@
 
       document.getElementById('btnDel').onclick = () => {
         if (confirm('Chat löschen?')) {
-          messages = [{...initialMsg}];
+          messages = [{ ...initialMsg }];
           updateSession();
           renderMessages();
           setTimeout(() => inputEl.focus(), 80);
@@ -434,7 +610,6 @@
       }
 
       function lastMessagesForApi(all) {
-        // Entfernt Platzhalter "⏳ ..." aus dem Payload + begrenzt auf 4
         const cleaned = all.filter(m => !(m.role === 'assistant' && (m.content || '').startsWith('⏳')));
         return cleaned.slice(-MAX_HISTORY_TO_SEND).map(m => ({ role: m.role, content: m.content }));
       }
@@ -445,7 +620,7 @@
         else sendBtn.classList.remove('btn-disabled');
       }
 
-      // iOS/Safari keyboard fix: composer position + chat padding
+      // iOS/Safari keyboard fix
       function adjustChatPaddingForComposer() {
         const h = composerEl ? composerEl.getBoundingClientRect().height : 80;
         chatEl.style.paddingBottom = (h + 16) + 'px';
@@ -453,7 +628,6 @@
       }
 
       function updateComposerBottomForKeyboard() {
-        // Only relevant on mobile when composer is fixed
         if (!window.visualViewport) return;
         const vv = window.visualViewport;
         const keyboardHeight = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
@@ -465,6 +639,7 @@
         window.visualViewport.addEventListener('resize', updateComposerBottomForKeyboard);
         window.visualViewport.addEventListener('scroll', updateComposerBottomForKeyboard);
       }
+
       window.addEventListener('resize', () => {
         composerEl.style.bottom = '0px';
         adjustChatPaddingForComposer();
@@ -473,16 +648,59 @@
       inputEl.addEventListener('focus', () => {
         setTimeout(updateComposerBottomForKeyboard, 50);
       });
+
       inputEl.addEventListener('blur', () => {
         composerEl.style.bottom = '0px';
         setTimeout(adjustChatPaddingForComposer, 50);
       });
 
-      // Send message
+      // ============================================================
+      // KI-PRÜFUNGEN HANDLER
+      // ============================================================
+
+      function handleKIPruefungen() {
+        // 1. Neue Session starten
+        const s = createSession();
+        messages = s.messages.slice();
+        activeId = s.id;
+
+        // 2. History-Hinweis anzeigen
+        const hinweis = {
+          role: 'assistant',
+          content: `🔄 **Neuer Dialog: KI-Prüfungen**\n\nDu startest einen speziellen Dialog zu KI in Prüfungen. Der bisherige Chat-Verlauf wird nicht berücksichtigt – du beginnst mit einer frischen Sitzung. Das hilft uns, fokussiert und strukturiert die Fragen zu klären.\n\n**Wer bist du?**\n\na) Ich bin Prüfer\nb) Ich bin Prüfling`
+        };
+
+        messages.push(hinweis);
+
+        // 3. Speichern & Rendern
+        updateSession();
+        renderMessages();
+        inputEl.value = '';
+        inputEl.focus();
+        setTimeout(adjustChatPaddingForComposer, 120);
+
+        // 4. State speichern
+        sessionStorage.setItem('kiPruefungenMode', 'true');
+        sessionStorage.setItem('kiPruefungenRole', '');
+      }
+
+      // ============================================================
+      // SEND MESSAGE
+      // ============================================================
+
       async function send() {
         if (isSending) return;
         const text = inputEl.value.trim();
         if (!text) return;
+
+        // ============================================================
+        // KI-Prüfungen Erkennung
+        // ============================================================
+        if (window.KIPruefungen && window.KIPruefungen.detect(text)) {
+          handleKIPruefungen();
+          return;
+        }
+        // ============================================================
 
         ensureGreeting();
 
@@ -491,28 +709,48 @@
         renderMessages();
         inputEl.value = '';
 
-        // UI placeholder (NICHT in API-History)
+        // UI placeholder
         messages.push({ role: 'assistant', content: '⏳ Einen Moment bitte ...' });
         renderMessages();
         updateSession();
-
         setSendingState(true);
 
         try {
           const payloadHistory = lastMessagesForApi(messages);
 
+          // ============================================================
+          // Erweiterte Payload für KI-Prüfungen
+          // ============================================================
+          const payload = {
+            question: text,
+            history: payloadHistory
+          };
+
+          // Wenn KI-Prüfungen Mode aktiv
+          if (sessionStorage.getItem('kiPruefungenMode') === 'true') {
+            payload.kiPruefungenMode = true;
+            payload.kiPruefungenRole = sessionStorage.getItem('kiPruefungenRole') || '';
+
+            // Rolle setzen basierend auf User-Antwort
+            if (text.toLowerCase().includes('a)') || text.toLowerCase().includes('prüfer')) {
+              sessionStorage.setItem('kiPruefungenRole', 'prufer');
+              payload.kiPruefungenRole = 'prufer';
+            } else if (text.toLowerCase().includes('b)') || text.toLowerCase().includes('prüfling')) {
+              sessionStorage.setItem('kiPruefungenRole', 'pruefling');
+              payload.kiPruefungenRole = 'pruefling';
+            }
+          }
+          // ============================================================
+
           const res = await fetch('/api/bot', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              question: text,
-              history: payloadHistory
-            })
+            body: JSON.stringify(payload)
           });
 
           const reply = await res.text();
 
-          // Placeholder ersetzen (nur den letzten placeholder)
+          // Placeholder ersetzen
           for (let i = messages.length - 1; i >= 0; i--) {
             if (messages[i].role === 'assistant' && (messages[i].content || '').startsWith('⏳')) {
               messages[i] = { role: 'assistant', content: reply };
@@ -520,7 +758,6 @@
             }
           }
         } catch {
-          // Placeholder entfernen, Fehler anzeigen
           messages = messages.filter(m => !(m.role === 'assistant' && (m.content || '').startsWith('⏳')));
           messages.push({ role: 'assistant', content: '❌ Fehler aufgetreten.' });
         } finally {
@@ -534,7 +771,6 @@
       }
 
       document.getElementById('send-btn').onclick = send;
-
       inputEl.addEventListener('keydown', e => {
         if (e.key === 'Enter' && !e.shiftKey) {
           e.preventDefault();
