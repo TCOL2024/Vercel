@@ -940,6 +940,7 @@
           const payloadHistory = lastMessagesForApi(messages);
 
           const payload = {
+            mode: 'standard',
             question: text,
             history: payloadHistory
           };
@@ -1000,18 +1001,14 @@
           const payloadHistory = lastMessagesForApi(messages);
 
           // STRUKTURIERTE PAYLOAD FÜR MAKE
-          // Includes:
-          // - question: Vollständige Kontextbeschreibung für Vector-Store-Abfragen
-          // - Strukturierte Codes (role, context, question) für Make-Routing
-          // - History für Konversations-Kontext
+          // mode: Bestimmt das Routing in Make (prufer, pruefling, standard)
           const payload = {
+            mode: formData.role,  // "prufer" oder "pruefling" – damit weiß Make, wohin
             question: contextDescription,
             history: payloadHistory,
-            kiPruefungenMode: true,
             kiPruefungenRole: formData.role,
             kiPruefungenContext: formData.context,
             kiPruefungenQuestion: formData.customQuestion || formData.question,
-            // Zusätzliche Labels für bessere Verarbeitung
             kiPruefungenContextLabel: window.KIPruefungenForm.getContextLabel(formData.role, formData.context),
             kiPruefungenQuestionLabel: formData.customQuestion
               ? formData.customQuestion
