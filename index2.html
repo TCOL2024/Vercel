@@ -977,22 +977,13 @@
       // ============================================================
 
       async function sendKIPruefungenFormToMake(formData) {
-        // Gebündelte Frage konstruieren
-        const questionParts = [];
-        questionParts.push(`Rolle: ${formData.role === 'prufer' ? 'Prüfer' : 'Prüfling'}`);
-        questionParts.push(`Kontext: ${formData.context}`);
-        if (formData.customQuestion) {
-          questionParts.push(`Frage: ${formData.customQuestion}`);
-        } else {
-          questionParts.push(`Frage: ${formData.question}`);
-        }
-
-        const bundledQuestion = questionParts.join('\n');
+        // KONTEXTBESCHREIBUNG: Mit vollen Labels für Vector-Store-Verarbeitung
+        const contextDescription = window.KIPruefungenForm.buildContextDescription(formData);
 
         // User-Zusammenfassung in Chat anzeigen
         messages.push({
           role: 'user',
-          content: bundledQuestion
+          content: contextDescription
         });
         renderMessages();
 
@@ -1009,13 +1000,22 @@
           const payloadHistory = lastMessagesForApi(messages);
 
           // STRUKTURIERTE PAYLOAD FÜR MAKE
+          // Includes:
+          // - question: Vollständige Kontextbeschreibung für Vector-Store-Abfragen
+          // - Strukturierte Codes (role, context, question) für Make-Routing
+          // - History für Konversations-Kontext
           const payload = {
-            question: bundledQuestion,
+            question: contextDescription,
             history: payloadHistory,
             kiPruefungenMode: true,
             kiPruefungenRole: formData.role,
             kiPruefungenContext: formData.context,
-            kiPruefungenQuestion: formData.customQuestion || formData.question
+            kiPruefungenQuestion: formData.customQuestion || formData.question,
+            // Zusätzliche Labels für bessere Verarbeitung
+            kiPruefungenContextLabel: window.KIPruefungenForm.getContextLabel(formData.role, formData.context),
+            kiPruefungenQuestionLabel: formData.customQuestion
+              ? formData.customQuestion
+              : window.KIPruefungenForm.getQuestionLabel(formData.role, formData.question)
           };
 
           const res = await fetch('/api/bot', {

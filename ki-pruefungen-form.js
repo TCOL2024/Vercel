@@ -1,12 +1,12 @@
 /**
- * KI-Prüfungen Form – Strukturiertes Multi-Step Formular
+ * KI-Prüfungen Form – Strukturiertes Multi-Step Formular mit Cluster-Fragen
  *
  * Flow:
  * 1. Rolle wählen (Prüfer / Prüfling)
  * 2. Kontext wählen (abhängig von Rolle)
- * 3. Kernfrage wählen (vordefiniert oder "Sonstige Frage")
+ * 3. Kernfrage wählen (aus Cluster-Fragen oder "Sonstige Frage")
  * 4. Bei "Sonstige Frage": Freie Text-Eingabe
- * 5. Fertig → an Make senden mit allen Daten
+ * 5. Fertig → an Make senden mit Codes + kontextualisierter Beschreibung
  */
 
 const KIPruefungenForm = (() => {
@@ -19,7 +19,7 @@ const KIPruefungenForm = (() => {
   };
 
   // ============================================================
-  // DATEN: Kontexte und Fragen je Rolle
+  // DATEN: Kontexte und Cluster-Fragen je Rolle
   // ============================================================
 
   const formData = {
@@ -30,16 +30,35 @@ const KIPruefungenForm = (() => {
         { id: 'hochschule', label: 'Hochschule / Universität' },
         { id: 'innerbetrieb', label: 'Innerbetriebliche Prüfung / Assessment' }
       ],
-      questions: {
-        default: [
-          'Um welchen Prüfungskontext geht es konkret?',
-          'Darf KI eigenständig bewerten / benoten?',
-          'Darf KI prüfungsrelevante Daten verarbeiten?',
-          'Wer haftet bei KI-gestützter Prüfung?',
-          'Alle drei'
-        ]
-      }
+      questions: [
+        {
+          id: 'q1',
+          label: 'KI-Einsatz in Prüfungsvorbereitung und -gestaltung',
+          description: 'Wie nutze ich KI sinnvoll bei der Vorbereitung und Gestaltung von Prüfungen?'
+        },
+        {
+          id: 'q2',
+          label: 'Bewertung und Benotung durch / mit KI',
+          description: 'Darf KI Prüfungsleistungen bewerten oder benoten? Wo liegen die Grenzen?'
+        },
+        {
+          id: 'q3',
+          label: 'Verantwortung und Haftung bei KI-Einsatz',
+          description: 'Wer haftet für KI-gestützte Prüfungen? Welche rechtlichen Verpflichtungen habe ich?'
+        },
+        {
+          id: 'q4',
+          label: 'Datenschutz und Transparenz in KI-Systemen',
+          description: 'Wie schütze ich sensible Prüfungsdaten? Was muss ich über KI-Nutzung offenlegen?'
+        },
+        {
+          id: 'q5',
+          label: 'KI-Erkennung und Authentizität von Leistungen',
+          description: 'Wie erkenne ich, ob ein Prüfling KI genutzt hat? Welche Strategien helfen mir?'
+        }
+      ]
     },
+
     pruefling: {
       contexts: [
         { id: 'abschlussprüfung', label: 'Vorbereitung Abschlussprüfung' },
@@ -47,17 +66,49 @@ const KIPruefungenForm = (() => {
         { id: 'projektarbeit', label: 'Vorbereitung Projektarbeit' },
         { id: 'report', label: 'Vorbereitung Report / Dokumentation' }
       ],
-      questions: {
-        default: [
-          'Darf ich KI für Recherche nutzen?',
-          'Darf ich KI für Drafts nutzen?',
-          'Wie kennzeichne ich KI-Nutzung?',
-          'Kann ich damit durchfallen?',
-          'Alle drei'
-        ]
-      }
+      questions: [
+        {
+          id: 'q1',
+          label: 'KI-Nutzung für Recherche und Brainstorming',
+          description: 'Darf ich KI für Recherche und Ideenfindung nutzen? Wo sind die Grenzen?'
+        },
+        {
+          id: 'q2',
+          label: 'KI-Nutzung bei Erstellung von Drafts und Dokumentation',
+          description: 'Kann ich KI für erste Entwürfe und Dokumentationen nutzen? Was muss ich beachten?'
+        },
+        {
+          id: 'q3',
+          label: 'Kennzeichnung und Transparenzpflichten',
+          description: 'Wie und wo muss ich KI-Nutzung dokumentieren? Was ist ausreichend?'
+        },
+        {
+          id: 'q4',
+          label: 'Akademische Integrität und institutionelle Regelwerke',
+          description: 'Was sind die Regeln meiner Institution? Wie vermeide ich Plagiarismus?'
+        },
+        {
+          id: 'q5',
+          label: 'Risiken und Konsequenzen bei Verstößen',
+          description: 'Was passiert, wenn ich KI gegen die Regeln nutze? Welche Konsequenzen drohen?'
+        }
+      ]
     }
   };
+
+  // ============================================================
+  // HILFSFUNKTIONEN: LABELS UND BESCHREIBUNGEN
+  // ============================================================
+
+  function getContextLabel(role, contextId) {
+    const context = formData[role]?.contexts.find(c => c.id === contextId);
+    return context ? context.label : contextId;
+  }
+
+  function getQuestionLabel(role, questionId) {
+    const question = formData[role]?.questions.find(q => q.id === questionId);
+    return question ? question.label : questionId;
+  }
 
   // ============================================================
   // ÖFFENTLICHE METHODEN
@@ -101,7 +152,7 @@ const KIPruefungenForm = (() => {
         title: 'Um welchen Prüfungskontext geht es konkret?',
         options: contexts.map((c, idx) => ({
           id: c.id,
-          label: `${c.label}`
+          label: c.label
         })),
         showOther: true
       };
@@ -109,14 +160,14 @@ const KIPruefungenForm = (() => {
 
     if (step === 2) {
       // Step 3: Kernfrage wählen
-      const questions = formData[data.role].questions.default;
+      const questions = formData[data.role].questions;
       return {
         step: 3,
         type: 'modal',
         title: 'Was ist deine Kernfrage?',
-        options: questions.slice(0, -1).map((q, idx) => ({
-          id: `q${idx}`,
-          label: q
+        options: questions.map((q, idx) => ({
+          id: q.id,
+          label: q.label
         })),
         showOther: true,
         otherLabel: 'Etwas anderes'
@@ -186,6 +237,22 @@ const KIPruefungenForm = (() => {
   }
 
   // ============================================================
+  // KONTEXTUALISIERTE BESCHREIBUNG FÜR MAKE
+  // ============================================================
+
+  function buildContextDescription(formData) {
+    const roleLabel = formData.role === 'prufer' ? 'Prüfer' : 'Prüfling';
+    const contextLabel = getContextLabel(formData.role, formData.context);
+    const questionLabel = formData.customQuestion
+      ? formData.customQuestion
+      : getQuestionLabel(formData.role, formData.question);
+
+    return `${roleLabel} möchte zu KI-Prüfungen folgendes wissen:\n` +
+           `Kontext: ${contextLabel}\n` +
+           `Frage: ${questionLabel}`;
+  }
+
+  // ============================================================
   // EXPORT
   // ============================================================
 
@@ -197,7 +264,10 @@ const KIPruefungenForm = (() => {
     getStepContent,
     isDetected,
     reset,
-    getCurrentData: () => ({ ...data })
+    getCurrentData: () => ({ ...data }),
+    getContextLabel,
+    getQuestionLabel,
+    buildContextDescription
   };
 })();
 
