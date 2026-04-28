@@ -6324,6 +6324,7 @@
       },
 
       isFvEligibleMode: () => {
+        if (SOZIALRECHT_ONLY_MODE) return true;
         const mode = String(app.state.settings?.domain || '').trim().toLowerCase();
         return mode === 'sozialrecht' || mode === 'standard';
       },
@@ -9131,14 +9132,15 @@
         }
 
         const fvTriggerText = app.utils.normalizeForKeyword(text);
-        const fvIntentMarker = /\b(pruef|prüf|check|testen|ob|moeglich|möglich|anspruch|voraussetzung|voraussetzungen)\b/i.test(text);
+        const fvIntentMarker =
+          /\b(pruef(?:e|en|st|t|ung)?|check(?:e|en|st|t)?|test(?:e|en|est|et)?|ob|moeglich|anspruch|voraussetzung(?:en)?)\b/.test(fvTriggerText);
         const fvTriggerMatch =
-          /\bfamilienversicherung\s+(pruef|prüf|check)\b/.test(fvTriggerText) ||
-          /\bpruef(?:e|en)?\s+die\s+familienversicherung\b|\bcheck(?:e|en)?\s+familienversicherung\b/i.test(text) ||
-          /\bfamilienversichert\b/i.test(text) ||
+          /\bfamilienversicherung\s+(pruef(?:e|en|ung)?|check(?:e|en)?|test(?:e|en)?)\b/.test(fvTriggerText) ||
+          /\b(?:pruef(?:e|en|st|t|ung)?|check(?:e|en|st|t)?|test(?:e|en|est|et)?)\s+(?:die\s+)?familienversicherung\b/.test(fvTriggerText) ||
+          /\bfamilienversichert\b/.test(fvTriggerText) ||
           /§\s*10\s*sgb\s*v/i.test(text) ||
-          (/\bfamilienversicherung\b/i.test(text) && fvIntentMarker) ||
-          (/\bgkv\s+familie\b/i.test(fvTriggerText) && fvIntentMarker);
+          (/\bfamilienversicherung\b/.test(fvTriggerText) && fvIntentMarker) ||
+          (/\bgkv\s+familie\b/.test(fvTriggerText) && fvIntentMarker);
         if (fvTriggerMatch && app.logic.isFvEligibleMode()) {
           if (!forcedText) {
             app.ui.input.value = '';
