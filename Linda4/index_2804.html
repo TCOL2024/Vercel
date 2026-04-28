@@ -946,6 +946,15 @@
     -webkit-overflow-scrolling: touch;
   }
 
+  .clarify-footer {
+    flex: 0 0 auto;
+    display: grid;
+    gap: 8px;
+    padding: 12px 16px 16px;
+    border-top: 1px solid #e0e8f3;
+    background: rgba(249, 252, 255, 0.98);
+  }
+
   .clarify-intro {
     margin: 0;
     font-size: 0.93rem;
@@ -969,6 +978,9 @@
     display: grid;
     gap: 10px;
     min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
   }
 
   .clarify-option {
@@ -1043,10 +1055,11 @@
     display: flex;
     gap: 8px;
     align-items: center;
+    flex-wrap: wrap;
   }
 
   .clarify-free input {
-    flex: 1;
+    flex: 1 1 220px;
     min-width: 0;
     border: 1px solid #d7e1ef;
     border-radius: 14px;
@@ -1143,6 +1156,13 @@
     font-size: 0.77rem;
     font-weight: 700;
     cursor: pointer;
+  }
+
+  .clarify-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    flex-wrap: wrap;
   }
 
   .action-btn:hover {
@@ -2682,13 +2702,29 @@
     .clarify-card {
       width: calc(100vw - 16px);
       max-width: calc(100vw - 16px);
-      max-height: min(68dvh, calc(100dvh - var(--input-h) - 34px));
+      max-height: min(74dvh, calc(100dvh - var(--input-h) - 24px));
       border-radius: 24px;
     }
 
     .clarify-body {
-      padding: 12px;
+      padding: 10px;
       gap: 8px;
+      grid-template-rows: auto auto minmax(0, 1fr);
+    }
+
+    .clarify-footer {
+      padding: 8px 10px 10px;
+      gap: 7px;
+    }
+
+    .clarify-question {
+      font-size: clamp(1.08rem, 6vw, 1.42rem);
+      letter-spacing: 0;
+    }
+
+    .clarify-options {
+      max-height: 34dvh;
+      padding-right: 2px;
     }
 
     .clarify-head {
@@ -2698,9 +2734,24 @@
     .clarify-free {
       flex-direction: column;
       align-items: stretch;
+      gap: 6px;
+    }
+
+    .clarify-free input {
+      flex-basis: auto;
+      width: 100%;
+      min-height: 52px;
     }
 
     .clarify-free button {
+      width: 100%;
+    }
+
+    .clarify-actions {
+      justify-content: stretch;
+    }
+
+    .clarify-actions button {
       width: 100%;
     }
 
@@ -4568,6 +4619,8 @@
                     </li>
                   `).join('')}
                 </ul>
+              </div>
+              <div class="clarify-footer">
                 <div class="clarify-free">
                   <input type="text" data-fv-free-input value="${app.utils.safeText(freeDraft).replace(/"/g, '&quot;')}" placeholder="${app.utils.safeText(step.freePlaceholder)}" aria-label="Eigene Antwort">
                   <button type="button" data-fv-free>Uebernehmen</button>
@@ -4622,6 +4675,8 @@
                   </li>
                 `).join('')}
               </ul>
+            </div>
+            <div class="clarify-footer">
               <div class="clarify-free">
                 <input type="text" data-clarify-free-input value="${app.utils.safeText(freeDraft).replace(/"/g, '&quot;')}" placeholder="Etwas anderes..." aria-label="Eigene Antwort">
                 <button type="button" data-clarify-free>Uebernehmen</button>
