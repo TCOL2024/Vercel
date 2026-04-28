@@ -5188,7 +5188,10 @@
         }
 
         const renderContent = normalizeAnswerTextForRender(content);
-        const mdRaw = marked.parse(String(renderContent).replace(/\$(.*?)\$/g, '**$1**'));
+        const isFvHtml = meta?.module === 'fv-check' && /<\s*(?:section|div|p|ul|ol|li|h[1-5])\b/i.test(String(renderContent || ''));
+        const mdRaw = isFvHtml
+          ? String(renderContent || '')
+          : marked.parse(String(renderContent).replace(/\$(.*?)\$/g, '**$1**'));
         const safe = DOMPurify.sanitize(mdRaw, {
           ALLOWED_TAGS: ['div','section','span','p','br','strong','em','ul','ol','li','h1','h2','h3','h4','h5','pre','code','blockquote','table','thead','tbody','tr','th','td','a'],
           ALLOWED_ATTR: ['href','target','rel','class']
@@ -9562,7 +9565,11 @@
             if (cleanSection) metaBits.push(cleanSection);
             if (s.page) metaBits.push(/^s\./i.test(s.page) ? s.page : `S. ${s.page}`);
             if (Number.isFinite(s.confidence)) metaBits.push(`Evidenz ${Math.round(Math.max(0, Math.min(1, s.confidence)) * 100)}%`);
-            const directJump = sgbLinkResolver && typeof sgbLinkResolver.resolveSource === 'function'
+            const sourceAllowsDirectJump =
+              /gesetze-im-internet\.de/i.test(String(s.url || '')) ||
+              /^Normbezug:/i.test(String(s.title || '')) ||
+              /(^|\s)§\s*\d+/i.test(String(s.title || ''));
+            const directJump = sourceAllowsDirectJump && sgbLinkResolver && typeof sgbLinkResolver.resolveSource === 'function'
               ? sgbLinkResolver.resolveSource(s, { question: bubbleMeta.question || '', answerText: renderedAnswerText })
               : null;
             const sourceHref = directJump?.url || s.url;
