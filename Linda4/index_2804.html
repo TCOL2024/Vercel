@@ -3755,6 +3755,68 @@
       url: 'https://www.tk.de/techniker/leistungen-und-mitgliedschaft/informationen-versicherte/veraenderung-berufliche-situation/versichert-als-schueler-und-auszubildende/krankenversicherung-auszubildende-2005806'
     }
   ];
+  const SGB_BOOK_SOURCE_MAP = {
+    '1': {
+      label: 'SGB I',
+      title: 'Allgemeiner Teil',
+      url: 'https://www.gesetze-im-internet.de/sgb_1/'
+    },
+    '2': {
+      label: 'SGB II',
+      title: 'Grundsicherung fuer Arbeitsuchende',
+      url: 'https://www.gesetze-im-internet.de/sgb_2/'
+    },
+    '3': {
+      label: 'SGB III',
+      title: 'Arbeitsfoerderung',
+      url: 'https://www.gesetze-im-internet.de/sgb_3/'
+    },
+    '4': {
+      label: 'SGB IV',
+      title: 'Gemeinsame Vorschriften fuer die Sozialversicherung',
+      url: 'https://www.gesetze-im-internet.de/sgb_4/'
+    },
+    '5': {
+      label: 'SGB V',
+      title: 'Gesetzliche Krankenversicherung',
+      url: 'https://www.gesetze-im-internet.de/sgb_5/'
+    },
+    '6': {
+      label: 'SGB VI',
+      title: 'Gesetzliche Rentenversicherung',
+      url: 'https://www.gesetze-im-internet.de/sgb_6/'
+    },
+    '7': {
+      label: 'SGB VII',
+      title: 'Gesetzliche Unfallversicherung',
+      url: 'https://www.gesetze-im-internet.de/sgb_7/'
+    },
+    '8': {
+      label: 'SGB VIII',
+      title: 'Kinder- und Jugendhilfe',
+      url: 'https://www.gesetze-im-internet.de/sgb_8/'
+    },
+    '9': {
+      label: 'SGB IX',
+      title: 'Rehabilitation und Teilhabe von Menschen mit Behinderungen',
+      url: 'https://www.gesetze-im-internet.de/sgb_9_2018/'
+    },
+    '10': {
+      label: 'SGB X',
+      title: 'Sozialverwaltungsverfahren und Sozialdatenschutz',
+      url: 'https://www.gesetze-im-internet.de/sgb_10/'
+    },
+    '11': {
+      label: 'SGB XI',
+      title: 'Soziale Pflegeversicherung',
+      url: 'https://www.gesetze-im-internet.de/sgb_11/'
+    },
+    '12': {
+      label: 'SGB XII',
+      title: 'Sozialhilfe',
+      url: 'https://www.gesetze-im-internet.de/sgb_12/'
+    }
+  };
 
   const FV_CHECK_STEPS = [
     {
@@ -5866,6 +5928,8 @@
       },
 
       topicFromText: (text, fallback = 'das Thema') => {
+        const sgbRef = app.logic.extractSgbBookReference(text);
+        if (sgbRef?.label) return sgbRef.label;
         const stop = new Set(['bitte', 'kannst', 'kann', 'mir', 'und', 'oder', 'eine', 'einer', 'eines', 'zum', 'zur', 'der', 'die', 'das', 'ist', 'sind', 'wie', 'was', 'warum', 'wieso', 'weshalb', 'mit', 'fuer', 'für', 'den', 'dem']);
         const tokens = String(text || '')
           .replace(/[^\p{L}\p{N}\s-]/gu, ' ')
@@ -5874,6 +5938,51 @@
           .filter((t) => t.length >= 4 && !stop.has(t.toLowerCase()));
         if (!tokens.length) return fallback;
         return tokens.slice(0, 5).join(' ');
+      },
+
+      extractSgbBookReference: (text = '') => {
+        const normalized = app.utils.normalizeForKeyword(text);
+        if (!normalized) return null;
+        const romanToArabic = {
+          i: '1',
+          ii: '2',
+          iii: '3',
+          iv: '4',
+          v: '5',
+          vi: '6',
+          vii: '7',
+          viii: '8',
+          ix: '9',
+          x: '10',
+          xi: '11',
+          xii: '12'
+        };
+        const match = normalized.match(/\bsgb\s+((?:xii|xi|x|ix|viii|vii|vi|v|iv|iii|ii|i)|(?:1[0-2]|[1-9]))\b/);
+        if (!match?.[1]) return null;
+        const rawKey = String(match[1] || '').trim();
+        const numeric = romanToArabic[rawKey] || rawKey;
+        const entry = SGB_BOOK_SOURCE_MAP[numeric];
+        if (!entry) return null;
+        return {
+          key: numeric,
+          label: entry.label,
+          title: entry.title,
+          url: entry.url
+        };
+      },
+
+      buildCanonicalSozialrechtSources: (question = '', answer = '') => {
+        const sgbRef = app.logic.extractSgbBookReference(question || answer);
+        if (!sgbRef) return [];
+        return app.logic.sanitizeSourceList([
+          {
+            title: `${sgbRef.label} - ${sgbRef.title}`,
+            url: sgbRef.url,
+            section: 'Gesamtausgabe',
+            excerpt: app.logic.deriveAnswerExcerptForSource(answer, question, `${sgbRef.label} ${sgbRef.title}`),
+            note: 'Gesetzesquelle wurde direkt aus der zitierten SGB-Buchangabe aufgeloest.'
+          }
+        ]);
       },
 
       deriveAnswerExcerptForSource: (answerText = '', question = '', sourceTitle = '') => {
@@ -7000,6 +7109,13 @@
 
         if (contextualFollowup && !sources.length && !app.logic.isOperationalAnswer(answer)) {
           sources = app.logic.sanitizeSourceList(recentGroundedContext.sources || []).slice(0, 3);
+        }
+
+        if (!sources.length && !app.logic.isOperationalAnswer(answer) && sozialrechtDomain) {
+          const canonicalSources = app.logic.buildCanonicalSozialrechtSources(question, answer);
+          if (canonicalSources.length) {
+            sources = canonicalSources.slice(0, 3);
+          }
         }
 
         const groundedMode = Boolean(app.state.settings.guardrails?.groundedMode);
