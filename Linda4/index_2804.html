@@ -820,10 +820,16 @@
     position: fixed;
     left: 0;
     right: 0;
+    top: auto;
     bottom: calc(var(--input-h) + 8px + env(safe-area-inset-bottom));
     z-index: 18;
-    padding: 0 12px 10px;
+    padding: 0 max(12px, env(safe-area-inset-left)) 10px max(12px, env(safe-area-inset-right));
     pointer-events: none;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    max-width: 100vw;
+    touch-action: pan-y;
   }
 
   .clarify-dock[hidden] {
@@ -832,7 +838,9 @@
 
   .clarify-card {
     pointer-events: auto;
-    width: min(100%, 760px);
+    width: min(760px, calc(100vw - 24px));
+    max-width: calc(100vw - 24px);
+    max-height: min(72dvh, calc(100dvh - var(--input-h) - 42px));
     margin: 0 auto;
     border: 1px solid rgba(210, 222, 239, 0.96);
     border-radius: 26px;
@@ -840,6 +848,9 @@
     box-shadow: 0 26px 60px rgba(7, 26, 52, 0.16), 0 10px 24px rgba(7, 26, 52, 0.08);
     backdrop-filter: blur(14px);
     overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
   }
 
   .clarify-handle {
@@ -851,6 +862,7 @@
   }
 
   .clarify-head {
+    flex: 0 0 auto;
     display: flex;
     justify-content: space-between;
     gap: 12px;
@@ -928,6 +940,10 @@
     padding: 14px 16px 16px;
     display: grid;
     gap: 12px;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
   }
 
   .clarify-intro {
@@ -952,6 +968,7 @@
     padding: 0;
     display: grid;
     gap: 10px;
+    min-height: 0;
   }
 
   .clarify-option {
@@ -2658,11 +2675,14 @@
     }
 
     .clarify-dock {
-      bottom: calc(var(--input-h) + 8px + env(safe-area-inset-bottom));
-      padding: 0 10px 8px;
+      bottom: calc(var(--input-h) + 10px + env(safe-area-inset-bottom));
+      padding: 0 max(8px, env(safe-area-inset-left)) 8px max(8px, env(safe-area-inset-right));
     }
 
     .clarify-card {
+      width: calc(100vw - 16px);
+      max-width: calc(100vw - 16px);
+      max-height: min(68dvh, calc(100dvh - var(--input-h) - 34px));
       border-radius: 24px;
     }
 
