@@ -4475,6 +4475,124 @@
           .map((m) => ({ role: m.role, content: app.utils.serializeHistoryMessage(m) }))
           .filter((m) => String(m.content || '').trim());
       },
+      legalKnowledgeTitleForFile: (name = '') => {
+        const raw = String(name || '').trim();
+        if (/vorsorge[_-]?draft\.md|sozialrecht[_-]?skript[_-]?draft\.md/i.test(raw)) {
+          return 'Wissensdatenbank Recht';
+        }
+        return raw || 'Wissensdatenbank Recht';
+      },
+      extractSearchResultText: (result = {}) => {
+        if (!result || typeof result !== 'object') return '';
+        const direct = String(
+          result.text ||
+          result.excerpt ||
+          result.snippet ||
+          result.content_text ||
+          result.contentText ||
+          ''
+        ).trim();
+        if (direct) return normalizeAnswerTextForRender(direct);
+
+        const content = Array.isArray(result.content) ? result.content : [];
+        const fromContent = content
+          .map((part) => {
+            if (typeof part === 'string') return part;
+            if (!part || typeof part !== 'object') return '';
+            return String(part.text || part.value || part.content || '').trim();
+          })
+          .filter(Boolean)
+          .join('\n\n')
+          .trim();
+        return normalizeAnswerTextForRender(fromContent);
+      },
+      collectOpenAiFileSearchSources: (payload) => {
+        const roots = [payload];
+        const meta = (payload?.meta && typeof payload.meta === 'object') ? payload.meta : null;
+        const metadata = (payload?.metadata && typeof payload.metadata === 'object') ? payload.metadata : null;
+        if (meta) roots.push(meta);
+        if (metadata) roots.push(metadata);
+        const nested = parseEmbeddedJSONObject(payload?.answer || payload?.response || payload?.text || '');
+        if (nested && typeof nested === 'object') roots.push(nested, nested.meta, nested.metadata);
+
+        const found = [];
+        const visit = (node, depth = 0) => {
+          if (!node || depth > 7) return;
+          if (Array.isArray(node)) {
+            node.forEach((item) => visit(item, depth + 1));
+            return;
+          }
+          if (typeof node !== 'object') return;
+
+          const type = String(node.type || '').trim();
+          if (type === 'file_search_call' && Array.isArray(node.results)) {
+            node.results.forEach((result) => {
+              if (!result || typeof result !== 'object') return;
+              const filename = String(
+                result.filename ||
+                result.file_name ||
+                result.fileName ||
+                result.name ||
+                result.title ||
+                ''
+              ).trim();
+              const fileId = String(result.file_id || result.fileId || '').trim();
+              const excerpt = app.utils.truncate(app.utils.extractSearchResultText(result), 900);
+              const attrs = (result.attributes && typeof result.attributes === 'object') ? result.attributes : {};
+              const metadata = (result.metadata && typeof result.metadata === 'object') ? result.metadata : {};
+              const section = String(
+                result.section ||
+                result.heading ||
+                attrs.section ||
+                attrs.heading ||
+                metadata.section ||
+                metadata.heading ||
+                ''
+              ).trim();
+              if (!filename && !fileId && !excerpt) return;
+              found.push({
+                title: app.utils.legalKnowledgeTitleForFile(filename),
+                file: filename,
+                file_id: fileId,
+                excerpt,
+                section,
+                page: String(result.page || result.pageNumber || attrs.page || metadata.page || '').trim(),
+                confidence: Number.isFinite(Number(result.score)) ? Number(result.score) : null,
+                type: 'knowledge_base',
+                source_type: 'file_search_result'
+              });
+            });
+          }
+
+          Object.entries(node).forEach(([key, value]) => {
+            if (key === 'content' && typeof value === 'string') return;
+            if (value && typeof value === 'object') visit(value, depth + 1);
+          });
+        };
+
+        roots.filter(Boolean).forEach((root) => visit(root));
+        return found;
+      },
+      extractOpenAiResponseText: (payload) => {
+        if (!payload || typeof payload !== 'object') return '';
+        const direct = String(payload.output_text || payload.outputText || '').trim();
+        if (direct) return normalizeAnswerTextForRender(direct);
+
+        const out = Array.isArray(payload.output) ? payload.output : [];
+        const parts = [];
+        out.forEach((item) => {
+          if (!item || typeof item !== 'object') return;
+          const content = Array.isArray(item.content) ? item.content : [];
+          content.forEach((part) => {
+            if (!part || typeof part !== 'object') return;
+            const type = String(part.type || '').trim();
+            if (type && !/text|output_text|message/i.test(type)) return;
+            const text = String(part.text || part.value || '').trim();
+            if (text) parts.push(text);
+          });
+        });
+        return normalizeAnswerTextForRender(parts.join('\n\n').trim());
+      },
       parseApiAnswer: (rawText) => {
         const parsed = parseJSON(rawText, null);
         if (!parsed) return { answer: rawText, sources: [], meta: {} };
@@ -4498,6 +4616,11 @@
           backendMeta.sources ||
           (parsed.metadata && parsed.metadata.sources) ||
           [];
+        const fileSearchSources = app.utils.collectOpenAiFileSearchSources(parsed);
+        const normalizedSources = [
+          ...(Array.isArray(altSources) ? altSources : []),
+          ...fileSearchSources
+        ];
         const followups =
           parsed.followups ||
           parsed.next_questions ||
@@ -4525,7 +4648,8 @@
           nestedMeta.evidenceNote ||
           ''
         ).trim();
-        const parsedAnswerTextRaw = String(parsed.answer || parsed.response || parsed.text || parsed.output || rawText);
+        const responseOutputText = app.utils.extractOpenAiResponseText(parsed);
+        const parsedAnswerTextRaw = String(parsed.answer || parsed.response || parsed.text || responseOutputText || rawText);
         const parsedAnswerText = normalizeAnswerTextForRender(parsedAnswerTextRaw);
         const nestedAnswerText = normalizeAnswerTextForRender(
           nestedAnswerPayload?.answer ||
@@ -4535,7 +4659,7 @@
         );
         return {
           answer: nestedAnswerText || parsedAnswerText || parsedAnswerTextRaw,
-          sources: Array.isArray(altSources) ? altSources : [],
+          sources: normalizedSources,
           meta: {
             followups: Array.isArray(followups) ? followups : [],
             confidence,
@@ -6156,8 +6280,8 @@
             title: `${ref.label} - ${ref.title}`,
             url: ref.url,
             section: 'Gesamtausgabe',
-            excerpt: app.logic.deriveAnswerExcerptForSource(answer, question, `${ref.label} ${ref.title}`),
-            note: 'Gesetzesquelle wurde direkt aus der zitierten SGB-Buchangabe aufgeloest.'
+            excerpt: '',
+            note: 'Gesetzesquelle zur genannten SGB-Buchangabe. Kein Textauszug aus der Wissensdatenbank.'
           });
         });
         return app.logic.sanitizeSourceList(unique);
@@ -6278,13 +6402,13 @@
             refs.push({
               title: `Normbezug: ${title}`,
               url: normUrl,
-              excerpt: app.utils.truncate(line, 280),
-              section: 'Rechtsbezug',
+              excerpt: '',
+              section: 'Erkannte Rechtsnorm',
               page: '',
               note: normUrl
-                ? 'Automatisch aus der Antwort extrahiert und auf die passende Gesetzesnorm verlinkt.'
-                : 'Automatisch aus der Antwort extrahiert (kein direkter Dokument-Chunk).',
-              confidence: 0.35
+                ? 'Normverweis ohne Textauszug aus der Wissensdatenbank. Bitte Originalnorm pruefen.'
+                : 'Normverweis ohne hinterlegte Textfundstelle.',
+              confidence: null
             });
             if (refs.length >= 6) break;
           }
@@ -9100,14 +9224,20 @@
         const raw = normalizeAnswerTextForRender(String(note || '').trim());
         if (!raw) return '';
         if (/automatisch aus der antwort|direkt aus der zitierten|gesetzesquelle wurde direkt/i.test(raw)) return '';
+        if (/^quelle\s*(?:\((?:file_)?citation\))?$/i.test(raw)) return '';
+        if (/^(?:file_)?citation$/i.test(raw)) return '';
         return app.utils.truncate(raw, 180);
       },
 
       buildSourceDisplayTitle: (source = {}, directJump = null) => {
-        const raw = String(source?.title || directJump?.book || source?.url || 'Quelle')
+        const raw = String(source?.title || source?.file || source?.filename || directJump?.book || source?.url || 'Quelle')
           .replace(/\s+/g, ' ')
           .replace(/^Normbezug:\s*/i, '')
           .trim();
+        const sourceType = String(source?._sourceType || source?.type || source?.kind || '').trim();
+        if (/vorsorge[_-]?draft\.md/i.test(raw) || /^(?:file_)?citation$/i.test(sourceType)) {
+          return 'Wissensdatenbank Recht';
+        }
         if (/^https?:\/\//i.test(raw)) {
           try {
             const u = new URL(raw);
@@ -9122,11 +9252,23 @@
       sourceDisplayKind: (source = {}, directJump = null, hasExcerpt = false) => {
         const title = String(source?.title || '').trim();
         const url = String(directJump?.url || source?.url || '').trim();
+        const sourceType = String(source?._sourceType || source?.type || source?.kind || '').trim();
+        if (/knowledge_base|file_search_result/i.test(sourceType)) return 'Wissensbasis';
+        if (/vorsorge[_-]?draft\.md/i.test(title) || /^(?:file_)?citation$/i.test(sourceType)) return 'Wissensbasis';
+        if (/\.(?:md|txt|pdf|docx?|pptx?|xlsx?)$/i.test(title)) return 'Datei';
         if (directJump?.url || /^Normbezug:/i.test(title) || /(^|\s)§\s*\d+/i.test(title)) return 'Norm';
         if (hasExcerpt) return 'Fundstelle';
         if (/\.pdf(?:$|[?#])/i.test(url)) return 'PDF';
         if (/^https?:\/\//i.test(url)) return 'Link';
         return 'Quelle';
+      },
+
+      cleanSourceSection: (section = '') => {
+        const raw = String(section || '').replace(/\s+/g, ' ').trim();
+        if (!raw) return '';
+        if (/^(?:file_)?citation$/i.test(raw)) return '';
+        if (/^quelle$/i.test(raw)) return '';
+        return raw;
       },
 
       prepareSourcesForDisplay: (items = [], answerText = '') => {
@@ -9164,6 +9306,7 @@
             if (!existing.page && next.page) existing.page = next.page;
             if (!existing.excerpt && next.excerpt) existing.excerpt = next.excerpt;
             if (!existing.note && next.note) existing.note = next.note;
+            if (!existing._sourceType && next._sourceType) existing._sourceType = next._sourceType;
             existing._suppressedEcho = Boolean(existing._suppressedEcho || next._suppressedEcho);
             return;
           }
@@ -9183,7 +9326,23 @@
             const text = String(item || '').trim();
             if (text) next = { title: text, url: '', excerpt: '', section: '', page: '', note: '', confidence: null };
           } else if (item && typeof item === 'object') {
-            const title = String(item.title || item.name || item.label || item.url || 'Quelle').trim();
+            const sourceType = String(item.type || item.kind || item.source_type || item.sourceType || '').trim();
+            const fileLabel = String(
+              item.filename ||
+              item.file_name ||
+              item.fileName ||
+              item.file ||
+              item.file_id ||
+              item.fileId ||
+              item.path ||
+              item.document ||
+              item.document_name ||
+              item.documentName ||
+              item.source ||
+              ''
+            ).trim().split('/').filter(Boolean).pop() || '';
+            const rawTitle = String(item.title || item.name || item.label || '').trim();
+            const title = String((/^quelle$/i.test(rawTitle) && fileLabel) ? fileLabel : (rawTitle || fileLabel || item.url || 'Quelle')).trim();
             const url = String(item.url || item.link || '').trim();
             const excerpt = normalizeAnswerTextForRender(String(
               item.excerpt ||
@@ -9204,12 +9363,12 @@
               item.body ||
               ''
             ).trim());
-            const section = String(item.section || item.heading || item.chapter || '').trim();
+            const section = app.logic.cleanSourceSection(item.section || item.heading || item.chapter || sourceType || '');
             const page = String(item.page || item.pageNumber || item.seite || '').trim();
             const note = normalizeAnswerTextForRender(String(item.note || item.reason || item.description || '').trim());
-            const confidence = Number.isFinite(Number(item.confidence)) ? Number(item.confidence) : null;
+            const confidence = Number.isFinite(Number(item.confidence)) && Number(item.confidence) > 0 ? Number(item.confidence) : null;
             if (title || url || excerpt) {
-              next = { title: title || url || 'Quelle', url, excerpt, section, page, note, confidence };
+              next = { title: title || url || 'Quelle', url, excerpt, section, page, note, confidence, _sourceType: sourceType, file: fileLabel };
             }
           }
 
@@ -9399,7 +9558,8 @@
           displaySources.forEach((s) => {
             const li = document.createElement('li');
             const metaBits = [];
-            if (s.section) metaBits.push(s.section);
+            const cleanSection = app.logic.cleanSourceSection(s.section || '');
+            if (cleanSection) metaBits.push(cleanSection);
             if (s.page) metaBits.push(/^s\./i.test(s.page) ? s.page : `S. ${s.page}`);
             if (Number.isFinite(s.confidence)) metaBits.push(`Evidenz ${Math.round(Math.max(0, Math.min(1, s.confidence)) * 100)}%`);
             const directJump = sgbLinkResolver && typeof sgbLinkResolver.resolveSource === 'function'
@@ -9442,7 +9602,10 @@
                 </a>
               `
               : '';
-            const canExportPdf = sozialrechtSourceCards && (String(s.url || '').trim() || String(effectiveExcerpt || '').trim());
+            const canExportPdf = sozialrechtSourceCards && (
+              String(effectiveExcerpt || '').trim() ||
+              app.logic.isPdfUrl(String(s.url || '').trim())
+            );
             const sourceToolsHtml = [
               directJumpHtml,
               canExportPdf
@@ -9736,6 +9899,15 @@
             schnellmodus: deepseekRoutingActive,
             history: historyForApi,
             sources: effectiveSources,
+            retrieval: {
+              provider: 'openai',
+              tool: 'file_search',
+              include: ['file_search_call.results'],
+              max_num_results: 5,
+              require_result_content: true,
+              source_files: ['vorsorge_draft.md', 'Sozialrecht_Skript_draft.md'],
+              source_label: 'Wissensdatenbank Recht'
+            },
             routing: {
               preferred_model: deepseekRoutingActive ? 'deepseek' : 'gpt-5.1',
               response_mode: expertModeEnabled ? 'expert' : 'genau'
