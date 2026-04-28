@@ -709,16 +709,28 @@
 
   .source-card-snippet {
     margin: 0;
-    font-size: 0.96rem;
+    font-size: 0.92rem;
     color: #263545;
     line-height: 1.5;
-    background: transparent;
-    border: 0;
-    border-radius: 0;
-    padding: 0;
+    background: #f7fbf8;
+    border-left: 3px solid #9fd2b8;
+    border-radius: 0 8px 8px 0;
+    padding: 9px 11px;
     white-space: pre-wrap;
     max-height: 18rem;
     overflow: auto;
+  }
+
+  .source-card-snippet::before {
+    content: "Fundstelle";
+    display: block;
+    margin-bottom: 4px;
+    color: #177245;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 0.72rem;
+    font-weight: 900;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
   }
 
   .source-card-note {
@@ -5491,16 +5503,14 @@
         const focus = app.logic.getSozialrechtContext(`${question || ''} ${topic || ''}`);
         if (!focus) {
           return [
-            'Soll ich das Thema zuerst als kompaktes Anspruchs- und Leistungsschema einordnen?',
-            'Moechtest du dazu drei IHK-Pruefungsfragen mit Loesungsskizze?'
+            'Erklaere das Thema mit einem kurzen Praxisbeispiel.',
+            'Erstelle drei Pruefungsfragen mit Loesung.'
           ];
         }
         const out = [];
-        const sgbLabel = String(focus.module?.sgb || 'SGB');
         const topicLabel = String(focus.topic?.title || topic || 'dem Thema');
-        out.push(`Soll ich ${topicLabel} im Kontext von ${sgbLabel} als Lernzettel strukturieren?`);
-        out.push(`Moechtest du einen typischen Praxisfall fuer Personalfachkaufleute zu ${topicLabel}?`);
-        out.push(...app.logic.sanitizeAssistantFollowups(focus.topic?.follow_up_questions || []));
+        out.push(`Erklaere ${topicLabel} mit einem kurzen Praxisbeispiel.`);
+        out.push(`Erstelle drei Pruefungsfragen mit Loesung zu ${topicLabel}.`);
         return app.logic.sanitizeAssistantFollowups(out);
       },
 
@@ -5702,7 +5712,7 @@
           seen.add(key);
           out.push(short);
         });
-        return out.slice(0, 4);
+        return out.slice(0, 3);
       },
 
       escapeRegExp: (value) => String(value || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&'),
@@ -5940,8 +5950,15 @@
         return tokens.slice(0, 5).join(' ');
       },
 
-      extractSgbBookReference: (text = '') => {
-        const normalized = app.utils.normalizeForKeyword(text);
+      getSgbBookSlug: (key = '') => {
+        const normalized = String(key || '').trim();
+        if (normalized === '9') return 'sgb_9_2018';
+        if (/^(?:1[0-2]|[1-8])$/.test(normalized)) return `sgb_${normalized}`;
+        return '';
+      },
+
+      lookupSgbBookSource: (value = '') => {
+        const normalized = app.utils.normalizeForKeyword(value);
         if (!normalized) return null;
         const romanToArabic = {
           i: '1',
@@ -5967,22 +5984,60 @@
           key: numeric,
           label: entry.label,
           title: entry.title,
-          url: entry.url
+          url: entry.url,
+          slug: app.logic.getSgbBookSlug(numeric)
         };
       },
 
+      extractSgbBookReferences: (text = '') => {
+        const normalized = app.utils.normalizeForKeyword(text);
+        if (!normalized) return [];
+        const refs = [];
+        const seen = new Set();
+        const regex = /\bsgb\s+((?:xii|xi|x|ix|viii|vii|vi|v|iv|iii|ii|i)|(?:1[0-2]|[1-9]))\b/g;
+        let match = null;
+        while ((match = regex.exec(normalized)) !== null) {
+          const source = app.logic.lookupSgbBookSource(`SGB ${match[1]}`);
+          if (!source) continue;
+          if (seen.has(source.key)) continue;
+          seen.add(source.key);
+          refs.push(source);
+        }
+        return refs;
+      },
+
+      extractSgbBookReference: (text = '') => {
+        const refs = app.logic.extractSgbBookReferences(text);
+        return refs[0] || null;
+      },
+
+      buildNormSourceUrl: (para = '', law = '') => {
+        const sgbRef = app.logic.lookupSgbBookSource(law);
+        if (!sgbRef?.slug) return '';
+        const paraMatch = String(para || '').match(/\d+[a-z]?/i);
+        if (!paraMatch?.[0]) return sgbRef.url || '';
+        return `https://www.gesetze-im-internet.de/${sgbRef.slug}/__${String(paraMatch[0]).toLowerCase()}.html`;
+      },
+
       buildCanonicalSozialrechtSources: (question = '', answer = '') => {
-        const sgbRef = app.logic.extractSgbBookReference(question || answer);
-        if (!sgbRef) return [];
-        return app.logic.sanitizeSourceList([
-          {
-            title: `${sgbRef.label} - ${sgbRef.title}`,
-            url: sgbRef.url,
+        const refs = [
+          ...app.logic.extractSgbBookReferences(answer),
+          ...app.logic.extractSgbBookReferences(question)
+        ];
+        const unique = [];
+        const seen = new Set();
+        refs.forEach((ref) => {
+          if (!ref?.key || seen.has(ref.key)) return;
+          seen.add(ref.key);
+          unique.push({
+            title: `${ref.label} - ${ref.title}`,
+            url: ref.url,
             section: 'Gesamtausgabe',
-            excerpt: app.logic.deriveAnswerExcerptForSource(answer, question, `${sgbRef.label} ${sgbRef.title}`),
+            excerpt: app.logic.deriveAnswerExcerptForSource(answer, question, `${ref.label} ${ref.title}`),
             note: 'Gesetzesquelle wurde direkt aus der zitierten SGB-Buchangabe aufgeloest.'
-          }
-        ]);
+          });
+        });
+        return app.logic.sanitizeSourceList(unique);
       },
 
       deriveAnswerExcerptForSource: (answerText = '', question = '', sourceTitle = '') => {
@@ -6059,23 +6114,19 @@
         const suggestions = [];
 
         if (/\b(entgeltfortzahlung|krankengeld|arbeitsunf|au\b)\b/i.test(text)) {
-          suggestions.push('Zeige mir den Unterschied zwischen Entgeltfortzahlung (Arbeitgeber) und Krankengeld (Krankenkasse) in 5 Punkten.');
-          suggestions.push('Pruefe einen kurzen Fall: Wann endet Entgeltfortzahlung und ab wann beginnt Krankengeld?');
+          suggestions.push('Zeige den Unterschied zwischen Entgeltfortzahlung und Krankengeld.');
         }
         if (/\b(friste|frist|woche|wochen|tage|dauer|zeitraum)\b/i.test(text)) {
-          suggestions.push(`Welche Fristen und Nachweise muss ich bei ${topic} sicher beachten?`);
+          suggestions.push(`Zeige die wichtigsten Fristen zu ${topic}.`);
         }
         if (/\b(arbeitgeber|personalabteilung|betrieb|azubi|arbeitnehmer)\b/i.test(text)) {
-          suggestions.push(`Erstelle mir eine Checkliste fuer die Personalpraxis zu ${topic}.`);
+          suggestions.push(`Erstelle eine kurze Praxis-Checkliste zu ${topic}.`);
         }
-        if (/\b(urteil|beschluss|aktenzeichen|rechtsprechung)\b/i.test(text)) {
-          suggestions.push(`Nenne mir ein relevantes Urteil zu ${topic} mit kurzer Einordnung.`);
-        }
-        if (sozialrechtDomain) {
-          suggestions.push(`Erstelle drei IHK-typische Pruefungsfragen mit Loesung zu ${topic}.`);
-        } else {
-          suggestions.push(`Gib mir ein kurzes Praxisbeispiel zu ${topic}.`);
-        }
+        suggestions.push(
+          sozialrechtDomain
+            ? `Erstelle drei Pruefungsfragen zu ${topic}.`
+            : `Gib mir ein kurzes Praxisbeispiel zu ${topic}.`
+        );
         return app.logic.sanitizeAssistantFollowups(suggestions);
       },
 
@@ -6100,13 +6151,16 @@
             const key = title.toLowerCase();
             if (seen.has(key)) continue;
             seen.add(key);
+            const normUrl = law ? app.logic.buildNormSourceUrl(para, law) : '';
             refs.push({
               title: `Normbezug: ${title}`,
-              url: '',
+              url: normUrl,
               excerpt: app.utils.truncate(line, 280),
               section: 'Rechtsbezug',
               page: '',
-              note: 'Automatisch aus der Antwort extrahiert (kein direkter Dokument-Chunk).',
+              note: normUrl
+                ? 'Automatisch aus der Antwort extrahiert und auf die passende Gesetzesnorm verlinkt.'
+                : 'Automatisch aus der Antwort extrahiert (kein direkter Dokument-Chunk).',
               confidence: 0.35
             });
             if (refs.length >= 6) break;
@@ -7111,10 +7165,10 @@
           sources = app.logic.sanitizeSourceList(recentGroundedContext.sources || []).slice(0, 3);
         }
 
-        if (!sources.length && !app.logic.isOperationalAnswer(answer) && sozialrechtDomain) {
+        if (sozialrechtDomain && !app.logic.isOperationalAnswer(answer)) {
           const canonicalSources = app.logic.buildCanonicalSozialrechtSources(question, answer);
           if (canonicalSources.length) {
-            sources = canonicalSources.slice(0, 3);
+            sources = app.logic.sanitizeSourceList([...(sources || []), ...canonicalSources]).slice(0, 6);
           }
         }
 
@@ -8898,7 +8952,25 @@
           } else if (item && typeof item === 'object') {
             const title = String(item.title || item.name || item.label || item.url || 'Quelle').trim();
             const url = String(item.url || item.link || '').trim();
-            const excerpt = normalizeAnswerTextForRender(String(item.excerpt || item.quote || item.snippet || item.text || item.chunk || '').trim());
+            const excerpt = normalizeAnswerTextForRender(String(
+              item.excerpt ||
+              item.fundstelle ||
+              item.quote ||
+              item.snippet ||
+              item.preview ||
+              item.summary ||
+              item.text ||
+              item.content ||
+              item.chunk ||
+              item.chunk_text ||
+              item.chunkText ||
+              item.document_text ||
+              item.documentText ||
+              item.page_content ||
+              item.pageContent ||
+              item.body ||
+              ''
+            ).trim());
             const section = String(item.section || item.heading || item.chapter || '').trim();
             const page = String(item.page || item.pageNumber || item.seite || '').trim();
             const note = normalizeAnswerTextForRender(String(item.note || item.reason || item.description || '').trim());
@@ -9012,6 +9084,12 @@
           section.appendChild(node);
         });
 
+        let listStart = 1;
+        stack.querySelectorAll('.sozialrecht-section > ol').forEach((list) => {
+          list.setAttribute('start', String(listStart));
+          listStart += list.querySelectorAll(':scope > li').length;
+        });
+
         const topline = document.createElement('div');
         topline.className = 'sozialrecht-topline';
         const storageState = meta?.storageUsed
@@ -9096,9 +9174,13 @@
               ? `<a href="${encodeURI(sourceHref)}" target="_blank" rel="noopener">${app.utils.safeText(sourceLabel)}</a>`
               : `<span>${app.utils.safeText(sourceLabel)}</span>`;
             const rawExcerpt = normalizeAnswerTextForRender(s.excerpt || '');
-            const effectiveExcerpt = rawExcerpt ||
-              app.logic.deriveAnswerExcerptForSourceTitle(renderedAnswerText, s.title || '') ||
-              app.logic.deriveAnswerExcerptForSource(renderedAnswerText, bubbleMeta.question || '', s.title || '');
+            const generatedLegalExcerpt = /Gesetzesquelle wurde direkt|Automatisch aus der Antwort extrahiert/i.test(String(s.note || ''))
+              ? (
+                app.logic.deriveAnswerExcerptForSourceTitle(renderedAnswerText, s.title || '') ||
+                app.logic.deriveAnswerExcerptForSource(renderedAnswerText, bubbleMeta.question || '', s.title || '')
+              )
+              : '';
+            const effectiveExcerpt = rawExcerpt || generatedLegalExcerpt;
             const highlightedSnippet = effectiveExcerpt
               ? (
                 sozialrechtSourceCards
@@ -9108,7 +9190,7 @@
               : '';
             const snippetHtml = effectiveExcerpt
               ? `<p class="source-card-snippet">${highlightedSnippet}</p>`
-              : '<p class="source-card-snippet">Kein markierter Abschnitt vorhanden.</p>';
+              : '';
             const noteHtml = s.note
               ? `<div class="source-card-note">${app.utils.safeText(s.note)}</div>`
               : '';
@@ -10826,6 +10908,9 @@
       activeMicRecorder = null;
       activeMicChunks = [];
     });
+
+    window.LINDA_APP = app;
+    window.dispatchEvent(new CustomEvent('linda:app-ready', { detail: { app } }));
   };
 
   const params = new URLSearchParams(window.location.search);
@@ -10842,5 +10927,6 @@
   }
 })();
 </script>
+<script src="./efz_check.js"></script>
 </body>
 </html>
