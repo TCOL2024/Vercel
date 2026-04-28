@@ -664,19 +664,26 @@
   }
 
   .source-card {
-    border: 0;
-    border-radius: 0;
-    background: transparent;
-    padding: 0 0 16px;
+    border: 1px solid #d9eadf;
+    border-radius: 9px;
+    background: #ffffff;
+    padding: 10px;
+    box-shadow: 0 6px 18px rgba(32, 91, 57, 0.06);
   }
 
   .source-card-head {
     display: flex;
-    align-items: baseline;
+    align-items: flex-start;
     justify-content: space-between;
     gap: 12px;
     margin-bottom: 8px;
     flex-wrap: wrap;
+  }
+
+  .source-card-title {
+    min-width: 0;
+    display: grid;
+    gap: 4px;
   }
 
   .source-card-head a {
@@ -684,7 +691,7 @@
     font-weight: 900;
     text-decoration: none;
     font-family: 'Space Grotesk', sans-serif;
-    font-size: 1.03rem;
+    font-size: 0.98rem;
     line-height: 1.35;
   }
 
@@ -692,7 +699,7 @@
     color: #1a8f58;
     font-weight: 900;
     font-family: 'Space Grotesk', sans-serif;
-    font-size: 1.03rem;
+    font-size: 0.98rem;
     line-height: 1.35;
   }
 
@@ -708,17 +715,32 @@
     font-weight: 700;
   }
 
+  .source-card-type {
+    align-self: flex-start;
+    border-radius: 999px;
+    border: 1px solid #cfe4d7;
+    background: #f2faf4;
+    color: #176344;
+    padding: 4px 8px;
+    font-size: 0.7rem;
+    font-weight: 900;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
   .source-card-snippet {
-    margin: 0;
-    font-size: 0.92rem;
+    margin: 8px 0 0;
+    font-size: 0.88rem;
     color: #263545;
-    line-height: 1.5;
-    background: #f7fbf8;
+    line-height: 1.48;
+    background: #f8fbf9;
+    border: 1px solid #dcece2;
     border-left: 3px solid #9fd2b8;
-    border-radius: 0 8px 8px 0;
-    padding: 9px 11px;
+    border-radius: 8px;
+    padding: 8px 10px;
     white-space: pre-wrap;
-    max-height: 18rem;
+    max-height: 8.8rem;
     overflow: auto;
   }
 
@@ -738,6 +760,17 @@
     margin-top: 8px;
     font-size: 0.8rem;
     color: #6a7a8a;
+  }
+
+  .source-card-context {
+    margin-top: 8px;
+    border-radius: 8px;
+    background: #f4f8fc;
+    border: 1px solid #dbe7f4;
+    color: #526b82;
+    padding: 7px 9px;
+    font-size: 0.78rem;
+    line-height: 1.35;
   }
 
   .source-mark {
@@ -781,10 +814,22 @@
   }
 
   .source-head {
-    margin: 0 0 12px;
+    margin: 0 0 8px;
     font-family: 'Space Grotesk', sans-serif;
-    font-size: 1.02rem;
+    font-size: 0.98rem;
     color: #1a8f58;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .source-count {
+    color: #6a7f91;
+    font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-size: 0.72rem;
+    font-weight: 800;
   }
 
   .followup-btn,
@@ -5711,22 +5756,22 @@
         return true;
       },
 
-      setGroundedMode: (enabled, opts = {}) => {
-        const prev = Boolean(app.state.settings.guardrails?.groundedMode);
-        const next = Boolean(enabled);
-        app.state.settings.guardrails.groundedMode = next;
-        if (!next) {
-          app.state.settings.guardrails.strictUnknown = false;
-        } else if (!app.state.settings.guardrails.strictUnknown) {
-          app.state.settings.guardrails.strictUnknown = true;
-        }
-        app.ui.syncGroundedModeControls();
-        app.ui.updateDomainUI();
-        app.utils.save();
-        if (next && !prev && opts.showOverlay !== false) {
-          app.ui.openModeInfo('grounded');
-        }
-      },
+	      setGroundedMode: (enabled, opts = {}) => {
+	        const prev = Boolean(app.state.settings.guardrails?.groundedMode);
+	        const next = Boolean(enabled);
+	        app.state.settings.guardrails.groundedMode = next;
+	        if (!next) {
+	          app.state.settings.guardrails.strictUnknown = false;
+	        } else if (!app.state.settings.guardrails.strictUnknown) {
+	          app.state.settings.guardrails.strictUnknown = true;
+	        }
+	        app.ui.syncGroundedModeControls();
+	        app.ui.updateDomainUI();
+	        if (opts.save !== false) app.utils.save();
+	        if (next && !prev && opts.showOverlay !== false) {
+	          app.ui.openModeInfo('grounded');
+	        }
+	      },
 
       sanitizePromptingConfig: (cfg) => {
         if (!cfg || typeof cfg !== 'object') return structuredClone(DEFAULT_PROMPTING_JSON);
@@ -9019,6 +9064,116 @@
         return String(parsed?.result || parsed?.text || '').trim();
       },
 
+      sourceCompareText: (text = '') => {
+        return String(text || '')
+          .toLowerCase()
+          .replace(/<[^>]*>/g, ' ')
+          .replace(/[^\p{L}\p{N}]+/gu, ' ')
+          .replace(/\s+/g, ' ')
+          .trim();
+      },
+
+      sourceExcerptEchoesAnswer: (excerpt = '', answerText = '', source = {}) => {
+        const rawExcerpt = normalizeAnswerTextForRender(String(excerpt || '').trim());
+        if (!rawExcerpt) return false;
+
+        const note = String(source?.note || '').trim();
+        if (/automatisch aus der antwort|direkt aus der zitierten|gesetzesquelle wurde direkt|kein direkter dokument-chunk/i.test(note)) {
+          return true;
+        }
+
+        const excerptText = app.logic.sourceCompareText(rawExcerpt);
+        const answer = app.logic.sourceCompareText(answerText);
+        if (!excerptText || !answer || excerptText.length < 80) return false;
+
+        const probe = excerptText.slice(0, Math.min(180, excerptText.length));
+        if (probe.length >= 80 && answer.includes(probe)) return true;
+
+        const answerProbe = answer.slice(0, Math.min(220, answer.length));
+        if (answerProbe.length >= 110 && excerptText.includes(answerProbe)) return true;
+
+        return false;
+      },
+
+      cleanSourceNote: (note = '', suppressedEcho = false) => {
+        if (suppressedEcho) return '';
+        const raw = normalizeAnswerTextForRender(String(note || '').trim());
+        if (!raw) return '';
+        if (/automatisch aus der antwort|direkt aus der zitierten|gesetzesquelle wurde direkt/i.test(raw)) return '';
+        return app.utils.truncate(raw, 180);
+      },
+
+      buildSourceDisplayTitle: (source = {}, directJump = null) => {
+        const raw = String(source?.title || directJump?.book || source?.url || 'Quelle')
+          .replace(/\s+/g, ' ')
+          .replace(/^Normbezug:\s*/i, '')
+          .trim();
+        if (/^https?:\/\//i.test(raw)) {
+          try {
+            const u = new URL(raw);
+            return u.hostname.replace(/^www\./i, '') || 'Webquelle';
+          } catch (_) {
+            return 'Webquelle';
+          }
+        }
+        return app.utils.truncate(raw || 'Quelle', 88);
+      },
+
+      sourceDisplayKind: (source = {}, directJump = null, hasExcerpt = false) => {
+        const title = String(source?.title || '').trim();
+        const url = String(directJump?.url || source?.url || '').trim();
+        if (directJump?.url || /^Normbezug:/i.test(title) || /(^|\s)§\s*\d+/i.test(title)) return 'Norm';
+        if (hasExcerpt) return 'Fundstelle';
+        if (/\.pdf(?:$|[?#])/i.test(url)) return 'PDF';
+        if (/^https?:\/\//i.test(url)) return 'Link';
+        return 'Quelle';
+      },
+
+      prepareSourcesForDisplay: (items = [], answerText = '') => {
+        const prepared = [];
+        const seen = new Map();
+        app.logic.sanitizeSourceList(items).forEach((source) => {
+          const rawExcerpt = normalizeAnswerTextForRender(String(source.excerpt || '').trim());
+          const suppressedEcho = app.logic.sourceExcerptEchoesAnswer(rawExcerpt, answerText, source);
+          const displayExcerpt = suppressedEcho ? '' : app.utils.truncate(rawExcerpt, 560);
+          const urlKey = String(source.url || '').trim().toLowerCase();
+          const locationKey = [
+            urlKey,
+            app.logic.sourceCompareText(source.section || ''),
+            String(source.page || '').trim().toLowerCase()
+          ].filter(Boolean).join('|');
+          const key = (
+            locationKey ||
+            urlKey ||
+            app.logic.sourceCompareText(source.title || '') ||
+            app.logic.sourceCompareText(displayExcerpt || rawExcerpt).slice(0, 90)
+          );
+          if (!key) return;
+
+          const next = {
+            ...source,
+            excerpt: displayExcerpt,
+            note: app.logic.cleanSourceNote(source.note || '', suppressedEcho),
+            _rawExcerpt: rawExcerpt,
+            _suppressedEcho: suppressedEcho
+          };
+
+          const existing = seen.get(key);
+          if (existing) {
+            if (!existing.section && next.section) existing.section = next.section;
+            if (!existing.page && next.page) existing.page = next.page;
+            if (!existing.excerpt && next.excerpt) existing.excerpt = next.excerpt;
+            if (!existing.note && next.note) existing.note = next.note;
+            existing._suppressedEcho = Boolean(existing._suppressedEcho || next._suppressedEcho);
+            return;
+          }
+
+          seen.set(key, next);
+          prepared.push(next);
+        });
+        return prepared.slice(0, 6);
+      },
+
       sanitizeSourceList: (items) => {
         const unique = [];
         const seen = new Set();
@@ -9227,17 +9382,21 @@
           md.appendChild(evidencePanel);
         }
 
-        const showSourcePanel = finalSources.length && (app.state.settings.assistant?.showEvidence || app.logic.isSozialrechtMeta(bubbleMeta));
+        const displaySources = app.logic.prepareSourcesForDisplay(finalSources, renderedAnswerText);
+        const showSourcePanel = displaySources.length && (app.state.settings.assistant?.showEvidence || app.logic.isSozialrechtMeta(bubbleMeta));
         if (showSourcePanel) {
           const panel = document.createElement('section');
           panel.className = 'source-panel';
           const title = document.createElement('h4');
           title.className = 'source-head';
-          title.textContent = 'Quellen & Abschnitte';
+          title.innerHTML = `
+            <span>Quellen</span>
+            <span class="source-count">${displaySources.length} Nachweis${displaySources.length === 1 ? '' : 'e'}</span>
+          `;
           const ul = document.createElement('ul');
           ul.className = 'source-card-list';
           const sozialrechtSourceCards = app.logic.isSozialrechtMeta(bubbleMeta);
-          finalSources.forEach((s) => {
+          displaySources.forEach((s) => {
             const li = document.createElement('li');
             const metaBits = [];
             if (s.section) metaBits.push(s.section);
@@ -9247,18 +9406,14 @@
               ? sgbLinkResolver.resolveSource(s, { question: bubbleMeta.question || '', answerText: renderedAnswerText })
               : null;
             const sourceHref = directJump?.url || s.url;
-            const sourceLabel = s.title || directJump?.book || 'Quelle';
+            const sourceLabel = app.logic.buildSourceDisplayTitle(s, directJump);
             const anchorHtml = sourceHref
               ? `<a href="${encodeURI(sourceHref)}" target="_blank" rel="noopener">${app.utils.safeText(sourceLabel)}</a>`
               : `<span>${app.utils.safeText(sourceLabel)}</span>`;
             const rawExcerpt = normalizeAnswerTextForRender(s.excerpt || '');
-            const generatedLegalExcerpt = /Gesetzesquelle wurde direkt|Automatisch aus der Antwort extrahiert/i.test(String(s.note || ''))
-              ? (
-                app.logic.deriveAnswerExcerptForSourceTitle(renderedAnswerText, s.title || '') ||
-                app.logic.deriveAnswerExcerptForSource(renderedAnswerText, bubbleMeta.question || '', s.title || '')
-              )
-              : '';
-            const effectiveExcerpt = rawExcerpt || generatedLegalExcerpt;
+            const effectiveExcerpt = rawExcerpt;
+            const sourceKind = app.logic.sourceDisplayKind(s, directJump, Boolean(effectiveExcerpt));
+            const typeHtml = `<span class="source-card-type">${app.utils.safeText(sourceKind)}</span>`;
             const highlightedSnippet = effectiveExcerpt
               ? (
                 sozialrechtSourceCards
@@ -9271,6 +9426,9 @@
               : '';
             const noteHtml = s.note
               ? `<div class="source-card-note">${app.utils.safeText(s.note)}</div>`
+              : '';
+            const contextHtml = s._suppressedEcho
+              ? '<div class="source-card-context">Der Textauszug wurde bereits in der Antwort verarbeitet und wird hier nicht erneut wiederholt.</div>'
               : '';
             const directJumpHtml = directJump?.url
               ? `
@@ -9305,11 +9463,15 @@
             li.innerHTML = `
               <div class="source-card">
                 <div class="source-card-head">
-                  ${anchorHtml}
-                  ${metaBits.length ? `<span class="source-card-meta">${app.utils.safeText(metaBits.join(' • '))}</span>` : ''}
+                  <div class="source-card-title">
+                    ${anchorHtml}
+                    ${metaBits.length ? `<span class="source-card-meta">${app.utils.safeText(metaBits.join(' • '))}</span>` : ''}
+                  </div>
+                  ${typeHtml}
                 </div>
                 ${snippetHtml}
                 ${noteHtml}
+                ${contextHtml}
                 ${sourceToolsHtml ? `<div class="source-card-tools">${sourceToolsHtml}</div>` : ''}
               </div>
             `;
@@ -10493,6 +10655,7 @@
       app.state.settings.fastMode.enabled = wantsOn;
       if (wantsOn) {
         app.state.settings.compareMode.enabled = true;
+        app.logic.setGroundedMode(false, { showOverlay: false, save: false });
         app.ui.syncCompareModeControls();
       }
       app.utils.save();
