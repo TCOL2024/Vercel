@@ -1317,7 +1317,9 @@
   }
 
   #snippet-popup.active {
-    display: block;
+    display: none;
+    visibility: hidden;
+    pointer-events: none;
   }
 
   .snippet-item {
@@ -3186,6 +3188,9 @@
     border-color: #bfd5cc;
     background: #ffffff;
     box-shadow: var(--shadow);
+    display: none !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
   }
 
   .snippet-item:hover {
@@ -5318,25 +5323,9 @@
 
       showSnippetPopup: (items) => {
         const pop = document.getElementById('snippet-popup');
-        if (!items.length) {
-          pop.classList.remove('active');
-          pop.innerHTML = '';
-          return;
-        }
-        pop.innerHTML = items
-          .map((item) => {
-            const entry = (typeof item === 'string')
-              ? { label: item, value: item }
-              : { label: item.label || item.value || '', value: item.value || '', kind: item.kind || '' };
-            return `
-              <div class="snippet-item" data-snippet="${encodeURIComponent(entry.value)}">
-                <div>${app.utils.safeText(entry.label)}</div>
-                ${entry.kind ? `<div class="mini" style="margin-top:3px;">${app.utils.safeText(entry.kind)}</div>` : ''}
-              </div>
-            `;
-          })
-          .join('');
-        pop.classList.add('active');
+        if (!pop) return;
+        pop.classList.remove('active');
+        pop.innerHTML = '';
       },
 
       createBubble: (role, content, sources = [], meta = {}) => {
@@ -11109,19 +11098,7 @@
       this.style.height = 'auto';
       this.style.height = Math.min(this.scrollHeight, 180) + 'px';
 
-      const val = this.value;
-      if (val.startsWith('/')) {
-        const q = val.slice(1).toLowerCase();
-        const matches = (app.state.settings.snippets || [])
-          .filter((s) => s.toLowerCase().includes(q))
-          .slice(0, 12)
-          .map((s) => ({ label: s, value: s, kind: 'Snippet' }));
-        const fvEntry = { label: 'Familienversicherung prüfen', value: 'fv-check', kind: 'Modul' };
-        const allMatches = [fvEntry, ...matches].filter((item, idx, arr) => arr.findIndex((x) => x.value === item.value) === idx);
-        app.ui.showSnippetPopup(allMatches);
-      } else {
-        document.getElementById('snippet-popup').classList.remove('active');
-      }
+      document.getElementById('snippet-popup').classList.remove('active');
     });
 
     app.ui.input.addEventListener('keydown', (e) => {
