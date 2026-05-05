@@ -3409,6 +3409,143 @@
     box-shadow: var(--lina-shadow) !important;
   }
 
+  /* 2026-05-05: final mobile header/action layout guard.
+     This intentionally lives late in the CSS to override older mobile blocks. */
+  @media (max-width: 920px) {
+    header {
+      display: grid !important;
+      grid-template-columns: minmax(0, 1fr) auto;
+      grid-template-areas:
+        "logo badge"
+        "reader reader"
+        "actions actions";
+      align-items: center;
+      gap: 8px 10px;
+      max-width: 100%;
+      overflow: visible;
+    }
+
+    .logo-wrap {
+      grid-area: logo;
+      min-width: 0;
+      max-width: 100%;
+    }
+
+    #domain-badge {
+      grid-area: badge;
+      justify-self: end;
+      max-width: 44vw;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .mobile-reader-toggle {
+      grid-area: reader;
+      order: initial !important;
+      width: 100%;
+      max-width: 100%;
+      overflow-x: auto;
+      justify-content: flex-start;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .header-actions {
+      grid-area: actions;
+      order: initial !important;
+      display: grid !important;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      width: 100%;
+      max-width: none !important;
+      min-width: 0;
+      overflow: visible !important;
+      gap: 8px;
+      padding: 0;
+    }
+
+    .header-actions .btn-icon {
+      width: 100% !important;
+      max-width: 100%;
+      min-width: 0 !important;
+      min-height: 42px;
+      height: auto;
+      padding: 8px 10px !important;
+      border-radius: 13px;
+      font-size: clamp(0.78rem, 3.2vw, 0.94rem) !important;
+      line-height: 1.12;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .header-actions .btn-icon:last-child {
+      grid-column: 1 / -1;
+    }
+
+    .source-toolbar,
+    .smart-controls-bar {
+      width: 100%;
+      max-width: 100vw;
+      min-width: 0;
+      overflow-x: auto;
+      overflow-y: hidden;
+      overscroll-behavior-x: contain;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+    }
+
+    .source-toolbar::-webkit-scrollbar,
+    .smart-controls-bar::-webkit-scrollbar,
+    .mobile-reader-toggle::-webkit-scrollbar {
+      display: none;
+    }
+
+    .smart-controls-bar {
+      display: flex !important;
+      flex-wrap: nowrap !important;
+      gap: 10px;
+      padding: 9px 10px;
+    }
+
+    .smart-control {
+      flex: 0 0 clamp(156px, 44vw, 190px) !important;
+      min-width: 156px !important;
+      max-width: 190px;
+      align-content: flex-start;
+    }
+  }
+
+  @media (min-width: 680px) and (max-width: 920px) {
+    .header-actions {
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+    }
+
+    .header-actions .btn-icon:last-child {
+      grid-column: auto;
+    }
+  }
+
+  @media (max-width: 420px) {
+    header {
+      gap: 7px;
+      padding: 9px 9px 7px;
+    }
+
+    .header-actions {
+      gap: 7px;
+    }
+
+    .header-actions .btn-icon {
+      min-height: 40px;
+      padding-inline: 7px !important;
+      letter-spacing: -0.01em;
+    }
+
+    .logo {
+      font-size: 1.12rem;
+    }
+  }
+
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after {
       animation: none !important;
@@ -3440,7 +3577,8 @@
     <div class="header-actions">
       <button class="btn-icon btn-primary" title="Neuer Chat" onclick="app.logic.resetHistoryAndNewChat()">Neu</button>
       <button class="btn-icon" title="Verlauf" onclick="app.ui.openModal('modal-sessions')">Verlauf</button>
-      <button class="btn-icon" title="Gespeicherte Lernkarten" onclick="app.logic.openSavedCardsLibrary()">Lernkarten</button><button class="btn-icon" title="Kollektionen" onclick="app.logic.openCollectionsPage()">Kollektionen</button>
+      <button class="btn-icon" title="Gespeicherte Lernkarten" onclick="app.logic.openSavedCardsLibrary()">Lernkarten</button>
+      <button class="btn-icon" title="Kollektionen" onclick="app.logic.openCollectionsPage()">Kollektionen</button>
       <button class="btn-icon" title="Einstellungen" onclick="app.ui.openModal('modal-settings')">Einstellungen</button>
     </div>
   </header>
@@ -3776,10 +3914,7 @@
       { pattern: "der\\s+auszu$", replacement: "der Auszubildende " },
       { pattern: "die\\s+auszu$", replacement: "die Auszubildende " }
     ],
-    quickSuggestions: [
-      "Formuliere die Antwort bitte in einfacher Sprache.",
-      "Nenne bitte ein kurzes Praxisbeispiel zur Situation."
-    ],
+    quickSuggestions: [],
     modeCards: [
       { key: "AEVO", label: "AEVO", hint: "Ausbilder-Themen" },
       { key: "VWL", label: "VWL/BWL", hint: "Wirtschaftsbezug" },
@@ -3806,7 +3941,7 @@
 
   const DEFAULT_ASSISTANT_PREFS = {
     showEvidence: true,
-    showFollowups: true,
+    showFollowups: false,
     showLearningPath: false,
       learningGoal: '',
       feedbackIncludeTranscript: false
@@ -3946,6 +4081,38 @@
       label: 'SGB XII',
       title: 'Sozialhilfe',
       url: 'https://www.gesetze-im-internet.de/sgb_12/'
+    }
+  };
+  const OTHER_LAW_SOURCE_MAP = {
+    SGG: {
+      label: 'SGG',
+      title: 'Sozialgerichtsgesetz',
+      slug: 'sgg',
+      url: 'https://www.gesetze-im-internet.de/sgg/'
+    },
+    VVG: {
+      label: 'VVG',
+      title: 'Versicherungsvertragsgesetz',
+      slug: 'vvg_2008',
+      url: 'https://www.gesetze-im-internet.de/vvg_2008/'
+    },
+    EFZG: {
+      label: 'EFZG',
+      title: 'Entgeltfortzahlungsgesetz',
+      slug: 'entgfg',
+      url: 'https://www.gesetze-im-internet.de/entgfg/'
+    },
+    AAG: {
+      label: 'AAG',
+      title: 'Aufwendungsausgleichsgesetz',
+      slug: 'aag',
+      url: 'https://www.gesetze-im-internet.de/aag/'
+    },
+    BGB: {
+      label: 'BGB',
+      title: 'Buergerliches Gesetzbuch',
+      slug: 'bgb',
+      url: 'https://www.gesetze-im-internet.de/bgb/'
     }
   };
 
@@ -4397,6 +4564,7 @@
         if (SOZIALRECHT_ONLY_MODE) {
           app.state.settings.domain = SOZIALRECHT_DOMAIN_KEY;
           app.state.settings.assistant.showLearningPath = false;
+          app.state.settings.assistant.showFollowups = false;
           app.state.settings.privacy.ephemeral = false;
         }
         app.state.settings.prompting.enabled = false;
@@ -4940,7 +5108,8 @@
         document.getElementById('inp-clarification-mode').checked = Boolean(settings.guardrails && settings.guardrails.clarificationMode);
         document.getElementById('inp-pii-shield').checked = Boolean(settings.guardrails && settings.guardrails.piiShield);
         document.getElementById('inp-show-evidence').checked = Boolean(settings.assistant && settings.assistant.showEvidence);
-        document.getElementById('inp-show-followups').checked = Boolean(settings.assistant && settings.assistant.showFollowups);
+        document.getElementById('inp-show-followups').checked = false;
+        document.getElementById('inp-show-followups').disabled = true;
         document.getElementById('inp-show-learning-path').checked = Boolean(settings.assistant && settings.assistant.showLearningPath);
         document.getElementById('inp-privacy-ephemeral').checked = Boolean(settings.privacy && settings.privacy.ephemeral);
         document.getElementById('inp-feedback-transcript').checked = Boolean(settings.assistant && settings.assistant.feedbackIncludeTranscript);
@@ -5750,17 +5919,17 @@
 
       buildSozialrechtFollowups: (topic, question) => {
         if (String(app.state.settings.domain || '').toUpperCase() !== 'SOZIALRECHT') return [];
-        const focus = app.logic.getSozialrechtContext(`${question || ''} ${topic || ''}`);
-        if (!focus) {
-          return [
-            'Erklaere das Thema mit einem kurzen Praxisbeispiel.',
-            'Erstelle drei Pruefungsfragen mit Loesung.'
-          ];
-        }
+        const raw = `${question || ''} ${topic || ''}`;
+        const text = app.utils.normalizeForKeyword(raw);
         const out = [];
-        const topicLabel = String(focus.topic?.title || topic || 'dem Thema');
-        out.push(`Erklaere ${topicLabel} mit einem kurzen Praxisbeispiel.`);
-        out.push(`Erstelle drei Pruefungsfragen mit Loesung zu ${topicLabel}.`);
+
+        if (/\bfamilienversicherung\b/.test(text) || /\bfamilienversichert\b/.test(text) || /§\s*10\s*sgb\s*v/i.test(raw)) {
+          out.push('Pruefe die Familienversicherung');
+        }
+        if (/\b(entgeltfortzahlung|lohnfortzahlung|efzg|fortsetzungserkrankung|vorerkrankungen?|krankheitstage|au zeiten|arbeitsunfaehigkeit)\b/.test(text)) {
+          out.push('Entgeltfortzahlung pruefen');
+        }
+
         return app.logic.sanitizeAssistantFollowups(out);
       },
 
@@ -5866,6 +6035,172 @@
 
       isSozialrechtDomain: (domain = app.state.settings?.domain) => {
         return String(domain || '').trim().toUpperCase() === SOZIALRECHT_DOMAIN_KEY;
+      },
+
+      analyzeSozialrechtQuestion: (question = '', answer = '') => {
+        const raw = `${question || ''}\n${answer || ''}`;
+        const normalized = app.utils.normalizeForKeyword(raw);
+        const q = app.utils.normalizeForKeyword(question || '');
+        const has = (rx) => rx.test(normalized);
+        const asked = (rx) => rx.test(q || normalized);
+
+        const profile = {
+          mode: 'general',
+          modeLabel: 'Allgemeine Wissensfrage',
+          allowClarifyingQuestions: false,
+          criticalReview: false,
+          requiresSchema: true,
+          requiresSampleText: asked(/\b(formulier(?:e|en)|erstelle|muster|mustertext|korrigierte version|abschliessend|abschließend|textvorschlag|schreiben)\b/),
+          authorityLetter: asked(/\b(bescheid|schreiben|ablehnung|entscheidung|anhoerung|anhörung|pflegekasse|krankenkasse|rentenversicherung|jobcenter|agentur fuer arbeit|agentur für arbeit|sozialamt|behorde|behörde|versicherungstraeger|versicherungsträger)\b/),
+          widerspruch: asked(/\b(widerspruch|rechtsbehelf|rechtsbehelfsbelehrung|rechtsmittel|sgg\s*84|§\s*84\s*sgg|e-mail widerspruch|email widerspruch)\b/),
+          coaching: asked(/\b(coaching|pruefmodus|prüfmodus|frage mich|lernmodus|pruefungsmodus|prüfungsmodus|pruefungsfragen|prüfungsfragen|quiz|uebung|übung)\b/),
+          familyInsurance: has(/\b(familienversicherung|familienversichert)\b/) || /§\s*10\s*sgb\s*v/i.test(raw),
+          pkvChild: has(/\b(kindernachversicherung|neugeboren(?:es)? kind|pkv kind|private krankenversicherung kind|§\s*198\s*vvg)\b/),
+          passiveBenefits: has(/\b(passive leistung|passive leistungen|alg i|arbeitslosengeld i|kurzarbeitergeld|insolvenzgeld|uebergangsgeld|übergangsgeld)\b/) && has(/\b(arbeitslosenversicherung|sgb iii|agentur fuer arbeit|agentur für arbeit|alg i|kurzarbeitergeld|insolvenzgeld|uebergangsgeld|übergangsgeld)\b/),
+          vaccinations: has(/\b(impfung|impfungen|schutzimpfung|schutzimpfungen|reiseimpfung|stiko|g-?ba|schutzimpfungsrichtlinie|schutzimpfungs-richtlinie|§\s*20i\s*sgb\s*v)\b/),
+          earningCapacity: has(/\b(erwerbsminderung|erwerbsunfaehigkeit|erwerbsunfähigkeit|arbeitsmarktrente|reha vor rente|§\s*43\s*sgb\s*vi)\b/),
+          singleCase: asked(/\b(pruef(?:e|en|ung)|prüf(?:e|en|ung)|beurteile|bewerte|einschaetzung|einschätzung|rechtslage|fall|anspruch|darf|muss|kann .* verlangen|ist .* rechtmaessig|ist .* rechtmäßig)\b/)
+        };
+
+        if (profile.coaching) {
+          profile.mode = 'coaching';
+          profile.modeLabel = 'Coaching-/Pruefmodus';
+          profile.allowClarifyingQuestions = true;
+          profile.criticalReview = true;
+        } else if (profile.authorityLetter || profile.widerspruch || profile.singleCase || profile.requiresSampleText) {
+          profile.mode = 'case_review';
+          profile.modeLabel = profile.authorityLetter ? 'Behoerden-/Kassen-Schreiben kritisch pruefen' : 'Einzelfallpruefung';
+          profile.criticalReview = true;
+        }
+
+        if (/^(was ist|was bedeutet|erklaere|erkläre|definition|ueberblick|überblick|systematik|unterschied)\b/.test(q)) {
+          profile.mode = profile.mode === 'general' ? 'general' : profile.mode;
+          profile.allowClarifyingQuestions = profile.mode !== 'general';
+        }
+
+        profile.flags = [
+          profile.familyInsurance ? 'familienversicherung' : '',
+          profile.pkvChild ? 'pkv_kindernachversicherung' : '',
+          profile.passiveBenefits ? 'arbeitslosenversicherung_passive_leistungen' : '',
+          profile.vaccinations ? 'gkv_impfungen' : '',
+          profile.earningCapacity ? 'erwerbsminderung_sgb_vi' : '',
+          profile.widerspruch ? 'widerspruch_sgg' : '',
+          profile.authorityLetter ? 'behoerden_kassen_schreiben' : '',
+          profile.requiresSampleText ? 'mustertext_pflicht' : ''
+        ].filter(Boolean);
+
+        return profile;
+      },
+
+      buildSozialrechtPromptDirective: (profile = {}) => {
+        const flags = Array.isArray(profile.flags) ? profile.flags : [];
+        const lines = [
+          'LINDA_SOZIALRECHT_QUALITAETSSTEUERUNG:',
+          'Antworte im Fachmodus Sozialrecht auf Pruefungs- und Dozenten-Niveau. Pruefe nicht nur die Norm, sondern auch Vollstaendigkeit, Fristen, Ausnahmen, Rechtsfolgen, Buergerrechte und typische Pruefungsfallen. Bei Behoerden- oder Kassen-Schreiben bewerte zusaetzlich, ob die Aussage zu pauschal, zu streng oder unvollstaendig ist. Wenn eine Aufgabe eine Musterformulierung verlangt, liefere diese immer.',
+          `Antwortmodus: ${profile.mode || 'general'} (${profile.modeLabel || 'Allgemeine Wissensfrage'}).`
+        ];
+
+        if (profile.mode === 'general') {
+          lines.push('Bei allgemeinen Wissensfragen: vollstaendige Systematik liefern, keine unnoetigen Rueckfragen stellen.');
+        }
+        if (profile.mode === 'case_review') {
+          lines.push('Bei Einzelfallpruefungen oder Schreiben: kritisch subsumieren, Gegenargumente, Rechtsfolgen, Fristen und Buergerrechte sichtbar machen.');
+        }
+        if (profile.mode === 'coaching') {
+          lines.push('Im Coaching-/Pruefmodus sind kurze Rueckfragen erlaubt; am Ende dennoch ein Ergebnis mit Pruefschema ausgeben.');
+        }
+        lines.push('Pflichtsektion am Ende: "## Qualitätscheck / Prüfungsfeinschliff" mit Begriff, Voraussetzungen, Pruefungsfalle, Pauschalitaet, Frist/Ausnahme/Rechtsfolge und Qualitaetsampel.');
+
+        if (profile.authorityLetter) {
+          lines.push('Schreiben/Bescheid-Pruefung: Rechtsauffassung korrekt? vollstaendig? zu streng/pauschal? Rechte des Buergers? Hinweis-, Beratungs- und Unterstuetzungspflichten? Heilung, Nachholung, Wiedereinsetzung, Fristprobleme? Mustertext liefern, wenn verlangt.');
+        }
+        if (profile.widerspruch) {
+          lines.push('Widerspruch zwingend pruefen: Form § 84 SGG; elektronische Form § 36a SGB I; Frist 1 Monat nach Bekanntgabe; Rechtsbehelfsbelehrung § 66 SGG; Wiedereinsetzung § 67 SGG; Abhilfepruefung § 85 SGG; Beratungs-/Hinweispflichten §§ 13-15 SGB I. Eine einfache E-Mail ist grundsaetzlich nicht formwirksam, aber nicht vorschnell "Sachentscheidung unmoeglich" sagen: formunwirksam, Hinweis auf formgerechte Nachholung, Frist/Wiedereinsetzung/Belehrungsfehler pruefen.');
+        }
+        if (profile.familyInsurance) {
+          lines.push('GKV/Familienversicherung: § 10 SGB V vollstaendig pruefen; bei Kindern § 10 Abs. 3 SGB V mit 3er-Pruefung: ein Elternteil privat versichert, dieser verdient mehr als der gesetzlich versicherte Elternteil, Einkommen liegt ueber JAEG.');
+        }
+        if (profile.pkvChild) {
+          lines.push('PKV/Kindernachversicherung: § 198 VVG; kein SGB-V-Begriff; Frist 2 Monate; kein hoeherer Schutz als beim Elternteil.');
+        }
+        if (profile.passiveBenefits) {
+          lines.push('Arbeitslosenversicherung: "passive Leistungen" als Lehrbegriff kennzeichnen; typische Leistungen ALG I, Kurzarbeitergeld, Insolvenzgeld; Uebergangsgeld nicht pauschal als typische passive Leistung der Arbeitslosenversicherung einordnen.');
+        }
+        if (profile.vaccinations) {
+          lines.push('GKV-Impfungen: § 20i SGB V; STIKO empfiehlt; G-BA entscheidet ueber Schutzimpfungs-Richtlinie; Krankenkasse zahlt bei Regelleistung; Reiseimpfungen meist Satzungsleistung.');
+        }
+        if (profile.earningCapacity) {
+          lines.push('Erwerbsminderung SGB VI: § 43 SGB VI; unter 3 Stunden volle EM; 3 bis unter 6 Stunden teilweise EM; ab 6 Stunden keine EM; Arbeitsmarktrente und Reha vor Rente ergaenzen; "Erwerbsunfaehigkeit" als alten Begriff kennzeichnen.');
+        }
+        if (flags.length) lines.push(`Erkannte Spezialthemen: ${flags.join(', ')}.`);
+        return lines.join('\n');
+      },
+
+      buildSozialrechtQualityScore: (answer = '', sources = [], evidence = {}, profile = {}) => {
+        const raw = String(answer || '').toLowerCase();
+        let score = 78;
+        const evidenceScore = Number(evidence?.score || 0);
+        if (evidenceScore >= 70) score += 14;
+        else if (evidenceScore >= 45) score += 8;
+        else if (evidenceScore >= 25) score += 3;
+        else score -= 6;
+        if (/\bvoraussetzung|tatbestand|pruef|prüf|schema|rechtsfolge\b/i.test(raw)) score += 3;
+        if (/\bfrist|ausnahme|rechtsfolge|wiedereinsetzung|bekanntgabe\b/i.test(raw)) score += 3;
+        if (/\btypische pruefungsfalle|prüfungsfalle|falle|nicht vorschnell|zu pauschal\b/i.test(raw)) score += 3;
+        if (Array.isArray(sources) && sources.some((s) => String(s.excerpt || '').trim())) score += 4;
+        if (profile.requiresSampleText && !/\b(muster|formulierung|textvorschlag|vorschlag)\b/i.test(raw)) score -= 10;
+        if (profile.widerspruch && !/§\s*84\s*sgg/i.test(answer)) score -= 6;
+        if (profile.familyInsurance && !/§\s*10\s*sgb\s*v/i.test(answer)) score -= 6;
+        if (profile.pkvChild && !/§\s*198\s*vvg/i.test(answer)) score -= 6;
+        if (profile.earningCapacity && !/§\s*43\s*sgb\s*vi/i.test(answer)) score -= 6;
+        score = Math.max(70, Math.min(100, Math.round(score)));
+        const label = score >= 95
+          ? 'pruefungsreif / Dozenten-Niveau'
+          : (score >= 85 ? 'gut, mit Feinschliff' : 'kritisch pruefen');
+        return { score, label };
+      },
+
+      buildSozialrechtQualityCheck: (answer = '', sources = [], evidence = {}, profile = {}) => {
+        const quality = app.logic.buildSozialrechtQualityScore(answer, sources, evidence, profile);
+        const lines = [
+          '## Qualitätscheck / Prüfungsfeinschliff',
+          `- Antwortmodus: ${profile.modeLabel || 'Allgemeine Wissensfrage'}.`,
+          `- Begriff: ${profile.passiveBenefits ? '"Passive Leistungen" ist ein Lehr-/Ordnungsbegriff, kein eigener gesetzlicher Anspruch.' : (profile.pkvChild ? 'Kindernachversicherung ist PKV/VVG-Systematik, kein SGB-V-Begriff.' : (profile.earningCapacity ? '"Erwerbsunfaehigkeit" ist als alter Begriff einzuordnen; heute ist Erwerbsminderung nach SGB VI massgeblich.' : 'Bei Legaldefinitionen bitte die Norm nennen; sonst als Lehr-/Praxisbegriff kennzeichnen.'))}`,
+          '- Voraussetzungen: Wurden Anspruchsgrundlage, persoenlicher/sachlicher Anwendungsbereich, Tatbestandsmerkmale und Rechtsfolge getrennt geprueft?',
+          '- Typische Pruefungsfalle: Nicht nur die Hauptnorm nennen, sondern Ausschluesse, Sonderregeln und Wechselwirkungen mitpruefen.',
+          '- Pauschalitaet: Pauschale Aussagen nur verwenden, wenn Fristen, Ausnahmen und Rechtsfolgen nicht entscheidungserheblich sind.',
+          '- Frist/Ausnahme/Rechtsfolge: Wenn im Fall Fristen, Nachholung, Heilung, Wiedereinsetzung oder Beratungspflichten eine Rolle spielen koennen, muessen sie sichtbar geprueft werden.'
+        ];
+
+        if (profile.authorityLetter) {
+          lines.push('- Schreiben/Bescheid: Rechtsauffassung, Vollstaendigkeit, moegliche Strenge/Pauschalitaet, Buergerrechte sowie Hinweis-, Beratungs- und Unterstuetzungspflichten gesondert pruefen.');
+        }
+        if (profile.widerspruch) {
+          lines.push('- Widerspruch: § 84 SGG, § 36a SGB I, § 66 SGG, § 67 SGG, § 85 SGG und §§ 13-15 SGB I mitpruefen. Eine einfache E-Mail ist grundsaetzlich formunwirksam; entscheidend sind Nachholung, Frist, Belehrung und Wiedereinsetzung.');
+        }
+        if (profile.familyInsurance) {
+          lines.push('- Familienversicherung: § 10 SGB V vollstaendig pruefen; bei Kindern § 10 Abs. 3 SGB V mit Privatversicherung, hoeherem Einkommen des privat versicherten Elternteils und JAEG abgleichen.');
+        }
+        if (profile.pkvChild) {
+          lines.push('- PKV-Kindernachversicherung: § 198 VVG, Zwei-Monats-Frist und Begrenzung auf den Schutz des Elternteils beachten.');
+        }
+        if (profile.vaccinations) {
+          lines.push('- GKV-Impfungen: § 20i SGB V, STIKO-Empfehlung, G-BA/Schutzimpfungs-Richtlinie, Regelleistung und Reiseimpfung als moegliche Satzungsleistung trennen.');
+        }
+        if (profile.earningCapacity) {
+          lines.push('- Erwerbsminderung: § 43 SGB VI, unter 3 Stunden/3 bis unter 6 Stunden/ab 6 Stunden, Arbeitsmarktrente und Reha vor Rente pruefen.');
+        }
+        if (profile.requiresSampleText && !/\b(muster|formulierung|textvorschlag|vorschlag)\b/i.test(answer)) {
+          lines.push('- Mustertext: Die Nutzerfrage verlangt eine Formulierung; eine Antwort ohne Mustertext ist unvollstaendig.');
+        }
+        lines.push(`- Qualitätsampel: ${quality.score} % - ${quality.label}.`);
+        return lines.join('\n');
+      },
+
+      ensureSozialrechtQualityCheck: (answer = '', sources = [], evidence = {}, profile = {}) => {
+        const raw = String(answer || '').trim();
+        if (!raw || /##\s*qualit[aä]tscheck\s*\/\s*pr[uü]fungsfeinschliff/i.test(raw)) return raw;
+        return `${raw}\n\n${app.logic.buildSozialrechtQualityCheck(raw, sources, evidence, profile)}`.trim();
       },
 
       enforceSozialrechtMode: (opts = {}) => {
@@ -6261,12 +6596,50 @@
         return refs[0] || null;
       },
 
+      lookupLawSource: (law = '') => {
+        const raw = String(law || '')
+          .replace(/\s+/g, ' ')
+          .replace(/^SGB\s*((?:XII|XI|X|IX|VIII|VII|VI|V|IV|III|II|I)|(?:1[0-2]|[1-9]))$/i, 'SGB $1')
+          .trim();
+        if (!raw) return null;
+        const sgb = app.logic.lookupSgbBookSource(raw);
+        if (sgb) return { ...sgb, isSgb: true };
+        const key = raw.toUpperCase().replace(/\s+/g, '');
+        const entry = OTHER_LAW_SOURCE_MAP[key];
+        if (!entry) return null;
+        return {
+          key,
+          label: entry.label,
+          title: entry.title,
+          url: entry.url,
+          slug: entry.slug,
+          isSgb: false
+        };
+      },
+
+      buildNormSource: (para = '', law = '', note = '') => {
+        const cleanPara = String(para || '').replace(/\s+/g, ' ').trim();
+        const lawSource = app.logic.lookupLawSource(law);
+        const label = lawSource?.label || String(law || '').replace(/\s+/g, ' ').trim();
+        const title = [cleanPara, label].filter(Boolean).join(' ').trim();
+        const normUrl = app.logic.buildNormSourceUrl(cleanPara, label);
+        return {
+          title: `Normbezug: ${title || cleanPara || label || 'Rechtsnorm'}`,
+          url: normUrl || lawSource?.url || '',
+          excerpt: '',
+          section: 'Erkannte Rechtsnorm',
+          page: '',
+          note: note || 'Normverweis ohne Textauszug aus der Wissensdatenbank. Bitte Originalnorm pruefen.',
+          confidence: null
+        };
+      },
+
       buildNormSourceUrl: (para = '', law = '') => {
-        const sgbRef = app.logic.lookupSgbBookSource(law);
-        if (!sgbRef?.slug) return '';
+        const lawRef = app.logic.lookupLawSource(law);
+        if (!lawRef?.slug) return '';
         const paraMatch = String(para || '').match(/\d+[a-z]?/i);
-        if (!paraMatch?.[0]) return sgbRef.url || '';
-        return `https://www.gesetze-im-internet.de/${sgbRef.slug}/__${String(paraMatch[0]).toLowerCase()}.html`;
+        if (!paraMatch?.[0]) return lawRef.url || '';
+        return `https://www.gesetze-im-internet.de/${lawRef.slug}/__${String(paraMatch[0]).toLowerCase()}.html`;
       },
 
       buildCanonicalSozialrechtSources: (question = '', answer = '') => {
@@ -6288,6 +6661,89 @@
           });
         });
         return app.logic.sanitizeSourceList(unique);
+      },
+
+      extractNormReferences: (text = '') => {
+        const raw = normalizeAnswerTextForRender(text);
+        if (!raw) return [];
+        const refs = [];
+        const seen = new Set();
+        const refRegex = /(§{1,2}\s*\d+[a-z]?(?:\s*(?:-|–|bis)\s*\d+[a-z]?)?(?:\s*Abs\.?\s*\d+)?(?:\s*S\.?\s*\d+)?(?:\s*Nr\.?\s*\d+)?)\s*(SGB\s*(?:XII|XI|X|IX|VIII|VII|VI|V|IV|III|II|I|1[0-2]|[1-9])|EFZG|AAG|SGG|BGB|VVG)\b/gi;
+        let match = null;
+        while ((match = refRegex.exec(raw)) !== null) {
+          const para = String(match[1] || '').replace(/\s+/g, ' ').trim();
+          const law = String(match[2] || '').replace(/\s+/g, ' ').trim();
+          const lawSource = app.logic.lookupLawSource(law);
+          if (!para || !lawSource?.label) continue;
+          const key = `${para} ${lawSource.label}`.toLowerCase();
+          if (seen.has(key)) continue;
+          seen.add(key);
+          refs.push({ para, law: lawSource.label, source: lawSource });
+        }
+        return refs.slice(0, 12);
+      },
+
+      buildSozialrechtMandatorySources: (profile = {}) => {
+        const out = [];
+        const add = (para, law, note = '') => out.push(app.logic.buildNormSource(para, law, note));
+        const addBook = (law, note = '') => {
+          const source = app.logic.lookupLawSource(law);
+          if (!source) return;
+          out.push({
+            title: `${source.label} - ${source.title}`,
+            url: source.url,
+            section: 'Gesamtausgabe',
+            excerpt: '',
+            note: note || 'Gesetzesquelle zur genannten Buchangabe. Kein Textauszug aus der Wissensdatenbank.',
+            confidence: null
+          });
+        };
+
+        if (profile.familyInsurance) add('§ 10', 'SGB V', 'Pflichtnorm fuer die Familienversicherung; bei Kindern insbesondere Abs. 3 mitpruefen.');
+        if (profile.pkvChild) add('§ 198', 'VVG', 'PKV-Kindernachversicherung; bewusst keine SGB-V-Norm.');
+        if (profile.vaccinations) add('§ 20i', 'SGB V', 'Schutzimpfungen in der gesetzlichen Krankenversicherung.');
+        if (profile.earningCapacity) add('§ 43', 'SGB VI', 'Erwerbsminderung in der gesetzlichen Rentenversicherung.');
+        if (profile.passiveBenefits) addBook('SGB III', 'Arbeitsfoerderung: passive Leistungsbegriffe nur als Lehr-/Praxisbegriff verwenden.');
+        if (profile.widerspruch) {
+          add('§ 84', 'SGG', 'Form und Frist des Widerspruchs.');
+          add('§ 36a', 'SGB I', 'Elektronische Form; einfache E-Mail grundsaetzlich nicht ausreichend.');
+          add('§ 66', 'SGG', 'Rechtsbehelfsbelehrung und Folgen fehlerhafter Belehrung.');
+          add('§ 67', 'SGG', 'Wiedereinsetzung pruefen.');
+          add('§ 85', 'SGG', 'Abhilfepruefung und Widerspruchsbescheid.');
+          add('§§ 13-15', 'SGB I', 'Aufklaerungs-, Beratungs- und Auskunftspflichten.');
+        }
+        return app.logic.sanitizeSourceList(out);
+      },
+
+      validateSozialrechtSources: (items = []) => {
+        return app.logic.sanitizeSourceList(items).map((source) => {
+          const hay = `${source.title || ''} ${source.section || ''} ${source.note || ''}`;
+          const ref = app.logic.extractNormReferences(hay)[0];
+          if (!ref) return source;
+          const expectedUrl = app.logic.buildNormSourceUrl(ref.para, ref.law);
+          const currentUrl = String(source.url || '').trim();
+          const currentLaw = app.logic.lookupLawSource(ref.law);
+          const hasMismatchedGesetzeUrl =
+            /gesetze-im-internet\.de/i.test(currentUrl) &&
+            currentLaw?.slug &&
+            !currentUrl.includes(`/${currentLaw.slug}/`);
+          return {
+            ...source,
+            title: /^Normbezug:/i.test(String(source.title || '')) || /(^|\s)§{1,2}\s*\d+/i.test(String(source.title || ''))
+              ? `Normbezug: ${ref.para} ${ref.law}`
+              : source.title,
+            url: expectedUrl && (hasMismatchedGesetzeUrl || /^Normbezug:/i.test(String(source.title || '')) || !currentUrl)
+              ? expectedUrl
+              : source.url,
+            note: hasMismatchedGesetzeUrl
+              ? 'Normquelle wurde auf das im Titel erkannte Gesetzbuch korrigiert.'
+              : source.note
+          };
+        });
+      },
+
+      isDirectGesetzeNormUrl: (url = '') => {
+        return /gesetze-im-internet\.de\/[^/]+\/__(?:\d+[a-z]?|art_\d+[a-z]?)\.html/i.test(String(url || ''));
       },
 
       deriveAnswerExcerptForSource: (answerText = '', question = '', sourceTitle = '') => {
@@ -6360,8 +6816,19 @@
 
       buildContextFollowups: (question, answer, topic, opts = {}) => {
         const text = `${question || ''} ${answer || ''}`.toLowerCase();
+        const keywordText = app.utils.normalizeForKeyword(`${question || ''} ${answer || ''}`);
         const sozialrechtDomain = Boolean(opts.sozialrechtDomain);
         const suggestions = [];
+
+        if (sozialrechtDomain) {
+          if (/\b(familienversicherung|familienversichert)\b/.test(keywordText) || /§\s*10\s*sgb\s*v/i.test(`${question || ''} ${answer || ''}`)) {
+            suggestions.push('Pruefe die Familienversicherung');
+          }
+          if (/\b(entgeltfortzahlung|lohnfortzahlung|efzg|fortsetzungserkrankung|vorerkrankungen?|krankheitstage|au zeiten|arbeitsunfaehigkeit)\b/.test(keywordText)) {
+            suggestions.push('Entgeltfortzahlung pruefen');
+          }
+          return app.logic.sanitizeAssistantFollowups(suggestions);
+        }
 
         if (/\b(entgeltfortzahlung|krankengeld|arbeitsunf|au\b)\b/i.test(text)) {
           suggestions.push('Zeige den Unterschied zwischen Entgeltfortzahlung und Krankengeld.');
@@ -6372,52 +6839,15 @@
         if (/\b(arbeitgeber|personalabteilung|betrieb|azubi|arbeitnehmer)\b/i.test(text)) {
           suggestions.push(`Erstelle eine kurze Praxis-Checkliste zu ${topic}.`);
         }
-        suggestions.push(
-          sozialrechtDomain
-            ? `Erstelle drei Pruefungsfragen zu ${topic}.`
-            : `Gib mir ein kurzes Praxisbeispiel zu ${topic}.`
-        );
         return app.logic.sanitizeAssistantFollowups(suggestions);
       },
 
       buildNormReferenceSources: (answer = '') => {
         const raw = normalizeAnswerTextForRender(answer);
         if (!raw) return [];
-        const lines = raw
-          .split(/\n+/)
-          .map((line) => line.replace(/\s+/g, ' ').trim())
-          .filter(Boolean);
-        const refs = [];
-        const seen = new Set();
-        const refRegex = /(§\s*\d+[a-z]?(?:\s*Abs\.?\s*\d+)?(?:\s*S\.\s*\d+)?(?:\s*Nr\.?\s*\d+)?)\s*(EFZG|AAG|SGB\s*[IVX0-9]+|SGB\s*[A-Z]+|SGG|BGB)?/gi;
-
-        lines.forEach((line) => {
-          let match = null;
-          while ((match = refRegex.exec(line)) !== null) {
-            const para = String(match[1] || '').replace(/\s+/g, ' ').trim();
-            const law = String(match[2] || '').replace(/\s+/g, ' ').trim();
-            if (!para) continue;
-            const title = law ? `${para} ${law}` : para;
-            const key = title.toLowerCase();
-            if (seen.has(key)) continue;
-            seen.add(key);
-            const normUrl = law ? app.logic.buildNormSourceUrl(para, law) : '';
-            refs.push({
-              title: `Normbezug: ${title}`,
-              url: normUrl,
-              excerpt: '',
-              section: 'Erkannte Rechtsnorm',
-              page: '',
-              note: normUrl
-                ? 'Normverweis ohne Textauszug aus der Wissensdatenbank. Bitte Originalnorm pruefen.'
-                : 'Normverweis ohne hinterlegte Textfundstelle.',
-              confidence: null
-            });
-            if (refs.length >= 6) break;
-          }
-        });
-
-        return refs.slice(0, 6);
+        return app.logic.extractNormReferences(raw)
+          .map((ref) => app.logic.buildNormSource(ref.para, ref.law))
+          .slice(0, 6);
       },
 
       unwrapStructuredAnswerPayload: (answerText = '', currentSources = [], currentMeta = {}) => {
@@ -7321,30 +7751,7 @@
       },
 
       buildFollowupSuggestions: (question, answer, sources, meta = {}) => {
-        if (!app.state.settings.assistant?.showFollowups) return [];
-
-        const topic = app.logic.topicFromText(question || answer, 'das Thema');
-        const goal = String(app.state.settings.assistant?.learningGoal || '').trim();
-        const domain = String(app.state.settings.domain || '').trim();
-        const sozialrechtDomain = app.logic.isSozialrechtDomain(domain);
-        const out = [];
-
-        if (meta.blockedForMissingSources) {
-          out.push('Welche Quelle oder welches Dokument soll ich dafuer gezielt nutzen?');
-          out.push(`Formuliere mir eine praezisere Frage zu ${topic}.`);
-        } else {
-          const backend = app.logic.sanitizeAssistantFollowups(meta.backendFollowups || []);
-          const contextual = app.logic.buildContextFollowups(question, answer, topic, { sozialrechtDomain });
-          if (sources.length) out.push(`Zeige mir die wichtigste Quelle mit Abschnitt zu ${topic}.`);
-          out.push(...contextual);
-          if (!sozialrechtDomain) out.push(`Fasse ${topic} in drei Stichpunkten zusammen.`);
-          if (domain && !sozialrechtDomain) out.push(`Erstelle drei Pruefungsfragen zu ${topic} im Fachmodus ${domain}.`);
-          if (sozialrechtDomain) out.push(...app.logic.buildSozialrechtFollowups(topic, question || answer));
-          if (backend.length) out.push(...backend.slice(0, 1));
-          if (goal && !sozialrechtDomain) out.push(`Verbinde ${topic} mit meinem Lernziel "${goal}".`);
-        }
-
-        return app.logic.sanitizeAssistantFollowups(out);
+        return [];
       },
 
       buildLearningStep: (question, answer, meta = {}) => {
@@ -7391,15 +7798,22 @@
         const sozialrechtDomain = app.logic.isSozialrechtDomain(
           String(backendMeta.domain || payload?.fachmodus || app.state.settings?.domain || '')
         );
+        const sozialrechtProfile = sozialrechtDomain
+          ? app.logic.analyzeSozialrechtQuestion(question, answer)
+          : null;
         const storageUsed = Boolean(backendMeta.storageUsed || backendMeta.storage_used);
         const storageFallback = Boolean(backendMeta.storageFallback || backendMeta.storage_fallback);
         const storageError = String(backendMeta.storageError || backendMeta.storage_error || '').trim();
 
-        if (sozialrechtDomain && !sources.length) {
-          const normFallbackSources = app.logic.buildNormReferenceSources(answer);
-          if (normFallbackSources.length) {
-            sources = app.logic.sanitizeSourceList(normFallbackSources);
-          }
+        if (sozialrechtDomain && !app.logic.isOperationalAnswer(answer)) {
+          sources = app.logic.validateSozialrechtSources(sources);
+          const normReferenceSources = app.logic.buildNormReferenceSources(answer);
+          const mandatorySources = app.logic.buildSozialrechtMandatorySources(sozialrechtProfile || {});
+          sources = app.logic.validateSozialrechtSources([
+            ...(sources || []),
+            ...normReferenceSources,
+            ...mandatorySources
+          ]).slice(0, 10);
         }
 
         const recentGroundedContext = sozialrechtDomain
@@ -7418,7 +7832,7 @@
         if (sozialrechtDomain && !app.logic.isOperationalAnswer(answer)) {
           const canonicalSources = app.logic.buildCanonicalSozialrechtSources(question, answer);
           if (canonicalSources.length) {
-            sources = app.logic.sanitizeSourceList([...(sources || []), ...canonicalSources]).slice(0, 6);
+            sources = app.logic.validateSozialrechtSources([...(sources || []), ...canonicalSources]).slice(0, 10);
           }
         }
 
@@ -7446,6 +7860,17 @@
           storageUsed,
           storageFallback
         });
+        if (
+          sozialrechtDomain &&
+          evidence &&
+          (evidence.level === 'medium' || (evidence.sourceCount > 0 && evidence.excerptCount === 0))
+        ) {
+          evidence.note = `${evidence.note || ''} Hinweis: Norm erkannt, aber keine zitierfaehige Textstelle aus dem Vector Store gefunden. Bitte Originalnorm pruefen.`.trim();
+        }
+
+        if (sozialrechtDomain && !blockedForMissingSources && !app.logic.isOperationalAnswer(answer)) {
+          answer = app.logic.ensureSozialrechtQualityCheck(answer, sources, evidence, sozialrechtProfile || {});
+        }
 
         const evidenceNoteParts = [String(backendMeta.evidenceNote || '').trim()];
         if (storageFallback && storageError) {
@@ -7716,7 +8141,7 @@
           app.state.settings.guardrails.strictUnknown = false;
         }
         app.state.settings.assistant.showEvidence = document.getElementById('inp-show-evidence').checked;
-        app.state.settings.assistant.showFollowups = document.getElementById('inp-show-followups').checked;
+        app.state.settings.assistant.showFollowups = false;
         app.state.settings.assistant.showLearningPath =
           (SOZIALRECHT_ONLY_MODE || sozialrechtLocked)
             ? false
@@ -7857,57 +8282,7 @@
       },
 
       findQuestionSuggestions: (input, limit = 6) => {
-        if (app.utils.privacyModeEnabled()) return [];
-        const raw = String(input || '').trim();
-        if (raw.length < 3) return [];
-
-        const inputNorm = app.utils.normalizeQuestion(raw);
-        if (!inputNorm) return [];
-
-        const mem = app.state.requestMemory;
-        const entries = Array.isArray(mem?.entries) ? mem.entries : [];
-        if (!entries.length) return [];
-
-        const inputTokens = new Set(app.utils.questionTokens(inputNorm));
-        const scored = [];
-
-        entries.forEach((entry) => {
-          if (!entry || !entry.text || !entry.normalized) return;
-          let score = 0;
-          const text = String(entry.text);
-          const norm = String(entry.normalized);
-
-          if (norm === inputNorm) score += 100;
-          if (norm.includes(inputNorm) || inputNorm.includes(norm)) score += 45;
-          if (text.toLowerCase().includes(raw.toLowerCase())) score += 20;
-
-          const tokens = app.utils.questionTokens(norm);
-          if (inputTokens.size && tokens.length) {
-            const tokenSet = new Set(tokens);
-            let overlap = 0;
-            inputTokens.forEach((tok) => { if (tokenSet.has(tok)) overlap += 1; });
-            if (overlap > 0) {
-              const union = new Set([...inputTokens, ...tokenSet]).size || 1;
-              score += Math.round((overlap / union) * 30);
-            }
-          }
-
-          score += Math.min(Number(entry.count || 0), 10);
-          if (score > 0) scored.push({ text, score, lastUsed: Number(entry.lastUsed || 0) });
-        });
-
-        scored.sort((a, b) => (b.score - a.score) || (b.lastUsed - a.lastUsed));
-
-        const unique = [];
-        const seen = new Set();
-        scored.forEach((item) => {
-          const key = item.text.toLowerCase();
-          if (seen.has(key)) return;
-          seen.add(key);
-          unique.push(item.text);
-        });
-
-        return unique.slice(0, limit);
+        return [];
       },
 
       maybeShowModeCards: () => {
@@ -7924,29 +8299,7 @@
       },
 
       getPromptingSuggestions: (inputValue) => {
-        if (!app.state.settings.prompting?.enabled) return [];
-        const text = String(inputValue || '');
-        if (!text || text.startsWith('/')) return [];
-        const cfg = app.utils.getPromptingConfig();
-        const out = [];
-
-        (Array.isArray(cfg.inlineExpansions) ? cfg.inlineExpansions : []).forEach((rule) => {
-          try {
-            const re = new RegExp(String(rule.pattern || ''), 'i');
-            if (!re.test(text)) return;
-            const value = text.replace(re, String(rule.replacement || ''));
-            if (value !== text) out.push({ label: String(rule.replacement || value), value, kind: 'Prompting-Vorschlag' });
-          } catch (_) {}
-        });
-
-        if (out.length) return out.slice(0, 6);
-
-        if (text.length >= 6) {
-          (Array.isArray(cfg.quickSuggestions) ? cfg.quickSuggestions : []).forEach((s) => {
-            out.push({ label: s, value: `${text}\n\n${s}`, kind: 'Prompting-Vorschlag' });
-          });
-        }
-        return out.slice(0, 6);
+        return [];
       },
 
       needsSlowModeHint: (text) => {
@@ -9569,7 +9922,8 @@
               /gesetze-im-internet\.de/i.test(String(s.url || '')) ||
               /^Normbezug:/i.test(String(s.title || '')) ||
               /(^|\s)§\s*\d+/i.test(String(s.title || ''));
-            const directJump = sourceAllowsDirectJump && sgbLinkResolver && typeof sgbLinkResolver.resolveSource === 'function'
+            const lockedNormUrl = app.logic.isDirectGesetzeNormUrl(s.url || '');
+            const directJump = !lockedNormUrl && sourceAllowsDirectJump && sgbLinkResolver && typeof sgbLinkResolver.resolveSource === 'function'
               ? sgbLinkResolver.resolveSource(s, { question: bubbleMeta.question || '', answerText: renderedAnswerText })
               : null;
             const sourceHref = directJump?.url || s.url;
@@ -9678,7 +10032,7 @@
           followupPanel.className = 'followup-panel';
           const title = document.createElement('h4');
           title.className = 'followup-head';
-          title.textContent = 'Naechste Fragen';
+          title.textContent = 'Naechste Schritte';
           const list = document.createElement('ul');
           list.className = 'followup-list';
           followups.forEach((item) => {
@@ -9893,15 +10247,24 @@
             ? []
             : contextWindow;
 
-          const payloadQuestion = apiQuestionPrefix
+          const sozialrechtProfile = sozialrechtDomain
+            ? app.logic.analyzeSozialrechtQuestion(text, '')
+            : null;
+          const sozialrechtDirective = sozialrechtProfile
+            ? app.logic.buildSozialrechtPromptDirective(sozialrechtProfile)
+            : '';
+          const basePayloadQuestion = apiQuestionPrefix
             ? `${apiQuestionPrefix}\n\n${text}`
             : (
               apiQuestionSuffix
                 ? `${text}\n\n${apiQuestionSuffix}`
                 : text
             );
+          const payloadQuestion = sozialrechtDirective
+            ? `${basePayloadQuestion}\n\n${sozialrechtDirective}`
+            : basePayloadQuestion;
           const payload = {
-            question: app.utils.truncate(payloadQuestion, 1600),
+            question: app.utils.truncate(payloadQuestion, 4200),
             fachmodus: SOZIALRECHT_ONLY_MODE ? SOZIALRECHT_DOMAIN_KEY : (app.state.settings.domain || ''),
             schnellmodus: deepseekRoutingActive,
             history: historyForApi,
@@ -9932,7 +10295,8 @@
               version: APP_VERSION,
               ts: new Date().toISOString(),
               privacyMode: app.utils.privacyModeEnabled(),
-              sozialrecht_mode: sozialrechtDomain
+              sozialrecht_mode: sozialrechtDomain,
+              sozialrecht_profile: sozialrechtProfile || null
             },
             guardrails: {
               grounded_mode: Boolean(app.state.settings.guardrails?.groundedMode),
@@ -9942,7 +10306,7 @@
             },
             assistantPrefs: {
               show_evidence: Boolean(app.state.settings.assistant?.showEvidence),
-              show_followups: Boolean(app.state.settings.assistant?.showFollowups),
+              show_followups: false,
               show_learning_path: sozialrechtDomain ? false : Boolean(app.state.settings.assistant?.showLearningPath),
               learning_goal: String(app.state.settings.assistant?.learningGoal || '').trim()
             }
@@ -10276,7 +10640,7 @@
           .replace(/^Frage:\s*/gim, '')
           .replace(/^Anfrage:\s*/gim, '')
           .replace(/^Quellen\s*(?:&|und).*/gim, '')
-          .replace(/^Naechste Fragen.*$/gim, '')
+          .replace(/^Naechste (?:Fragen|Schritte).*$/gim, '')
           .replace(/^Persoenlicher Lernpfad.*$/gim, '')
           .trim();
 
@@ -10756,14 +11120,7 @@
         const allMatches = [fvEntry, ...matches].filter((item, idx, arr) => arr.findIndex((x) => x.value === item.value) === idx);
         app.ui.showSnippetPopup(allMatches);
       } else {
-        const memorySuggestions = app.logic.findQuestionSuggestions(val, 6)
-          .map((s) => ({ label: s, value: s, kind: 'Aehnliche Frage aus Verlauf' }));
-        const promptSuggestions = app.logic.getPromptingSuggestions(val);
-        const allSuggestions = [...memorySuggestions, ...promptSuggestions]
-          .filter((item, idx, arr) => arr.findIndex((x) => x.value === item.value) === idx)
-          .slice(0, 8);
-        if (allSuggestions.length) app.ui.showSnippetPopup(allSuggestions);
-        else document.getElementById('snippet-popup').classList.remove('active');
+        document.getElementById('snippet-popup').classList.remove('active');
       }
     });
 
