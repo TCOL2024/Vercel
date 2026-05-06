@@ -288,6 +288,20 @@ function getAction(req, body) {
   return String(q.action || '').trim().toLowerCase();
 }
 
+function isFlashcardsRequestBody(body) {
+  if (!body || typeof body !== 'object') return false;
+  const mode = String(body?.mode || '').trim().toLowerCase();
+  const action = String(body?.action || '').trim().toLowerCase();
+  if (action === 'flashcards' || mode === 'flashcards') return true;
+  if (mode === 'exercise') return true;
+  if (body?.template_id || body?.templateId || body?.template_label || body?.templateLabel) return true;
+  if (body?.audience || body?.focus || body?.economyMode) return true;
+  if (body?.question_text) return true;
+  const count = Number(body?.count);
+  const context = String(body?.context || body?.text || body?.selected_text || body?.selectedText || '').trim();
+  return Boolean(context) && Number.isFinite(count);
+}
+
 function getDeepSeekConfig() {
   const v = String(process.env.Linda3Schnellmodus || '').trim();
   let apiKey = '';
@@ -1245,6 +1259,9 @@ async function handleBot(res, body) {
   if (!webhookUrl) return sendJson(res, 500, { error: 'MAKE_WEBHOOK_URL fehlt in Vercel Environment' });
 
   const questionRaw = String(body?.question || body?.prompt || body?.input || body?.text || '').trim();
+  if (!questionRaw && isFlashcardsRequestBody(body)) {
+    return handleFlashcards(res, body);
+  }
   if (!questionRaw) return sendJson(res, 400, { error: 'question fehlt' });
   const userQuestionForAnalysis = questionRaw.split(/\n\s*LINDA_SOZIALRECHT_QUALITAETSSTEUERUNG:/i)[0].trim() || questionRaw;
   const bbigMatches = detectBbigGuardrails(userQuestionForAnalysis);
@@ -1916,6 +1933,9 @@ export default async function handler(req, res) {
 
   const body = req.body && typeof req.body === 'object' ? req.body : {};
   const action = getAction(req, body);
+  if (isFlashcardsRequestBody(body) && (action === 'bot' || action === 'flashcards' || !action)) {
+    return handleFlashcards(res, body);
+  }
   const bodyLength = Buffer.byteLength(JSON.stringify(body || {}), 'utf8');
   const maxPayload = action === 'stt' ? 6 * 1024 * 1024 : 32 * 1024;
   if (bodyLength > maxPayload) {
