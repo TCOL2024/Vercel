@@ -2456,12 +2456,19 @@
 
   .selection-field select,
   .selection-field input,
+  .selection-field textarea,
   .selection-result-text {
     width: 100%;
     border: 1px solid #c6d8f1;
     border-radius: 10px;
     padding: 9px 10px;
     font: inherit;
+  }
+
+  .selection-field textarea {
+    min-height: 88px;
+    resize: vertical;
+    line-height: 1.45;
   }
 
   .selection-result-text {
@@ -3899,7 +3906,6 @@
   const STT_API_ENDPOINT = '/api/linda3?action=stt';
   const SOZIALRECHT_ONLY_MODE = true;
   const SOZIALRECHT_DOMAIN_KEY = 'SOZIALRECHT';
-  const LEARNING_TEMPLATES_PATH = './docs/learning_templates.json';
   const SOZIALRECHT_CURRICULUM_PATH = './docs/sozialrecht_sgb_i_xii.json';
   const CLAUDE_CLARIFY_MODE = true;
   const APP_VERSION = 5;
@@ -3960,26 +3966,8 @@
 
   const DEFAULT_LEARNING_TEMPLATES = {
     version: '1.0',
-    flashcards: {
-      instruction_template:
-        'Erstelle aus dem folgenden Volltext genau {{count}} hochwertige Lernkarten. ' +
-        'Antwort ausschliesslich als JSON ohne Markdown im Format {"deckTitle":"...","cards":[{"question":"...","answer":"..."}]}. ' +
-        'Regeln: Verwende den gesamten Text als Grundlage, formuliere praezise und pruefungsorientierte Fragen, keine generischen Fragen wie "Welche Kernaussage..." oder "Was laesst sich ableiten?", keine Meta-Hinweise, jede Antwort muss konkret aus dem Text belegbar sein. ' +
-        'Nutze nur 2 oder 4 Karten, keine anderen Anzahlen. Fachmodus: {{domain}}. Volltext: {{content}}'
-    },
     practice: {
       title_prefix: 'Pruefungsaufgaben',
-      instruction_template:
-        'Du bist Pruefungsautor fuer {{audience}}. Erstelle genau {{count}} Aufgaben im Stil einer echten IHK-Abschlusspruefung. ' +
-        'Modus: {{template_label}}. Niveau: {{difficulty}}. Pruefungsfokus: {{exam_focus}}. Stil: {{question_style}}. ' +
-        'Stilbeschreibung: {{template_description}}. Nutze den bereitgestellten Kontext nur fuer fachlich relevante, pruefungsnahe Inhalte. ' +
-        'Die Fragen muessen fallorientiert, prazise und deutlich anspruchsvoller als Lernkarten sein. Bevorzuge Operatoren wie Beurteilen, Erlaeutern, ' +
-        'Anwenden, Abgrenzen, Begruenden, Pruefen und Einordnen. Vermeide generische Fragen wie "Welche Kernaussage..." oder "Was laesst sich ableiten?" ' +
-        'und vermeide Meta-Hinweise. Wenn offene Aufgaben erlaubt sind, baue etwa jede dritte Aufgabe als offene Fall- oder Begruendungsfrage ein. ' +
-        'Bei MC-Aufgaben nutze mindestens 4 plausible, fachlich nahe Antwortoptionen mit genau einer richtigen Loesung. Jede Loesung soll kurz erklaeren, ' +
-        'warum die richtige Antwort stimmt und welche typische Pruefungsfalle in den falschen Antworten steckt. Antworte ausschliesslich als JSON ohne Markdown ' +
-        'im Format {"title":"...","questions":[{"type":"mc","question":"...","options":["..."],"correctIndices":[0],"hint":"...","solution":"...","points":2}]}. ' +
-        'Fachmodus: {{domain}}. Zielgruppe: {{audience}}. Kontext: {{content}}',
       templates: [
         { id: 'quick_quiz', label: 'Schnelles Quiz', description: 'Kurze Wiederholung mit klarer Pruefungslogik', duration: '5 Minuten', default_count: 4, supports_open: false },
         { id: 'multiple_choice', label: 'Multiple Choice', description: 'IHK-nahe Fragen mit plausiblen Ablenkern', duration: '10 Minuten', default_count: 6, supports_open: false },
@@ -5585,6 +5573,10 @@
 
         modal.classList.add('open');
         modal.setAttribute('aria-hidden', 'false');
+        window.setTimeout(() => {
+          const firstField = fieldsEl.querySelector('#selection-practice-focus') || fieldsEl.querySelector('textarea, input, select, button');
+          if (firstField && typeof firstField.focus === 'function') firstField.focus();
+        }, 0);
       },
 
       openSelectionResultModal: (title, text, opts = {}) => {
@@ -5765,55 +5757,7 @@
       },
 
       loadLearningTemplates: async () => {
-        try {
-          const res = await fetch(LEARNING_TEMPLATES_PATH, { cache: 'no-store' });
-          if (!res.ok) return;
-          const parsed = await res.json();
-          if (!parsed || typeof parsed !== 'object') return;
-
-          const flashInstruction = String(parsed?.flashcards?.instruction_template || '').trim();
-          const practiceObj = parsed?.practice && typeof parsed.practice === 'object' ? parsed.practice : {};
-          const practiceTemplates = Array.isArray(practiceObj.templates) ? practiceObj.templates : [];
-          const normalizedTemplates = practiceTemplates
-            .map((t) => {
-              if (!t || typeof t !== 'object') return null;
-              const id = String(t.id || '').trim();
-              const label = String(t.label || '').trim();
-              if (!id || !label) return null;
-              return {
-                id,
-                label,
-                description: String(t.description || '').trim(),
-                duration: String(t.duration || '').trim(),
-                default_count: Math.max(3, Math.min(12, Number(t.default_count || 6))),
-                supports_open: Boolean(t.supports_open)
-              };
-            })
-            .filter(Boolean);
-
-          learningTemplatesCache = {
-            version: String(parsed.version || DEFAULT_LEARNING_TEMPLATES.version || '1.0'),
-            flashcards: {
-              instruction_template:
-                flashInstruction || DEFAULT_LEARNING_TEMPLATES.flashcards.instruction_template
-            },
-            practice: {
-              title_prefix: String(practiceObj.title_prefix || DEFAULT_LEARNING_TEMPLATES.practice.title_prefix || 'Pruefungsaufgaben').trim(),
-              instruction_template:
-                String(practiceObj.instruction_template || '').trim() ||
-                DEFAULT_LEARNING_TEMPLATES.practice.instruction_template,
-              templates: normalizedTemplates.length
-                ? normalizedTemplates
-                : structuredClone(DEFAULT_LEARNING_TEMPLATES.practice.templates),
-              difficulties: (Array.isArray(practiceObj.difficulties) ? practiceObj.difficulties : [])
-                .map((v) => String(v || '').trim())
-                .filter(Boolean)
-            }
-          };
-          if (!learningTemplatesCache.practice.difficulties.length) {
-            learningTemplatesCache.practice.difficulties = structuredClone(DEFAULT_LEARNING_TEMPLATES.practice.difficulties);
-          }
-        } catch (_) {}
+        learningTemplatesCache = structuredClone(DEFAULT_LEARNING_TEMPLATES);
       },
 
       getLearningTemplates: () => {
@@ -6088,116 +6032,10 @@
         return profile;
       },
 
-      buildSozialrechtPromptDirective: (profile = {}) => {
-        const flags = Array.isArray(profile.flags) ? profile.flags : [];
-        const lines = [
-          'LINDA_SOZIALRECHT_QUALITAETSSTEUERUNG:',
-          'Antworte im Fachmodus Sozialrecht auf Pruefungs- und Dozenten-Niveau. Pruefe nicht nur die Norm, sondern auch Vollstaendigkeit, Fristen, Ausnahmen, Rechtsfolgen, Buergerrechte und typische Pruefungsfallen. Bei Behoerden- oder Kassen-Schreiben bewerte zusaetzlich, ob die Aussage zu pauschal, zu streng oder unvollstaendig ist. Wenn eine Aufgabe eine Musterformulierung verlangt, liefere diese immer.',
-          `Antwortmodus: ${profile.mode || 'general'} (${profile.modeLabel || 'Allgemeine Wissensfrage'}).`
-        ];
-
-        if (profile.mode === 'general') {
-          lines.push('Bei allgemeinen Wissensfragen: vollstaendige Systematik liefern, keine unnoetigen Rueckfragen stellen.');
-        }
-        if (profile.mode === 'case_review') {
-          lines.push('Bei Einzelfallpruefungen oder Schreiben: kritisch subsumieren, Gegenargumente, Rechtsfolgen, Fristen und Buergerrechte sichtbar machen.');
-        }
-        if (profile.mode === 'coaching') {
-          lines.push('Im Coaching-/Pruefmodus sind kurze Rueckfragen erlaubt; am Ende dennoch ein Ergebnis mit Pruefschema ausgeben.');
-        }
-        lines.push('Pflichtsektion am Ende: "## Qualitätscheck / Prüfungsfeinschliff" mit Begriff, Voraussetzungen, Pruefungsfalle, Pauschalitaet, Frist/Ausnahme/Rechtsfolge und Qualitaetsampel.');
-
-        if (profile.authorityLetter) {
-          lines.push('Schreiben/Bescheid-Pruefung: Rechtsauffassung korrekt? vollstaendig? zu streng/pauschal? Rechte des Buergers? Hinweis-, Beratungs- und Unterstuetzungspflichten? Heilung, Nachholung, Wiedereinsetzung, Fristprobleme? Mustertext liefern, wenn verlangt.');
-        }
-        if (profile.widerspruch) {
-          lines.push('Widerspruch zwingend pruefen: Form § 84 SGG; elektronische Form § 36a SGB I; Frist 1 Monat nach Bekanntgabe; Rechtsbehelfsbelehrung § 66 SGG; Wiedereinsetzung § 67 SGG; Abhilfepruefung § 85 SGG; Beratungs-/Hinweispflichten §§ 13-15 SGB I. Eine einfache E-Mail ist grundsaetzlich nicht formwirksam, aber nicht vorschnell "Sachentscheidung unmoeglich" sagen: formunwirksam, Hinweis auf formgerechte Nachholung, Frist/Wiedereinsetzung/Belehrungsfehler pruefen.');
-        }
-        if (profile.familyInsurance) {
-          lines.push('GKV/Familienversicherung: § 10 SGB V vollstaendig pruefen; bei Kindern § 10 Abs. 3 SGB V mit 3er-Pruefung: ein Elternteil privat versichert, dieser verdient mehr als der gesetzlich versicherte Elternteil, Einkommen liegt ueber JAEG.');
-        }
-        if (profile.pkvChild) {
-          lines.push('PKV/Kindernachversicherung: § 198 VVG; kein SGB-V-Begriff; Frist 2 Monate; kein hoeherer Schutz als beim Elternteil.');
-        }
-        if (profile.passiveBenefits) {
-          lines.push('Arbeitslosenversicherung: "passive Leistungen" als Lehrbegriff kennzeichnen; typische Leistungen ALG I, Kurzarbeitergeld, Insolvenzgeld; Uebergangsgeld nicht pauschal als typische passive Leistung der Arbeitslosenversicherung einordnen.');
-        }
-        if (profile.vaccinations) {
-          lines.push('GKV-Impfungen: § 20i SGB V; STIKO empfiehlt; G-BA entscheidet ueber Schutzimpfungs-Richtlinie; Krankenkasse zahlt bei Regelleistung; Reiseimpfungen meist Satzungsleistung.');
-        }
-        if (profile.earningCapacity) {
-          lines.push('Erwerbsminderung SGB VI: § 43 SGB VI; unter 3 Stunden volle EM; 3 bis unter 6 Stunden teilweise EM; ab 6 Stunden keine EM; Arbeitsmarktrente und Reha vor Rente ergaenzen; "Erwerbsunfaehigkeit" als alten Begriff kennzeichnen.');
-        }
-        if (flags.length) lines.push(`Erkannte Spezialthemen: ${flags.join(', ')}.`);
-        return lines.join('\n');
-      },
-
-      buildSozialrechtQualityScore: (answer = '', sources = [], evidence = {}, profile = {}) => {
-        const raw = String(answer || '').toLowerCase();
-        let score = 78;
-        const evidenceScore = Number(evidence?.score || 0);
-        if (evidenceScore >= 70) score += 14;
-        else if (evidenceScore >= 45) score += 8;
-        else if (evidenceScore >= 25) score += 3;
-        else score -= 6;
-        if (/\bvoraussetzung|tatbestand|pruef|prüf|schema|rechtsfolge\b/i.test(raw)) score += 3;
-        if (/\bfrist|ausnahme|rechtsfolge|wiedereinsetzung|bekanntgabe\b/i.test(raw)) score += 3;
-        if (/\btypische pruefungsfalle|prüfungsfalle|falle|nicht vorschnell|zu pauschal\b/i.test(raw)) score += 3;
-        if (Array.isArray(sources) && sources.some((s) => String(s.excerpt || '').trim())) score += 4;
-        if (profile.requiresSampleText && !/\b(muster|formulierung|textvorschlag|vorschlag)\b/i.test(raw)) score -= 10;
-        if (profile.widerspruch && !/§\s*84\s*sgg/i.test(answer)) score -= 6;
-        if (profile.familyInsurance && !/§\s*10\s*sgb\s*v/i.test(answer)) score -= 6;
-        if (profile.pkvChild && !/§\s*198\s*vvg/i.test(answer)) score -= 6;
-        if (profile.earningCapacity && !/§\s*43\s*sgb\s*vi/i.test(answer)) score -= 6;
-        score = Math.max(70, Math.min(100, Math.round(score)));
-        const label = score >= 95
-          ? 'pruefungsreif / Dozenten-Niveau'
-          : (score >= 85 ? 'gut, mit Feinschliff' : 'kritisch pruefen');
-        return { score, label };
-      },
-
-      buildSozialrechtQualityCheck: (answer = '', sources = [], evidence = {}, profile = {}) => {
-        const quality = app.logic.buildSozialrechtQualityScore(answer, sources, evidence, profile);
-        const lines = [
-          '## Qualitätscheck / Prüfungsfeinschliff',
-          `- Antwortmodus: ${profile.modeLabel || 'Allgemeine Wissensfrage'}.`,
-          `- Begriff: ${profile.passiveBenefits ? '"Passive Leistungen" ist ein Lehr-/Ordnungsbegriff, kein eigener gesetzlicher Anspruch.' : (profile.pkvChild ? 'Kindernachversicherung ist PKV/VVG-Systematik, kein SGB-V-Begriff.' : (profile.earningCapacity ? '"Erwerbsunfaehigkeit" ist als alter Begriff einzuordnen; heute ist Erwerbsminderung nach SGB VI massgeblich.' : 'Bei Legaldefinitionen bitte die Norm nennen; sonst als Lehr-/Praxisbegriff kennzeichnen.'))}`,
-          '- Voraussetzungen: Wurden Anspruchsgrundlage, persoenlicher/sachlicher Anwendungsbereich, Tatbestandsmerkmale und Rechtsfolge getrennt geprueft?',
-          '- Typische Pruefungsfalle: Nicht nur die Hauptnorm nennen, sondern Ausschluesse, Sonderregeln und Wechselwirkungen mitpruefen.',
-          '- Pauschalitaet: Pauschale Aussagen nur verwenden, wenn Fristen, Ausnahmen und Rechtsfolgen nicht entscheidungserheblich sind.',
-          '- Frist/Ausnahme/Rechtsfolge: Wenn im Fall Fristen, Nachholung, Heilung, Wiedereinsetzung oder Beratungspflichten eine Rolle spielen koennen, muessen sie sichtbar geprueft werden.'
-        ];
-
-        if (profile.authorityLetter) {
-          lines.push('- Schreiben/Bescheid: Rechtsauffassung, Vollstaendigkeit, moegliche Strenge/Pauschalitaet, Buergerrechte sowie Hinweis-, Beratungs- und Unterstuetzungspflichten gesondert pruefen.');
-        }
-        if (profile.widerspruch) {
-          lines.push('- Widerspruch: § 84 SGG, § 36a SGB I, § 66 SGG, § 67 SGG, § 85 SGG und §§ 13-15 SGB I mitpruefen. Eine einfache E-Mail ist grundsaetzlich formunwirksam; entscheidend sind Nachholung, Frist, Belehrung und Wiedereinsetzung.');
-        }
-        if (profile.familyInsurance) {
-          lines.push('- Familienversicherung: § 10 SGB V vollstaendig pruefen; bei Kindern § 10 Abs. 3 SGB V mit Privatversicherung, hoeherem Einkommen des privat versicherten Elternteils und JAEG abgleichen.');
-        }
-        if (profile.pkvChild) {
-          lines.push('- PKV-Kindernachversicherung: § 198 VVG, Zwei-Monats-Frist und Begrenzung auf den Schutz des Elternteils beachten.');
-        }
-        if (profile.vaccinations) {
-          lines.push('- GKV-Impfungen: § 20i SGB V, STIKO-Empfehlung, G-BA/Schutzimpfungs-Richtlinie, Regelleistung und Reiseimpfung als moegliche Satzungsleistung trennen.');
-        }
-        if (profile.earningCapacity) {
-          lines.push('- Erwerbsminderung: § 43 SGB VI, unter 3 Stunden/3 bis unter 6 Stunden/ab 6 Stunden, Arbeitsmarktrente und Reha vor Rente pruefen.');
-        }
-        if (profile.requiresSampleText && !/\b(muster|formulierung|textvorschlag|vorschlag)\b/i.test(answer)) {
-          lines.push('- Mustertext: Die Nutzerfrage verlangt eine Formulierung; eine Antwort ohne Mustertext ist unvollstaendig.');
-        }
-        lines.push(`- Qualitätsampel: ${quality.score} % - ${quality.label}.`);
-        return lines.join('\n');
-      },
-
-      ensureSozialrechtQualityCheck: (answer = '', sources = [], evidence = {}, profile = {}) => {
-        const raw = String(answer || '').trim();
-        if (!raw || /##\s*qualit[aä]tscheck\s*\/\s*pr[uü]fungsfeinschliff/i.test(raw)) return raw;
-        return `${raw}\n\n${app.logic.buildSozialrechtQualityCheck(raw, sources, evidence, profile)}`.trim();
-      },
+      buildSozialrechtPromptDirective: () => '',
+      buildSozialrechtQualityScore: () => ({ score: 0, label: 'serverseitig' }),
+      buildSozialrechtQualityCheck: (answer = '') => String(answer || '').trim(),
+      ensureSozialrechtQualityCheck: (answer = '') => String(answer || '').trim(),
 
       enforceSozialrechtMode: (opts = {}) => {
         if (SOZIALRECHT_ONLY_MODE) app.state.settings.domain = SOZIALRECHT_DOMAIN_KEY;
@@ -8439,36 +8277,20 @@
         return next.slice(0, want);
       },
 
-      buildCardsWebhookQuestion: (text, targetCount, domain) => {
-        const safeText = app.logic.sanitizeCardsInputText(text, 9000);
-        const tpl = app.logic.getLearningTemplates();
-        const pattern =
-          String(tpl?.flashcards?.instruction_template || '').trim() ||
-          DEFAULT_LEARNING_TEMPLATES.flashcards.instruction_template;
-        return app.logic.fillTemplateVars(pattern, {
-          count: app.logic.sanitizeCardCount(targetCount),
-          domain: domain || 'Standard',
-          content: safeText
-        });
-      },
-
       requestCardsViaWebhook: async (rawText, sourceType = 'manual', count = 4) => {
         const domain = app.state.settings.domain || '';
         const targetCount = app.logic.sanitizeCardCount(count, app.state.settings.cardsWebhook?.targetCount || 4);
         const endpoint = app.logic.resolveSafeCardsEndpoint();
-        const question = app.logic.buildCardsWebhookQuestion(rawText, targetCount, domain);
+        const safeText = app.logic.sanitizeCardsInputText(rawText, 9000);
 
         const res = await app.logic.fetchApi(endpoint, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            question: app.utils.truncate(question, 12000),
+            mode: 'flashcards',
+            count: targetCount,
             fachmodus: domain,
-            schnellmodus: false,
-            routing: {
-              preferred_model: 'default'
-            },
-            history: []
+            context: safeText
           })
         });
 
@@ -8807,21 +8629,6 @@
         const safeCount = app.logic.sanitizeCardCount(count, 4);
         const sourceText = app.logic.buildCardSourceContext(fullText || selectedText, selectedText, questionText);
 
-        const localFallback = () => {
-          const cards = app.logic.ensureCardCount(
-            app.logic.normalizeGeneratedCards(app.logic.buildFlashcardsFromText(sourceText), safeCount),
-            safeCount,
-            sourceText
-          );
-          if (!cards.length) throw new Error('Keine Lernkarten erzeugt');
-          return {
-            cards,
-            deckTitle: 'Lernkarten aus Auswahl',
-            sourceType: 'selection-local-fallback',
-            requestedCount: safeCount
-          };
-        };
-
         try {
           const result = await app.logic.requestCardsViaWebhook(sourceText, 'selection', safeCount);
           return {
@@ -8829,8 +8636,8 @@
             requestedCount: safeCount,
             deckTitle: result.deckTitle || `Lernkarten ${domain}`
           };
-        } catch (_) {
-          return localFallback();
+        } catch (err) {
+          throw new Error(`Lernkarten konnten nicht erzeugt werden${err?.message ? `: ${err.message}` : ''}`);
         }
       },
 
@@ -8890,103 +8697,6 @@
         return null;
       },
 
-      buildPracticeFromCards: (cards, opts) => {
-        const template = opts?.template || {};
-        const wanted = Math.max(3, Math.min(12, Number(opts?.count || template.default_count || 6)));
-        const sourceCards = Array.isArray(cards) ? cards.filter((c) => c.question && c.answer) : [];
-        const picked = sourceCards.slice(0, wanted);
-        const questions = [];
-        const templateLabel = String(template.label || template.id || 'Multiple Choice').trim();
-        const templateId = String(template.id || '').trim().toLowerCase();
-        const isPruefungsfall = /pruefungsfall|falltraining|deep|case|progressive/i.test(`${templateLabel} ${templateId}`);
-        const openSpacing = isPruefungsfall ? 2 : 3;
-        const makeStem = (raw) => {
-          const base = String(raw || '').replace(/\s+/g, ' ').trim().replace(/[?]+$/, '');
-          if (!base) return 'Welche Aussage ist fachlich korrekt';
-          if (isPruefungsfall && !/^Pruefungsfall:/i.test(base)) {
-            return `Pruefungsfall: ${base}`;
-          }
-          return base;
-        };
-        const finishStem = (text) => (/[?.!]$/.test(text) ? text : `${text}?`);
-
-        const buildDistractors = (correct, pool) => {
-          const out = [];
-          const seen = new Set([String(correct || '').toLowerCase()]);
-          for (const entry of pool) {
-            const candidate = String(entry || '').trim();
-            if (!candidate) continue;
-            const key = candidate.toLowerCase();
-            if (seen.has(key)) continue;
-            seen.add(key);
-            out.push(candidate);
-            if (out.length >= 3) break;
-          }
-          if (out.length < 3) {
-            const fallback = [
-              'Die Aussage gilt ohne weitere Voraussetzungen immer.',
-              'Die Aussage ist nur bei freiwilliger Anwendung relevant.',
-              'Die Aussage bezieht sich ausschliesslich auf Theorie ohne Praxisbezug.'
-            ];
-            for (const f of fallback) {
-              const key = f.toLowerCase();
-              if (seen.has(key)) continue;
-              out.push(f);
-              if (out.length >= 3) break;
-            }
-          }
-          return out;
-        };
-
-        picked.forEach((card, idx) => {
-          const questionText = String(card.question || '').replace(/\?+$/, '').trim();
-          const answerText = String(card.answer || '').trim();
-          const pool = sourceCards
-            .map((c) => c.answer)
-            .filter((a) => String(a || '').trim() && String(a || '').trim() !== answerText);
-          const distractors = buildDistractors(answerText, pool);
-          const options = [answerText, ...distractors].slice(0, 4);
-          options.sort((a, b) => (a > b ? 1 : -1));
-          const correctIndex = options.findIndex((o) => o === answerText);
-
-          const isOpen = Boolean(template.supports_open) && idx % openSpacing === openSpacing - 1;
-          if (isOpen) {
-            const stem = makeStem(questionText);
-            questions.push({
-              id: `open_${idx + 1}`,
-              type: 'open',
-              question: `${stem}. Begruende deine Antwort mit Bezug auf den markierten Inhalt.`,
-              options: [],
-              correctIndices: [],
-              hint: `Nutze die Kernaussage aus: ${answerText.slice(0, 120)}${answerText.length > 120 ? '...' : ''}`,
-              solution: answerText,
-              points: 3
-            });
-            return;
-          }
-
-          questions.push({
-            id: `mc_${idx + 1}`,
-            type: 'mc',
-            question: finishStem(makeStem(questionText)),
-            options,
-            correctIndices: correctIndex >= 0 ? [correctIndex] : [0],
-            hint: `Pruefe den Abschnitt mit Fokus auf den Kernbegriff: ${questionText.split(' ').slice(0, 4).join(' ')}.`,
-            solution: answerText,
-            points: 2
-          });
-        });
-
-        return {
-          title: `${app.logic.getLearningTemplates()?.practice?.title_prefix || 'Pruefungsaufgaben'} ${app.utils.nowStamp()}`,
-          templateId: template.id || 'multiple_choice',
-          templateLabel: template.label || 'Multiple Choice',
-          difficulty: String(opts?.difficulty || 'mittel'),
-          sourceType: 'selection-practice-local',
-          questions
-        };
-      },
-
       requestSelectionPractice: async (selectedText, options = {}) => {
         const safeText = app.logic.sanitizeCardsInputText(selectedText, 1800);
         const templates = app.logic.getPracticeTemplates();
@@ -8994,38 +8704,10 @@
         const template = templates.find((t) => t.id === templateId) || templates[0] || DEFAULT_LEARNING_TEMPLATES.practice.templates[0];
         const count = Math.max(3, Math.min(12, Number(options.count || template.default_count || 6)));
         const difficulty = String(options.difficulty || 'mittel');
-        const curriculum = app.logic.getSozialrechtCurriculum();
-        const audience = String(curriculum?.target_group || 'Personalfachkaufleute (IHK)').trim() || 'Personalfachkaufleute (IHK)';
-        const questionStyle = template.supports_open
-          ? 'fallorientierte Pruefungsfragen mit Begruendung'
-          : 'pruefungsnahe Multiple-Choice-Fragen mit plausiblen Ablenkern';
-        const examFocus = template.supports_open
-          ? 'Pruefungsfall mit Anwendung, Abgrenzung und Transfer'
-          : 'Pruefungsnahe Wiederholung mit klarer Fachlogik';
-
-        const localFromCards = () => {
-          const cards = app.logic.buildFlashcardsFromText(safeText).slice(0, Math.max(6, count + 2));
-          return app.logic.buildPracticeFromCards(cards, { template, count, difficulty });
-        };
+        const focus = String(options.focus || '').trim();
+        const audience = 'Personalfachkaufleute (IHK)';
 
         try {
-          const tplCfg = app.logic.getLearningTemplates();
-          const instruction = app.logic.fillTemplateVars(
-            String(tplCfg?.practice?.instruction_template || DEFAULT_LEARNING_TEMPLATES.practice.instruction_template),
-            {
-              template_label: template.label,
-              template_description: template.description,
-              template_id: template.id,
-              difficulty,
-              count,
-              domain: app.state.settings.domain || 'Standard',
-              audience,
-              exam_focus: examFocus,
-              question_style: questionStyle,
-              content: safeText
-            }
-          );
-
           const res = await app.logic.fetchApi(FLASHCARDS_API_ENDPOINT, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -9039,15 +8721,16 @@
               title: `${template.label} - ${audience}`,
               source: `Markierter Text (${audience})`,
               audience,
-              exam_focus: examFocus,
-              question_style: questionStyle,
+              focus,
               context: safeText,
-              instruction,
+              question_text: String(app.state.selectionDraft?.questionText || '').trim(),
               economyMode: true
             })
           });
 
-          if (!res.ok) return localFromCards();
+          if (!res.ok) {
+            throw new Error(`HTTP ${res.status}`);
+          }
 
           const raw = await res.text();
           const parsedPractice = app.logic.parsePracticeApiResponse(raw);
@@ -9057,18 +8740,13 @@
               templateId: template.id,
               templateLabel: template.label,
               difficulty,
+              focus,
               sourceType: 'selection-practice-api'
             };
           }
-
-          const parsedCards = parseCardsWebhookResponse(raw);
-          if (parsedCards && Array.isArray(parsedCards.cards) && parsedCards.cards.length) {
-            return app.logic.buildPracticeFromCards(parsedCards.cards, { template, count, difficulty });
-          }
-
-          return localFromCards();
-        } catch (_) {
-          return localFromCards();
+          throw new Error('Keine Uebungsaufgaben empfangen');
+        } catch (err) {
+          throw new Error(`Uebungsaufgaben konnten nicht erzeugt werden${err?.message ? `: ${err.message}` : ''}`);
         }
       },
 
@@ -10276,12 +9954,6 @@
             ? []
             : contextWindow;
 
-          const sozialrechtProfile = sozialrechtDomain
-            ? app.logic.analyzeSozialrechtQuestion(text, '')
-            : null;
-          const sozialrechtDirective = sozialrechtProfile
-            ? app.logic.buildSozialrechtPromptDirective(sozialrechtProfile)
-            : '';
           const basePayloadQuestion = apiQuestionPrefix
             ? `${apiQuestionPrefix}\n\n${text}`
             : (
@@ -10289,11 +9961,8 @@
                 ? `${text}\n\n${apiQuestionSuffix}`
                 : text
             );
-          const payloadQuestion = sozialrechtDirective
-            ? `${basePayloadQuestion}\n\n${sozialrechtDirective}`
-            : basePayloadQuestion;
           const payload = {
-            question: app.utils.truncate(payloadQuestion, 4200),
+            question: app.utils.truncate(basePayloadQuestion, 4200),
             fachmodus: SOZIALRECHT_ONLY_MODE ? SOZIALRECHT_DOMAIN_KEY : (app.state.settings.domain || ''),
             schnellmodus: deepseekRoutingActive,
             history: historyForApi,
@@ -11032,13 +10701,16 @@
       try { localStorage.removeItem(PRACTICE_KEY); } catch (_) {}
     }
     const questions = Array.isArray(payload.questions) ? payload.questions : [];
+    const focusLabel = payload.focus
+      ? ` • Fokus: ${app.utils.safeText(String(payload.focus).slice(0, 80))}${String(payload.focus).length > 80 ? '...' : ''}`
+      : '';
 
     root.innerHTML = `
       <div class="cards-layout">
         <div class="cards-top">
           <div>
             <h1 class="cards-title">LINDA3 Uebungsaufgaben</h1>
-            <p class="cards-sub">${app.utils.safeText(payload.title || 'Uebungsaufgaben')} • ${questions.length} Aufgaben • Generiert: ${app.utils.safeText(payload.generatedAt || 'unbekannt')}</p>
+            <p class="cards-sub">${app.utils.safeText(payload.title || 'Uebungsaufgaben')} • ${questions.length} Aufgaben • Generiert: ${app.utils.safeText(payload.generatedAt || 'unbekannt')}${focusLabel}</p>
           </div>
           <button class="btn-icon" onclick="window.close()">Schließen</button>
         </div>
@@ -11116,7 +10788,6 @@
     app.utils.load();
     app.logic.enforceSozialrechtMode({ save: false });
     app.logic.loadKeywordLinks();
-    app.logic.loadLearningTemplates();
     app.logic.loadSozialrechtCurriculum();
     app.ui.updateDomainUI();
     app.ui.renderSourceToolbar();
@@ -11547,15 +11218,17 @@
         fieldsHtml:
           `<div class="selection-field"><label>Vorlage</label><div class="selection-template-grid">${cardsHtml}</div></div>` +
           '<div class="selection-field"><label for="selection-practice-count">Anzahl Aufgaben</label><select id="selection-practice-count"><option value="4">4</option><option value="6" selected>6</option><option value="8">8</option><option value="10">10</option></select></div>' +
-          `<div class="selection-field"><label for="selection-practice-difficulty">Niveau</label><select id="selection-practice-difficulty">${difficultyOptions}</select></div>`,
+          `<div class="selection-field"><label for="selection-practice-difficulty">Niveau</label><select id="selection-practice-difficulty">${difficultyOptions}</select></div>` +
+          '<div class="selection-field"><label for="selection-practice-focus">Aufgabenfokus</label><textarea id="selection-practice-focus" placeholder="z.B. Rechtsgrundlage, Berechnung, Frist oder Transfer"></textarea></div>',
         confirmLabel: 'Uebungsaufgaben erstellen',
         onConfirm: async () => {
           const activeTemplate = document.querySelector('.selection-template.active');
           const templateId = activeTemplate?.getAttribute('data-practice-template') || templates[0]?.id;
           const count = Number(document.getElementById('selection-practice-count')?.value || 6);
           const difficulty = String(document.getElementById('selection-practice-difficulty')?.value || 'mittel');
+          const focus = String(document.getElementById('selection-practice-focus')?.value || '').trim();
 
-          const result = await app.logic.requestSelectionPractice(draft.text, { templateId, count, difficulty });
+          const result = await app.logic.requestSelectionPractice(draft.text, { templateId, count, difficulty, focus });
           app.logic.openPracticeTabWithPayload({
             ...result,
             generatedAt: app.utils.nowStamp(),
