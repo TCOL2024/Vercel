@@ -128,6 +128,13 @@ function buildBbigKeywordLookup() {
 
 const BBIG_KEYWORD_LOOKUP = buildBbigKeywordLookup();
 
+const SOCIALRECHT_PRACTICE_MD_CANDIDATE_PATHS = Array.from(new Set([
+  String(process.env.LINDA_SOCIALRECHT_MARKDOWN_PATH || '').trim(),
+  path.join(process.cwd(), 'docs', 'Linda4_Sozialrecht_50_Fragen_Stand2026.md'),
+  '/Users/jensnoormann/Downloads/Linda4_Sozialrecht_50_Fragen_Stand2026.md'
+].filter(Boolean)));
+let SOCIALRECHT_PRACTICE_BANK_CACHE = null;
+
 function detectBbigKeywordSections(questionText, maxHits = 4) {
   const hay = normalizeForGuardrails(questionText);
   if (!hay) return [];
@@ -777,6 +784,19 @@ function buildPracticeCardsFromCards(cards, opts = {}) {
 
 function buildPracticeCardsFromText(text, opts = {}) {
   const wanted = Math.max(4, Math.min(20, Number(opts?.count || 8)));
+  const queryText = [opts?.focus, opts?.questionText, opts?.domain, text]
+    .filter(Boolean)
+    .join(' ');
+  const socialrechtBank = hasSocialLawSignals(queryText) ? getSocialrechtPracticeBank() : null;
+  if (socialrechtBank?.cases?.length) {
+    const practice = buildSocialrechtPracticeFromBank(socialrechtBank, {
+      ...opts,
+      count: wanted,
+      questionText: String(opts?.questionText || '').trim(),
+      content: text
+    });
+    if (practice?.questions?.length) return practice;
+  }
   const cards = buildFallbackCards(text, wanted);
   return buildPracticeCardsFromCards(cards, opts);
 }
@@ -853,6 +873,353 @@ function buildFallbackCards(text, count = 8) {
     if (cards.length >= count) break;
   }
   return cards;
+}
+
+function normalizeSocialrechtPracticeText(text) {
+  return normalizeForGuardrails(
+    String(text || '')
+      .replace(/\u00a0/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim()
+  );
+}
+
+function normalizeSocialrechtPracticeCell(text) {
+  return String(text || '')
+    .replace(/\u00a0/g, ' ')
+    .replace(/\u200b/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function splitSocialrechtPracticeRow(line) {
+  const raw = String(line || '').trim();
+  if (!raw.startsWith('|')) return null;
+  if (/^\|\s*[-:|\s]+\|?$/.test(raw)) return null;
+  const cells = raw.split('|').slice(1, -1).map((cell) => normalizeSocialrechtPracticeCell(cell));
+  if (cells.length < 6) return null;
+  return cells;
+}
+
+function extractSocialrechtNormReferences(text) {
+  const raw = String(text || '');
+  const refs = [];
+  const add = (value) => {
+    const clean = normalizeSocialrechtPracticeCell(value);
+    if (!clean) return;
+    if (refs.includes(clean)) return;
+    refs.push(clean);
+  };
+
+  const patterns = [
+    /\b§\s*\d+[a-zA-Z]*(?:\s*Abs\.\s*\d+)?(?:\s*Nr\.\s*\d+)?(?:\s*Satz\s*\d+)?(?:\s*SGB\s*[IVX]+)?\b/gi,
+    /\bSGB\s*[IVX]+\b/gi,
+    /\b(?:BEEG|MuSchG|BBiG|AEVO|AAG|KSVG|EFZG|SchwarzArbG|BetrAVG|SGB\s*I|SGB\s*II|SGB\s*III|SGB\s*IV|SGB\s*V|SGB\s*VI|SGB\s*VII|SGB\s*IX|SGB\s*X|VO\s*\(EG\)\s*\d+\/\d+)\b/gi
+  ];
+
+  for (const pattern of patterns) {
+    const matches = raw.match(pattern) || [];
+    for (const match of matches) add(match);
+  }
+  return refs.slice(0, 8);
+}
+
+function buildSocialrechtAnswerCue(prompt, entry = {}) {
+  const raw = normalizeSocialrechtPracticeText(prompt);
+  const topic = String(entry?.thema || '').trim();
+  const firstNorm = Array.isArray(entry?.relevant_norms) ? String(entry.relevant_norms[0] || '').trim() : '';
+
+  if (!raw) return 'Fallbezogen und knapp beantworten.';
+  if (/(rechtsgrundlage|norm|definiert|definition|akteur)/i.test(raw)) {
+    return firstNorm
+      ? `Rechtsgrundlage und Begriff sauber benennen, etwa ${firstNorm}.`
+      : 'Rechtsgrundlage, Begriff oder Akteur sauber benennen.';
+  }
+  if (/(berechn|grenze|entgelt|beitrag|bbg|jaeg|minijob|midijob|krankengeld|elterngeld|monatl|stunden|tage|prozent|%)/i.test(raw)) {
+    return 'Relevante Werte nennen, Berechnung nachvollziehen und das Ergebnis kurz ausweisen.';
+  }
+  if (/(pruef|prüf|beurteil|anwenden|subsum|wuerdig|würdigung|einordn)/i.test(raw)) {
+    return topic
+      ? `Sachverhalt bei ${topic} am Normtext subsumieren und die entscheidenden Indizien nennen.`
+      : 'Sachverhalt am Normtext subsumieren und die entscheidenden Indizien nennen.';
+  }
+  if (/(folge|folgen|konsequenz|auswirkung|transfer|variante|beratung)/i.test(raw)) {
+    return 'Die Rechtsfolge der Variante fuer Arbeitgeber, Arbeitnehmer oder Traeger herleiten.';
+  }
+  if (/(frist|antrag|meldung|anzeige|bescheid|widerspruch|verfahren)/i.test(raw)) {
+    return 'Zustaendige Stelle, Frist und Verfahrensfolge benennen.';
+  }
+  return 'Fallbezogen und knapp die fachliche Kernaussage herleiten.';
+}
+
+function extractSocialrechtPracticeBank(raw, sourcePath = '') {
+  const text = String(raw || '').replace(/\r\n?/g, '\n');
+  const lines = text.split('\n');
+  const cases = [];
+  let title = '';
+  let cluster = '';
+  let clusterTitle = '';
+  let rightsStand = '';
+
+  for (const line of lines) {
+    const trimmed = String(line || '').trim();
+    if (!trimmed) continue;
+    if (!title && /^#\s+/.test(trimmed)) {
+      title = normalizeSocialrechtPracticeCell(trimmed.replace(/^#\s+/, ''));
+      continue;
+    }
+    if (!rightsStand && /^(\*\*)?Rechtsstand:/i.test(trimmed)) {
+      rightsStand = normalizeSocialrechtPracticeCell(trimmed.replace(/^\*\*?Rechtsstand:\*\*?/i, '').replace(/^Rechtsstand:\s*/i, ''));
+      continue;
+    }
+    const section = trimmed.match(/^##\s+([A-J])\)\s*(.+)$/);
+    if (section) {
+      cluster = String(section[1] || '').trim();
+      clusterTitle = normalizeSocialrechtPracticeCell(section[2] || '');
+      continue;
+    }
+
+    const cells = splitSocialrechtPracticeRow(trimmed);
+    if (!cells) continue;
+    const [nr, thema, sachverhalt, stufe1, stufe2, stufe3] = cells;
+    if (!nr || !thema || !sachverhalt || !stufe1 || !stufe2 || !stufe3) continue;
+    if (/^#|^---/.test(nr)) continue;
+
+    const numericId = String(nr).replace(/[^\d]+/g, '');
+    const caseIndex = numericId || String(cases.length + 1).padStart(2, '0');
+    const combined = [thema, sachverhalt, stufe1, stufe2, stufe3].join(' ');
+    const relevantNorms = extractSocialrechtNormReferences(combined);
+
+    cases.push({
+      id: `sr_${String(cluster || 'x').toLowerCase()}_${caseIndex}`,
+      nr: String(nr).trim(),
+      cluster,
+      cluster_title: clusterTitle,
+      thema,
+      sachverhalt,
+      stufe1_einstieg: stufe1,
+      stufe2_vertiefung: stufe2,
+      stufe3_transfer: stufe3,
+      relevante_normen: relevantNorms,
+      lernziel: `Fallorientierte Sozialrecht- und SGB-Pruefung zu ${thema}`,
+      schwierigkeitsgrad: 'mittel'
+    });
+  }
+
+  return {
+    title: title || 'Linda 4 - Uebungsdialog Sozialrecht fuer Personalfachkaufleute',
+    rightsStand: rightsStand || '2026',
+    sourcePath,
+    caseCount: cases.length,
+    cases
+  };
+}
+
+function loadSocialrechtPracticeBank() {
+  if (SOCIALRECHT_PRACTICE_BANK_CACHE) return SOCIALRECHT_PRACTICE_BANK_CACHE;
+
+  for (const filePath of SOCIALRECHT_PRACTICE_MD_CANDIDATE_PATHS) {
+    try {
+      if (!fs.existsSync(filePath)) continue;
+      const raw = fs.readFileSync(filePath, 'utf8');
+      const bank = extractSocialrechtPracticeBank(raw, filePath);
+      if (bank?.cases?.length) {
+        SOCIALRECHT_PRACTICE_BANK_CACHE = bank;
+        return bank;
+      }
+    } catch (_) {}
+  }
+
+  SOCIALRECHT_PRACTICE_BANK_CACHE = {
+    title: 'Linda 4 - Uebungsdialog Sozialrecht fuer Personalfachkaufleute',
+    rightsStand: '2026',
+    sourcePath: '',
+    caseCount: 0,
+    cases: []
+  };
+  return SOCIALRECHT_PRACTICE_BANK_CACHE;
+}
+
+function getSocialrechtPracticeBank() {
+  return loadSocialrechtPracticeBank();
+}
+
+function scoreSocialrechtPracticeCase(entry, queryText = '') {
+  const hay = normalizeSocialrechtPracticeText([
+    entry?.thema,
+    entry?.cluster_title,
+    entry?.sachverhalt,
+    entry?.stufe1_einstieg,
+    entry?.stufe2_vertiefung,
+    entry?.stufe3_transfer,
+    Array.isArray(entry?.relevante_normen) ? entry.relevante_normen.join(' ') : ''
+  ].filter(Boolean).join(' '));
+  const query = normalizeSocialrechtPracticeText(queryText);
+  if (!hay || !query) return 0;
+
+  const stopWords = new Set([
+    'und', 'oder', 'der', 'die', 'das', 'den', 'dem', 'des', 'ein', 'eine', 'einer', 'eines',
+    'ist', 'sind', 'war', 'wird', 'werden', 'bei', 'fuer', 'für', 'mit', 'auf', 'von', 'vom',
+    'im', 'in', 'zu', 'zum', 'zur', 'nach', 'vor', 'aus', 'am', 'an', 'wie', 'was', 'welche',
+    'welcher', 'welches', 'welchen', 'dass', 'sich', 'hier', 'bitte', 'kann', 'koennen', 'können'
+  ]);
+  const queryTokens = Array.from(new Set(query.split(' ').filter((w) => w.length >= 4 && !stopWords.has(w))));
+  let score = 0;
+
+  for (const token of queryTokens) {
+    if (!hay.includes(token)) continue;
+    score += token.length >= 8 ? 5 : 2;
+  }
+
+  const specificMarks = [
+    ...((String(queryText || '').match(/\b(?:SGB\s*[IVX]+|BEEG|MuSchG|BBiG|AEVO|AAG|KSVG|EFZG|SchwarzArbG|BetrAVG|VO\s*\(EG\)\s*\d+\/\d+)\b/gi) || [])),
+    ...((String(queryText || '').match(/\b(?:§\s*\d+[a-zA-Z]*(?:\s*Abs\.\s*\d+)?(?:\s*Nr\.\s*\d+)?(?:\s*Satz\s*\d+)?(?:\s*SGB\s*[IVX]+)?)\b/gi) || []))
+  ];
+  for (const mark of specificMarks) {
+    const normalizedMark = normalizeSocialrechtPracticeText(mark);
+    if (normalizedMark && hay.includes(normalizedMark)) score += 10;
+  }
+
+  const topic = normalizeSocialrechtPracticeText(entry?.thema || '');
+  if (topic && query.includes(topic)) score += 14;
+
+  const clusterTitle = normalizeSocialrechtPracticeText(entry?.cluster_title || '');
+  if (clusterTitle && query.includes(clusterTitle)) score += 8;
+
+  for (const ref of Array.isArray(entry?.relevante_normen) ? entry.relevante_normen : []) {
+    const refNorm = normalizeSocialrechtPracticeText(ref);
+    if (refNorm && query.includes(refNorm)) score += 6;
+  }
+
+  if (/(fall|pruefungsfall|prüfungsfall|stufe|einstieg|vertiefung|transfer|sgb)/i.test(queryText)) {
+    score += 3;
+  }
+
+  return score;
+}
+
+function pickSocialrechtPracticeCases(bank, queryText = '', count = 6) {
+  const cases = Array.isArray(bank?.cases) ? bank.cases : [];
+  if (!cases.length) return [];
+
+  const target = Math.max(1, Math.min(20, Number(count || 6)));
+  const queryHasSpecificMark = /\b(?:SGB\s*[IVX]+|BEEG|MuSchG|BBiG|AEVO|AAG|KSVG|EFZG|SchwarzArbG|BetrAVG|VO\s*\(EG\)\s*\d+\/\d+)\b/i.test(String(queryText || ''))
+    || /\b§\s*\d+/i.test(String(queryText || ''));
+  const scored = cases
+    .map((entry, index) => ({
+      ...entry,
+      __score: scoreSocialrechtPracticeCase(entry, queryText),
+      __index: index
+    }))
+    .sort((a, b) => b.__score - a.__score || a.__index - b.__index);
+
+  if (queryHasSpecificMark) {
+    return scored.slice(0, target);
+  }
+
+  const buckets = new Map();
+  for (const entry of scored) {
+    const key = String(entry.cluster || 'x').trim() || 'x';
+    if (!buckets.has(key)) buckets.set(key, []);
+    buckets.get(key).push(entry);
+  }
+
+  const orderedClusters = Array.from(buckets.entries())
+    .map(([key, list]) => ({ key, score: list[0]?.__score || 0 }))
+    .sort((a, b) => b.score - a.score || a.key.localeCompare(b.key, 'de'))
+    .map((item) => item.key);
+
+  const picked = [];
+  while (picked.length < target) {
+    let progress = false;
+    for (const key of orderedClusters) {
+      const bucket = buckets.get(key) || [];
+      const next = bucket.shift();
+      if (!next) continue;
+      picked.push(next);
+      progress = true;
+      if (picked.length >= target) break;
+    }
+    if (!progress) break;
+  }
+
+  if (!picked.length) return scored.slice(0, target);
+  return picked.slice(0, target);
+}
+
+function buildSocialrechtPracticeQuestion(entry, opts = {}) {
+  const focus = String(opts?.focus || '').trim();
+  const lineNo = String(entry?.nr || '').trim();
+  const clusterLabel = [entry?.cluster, entry?.cluster_title].filter(Boolean).join(' - ');
+  const lines = [
+    `Pruefungsfall ${lineNo || String(entry?.id || '').replace(/^sr_[a-z]_/, '')}: ${entry?.thema || 'Sozialrechtlicher Fall'}`,
+    clusterLabel ? `Bereich: ${clusterLabel}` : '',
+    `Sachverhalt: ${String(entry?.sachverhalt || '').trim()}`,
+    focus ? `Aufgabenfokus: ${focus}` : '',
+    'Bearbeiten Sie die drei Stufen:',
+    `1. Einstieg: ${String(entry?.stufe1_einstieg || '').trim()}`,
+    `2. Vertiefung: ${String(entry?.stufe2_vertiefung || '').trim()}`,
+    `3. Transfer: ${String(entry?.stufe3_transfer || '').trim()}`
+  ].filter(Boolean);
+  return lines.join('\n');
+}
+
+function buildSocialrechtPracticeSolution(entry, opts = {}) {
+  const focus = String(opts?.focus || '').trim();
+  const norms = Array.isArray(entry?.relevante_normen) ? entry.relevante_normen.slice(0, 4) : [];
+  const stripEnd = (value) => String(value || '').replace(/[.。]+$/, '');
+  const lines = [];
+  if (focus) lines.push(`Fokus: ${focus}.`);
+  if (norms.length) lines.push(`Zentrale Normen: ${norms.join(', ')}.`);
+  lines.push(`Stufe 1: ${stripEnd(buildSocialrechtAnswerCue(entry?.stufe1_einstieg || '', entry))}.`);
+  lines.push(`Stufe 2: ${stripEnd(buildSocialrechtAnswerCue(entry?.stufe2_vertiefung || '', entry))}.`);
+  lines.push(`Stufe 3: ${stripEnd(buildSocialrechtAnswerCue(entry?.stufe3_transfer || '', entry))}.`);
+  return lines.join(' ');
+}
+
+function buildSocialrechtPracticeFromBank(bank, opts = {}) {
+  const picked = pickSocialrechtPracticeCases(bank, [
+    opts?.focus,
+    opts?.questionText,
+    opts?.content,
+    opts?.domain,
+    opts?.audience
+  ].filter(Boolean).join(' '), opts?.count || 6);
+  if (!picked.length) return null;
+
+  const title = String(bank?.title || 'Linda 4 - Uebungsdialog Sozialrecht fuer Personalfachkaufleute').trim();
+  const focus = String(opts?.focus || '').trim();
+  const difficulty = String(opts?.difficulty || 'mittel').trim();
+  const audience = String(opts?.audience || 'Personalfachkaufleute (IHK)').trim();
+
+  return {
+    title: `${title} - ${audience}`,
+    deckTitle: `${title} - ${audience}`,
+    templateId: 'deep_dive',
+    sourceTemplateId: String(opts?.templateId || '').trim(),
+    templateLabel: 'Pruefungsfall',
+    difficulty,
+    focus,
+    sourceType: 'socialrecht-markdown-bank',
+    bankSourcePath: String(bank?.sourcePath || '').trim(),
+    bankCaseCount: Number(bank?.caseCount || bank?.cases?.length || picked.length),
+    questions: picked.map((entry, idx) => ({
+      id: String(entry?.id || `sr_${idx + 1}`),
+      type: 'open',
+      question: buildSocialrechtPracticeQuestion(entry, opts),
+      options: [],
+      correctIndices: [],
+      hint: [
+        focus ? `Fokus: ${focus}.` : '',
+        Array.isArray(entry?.relevante_normen) && entry.relevante_normen.length
+          ? `Normanker: ${entry.relevante_normen.slice(0, 4).join(', ')}.`
+          : '',
+        `Arbeite strikt dreistufig: Einstieg, Vertiefung, Transfer.`
+      ].filter(Boolean).join(' '),
+      solution: buildSocialrechtPracticeSolution(entry, opts),
+      points: 3
+    }))
+  };
 }
 
 async function handleHealth(res) {
@@ -1207,6 +1574,24 @@ async function handleFlashcards(res, body) {
   const baseText = sanitizePracticeText([contextText, selectedText, questionText].filter(Boolean).join('\n\n'), 9000);
   const endpoint = String(process.env.LernkartenAPI || '').trim();
   const finalFocus = focus || buildPracticeFocusSuggestion(baseText, questionText);
+  const socialrechtQuery = [domain, finalFocus, questionText, baseText].filter(Boolean).join(' ');
+  const socialrechtBank = mode === 'exercise' && hasSocialLawSignals(socialrechtQuery) ? getSocialrechtPracticeBank() : null;
+
+  if (socialrechtBank?.cases?.length) {
+    const practice = buildSocialrechtPracticeFromBank(socialrechtBank, {
+      templateId: template.id,
+      difficulty,
+      count: countValue,
+      domain,
+      audience,
+      focus: finalFocus,
+      questionText,
+      content: baseText || contextText || selectedText || questionText
+    });
+    if (practice?.questions?.length) {
+      return sendJson(res, 200, practice);
+    }
+  }
 
   const payload = {
     ...(body && typeof body === 'object' ? body : {}),
