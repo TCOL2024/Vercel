@@ -4018,7 +4018,7 @@
 
   const DEFAULT_CARDS_WEBHOOK_JSON = {
     enabled: true,
-    endpointPath: "/api/linda3?action=bot",
+    endpointPath: "/api/linda3?action=flashcards",
     minSelectionChars: 24,
     targetCount: 4,
     requireConfirmation: true,
@@ -8369,10 +8369,12 @@
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
+            action: 'flashcards',
             mode: 'flashcards',
             count: targetCount,
             fachmodus: domain,
-            context: safeText
+            context: safeText,
+            question_text: safeText.slice(0, 500)
           })
         });
 
@@ -8485,19 +8487,23 @@
 
       resolveSafeCardsEndpoint: () => {
         const cfg = app.state.settings.cardsWebhook || DEFAULT_CARDS_WEBHOOK_JSON;
-        const raw = String(cfg.endpointPath || API_ENDPOINT || '/api/linda3?action=bot').trim();
-        if (!raw) return '/api/linda3?action=bot';
+        const raw = String(cfg.endpointPath || FLASHCARDS_API_ENDPOINT || '/api/linda3?action=flashcards').trim();
+        if (!raw) return FLASHCARDS_API_ENDPOINT;
+        if (/^\/api\/linda3(?:\?.*)?$/i.test(raw)) return FLASHCARDS_API_ENDPOINT;
+        if (raw === API_ENDPOINT || /action=bot(?:&|$)/i.test(raw)) return FLASHCARDS_API_ENDPOINT;
         if (raw.startsWith('/')) {
-          if (!raw.startsWith('/api/')) return '/api/linda3?action=bot';
+          if (!raw.startsWith('/api/')) return FLASHCARDS_API_ENDPOINT;
           return raw;
         }
         try {
           const u = new URL(raw, window.location.origin);
-          if (u.origin !== window.location.origin) return '/api/linda3?action=bot';
-          if (!u.pathname.startsWith('/api/')) return '/api/linda3?action=bot';
-          return `${u.pathname}${u.search}`;
+          if (u.origin !== window.location.origin) return FLASHCARDS_API_ENDPOINT;
+          if (!u.pathname.startsWith('/api/')) return FLASHCARDS_API_ENDPOINT;
+          const resolved = `${u.pathname}${u.search}`;
+          if (u.pathname === '/api/linda3') return FLASHCARDS_API_ENDPOINT;
+          return /action=bot(?:&|$)/i.test(resolved) ? FLASHCARDS_API_ENDPOINT : resolved;
         } catch (_) {
-          return '/api/linda3?action=bot';
+          return FLASHCARDS_API_ENDPOINT;
         }
       },
 
@@ -8794,6 +8800,7 @@
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
+              action: 'flashcards',
               mode: 'exercise',
               fachmodus: SOZIALRECHT_DOMAIN_KEY,
               domain: SOZIALRECHT_DOMAIN_KEY,
@@ -8807,7 +8814,7 @@
               audience,
               focus,
               context: safeText,
-              question_text: String(app.state.selectionDraft?.questionText || '').trim(),
+              question_text: String(app.state.selectionDraft?.questionText || focus || '').trim(),
               economyMode: true
             })
           });
