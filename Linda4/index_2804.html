@@ -3968,16 +3968,23 @@
         'Nutze nur 2 oder 4 Karten, keine anderen Anzahlen. Fachmodus: {{domain}}. Volltext: {{content}}'
     },
     practice: {
-      title_prefix: 'Uebungsaufgaben',
+      title_prefix: 'Pruefungsaufgaben',
       instruction_template:
-        'Analysiere den Inhalt gruendlich und erstelle durchdachte Uebungsaufgaben im Modus {{template_label}} mit Niveau {{difficulty}}. ' +
-        'Liefere JSON ohne Markdown im Format {"title":"...","questions":[{"type":"mc","question":"...","options":["..."],"correctIndices":[0],"hint":"...","solution":"...","points":2}]}. ' +
-        'Fuer MC mindestens 4 Optionen. Kontext: {{content}}',
+        'Du bist Pruefungsautor fuer {{audience}}. Erstelle genau {{count}} Aufgaben im Stil einer echten IHK-Abschlusspruefung. ' +
+        'Modus: {{template_label}}. Niveau: {{difficulty}}. Pruefungsfokus: {{exam_focus}}. Stil: {{question_style}}. ' +
+        'Stilbeschreibung: {{template_description}}. Nutze den bereitgestellten Kontext nur fuer fachlich relevante, pruefungsnahe Inhalte. ' +
+        'Die Fragen muessen fallorientiert, prazise und deutlich anspruchsvoller als Lernkarten sein. Bevorzuge Operatoren wie Beurteilen, Erlaeutern, ' +
+        'Anwenden, Abgrenzen, Begruenden, Pruefen und Einordnen. Vermeide generische Fragen wie "Welche Kernaussage..." oder "Was laesst sich ableiten?" ' +
+        'und vermeide Meta-Hinweise. Wenn offene Aufgaben erlaubt sind, baue etwa jede dritte Aufgabe als offene Fall- oder Begruendungsfrage ein. ' +
+        'Bei MC-Aufgaben nutze mindestens 4 plausible, fachlich nahe Antwortoptionen mit genau einer richtigen Loesung. Jede Loesung soll kurz erklaeren, ' +
+        'warum die richtige Antwort stimmt und welche typische Pruefungsfalle in den falschen Antworten steckt. Antworte ausschliesslich als JSON ohne Markdown ' +
+        'im Format {"title":"...","questions":[{"type":"mc","question":"...","options":["..."],"correctIndices":[0],"hint":"...","solution":"...","points":2}]}. ' +
+        'Fachmodus: {{domain}}. Zielgruppe: {{audience}}. Kontext: {{content}}',
       templates: [
-        { id: 'quick_quiz', label: 'Schnelles Quiz', description: 'Kurze Wiederholung von Fakten und Definitionen', duration: '5 Minuten', default_count: 4, supports_open: false },
-        { id: 'multiple_choice', label: 'Multiple Choice', description: 'Prueft Verstaendnis auf mehreren Ebenen', duration: '10 Minuten', default_count: 6, supports_open: false },
-        { id: 'progressive', label: 'Progressive Uebung', description: 'Steigendes Niveau inkl. Transferaufgaben', duration: '15 Minuten', default_count: 6, supports_open: true },
-        { id: 'deep_dive', label: 'Deep Dive', description: 'Anwendung, Begruendung und kritisches Denken', duration: '25 Minuten', default_count: 8, supports_open: true }
+        { id: 'quick_quiz', label: 'Schnelles Quiz', description: 'Kurze Wiederholung mit klarer Pruefungslogik', duration: '5 Minuten', default_count: 4, supports_open: false },
+        { id: 'multiple_choice', label: 'Multiple Choice', description: 'IHK-nahe Fragen mit plausiblen Ablenkern', duration: '10 Minuten', default_count: 6, supports_open: false },
+        { id: 'progressive', label: 'Falltraining', description: 'Fallorientierte Aufgaben mit steigender Tiefe', duration: '15 Minuten', default_count: 6, supports_open: true },
+        { id: 'deep_dive', label: 'Pruefungsfall', description: 'Klausurfall mit Anwendung, Begruendung und Transfer', duration: '25 Minuten', default_count: 8, supports_open: true }
       ],
       difficulties: ['leicht', 'mittel', 'anspruchsvoll']
     }
@@ -5791,7 +5798,7 @@
                 flashInstruction || DEFAULT_LEARNING_TEMPLATES.flashcards.instruction_template
             },
             practice: {
-              title_prefix: String(practiceObj.title_prefix || DEFAULT_LEARNING_TEMPLATES.practice.title_prefix || 'Uebungsaufgaben').trim(),
+              title_prefix: String(practiceObj.title_prefix || DEFAULT_LEARNING_TEMPLATES.practice.title_prefix || 'Pruefungsaufgaben').trim(),
               instruction_template:
                 String(practiceObj.instruction_template || '').trim() ||
                 DEFAULT_LEARNING_TEMPLATES.practice.instruction_template,
@@ -8834,7 +8841,7 @@
       },
 
       normalizePracticeSet: (data) => {
-        const title = String(data?.title || '').trim() || 'Uebungsaufgaben';
+        const title = String(data?.title || '').trim() || 'Pruefungsaufgaben';
         const questions = (Array.isArray(data?.questions) ? data.questions : [])
           .map((q, idx) => {
             const question = String(q?.question || '').trim();
@@ -8889,6 +8896,19 @@
         const sourceCards = Array.isArray(cards) ? cards.filter((c) => c.question && c.answer) : [];
         const picked = sourceCards.slice(0, wanted);
         const questions = [];
+        const templateLabel = String(template.label || template.id || 'Multiple Choice').trim();
+        const templateId = String(template.id || '').trim().toLowerCase();
+        const isPruefungsfall = /pruefungsfall|falltraining|deep|case|progressive/i.test(`${templateLabel} ${templateId}`);
+        const openSpacing = isPruefungsfall ? 2 : 3;
+        const makeStem = (raw) => {
+          const base = String(raw || '').replace(/\s+/g, ' ').trim().replace(/[?]+$/, '');
+          if (!base) return 'Welche Aussage ist fachlich korrekt';
+          if (isPruefungsfall && !/^Pruefungsfall:/i.test(base)) {
+            return `Pruefungsfall: ${base}`;
+          }
+          return base;
+        };
+        const finishStem = (text) => (/[?.!]$/.test(text) ? text : `${text}?`);
 
         const buildDistractors = (correct, pool) => {
           const out = [];
@@ -8929,12 +8949,13 @@
           options.sort((a, b) => (a > b ? 1 : -1));
           const correctIndex = options.findIndex((o) => o === answerText);
 
-          const isOpen = Boolean(template.supports_open) && idx % 3 === 2;
+          const isOpen = Boolean(template.supports_open) && idx % openSpacing === openSpacing - 1;
           if (isOpen) {
+            const stem = makeStem(questionText);
             questions.push({
               id: `open_${idx + 1}`,
               type: 'open',
-              question: `${questionText || 'Erläutere den Zusammenhang'}. Begründe deine Antwort mit Bezug auf den markierten Inhalt.`,
+              question: `${stem}. Begruende deine Antwort mit Bezug auf den markierten Inhalt.`,
               options: [],
               correctIndices: [],
               hint: `Nutze die Kernaussage aus: ${answerText.slice(0, 120)}${answerText.length > 120 ? '...' : ''}`,
@@ -8947,7 +8968,7 @@
           questions.push({
             id: `mc_${idx + 1}`,
             type: 'mc',
-            question: `${questionText || 'Welche Aussage ist fachlich korrekt'}?`,
+            question: finishStem(makeStem(questionText)),
             options,
             correctIndices: correctIndex >= 0 ? [correctIndex] : [0],
             hint: `Pruefe den Abschnitt mit Fokus auf den Kernbegriff: ${questionText.split(' ').slice(0, 4).join(' ')}.`,
@@ -8957,7 +8978,7 @@
         });
 
         return {
-          title: `${app.logic.getLearningTemplates()?.practice?.title_prefix || 'Uebungsaufgaben'} ${app.utils.nowStamp()}`,
+          title: `${app.logic.getLearningTemplates()?.practice?.title_prefix || 'Pruefungsaufgaben'} ${app.utils.nowStamp()}`,
           templateId: template.id || 'multiple_choice',
           templateLabel: template.label || 'Multiple Choice',
           difficulty: String(opts?.difficulty || 'mittel'),
@@ -8973,6 +8994,14 @@
         const template = templates.find((t) => t.id === templateId) || templates[0] || DEFAULT_LEARNING_TEMPLATES.practice.templates[0];
         const count = Math.max(3, Math.min(12, Number(options.count || template.default_count || 6)));
         const difficulty = String(options.difficulty || 'mittel');
+        const curriculum = app.logic.getSozialrechtCurriculum();
+        const audience = String(curriculum?.target_group || 'Personalfachkaufleute (IHK)').trim() || 'Personalfachkaufleute (IHK)';
+        const questionStyle = template.supports_open
+          ? 'fallorientierte Pruefungsfragen mit Begruendung'
+          : 'pruefungsnahe Multiple-Choice-Fragen mit plausiblen Ablenkern';
+        const examFocus = template.supports_open
+          ? 'Pruefungsfall mit Anwendung, Abgrenzung und Transfer'
+          : 'Pruefungsnahe Wiederholung mit klarer Fachlogik';
 
         const localFromCards = () => {
           const cards = app.logic.buildFlashcardsFromText(safeText).slice(0, Math.max(6, count + 2));
@@ -8985,7 +9014,14 @@
             String(tplCfg?.practice?.instruction_template || DEFAULT_LEARNING_TEMPLATES.practice.instruction_template),
             {
               template_label: template.label,
+              template_description: template.description,
+              template_id: template.id,
               difficulty,
+              count,
+              domain: app.state.settings.domain || 'Standard',
+              audience,
+              exam_focus: examFocus,
+              question_style: questionStyle,
               content: safeText
             }
           );
@@ -8997,10 +9033,14 @@
               mode: 'exercise',
               template_id: template.id,
               template_label: template.label,
+              template_description: template.description,
               count,
               difficulty,
-              title: `${template.label} - ${app.state.settings.domain || 'Standard'}`,
-              source: `Markierter Text (${app.state.settings.domain || 'Standard'})`,
+              title: `${template.label} - ${audience}`,
+              source: `Markierter Text (${audience})`,
+              audience,
+              exam_focus: examFocus,
+              question_style: questionStyle,
               context: safeText,
               instruction,
               economyMode: true
