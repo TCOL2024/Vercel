@@ -414,6 +414,447 @@ function isPromptInjectionAttempt(text) {
   return needles.some((n) => t.includes(n));
 }
 
+const PRACTICE_TEMPLATE_DEFS = [
+  { id: 'quick_quiz', label: 'Schnelles Quiz', description: 'Kurze Wiederholung mit klarer Pruefungslogik', duration: '5 Minuten', default_count: 4, supports_open: false },
+  { id: 'multiple_choice', label: 'Multiple Choice', description: 'IHK-nahe Fragen mit plausiblen Ablenkern', duration: '10 Minuten', default_count: 6, supports_open: false },
+  { id: 'progressive', label: 'Falltraining', description: 'Fallorientierte Aufgaben mit steigender Tiefe', duration: '15 Minuten', default_count: 6, supports_open: true },
+  { id: 'deep_dive', label: 'Pruefungsfall', description: 'Klausurfall mit Anwendung, Begruendung und Transfer', duration: '25 Minuten', default_count: 8, supports_open: true }
+];
+
+function sanitizePracticeText(text, maxLen = 9000) {
+  return String(text || '')
+    .replace(/\r/g, '\n')
+    .replace(/```[\s\S]*?```/g, ' ')
+    .replace(/\[(.*?)\]\((.*?)\)/g, '$1')
+    .replace(/[\t ]+/g, ' ')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim()
+    .slice(0, maxLen);
+}
+
+function hasSocialLawSignals(text) {
+  const t = String(text || '').toLowerCase();
+  return [
+    'sgb',
+    'sozialrecht',
+    'sozialversicherung',
+    'krankengeld',
+    'mutterschutz',
+    'elternzeit',
+    'elterngeld',
+    'minijob',
+    'midijob',
+    'statusfeststellung',
+    'familienversicherung',
+    'versicherungsfrei',
+    'versicherungspflicht',
+    'beitragspflicht',
+    'beitragsbemessungsgrenze',
+    'geringf',
+    'kurzarbeitergeld',
+    'arbeitslosengeld',
+    'rentenversicherung',
+    'pflegeversicherung',
+    'unfallversicherung',
+    'entgeltfortzahlung',
+    'eau',
+    'bem',
+    'a1-bescheinigung',
+    'entsendung',
+    'sperrzeit',
+    'inso',
+    'arbeitsunfall',
+    'berufskrankheit',
+    'kündigungsschutz',
+    'kuendigungsschutz',
+    'ausgleichsabgabe'
+  ].some((part) => t.includes(part));
+}
+
+function buildPracticeFocusSuggestion(text, questionText = '') {
+  const source = `${String(text || '')} ${String(questionText || '')}`.toLowerCase();
+  if (hasSocialLawSignals(source)) {
+    if (/(€|eur|prozent|%|grenze|beitrag|entgelt|stunden|tage|monat|jahr|bbg|jaeg|geringf|lohn)/i.test(source)) {
+      return 'Berechnung, Grenze und Rechtsfolge';
+    }
+    if (/(frist|antrag|meldung|anzeige|statusfeststellung|bescheid|widerspruch|kündigung|kuendigung|eau|a1|nachweis|bescheinigung|unterlagen)/i.test(source)) {
+      return 'Verfahren, Frist und Folge';
+    }
+    return 'Rechtsgrundlage, Voraussetzungen und Transfer';
+  }
+  if (/(€|eur|prozent|%|stunden|tage|monat|jahr|berechnung|berechnen)/i.test(source)) {
+    return 'Berechnung, Einordnung und Folge';
+  }
+  return 'Fallfrage, Begründung und Transfer';
+}
+
+function buildPracticeTopic(questionText, answerText, focusText = '') {
+  const source = String(focusText || questionText || answerText || '')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .replace(/[?!.:;]+$/g, '');
+  if (!source) return 'den Sachverhalt';
+
+  const rxList = [
+    /§\s*\d+[a-zA-Z]*(?:\s*Abs\.\s*\d+)?(?:\s*Nr\.\s*\d+)?(?:\s*SGB\s*[IVX]+)?/i,
+    /\bSGB\s*[IVX]+\b/i,
+    /\b(?:BEEG|MuSchG|SGB\s*[IVX]+|SGB IV|SGB V|SGB VII|SGB IX|SGB X|SGB III|SGB VI)\b/i,
+    /\b(?:Minijob|Midijob|Krankengeld|Familienversicherung|Statusfeststellung|Mutterschutz|Elternzeit|Elterngeld|Kurzarbeitergeld|Arbeitslosengeld|Betriebspruefung|Betriebsprüfung|eAU|BEM|A1-Bescheinigung|Entgeltfortzahlung|Rentenversicherung|Pflegeversicherung|Unfallversicherung|Arbeitsunfall|Berufskrankheit|Sperrzeit|Insolvenzgeld|Ausgleichsabgabe|Versicherungspflicht|Beitragspflicht|Beitragsbemessungsgrenze|Geringfuegigkeitsgrenze|Geringfügigkeitsgrenze)\b/i
+  ];
+  for (const rx of rxList) {
+    const match = source.match(rx);
+    if (match) return String(match[0] || '').replace(/\s+/g, ' ').trim();
+  }
+
+  const stopWords = new Set([
+    'der', 'die', 'das', 'und', 'oder', 'bei', 'fuer', 'für', 'mit', 'auf', 'den', 'dem', 'des',
+    'im', 'in', 'zu', 'vom', 'von', 'eine', 'einer', 'eines', 'ein', 'einem', 'einen', 'ist',
+    'sind', 'wird', 'werden', 'als', 'nach', 'vor', 'ueber', 'über', 'durch', 'aus', 'an', 'am',
+    'bis', 'ab', 'wenn', 'wie', 'welche', 'welcher', 'welches', 'welchen', 'was', 'dass', 'sein',
+    'hat', 'haben', 'soll', 'sollen', 'kann', 'koennen', 'können', 'muss', 'müssen', 'darf', 'dürfen'
+  ]);
+  const words = source
+    .split(/\s+/)
+    .map((w) => w.replace(/^[^A-Za-zÄÖÜäöüß0-9§€%/.-]+|[^A-Za-zÄÖÜäöüß0-9§€%/.-]+$/g, ''))
+    .filter(Boolean)
+    .filter((w) => !stopWords.has(w.toLowerCase()));
+  const topic = words.slice(0, 8).join(' ');
+  if (topic) return topic.length > 72 ? `${topic.slice(0, 69)}...` : topic;
+  return source.length > 72 ? `${source.slice(0, 69)}...` : source;
+}
+
+function buildPracticeQuestionStem(questionText, answerText, opts = {}, mode = 'mc') {
+  const focus = String(opts.focus || '').trim();
+  const template = opts.template || {};
+  const domain = String(opts.domain || '').trim();
+  const combined = [focus, questionText, answerText, template.label, template.id, domain]
+    .filter(Boolean)
+    .join(' ');
+  const socialLaw = Boolean(opts.socialLaw) || hasSocialLawSignals(combined);
+  const topic = buildPracticeTopic(questionText, answerText, focus);
+  const wantsCalc = /[€%]|(?:\b\d+(?:[.,]\d+)?\b)|beitrag|grenze|entgelt|stunden|tage|monat|jahr|bbg|jaeg|geringf|minijob|midijob|kurzarbeitergeld|krankengeld|elterngeld/i.test(combined.toLowerCase());
+  const wantsProcedure = /frist|antrag|meldung|anzeige|statusfeststellung|bescheid|widerspruch|kündigung|kuendigung|eau|a1|nachweis|bescheinigung|unterlagen|pflicht|melde/i.test(combined.toLowerCase());
+
+  if (mode === 'open') {
+    if (socialLaw) {
+      return {
+        topic,
+        socialLaw,
+        question:
+          `Pruefungsfall: ${topic}.\n` +
+          '1. Einstieg: Welche Rechtsgrundlage, Definition oder welcher Akteur ist einschlaegig?\n' +
+          '2. Vertiefung: Pruefen Sie den konkreten Sachverhalt anhand des Textes.\n' +
+          '3. Transfer: Wie aendert sich die Beurteilung bei einer Variante?'
+      };
+    }
+    if (wantsCalc) {
+      return {
+        topic,
+        socialLaw,
+        question:
+          `Pruefungsfall: ${topic}.\n` +
+          '1. Einstieg: Welche Werte oder Grenzen sind fuer die Einordnung relevant?\n' +
+          '2. Vertiefung: Berechnen oder ordnen Sie den Fall ein.\n' +
+          '3. Transfer: Welche Folge hat eine andere Ausgangslage?'
+      };
+    }
+    return {
+      topic,
+      socialLaw,
+      question:
+        `Pruefungsfall: ${topic}.\n` +
+        '1. Einstieg: Welche Grundlage ist massgeblich?\n' +
+        '2. Vertiefung: Pruefen Sie den konkreten Fall.\n' +
+        '3. Transfer: Welche Folge hat eine Variante?'
+    };
+  }
+
+  if (socialLaw) {
+    if (wantsCalc) {
+      return {
+        topic,
+        socialLaw,
+        question: `Welche Berechnung oder Einordnung ist fuer ${topic} im vorliegenden Fall entscheidend?`
+      };
+    }
+    if (wantsProcedure) {
+      return {
+        topic,
+        socialLaw,
+        question: `Welche Frist, Meldung oder Rechtsfolge ist bei ${topic} massgeblich?`
+      };
+    }
+    return {
+      topic,
+      socialLaw,
+      question: `Welche Rechtsfolge oder welches Tatbestandsmerkmal ist bei ${topic} im vorliegenden Fall entscheidend?`
+    };
+  }
+
+  if (wantsCalc) {
+    return {
+      topic,
+      socialLaw,
+      question: `Welche Berechnung oder Einordnung ist bei ${topic} vorzunehmen?`
+    };
+  }
+  if (wantsProcedure) {
+    return {
+      topic,
+      socialLaw,
+      question: `Welche Folge oder welches Verfahren ist bei ${topic} massgeblich?`
+    };
+  }
+
+  return {
+    topic,
+    socialLaw,
+    question: `Welche fachliche Einordnung zu ${topic} ist nach dem Text am ehesten zutreffend?`
+  };
+}
+
+function resolvePracticeTemplate(templateId) {
+  const wanted = String(templateId || 'multiple_choice').trim();
+  return PRACTICE_TEMPLATE_DEFS.find((t) => t.id === wanted) || PRACTICE_TEMPLATE_DEFS[1];
+}
+
+function buildFlashcardsPrompt({ count, domain, content }) {
+  return [
+    `Erstelle aus dem folgenden Inhalt genau ${count} hochwertige Lernkarten.`,
+    'Antworte ausschliesslich als JSON ohne Markdown im Format {"deckTitle":"...","cards":[{"question":"...","answer":"..."}]}.',
+    'Regeln: Verwende den gesamten Text als Grundlage, formuliere praezise und pruefungsorientierte Fragen, keine generischen Fragen wie "Welche Kernaussage..." oder "Was laesst sich ableiten?", keine Meta-Hinweise, jede Antwort muss konkret aus dem Text belegbar sein.',
+    'Nutze nur 2 oder 4 Karten, keine anderen Anzahlen.',
+    `Fachmodus: ${domain || 'Standard'}.`,
+    `Inhalt: ${content}`
+  ].join(' ');
+}
+
+function buildPracticePrompt({
+  template,
+  difficulty,
+  count,
+  domain,
+  audience,
+  focus,
+  questionText,
+  content
+}) {
+  const safeTemplate = template || resolvePracticeTemplate('multiple_choice');
+  const examFocus = String(focus || '').trim() || buildPracticeFocusSuggestion(content, questionText);
+  const socialLaw = hasSocialLawSignals([examFocus, domain, content, safeTemplate.label, safeTemplate.id, audience].filter(Boolean).join(' '));
+  const questionStyle = safeTemplate.supports_open
+    ? (socialLaw ? 'dreistufige Fallfrage mit Einstieg, Vertiefung und Transfer' : 'fallorientierte Pruefungsfragen mit Begruendung')
+    : (socialLaw ? 'praezise Rechtsfragen mit plausiblen Ablenkern' : 'pruefungsnahe Multiple-Choice-Fragen mit plausiblen Ablenkern');
+
+  return [
+    `Du bist Pruefungsautor fuer ${audience || 'Personalfachkaufleute (IHK)'}.`,
+    `Erstelle genau ${count} Aufgaben im Stil einer echten IHK-Abschlusspruefung.`,
+    `Modus: ${safeTemplate.label}. Niveau: ${difficulty}. Pruefungsfokus: ${examFocus}. Stil: ${questionStyle}.`,
+    `Stilbeschreibung: ${safeTemplate.description}.`,
+    'Nutze den bereitgestellten Kontext nur fuer fachlich relevante, pruefungsnahe Inhalte.',
+    'Die Fragen muessen fallorientiert, prazise und deutlich anspruchsvoller als Lernkarten sein.',
+    'Bevorzuge Operatoren wie Beurteilen, Erlaeutern, Anwenden, Abgrenzen, Begruenden, Pruefen und Einordnen.',
+    'Vermeide generische Fragen wie "Welche Kernaussage..." oder "Was laesst sich ableiten?" und vermeide Meta-Hinweise.',
+    socialLaw
+      ? 'Für Sozialrecht/SGB: arbeite mit dreistufigen Prüfungsfällen. Stufe 1: Rechtsgrundlage, Definition oder Akteur. Stufe 2: Anwendung, Subsumtion oder Berechnung am Fall. Stufe 3: Variante, Beratung oder Folgewirkung.'
+      : 'Formuliere stattdessen konkrete Prüfungsfragen mit Anwendung, Abgrenzung, Berechnung oder Begründung.',
+    safeTemplate.supports_open
+      ? 'Bei offenen Aufgaben soll ein kurzer Fall beantwortet werden; mindestens jede dritte Aufgabe darf offene Anwendung oder Transfer verlangen.'
+      : 'Bei MC-Aufgaben müssen mindestens vier plausible Antwortoptionen mit genau einer richtigen Lösung vorkommen.',
+    'Jede Loesung soll kurz erklaeren, warum die richtige Antwort stimmt und welche typische Pruefungsfalle in den falschen Antworten steckt.',
+    'Antworte ausschliesslich als JSON ohne Markdown im Format {"title":"...","questions":[{"type":"mc","question":"...","options":["..."],"correctIndices":[0],"hint":"...","solution":"...","points":2}]}',
+    `Fachmodus: ${domain || 'Standard'}. Zielgruppe: ${audience || 'Personalfachkaufleute (IHK)'}. Kontext: ${content}`
+  ].join(' ');
+}
+
+const DEFAULT_PRACTICE_TITLE_PREFIX = 'Pruefungsaufgaben';
+
+function buildPracticeCardsFromCards(cards, opts = {}) {
+  const template = resolvePracticeTemplate(opts?.templateId || opts?.template?.id || 'multiple_choice');
+  const wanted = Math.max(3, Math.min(12, Number(opts?.count || template.default_count || 6)));
+  const sourceCards = Array.isArray(cards) ? cards.filter((c) => c.question && c.answer) : [];
+  const picked = sourceCards.slice(0, wanted);
+  const questions = [];
+  const focus = String(opts?.focus || '').trim();
+  const domain = String(opts?.domain || '').trim();
+  const audience = String(opts?.audience || 'Personalfachkaufleute (IHK)').trim();
+  const sourceText = sourceCards.map((c) => `${String(c.question || '')} ${String(c.answer || '')}`).join(' ');
+  const socialLawMode = hasSocialLawSignals([focus, domain, sourceText, template.label, template.id, audience].filter(Boolean).join(' '));
+  const openSpacing = socialLawMode || /pruefungsfall|falltraining|deep|case|progressive/i.test(`${template.label || ''} ${template.id || ''} ${focus}`) ? 2 : 3;
+
+  const buildDistractors = (correct, pool) => {
+    const out = [];
+    const seen = new Set([String(correct || '').toLowerCase()]);
+    for (const entry of pool) {
+      const candidate = String(entry || '').trim();
+      if (!candidate) continue;
+      const key = candidate.toLowerCase();
+      if (seen.has(key)) continue;
+      seen.add(key);
+      out.push(candidate);
+      if (out.length >= 3) break;
+    }
+    if (out.length < 3) {
+      const fallback = socialLawMode
+        ? [
+            'Die Aussage gilt ohne weitere Voraussetzungen immer.',
+            'Die Aussage ist nur bei freiwilliger Anwendung relevant.',
+            'Die Aussage bezieht sich ausschliesslich auf Theorie ohne Praxisbezug.'
+          ]
+        : [
+            'Die Aussage gilt ohne weitere Voraussetzungen immer.',
+            'Die Aussage ist nur bei freiwilliger Anwendung relevant.',
+            'Die Aussage bezieht sich ausschliesslich auf Theorie ohne Praxisbezug.'
+          ];
+      for (const f of fallback) {
+        const key = f.toLowerCase();
+        if (seen.has(key)) continue;
+        out.push(f);
+        if (out.length >= 3) break;
+      }
+    }
+    return out;
+  };
+
+  picked.forEach((card, idx) => {
+    const questionText = String(card.question || '').replace(/\?+$/, '').trim();
+    const answerText = String(card.answer || '').trim();
+    const pool = sourceCards
+      .map((c) => c.answer)
+      .filter((a) => String(a || '').trim() && String(a || '').trim() !== answerText);
+    const distractors = buildDistractors(answerText, pool);
+    const options = [answerText, ...distractors].slice(0, 4);
+    options.sort((a, b) => (a > b ? 1 : -1));
+    const correctIndex = options.findIndex((o) => o === answerText);
+
+    const isOpen = Boolean(template.supports_open) && idx % openSpacing === openSpacing - 1;
+    const stemInfo = buildPracticeQuestionStem(questionText, answerText, {
+      template,
+      focus,
+      domain,
+      socialLaw: socialLawMode
+    }, isOpen ? 'open' : 'mc');
+    if (isOpen) {
+      questions.push({
+        id: `open_${idx + 1}`,
+        type: 'open',
+        question: stemInfo.question,
+        options: [],
+        correctIndices: [],
+        hint: stemInfo.socialLaw
+          ? `Denke in Rechtsgrundlage, Voraussetzungen und Rechtsfolge zu ${stemInfo.topic}.`
+          : `Nutze die Kernaussage aus: ${answerText.slice(0, 120)}${answerText.length > 120 ? '...' : ''}`,
+        solution: answerText,
+        points: 3
+      });
+      return;
+    }
+
+    questions.push({
+      id: `mc_${idx + 1}`,
+      type: 'mc',
+      question: stemInfo.question,
+      options,
+      correctIndices: correctIndex >= 0 ? [correctIndex] : [0],
+      hint: stemInfo.socialLaw
+        ? `Achte auf Rechtsgrundlage, Voraussetzungen und Rechtsfolge zu ${stemInfo.topic}.`
+        : `Pruefe den Abschnitt mit Fokus auf den Kernbegriff: ${stemInfo.topic}.`,
+      solution: answerText,
+      points: 2
+    });
+  });
+
+  return {
+    title: `${DEFAULT_PRACTICE_TITLE_PREFIX} ${new Date().toISOString().slice(0, 10)}`,
+    templateId: template.id,
+    templateLabel: template.label,
+    difficulty: String(opts?.difficulty || 'mittel'),
+    focus: focus || '',
+    sourceType: 'selection-practice-local',
+    questions
+  };
+}
+
+function buildPracticeCardsFromText(text, opts = {}) {
+  const wanted = Math.max(4, Math.min(20, Number(opts?.count || 8)));
+  const cards = buildFallbackCards(text, wanted);
+  return buildPracticeCardsFromCards(cards, opts);
+}
+
+function buildFallbackCards(text, count = 8) {
+  const clean = String(text || '')
+    .replace(/\r/g, '')
+    .replace(/`{1,3}[^`]*`{1,3}/g, '')
+    .replace(/\[(.*?)\]\((.*?)\)/g, '$1')
+    .replace(/\s+/g, ' ')
+    .trim();
+  if (!clean) return [];
+
+  const lines = clean
+    .split('\n')
+    .map((s) => s.trim())
+    .filter(Boolean)
+    .filter((s) => !/^quellen?\s*:?/i.test(s));
+  const bullets = lines
+    .filter((s) => /^[-*]|^\d+\./.test(s))
+    .map((s) => s.replace(/^[-*]\s*/, '').replace(/^\d+\.\s*/, '').trim())
+    .filter((s) => s.length > 20);
+  const sentences = clean
+    .split(/(?<=[.!?])\s+/)
+    .map((s) => s.trim())
+    .filter((s) => s.length > 28)
+    .slice(0, 24);
+
+  const seeds = [...bullets, ...sentences].slice(0, 36);
+  const cards = [];
+  const used = new Set();
+  const socialLawMode = hasSocialLawSignals(clean);
+
+  const mkQuestion = (textPart) => {
+    const t = String(textPart || '').trim().replace(/\s+/g, ' ');
+    if (!t) return { q: '', a: '' };
+    if (/^(Bei|Wenn|Falls|Sobald)\b/i.test(t)) {
+      return {
+        q: `Welche Konsequenz gilt, ${t.replace(/[.;]+$/, '').toLowerCase()}?`,
+        a: t
+      };
+    }
+    const def = t.match(/^(.{5,90}?)\s+(ist|sind)\s+(.{12,})$/i);
+    if (def) {
+      return {
+        q: `Was bedeutet ${def[1].trim()} im Kontext?`,
+        a: `${def[1].trim()} ${def[2]} ${def[3].trim()}`
+      };
+    }
+    if (/\b(muss|muesse?n|darf|duerfen|soll|sollen|kann|koennen|gilt)\b/i.test(t)) {
+      const topic = t.split(/\s+/).slice(0, 9).join(' ');
+      return {
+        q: socialLawMode
+          ? `Welche Rechtsfolge oder Voraussetzung beschreibt der Text fuer "${topic}"?`
+          : `Welche Regel beschreibt der Text fuer "${topic}"?`,
+        a: t
+      };
+    }
+    return {
+      q: socialLawMode
+        ? 'Welche Rechtsfrage laesst sich aus diesem Abschnitt ableiten?'
+        : 'Welche fachliche Aussage laesst sich aus diesem Abschnitt ableiten?',
+      a: t
+    };
+  };
+
+  for (const s of seeds) {
+    const { q, a } = mkQuestion(s);
+    if (!q || !a) continue;
+    const key = `${q}|${a}`.toLowerCase();
+    if (used.has(key)) continue;
+    used.add(key);
+    cards.push({ question: q, answer: a });
+    if (cards.length >= count) break;
+  }
+  return cards;
+}
+
 async function handleHealth(res) {
   const checks = {
     MAKE_WEBHOOK_URL: isSet('MAKE_WEBHOOK_URL'),
@@ -752,110 +1193,81 @@ async function handleRewrite(res, body) {
 }
 
 async function handleFlashcards(res, body) {
-  const buildFallbackCards = (text, count = 8) => {
-    const clean = String(text || '')
-      .replace(/\r/g, '')
-      .replace(/`{1,3}[^`]*`{1,3}/g, '')
-      .replace(/\[(.*?)\]\((.*?)\)/g, '$1')
-      .replace(/\s+/g, ' ')
-      .trim();
-    if (!clean) return [];
-
-    const lines = clean
-      .split('\n')
-      .map((s) => s.trim())
-      .filter(Boolean)
-      .filter((s) => !/^quellen?\s*:?/i.test(s));
-    const bullets = lines
-      .filter((s) => /^[-*]|^\d+\./.test(s))
-      .map((s) => s.replace(/^[-*]\s*/, '').replace(/^\d+\.\s*/, '').trim())
-      .filter((s) => s.length > 20);
-    const sentences = clean
-      .split(/(?<=[.!?])\s+/)
-      .map((s) => s.trim())
-      .filter((s) => s.length > 28)
-      .slice(0, 24);
-
-    const seeds = [...bullets, ...sentences].slice(0, 36);
-    const cards = [];
-    const used = new Set();
-
-    const mkQuestion = (textPart) => {
-      const t = String(textPart || '').trim().replace(/\s+/g, ' ');
-      if (!t) return { q: '', a: '' };
-      if (/^(Bei|Wenn|Falls|Sobald)\b/i.test(t)) {
-        return {
-          q: `Welche Konsequenz gilt, ${t.replace(/[.;]+$/, '').toLowerCase()}?`,
-          a: t
-        };
-      }
-      const def = t.match(/^(.{5,90}?)\s+(ist|sind)\s+(.{12,})$/i);
-      if (def) {
-        return {
-          q: `Was bedeutet ${def[1].trim()} im Kontext?`,
-          a: `${def[1].trim()} ${def[2]} ${def[3].trim()}`
-        };
-      }
-      if (/\b(muss|muesse?n|darf|duerfen|soll|sollen|kann|koennen|gilt)\b/i.test(t)) {
-        const topic = t.split(/\s+/).slice(0, 9).join(' ');
-        return {
-          q: `Welche Regel beschreibt der Text fuer \"${topic}\"?`,
-          a: t
-        };
-      }
-      return {
-        q: `Welche Kernaussage laesst sich aus diesem Abschnitt ableiten?`,
-        a: t
-      };
-    };
-
-    for (const s of seeds) {
-      const { q, a } = mkQuestion(s);
-      if (!q || !a) continue;
-      const key = `${q}|${a}`.toLowerCase();
-      if (used.has(key)) continue;
-      used.add(key);
-      cards.push({ question: q, answer: a });
-      if (cards.length >= count) break;
-    }
-    return cards;
-  };
-
-  const buildFallbackExerciseSet = (cards, mode = 'multiple_choice') => {
-    const title = `Uebungsaufgaben (${mode})`;
-    const source = Array.isArray(cards) ? cards : [];
-    const questions = source.slice(0, 10).map((card, idx) => {
-      const options = [
-        String(card.answer || '').trim(),
-        'Die Aussage gilt ohne weitere Voraussetzungen immer.',
-        'Die Aussage ist nur in Ausnahmefaellen ohne Fachbezug relevant.',
-        'Die Aussage beschreibt ausschliesslich einen historischen Sonderfall.'
-      ];
-      return {
-        type: mode === 'deep_dive' && idx % 3 === 2 ? 'open' : 'mc',
-        question: String(card.question || '').trim() || 'Erläutere den fachlichen Zusammenhang.',
-        options: mode === 'deep_dive' && idx % 3 === 2 ? [] : options,
-        correctIndices: mode === 'deep_dive' && idx % 3 === 2 ? [] : [0],
-        hint: `Achte auf die Kernformulierung in der Antwort: ${String(card.answer || '').slice(0, 90)}${String(card.answer || '').length > 90 ? '...' : ''}`,
-        solution: String(card.answer || '').trim(),
-        points: mode === 'deep_dive' && idx % 3 === 2 ? 3 : 2
-      };
-    });
-    return { title, questions };
-  };
-
-  const contextText = String(body?.context || body?.text || '').trim();
-  const wanted = Math.max(4, Math.min(20, Number(body?.count || 8)));
   const mode = String(body?.mode || '').trim().toLowerCase();
-  const templateId = String(body?.template_id || 'multiple_choice').trim();
+  const templateId = String(body?.template_id || body?.templateId || 'multiple_choice').trim();
+  const template = resolvePracticeTemplate(templateId);
+  const domain = String(body?.fachmodus || body?.domain || '').trim() || 'Standard';
+  const difficulty = String(body?.difficulty || 'mittel').trim() || 'mittel';
+  const audience = String(body?.audience || '').trim() || 'Personalfachkaufleute (IHK)';
+  const focus = String(body?.focus || '').trim();
+  const countValue = Math.max(4, Math.min(20, Number(body?.count || template.default_count || 8)));
+  const selectedText = sanitizePracticeText(body?.selected_text || body?.selectedText || '', 1800);
+  const questionText = sanitizePracticeText(body?.question_text || body?.question || '', 500);
+  const contextText = sanitizePracticeText(body?.context || body?.text || '', 9000);
+  const baseText = sanitizePracticeText([contextText, selectedText, questionText].filter(Boolean).join('\n\n'), 9000);
   const endpoint = String(process.env.LernkartenAPI || '').trim();
+  const finalFocus = focus || buildPracticeFocusSuggestion(baseText, questionText);
+
+  const payload = {
+    ...(body && typeof body === 'object' ? body : {}),
+    count: countValue,
+    fachmodus: domain,
+    context: baseText || contextText || selectedText || questionText
+  };
+
+  if (mode === 'exercise') {
+    payload.mode = 'exercise';
+    payload.template_id = template.id;
+    payload.template_label = template.label;
+    payload.template_description = template.description;
+    payload.title = `${template.label} - ${audience}`;
+    payload.source = `Markierter Text (${audience})`;
+    payload.audience = audience;
+    payload.focus = finalFocus;
+    payload.question_text = questionText;
+    payload.question = buildPracticePrompt({
+      template,
+      difficulty,
+      count: countValue,
+      domain,
+      audience,
+      focus: finalFocus,
+      questionText,
+      content: baseText || contextText || selectedText || questionText
+    });
+  } else {
+    payload.mode = 'flashcards';
+    payload.question = buildFlashcardsPrompt({
+      count: countValue,
+      domain,
+      content: baseText || contextText || selectedText || questionText
+    });
+  }
+
+  const localPracticeFallback = () => {
+    const practice = buildPracticeCardsFromText(baseText || contextText || selectedText || questionText, {
+      templateId: template.id,
+      count: countValue,
+      difficulty,
+      focus: finalFocus,
+      domain,
+      audience
+    });
+    return practice.questions.length ? { ...practice, sourceType: 'local-fallback-practice' } : null;
+  };
+
+  const localCardsFallback = () => {
+    const fallback = buildFallbackCards(baseText || contextText || selectedText || questionText, countValue);
+    return fallback.length ? { cards: fallback, sourceType: 'local-fallback-cards' } : null;
+  };
+
   if (!endpoint) {
-    const fallback = buildFallbackCards(contextText, wanted);
     if (mode === 'exercise') {
-      const practice = buildFallbackExerciseSet(fallback, templateId || 'multiple_choice');
-      if (practice.questions.length) return sendJson(res, 200, { ...practice, sourceType: 'local-fallback-practice-no-env' });
+      const practice = localPracticeFallback();
+      if (practice) return sendJson(res, 200, practice);
     }
-    if (fallback.length) return sendJson(res, 200, { cards: fallback, sourceType: 'local-fallback-no-env' });
+    const fallback = localCardsFallback();
+    if (fallback) return sendJson(res, 200, fallback);
     return sendJson(res, 500, { error: 'LernkartenAPI fehlt in Environment' });
   }
 
@@ -863,17 +1275,17 @@ async function handleFlashcards(res, body) {
     const upstream = await fetch(endpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body || {})
+      body: JSON.stringify(payload)
     });
     const raw = await upstream.text();
 
     if (!upstream.ok) {
-      const fallback = buildFallbackCards(contextText, wanted);
       if (mode === 'exercise') {
-        const practice = buildFallbackExerciseSet(fallback, templateId || 'multiple_choice');
-        if (practice.questions.length) return sendJson(res, 200, { ...practice, sourceType: 'local-fallback-practice-upstream-error' });
+        const practice = localPracticeFallback();
+        if (practice) return sendJson(res, 200, { ...practice, sourceType: 'local-fallback-practice-upstream-error' });
       }
-      if (fallback.length) return sendJson(res, 200, { cards: fallback, sourceType: 'local-fallback-upstream-error' });
+      const fallback = localCardsFallback();
+      if (fallback) return sendJson(res, 200, { ...fallback, sourceType: 'local-fallback-upstream-error' });
       return sendJson(res, upstream.status, { error: 'Lernkarten API Fehler', detail: raw.slice(0, 1500) });
     }
 
@@ -883,39 +1295,52 @@ async function handleFlashcards(res, body) {
         if (Array.isArray(parsed?.questions) && parsed.questions.length) return sendJson(res, 200, parsed);
         const arrCards = Array.isArray(parsed?.cards) ? parsed.cards : [];
         if (arrCards.length) {
-          const normalizedCards = arrCards.map((c) => ({
-            question: String(c.question || c.front || '').trim(),
-            answer: String(c.answer || c.back || '').trim()
-          })).filter((c) => c.question && c.answer);
-          const practice = buildFallbackExerciseSet(normalizedCards, templateId || 'multiple_choice');
+          const normalizedCards = arrCards
+            .map((c) => ({
+              question: String(c.question || c.front || '').trim(),
+              answer: String(c.answer || c.back || '').trim()
+            }))
+            .filter((c) => c.question && c.answer);
+          const practice = buildPracticeCardsFromCards(normalizedCards, {
+            templateId: template.id,
+            count: countValue,
+            difficulty,
+            focus: finalFocus,
+            domain,
+            audience
+          });
           if (practice.questions.length) return sendJson(res, 200, { ...practice, sourceType: 'local-fallback-practice-from-cards' });
         }
+        const practice = localPracticeFallback();
+        if (practice) return sendJson(res, 200, { ...practice, sourceType: 'local-fallback-practice-empty' });
+        return sendJson(res, 200, {
+          title: `${template.label} - ${audience}`,
+          questions: [],
+          sourceType: 'empty-practice'
+        });
       }
+
       const arr = Array.isArray(parsed?.cards) ? parsed.cards : [];
       if (arr.length) return sendJson(res, 200, parsed);
-      const fallback = buildFallbackCards(contextText, wanted);
-      if (mode === 'exercise') {
-        const practice = buildFallbackExerciseSet(fallback, templateId || 'multiple_choice');
-        if (practice.questions.length) return sendJson(res, 200, { ...practice, sourceType: 'local-fallback-practice-empty' });
-      }
-      if (fallback.length) return sendJson(res, 200, { cards: fallback, sourceType: 'local-fallback-empty' });
+      const fallback = localCardsFallback();
+      if (fallback) return sendJson(res, 200, { ...fallback, sourceType: 'local-fallback-empty' });
       return sendJson(res, 200, { cards: [], raw });
     } catch (_) {
-      const fallback = buildFallbackCards(contextText, wanted);
       if (mode === 'exercise') {
-        const practice = buildFallbackExerciseSet(fallback, templateId || 'multiple_choice');
-        if (practice.questions.length) return sendJson(res, 200, { ...practice, sourceType: 'local-fallback-practice-invalid-json' });
+        const practice = localPracticeFallback();
+        if (practice) return sendJson(res, 200, { ...practice, sourceType: 'local-fallback-practice-invalid-json' });
       }
-      if (fallback.length) return sendJson(res, 200, { cards: fallback, sourceType: 'local-fallback-invalid-json' });
+      const fallback = localCardsFallback();
+      if (fallback) return sendJson(res, 200, { ...fallback, sourceType: 'local-fallback-invalid-json' });
       return sendJson(res, 200, { cards: [], raw });
     }
   } catch (e) {
-    const fallback = buildFallbackCards(contextText, wanted);
     if (mode === 'exercise') {
-      const practice = buildFallbackExerciseSet(fallback, templateId || 'multiple_choice');
-      if (practice.questions.length) return sendJson(res, 200, { ...practice, sourceType: 'local-fallback-practice-exception' });
+      const practice = localPracticeFallback();
+      if (practice) return sendJson(res, 200, { ...practice, sourceType: 'local-fallback-practice-exception' });
     }
-    if (fallback.length) return sendJson(res, 200, { cards: fallback, sourceType: 'local-fallback-exception' });
+    const fallback = localCardsFallback();
+    if (fallback) return sendJson(res, 200, { ...fallback, sourceType: 'local-fallback-exception' });
     return sendJson(res, 500, { error: 'Lernkarten request failed', detail: String(e?.message || '') });
   }
 }
