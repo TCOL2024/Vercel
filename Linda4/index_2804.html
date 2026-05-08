@@ -3988,6 +3988,17 @@
   const STT_API_ENDPOINT = '/api/linda3?action=stt';
   const SOZIALRECHT_ONLY_MODE = true;
   const SOZIALRECHT_DOMAIN_KEY = 'SOZIALRECHT';
+  const SOZIALRECHT_VECTOR_STORE = {
+    name: 'Sozialrecht2026',
+    id: 'vs_69de0362cf84819199202158e8444e16',
+    files: {
+      sozialrechtQaMarkdown: 'file-SFyyy5nhuvp2UiUieweCwi',
+      verhinderungspflege: 'file-2GV2ffyiPT5sN2fXL63SxB',
+      angehoerigePflege: 'file-DCji3R9WhwnKEvawfUHwvG',
+      krankenPflegeversicherungRentner: 'file-3qYmeg5U4otWjPAzMrP88U'
+    }
+  };
+  const BLOCKED_NON_SOZIALRECHT_KEYWORDS = ['BBiG', 'AEVO', 'IHK', 'Ausbilder', 'Ausbildereignung', 'Berufsbildungsgesetz'];
   const SOZIALRECHT_CURRICULUM_PATH = './docs/sozialrecht_sgb_i_xii.json';
   const CLAUDE_CLARIFY_MODE = true;
   const APP_VERSION = 5;
@@ -4009,9 +4020,6 @@
     ],
     quickSuggestions: [],
     modeCards: [
-      { key: "AEVO", label: "AEVO", hint: "Ausbilder-Themen" },
-      { key: "VWL", label: "VWL/BWL", hint: "Wirtschaftsbezug" },
-      { key: "PERSONAL", label: "Personal", hint: "Personalwesen" },
       { key: "SOZIALRECHT", label: "Sozialrecht", hint: "SGB I-XII" }
     ]
   };
@@ -6082,6 +6090,8 @@
           vaccinations: has(/\b(impfung|impfungen|schutzimpfung|schutzimpfungen|reiseimpfung|stiko|g-?ba|schutzimpfungsrichtlinie|schutzimpfungs-richtlinie|§\s*20i\s*sgb\s*v)\b/),
           earningCapacity: has(/\b(erwerbsminderung|erwerbsunfaehigkeit|erwerbsunfähigkeit|arbeitsmarktrente|reha vor rente|§\s*43\s*sgb\s*vi)\b/),
           carePension: has(/\b(pflegeperson|pflegepersonen|pflegebeduerftig|pflegebedürftig|pflegegrad|pflegekasse|rentenversicherung|rentenbeitraege|rentenbeiträge|10 stunden|zwei tage|2 tage|30 stunden|§\s*3\s*sgb\s*vi|§\s*44\s*sgb\s*xi)\b/) && has(/\b(pflege|pflegt|pflegen|pflegeperson|pflegepersonen)\b/) && has(/\b(rentenversicherung|rentenbeitraege|rentenbeiträge|versicherungspflicht|soziale sicherung|30 stunden|10 stunden|zwei tage|2 tage)\b/),
+          respiteCare: has(/\b(verhinderungspflege|ersatzpflege|pflegevertretung|stundenweise verhinderung|§\s*39\s*sgb\s*xi)\b/),
+          retireeInsurance: has(/\b(kvdr|pvdr|krankenversicherung der rentner|pflegeversicherung der rentner|rentner krankenversicherung|rentner pflegeversicherung|rente krankenkasse|rentenantrag krankenversicherung)\b/),
           singleCase: asked(/\b(pruef(?:e|en|ung)|prüf(?:e|en|ung)|beurteile|bewerte|einschaetzung|einschätzung|rechtslage|fall|anspruch|darf|muss|kann .* verlangen|ist .* rechtmaessig|ist .* rechtmäßig)\b/)
         };
 
@@ -6108,6 +6118,8 @@
           profile.vaccinations ? 'gkv_impfungen' : '',
           profile.earningCapacity ? 'erwerbsminderung_sgb_vi' : '',
           profile.carePension ? 'pflegeperson_rentenversicherung' : '',
+          profile.respiteCare ? 'verhinderungspflege' : '',
+          profile.retireeInsurance ? 'kvdr_pvdr' : '',
           profile.widerspruch ? 'widerspruch_sgg' : '',
           profile.authorityLetter ? 'behoerden_kassen_schreiben' : '',
           profile.requiresSampleText ? 'mustertext_pflicht' : ''
@@ -6125,6 +6137,12 @@
         ];
         if (profile.carePension) {
           lines.push('Pflegeperson/Rentenversicherung: pruefe § 3 Satz 1 Nr. 1a SGB VI und § 44 SGB XI. Kernpunkte: nicht erwerbsmaessige Pflege, Pflegebeduerftiger mindestens Pflegegrad 2, haeusliche Umgebung, mindestens 10 Stunden woechentlich verteilt auf regelmaessig mindestens 2 Tage, Anspruch aus sozialer oder privater Pflege-Pflichtversicherung, Ausschluss bei regelmaessig mehr als 30 Stunden Erwerbstaetigkeit, Rechtsfolge Rentenversicherungspflicht/Beitragszahlung durch Pflegekasse/private Pflege-Pflichtversicherung.');
+        }
+        if (profile.respiteCare) {
+          lines.push(`Verhinderungspflege: nutze vorrangig das Vector-Store-Dokument ${SOZIALRECHT_VECTOR_STORE.files.verhinderungspflege} und pruefe § 39 SGB XI mit Voraussetzungen, Budget/Dauer, stundenweiser Verhinderungspflege und Angehoerigenkonstellation.`);
+        }
+        if (profile.retireeInsurance) {
+          lines.push(`KVdR/PVdR: nutze vorrangig das Vector-Store-Dokument ${SOZIALRECHT_VECTOR_STORE.files.krankenPflegeversicherungRentner} und pruefe Vorversicherungszeit, Status, Beitragspflicht und typische Rentner-Fallen.`);
         }
         return lines.join('\n');
       },
@@ -6162,6 +6180,55 @@
           '## Pruefungsfalle',
           'Nicht verwechseln: Pflegegeld/Sachleistungen fuer den Pflegebeduerftigen sind etwas anderes als die rentenrechtliche soziale Sicherung der Pflegeperson.'
         ].join('\n');
+      },
+
+      detectSozialrechtPinnedFiles: (question = '', profile = {}) => {
+        const q = app.utils.normalizeForKeyword(question || '');
+        const files = [SOZIALRECHT_VECTOR_STORE.files.sozialrechtQaMarkdown];
+        const add = (id) => {
+          if (id && !files.includes(id)) files.push(id);
+        };
+
+        if (/\b(verhinderungspflege|ersatzpflege|pflegevertretung|stundenweise verhinderung|39 sgb xi)\b/.test(q)) {
+          add(SOZIALRECHT_VECTOR_STORE.files.verhinderungspflege);
+        }
+        if (
+          profile.carePension ||
+          /\b(angehoerige pflege|angehörige pflege|angehoerigenpflege|angehörigenpflege|pflegende angehoerige|pflegende angehörige|pflegeperson|pflegepersonen|nicht erwerbsmaessige pflege|nicht erwerbsmäßige pflege|soziale sicherung der pflegeperson)\b/.test(q)
+        ) {
+          add(SOZIALRECHT_VECTOR_STORE.files.angehoerigePflege);
+        }
+        if (/\b(kvdr|pvdr|krankenversicherung der rentner|pflegeversicherung der rentner|rentner krankenversicherung|rentner pflegeversicherung|rente krankenkasse|rentenantrag krankenversicherung)\b/.test(q)) {
+          add(SOZIALRECHT_VECTOR_STORE.files.krankenPflegeversicherungRentner);
+        }
+        return files;
+      },
+
+      buildSozialrechtRetrievalConfig: (question = '', profile = {}) => {
+        const pinnedFileIds = app.logic.detectSozialrechtPinnedFiles(question, profile);
+        return {
+          provider: 'openai',
+          tool: 'file_search',
+          include: ['file_search_call.results'],
+          max_num_results: 8,
+          require_result_content: true,
+          vector_store_name: SOZIALRECHT_VECTOR_STORE.name,
+          vector_store_id: SOZIALRECHT_VECTOR_STORE.id,
+          vector_store_ids: [SOZIALRECHT_VECTOR_STORE.id],
+          pinned_file_ids: pinnedFileIds,
+          file_ids: pinnedFileIds,
+          source_files: pinnedFileIds,
+          target_file_ids: pinnedFileIds,
+          vectorStoreId: SOZIALRECHT_VECTOR_STORE.id,
+          vectorStoreIds: [SOZIALRECHT_VECTOR_STORE.id],
+          pinnedFileIds: pinnedFileIds,
+          fileIds: pinnedFileIds,
+          domain: SOZIALRECHT_DOMAIN_KEY,
+          source_label: 'Sozialrecht2026',
+          must_use_vector_store: true,
+          exclude_source_keywords: BLOCKED_NON_SOZIALRECHT_KEYWORDS,
+          forbidden_source_keywords: BLOCKED_NON_SOZIALRECHT_KEYWORDS
+        };
       },
 
       enforceSozialrechtMode: (opts = {}) => {
@@ -6668,6 +6735,11 @@
           add('§ 3', 'SGB VI', 'Versicherungspflicht nicht erwerbsmaessig taetiger Pflegepersonen.');
           add('§ 44', 'SGB XI', 'Leistungen zur sozialen Sicherung der Pflegepersonen.');
           add('§ 19', 'SGB XI', 'Begriff der Pflegeperson.');
+        }
+        if (profile.respiteCare) add('§ 39', 'SGB XI', 'Verhinderungspflege/Ersatzpflege.');
+        if (profile.retireeInsurance) {
+          add('§ 5', 'SGB V', 'Versicherungspflicht in der Krankenversicherung der Rentner, insbesondere Abs. 1 Nr. 11.');
+          add('§ 20', 'SGB XI', 'Versicherungspflicht in der sozialen Pflegeversicherung.');
         }
         if (profile.passiveBenefits) addBook('SGB III', 'Arbeitsfoerderung: passive Leistungsbegriffe nur als Lehr-/Praxisbegriff verwenden.');
         if (profile.widerspruch) {
@@ -9730,7 +9802,7 @@
         const sgbLinkResolver = window.LINDA_SGB_DIRECT_LINKS || window.SGB_DIRECT_LINKS || null;
         const plainText = String(md.innerText || '').toLowerCase();
         const mentionsBBIG = /(?:\bbbig\b|berufsbildungsgesetz)/i.test(plainText);
-        if (mentionsBBIG) {
+        if (mentionsBBIG && !SOZIALRECHT_ONLY_MODE && !app.logic.isSozialrechtMeta(bubbleMeta)) {
           const hasDoc = finalSources.some((s) => String(s.url || '').includes('BBIG_V20022026.pdf'));
           if (!hasDoc) {
             finalSources.push({
@@ -10103,13 +10175,15 @@
             ? false
             : Boolean(app.state.settings.compareMode && app.state.settings.compareMode.enabled);
           const strictSourcesActive = Boolean(app.state.settings.guardrails?.groundedMode);
-          const deepseekRoutingActive = Boolean(effectiveFastMode && !strictSourcesActive);
+          const deepseekRoutingActive = Boolean(effectiveFastMode && !strictSourcesActive && !SOZIALRECHT_ONLY_MODE);
           const effectiveSources = app.state.settings.sources;
           const priorMessages = Array.isArray(s.messages) ? s.messages.slice(0, -1) : [];
           const contextWindow = app.utils.chatContext({ ...s, messages: priorMessages });
           const historyForApi = app.utils.privacyModeEnabled()
             ? []
             : contextWindow;
+          const sozialrechtProfileForPayload = app.logic.analyzeSozialrechtQuestion(text, '');
+          const sozialrechtRetrieval = app.logic.buildSozialrechtRetrievalConfig(text, sozialrechtProfileForPayload);
 
           const basePayloadQuestion = apiQuestionPrefix
             ? `${apiQuestionPrefix}\n\n${text}`
@@ -10125,14 +10199,16 @@
             history: historyForApi,
             sources: effectiveSources,
             retrieval: {
-              provider: 'openai',
-              tool: 'file_search',
-              include: ['file_search_call.results'],
-              max_num_results: 5,
-              require_result_content: true,
-              source_files: ['vorsorge_draft.md', 'Sozialrecht_Skript_draft.md'],
-              source_label: 'Wissensdatenbank Recht'
+              ...sozialrechtRetrieval
             },
+            vector_store_id: SOZIALRECHT_VECTOR_STORE.id,
+            vectorStoreId: SOZIALRECHT_VECTOR_STORE.id,
+            vector_store_ids: [SOZIALRECHT_VECTOR_STORE.id],
+            vectorStoreIds: [SOZIALRECHT_VECTOR_STORE.id],
+            file_ids: sozialrechtRetrieval.file_ids || [],
+            fileIds: sozialrechtRetrieval.file_ids || [],
+            pinned_file_ids: sozialrechtRetrieval.pinned_file_ids || [],
+            pinnedFileIds: sozialrechtRetrieval.pinned_file_ids || [],
             routing: {
               preferred_model: deepseekRoutingActive ? 'deepseek' : 'gpt-5.1',
               response_mode: expertModeEnabled ? 'expert' : 'genau'
@@ -10150,7 +10226,14 @@
               version: APP_VERSION,
               ts: new Date().toISOString(),
               privacyMode: app.utils.privacyModeEnabled(),
-              sozialrecht_mode: sozialrechtDomain
+              sozialrecht_mode: true,
+              vector_store: {
+                provider: 'openai',
+                name: SOZIALRECHT_VECTOR_STORE.name,
+                id: SOZIALRECHT_VECTOR_STORE.id,
+                pinned_file_ids: sozialrechtRetrieval.pinned_file_ids || []
+              },
+              blocked_domains: ['BBIG', 'AEVO', 'IHK-Ausbildungsrecht']
             },
             guardrails: {
               grounded_mode: Boolean(app.state.settings.guardrails?.groundedMode),

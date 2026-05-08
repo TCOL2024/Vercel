@@ -1,6 +1,19 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
+const FIXED_FACHMODUS = 'SOZIALRECHT';
+const SOZIALRECHT_VECTOR_STORE = {
+  name: 'Sozialrecht2026',
+  id: 'vs_69de0362cf84819199202158e8444e16',
+  files: {
+    sozialrechtQaMarkdown: 'file-SFyyy5nhuvp2UiUieweCwi',
+    verhinderungspflege: 'file-2GV2ffyiPT5sN2fXL63SxB',
+    angehoerigePflege: 'file-DCji3R9WhwnKEvawfUHwvG',
+    krankenPflegeversicherungRentner: 'file-3qYmeg5U4otWjPAzMrP88U'
+  }
+};
+const FORBIDDEN_NON_SOZIALRECHT_KEYWORDS = ['BBiG', 'AEVO', 'IHK', 'Ausbilder', 'Ausbildereignung', 'Berufsbildungsgesetz'];
+
 function sendJson(res, status, obj) {
   res.statusCode = status;
   res.setHeader('Content-Type', 'application/json; charset=utf-8');
@@ -316,6 +329,7 @@ function normalizeFachmodus(value) {
   const v = String(value || '').trim();
   if (!v) return '';
   const u = v.toUpperCase();
+  if (u === 'SOZIALRECHT') return 'SOZIALRECHT';
   if (u === 'AEVO') return 'AEVO';
   if (u === 'VWL') return 'VWL';
   if (u === 'PERSONAL' || u === 'PERSONALWESEN') return 'PERSONAL';
@@ -324,6 +338,7 @@ function normalizeFachmodus(value) {
 
 function fachmodusLabel(value) {
   const v = normalizeFachmodus(value);
+  if (v === 'SOZIALRECHT') return 'Sozialrecht';
   if (v === 'AEVO') return 'AEVO';
   if (v === 'VWL') return 'VWL';
   if (v === 'PERSONAL' || v === 'PERSONALWESEN') return 'Personal';
@@ -346,6 +361,58 @@ function isSozialrechtFachmodus(value) {
   return normalizeFachmodus(value) === 'SOZIALRECHT';
 }
 
+function detectSozialrechtPinnedFiles(question, profile = {}) {
+  const q = normalizeForGuardrails(question);
+  const files = [SOZIALRECHT_VECTOR_STORE.files.sozialrechtQaMarkdown];
+  const add = (id) => {
+    if (id && !files.includes(id)) files.push(id);
+  };
+
+  if (/\b(verhinderungspflege|ersatzpflege|pflegevertretung|stundenweise verhinderung|39 sgb xi|sgb xi 39)\b/.test(q)) {
+    add(SOZIALRECHT_VECTOR_STORE.files.verhinderungspflege);
+  }
+  if (
+    profile.carePension ||
+    /\b(angehoerige pflege|angehoerigenpflege|pflegende angehoerige|pflegeperson|pflegepersonen|nicht erwerbsmaessige pflege|soziale sicherung der pflegeperson)\b/.test(q)
+  ) {
+    add(SOZIALRECHT_VECTOR_STORE.files.angehoerigePflege);
+  }
+  if (/\b(kvdr|pvdr|krankenversicherung der rentner|pflegeversicherung der rentner|rentner krankenversicherung|rentner pflegeversicherung|rente krankenkasse|rentenantrag krankenversicherung)\b/.test(q)) {
+    add(SOZIALRECHT_VECTOR_STORE.files.krankenPflegeversicherungRentner);
+  }
+
+  return files;
+}
+
+function buildSozialrechtRetrievalConfig(question, profile = {}, requestedRetrieval = {}) {
+  const pinnedFileIds = detectSozialrechtPinnedFiles(question, profile);
+  return {
+    provider: 'openai',
+    tool: 'file_search',
+    include: ['file_search_call.results'],
+    max_num_results: Number.isFinite(Number(requestedRetrieval.max_num_results))
+      ? Math.max(1, Math.min(12, Number(requestedRetrieval.max_num_results)))
+      : 8,
+    require_result_content: true,
+    vector_store_name: SOZIALRECHT_VECTOR_STORE.name,
+    vector_store_id: SOZIALRECHT_VECTOR_STORE.id,
+    vector_store_ids: [SOZIALRECHT_VECTOR_STORE.id],
+    pinned_file_ids: pinnedFileIds,
+    file_ids: pinnedFileIds,
+    source_files: pinnedFileIds,
+    target_file_ids: pinnedFileIds,
+    vectorStoreId: SOZIALRECHT_VECTOR_STORE.id,
+    vectorStoreIds: [SOZIALRECHT_VECTOR_STORE.id],
+    fileIds: pinnedFileIds,
+    pinnedFileIds: pinnedFileIds,
+    domain: FIXED_FACHMODUS,
+    source_label: 'Sozialrecht2026',
+    must_use_vector_store: true,
+    exclude_source_keywords: FORBIDDEN_NON_SOZIALRECHT_KEYWORDS,
+    forbidden_source_keywords: FORBIDDEN_NON_SOZIALRECHT_KEYWORDS
+  };
+}
+
 function detectSozialrechtProfile(question) {
   const q = normalizeForGuardrails(question);
   const has = (rx) => rx.test(q);
@@ -362,6 +429,8 @@ function detectSozialrechtProfile(question) {
     vaccinations: has(/\b(impfung|impfungen|schutzimpfung|schutzimpfungen|reiseimpfung|stiko|g ba|schutzimpfungsrichtlinie|20i sgb v)\b/),
     earningCapacity: has(/\b(erwerbsminderung|erwerbsunfaehigkeit|arbeitsmarktrente|reha vor rente|43 sgb vi)\b/),
     carePension: has(/\b(pflegeperson|pflegepersonen|pflegebeduerftig|pflegegrad|pflegekasse|rentenversicherung|rentenbeitraege|10 stunden|zwei tage|2 tage|30 stunden|3 sgb vi|44 sgb xi)\b/) && has(/\b(pflege|pflegt|pflegen|pflegeperson|pflegepersonen)\b/) && has(/\b(rentenversicherung|rentenbeitraege|versicherungspflicht|soziale sicherung|30 stunden|10 stunden|zwei tage|2 tage)\b/),
+    respiteCare: has(/\b(verhinderungspflege|ersatzpflege|pflegevertretung|39 sgb xi|sgb xi 39)\b/),
+    retireeInsurance: has(/\b(kvdr|pvdr|krankenversicherung der rentner|pflegeversicherung der rentner|rentner krankenversicherung|rentner pflegeversicherung|rente krankenkasse|rentenantrag krankenversicherung)\b/),
     singleCase: has(/\b(pruef|beurteile|bewerte|einschaetzung|rechtslage|fall|anspruch|darf|muss|rechtmaessig)\b/)
   };
   if (profile.coaching) {
@@ -378,6 +447,8 @@ function detectSozialrechtProfile(question) {
     profile.vaccinations ? 'gkv_impfungen' : '',
     profile.earningCapacity ? 'erwerbsminderung_sgb_vi' : '',
     profile.carePension ? 'pflegeperson_rentenversicherung' : '',
+    profile.respiteCare ? 'verhinderungspflege' : '',
+    profile.retireeInsurance ? 'kvdr_pvdr' : '',
     profile.widerspruch ? 'widerspruch_sgg' : '',
     profile.authorityLetter ? 'behoerden_kassen_schreiben' : '',
     profile.requiresSampleText ? 'mustertext_pflicht' : ''
@@ -403,6 +474,8 @@ function buildSozialrechtSystemInstruction(profile = {}) {
   if (profile.vaccinations) lines.push('GKV-Impfungen: § 20i SGB V; STIKO empfiehlt; G-BA entscheidet ueber Schutzimpfungs-Richtlinie; Krankenkasse zahlt bei Regelleistung; Reiseimpfungen meist Satzungsleistung.');
   if (profile.earningCapacity) lines.push('Erwerbsminderung SGB VI: § 43 SGB VI; unter 3 Stunden volle EM; 3 bis unter 6 Stunden teilweise EM; ab 6 Stunden keine EM; Arbeitsmarktrente und Reha vor Rente ergaenzen; "Erwerbsunfaehigkeit" als alten Begriff kennzeichnen.');
   if (profile.carePension) lines.push('Pflegeperson/Rentenversicherung: pruefe § 3 Satz 1 Nr. 1a SGB VI und § 44 SGB XI. Nicht als BBiG/AEVO behandeln. Voraussetzungen: nicht erwerbsmaessige Pflege, Pflegebeduerftiger mindestens Pflegegrad 2, haeusliche Umgebung, mindestens 10 Stunden woechentlich verteilt auf regelmaessig mindestens 2 Tage, Anspruch aus sozialer oder privater Pflege-Pflichtversicherung, Ausschluss bei regelmaessig mehr als 30 Stunden Erwerbstaetigkeit. Rechtsfolge: Rentenversicherungspflicht/Beitragszahlung fuer die Pflegeperson.');
+  if (profile.respiteCare) lines.push('Verhinderungspflege: nutze vorrangig das Vector-Store-Dokument file-2GV2ffyiPT5sN2fXL63SxB und pruefe § 39 SGB XI mit Voraussetzungen, Dauer/Budget, stundenweiser Verhinderungspflege, Nahestehenden-/Angehoerigen-Konstellation, Kombinations- und Abgrenzungsfragen.');
+  if (profile.retireeInsurance) lines.push('Kranken- und Pflegeversicherung der Rentner: nutze vorrangig das Vector-Store-Dokument file-3qYmeg5U4otWjPAzMrP88U und pruefe KVdR/PVdR systematisch mit Vorversicherungszeit, Statuswechsel, Beitragspflicht und typischen Rentner-Fallen.');
   lines.push('Negativregel: Wenn die Nutzerfrage Sozialrecht betrifft, aber Retrieval BBiG/AEVO/IHK-Ausbildungsrecht liefert, ignoriere diese Treffer und sage nicht, Sozialrecht sei nicht pruefbar.');
   if (Array.isArray(profile.flags) && profile.flags.length) lines.push(`Erkannte Spezialthemen: ${profile.flags.join(', ')}.`);
   return lines.join('\n');
@@ -1268,9 +1341,9 @@ async function handleBot(res, body) {
   }
   if (!questionRaw) return sendJson(res, 400, { error: 'question fehlt' });
   const userQuestionForAnalysis = questionRaw.split(/\n\s*LINDA_SOZIALRECHT_QUALITAETSSTEUERUNG:/i)[0].trim() || questionRaw;
-  const fmUser = normalizeFachmodus(body?.fm_user || body?.fachmodus || body?.meta?.fm_user || '');
-  const fmLabel = fachmodusLabel(body?.fm_user || body?.fachmodus || body?.meta?.fm_user || '');
-  const sozialrechtMode = isSozialrechtFachmodus(fmUser || body?.fachmodus || body?.meta?.fm_user || '');
+  const fmUser = FIXED_FACHMODUS;
+  const fmLabel = fachmodusLabel(FIXED_FACHMODUS);
+  const sozialrechtMode = true;
   const bbigMatches = sozialrechtMode ? [] : detectBbigGuardrails(userQuestionForAnalysis);
   const bbigInstruction = sozialrechtMode ? '' : buildBbigGuardrailInstruction(bbigMatches);
   const bbigKeywordHits = sozialrechtMode ? [] : detectBbigKeywordSections(userQuestionForAnalysis, 4);
@@ -1299,42 +1372,33 @@ async function handleBot(res, body) {
     : questionBase;
   const question = questionComposed.slice(0, 5000);
   if (!question) return sendJson(res, 400, { error: 'question fehlt' });
+  const sozialrechtRetrieval = buildSozialrechtRetrievalConfig(userQuestionForAnalysis, sozialrechtProfile || {}, requestedRetrieval);
 
   const payloadMeta = {
     question,
     history,
-    retrieval: {
-      provider: 'openai',
-      tool: 'file_search',
-      include: ['file_search_call.results'],
-      max_num_results: Number.isFinite(Number(requestedRetrieval.max_num_results))
-        ? Math.max(1, Math.min(8, Number(requestedRetrieval.max_num_results)))
-        : 5,
-      require_result_content: true,
-      source_files: ['vorsorge_draft.md', 'Sozialrecht_Skript_draft.md'],
-      source_label: 'Wissensdatenbank Recht',
-      domain: sozialrechtMode ? 'SOZIALRECHT' : '',
-      exclude_source_keywords: sozialrechtMode
-        ? ['BBiG', 'AEVO', 'IHK', 'Ausbilder', 'Berufsbildungsgesetz']
-        : []
-    },
+    retrieval: sozialrechtRetrieval,
+    vector_store_id: SOZIALRECHT_VECTOR_STORE.id,
+    vectorStoreId: SOZIALRECHT_VECTOR_STORE.id,
+    vector_store_ids: [SOZIALRECHT_VECTOR_STORE.id],
+    vectorStoreIds: [SOZIALRECHT_VECTOR_STORE.id],
+    file_ids: sozialrechtRetrieval.file_ids || [],
+    fileIds: sozialrechtRetrieval.file_ids || [],
+    pinned_file_ids: sozialrechtRetrieval.pinned_file_ids || [],
+    pinnedFileIds: sozialrechtRetrieval.pinned_file_ids || [],
     meta: {
       fm_user: fmUser || '',
       fm_user_label: fmLabel || '',
-      fachmodus: fmUser || '',
+      fachmodus: FIXED_FACHMODUS,
       vector_yes: vectorYes,
-      retrieval: {
+      retrieval: sozialrechtRetrieval,
+      vector_store: {
         provider: 'openai',
-        tool: 'file_search',
-        include: ['file_search_call.results'],
-        require_result_content: true,
-        source_files: ['vorsorge_draft.md', 'Sozialrecht_Skript_draft.md'],
-        source_label: 'Wissensdatenbank Recht',
-        domain: sozialrechtMode ? 'SOZIALRECHT' : '',
-        exclude_source_keywords: sozialrechtMode
-          ? ['BBiG', 'AEVO', 'IHK', 'Ausbilder', 'Berufsbildungsgesetz']
-          : []
+        name: SOZIALRECHT_VECTOR_STORE.name,
+        id: SOZIALRECHT_VECTOR_STORE.id,
+        pinned_file_ids: sozialrechtRetrieval.pinned_file_ids || []
       },
+      blocked_domains: ['BBIG', 'AEVO', 'IHK-Ausbildungsrecht'],
       need,
       token,
       context,
@@ -1344,18 +1408,17 @@ async function handleBot(res, body) {
         instruction: sozialrechtInstruction || 'Frontend-Anweisung bereits im Nutzerprompt enthalten.'
       } : { active: false },
       legal_guardrails: {
-        active: Boolean(bbigMatches.length),
-        source: 'BBIG_GUARDRAILS',
-        matches: bbigMatches.map((m) => ({
-          id: String(m.id || ''),
-          references: Array.isArray(m.references) ? m.references : []
-        })),
-        instruction: bbigInstruction || ''
+        active: false,
+        blocked: true,
+        source: 'BBIG_GUARDRAILS_DISABLED_FOR_SOZIALRECHT',
+        matches: [],
+        instruction: 'BBiG/AEVO/IHK-Ausbildungsrecht ist in diesem Bot gesperrt.'
       },
       bbig_keyword_context: {
-        active: Boolean(bbigKeywordHits.length),
+        active: false,
+        blocked: true,
         source: 'docs/bbig_fulltext.json',
-        hits: bbigKeywordHits
+        hits: []
       }
     }
   };
@@ -1392,8 +1455,8 @@ async function handleDeepseek(res, body) {
       content: sanitizeQuestion(String(m?.content || '')).slice(0, 1200)
     }))
     .filter((m) => m.content && !isPromptInjectionAttempt(m.content));
-  const fachmodus = String(body?.fachmodus || '').trim();
-  const sozialrechtMode = isSozialrechtFachmodus(fachmodus);
+  const fachmodus = FIXED_FACHMODUS;
+  const sozialrechtMode = true;
   const userQuestionForAnalysis = question.split(/\n\s*LINDA_SOZIALRECHT_QUALITAETSSTEUERUNG:/i)[0].trim() || question;
   const sozialrechtProfile = sozialrechtMode ? detectSozialrechtProfile(userQuestionForAnalysis) : null;
   const sozialrechtInstruction = sozialrechtMode ? buildSozialrechtSystemInstruction(sozialrechtProfile || {}) : '';
