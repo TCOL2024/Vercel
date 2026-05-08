@@ -481,6 +481,152 @@ function buildSozialrechtSystemInstruction(profile = {}) {
   return lines.join('\n');
 }
 
+function getSozialrechtOpenAiKey() {
+  return String(process.env.Sozialrecht2026 || '').trim();
+}
+
+function extractResponseText(parsed) {
+  if (typeof parsed?.output_text === 'string' && parsed.output_text.trim()) return parsed.output_text.trim();
+  const parts = [];
+  const walk = (node) => {
+    if (!node || typeof node !== 'object') return;
+    if (Array.isArray(node)) {
+      node.forEach(walk);
+      return;
+    }
+    if (typeof node.text === 'string' && (node.type === 'output_text' || node.type === 'text')) parts.push(node.text);
+    if (typeof node.content === 'string') parts.push(node.content);
+    Object.values(node).forEach(walk);
+  };
+  walk(parsed?.output || parsed);
+  return parts.join('\n').trim();
+}
+
+function extractResponseSources(parsed) {
+  const out = [];
+  const seen = new Set();
+  const add = (item = {}) => {
+    const fileId = String(item.file_id || item.fileId || item.id || '').trim();
+    const title = String(item.filename || item.file_name || item.name || item.title || fileId || 'Sozialrecht2026').trim();
+    const text = String(item.text || item.content || item.snippet || item.excerpt || '').trim();
+    const key = `${fileId}|${title}|${text.slice(0, 80)}`.toLowerCase();
+    if (seen.has(key)) return;
+    seen.add(key);
+    out.push({
+      title,
+      url: fileId ? `openai-file://${fileId}` : '',
+      section: item.score != null ? `File Search Score: ${item.score}` : 'OpenAI Vector Store',
+      excerpt: text.slice(0, 1200),
+      note: 'Quelle aus OpenAI Vector Store Sozialrecht2026.',
+      source_type: 'file_search_result',
+      confidence: item.score ?? null
+    });
+  };
+  const walk = (node) => {
+    if (!node || typeof node !== 'object') return;
+    if (Array.isArray(node)) {
+      node.forEach(walk);
+      return;
+    }
+    if (node.type === 'file_search_call' && Array.isArray(node.results)) node.results.forEach(add);
+    if (Array.isArray(node.results) && /file_search/i.test(String(node.type || node.tool || ''))) node.results.forEach(add);
+    Object.values(node).forEach(walk);
+  };
+  walk(parsed);
+  return out.slice(0, 10);
+}
+
+async function callSozialrechtOpenAi({ question, history, retrieval, sozialrechtProfile, sozialrechtInstruction, payloadMeta }) {
+  const apiKey = getSozialrechtOpenAiKey();
+  if (!apiKey) {
+    return {
+      ok: false,
+      status: 500,
+      error: 'Vercel Environment Variable Sozialrecht2026 fehlt. Sozialrecht-Vector-Store wird deshalb nicht angesprochen.'
+    };
+  }
+
+  const model = String(process.env.SOZIALRECHT_MODEL || process.env.OPENAI_MODEL_SOZIALRECHT || 'gpt-5.1').trim();
+  const cleanHistory = (Array.isArray(history) ? history : [])
+    .slice(-8)
+    .map((m) => `${String(m?.role || 'user').slice(0, 20)}: ${String(m?.content || '').slice(0, 1200)}`)
+    .filter(Boolean)
+    .join('\n\n');
+  const userInput = [
+    cleanHistory ? `Bisheriger Verlauf:\n${cleanHistory}` : '',
+    `Aktuelle Frage:\n${question}`
+  ].filter(Boolean).join('\n\n');
+  const instructions = [
+    'Du bist Linda, Fachmodus Sozialrecht. Der Fachmodus ist fix: SOZIALRECHT.',
+    'Nutze zwingend den OpenAI Vector Store Sozialrecht2026 per file_search. Antworte nicht aus BBiG/AEVO/IHK-Ausbildungsrecht.',
+    'Wenn File-Search-Treffer vorhanden sind, nutze sie und fuehre unten kurze Quellen-Miniauszuege auf.',
+    'Wenn keine passenden Treffer gefunden werden, nutze die einschlaegige SGB-Systematik, aber markiere: "Hinweis: Keine zitierfaehige Textstelle aus dem Vector Store gefunden."',
+    sozialrechtInstruction || buildSozialrechtSystemInstruction(sozialrechtProfile || {})
+  ].filter(Boolean).join('\n\n');
+
+  const upstream = await fetch('https://api.openai.com/v1/responses', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${apiKey}`
+    },
+    body: JSON.stringify({
+      model,
+      instructions,
+      input: userInput,
+      tools: [{
+        type: 'file_search',
+        vector_store_ids: [SOZIALRECHT_VECTOR_STORE.id],
+        max_num_results: Number(retrieval?.max_num_results || 8)
+      }],
+      include: ['file_search_call.results'],
+      metadata: {
+        fachmodus: FIXED_FACHMODUS,
+        vector_store_id: SOZIALRECHT_VECTOR_STORE.id,
+        pinned_file_ids: (retrieval?.pinned_file_ids || []).join(','),
+        profile_flags: Array.isArray(sozialrechtProfile?.flags) ? sozialrechtProfile.flags.join(',') : '',
+        source: 'linda4-direct-sozialrecht'
+      }
+    })
+  });
+
+  const raw = await upstream.text();
+  if (!upstream.ok) {
+    return {
+      ok: false,
+      status: upstream.status,
+      error: `OpenAI Sozialrecht2026 Fehler (${upstream.status})`,
+      detail: raw.slice(0, 1600)
+    };
+  }
+
+  let parsed;
+  try {
+    parsed = JSON.parse(raw);
+  } catch (_) {
+    parsed = { output_text: raw };
+  }
+  return {
+    ok: true,
+    answer: extractResponseText(parsed) || 'Keine Antwort aus dem Sozialrecht-Vector-Store erhalten.',
+    sources: extractResponseSources(parsed),
+    meta: {
+      ...(payloadMeta?.meta || {}),
+      domain: FIXED_FACHMODUS,
+      storageUsed: true,
+      storageFallback: false,
+      provider: 'openai-responses',
+      model,
+      vector_store: {
+        provider: 'openai',
+        name: SOZIALRECHT_VECTOR_STORE.name,
+        id: SOZIALRECHT_VECTOR_STORE.id,
+        pinned_file_ids: retrieval?.pinned_file_ids || []
+      }
+    }
+  };
+}
+
 function sanitizeQuestion(input) {
   return String(input || '')
     .replace(/<\s*\/?\s*system\s*>/gi, ' ')
@@ -1316,6 +1462,7 @@ function buildSocialrechtPracticeFromBank(bank, opts = {}) {
 async function handleHealth(res) {
   const checks = {
     MAKE_WEBHOOK_URL: isSet('MAKE_WEBHOOK_URL'),
+    Sozialrecht2026: isSet('Sozialrecht2026'),
     Linda3Schnellmodus: isSet('Linda3Schnellmodus'),
     DEEPL_API_KEY: isSet('DEEPL_API_KEY'),
     ReWrite: isSet('ReWrite'),
@@ -1323,7 +1470,7 @@ async function handleHealth(res) {
     TTS_API_KEY: isSet('TTS_API_KEY') || /^sk-/.test(String(process.env.ReWrite || '').trim()),
     STT_API_KEY: isSet('STT_API_KEY') || isSet('TTS_API_KEY') || /^sk-/.test(String(process.env.ReWrite || '').trim())
   };
-  const required = ['MAKE_WEBHOOK_URL', 'Linda3Schnellmodus', 'DEEPL_API_KEY', 'ReWrite', 'LernkartenAPI'];
+  const required = ['Sozialrecht2026', 'DEEPL_API_KEY', 'ReWrite', 'LernkartenAPI'];
   return sendJson(res, 200, {
     ok: required.every((k) => Boolean(checks[k])),
     checks,
@@ -1333,7 +1480,6 @@ async function handleHealth(res) {
 
 async function handleBot(res, body) {
   const webhookUrl = String(process.env.MAKE_WEBHOOK_URL || '').trim();
-  if (!webhookUrl) return sendJson(res, 500, { error: 'MAKE_WEBHOOK_URL fehlt in Vercel Environment' });
 
   const questionRaw = String(body?.question || body?.prompt || body?.input || body?.text || '').trim();
   if (!questionRaw && isFlashcardsRequestBody(body)) {
@@ -1422,6 +1568,36 @@ async function handleBot(res, body) {
       }
     }
   };
+
+  const directSozialrecht = await callSozialrechtOpenAi({
+    question,
+    history,
+    retrieval: sozialrechtRetrieval,
+    sozialrechtProfile,
+    sozialrechtInstruction,
+    payloadMeta
+  });
+  if (directSozialrecht.ok) return sendJson(res, 200, directSozialrecht);
+  if (String(process.env.ALLOW_MAKE_FALLBACK || '').trim() !== '1') {
+    return sendJson(res, directSozialrecht.status || 500, {
+      error: directSozialrecht.error || 'Sozialrecht2026 konnte nicht angesprochen werden.',
+      detail: directSozialrecht.detail || '',
+      meta: {
+        domain: FIXED_FACHMODUS,
+        storageUsed: false,
+        storageFallback: false,
+        provider: 'openai-responses',
+        vector_store: {
+          provider: 'openai',
+          name: SOZIALRECHT_VECTOR_STORE.name,
+          id: SOZIALRECHT_VECTOR_STORE.id,
+          pinned_file_ids: sozialrechtRetrieval.pinned_file_ids || []
+        }
+      }
+    });
+  }
+
+  if (!webhookUrl) return sendJson(res, 500, { error: 'MAKE_WEBHOOK_URL fehlt in Vercel Environment' });
 
   const upstream = await fetch(webhookUrl, {
     method: 'POST',
