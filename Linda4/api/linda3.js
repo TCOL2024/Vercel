@@ -510,6 +510,7 @@ function extractResponseSources(parsed) {
     const fileId = String(item.file_id || item.fileId || item.id || '').trim();
     const title = String(item.filename || item.file_name || item.name || item.title || fileId || 'Sozialrecht2026').trim();
     const text = String(item.text || item.content || item.snippet || item.excerpt || '').trim();
+    const suppressExcerpt = /(^|\/)Sozialrecht_Skript_final_1\.md$/i.test(title) || /Sozialrecht_Skript_final_1\.md/i.test(title);
     const key = `${fileId}|${title}|${text.slice(0, 80)}`.toLowerCase();
     if (seen.has(key)) return;
     seen.add(key);
@@ -517,8 +518,10 @@ function extractResponseSources(parsed) {
       title,
       url: fileId ? `openai-file://${fileId}` : '',
       section: item.score != null ? `File Search Score: ${item.score}` : 'OpenAI Vector Store',
-      excerpt: text.slice(0, 850),
-      note: 'Quelle aus OpenAI Vector Store Sozialrecht2026.',
+      excerpt: suppressExcerpt ? '' : text.slice(0, 850),
+      note: suppressExcerpt
+        ? 'Quelle aus OpenAI Vector Store Sozialrecht2026. Auszug fuer dieses Skript bewusst ausgeblendet.'
+        : 'Quelle aus OpenAI Vector Store Sozialrecht2026.',
       source_type: 'file_search_result',
       confidence: item.score ?? null
     });
