@@ -391,8 +391,8 @@ function buildSozialrechtRetrievalConfig(question, profile = {}, requestedRetrie
     tool: 'file_search',
     include: ['file_search_call.results'],
     max_num_results: Number.isFinite(Number(requestedRetrieval.max_num_results))
-      ? Math.max(1, Math.min(12, Number(requestedRetrieval.max_num_results)))
-      : 8,
+      ? Math.max(1, Math.min(6, Number(requestedRetrieval.max_num_results)))
+      : 5,
     require_result_content: true,
     vector_store_name: SOZIALRECHT_VECTOR_STORE.name,
     vector_store_id: SOZIALRECHT_VECTOR_STORE.id,
@@ -459,9 +459,10 @@ function detectSozialrechtProfile(question) {
 function buildSozialrechtSystemInstruction(profile = {}) {
   const lines = [
     'LINDA_SOZIALRECHT_QUALITAETSSTEUERUNG:',
-    'Antworte im Fachmodus Sozialrecht auf Pruefungs- und Dozenten-Niveau. Pruefe nicht nur die Norm, sondern auch Vollstaendigkeit, Fristen, Ausnahmen, Rechtsfolgen, Buergerrechte und typische Pruefungsfallen. Bei Behoerden- oder Kassen-Schreiben bewerte zusaetzlich, ob die Aussage zu pauschal, zu streng oder unvollstaendig ist. Wenn eine Aufgabe eine Musterformulierung verlangt, liefere diese immer.',
+    'Antworte im Fachmodus Sozialrecht kompakt, aber auf Pruefungs- und Dozenten-Niveau. Keine langen Einleitungen, keine Wiederholungen. Pruefe Norm, Vollstaendigkeit, Fristen, Ausnahmen, Rechtsfolgen, Buergerrechte und typische Pruefungsfallen. Bei Behoerden- oder Kassen-Schreiben bewerte zusaetzlich, ob die Aussage zu pauschal, zu streng oder unvollstaendig ist. Wenn eine Aufgabe eine Musterformulierung verlangt, liefere diese immer.',
     `Antwortmodus: ${profile.mode || 'general'} (${profile.modeLabel || 'Allgemeine Wissensfrage'}).`,
-    'Pflichtsektion am Ende: "## Qualitätscheck / Prüfungsfeinschliff" mit Begriff, Voraussetzungen, Pruefungsfalle, Pauschalitaet, Frist/Ausnahme/Rechtsfolge und Qualitaetsampel.'
+    'Standardaufbau: ## Antwortkern, ## Pruefung, ## Ergebnis, ## Quellen-Miniauszuege, ## Kurz-Qualitaetscheck.',
+    'Pflichtsektion am Ende: "## Kurz-Qualitaetscheck" mit maximal 4 Bulletpoints: Begriff sauber?, Voraussetzungen vollstaendig?, typische Pruefungsfalle?, Ampel. Keine lange Ampel-Erklaerung.'
   ];
   if (profile.mode === 'general') lines.push('Bei allgemeinen Wissensfragen: vollstaendige Systematik liefern, keine unnoetigen Rueckfragen stellen.');
   if (profile.mode === 'case_review') lines.push('Bei Einzelfallpruefungen oder Schreiben: kritisch subsumieren, Gegenargumente, Rechtsfolgen, Fristen und Buergerrechte sichtbar machen.');
@@ -516,7 +517,7 @@ function extractResponseSources(parsed) {
       title,
       url: fileId ? `openai-file://${fileId}` : '',
       section: item.score != null ? `File Search Score: ${item.score}` : 'OpenAI Vector Store',
-      excerpt: text.slice(0, 1200),
+      excerpt: text.slice(0, 850),
       note: 'Quelle aus OpenAI Vector Store Sozialrecht2026.',
       source_type: 'file_search_result',
       confidence: item.score ?? null
@@ -533,7 +534,7 @@ function extractResponseSources(parsed) {
     Object.values(node).forEach(walk);
   };
   walk(parsed);
-  return out.slice(0, 10);
+  return out.slice(0, 5);
 }
 
 async function callSozialrechtOpenAi({ question, history, retrieval, sozialrechtProfile, sozialrechtInstruction, payloadMeta }) {
@@ -559,8 +560,10 @@ async function callSozialrechtOpenAi({ question, history, retrieval, sozialrecht
   const instructions = [
     'Du bist Linda, Fachmodus Sozialrecht. Der Fachmodus ist fix: SOZIALRECHT.',
     'Nutze zwingend den OpenAI Vector Store Sozialrecht2026 per file_search. Antworte nicht aus BBiG/AEVO/IHK-Ausbildungsrecht.',
-    'Wenn File-Search-Treffer vorhanden sind, nutze sie und fuehre unten kurze Quellen-Miniauszuege auf.',
+    'Antworte kurz genug fuer Unterricht/Pruefung: klare Subsumtion, keine Dopplungen, keine langen Disclaimer. Ziel: ca. 60 Prozent einer Langantwort, aber ohne Qualitaetsverlust.',
+    'Wenn File-Search-Treffer vorhanden sind, nutze sie und fuehre unten 2-3 kurze Quellen-Miniauszuege auf. Die Auszuege sind wichtig, aber knapp halten.',
     'Wenn keine passenden Treffer gefunden werden, nutze die einschlaegige SGB-Systematik, aber markiere: "Hinweis: Keine zitierfaehige Textstelle aus dem Vector Store gefunden."',
+    'Der Kurz-Qualitaetscheck darf maximal 4 Bulletpoints haben und keine ausformulierte lange Qualitaetsampel.',
     sozialrechtInstruction || buildSozialrechtSystemInstruction(sozialrechtProfile || {})
   ].filter(Boolean).join('\n\n');
 
@@ -577,7 +580,7 @@ async function callSozialrechtOpenAi({ question, history, retrieval, sozialrecht
       tools: [{
         type: 'file_search',
         vector_store_ids: [SOZIALRECHT_VECTOR_STORE.id],
-        max_num_results: Number(retrieval?.max_num_results || 8)
+        max_num_results: Number(retrieval?.max_num_results || 5)
       }],
       include: ['file_search_call.results'],
       metadata: {
