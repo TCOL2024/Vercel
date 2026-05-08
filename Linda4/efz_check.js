@@ -604,26 +604,6 @@
       return originalSendMessage(opts);
     };
 
-    const originalPrompting = app.logic.getPromptingSuggestions
-      ? app.logic.getPromptingSuggestions.bind(app.logic)
-      : null;
-    if (originalPrompting) {
-      app.logic.getPromptingSuggestions = (inputValue) => {
-        const suggestions = originalPrompting(inputValue) || [];
-        const t = normalize(inputValue);
-        if (/\b(entgelt|lohnfortzahlung|vorerkrank|efzg|arbeitsunfaehigkeit)\b/.test(t)) {
-          suggestions.unshift({
-            label: 'Entgeltfortzahlung pruefen',
-            value: 'Entgeltfortzahlung pruefen',
-            kind: 'Modul'
-          });
-        }
-        return suggestions
-          .filter((item, idx, arr) => arr.findIndex((x) => x.value === item.value) === idx)
-          .slice(0, 8);
-      };
-    }
-
     if (app.ui.clarifyDock) {
       app.ui.clarifyDock.addEventListener('click', (event) => {
         if (!state.active) return;

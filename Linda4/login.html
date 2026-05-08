@@ -1,0 +1,329 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Linda Login | Zugriffsschutz</title>
+  <meta name="description" content="Login-Gate fuer Linda 2.0 und Linda 3.0 auf Vercel">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-1: #f4f7f2;
+      --bg-2: #d9e7df;
+      --card: rgba(255, 255, 255, 0.9);
+      --ink: #10231b;
+      --muted: #4c655d;
+      --accent: #006d5c;
+      --accent-strong: #045144;
+      --danger: #8f1e1e;
+      --ring: rgba(0, 109, 92, 0.25);
+      --line: rgba(16, 35, 27, 0.14);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100svh;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+      font-family: "Manrope", "Segoe UI", Arial, sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 18% 12%, #fdf7e9 0%, transparent 46%),
+        radial-gradient(circle at 82% 88%, #d0ece2 0%, transparent 52%),
+        linear-gradient(150deg, var(--bg-1), var(--bg-2));
+    }
+
+    .card {
+      width: min(480px, 100%);
+      border-radius: 18px;
+      border: 1px solid var(--line);
+      background: var(--card);
+      backdrop-filter: blur(10px);
+      box-shadow: 0 20px 48px rgba(6, 28, 22, 0.13);
+      padding: 30px 26px 24px;
+      animation: card-in 360ms ease-out;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      background: #e6f3ef;
+      color: var(--accent-strong);
+    }
+
+    h1 {
+      margin: 14px 0 8px;
+      font-size: clamp(26px, 4vw, 34px);
+      line-height: 1.1;
+      letter-spacing: -0.02em;
+    }
+
+    .intro {
+      margin: 0 0 24px;
+      color: var(--muted);
+      line-height: 1.55;
+      font-size: 15px;
+    }
+
+    .field {
+      display: grid;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+
+    label {
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    input {
+      width: 100%;
+      border-radius: 12px;
+      border: 1px solid #bfd5cc;
+      padding: 12px 13px;
+      font-size: 15px;
+      color: var(--ink);
+      background: #fbfdfc;
+      transition: border-color 150ms ease, box-shadow 150ms ease, transform 120ms ease;
+    }
+
+    input:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 4px var(--ring);
+      transform: translateY(-1px);
+    }
+
+    button {
+      width: 100%;
+      border: 0;
+      border-radius: 12px;
+      margin-top: 6px;
+      padding: 12px 14px;
+      font-size: 15px;
+      font-weight: 800;
+      letter-spacing: 0.01em;
+      color: #ffffff;
+      background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+      cursor: pointer;
+      transition: transform 140ms ease, box-shadow 140ms ease, opacity 140ms ease;
+    }
+
+    button:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 12px 26px rgba(0, 82, 69, 0.26);
+    }
+
+    button:active {
+      transform: translateY(0);
+    }
+
+    button:disabled {
+      opacity: 0.75;
+      cursor: progress;
+      transform: none;
+      box-shadow: none;
+    }
+
+    .status {
+      min-height: 22px;
+      margin: 14px 0 0;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--muted);
+    }
+
+    .status.error {
+      color: var(--danger);
+    }
+
+    .status.ok {
+      color: var(--accent-strong);
+    }
+
+    .notice {
+      margin-top: 22px;
+      padding-top: 16px;
+      border-top: 1px dashed var(--line);
+    }
+
+    .notice h2 {
+      margin: 0 0 8px;
+      font-size: 14px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .notice p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.5;
+      font-size: 14px;
+    }
+
+    .meta {
+      margin: 16px 0 0;
+      color: #5d746c;
+      font-size: 12px;
+      letter-spacing: 0.02em;
+    }
+
+    code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      font-size: 0.93em;
+      background: #edf4f1;
+      padding: 0.2em 0.35em;
+      border-radius: 4px;
+    }
+
+    @keyframes card-in {
+      from {
+        opacity: 0;
+        transform: translateY(10px) scale(0.99);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    @media (max-width: 520px) {
+      .card {
+        padding: 24px 18px 20px;
+        border-radius: 16px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="card" aria-labelledby="login-title">
+    <span class="badge">Lernassistenz</span>
+    <h1 id="login-title">Login fuer Linda 2.0 / 3.0</h1>
+    <form id="login-form" novalidate>
+      <div class="field">
+        <label for="username">Benutzername</label>
+        <input id="username" name="username" autocomplete="username" required maxlength="80">
+      </div>
+
+      <div class="field">
+        <label for="password">Passwort</label>
+        <input id="password" name="password" type="password" autocomplete="current-password" required maxlength="120">
+      </div>
+
+      <button id="submit-btn" type="submit">Anmelden</button>
+      <p id="status" class="status" role="status" aria-live="polite"></p>
+    </form>
+
+    <p class="meta">Stand: April 2026</p>
+  </main>
+
+  <script>
+    (function () {
+      var form = document.getElementById("login-form");
+      var statusEl = document.getElementById("status");
+      var submitBtn = document.getElementById("submit-btn");
+      var usernameEl = document.getElementById("username");
+      var passwordEl = document.getElementById("password");
+
+      function setBusy(isBusy) {
+        submitBtn.disabled = isBusy;
+        submitBtn.textContent = isBusy ? "Pruefe Zugang..." : "Anmelden";
+      }
+
+      function setStatus(message, type) {
+        statusEl.textContent = message || "";
+        statusEl.className = "status" + (type ? " " + type : "");
+      }
+
+      function safeRedirectTarget(rawTarget) {
+        if (!rawTarget) {
+          return "/";
+        }
+        try {
+          var url = new URL(rawTarget, window.location.origin);
+          if (url.origin !== window.location.origin) {
+            return "/";
+          }
+          return url.pathname + url.search + url.hash;
+        } catch (error) {
+          return "/";
+        }
+      }
+
+      form.addEventListener("submit", async function (event) {
+        event.preventDefault();
+
+        var username = usernameEl.value.trim();
+        var password = passwordEl.value;
+
+        if (!username || !password) {
+          setStatus("Bitte Benutzername und Passwort eingeben.", "error");
+          return;
+        }
+
+        setBusy(true);
+        setStatus("Login wird geprueft...");
+
+        try {
+          var response = await fetch("/api/login", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ username: username, password: password })
+          });
+
+          var payload = null;
+          try {
+            payload = await response.json();
+          } catch (jsonError) {
+            payload = null;
+          }
+
+          if (!response.ok) {
+            throw new Error((payload && (payload.message || payload.error)) || "Login fehlgeschlagen.");
+          }
+
+          var isAuthorized = Boolean(
+            payload && (payload.ok === true || payload.success === true || payload.authenticated === true)
+          );
+
+          if (!isAuthorized) {
+            throw new Error((payload && (payload.message || payload.error)) || "Ungueltige Zugangsdaten.");
+          }
+
+          sessionStorage.setItem("linda_login_gate", "ok");
+
+          var params = new URLSearchParams(window.location.search);
+          var targetFromQuery = params.get("next");
+          var targetFromApi = payload && typeof payload.redirectTo === "string" ? payload.redirectTo : "";
+          var target = safeRedirectTarget(targetFromApi || targetFromQuery || "/");
+
+          setStatus("Login erfolgreich. Weiterleitung...", "ok");
+          window.setTimeout(function () {
+            window.location.assign(target);
+          }, 320);
+        } catch (error) {
+          setStatus(error.message || "Technischer Fehler beim Login.", "error");
+          passwordEl.focus();
+          passwordEl.select();
+        } finally {
+          setBusy(false);
+        }
+      });
+    })();
+  </script>
+</body>
+</html>

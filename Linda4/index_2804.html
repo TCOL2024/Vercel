@@ -6081,6 +6081,7 @@
           passiveBenefits: has(/\b(passive leistung|passive leistungen|alg i|arbeitslosengeld i|kurzarbeitergeld|insolvenzgeld|uebergangsgeld|übergangsgeld)\b/) && has(/\b(arbeitslosenversicherung|sgb iii|agentur fuer arbeit|agentur für arbeit|alg i|kurzarbeitergeld|insolvenzgeld|uebergangsgeld|übergangsgeld)\b/),
           vaccinations: has(/\b(impfung|impfungen|schutzimpfung|schutzimpfungen|reiseimpfung|stiko|g-?ba|schutzimpfungsrichtlinie|schutzimpfungs-richtlinie|§\s*20i\s*sgb\s*v)\b/),
           earningCapacity: has(/\b(erwerbsminderung|erwerbsunfaehigkeit|erwerbsunfähigkeit|arbeitsmarktrente|reha vor rente|§\s*43\s*sgb\s*vi)\b/),
+          carePension: has(/\b(pflegeperson|pflegepersonen|pflegebeduerftig|pflegebedürftig|pflegegrad|pflegekasse|rentenversicherung|rentenbeitraege|rentenbeiträge|10 stunden|zwei tage|2 tage|30 stunden|§\s*3\s*sgb\s*vi|§\s*44\s*sgb\s*xi)\b/) && has(/\b(pflege|pflegt|pflegen|pflegeperson|pflegepersonen)\b/) && has(/\b(rentenversicherung|rentenbeitraege|rentenbeiträge|versicherungspflicht|soziale sicherung|30 stunden|10 stunden|zwei tage|2 tage)\b/),
           singleCase: asked(/\b(pruef(?:e|en|ung)|prüf(?:e|en|ung)|beurteile|bewerte|einschaetzung|einschätzung|rechtslage|fall|anspruch|darf|muss|kann .* verlangen|ist .* rechtmaessig|ist .* rechtmäßig)\b/)
         };
 
@@ -6106,6 +6107,7 @@
           profile.passiveBenefits ? 'arbeitslosenversicherung_passive_leistungen' : '',
           profile.vaccinations ? 'gkv_impfungen' : '',
           profile.earningCapacity ? 'erwerbsminderung_sgb_vi' : '',
+          profile.carePension ? 'pflegeperson_rentenversicherung' : '',
           profile.widerspruch ? 'widerspruch_sgg' : '',
           profile.authorityLetter ? 'behoerden_kassen_schreiben' : '',
           profile.requiresSampleText ? 'mustertext_pflicht' : ''
@@ -6114,10 +6116,53 @@
         return profile;
       },
 
-      buildSozialrechtPromptDirective: () => '',
+      buildSozialrechtPromptDirective: (profile = {}) => {
+        const lines = [
+          'LINDA_SOZIALRECHT_QUALITAETSSTEUERUNG:',
+          'Fachmodus ist SOZIALRECHT. Nutze Sozialrecht/SGB und den Sozialrecht-Vector-Store. BBiG/AEVO/IHK-Ausbildungsrecht ist in diesem Modus nur relevant, wenn die Nutzerfrage es ausdruecklich nennt.',
+          'Wenn Retrieval BBiG/AEVO/ausbildungsrechtliche Quellen liefert, die Frage aber sozialrechtlich ist: diese Quellen ignorieren und die einschlaegigen SGB-Normen verwenden.',
+          'Antworte pruefungsnah: Rechtskreis, Anspruchsgrundlage, Voraussetzungen, Subsumtion, Rechtsfolge, typische Falle.'
+        ];
+        if (profile.carePension) {
+          lines.push('Pflegeperson/Rentenversicherung: pruefe § 3 Satz 1 Nr. 1a SGB VI und § 44 SGB XI. Kernpunkte: nicht erwerbsmaessige Pflege, Pflegebeduerftiger mindestens Pflegegrad 2, haeusliche Umgebung, mindestens 10 Stunden woechentlich verteilt auf regelmaessig mindestens 2 Tage, Anspruch aus sozialer oder privater Pflege-Pflichtversicherung, Ausschluss bei regelmaessig mehr als 30 Stunden Erwerbstaetigkeit, Rechtsfolge Rentenversicherungspflicht/Beitragszahlung durch Pflegekasse/private Pflege-Pflichtversicherung.');
+        }
+        return lines.join('\n');
+      },
       buildSozialrechtQualityScore: () => ({ score: 0, label: 'serverseitig' }),
       buildSozialrechtQualityCheck: (answer = '') => String(answer || '').trim(),
       ensureSozialrechtQualityCheck: (answer = '') => String(answer || '').trim(),
+
+      isBbigContaminatedSozialrechtAnswer: (question = '', answer = '') => {
+        const q = app.utils.normalizeForKeyword(question || '');
+        const a = app.utils.normalizeForKeyword(answer || '');
+        if (/\b(bbig|aevo|ausbilder|ausbildereignung|berufsbildungsgesetz)\b/.test(q)) return false;
+        return /\b(bbig|aevo|ausbilder|ausbildereignung|berufsbildungsgesetz|ihk)\b/.test(a) &&
+          /\b(sgb|sozialrecht|pflege|pflegeperson|krankenkasse|pflegekasse|rentenversicherung|arbeitslosengeld|familienversicherung)\b/.test(q);
+      },
+
+      buildLocalSozialrechtCorrection: (profile = {}, question = '') => {
+        if (!profile.carePension) return '';
+        return [
+          '## Antwortkern',
+          'Die genannte Aussage betrifft nicht BBiG/AEVO, sondern die soziale Sicherung nicht erwerbsmaessig taetiger Pflegepersonen im Sozialrecht.',
+          '',
+          'Im Kern ist die Richtung richtig, aber sauberer ist die Formulierung: Eine nicht erwerbsmaessig taetige Pflegeperson kann in der gesetzlichen Rentenversicherung versicherungspflichtig sein. Massgeblich sind insbesondere § 3 Satz 1 Nr. 1a SGB VI und § 44 SGB XI.',
+          '',
+          '## Pruefschema',
+          '1. Die Pflegeperson pflegt eine oder mehrere pflegebeduerftige Personen mit mindestens Pflegegrad 2.',
+          '2. Die Pflege erfolgt in haeuslicher Umgebung und nicht erwerbsmaessig.',
+          '3. Der Pflegeumfang betraegt wenigstens 10 Stunden woechentlich.',
+          '4. Diese 10 Stunden sind auf regelmaessig mindestens 2 Tage in der Woche verteilt.',
+          '5. Der Pflegebeduerftige hat Anspruch auf Leistungen aus der sozialen Pflegeversicherung oder privaten Pflege-Pflichtversicherung.',
+          '6. Die Pflegeperson ist regelmaessig nicht mehr als 30 Stunden woechentlich erwerbstaetig.',
+          '',
+          '## Rechtsfolge',
+          'Sind die Voraussetzungen erfuellt, werden Rentenversicherungsbeitraege fuer die Pflegeperson entrichtet. Praktisch geht es also nicht um eine direkte Rentenzahlung an die Pflegeperson, sondern um Rentenversicherungspflicht beziehungsweise Beitragszeiten.',
+          '',
+          '## Pruefungsfalle',
+          'Nicht verwechseln: Pflegegeld/Sachleistungen fuer den Pflegebeduerftigen sind etwas anderes als die rentenrechtliche soziale Sicherung der Pflegeperson.'
+        ].join('\n');
+      },
 
       enforceSozialrechtMode: (opts = {}) => {
         if (SOZIALRECHT_ONLY_MODE) app.state.settings.domain = SOZIALRECHT_DOMAIN_KEY;
@@ -6619,6 +6664,11 @@
         if (profile.pkvChild) add('§ 198', 'VVG', 'PKV-Kindernachversicherung; bewusst keine SGB-V-Norm.');
         if (profile.vaccinations) add('§ 20i', 'SGB V', 'Schutzimpfungen in der gesetzlichen Krankenversicherung.');
         if (profile.earningCapacity) add('§ 43', 'SGB VI', 'Erwerbsminderung in der gesetzlichen Rentenversicherung.');
+        if (profile.carePension) {
+          add('§ 3', 'SGB VI', 'Versicherungspflicht nicht erwerbsmaessig taetiger Pflegepersonen.');
+          add('§ 44', 'SGB XI', 'Leistungen zur sozialen Sicherung der Pflegepersonen.');
+          add('§ 19', 'SGB XI', 'Begriff der Pflegeperson.');
+        }
         if (profile.passiveBenefits) addBook('SGB III', 'Arbeitsfoerderung: passive Leistungsbegriffe nur als Lehr-/Praxisbegriff verwenden.');
         if (profile.widerspruch) {
           add('§ 84', 'SGG', 'Form und Frist des Widerspruchs.');
@@ -7717,6 +7767,22 @@
         const sozialrechtProfile = sozialrechtDomain
           ? app.logic.analyzeSozialrechtQuestion(question, answer)
           : null;
+
+        const localSozialrechtCorrection =
+          sozialrechtDomain &&
+          app.logic.isBbigContaminatedSozialrechtAnswer(question, answer)
+            ? app.logic.buildLocalSozialrechtCorrection(sozialrechtProfile || {}, question)
+            : '';
+        if (localSozialrechtCorrection) {
+          answer = localSozialrechtCorrection;
+          sources = [];
+          backendMeta = {
+            ...backendMeta,
+            storageFallback: true,
+            storageError: 'Falscher Rechtskreis in Antwort erkannt; lokale Sozialrecht-Korrektur verwendet.'
+          };
+        }
+
         const storageUsed = Boolean(backendMeta.storageUsed || backendMeta.storage_used);
         const storageFallback = Boolean(backendMeta.storageFallback || backendMeta.storage_fallback);
         const storageError = String(backendMeta.storageError || backendMeta.storage_error || '').trim();

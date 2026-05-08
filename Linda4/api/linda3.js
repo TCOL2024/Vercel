@@ -361,6 +361,7 @@ function detectSozialrechtProfile(question) {
     passiveBenefits: has(/\b(passive leistung|passive leistungen|alg i|arbeitslosengeld i|kurzarbeitergeld|insolvenzgeld|uebergangsgeld)\b/) && has(/\b(arbeitslosenversicherung|sgb iii|agentur fuer arbeit|alg i|kurzarbeitergeld|insolvenzgeld|uebergangsgeld)\b/),
     vaccinations: has(/\b(impfung|impfungen|schutzimpfung|schutzimpfungen|reiseimpfung|stiko|g ba|schutzimpfungsrichtlinie|20i sgb v)\b/),
     earningCapacity: has(/\b(erwerbsminderung|erwerbsunfaehigkeit|arbeitsmarktrente|reha vor rente|43 sgb vi)\b/),
+    carePension: has(/\b(pflegeperson|pflegepersonen|pflegebeduerftig|pflegegrad|pflegekasse|rentenversicherung|rentenbeitraege|10 stunden|zwei tage|2 tage|30 stunden|3 sgb vi|44 sgb xi)\b/) && has(/\b(pflege|pflegt|pflegen|pflegeperson|pflegepersonen)\b/) && has(/\b(rentenversicherung|rentenbeitraege|versicherungspflicht|soziale sicherung|30 stunden|10 stunden|zwei tage|2 tage)\b/),
     singleCase: has(/\b(pruef|beurteile|bewerte|einschaetzung|rechtslage|fall|anspruch|darf|muss|rechtmaessig)\b/)
   };
   if (profile.coaching) {
@@ -376,6 +377,7 @@ function detectSozialrechtProfile(question) {
     profile.passiveBenefits ? 'arbeitslosenversicherung_passive_leistungen' : '',
     profile.vaccinations ? 'gkv_impfungen' : '',
     profile.earningCapacity ? 'erwerbsminderung_sgb_vi' : '',
+    profile.carePension ? 'pflegeperson_rentenversicherung' : '',
     profile.widerspruch ? 'widerspruch_sgg' : '',
     profile.authorityLetter ? 'behoerden_kassen_schreiben' : '',
     profile.requiresSampleText ? 'mustertext_pflicht' : ''
@@ -400,6 +402,8 @@ function buildSozialrechtSystemInstruction(profile = {}) {
   if (profile.passiveBenefits) lines.push('Arbeitslosenversicherung: "passive Leistungen" als Lehrbegriff kennzeichnen; typische Leistungen ALG I, Kurzarbeitergeld, Insolvenzgeld; Uebergangsgeld nicht pauschal als typische passive Leistung der Arbeitslosenversicherung einordnen.');
   if (profile.vaccinations) lines.push('GKV-Impfungen: § 20i SGB V; STIKO empfiehlt; G-BA entscheidet ueber Schutzimpfungs-Richtlinie; Krankenkasse zahlt bei Regelleistung; Reiseimpfungen meist Satzungsleistung.');
   if (profile.earningCapacity) lines.push('Erwerbsminderung SGB VI: § 43 SGB VI; unter 3 Stunden volle EM; 3 bis unter 6 Stunden teilweise EM; ab 6 Stunden keine EM; Arbeitsmarktrente und Reha vor Rente ergaenzen; "Erwerbsunfaehigkeit" als alten Begriff kennzeichnen.');
+  if (profile.carePension) lines.push('Pflegeperson/Rentenversicherung: pruefe § 3 Satz 1 Nr. 1a SGB VI und § 44 SGB XI. Nicht als BBiG/AEVO behandeln. Voraussetzungen: nicht erwerbsmaessige Pflege, Pflegebeduerftiger mindestens Pflegegrad 2, haeusliche Umgebung, mindestens 10 Stunden woechentlich verteilt auf regelmaessig mindestens 2 Tage, Anspruch aus sozialer oder privater Pflege-Pflichtversicherung, Ausschluss bei regelmaessig mehr als 30 Stunden Erwerbstaetigkeit. Rechtsfolge: Rentenversicherungspflicht/Beitragszahlung fuer die Pflegeperson.');
+  lines.push('Negativregel: Wenn die Nutzerfrage Sozialrecht betrifft, aber Retrieval BBiG/AEVO/IHK-Ausbildungsrecht liefert, ignoriere diese Treffer und sage nicht, Sozialrecht sei nicht pruefbar.');
   if (Array.isArray(profile.flags) && profile.flags.length) lines.push(`Erkannte Spezialthemen: ${profile.flags.join(', ')}.`);
   return lines.join('\n');
 }
@@ -1264,13 +1268,13 @@ async function handleBot(res, body) {
   }
   if (!questionRaw) return sendJson(res, 400, { error: 'question fehlt' });
   const userQuestionForAnalysis = questionRaw.split(/\n\s*LINDA_SOZIALRECHT_QUALITAETSSTEUERUNG:/i)[0].trim() || questionRaw;
-  const bbigMatches = detectBbigGuardrails(userQuestionForAnalysis);
-  const bbigInstruction = buildBbigGuardrailInstruction(bbigMatches);
-  const bbigKeywordHits = detectBbigKeywordSections(userQuestionForAnalysis, 4);
-  const bbigKeywordInstruction = buildBbigKeywordInstruction(bbigKeywordHits);
   const fmUser = normalizeFachmodus(body?.fm_user || body?.fachmodus || body?.meta?.fm_user || '');
   const fmLabel = fachmodusLabel(body?.fm_user || body?.fachmodus || body?.meta?.fm_user || '');
   const sozialrechtMode = isSozialrechtFachmodus(fmUser || body?.fachmodus || body?.meta?.fm_user || '');
+  const bbigMatches = sozialrechtMode ? [] : detectBbigGuardrails(userQuestionForAnalysis);
+  const bbigInstruction = sozialrechtMode ? '' : buildBbigGuardrailInstruction(bbigMatches);
+  const bbigKeywordHits = sozialrechtMode ? [] : detectBbigKeywordSections(userQuestionForAnalysis, 4);
+  const bbigKeywordInstruction = sozialrechtMode ? '' : buildBbigKeywordInstruction(bbigKeywordHits);
   const sozialrechtProfile = sozialrechtMode ? detectSozialrechtProfile(userQuestionForAnalysis) : null;
   const sozialrechtInstruction =
     sozialrechtMode && !/LINDA_SOZIALRECHT_QUALITAETSSTEUERUNG/i.test(questionRaw)
@@ -1308,7 +1312,11 @@ async function handleBot(res, body) {
         : 5,
       require_result_content: true,
       source_files: ['vorsorge_draft.md', 'Sozialrecht_Skript_draft.md'],
-      source_label: 'Wissensdatenbank Recht'
+      source_label: 'Wissensdatenbank Recht',
+      domain: sozialrechtMode ? 'SOZIALRECHT' : '',
+      exclude_source_keywords: sozialrechtMode
+        ? ['BBiG', 'AEVO', 'IHK', 'Ausbilder', 'Berufsbildungsgesetz']
+        : []
     },
     meta: {
       fm_user: fmUser || '',
@@ -1321,7 +1329,11 @@ async function handleBot(res, body) {
         include: ['file_search_call.results'],
         require_result_content: true,
         source_files: ['vorsorge_draft.md', 'Sozialrecht_Skript_draft.md'],
-        source_label: 'Wissensdatenbank Recht'
+        source_label: 'Wissensdatenbank Recht',
+        domain: sozialrechtMode ? 'SOZIALRECHT' : '',
+        exclude_source_keywords: sozialrechtMode
+          ? ['BBiG', 'AEVO', 'IHK', 'Ausbilder', 'Berufsbildungsgesetz']
+          : []
       },
       need,
       token,
@@ -1385,10 +1397,10 @@ async function handleDeepseek(res, body) {
   const userQuestionForAnalysis = question.split(/\n\s*LINDA_SOZIALRECHT_QUALITAETSSTEUERUNG:/i)[0].trim() || question;
   const sozialrechtProfile = sozialrechtMode ? detectSozialrechtProfile(userQuestionForAnalysis) : null;
   const sozialrechtInstruction = sozialrechtMode ? buildSozialrechtSystemInstruction(sozialrechtProfile || {}) : '';
-  const bbigMatches = detectBbigGuardrails(userQuestionForAnalysis);
-  const bbigInstruction = buildBbigGuardrailInstruction(bbigMatches);
-  const bbigKeywordHits = detectBbigKeywordSections(userQuestionForAnalysis, 4);
-  const bbigKeywordInstruction = buildBbigKeywordInstruction(bbigKeywordHits);
+  const bbigMatches = sozialrechtMode ? [] : detectBbigGuardrails(userQuestionForAnalysis);
+  const bbigInstruction = sozialrechtMode ? '' : buildBbigGuardrailInstruction(bbigMatches);
+  const bbigKeywordHits = sozialrechtMode ? [] : detectBbigKeywordSections(userQuestionForAnalysis, 4);
+  const bbigKeywordInstruction = sozialrechtMode ? '' : buildBbigKeywordInstruction(bbigKeywordHits);
 
   const { apiKey, model } = getDeepSeekConfig();
   if (!apiKey) return sendJson(res, 500, { error: 'Linda3Schnellmodus fehlt (oder DEEPSEEK_API_KEY)' });
