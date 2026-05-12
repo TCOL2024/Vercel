@@ -222,24 +222,59 @@
       align-self: flex-start;
       width: min(880px, 100%);
       display: grid;
-      gap: 8px;
-      margin-top: -4px;
+      gap: 10px;
+      margin-top: 2px;
+      border: 1px solid #d7c78f;
+      border-radius: 8px;
+      background: #fff8df;
+      padding: 12px;
+      box-shadow: 0 12px 28px rgba(23, 32, 28, 0.08);
+    }
+
+    .sources-title {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      font-family: "Trebuchet MS", Verdana, sans-serif;
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #5f4b0d;
     }
 
     .source {
-      border-left: 4px solid var(--mark);
-      border-radius: 6px;
-      background: #fffaf0;
-      padding: 10px 12px;
+      border: 1px solid #eadb9f;
+      border-left: 5px solid var(--mark);
+      border-radius: 8px;
+      background: #fffdf5;
+      padding: 12px 13px;
       font-family: "Trebuchet MS", Verdana, sans-serif;
-      color: var(--muted);
+      color: var(--ink);
       line-height: 1.45;
     }
 
     .source strong {
       display: block;
       color: var(--ink);
-      margin-bottom: 4px;
+      margin-bottom: 6px;
+    }
+
+    .source-meta {
+      display: block;
+      color: var(--muted);
+      font-size: 0.82rem;
+      margin-bottom: 8px;
+    }
+
+    .source-quote {
+      margin: 0;
+      border-left: 3px solid rgba(15, 107, 95, 0.35);
+      padding: 8px 0 8px 11px;
+      color: #2d372f;
+      background: linear-gradient(90deg, rgba(15, 107, 95, 0.08), transparent);
+      white-space: pre-wrap;
     }
 
     .composer {
@@ -418,7 +453,7 @@
     };
 
     let activeMode = "fragen";
-    let apiEndpoint = "/api/vwl";
+    let apiEndpoint = "";
 
     async function detectApiEndpoint() {
       for (const candidate of apiCandidates) {
@@ -453,17 +488,36 @@
       const wrapper = document.createElement("div");
       wrapper.className = "sources";
 
+      const header = document.createElement("div");
+      header.className = "sources-title";
+      header.textContent = "Quellen aus den Unterlagen";
+      wrapper.appendChild(header);
+
       for (const source of sources.slice(0, 5)) {
         const item = document.createElement("div");
         item.className = "source";
 
         const title = document.createElement("strong");
-        title.textContent = source.title || "Quelle";
+        title.textContent = `Quelle ${wrapper.querySelectorAll(".source").length + 1}: ${source.title || "Dokument"}`;
         item.appendChild(title);
 
-        const snippet = document.createElement("span");
-        snippet.textContent = source.snippet || source.fileId || "Quelle aus dem VWL-Vectorstore.";
-        item.appendChild(snippet);
+        const metaParts = [
+          source.page ? `Seite ${source.page}` : "",
+          source.score ? `Trefferwert ${source.score}` : "",
+          source.fileId ? `Datei-ID ${source.fileId}` : "",
+        ].filter(Boolean);
+
+        if (metaParts.length) {
+          const meta = document.createElement("span");
+          meta.className = "source-meta";
+          meta.textContent = metaParts.join(" · ");
+          item.appendChild(meta);
+        }
+
+        const quote = document.createElement("blockquote");
+        quote.className = "source-quote";
+        quote.textContent = source.snippet || "Diese Datei wurde als Quelle verwendet; OpenAI hat fuer diesen Treffer keinen Ausschnitt geliefert.";
+        item.appendChild(quote);
 
         wrapper.appendChild(item);
       }
@@ -497,6 +551,14 @@
 
       const text = question.value.trim();
       if (!text) return;
+
+      if (!apiEndpoint) {
+        appendMessage(
+          "Die VWL-API wurde im Deployment nicht gefunden.\n\nPruefe in Vercel die Root Directory Einstellung: Wenn die Dateien unter Linda4/VWL liegen, muss entweder Root Directory = Linda4/VWL sein oder es muss eine Datei Linda4/api/vwl.js existieren.",
+          "bot"
+        ).classList.add("error");
+        return;
+      }
 
       appendMessage(text, "user");
       question.value = "";
