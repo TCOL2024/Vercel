@@ -24,6 +24,27 @@ const MODE_CONFIG = {
   },
 };
 
+const API_KEY_ENV_NAMES = ["VWL2026LINDA4", "OPENAI_API_KEY"];
+const VECTOR_STORE_ENV_NAMES = [
+  "VWL-Vectorstore",
+  "VWL_VECTOR_STORE_ID",
+  "VWL_VECTORSTORE",
+  "VWL_VECTORSTORE_ID",
+  "VWL_VECTOR_STORE",
+  "VWL_Vectorstore",
+  "VWL_VECTOR",
+];
+
+function readFirstEnv(names) {
+  for (const name of names) {
+    const value = process.env[name];
+    if (typeof value === "string" && value.trim()) {
+      return value.trim();
+    }
+  }
+  return "";
+}
+
 function setCors(res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
@@ -156,12 +177,12 @@ module.exports = async function handler(req, res) {
       service: "VWL-Linda 4 API",
       model: MODEL,
       configured: {
-        apiKey: Boolean(process.env.VWL2026LINDA4 || process.env.OPENAI_API_KEY),
-        vectorStore: Boolean(
-          process.env["VWL-Vectorstore"] ||
-            process.env.VWL_VECTOR_STORE_ID ||
-            process.env.VWL_VECTORSTORE
-        ),
+        apiKey: Boolean(readFirstEnv(API_KEY_ENV_NAMES)),
+        vectorStore: Boolean(readFirstEnv(VECTOR_STORE_ENV_NAMES)),
+      },
+      expectedEnv: {
+        apiKey: API_KEY_ENV_NAMES,
+        vectorStore: VECTOR_STORE_ENV_NAMES,
       },
     });
     return;
@@ -172,11 +193,8 @@ module.exports = async function handler(req, res) {
     return;
   }
 
-  const apiKey = process.env.VWL2026LINDA4 || process.env.OPENAI_API_KEY;
-  const vectorStoreId =
-    process.env["VWL-Vectorstore"] ||
-    process.env.VWL_VECTOR_STORE_ID ||
-    process.env.VWL_VECTORSTORE;
+  const apiKey = readFirstEnv(API_KEY_ENV_NAMES);
+  const vectorStoreId = readFirstEnv(VECTOR_STORE_ENV_NAMES);
 
   if (!apiKey || !vectorStoreId) {
     json(res, 500, {
