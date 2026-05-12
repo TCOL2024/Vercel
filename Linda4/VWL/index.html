@@ -1,0 +1,510 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>VWL-Linda 4</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #17201c;
+      --muted: #66736d;
+      --line: #d8dfdb;
+      --paper: #fbfaf6;
+      --panel: #ffffff;
+      --accent: #0f6b5f;
+      --accent-strong: #084a42;
+      --mark: #f0bd42;
+      --danger: #9a2d20;
+      --shadow: 0 18px 55px rgba(23, 32, 28, 0.13);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: Georgia, "Times New Roman", serif;
+      color: var(--ink);
+      background:
+        linear-gradient(120deg, rgba(15, 107, 95, 0.09), transparent 38%),
+        linear-gradient(310deg, rgba(240, 189, 66, 0.16), transparent 32%),
+        var(--paper);
+    }
+
+    button,
+    textarea,
+    select {
+      font: inherit;
+    }
+
+    .shell {
+      width: min(1180px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 30px 0;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 24px;
+      margin-bottom: 22px;
+    }
+
+    .brand h1 {
+      margin: 0;
+      font-size: clamp(2rem, 4vw, 4.4rem);
+      line-height: 0.95;
+      letter-spacing: 0;
+    }
+
+    .brand p {
+      max-width: 640px;
+      margin: 12px 0 0;
+      color: var(--muted);
+      font-family: "Trebuchet MS", Verdana, sans-serif;
+      font-size: 1rem;
+      line-height: 1.55;
+    }
+
+    .status {
+      min-width: 190px;
+      padding: 10px 12px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.66);
+      font-family: "Trebuchet MS", Verdana, sans-serif;
+      color: var(--muted);
+      text-align: right;
+    }
+
+    .workspace {
+      display: grid;
+      grid-template-columns: 280px 1fr;
+      gap: 18px;
+      align-items: start;
+    }
+
+    .side,
+    .chat {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.88);
+      box-shadow: var(--shadow);
+    }
+
+    .side {
+      padding: 14px;
+      position: sticky;
+      top: 18px;
+    }
+
+    .side h2,
+    .chat h2 {
+      margin: 0;
+      font-family: "Trebuchet MS", Verdana, sans-serif;
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--muted);
+    }
+
+    .mode-list {
+      display: grid;
+      gap: 8px;
+      margin-top: 14px;
+    }
+
+    .mode {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      padding: 12px;
+      color: var(--ink);
+      text-align: left;
+      cursor: pointer;
+      transition: border-color 150ms ease, transform 150ms ease, background 150ms ease;
+    }
+
+    .mode:hover {
+      transform: translateY(-1px);
+      border-color: var(--accent);
+    }
+
+    .mode.is-active {
+      background: #eef8f5;
+      border-color: var(--accent);
+      box-shadow: inset 4px 0 0 var(--accent);
+    }
+
+    .mode strong {
+      display: block;
+      font-family: "Trebuchet MS", Verdana, sans-serif;
+      font-size: 0.98rem;
+      margin-bottom: 4px;
+    }
+
+    .mode span {
+      color: var(--muted);
+      font-family: "Trebuchet MS", Verdana, sans-serif;
+      font-size: 0.88rem;
+      line-height: 1.35;
+    }
+
+    .chat {
+      min-height: 650px;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      overflow: hidden;
+    }
+
+    .chat-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 18px;
+      padding: 16px 18px;
+      border-bottom: 1px solid var(--line);
+      background: rgba(251, 250, 246, 0.76);
+    }
+
+    .chat-header p {
+      margin: 5px 0 0;
+      font-family: "Trebuchet MS", Verdana, sans-serif;
+      color: var(--muted);
+      line-height: 1.4;
+    }
+
+    .pill {
+      flex: 0 0 auto;
+      border: 1px solid rgba(15, 107, 95, 0.24);
+      border-radius: 999px;
+      padding: 8px 12px;
+      background: #eef8f5;
+      font-family: "Trebuchet MS", Verdana, sans-serif;
+      color: var(--accent-strong);
+      font-size: 0.9rem;
+    }
+
+    .messages {
+      padding: 18px;
+      overflow: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .message {
+      max-width: 880px;
+      border-radius: 8px;
+      padding: 14px 15px;
+      font-family: "Trebuchet MS", Verdana, sans-serif;
+      line-height: 1.55;
+      white-space: pre-wrap;
+    }
+
+    .message.user {
+      align-self: flex-end;
+      background: var(--accent);
+      color: #fff;
+    }
+
+    .message.bot {
+      align-self: flex-start;
+      background: #f4f1e8;
+      border: 1px solid #e5ddc9;
+    }
+
+    .sources {
+      align-self: flex-start;
+      width: min(880px, 100%);
+      display: grid;
+      gap: 8px;
+      margin-top: -4px;
+    }
+
+    .source {
+      border-left: 4px solid var(--mark);
+      border-radius: 6px;
+      background: #fffaf0;
+      padding: 10px 12px;
+      font-family: "Trebuchet MS", Verdana, sans-serif;
+      color: var(--muted);
+      line-height: 1.45;
+    }
+
+    .source strong {
+      display: block;
+      color: var(--ink);
+      margin-bottom: 4px;
+    }
+
+    .composer {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 12px;
+      padding: 16px 18px;
+      border-top: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.9);
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 84px;
+      max-height: 210px;
+      resize: vertical;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 12px;
+      color: var(--ink);
+      background: var(--panel);
+      line-height: 1.45;
+    }
+
+    textarea:focus,
+    button:focus-visible {
+      outline: 3px solid rgba(240, 189, 66, 0.45);
+      outline-offset: 2px;
+    }
+
+    .send {
+      align-self: end;
+      border: 0;
+      border-radius: 8px;
+      padding: 14px 18px;
+      min-width: 118px;
+      background: var(--accent);
+      color: #fff;
+      cursor: pointer;
+      font-family: "Trebuchet MS", Verdana, sans-serif;
+      font-weight: 700;
+    }
+
+    .send:disabled {
+      opacity: 0.58;
+      cursor: wait;
+    }
+
+    .error {
+      color: var(--danger);
+    }
+
+    @media (max-width: 820px) {
+      .shell {
+        width: min(100% - 20px, 720px);
+        padding: 18px 0;
+      }
+
+      .topbar,
+      .workspace,
+      .composer,
+      .chat-header {
+        grid-template-columns: 1fr;
+        display: grid;
+      }
+
+      .status {
+        text-align: left;
+      }
+
+      .side {
+        position: static;
+      }
+
+      .mode-list {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .chat {
+        min-height: 620px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <header class="topbar">
+      <div class="brand">
+        <h1>VWL-Linda 4</h1>
+        <p>Quellenbasierter VWL-Lernassistent fuer Fragen, Lernkarten, Uebungsaufgaben und fachliche Uebersetzung.</p>
+      </div>
+      <div class="status" id="status">Bereit</div>
+    </header>
+
+    <section class="workspace" aria-label="VWL-Linda 4 Arbeitsbereich">
+      <aside class="side">
+        <h2>Modus</h2>
+        <div class="mode-list" id="modes">
+          <button class="mode is-active" type="button" data-mode="fragen">
+            <strong>Fragen</strong>
+            <span>Kompakte Antworten mit Quellen.</span>
+          </button>
+          <button class="mode" type="button" data-mode="lernkarten">
+            <strong>Lernkarten</strong>
+            <span>Vorderseite, Rueckseite, pruefungsnah.</span>
+          </button>
+          <button class="mode" type="button" data-mode="uebungen">
+            <strong>Uebungen</strong>
+            <span>Aufgaben mit Loesung und Erklaerung.</span>
+          </button>
+          <button class="mode" type="button" data-mode="uebersetzen">
+            <strong>Uebersetzen</strong>
+            <span>Fachlich sauber und nah am Text.</span>
+          </button>
+        </div>
+      </aside>
+
+      <section class="chat">
+        <div class="chat-header">
+          <div>
+            <h2 id="modeTitle">Fragen</h2>
+            <p id="modeHint">Stelle eine VWL-Frage. Die Unterlagen haben Vorrang, allgemeines VWL-Wissen ergaenzt bei Bedarf.</p>
+          </div>
+          <div class="pill">GPT-5.4 + VWL Vectorstore</div>
+        </div>
+
+        <div class="messages" id="messages">
+          <div class="message bot">Willkommen. Frag mich etwas zu VWL, oder waehle links einen Lernmodus.</div>
+        </div>
+
+        <form class="composer" id="form">
+          <textarea id="question" placeholder="Zum Beispiel: Erklaere Angebot und Nachfrage kompakt mit Beispiel." required></textarea>
+          <button class="send" id="send" type="submit">Senden</button>
+        </form>
+      </section>
+    </section>
+  </main>
+
+  <script>
+    const form = document.querySelector("#form");
+    const question = document.querySelector("#question");
+    const messages = document.querySelector("#messages");
+    const status = document.querySelector("#status");
+    const send = document.querySelector("#send");
+    const modes = document.querySelector("#modes");
+    const modeTitle = document.querySelector("#modeTitle");
+    const modeHint = document.querySelector("#modeHint");
+
+    const modeCopy = {
+      fragen: {
+        title: "Fragen",
+        hint: "Stelle eine VWL-Frage. Die Unterlagen haben Vorrang, allgemeines VWL-Wissen ergaenzt bei Bedarf.",
+        placeholder: "Zum Beispiel: Erklaere Angebot und Nachfrage kompakt mit Beispiel.",
+      },
+      lernkarten: {
+        title: "Lernkarten",
+        hint: "Nenne ein Thema oder fuege Text ein. VWL-Linda erstellt kurze Karten mit Vorder- und Rueckseite.",
+        placeholder: "Zum Beispiel: Erstelle 8 Lernkarten zu Marktformen.",
+      },
+      uebungen: {
+        title: "Uebungsaufgaben",
+        hint: "Nenne Thema, Umfang und Schwierigkeit. VWL-Linda erstellt Aufgaben mit Loesungen.",
+        placeholder: "Zum Beispiel: Erstelle 5 IHK-nahe Uebungsaufgaben zur Preisbildung.",
+      },
+      uebersetzen: {
+        title: "Uebersetzen",
+        hint: "Fuege Text ein und nenne Ziel: einfaches Deutsch, Englisch oder fachliche Vereinfachung.",
+        placeholder: "Zum Beispiel: Uebersetze diesen Abschnitt in einfaches Deutsch: ...",
+      },
+    };
+
+    let activeMode = "fragen";
+
+    function appendMessage(text, type) {
+      const node = document.createElement("div");
+      node.className = `message ${type}`;
+      node.textContent = text;
+      messages.appendChild(node);
+      messages.scrollTop = messages.scrollHeight;
+      return node;
+    }
+
+    function appendSources(sources) {
+      if (!Array.isArray(sources) || sources.length === 0) return;
+
+      const wrapper = document.createElement("div");
+      wrapper.className = "sources";
+
+      for (const source of sources.slice(0, 5)) {
+        const item = document.createElement("div");
+        item.className = "source";
+
+        const title = document.createElement("strong");
+        title.textContent = source.title || "Quelle";
+        item.appendChild(title);
+
+        const snippet = document.createElement("span");
+        snippet.textContent = source.snippet || source.fileId || "Quelle aus dem VWL-Vectorstore.";
+        item.appendChild(snippet);
+
+        wrapper.appendChild(item);
+      }
+
+      messages.appendChild(wrapper);
+      messages.scrollTop = messages.scrollHeight;
+    }
+
+    function setLoading(isLoading) {
+      send.disabled = isLoading;
+      question.disabled = isLoading;
+      status.textContent = isLoading ? "Denke nach ..." : "Bereit";
+    }
+
+    modes.addEventListener("click", (event) => {
+      const button = event.target.closest("[data-mode]");
+      if (!button) return;
+
+      activeMode = button.dataset.mode;
+      document.querySelectorAll(".mode").forEach((mode) => mode.classList.remove("is-active"));
+      button.classList.add("is-active");
+
+      modeTitle.textContent = modeCopy[activeMode].title;
+      modeHint.textContent = modeCopy[activeMode].hint;
+      question.placeholder = modeCopy[activeMode].placeholder;
+      question.focus();
+    });
+
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+
+      const text = question.value.trim();
+      if (!text) return;
+
+      appendMessage(text, "user");
+      question.value = "";
+      setLoading(true);
+
+      try {
+        const response = await fetch("/api/vwl", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            mode: activeMode,
+            question: text,
+          }),
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          appendMessage(data.error || "Die Anfrage konnte nicht verarbeitet werden.", "bot");
+          messages.lastElementChild.classList.add("error");
+          return;
+        }
+
+        appendMessage(data.answer || "Ich habe keine Antwort erhalten.", "bot");
+        appendSources(data.sources);
+      } catch (error) {
+        const node = appendMessage("Die VWL-API ist gerade nicht erreichbar. Bitte pruefe Deployment und Vercel-Variablen.", "bot");
+        node.classList.add("error");
+      } finally {
+        setLoading(false);
+        question.focus();
+      }
+    });
+  </script>
+</body>
+</html>
