@@ -34,6 +34,7 @@ const VECTOR_STORE_ENV_NAMES = [
   "VWL_Vectorstore",
   "VWL_VECTOR",
 ];
+const SOURCE_SNIPPET_LIMIT = 900;
 
 function readFirstEnv(names) {
   for (const name of names) {
@@ -129,7 +130,93 @@ function extractTextFromResponse(data) {
   return chunks.join("\n").trim();
 }
 
-function extractSources(data) {
+function compactText(value) {
+  return String(value || "").replace(/\s+/g, " ").trim();
+}
+
+function limitSnippet(value) {
+  const text = compactText(value);
+  if (text.length <= SOURCE_SNIPPET_LIMIT) {
+    return text;
+  }
+  return `${text.slice(0, SOURCE_SNIPPET_LIMIT - 1).trim()}…`;
+}
+
+function textFromSearchResult(result) {
+  if (typeof result?.text === "string") return result.text;
+  if (typeof result?.content === "string") return result.content;
+  if (Array.isArray(result?.content)) {
+    return result.content
+      .map((part) => {
+        if (typeof part === "string") return part;
+        if (typeof part?.text === "string") return part.text;
+        if (typeof part?.content === "string") return part.content;
+        return "";
+      })
+      .filter(Boolean)
+      .join(" ");
+  }
+  return result?.snippet || result?.quote || "";
+}
+
+function normalizeSource(source) {
+  const title = compactText(
+    source?.filename ||
+      source?.file_name ||
+      source?.title ||
+      source?.name ||
+      source?.document ||
+      source?.file_id ||
+      "Quelle"
+  );
+  const fileId = compactText(source?.file_id || source?.fileId || "");
+  const page = compactText(source?.page || source?.page_number || source?.attributes?.page || "");
+  const scoreRaw = source?.score ?? source?.ranking_score ?? source?.similarity;
+  const score = typeof scoreRaw === "number" ? scoreRaw.toFixed(2) : compactText(scoreRaw);
+  const snippet = limitSnippet(source?.snippet || source?.quote || source?.text || textFromSearchResult(source));
+
+  if (!title && !fileId && !snippet) {
+    return null;
+  }
+
+  return {
+    title: title || fileId || "Quelle",
+    fileId: fileId || null,
+    page: page || null,
+    score: score || null,
+    snippet: snippet || null,
+  };
+}
+
+function uniqueSources(sources) {
+  const seen = new Set();
+  return sources.filter((source) => {
+    if (!source) return false;
+    const key = `${source.title}:${source.fileId || ""}:${source.page || ""}:${source.snippet || ""}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+function extractSearchResultSources(data) {
+  const sources = [];
+
+  for (const item of data.output || []) {
+    if (item.type !== "file_search_call") {
+      continue;
+    }
+
+    const results = item.search_results || item.results || [];
+    for (const result of results) {
+      sources.push(normalizeSource(result));
+    }
+  }
+
+  return uniqueSources(sources);
+}
+
+function extractAnnotationSources(data) {
   const sources = [];
 
   for (const item of data.output || []) {
@@ -147,19 +234,73 @@ function extractSources(data) {
           continue;
         }
 
-        sources.push({
-          title: fileName || fileId || "Quelle",
-          fileId: fileId || null,
-          snippet: quote || null,
-        });
+        sources.push(normalizeSource({
+          title: fileName,
+          file_id: fileId,
+          snippet: quote,
+        }));
       }
     }
   }
 
-  return sources.filter((source, index, list) => {
-    const key = `${source.title}:${source.fileId || ""}:${source.snippet || ""}`;
-    return list.findIndex((candidate) => `${candidate.title}:${candidate.fileId || ""}:${candidate.snippet || ""}` === key) === index;
-  });
+  return uniqueSources(sources);
+}
+
+function extractSources(data) {
+  return uniqueSources([
+    ...extractSearchResultSources(data),
+    ...extractAnnotationSources(data),
+  ]).slice(0, 6);
+}
+
+function extractAnswerSourceLines(answerText) {
+  const lines = String(answerText || "").split(/\r?\n/);
+  const sources = [];
+  let inSources = false;
+
+  for (const rawLine of lines) {
+    const line = rawLine.trim();
+    if (!line) continue;
+
+    if (/^quellen\s*:/i.test(line)) {
+      inSources = true;
+      continue;
+    }
+
+    if (inSources && /^(ergaenzung|ergänzung|kurzantwort|aus den unterlagen|lernkarten|uebungsaufgaben|übungsaufgaben)\s*:/i.test(line)) {
+      break;
+    }
+
+    if (!inSources || !/^[-*]\s+/.test(line)) {
+      continue;
+    }
+
+    const cleaned = line.replace(/^[-*]\s+/, "").trim();
+    const [rawTitle, ...rest] = cleaned.split(":");
+    const title = compactText(rest.length ? rawTitle : "Quelle aus der Antwort");
+    const snippet = limitSnippet(rest.length ? rest.join(":") : cleaned);
+
+    sources.push(normalizeSource({
+      title,
+      snippet,
+    }));
+  }
+
+  return uniqueSources(sources);
+}
+
+function enrichSourcesFromAnswer(answerText, technicalSources) {
+  const answerSources = extractAnswerSourceLines(answerText);
+  if (!answerSources.length) {
+    return technicalSources;
+  }
+
+  const technicalHasSnippets = technicalSources.some((source) => source?.snippet);
+  if (!technicalSources.length || !technicalHasSnippets) {
+    return uniqueSources(answerSources).slice(0, 6);
+  }
+
+  return uniqueSources([...technicalSources, ...answerSources]).slice(0, 6);
 }
 
 module.exports = async function handler(req, res) {
@@ -243,8 +384,10 @@ module.exports = async function handler(req, res) {
           {
             type: "file_search",
             vector_store_ids: [vectorStoreId],
+            max_num_results: 6,
           },
         ],
+        include: ["file_search_call.results"],
       }),
     });
 
@@ -258,9 +401,12 @@ module.exports = async function handler(req, res) {
       return;
     }
 
+    const answer = extractTextFromResponse(data);
+    const sources = enrichSourcesFromAnswer(answer, extractSources(data));
+
     json(res, 200, {
-      answer: extractTextFromResponse(data),
-      sources: extractSources(data),
+      answer,
+      sources,
       mode,
       model: MODEL,
     });
