@@ -253,6 +253,56 @@ function extractSources(data) {
   ]).slice(0, 6);
 }
 
+function extractAnswerSourceLines(answerText) {
+  const lines = String(answerText || "").split(/\r?\n/);
+  const sources = [];
+  let inSources = false;
+
+  for (const rawLine of lines) {
+    const line = rawLine.trim();
+    if (!line) continue;
+
+    if (/^quellen\s*:/i.test(line)) {
+      inSources = true;
+      continue;
+    }
+
+    if (inSources && /^(ergaenzung|ergänzung|kurzantwort|aus den unterlagen|lernkarten|uebungsaufgaben|übungsaufgaben)\s*:/i.test(line)) {
+      break;
+    }
+
+    if (!inSources || !/^[-*]\s+/.test(line)) {
+      continue;
+    }
+
+    const cleaned = line.replace(/^[-*]\s+/, "").trim();
+    const [rawTitle, ...rest] = cleaned.split(":");
+    const title = compactText(rest.length ? rawTitle : "Quelle aus der Antwort");
+    const snippet = limitSnippet(rest.length ? rest.join(":") : cleaned);
+
+    sources.push(normalizeSource({
+      title,
+      snippet,
+    }));
+  }
+
+  return uniqueSources(sources);
+}
+
+function enrichSourcesFromAnswer(answerText, technicalSources) {
+  const answerSources = extractAnswerSourceLines(answerText);
+  if (!answerSources.length) {
+    return technicalSources;
+  }
+
+  const technicalHasSnippets = technicalSources.some((source) => source?.snippet);
+  if (!technicalSources.length || !technicalHasSnippets) {
+    return uniqueSources(answerSources).slice(0, 6);
+  }
+
+  return uniqueSources([...technicalSources, ...answerSources]).slice(0, 6);
+}
+
 module.exports = async function handler(req, res) {
   setCors(res);
 
@@ -351,9 +401,12 @@ module.exports = async function handler(req, res) {
       return;
     }
 
+    const answer = extractTextFromResponse(data);
+    const sources = enrichSourcesFromAnswer(answer, extractSources(data));
+
     json(res, 200, {
-      answer: extractTextFromResponse(data),
-      sources: extractSources(data),
+      answer,
+      sources,
       mode,
       model: MODEL,
     });
