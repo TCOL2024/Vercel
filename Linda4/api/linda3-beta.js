@@ -40,7 +40,16 @@ function detectPinnedFiles(question = '', context = '') {
   const files = [SOZIALRECHT_VECTOR_STORE.files.sozialrechtQaMarkdown];
   const add = (id) => { if (id && !files.includes(id)) files.push(id); };
   if (/\b(verhinderungspflege|ersatzpflege|pflegevertretung|39 sgb xi|sgb xi 39)\b/.test(q)) add(SOZIALRECHT_VECTOR_STORE.files.verhinderungspflege);
-  if (/\b(angehoerige pflege|angehoerigenpflege|pflegende angehoerige|pflegeperson|pflegepersonen|nicht erwerbsmaessige pflege|soziale sicherung der pflegeperson|rentenversicherung.*pflege)\b/.test(q)) add(SOZIALRECHT_VECTOR_STORE.files.angehoerigePflege);
+  if (
+    q.includes('pflegeperson') ||
+    q.includes('pflegepersonen') ||
+    q.includes('pflegende angehoerige') ||
+    q.includes('angehoerige pflege') ||
+    q.includes('angehoerigenpflege') ||
+    (q.includes('rentenversicherung') && q.includes('pflege')) ||
+    q.includes('nicht erwerbsmaessige pflege') ||
+    q.includes('soziale sicherung der pflegeperson')
+  ) add(SOZIALRECHT_VECTOR_STORE.files.angehoerigePflege);
   if (/\b(kvdr|pvdr|krankenversicherung der rentner|pflegeversicherung der rentner|rentner krankenversicherung|rentenantrag krankenversicherung)\b/.test(q)) add(SOZIALRECHT_VECTOR_STORE.files.krankenPflegeversicherungRentner);
   return files;
 }
@@ -122,22 +131,42 @@ function normalizePracticeSet(parsed = {}, count = 6) {
 function buildInstructions(kind, body) {
   const count = Math.max(2, Math.min(10, Number(body.count || (kind === 'practice' ? 6 : 4))));
   const difficulty = String(body.difficulty || 'mittel').trim();
+  const question = cleanText(body.origin_question || body.question_text || body.question || '', 900);
   const focus = cleanText(body.focus || body.hint || body.user_hint || '', 700);
+  const specialFocus = /\b(pflegeperson|pflegepersonen|pflege|rentenversicherung)\b/i.test(question)
+    ? 'Spezialfokus: Pflegeperson, Rentenversicherung, § 3 SGB VI, § 44 SGB XI, Voraussetzungen und Ausschlussgruende.'
+    : '';
   const base = [
     'Du bist Linda, Fachmodus Sozialrecht. Erzeuge Lernmaterial auf pruefungsnaher IHK-/Dozenten-Qualitaet.',
     'Nutze den OpenAI Vector Store Sozialrecht2026 per file_search als fachliche Grundlage.',
     'Wichtig: Erzeuge neue, verstaendliche Lernkarten/Aufgaben aus der Nutzerfrage und dem fachlichen Kontext. Reproduziere keine rohen Textfragmente.',
     'Keine BBiG-/AEVO-/IHK-Ausbildungsrecht-Inhalte, ausser die Nutzerfrage verlangt sie ausdruecklich. Hier ist Sozialrecht fix.',
+    question ? `Exakte Ausgangsfrage: ${question}` : '',
+    question ? 'Erstelle Karten nur zu dieser Frage und ihren direkt notwendigen Voraussetzungen, Rechtsfolgen und Prueffallen.' : '',
+    specialFocus,
     focus ? `Zusaetzlicher Nutzerhinweis/Fokus: ${focus}` : '',
     `Niveau: ${difficulty}. Anzahl: ${count}.`
   ].filter(Boolean).join('\n');
 
   if (kind === 'flashcards') {
-    return `${base}\n\nGib ausschliesslich JSON zurueck im Schema: {"deckTitle":"...","cards":[{"question":"konkrete Pruefungsfrage","answer":"praezise Musterantwort mit Norm/Prueffalle wenn passend"}]}. Jede Karte muss ohne Markierungstext verstaendlich sein. Keine generischen Fragen wie 'Was ist die Kernaussage?'.`;
+    return `${base}\n\nGib ausschliesslich JSON zurueck im Schema: {"deckTitle":"...","cards":[{"question":"konkrete Pruefungsfrage","answer":"praezise Musterantwort mit Norm/Prueffalle wenn passend"}]}.
+Wichtig: Erzeuge nur sehr gute Lernkarten. Maximal 4 Karten.
+Die Lernkarten muessen die konkrete Ausgangsfrage direkt beantworten. Kein allgemeines Uberblicksdeck, wenn eine konkrete Frage gestellt wurde.
+Jede Karte muss wie eine saubere Lernkartei wirken:
+- vorne eine konkrete Frage ohne Floskel
+- hinten eine kurze, klare Antwort mit 2 bis 4 Punkten oder 1 kompakten Antwortsatz
+- keine Rohfragmente, keine Mischdecks, keine generischen Formulierungen
+- Titel so benennen, dass das konkrete Thema sofort sichtbar ist
+Wenn die Frage eine Anspruchs- oder Pruefungsfrage ist, dann decke nur die dafuer relevanten Bausteine ab: Voraussetzungen, Rechtsfolge, Ausschlussgründe, Fristen, Prueffallen.
+Keine generischen Fragen wie "Was ist die Kernaussage?" oder "Welcher Aspekt?"`;
   }
 
-  return `${base}\n\nGib ausschliesslich JSON zurueck im Schema: {"title":"...","questions":[{"type":"open|mc","question":"...","options":["..."],"correctIndices":[0],"hint":"...","solution":"Musterloesung mit Norm/Subsumtion","points":2}]}. Mindestens die Haelfte offene Transfer-/Pruefungsfragen. MC nur, wenn die Antwortoptionen wirklich trennscharf sind.`;
-}
+  return `${base}\n\nGib ausschliesslich JSON zurueck im Schema: {"title":"...","questions":[{"type":"open|mc","question":"...","options":["..."],"correctIndices":[0],"hint":"...","solution":"Musterloesung mit Norm/Subsumtion","points":2}]}.
+Die Aufgaben sollen pruefungsnah, klar und nicht redundant sein.
+Mindestens die Haelfte offene Transfer-/Pruefungsfragen.
+MC nur, wenn die Antwortoptionen wirklich trennscharf sind.
+Jede Loesung kurz, sauber und direkt am Fall.`;
+  }
 
 function buildInput(kind, body) {
   const question = cleanText(body.origin_question || body.question_text || body.question || '', 900);
@@ -147,6 +176,7 @@ function buildInput(kind, body) {
   return [
     `Auftrag: ${kind === 'practice' ? 'Erstelle Uebungsaufgaben' : 'Erstelle Lernkarten'}.`,
     question ? `Ausgangsfrage des Users: ${question}` : '',
+    question ? `Zielthema fuer die Karten: ${question}` : '',
     selected ? `Markierter Fokusabschnitt (nur als Fokus, nicht roh reproduzieren):\n${selected}` : '',
     context ? `Kontext der bisherigen Antwort/Quelle:\n${context}` : '',
     hint ? `Nutzerhinweis:\n${hint}` : ''
