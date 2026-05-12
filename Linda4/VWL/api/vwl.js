@@ -150,13 +150,33 @@ module.exports = async function handler(req, res) {
     return;
   }
 
+  if (req.method === "GET") {
+    json(res, 200, {
+      ok: true,
+      service: "VWL-Linda 4 API",
+      model: MODEL,
+      configured: {
+        apiKey: Boolean(process.env.VWL2026LINDA4 || process.env.OPENAI_API_KEY),
+        vectorStore: Boolean(
+          process.env["VWL-Vectorstore"] ||
+            process.env.VWL_VECTOR_STORE_ID ||
+            process.env.VWL_VECTORSTORE
+        ),
+      },
+    });
+    return;
+  }
+
   if (req.method !== "POST") {
     json(res, 405, { error: "Method not allowed" });
     return;
   }
 
   const apiKey = process.env.VWL2026LINDA4 || process.env.OPENAI_API_KEY;
-  const vectorStoreId = process.env["VWL-Vectorstore"];
+  const vectorStoreId =
+    process.env["VWL-Vectorstore"] ||
+    process.env.VWL_VECTOR_STORE_ID ||
+    process.env.VWL_VECTORSTORE;
 
   if (!apiKey || !vectorStoreId) {
     json(res, 500, {

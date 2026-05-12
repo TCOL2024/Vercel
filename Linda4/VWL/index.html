@@ -487,10 +487,20 @@
           }),
         });
 
-        const data = await response.json();
+        const raw = await response.text();
+        let data;
+        try {
+          data = raw ? JSON.parse(raw) : {};
+        } catch (error) {
+          data = {
+            error: `Die API hat keine JSON-Antwort geliefert. HTTP ${response.status}`,
+            details: raw.slice(0, 220),
+          };
+        }
 
         if (!response.ok) {
-          appendMessage(data.error || "Die Anfrage konnte nicht verarbeitet werden.", "bot");
+          const detail = data.details?.message || data.details?.type || data.details || "";
+          appendMessage([data.error || "Die Anfrage konnte nicht verarbeitet werden.", detail].filter(Boolean).join("\n"), "bot");
           messages.lastElementChild.classList.add("error");
           return;
         }
@@ -498,7 +508,7 @@
         appendMessage(data.answer || "Ich habe keine Antwort erhalten.", "bot");
         appendSources(data.sources);
       } catch (error) {
-        const node = appendMessage("Die VWL-API ist gerade nicht erreichbar. Bitte pruefe Deployment und Vercel-Variablen.", "bot");
+        const node = appendMessage(`Die VWL-API ist gerade nicht erreichbar.\n${error.message}`, "bot");
         node.classList.add("error");
       } finally {
         setLoading(false);
