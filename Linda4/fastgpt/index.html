@@ -404,6 +404,14 @@
       margin-bottom: 14px;
     }
 
+    .result-actions {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
     .meta-row {
       display: flex;
       flex-wrap: wrap;
@@ -609,6 +617,15 @@
         flex-direction: column;
       }
 
+      .result-actions {
+        width: 100%;
+        justify-content: stretch;
+      }
+
+      .result-actions .btn {
+        flex: 1 1 auto;
+      }
+
       h1 {
         font-size: 1.65rem;
       }
@@ -759,7 +776,10 @@
               <p class="eyebrow">Vorschau</p>
               <h2 id="result-title">Noch keine Ausgabe</h2>
             </div>
-            <button type="button" class="btn outline" id="copyBtn" hidden>Kopieren</button>
+            <div class="result-actions" id="resultActions" hidden>
+              <button type="button" class="btn outline" id="pdfBtn">PDF</button>
+              <button type="button" class="btn outline" id="copyBtn">Kopieren</button>
+            </div>
           </div>
 
           <div class="meta-row" aria-label="Aktuelle Einstellungen">
@@ -803,6 +823,8 @@
     const demoBtn = document.getElementById('demoBtn');
     const resetBtn = document.getElementById('resetBtn');
     const launchBtn = document.getElementById('launchBtn');
+    const resultActions = document.getElementById('resultActions');
+    const pdfBtn = document.getElementById('pdfBtn');
     const copyBtn = document.getElementById('copyBtn');
     const settingsToggle = document.getElementById('settingsToggle');
     const settingsPanel = document.getElementById('settingsPanel');
@@ -867,6 +889,7 @@
       demoBtn.disabled = value;
       resetBtn.disabled = value;
       launchBtn.disabled = value;
+      pdfBtn.disabled = value;
       copyBtn.disabled = value;
       modeButtons.forEach((button) => {
         button.disabled = value;
@@ -964,6 +987,418 @@
       };
     }
 
+    function selectedControlText(element) {
+      if (!element || element.selectedIndex < 0) return '';
+      return element.options[element.selectedIndex].textContent || element.value || '';
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    function optionLetter(index) {
+      return String.fromCharCode(65 + index);
+    }
+
+    function formatCreatedAt(value) {
+      const date = value ? new Date(value) : new Date();
+      return new Intl.DateTimeFormat('de-DE', {
+        dateStyle: 'medium',
+        timeStyle: 'short'
+      }).format(date);
+    }
+
+    function buildExportMeta(data, items) {
+      return {
+        mode: data.mode || state.mode,
+        modeLabel: (data.mode || state.mode) === 'quiz' ? 'Quizfragen' : 'Prüfungsfragen',
+        topicLabel: selectedTopicLabel(),
+        audience: audience.value,
+        difficulty: selectedControlText(difficulty),
+        language: language.value || 'Deutsch',
+        count: items.length,
+        createdAt: new Date().toISOString()
+      };
+    }
+
+    function buildPdfItems(items, mode) {
+      if (!items.length) {
+        return '<article class="card"><p>Keine strukturierte Ausgabe verfügbar.</p></article>';
+      }
+
+      return items.map((item, index) => {
+        const options = Array.isArray(item.options) && item.options.length
+          ? `<ol class="options">${item.options.map((option, optionIndex) => `
+              <li>
+                <span class="letter">${optionLetter(optionIndex)}</span>
+                <span>${escapeHtml(option)}</span>
+              </li>
+            `).join('')}</ol>`
+          : '';
+
+        const points = item.points ? `<span class="points">${escapeHtml(item.points)} Punkte</span>` : '';
+
+        return `
+          <article class="card">
+            <div class="card-kicker">
+              <span>Frage ${index + 1}</span>
+              ${mode === 'exam' ? points : ''}
+            </div>
+            <h2>${escapeHtml(item.question || 'Frage')}</h2>
+            ${options}
+            ${mode === 'exam' ? '<div class="answer-space"></div>' : ''}
+          </article>
+        `;
+      }).join('');
+    }
+
+    function buildPdfSolutions(items, mode) {
+      if (!items.length) return '';
+
+      return items.map((item, index) => {
+        let answer = item.answer || '';
+
+        if (!answer && Array.isArray(item.options) && Number.isInteger(item.correctIndex)) {
+          const correct = item.options[item.correctIndex];
+          if (correct) answer = `${optionLetter(item.correctIndex)}. ${correct}`;
+        }
+
+        const explanation = item.explanation
+          ? `<p class="solution-note">${escapeHtml(item.explanation)}</p>`
+          : '';
+
+        const points = item.points && mode === 'exam'
+          ? `<p class="solution-note"><strong>Punkte:</strong> ${escapeHtml(item.points)}</p>`
+          : '';
+
+        return `
+          <article class="solution">
+            <h3>${index + 1}. ${escapeHtml(item.question || 'Frage')}</h3>
+            <p><strong>Antwort:</strong> ${escapeHtml(answer || 'Keine Antwort angegeben.')}</p>
+            ${explanation}
+            ${points}
+          </article>
+        `;
+      }).join('');
+    }
+
+    function buildPdfDocument(payload) {
+      const items = Array.isArray(payload.items) ? payload.items : [];
+      const meta = payload.exportMeta || buildExportMeta(payload, items);
+      const title = payload.title || meta.modeLabel || 'Linda4';
+      const summary = payload.summary || 'Fragen und Antworten.';
+      const raw = !items.length && payload.raw ? `<pre class="raw">${escapeHtml(payload.raw)}</pre>` : '';
+      const metaRows = [
+        ['Modus', meta.modeLabel],
+        ['Thema', meta.topicLabel],
+        ['Zielgruppe', meta.audience],
+        ['Schwierigkeit', meta.difficulty],
+        ['Umfang', `${meta.count || items.length || 0} Fragen`],
+        ['Sprache', meta.language],
+        ['Erstellt', formatCreatedAt(meta.createdAt)]
+      ].filter((entry) => entry[1]);
+
+      return `<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <title>${escapeHtml(title)}</title>
+  <style>
+    @page {
+      size: A4;
+      margin: 14mm 14mm 16mm;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: Aptos, "Aptos Display", Calibri, Arial, sans-serif;
+      font-size: 11pt;
+      line-height: 1.45;
+      color: #172033;
+      background: #ffffff;
+    }
+
+    .page {
+      max-width: 180mm;
+      margin: 0 auto;
+    }
+
+    .hero {
+      position: relative;
+      padding: 12mm 11mm 10mm;
+      border: 1px solid #dddff0;
+      border-radius: 5mm;
+      background:
+        radial-gradient(circle at top right, rgba(249, 115, 22, 0.18), transparent 34%),
+        linear-gradient(135deg, rgba(95, 61, 196, 0.12), rgba(255, 255, 255, 0) 46%),
+        #fbfbff;
+      overflow: hidden;
+    }
+
+    .brand {
+      margin: 0 0 8mm;
+      color: #5f3dc4;
+      font-size: 9pt;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      max-width: 140mm;
+      margin: 0;
+      font-size: 22pt;
+      line-height: 1.08;
+      letter-spacing: -0.02em;
+    }
+
+    .summary {
+      max-width: 150mm;
+      margin: 4mm 0 0;
+      color: #596174;
+    }
+
+    .meta {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 2.5mm;
+      margin: 6mm 0 0;
+    }
+
+    .meta div {
+      padding: 2.5mm 3mm;
+      border: 1px solid #e6e8f2;
+      border-radius: 3mm;
+      background: rgba(255, 255, 255, 0.78);
+    }
+
+    .meta strong {
+      display: block;
+      color: #596174;
+      font-size: 8pt;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .meta span {
+      display: block;
+      margin-top: 0.8mm;
+      font-weight: 700;
+    }
+
+    .section-title {
+      display: flex;
+      align-items: center;
+      gap: 3mm;
+      margin: 9mm 0 4mm;
+      font-size: 14pt;
+      letter-spacing: -0.01em;
+    }
+
+    .section-title::before {
+      content: "";
+      width: 6mm;
+      height: 6mm;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #5f3dc4, #f97316);
+    }
+
+    .card,
+    .solution {
+      break-inside: avoid;
+      margin: 0 0 4mm;
+      padding: 5mm;
+      border: 1px solid #e5e7f0;
+      border-radius: 4mm;
+      background: #ffffff;
+      box-shadow: 0 2mm 8mm rgba(22, 26, 35, 0.05);
+    }
+
+    .card-kicker {
+      display: flex;
+      justify-content: space-between;
+      gap: 4mm;
+      margin-bottom: 2.5mm;
+      color: #5f3dc4;
+      font-size: 8.5pt;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .points {
+      color: #596174;
+      letter-spacing: 0;
+      text-transform: none;
+    }
+
+    h2,
+    h3 {
+      margin: 0;
+      line-height: 1.32;
+      font-size: 11pt;
+    }
+
+    .options {
+      display: grid;
+      gap: 2mm;
+      margin: 4mm 0 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .options li {
+      display: grid;
+      grid-template-columns: 8mm minmax(0, 1fr);
+      gap: 2.5mm;
+      align-items: start;
+      padding: 2.5mm 3mm;
+      border: 1px solid #edf0f6;
+      border-radius: 3mm;
+      background: #fafbff;
+    }
+
+    .letter {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 6mm;
+      height: 6mm;
+      border-radius: 50%;
+      color: #4c1d95;
+      background: rgba(95, 61, 196, 0.1);
+      font-size: 8.5pt;
+      font-weight: 700;
+    }
+
+    .answer-space {
+      height: 24mm;
+      margin-top: 4mm;
+      border-radius: 3mm;
+      background:
+        repeating-linear-gradient(
+          to bottom,
+          transparent 0,
+          transparent 6mm,
+          #e8ebf3 6.2mm
+        );
+    }
+
+    .solutions {
+      page-break-before: always;
+    }
+
+    .solution {
+      background: linear-gradient(180deg, #ffffff, #fbfbff);
+    }
+
+    .solution h3 {
+      margin-bottom: 2.5mm;
+    }
+
+    .solution p {
+      margin: 0;
+    }
+
+    .solution-note {
+      margin-top: 2mm !important;
+      color: #596174;
+    }
+
+    .raw {
+      white-space: pre-wrap;
+      word-break: break-word;
+      padding: 5mm;
+      border: 1px solid #e5e7f0;
+      border-radius: 4mm;
+      background: #fafbff;
+      font: inherit;
+    }
+
+    .footer {
+      margin-top: 9mm;
+      padding-top: 3mm;
+      border-top: 1px solid #e5e7f0;
+      color: #747d8f;
+      font-size: 8.5pt;
+    }
+
+    @media print {
+      body {
+        print-color-adjust: exact;
+        -webkit-print-color-adjust: exact;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <section class="hero">
+      <p class="brand">Linda4</p>
+      <h1>${escapeHtml(title)}</h1>
+      <p class="summary">${escapeHtml(summary)}</p>
+      <div class="meta">
+        ${metaRows.map(([label, value]) => `
+          <div>
+            <strong>${escapeHtml(label)}</strong>
+            <span>${escapeHtml(value)}</span>
+          </div>
+        `).join('')}
+      </div>
+    </section>
+
+    <section>
+      <h2 class="section-title">Aufgaben</h2>
+      ${buildPdfItems(items, meta.mode)}
+      ${raw}
+    </section>
+
+    ${items.length ? `
+      <section class="solutions">
+        <h2 class="section-title">Lösungen</h2>
+        ${buildPdfSolutions(items, meta.mode)}
+      </section>
+    ` : ''}
+
+    <p class="footer">Erstellt mit Linda4. Schrift: Aptos, 11 pt.</p>
+  </main>
+  <script>
+    window.addEventListener('load', () => {
+      setTimeout(() => window.print(), 250);
+    });
+  <\/script>
+</body>
+</html>`;
+    }
+
+    function exportPdf() {
+      if (!state.latest) {
+        setStatus('Bitte zuerst Fragen erstellen.', 'error');
+        return;
+      }
+
+      const pdfWindow = window.open('', '_blank', 'width=960,height=1100');
+      if (!pdfWindow) {
+        setStatus('Das PDF-Fenster wurde blockiert. Bitte Pop-ups für diese Seite erlauben.', 'error');
+        return;
+      }
+
+      pdfWindow.opener = null;
+      pdfWindow.document.open();
+      pdfWindow.document.write(buildPdfDocument(state.latest));
+      pdfWindow.document.close();
+      setStatus('PDF-Vorlage geöffnet. Im Druckdialog als PDF sichern.');
+    }
+
     function renderCopyText(payload) {
       const lines = [];
       lines.push(payload.title || 'Linda4');
@@ -1012,7 +1447,7 @@
       resultItems.appendChild(emptyState);
       rawOutput.hidden = true;
       rawOutput.textContent = '';
-      copyBtn.hidden = true;
+      resultActions.hidden = true;
       state.latest = null;
       setStatus('');
     }
@@ -1125,8 +1560,11 @@
 
       rawOutput.hidden = true;
       rawOutput.textContent = data.raw || '';
-      copyBtn.hidden = false;
-      state.latest = data;
+      state.latest = {
+        ...data,
+        exportMeta: buildExportMeta(data, items)
+      };
+      resultActions.hidden = false;
     }
 
     async function runHealthcheck() {
@@ -1185,6 +1623,8 @@
       if (!state.latest) return;
       await copyText(renderCopyText(state.latest), 'Ergebnis kopiert.');
     });
+
+    pdfBtn.addEventListener('click', exportPdf);
 
     composer.addEventListener('submit', async (event) => {
       event.preventDefault();
