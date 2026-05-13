@@ -1,5 +1,6 @@
 const DEEPSEEK_URL = 'https://api.deepseek.com/chat/completions';
 const DEFAULT_MODEL = process.env.DEEPSEEK_MODEL || 'deepseek-chat';
+const DEEPSEEK_API_KEY = process.env.Linda3Schnellmodus;
 
 function sendJson(res, statusCode, payload) {
   res.statusCode = statusCode;
@@ -180,7 +181,7 @@ async function handler(req, res) {
     sendJson(res, 200, {
       ok: true,
       route: 'deepseek',
-      ready: Boolean(process.env.DEEPSEEK_API_KEY)
+      ready: Boolean(DEEPSEEK_API_KEY)
     });
     return;
   }
@@ -194,10 +195,10 @@ async function handler(req, res) {
     return;
   }
 
-  if (!process.env.DEEPSEEK_API_KEY) {
+  if (!DEEPSEEK_API_KEY) {
     sendJson(res, 500, {
       ok: false,
-      error: 'DEEPSEEK_API_KEY is missing.'
+      error: 'Linda3Schnellmodus is missing.'
     });
     return;
   }
@@ -233,7 +234,7 @@ async function handler(req, res) {
     const response = await fetch(DEEPSEEK_URL, {
       method: 'POST',
       headers: {
-        Authorization: `Bearer ${process.env.DEEPSEEK_API_KEY}`,
+        Authorization: `Bearer ${DEEPSEEK_API_KEY}`,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
