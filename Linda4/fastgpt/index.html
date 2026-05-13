@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <meta name="theme-color" content="#f5f0fb" />
+  <meta name="theme-color" content="#f7f7fb" />
   <title>Linda4</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -11,57 +11,36 @@
   <style>
     :root {
       color-scheme: light;
-      --bg-a: #f5f0fb;
-      --bg-b: #fff6ef;
-      --ink: #111827;
-      --muted: #5d6476;
-      --line: rgba(17, 24, 39, 0.08);
-      --surface: rgba(255, 255, 255, 0.76);
-      --surface-strong: rgba(255, 255, 255, 0.94);
-      --accent: #6d28d9;
-      --accent-2: #ea580c;
-      --accent-3: #ef4444;
-      --accent-soft: rgba(109, 40, 217, 0.12);
-      --shadow: 0 26px 72px rgba(17, 24, 39, 0.12);
-      --shadow-soft: 0 12px 28px rgba(17, 24, 39, 0.08);
-      --radius-xl: 34px;
-      --radius-lg: 24px;
-      --radius-md: 18px;
-      --radius-sm: 14px;
-      --font-body: "Inter", system-ui, sans-serif;
+      --page: #f7f7fb;
+      --panel: #ffffff;
+      --panel-soft: #fbfbfd;
+      --ink: #161a23;
+      --muted: #626b7c;
+      --line: #d9dce5;
+      --line-soft: #eceef4;
+      --accent: #5f3dc4;
+      --accent-strong: #4c1d95;
+      --warm: #f97316;
+      --good: #047857;
+      --bad: #b42318;
+      --shadow: 0 16px 42px rgba(22, 26, 35, 0.08);
+      --radius: 8px;
+      --font: "Inter", system-ui, sans-serif;
     }
 
     * {
       box-sizing: border-box;
     }
 
-    html {
-      scroll-behavior: smooth;
-    }
-
     body {
       margin: 0;
       min-height: 100vh;
-      font-family: var(--font-body);
+      font-family: var(--font);
       color: var(--ink);
       background:
-        radial-gradient(circle at 14% 12%, rgba(109, 40, 217, 0.12), transparent 24%),
-        radial-gradient(circle at 84% 8%, rgba(234, 88, 12, 0.12), transparent 20%),
-        radial-gradient(circle at 70% 82%, rgba(79, 70, 229, 0.10), transparent 18%),
-        linear-gradient(180deg, var(--bg-a) 0%, #faf8fd 42%, var(--bg-b) 100%);
-    }
-
-    body::before {
-      content: "";
-      position: fixed;
-      inset: 0;
-      pointer-events: none;
-      background-image:
-        linear-gradient(rgba(255, 255, 255, 0.24) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(255, 255, 255, 0.24) 1px, transparent 1px);
-      background-size: 84px 84px;
-      opacity: 0.18;
-      mask-image: radial-gradient(circle at center, rgba(0, 0, 0, 0.25), transparent 74%);
+        linear-gradient(135deg, rgba(95, 61, 196, 0.08), transparent 34%),
+        linear-gradient(225deg, rgba(249, 115, 22, 0.08), transparent 30%),
+        var(--page);
     }
 
     button,
@@ -76,404 +55,301 @@
       cursor: pointer;
     }
 
-    .page {
-      width: min(1700px, calc(100% - 18px));
+    .app {
+      width: min(1420px, calc(100% - 18px));
       margin: 0 auto;
-      padding: 10px 0 14px;
+      padding: 10px 0;
     }
 
-    .frame {
-      padding: 4px;
-      border-radius: 38px;
-      background: linear-gradient(135deg, #7c3aed 0%, #db2777 32%, #f97316 68%, #fb7185 100%);
-      box-shadow: 0 28px 78px rgba(88, 28, 135, 0.12);
-    }
-
-    .surface {
-      position: relative;
+    .shell {
+      min-height: calc(100vh - 20px);
+      border: 3px solid transparent;
+      border-radius: 18px;
+      background:
+        linear-gradient(var(--panel), var(--panel)) padding-box,
+        linear-gradient(135deg, #6d28d9 0%, #db2777 38%, #f97316 100%) border-box;
+      box-shadow: var(--shadow);
       overflow: hidden;
-      min-height: calc(100vh - 24px);
-      border-radius: 34px;
-      background:
-        radial-gradient(circle at 10% 8%, rgba(109, 40, 217, 0.08), transparent 24%),
-        radial-gradient(circle at 92% 10%, rgba(249, 115, 22, 0.08), transparent 18%),
-        linear-gradient(180deg, rgba(253, 250, 255, 0.98) 0%, rgba(247, 244, 251, 0.98) 18%, rgba(255, 255, 255, 0.98) 100%);
-      border: 1px solid rgba(255, 255, 255, 0.36);
     }
 
-    .surface::before {
-      content: "";
-      position: absolute;
-      inset: -20%;
-      pointer-events: none;
-      background:
-        radial-gradient(circle at 12% 18%, rgba(109, 40, 217, 0.10), transparent 22%),
-        radial-gradient(circle at 86% 14%, rgba(249, 115, 22, 0.08), transparent 20%),
-        radial-gradient(circle at 84% 82%, rgba(59, 130, 246, 0.06), transparent 18%);
-      filter: blur(4px);
-      opacity: 0.95;
-    }
-
-    .chrome {
+    .topbar {
       position: relative;
-      z-index: 1;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 16px;
-      padding: 22px 26px 10px;
+      gap: 14px;
+      padding: 18px 22px;
+      border-bottom: 1px solid var(--line-soft);
+      background: rgba(255, 255, 255, 0.86);
+      backdrop-filter: blur(16px);
     }
 
     .brand {
-      display: inline-flex;
-      align-items: center;
-      gap: 12px;
-      min-height: 42px;
-      padding: 10px 15px;
-      border-radius: 999px;
-      background: rgba(255, 255, 255, 0.86);
-      border: 1px solid rgba(17, 24, 39, 0.07);
-      box-shadow: 0 12px 24px rgba(17, 24, 39, 0.04);
-      font-size: 0.98rem;
-      font-weight: 800;
-      letter-spacing: -0.02em;
-    }
-
-    .brand-mark {
-      width: 12px;
-      height: 12px;
-      border-radius: 999px;
-      background: linear-gradient(135deg, var(--accent), var(--accent-2));
-      box-shadow: 0 0 0 7px rgba(109, 40, 217, 0.08);
-      flex: 0 0 auto;
-    }
-
-    .chrome-actions {
       display: flex;
       align-items: center;
       gap: 10px;
+      min-width: 0;
+    }
+
+    .brand-mark {
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      background:
+        radial-gradient(circle at 50% 50%, #f97316 0 24%, transparent 25%),
+        radial-gradient(circle at 50% 50%, #6d28d9 0 48%, transparent 49%),
+        #f4efff;
+      box-shadow: inset 0 0 0 1px rgba(95, 61, 196, 0.12);
+      flex: 0 0 auto;
+    }
+
+    .brand strong {
+      display: block;
+      font-size: 1rem;
+      font-weight: 800;
+    }
+
+    .brand span:last-child {
+      display: block;
+      color: var(--muted);
+      font-size: 0.82rem;
+      margin-top: 1px;
+    }
+
+    .top-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
       flex-wrap: wrap;
+      justify-content: flex-end;
     }
 
-    .chrome-btn,
-    .small-btn,
-    .ghost-btn,
-    .primary-btn,
-    .sample-card,
-    .mode-btn {
-      transition:
-        transform 150ms ease,
-        box-shadow 150ms ease,
-        background 150ms ease,
-        border-color 150ms ease,
-        color 150ms ease,
-        opacity 150ms ease;
+    .btn {
+      min-height: 38px;
+      border-radius: 7px;
+      padding: 9px 13px;
+      font-weight: 700;
+      color: var(--ink);
+      background: #f2f3f7;
+      border: 1px solid transparent;
+      transition: transform 140ms ease, background 140ms ease, border-color 140ms ease, box-shadow 140ms ease;
     }
 
-    .chrome-btn {
-      min-height: 42px;
-      padding: 10px 16px;
-      border-radius: 12px;
+    .btn:hover {
+      transform: translateY(-1px);
+      background: #ebeef5;
+    }
+
+    .btn.primary {
+      color: #fff;
+      background: var(--accent);
+      box-shadow: 0 10px 22px rgba(95, 61, 196, 0.24);
+    }
+
+    .btn.primary:hover {
+      background: var(--accent-strong);
+    }
+
+    .btn.outline {
+      color: #4c1d95;
+      background: #fff;
+      border-color: rgba(95, 61, 196, 0.24);
+    }
+
+    .btn:disabled {
+      cursor: not-allowed;
+      opacity: 0.58;
+      transform: none;
+      box-shadow: none;
+    }
+
+    .settings-panel {
+      position: absolute;
+      top: calc(100% + 8px);
+      right: 22px;
+      z-index: 10;
+      width: min(340px, calc(100vw - 32px));
+      padding: 14px;
+      border-radius: var(--radius);
+      border: 1px solid var(--line);
+      background: #fff;
+      box-shadow: 0 22px 50px rgba(22, 26, 35, 0.14);
+    }
+
+    .settings-panel[hidden] {
+      display: none;
+    }
+
+    .settings-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .settings-head h2 {
+      margin: 0;
+      font-size: 1rem;
+    }
+
+    .settings-head p,
+    .health-state,
+    .subtle {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.45;
+      font-size: 0.9rem;
+    }
+
+    .health-row {
+      display: grid;
+      gap: 10px;
+      padding: 12px;
+      border: 1px solid var(--line-soft);
+      border-radius: var(--radius);
+      background: var(--panel-soft);
+    }
+
+    .health-state.ready {
+      color: var(--good);
       font-weight: 700;
     }
 
-    .chrome-btn.ghost {
-      color: #4338ca;
-      background: rgba(255, 255, 255, 0.86);
-      border: 1px solid rgba(109, 40, 217, 0.28);
-    }
-
-    .chrome-btn.primary {
-      color: #fff;
-      background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 55%, #9333ea 100%);
-      box-shadow: 0 16px 28px rgba(79, 70, 229, 0.24);
-    }
-
-    .chrome-btn:hover,
-    .small-btn:hover,
-    .ghost-btn:hover,
-    .primary-btn:hover,
-    .sample-card:hover,
-    .mode-btn:hover {
-      transform: translateY(-1px);
+    .health-state.error {
+      color: var(--bad);
+      font-weight: 700;
     }
 
     .workspace {
-      position: relative;
-      z-index: 1;
       display: grid;
-      grid-template-columns: minmax(270px, 0.85fr) minmax(0, 1.34fr) minmax(300px, 0.98fr);
-      grid-template-areas: "left center right";
-      gap: 20px;
-      align-items: start;
-      padding: 8px 24px 24px;
+      grid-template-columns: minmax(0, 1.12fr) minmax(320px, 0.88fr);
+      gap: 0;
+      min-height: calc(100vh - 86px);
     }
 
-    .rail-left {
-      grid-area: left;
+    .builder,
+    .preview {
+      padding: 24px;
     }
 
-    .builder-pane {
-      grid-area: center;
-      display: grid;
+    .builder {
+      border-right: 1px solid var(--line-soft);
+      background: linear-gradient(180deg, #fff 0%, #fbfbfd 100%);
+    }
+
+    .preview {
+      background: #fff;
+    }
+
+    .section-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
       gap: 16px;
-    }
-
-    .rail-right {
-      grid-area: right;
-      position: sticky;
-      top: 18px;
-    }
-
-    .eyebrow {
-      margin: 0 0 8px;
-      color: #7c3aed;
-      font-size: 0.74rem;
-      font-weight: 800;
-      letter-spacing: 0.2em;
-      text-transform: uppercase;
+      margin-bottom: 18px;
     }
 
     h1,
     h2,
     h3 {
       margin: 0;
-      letter-spacing: -0.05em;
-      line-height: 0.96;
+      line-height: 1.08;
+      letter-spacing: 0;
     }
 
     h1 {
-      font-size: clamp(2.8rem, 4.8vw, 5.2rem);
-      max-width: 10ch;
+      font-size: 2rem;
+      font-weight: 800;
     }
 
-    .lede,
-    .summary,
-    .rail-copy,
-    .accordion p,
-    .sample-card p,
-    .callout p {
-      margin: 0;
-      color: var(--muted);
-      line-height: 1.58;
+    h2 {
+      font-size: 1.3rem;
+      font-weight: 800;
     }
 
-    .builder-head {
-      display: grid;
-      gap: 12px;
-      padding: 8px 2px 0;
-    }
-
-    .builder-head .lede {
-      max-width: 56ch;
-      font-size: 1rem;
-    }
-
-    .rail {
-      display: grid;
-      gap: 14px;
-    }
-
-    .callout {
-      position: relative;
-      display: grid;
-      gap: 10px;
-      padding: 22px 22px 20px;
-      border-radius: 22px;
-      background: #2a2631;
-      color: #fff;
-      box-shadow: 0 18px 32px rgba(17, 24, 39, 0.18);
-    }
-
-    .callout::after {
-      content: "";
-      position: absolute;
-      left: 22px;
-      bottom: -10px;
-      width: 20px;
-      height: 20px;
-      background: #2a2631;
-      transform: rotate(45deg);
-      border-radius: 4px;
-    }
-
-    .callout.callout-right::after {
-      left: auto;
-      right: 22px;
-    }
-
-    .callout-kicker {
-      margin: 0;
+    .eyebrow {
+      margin: 0 0 6px;
+      color: var(--accent);
       font-size: 0.76rem;
       font-weight: 800;
-      letter-spacing: 0.2em;
-      text-transform: uppercase;
-      color: rgba(255, 255, 255, 0.66);
-    }
-
-    .callout h2 {
-      font-size: clamp(1.28rem, 2.4vw, 1.8rem);
-      line-height: 1.12;
-      max-width: 11ch;
-    }
-
-    .callout p {
-      color: rgba(255, 255, 255, 0.82);
-      max-width: 30ch;
-    }
-
-    .callout-icon {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      width: 34px;
-      height: 34px;
-      border-radius: 999px;
-      background: rgba(255, 255, 255, 0.08);
-      color: #fff;
-      font-size: 1rem;
-      font-weight: 800;
-    }
-
-    .rail-note {
-      display: grid;
-      gap: 8px;
-      padding: 4px 6px 0;
-    }
-
-    .rail-note .eyebrow {
-      margin-bottom: 2px;
-    }
-
-    .sample-list {
-      display: grid;
-      gap: 10px;
-      margin-top: 6px;
-    }
-
-    .sample-card {
-      display: grid;
-      gap: 8px;
-      padding: 16px 16px 15px;
-      text-align: left;
-      border-radius: 18px;
-      background: rgba(255, 255, 255, 0.9);
-      border: 1px solid rgba(17, 24, 39, 0.08);
-      box-shadow: var(--shadow-soft);
-    }
-
-    .sample-card strong {
-      font-size: 0.98rem;
-      letter-spacing: -0.03em;
-    }
-
-    .sample-card small {
-      display: inline-flex;
-      align-items: center;
-      width: fit-content;
-      min-height: 24px;
-      padding: 4px 9px;
-      border-radius: 999px;
-      background: rgba(109, 40, 217, 0.09);
-      color: #5b21b6;
-      font-size: 0.72rem;
-      font-weight: 800;
-      letter-spacing: 0.14em;
+      letter-spacing: 0.16em;
       text-transform: uppercase;
     }
 
-    .sample-card p {
-      font-size: 0.92rem;
-      max-width: 28ch;
-    }
-
-    .builder-card,
-    .preview-card {
-      border-radius: var(--radius-xl);
-      border: 1px solid rgba(17, 24, 39, 0.08);
-      background: var(--surface);
-      box-shadow: var(--shadow);
-      backdrop-filter: blur(18px);
-    }
-
-    .builder-card {
+    .composer {
       display: grid;
-      gap: 16px;
-      padding: 20px;
+      gap: 15px;
+      max-width: 820px;
     }
 
     .segmented {
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 10px;
-      padding: 6px;
-      border-radius: 18px;
-      background: rgba(17, 24, 39, 0.04);
+      gap: 6px;
+      padding: 5px;
+      border-radius: var(--radius);
+      background: #f0f1f6;
     }
 
     .mode-btn {
-      min-height: 48px;
-      padding: 11px 14px;
-      border-radius: 14px;
+      min-height: 42px;
+      padding: 10px 12px;
+      border-radius: 6px;
+      color: #596174;
       background: transparent;
-      color: var(--muted);
       font-weight: 800;
+      transition: background 140ms ease, color 140ms ease, box-shadow 140ms ease;
     }
 
     .mode-btn.active {
       color: #fff;
-      background: linear-gradient(135deg, #111827 0%, #312e81 100%);
-      box-shadow: 0 12px 24px rgba(17, 24, 39, 0.16);
+      background: #24224f;
+      box-shadow: 0 8px 18px rgba(36, 34, 79, 0.18);
     }
 
     .field {
       display: grid;
-      gap: 8px;
+      gap: 7px;
     }
 
     .field label {
-      font-size: 0.94rem;
+      font-size: 0.92rem;
       font-weight: 700;
-      color: var(--ink);
     }
 
     .field .hint {
       margin: 0;
       color: var(--muted);
-      font-size: 0.85rem;
-      line-height: 1.45;
+      font-size: 0.83rem;
+      line-height: 1.35;
     }
 
     .control,
-    .field textarea,
-    .field select {
+    textarea,
+    select {
       width: 100%;
-      border: 1px solid rgba(17, 24, 39, 0.12);
-      border-radius: 16px;
-      background: rgba(255, 255, 255, 0.92);
+      min-height: 44px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: #fff;
       color: var(--ink);
       outline: none;
-      transition: border-color 150ms ease, box-shadow 150ms ease, transform 150ms ease;
+      padding: 10px 12px;
+      transition: border-color 140ms ease, box-shadow 140ms ease;
+    }
+
+    textarea {
+      min-height: 150px;
+      resize: vertical;
+      line-height: 1.52;
     }
 
     .control:focus,
-    .field textarea:focus,
-    .field select:focus {
-      border-color: rgba(109, 40, 217, 0.42);
-      box-shadow: 0 0 0 4px rgba(109, 40, 217, 0.12);
-    }
-
-    .control,
-    .field select {
-      min-height: 50px;
-      padding: 12px 14px;
-    }
-
-    .field textarea {
-      min-height: 184px;
-      padding: 14px;
-      resize: vertical;
-      line-height: 1.56;
+    textarea:focus,
+    select:focus {
+      border-color: rgba(95, 61, 196, 0.55);
+      box-shadow: 0 0 0 3px rgba(95, 61, 196, 0.12);
     }
 
     .grid-2 {
@@ -482,28 +358,28 @@
       gap: 14px;
     }
 
-    .range-shell {
+    .range-box {
       display: grid;
-      gap: 10px;
-      padding: 14px;
-      border-radius: 16px;
-      background: rgba(255, 255, 255, 0.78);
-      border: 1px solid rgba(17, 24, 39, 0.1);
+      gap: 8px;
+      padding: 11px 12px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: #fff;
     }
 
     .range-head {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 12px;
+      gap: 10px;
       color: var(--muted);
-      font-size: 0.9rem;
-      font-weight: 600;
+      font-size: 0.88rem;
+      font-weight: 700;
     }
 
     .range-head output {
       color: var(--ink);
-      font-size: 1.15rem;
+      font-size: 1.05rem;
       font-weight: 800;
     }
 
@@ -512,105 +388,12 @@
       accent-color: var(--accent);
     }
 
-    .accordion-stack {
-      display: grid;
-      gap: 10px;
-    }
-
-    .accordion {
-      border-radius: 16px;
-      border: 1px solid rgba(17, 24, 39, 0.08);
-      background: rgba(255, 255, 255, 0.82);
-      overflow: hidden;
-    }
-
-    .accordion summary {
-      list-style: none;
+    .actions {
       display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 14px;
-      padding: 15px 16px;
-      cursor: pointer;
-      font-weight: 800;
-      letter-spacing: -0.02em;
-    }
-
-    .accordion summary::-webkit-details-marker {
-      display: none;
-    }
-
-    .accordion summary::after {
-      content: "▾";
-      color: rgba(17, 24, 39, 0.46);
-      transition: transform 150ms ease;
-    }
-
-    .accordion[open] summary::after {
-      transform: rotate(180deg);
-    }
-
-    .accordion p {
-      padding: 0 16px 16px;
-      color: var(--muted);
-      line-height: 1.55;
-    }
-
-    .form-actions {
-      display: flex;
-      align-items: center;
       justify-content: flex-end;
-      gap: 10px;
+      gap: 8px;
       flex-wrap: wrap;
       padding-top: 2px;
-    }
-
-    .ghost-btn,
-    .small-btn {
-      min-height: 46px;
-      padding: 11px 16px;
-      border-radius: 14px;
-      font-weight: 800;
-    }
-
-    .ghost-btn {
-      background: rgba(17, 24, 39, 0.05);
-      color: var(--ink);
-    }
-
-    .small-btn {
-      background: rgba(255, 255, 255, 0.9);
-      color: #4338ca;
-      border: 1px solid rgba(109, 40, 217, 0.24);
-    }
-
-    .primary-btn {
-      min-height: 46px;
-      padding: 11px 18px;
-      border-radius: 14px;
-      color: #fff;
-      font-weight: 800;
-      background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 52%, #9333ea 100%);
-      box-shadow: 0 16px 30px rgba(79, 70, 229, 0.24);
-    }
-
-    .primary-btn:disabled,
-    .ghost-btn:disabled,
-    .small-btn:disabled,
-    .chrome-btn:disabled,
-    .mode-btn:disabled,
-    .sample-card:disabled {
-      cursor: not-allowed;
-      opacity: 0.62;
-      transform: none;
-    }
-
-    .preview-card {
-      display: grid;
-      gap: 16px;
-      padding: 20px;
-      position: relative;
-      min-height: 640px;
     }
 
     .preview-head {
@@ -618,140 +401,140 @@
       align-items: flex-start;
       justify-content: space-between;
       gap: 12px;
-      flex-wrap: wrap;
-    }
-
-    .preview-head h2 {
-      font-size: clamp(1.8rem, 3.2vw, 2.4rem);
-      line-height: 1;
-      margin-top: 2px;
-    }
-
-    .summary {
-      line-height: 1.58;
+      margin-bottom: 14px;
     }
 
     .meta-row {
       display: flex;
       flex-wrap: wrap;
-      gap: 8px;
+      gap: 6px;
+      margin-bottom: 12px;
     }
 
     .meta-chip {
       display: inline-flex;
       align-items: center;
-      min-height: 34px;
-      padding: 7px 11px;
+      min-height: 30px;
+      padding: 6px 9px;
       border-radius: 999px;
-      background: rgba(109, 40, 217, 0.1);
-      color: #5b21b6;
-      border: 1px solid rgba(109, 40, 217, 0.14);
-      font-size: 0.84rem;
+      color: #4c1d95;
+      background: rgba(95, 61, 196, 0.08);
+      border: 1px solid rgba(95, 61, 196, 0.12);
+      font-size: 0.82rem;
       font-weight: 800;
-      letter-spacing: -0.01em;
+    }
+
+    .summary {
+      margin: 0 0 12px;
+      color: var(--muted);
+      line-height: 1.5;
     }
 
     .status {
       min-height: 22px;
+      margin-bottom: 12px;
       color: var(--muted);
-      font-size: 0.92rem;
+      font-size: 0.9rem;
       font-weight: 600;
     }
 
     .status.error {
-      color: #b42318;
+      color: var(--bad);
     }
 
     .result-items {
       display: grid;
-      gap: 12px;
+      gap: 10px;
       align-content: start;
-      max-height: 56vh;
+      max-height: calc(100vh - 260px);
       overflow: auto;
-      padding-right: 4px;
+      padding-right: 2px;
+    }
+
+    .item,
+    .empty-state {
+      border: 1px solid var(--line-soft);
+      border-radius: var(--radius);
+      background: var(--panel-soft);
     }
 
     .item {
       display: grid;
-      gap: 12px;
-      padding: 16px;
-      border-radius: 18px;
-      background: rgba(255, 255, 255, 0.88);
-      border: 1px solid rgba(17, 24, 39, 0.08);
-      box-shadow: 0 10px 22px rgba(17, 24, 39, 0.05);
+      gap: 11px;
+      padding: 14px;
     }
 
     .item-top {
       display: flex;
       align-items: flex-start;
-      gap: 12px;
+      gap: 10px;
     }
 
     .item-index {
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      min-width: 38px;
-      min-height: 38px;
-      padding: 0 10px;
-      border-radius: 999px;
-      background: rgba(109, 40, 217, 0.1);
-      color: #5b21b6;
+      min-width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      color: #4c1d95;
+      background: rgba(95, 61, 196, 0.1);
+      font-size: 0.82rem;
       font-weight: 800;
       flex: 0 0 auto;
     }
 
     .item h3 {
-      font-size: 1.05rem;
-      line-height: 1.42;
-      letter-spacing: -0.02em;
-      margin-top: 2px;
+      font-size: 0.98rem;
+      line-height: 1.38;
     }
 
     .item p {
       margin: 0;
       color: var(--muted);
-      line-height: 1.55;
+      line-height: 1.48;
     }
 
     .options {
       display: grid;
-      gap: 8px;
+      gap: 7px;
     }
 
     .option {
       display: grid;
+      grid-template-columns: 28px minmax(0, 1fr);
       gap: 8px;
-      padding: 10px 12px;
-      border-radius: 14px;
-      background: rgba(255, 255, 255, 0.9);
-      border: 1px solid rgba(17, 24, 39, 0.08);
+      align-items: start;
+      padding: 9px 10px;
+      border-radius: var(--radius);
+      background: #fff;
+      border: 1px solid var(--line-soft);
     }
 
     .option.correct {
-      border-color: rgba(15, 118, 110, 0.2);
-      background: rgba(15, 118, 110, 0.08);
+      background: rgba(4, 120, 87, 0.07);
+      border-color: rgba(4, 120, 87, 0.22);
     }
 
     .option-label {
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      width: 28px;
-      height: 28px;
-      border-radius: 999px;
-      background: rgba(17, 24, 39, 0.06);
-      color: var(--ink);
-      font-size: 0.82rem;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: #f0f1f6;
+      font-size: 0.78rem;
       font-weight: 800;
     }
 
     .answer {
       display: grid;
       gap: 6px;
-      padding: 12px 14px;
-      border-radius: 14px;
-      background: rgba(17, 24, 39, 0.04);
+      padding: 10px 12px;
+      border-radius: var(--radius);
+      background: #fff;
+      border: 1px solid var(--line-soft);
     }
 
     .answer strong {
@@ -760,53 +543,30 @@
 
     .empty-state {
       display: grid;
-      gap: 8px;
-      padding: 18px;
-      border-radius: 18px;
-      background: rgba(255, 255, 255, 0.78);
-      border: 1px dashed rgba(17, 24, 39, 0.12);
+      gap: 7px;
+      padding: 14px;
       color: var(--muted);
     }
 
     .raw {
       margin: 0;
-      padding: 16px;
-      border-radius: 16px;
-      background: rgba(17, 24, 39, 0.05);
+      padding: 14px;
+      border-radius: var(--radius);
+      background: var(--panel-soft);
       color: var(--ink);
       white-space: pre-wrap;
       word-break: break-word;
       line-height: 1.5;
     }
 
-    .small-btn {
-      white-space: nowrap;
-    }
-
-    .launch-note {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      min-height: 34px;
-      padding: 7px 11px;
-      border-radius: 999px;
-      background: rgba(15, 118, 110, 0.08);
-      color: #0f766e;
-      font-size: 0.84rem;
-      font-weight: 800;
-    }
-
-    @media (max-width: 1180px) {
+    @media (max-width: 980px) {
       .workspace {
-        grid-template-columns: minmax(0, 1fr);
-        grid-template-areas:
-          "center"
-          "right"
-          "left";
+        grid-template-columns: 1fr;
       }
 
-      .rail-right {
-        position: static;
+      .builder {
+        border-right: 0;
+        border-bottom: 1px solid var(--line-soft);
       }
 
       .result-items {
@@ -814,45 +574,43 @@
       }
     }
 
-    @media (max-width: 760px) {
-      .page {
-        width: min(100% - 10px, 1700px);
-        padding-top: 6px;
+    @media (max-width: 680px) {
+      .app {
+        width: min(100% - 8px, 1420px);
+        padding: 4px 0;
       }
 
-      .frame {
-        border-radius: 30px;
-        padding: 3px;
+      .shell {
+        min-height: calc(100vh - 8px);
+        border-radius: 14px;
       }
 
-      .surface {
-        border-radius: 28px;
-        min-height: calc(100vh - 12px);
-      }
-
-      .chrome {
-        padding: 18px 16px 10px;
+      .topbar {
         align-items: flex-start;
+        padding: 14px;
+      }
+
+      .top-actions {
+        gap: 6px;
+      }
+
+      .btn {
+        min-height: 36px;
+        padding: 8px 10px;
+      }
+
+      .builder,
+      .preview {
+        padding: 16px;
+      }
+
+      .section-head,
+      .preview-head {
         flex-direction: column;
       }
 
-      .chrome-actions {
-        width: 100%;
-      }
-
-      .chrome-btn {
-        flex: 1 1 0;
-        justify-content: center;
-      }
-
-      .workspace {
-        padding: 6px 12px 14px;
-      }
-
-      .builder-card,
-      .preview-card {
-        border-radius: 26px;
-        padding: 18px;
+      h1 {
+        font-size: 1.65rem;
       }
 
       .grid-2,
@@ -860,191 +618,168 @@
         grid-template-columns: 1fr;
       }
 
-      .form-actions {
+      .actions {
         justify-content: stretch;
       }
 
-      .form-actions > * {
+      .actions .btn {
         flex: 1 1 100%;
-      }
-
-      h1 {
-        max-width: 100%;
-      }
-
-      .result-items {
-        max-height: none;
       }
     }
   </style>
 </head>
 <body>
-  <main class="page">
-    <section class="frame" aria-label="Linda4 fastgpt">
-      <div class="surface">
-        <header class="chrome">
-          <div class="brand">
-            <span class="brand-mark" aria-hidden="true"></span>
-            <span>Linda4</span>
+  <main class="app">
+    <section class="shell" aria-label="Linda4">
+      <header class="topbar">
+        <div class="brand">
+          <span class="brand-mark" aria-hidden="true"></span>
+          <div>
+            <strong>Linda4</strong>
+            <span>Linda4Schnellmodi</span>
           </div>
-          <div class="chrome-actions">
-            <button type="button" class="chrome-btn ghost" id="shareBtn">Teilen</button>
-            <button type="button" class="chrome-btn primary" id="launchBtn">Fragen erstellen</button>
+        </div>
+
+        <div class="top-actions">
+          <button type="button" class="btn outline" id="settingsToggle" aria-expanded="false" aria-controls="settingsPanel">Einstellungen</button>
+          <button type="button" class="btn primary" id="launchBtn">Erstellen</button>
+        </div>
+
+        <aside class="settings-panel" id="settingsPanel" hidden>
+          <div class="settings-head">
+            <div>
+              <h2>Linda4Schnellmodi</h2>
+              <p>Status und Verbindung</p>
+            </div>
+            <button type="button" class="btn" id="settingsClose" aria-label="Einstellungen schliessen">Schliessen</button>
           </div>
-        </header>
+          <div class="health-row">
+            <p class="health-state" id="healthState">Noch nicht geprüft.</p>
+            <button type="button" class="btn outline" id="healthBtn">Healthcheck</button>
+          </div>
+        </aside>
+      </header>
 
-        <div class="workspace">
-          <aside class="rail rail-left">
-            <div class="callout">
-              <div class="callout-icon" aria-hidden="true">✦</div>
-              <p class="callout-kicker">Schnellstart</p>
-              <h2>Beschreibe kurz, was du brauchst.</h2>
-              <p>Thema, Lernstoff und gewuenschte Menge reichen fuer einen guten Start.</p>
+      <div class="workspace">
+        <section class="builder">
+          <div class="section-head">
+            <div>
+              <p class="eyebrow">Fragen-Builder</p>
+              <h1>Prüfungs- und Quizfragen</h1>
+            </div>
+          </div>
+
+          <form id="composer" class="composer" autocomplete="off" novalidate>
+            <div class="segmented" role="tablist" aria-label="Modus wählen">
+              <button type="button" class="mode-btn active" data-mode="exam" aria-pressed="true">Prüfungsfragen</button>
+              <button type="button" class="mode-btn" data-mode="quiz" aria-pressed="false">Quizfragen</button>
             </div>
 
-            <div class="rail-note">
-              <p class="eyebrow">Direkt loslegen</p>
-              <p class="rail-copy">Die Vorlagen sind so gebaut, dass du auf dem Handy genauso bequem starten kannst wie am Desktop.</p>
-            </div>
-
-            <div class="sample-list">
-              <button type="button" class="sample-card" data-example="exam">
-                <small>Vorlage 01</small>
-                <strong>Pruefungsset</strong>
-                <p>Saubere Fragen mit klaren Antworten und kurzem Nachgang.</p>
-              </button>
-              <button type="button" class="sample-card" data-example="quiz">
-                <small>Vorlage 02</small>
-                <strong>Quizrunde</strong>
-                <p>Mehrwahlfragen mit Tempo und leichtem, fluessigem Aufbau.</p>
-              </button>
-              <button type="button" class="sample-card" data-example="current">
-                <small>Vorlage 03</small>
-                <strong>Schnellstart</strong>
-                <p>Die aktuell gewaehlte Richtung sofort mit Beispieldaten fuellen.</p>
-              </button>
-            </div>
-          </aside>
-
-          <section class="builder-pane">
-            <div class="builder-head">
-              <div>
-                <p class="eyebrow">Fragen-Builder</p>
-                <h1>Fragen bauen, die sitzen.</h1>
-                <p class="lede">Ein schlankes Studio fuer Pruefungsfragen und Quizfragen. Klar, ruhig und angenehm auf dem Handy.</p>
-              </div>
-            </div>
-
-            <form id="composer" class="builder-card" autocomplete="off" novalidate>
-              <div class="segmented" role="tablist" aria-label="Modus waehlen">
-                <button type="button" class="mode-btn active" data-mode="exam" aria-pressed="true">Pruefungsfragen</button>
-                <button type="button" class="mode-btn" data-mode="quiz" aria-pressed="false">Quizfragen</button>
-              </div>
-
+            <div class="grid-2">
               <div class="field">
                 <label for="topic">Thema</label>
-                <input id="topic" class="control" name="topic" type="text" maxlength="180" placeholder="z. B. Sozialrecht, Anatomie, Marketing" />
+                <select id="topic" class="control" name="topic">
+                  <option value="">Thema wählen</option>
+                  <optgroup label="Ausbildereignung">
+                    <option value="Ausbildereignung - Handlungsfeld 1">Handlungsfeld 1</option>
+                    <option value="Ausbildereignung - Handlungsfeld 2">Handlungsfeld 2</option>
+                    <option value="Ausbildereignung - Handlungsfeld 4">Handlungsfeld 4</option>
+                  </optgroup>
+                  <option value="Kommunikation">Kommunikation</option>
+                  <option value="Führung">Führung</option>
+                  <option value="Zusammenarbeit">Zusammenarbeit</option>
+                  <option value="Sozialversicherungsrecht">Sozialversicherungsrecht</option>
+                  <option value="Volkswirtschaftslehre">Volkswirtschaftslehre</option>
+                </select>
               </div>
 
               <div class="field">
-                <label for="material">Lernstoff</label>
-                <textarea id="material" name="material" placeholder="Stichpunkte, Abschnitte oder Fliesstext hier eintragen."></textarea>
-                <p class="hint">Der Inhalt wird nur als Lernstoff gelesen.</p>
+                <label for="audience">Zielgruppe</label>
+                <select id="audience" class="control" name="audience">
+                  <option value="Fachwirt">Fachwirt</option>
+                  <option value="Student Bachelor Studium">Student Bachelor Studium</option>
+                </select>
               </div>
-
-              <div class="grid-2">
-                <div class="field">
-                  <label for="audience">Zielgruppe</label>
-                  <input id="audience" class="control" name="audience" type="text" maxlength="120" placeholder="z. B. Ausbildung, Studium, Team" />
-                </div>
-                <div class="field">
-                  <label for="language">Sprache</label>
-                  <input id="language" class="control" name="language" type="text" maxlength="40" value="Deutsch" />
-                </div>
-              </div>
-
-              <div class="grid-2">
-                <div class="field">
-                  <label for="difficulty">Schwierigkeit</label>
-                  <select id="difficulty" name="difficulty">
-                    <option value="leicht">Leicht</option>
-                    <option value="mittel" selected>Mittel</option>
-                    <option value="schwer">Schwer</option>
-                  </select>
-                </div>
-                <div class="field">
-                  <label for="count">Anzahl</label>
-                  <div class="range-shell">
-                    <div class="range-head">
-                      <span>Fragen pro Satz</span>
-                      <output id="countValue" for="count">5</output>
-                    </div>
-                    <input id="count" name="count" type="range" min="3" max="12" value="5" />
-                  </div>
-                </div>
-              </div>
-
-              <div class="accordion-stack" aria-label="Hinweise">
-                <details class="accordion" open>
-                  <summary>Qualitaet</summary>
-                  <p>Kurze, klare Formulierungen mit eindeutigen Antworten und sauberer Schwierigkeit.</p>
-                </details>
-                <details class="accordion">
-                  <summary>Ausgabe</summary>
-                  <p>Pruefungsfragen erscheinen mit Antwort. Quizfragen erscheinen als Auswahl mit Loesung.</p>
-                </details>
-                <details class="accordion">
-                  <summary>Hinweis</summary>
-                  <p>Der Text wird als Lernstoff gelesen und nicht als Anweisung interpretiert.</p>
-                </details>
-              </div>
-
-              <div class="form-actions">
-                <button type="button" class="ghost-btn" id="demoBtn">Beispiel fuellen</button>
-                <button type="button" class="ghost-btn" id="resetBtn">Leeren</button>
-                <button type="submit" class="primary-btn" id="createBtn">Erstellen</button>
-              </div>
-            </form>
-          </section>
-
-          <aside class="rail rail-right">
-            <div class="callout callout-right">
-              <div class="callout-icon" aria-hidden="true">✦</div>
-              <p class="callout-kicker">Vorschau</p>
-              <h2>Die Ausgabe bleibt rechts immer im Blick.</h2>
-              <p>So kannst du vergleichen, kopieren und direkt nachjustieren, ohne den Fluss zu verlieren.</p>
             </div>
 
-            <section class="preview-card" aria-labelledby="result-title">
-              <div class="preview-head">
-                <div>
-                  <p class="eyebrow">Live Preview</p>
-                  <h2 id="result-title">Vorschau</h2>
+            <div class="field">
+              <label for="material">Lernstoff</label>
+              <textarea id="material" name="material" placeholder="Stichpunkte, Abschnitte oder Fließtext eintragen."></textarea>
+              <p class="hint">Der Inhalt wird als Lernstoff gelesen.</p>
+            </div>
+
+            <div class="grid-2">
+              <div class="field">
+                <label for="difficulty">Schwierigkeit</label>
+                <select id="difficulty" name="difficulty">
+                  <option value="leicht">Leicht</option>
+                  <option value="mittel" selected>Mittel</option>
+                  <option value="schwer">Schwer</option>
+                </select>
+              </div>
+
+              <div class="field">
+                <label for="count">Anzahl</label>
+                <div class="range-box">
+                  <div class="range-head">
+                    <span>Fragen pro Satz</span>
+                    <output id="countValue" for="count">5</output>
+                  </div>
+                  <input id="count" name="count" type="range" min="3" max="12" value="5" />
                 </div>
-                <button type="button" class="small-btn" id="copyBtn" hidden>Kopieren</button>
+              </div>
+            </div>
+
+            <div class="grid-2">
+              <div class="field">
+                <label for="language">Sprache</label>
+                <select id="language" class="control" name="language">
+                  <option value="Deutsch" selected>Deutsch</option>
+                  <option value="Englisch">Englisch</option>
+                </select>
               </div>
 
-              <p class="summary" id="resultSummary">Noch keine Ausgabe erzeugt.</p>
-
-              <div class="meta-row" aria-label="Aktuelle Einstellungen">
-                <span class="meta-chip" id="modeChip">Pruefungsfragen</span>
-                <span class="meta-chip" id="countChip">5 Fragen</span>
-                <span class="meta-chip" id="languageChip">Deutsch</span>
+              <div class="field">
+                <label>Qualität</label>
+                <p class="subtle">Klar, prüfbar und lösungsorientiert.</p>
               </div>
+            </div>
 
-              <div class="status" id="status" aria-live="polite"></div>
+            <div class="actions">
+              <button type="button" class="btn" id="demoBtn">Beispiel</button>
+              <button type="button" class="btn" id="resetBtn">Leeren</button>
+              <button type="submit" class="btn primary" id="createBtn">Erstellen</button>
+            </div>
+          </form>
+        </section>
 
-              <div class="result-items" id="resultItems">
-                <div class="empty-state" id="emptyState">
-                  <strong>Bereit.</strong>
-                  <span>Sobald du auf Erstellen klickst, erscheint die fertige Ausgabe hier.</span>
-                </div>
-              </div>
+        <aside class="preview" aria-labelledby="result-title">
+          <div class="preview-head">
+            <div>
+              <p class="eyebrow">Vorschau</p>
+              <h2 id="result-title">Noch keine Ausgabe</h2>
+            </div>
+            <button type="button" class="btn outline" id="copyBtn" hidden>Kopieren</button>
+          </div>
 
-              <pre class="raw" id="rawOutput" hidden></pre>
-            </section>
-          </aside>
-        </div>
+          <div class="meta-row" aria-label="Aktuelle Einstellungen">
+            <span class="meta-chip" id="modeChip">Prüfungsfragen</span>
+            <span class="meta-chip" id="topicChip">Thema wählen</span>
+            <span class="meta-chip" id="countChip">5 Fragen</span>
+          </div>
+
+          <p class="summary" id="resultSummary">Wähle ein Thema und erstelle den ersten Satz.</p>
+          <div class="status" id="status" aria-live="polite"></div>
+
+          <div class="result-items" id="resultItems">
+            <div class="empty-state" id="emptyState">
+              <strong>Bereit.</strong>
+              <span>Die Ausgabe erscheint hier.</span>
+            </div>
+          </div>
+
+          <pre class="raw" id="rawOutput" hidden></pre>
+        </aside>
       </div>
     </section>
   </main>
@@ -1067,9 +802,13 @@
     const createBtn = document.getElementById('createBtn');
     const demoBtn = document.getElementById('demoBtn');
     const resetBtn = document.getElementById('resetBtn');
-    const shareBtn = document.getElementById('shareBtn');
     const launchBtn = document.getElementById('launchBtn');
     const copyBtn = document.getElementById('copyBtn');
+    const settingsToggle = document.getElementById('settingsToggle');
+    const settingsPanel = document.getElementById('settingsPanel');
+    const settingsClose = document.getElementById('settingsClose');
+    const healthBtn = document.getElementById('healthBtn');
+    const healthState = document.getElementById('healthState');
     const resultTitle = document.getElementById('result-title');
     const resultSummary = document.getElementById('resultSummary');
     const resultItems = document.getElementById('resultItems');
@@ -1077,34 +816,39 @@
     const rawOutput = document.getElementById('rawOutput');
     const emptyState = document.getElementById('emptyState');
     const modeButtons = Array.from(document.querySelectorAll('.mode-btn'));
-    const sampleButtons = Array.from(document.querySelectorAll('[data-example]'));
     const modeChip = document.getElementById('modeChip');
+    const topicChip = document.getElementById('topicChip');
     const countChip = document.getElementById('countChip');
-    const languageChip = document.getElementById('languageChip');
+    const API_ENDPOINT = './api/linda4-schnellmodi';
 
     const examples = {
       exam: {
-        topic: 'Sozialrecht',
-        material: 'Grundlagen des SGB IV, Versicherungszweige, Meldepflichten und Beitraege.',
-        audience: 'Ausbildung und Pruefungsvorbereitung',
+        topic: 'Sozialversicherungsrecht',
+        material: 'Versicherungszweige, Beitragsgrundlagen, Meldepflichten und typische Prüfungsfallen.',
+        audience: 'Fachwirt',
         difficulty: 'mittel',
         count: 5,
         language: 'Deutsch'
       },
       quiz: {
-        topic: 'Mikrobiologie',
-        material: 'Zellaufbau, Bakterienarten, Infektionswege und einfache Merkmale.',
-        audience: 'Lernkontrolle im Alltag',
+        topic: 'Kommunikation',
+        material: 'Aktives Zuhören, Ich-Botschaften, Feedbackregeln und Gesprächsstruktur.',
+        audience: 'Student Bachelor Studium',
         difficulty: 'leicht',
         count: 6,
         language: 'Deutsch'
       }
     };
 
+    function selectedTopicLabel() {
+      if (!topic.value) return 'Thema wählen';
+      return topic.options[topic.selectedIndex].textContent || topic.value;
+    }
+
     function syncPreviewMeta() {
-      modeChip.textContent = state.mode === 'quiz' ? 'Quizfragen' : 'Pruefungsfragen';
+      modeChip.textContent = state.mode === 'quiz' ? 'Quizfragen' : 'Prüfungsfragen';
+      topicChip.textContent = selectedTopicLabel();
       countChip.textContent = `${count.value || 5} Fragen`;
-      languageChip.textContent = language.value.trim() || 'Deutsch';
     }
 
     function setMode(nextMode) {
@@ -1122,16 +866,13 @@
       createBtn.disabled = value;
       demoBtn.disabled = value;
       resetBtn.disabled = value;
-      shareBtn.disabled = value;
       launchBtn.disabled = value;
       copyBtn.disabled = value;
       modeButtons.forEach((button) => {
         button.disabled = value;
       });
-      sampleButtons.forEach((button) => {
-        button.disabled = value;
-      });
       createBtn.textContent = value ? 'Erzeuge ...' : 'Erstellen';
+      launchBtn.textContent = value ? 'Erzeuge ...' : 'Erstellen';
     }
 
     function setStatus(message, kind = 'normal') {
@@ -1139,29 +880,22 @@
       status.classList.toggle('error', kind === 'error');
     }
 
+    function setHealth(message, kind = 'normal') {
+      healthState.textContent = message;
+      healthState.classList.toggle('ready', kind === 'ready');
+      healthState.classList.toggle('error', kind === 'error');
+    }
+
     function getPayload() {
       return {
         mode: state.mode,
-        topic: topic.value.trim(),
+        topic: topic.value,
         material: material.value.trim(),
-        audience: audience.value.trim(),
+        audience: audience.value,
         difficulty: difficulty.value,
         count: Number.parseInt(count.value, 10) || 5,
-        language: language.value.trim() || 'Deutsch'
+        language: language.value || 'Deutsch'
       };
-    }
-
-    function renderRequestSummary() {
-      const payload = getPayload();
-      return [
-        payload.mode === 'quiz' ? 'Quizfragen' : 'Pruefungsfragen',
-        `Thema: ${payload.topic || 'ohne Thema'}`,
-        `Lernstoff: ${payload.material || 'ohne Text'}`,
-        `Zielgruppe: ${payload.audience || 'ohne Angabe'}`,
-        `Schwierigkeit: ${payload.difficulty}`,
-        `Anzahl: ${payload.count}`,
-        `Sprache: ${payload.language}`
-      ].join('\n');
     }
 
     function renderCopyText(payload) {
@@ -1182,23 +916,16 @@
           });
           if (Number.isInteger(item.correctIndex)) {
             const correct = item.options[item.correctIndex];
-            if (correct) {
-              lines.push(`   Antwort: ${correct}`);
-            }
+            if (correct) lines.push(`   Antwort: ${correct}`);
           }
         } else if (item.answer) {
           lines.push(`   Antwort: ${item.answer}`);
         }
-        if (item.explanation) {
-          lines.push(`   Hinweis: ${item.explanation}`);
-        }
+        if (item.explanation) lines.push(`   Hinweis: ${item.explanation}`);
         lines.push('');
       });
 
-      if (!items.length && payload.raw) {
-        lines.push(payload.raw);
-      }
-
+      if (!items.length && payload.raw) lines.push(payload.raw);
       return lines.join('\n').trim();
     }
 
@@ -1208,13 +935,13 @@
         await navigator.clipboard.writeText(text);
         setStatus(successMessage);
       } catch {
-        setStatus('Kopieren ist in diesem Browser nicht verfuegbar.', 'error');
+        setStatus('Kopieren ist in diesem Browser nicht verfügbar.', 'error');
       }
     }
 
     function clearResult() {
-      resultTitle.textContent = 'Vorschau';
-      resultSummary.textContent = 'Noch keine Ausgabe erzeugt.';
+      resultTitle.textContent = 'Noch keine Ausgabe';
+      resultSummary.textContent = 'Wähle ein Thema und erstelle den ersten Satz.';
       resultItems.innerHTML = '';
       resultItems.appendChild(emptyState);
       rawOutput.hidden = true;
@@ -1237,14 +964,13 @@
       countValue.textContent = count.value;
       language.value = example.language;
       syncPreviewMeta();
-      setStatus('Beispiel eingefuellt.');
+      setStatus('Beispiel eingefüllt.');
     }
 
     function renderResult(data) {
       const items = Array.isArray(data.items) ? data.items : [];
-
-      resultTitle.textContent = data.title || (state.mode === 'quiz' ? 'Quizfragen' : 'Pruefungsfragen');
-      resultSummary.textContent = data.summary || 'Die Ausgabe wurde erfolgreich erzeugt.';
+      resultTitle.textContent = data.title || (state.mode === 'quiz' ? 'Quizfragen' : 'Prüfungsfragen');
+      resultSummary.textContent = data.summary || 'Die Ausgabe wurde erstellt.';
       resultItems.innerHTML = '';
 
       if (items.length) {
@@ -1327,7 +1053,7 @@
       } else {
         const raw = document.createElement('pre');
         raw.className = 'raw';
-        raw.textContent = data.raw || 'Keine strukturierte Ausgabe verfuegbar.';
+        raw.textContent = data.raw || 'Keine strukturierte Ausgabe verfügbar.';
         resultItems.appendChild(raw);
       }
 
@@ -1337,34 +1063,53 @@
       state.latest = data;
     }
 
-    function setBusyAndSubmitText(value) {
-      setBusy(value);
-      createBtn.textContent = value ? 'Erzeuge ...' : 'Erstellen';
+    async function runHealthcheck() {
+      setHealth('Prüfe Linda4Schnellmodi ...');
+      healthBtn.disabled = true;
+      try {
+        const response = await fetch(API_ENDPOINT, { method: 'GET' });
+        const data = await response.json().catch(() => null);
+        if (!response.ok || !data || !data.ok) {
+          throw new Error('Nicht erreichbar.');
+        }
+        setHealth(data.ready ? 'Linda4Schnellmodi ist bereit.' : 'Linda4Schnellmodi ist nicht bereit.', data.ready ? 'ready' : 'error');
+      } catch {
+        setHealth('Linda4Schnellmodi ist nicht erreichbar.', 'error');
+      } finally {
+        healthBtn.disabled = false;
+      }
     }
 
     modeButtons.forEach((button) => {
-      button.addEventListener('click', () => {
-        setMode(button.dataset.mode);
+      button.addEventListener('click', () => setMode(button.dataset.mode));
+    });
+
+    [topic, count, language].forEach((element) => {
+      element.addEventListener('input', () => {
+        countValue.textContent = count.value;
+        syncPreviewMeta();
+      });
+      element.addEventListener('change', () => {
+        countValue.textContent = count.value;
+        syncPreviewMeta();
       });
     });
 
-    sampleButtons.forEach((button) => {
-      button.addEventListener('click', () => {
-        const key = button.dataset.example === 'current' ? state.mode : button.dataset.example;
-        fillExample(key);
-      });
+    settingsToggle.addEventListener('click', () => {
+      const shouldOpen = settingsPanel.hidden;
+      settingsPanel.hidden = !shouldOpen;
+      settingsToggle.setAttribute('aria-expanded', String(shouldOpen));
     });
 
-    count.addEventListener('input', () => {
-      countValue.textContent = count.value;
-      syncPreviewMeta();
+    settingsClose.addEventListener('click', () => {
+      settingsPanel.hidden = true;
+      settingsToggle.setAttribute('aria-expanded', 'false');
     });
 
-    language.addEventListener('input', syncPreviewMeta);
+    healthBtn.addEventListener('click', runHealthcheck);
 
-    demoBtn.addEventListener('click', () => {
-      fillExample(state.mode);
-    });
+    demoBtn.addEventListener('click', () => fillExample(state.mode));
+    launchBtn.addEventListener('click', () => composer.requestSubmit());
 
     resetBtn.addEventListener('click', () => {
       composer.reset();
@@ -1372,15 +1117,6 @@
       countValue.textContent = count.value;
       syncPreviewMeta();
       clearResult();
-    });
-
-    shareBtn.addEventListener('click', async () => {
-      const text = state.latest ? renderCopyText(state.latest) : renderRequestSummary();
-      await copyText(text, 'Zwischenablage aktualisiert.');
-    });
-
-    launchBtn.addEventListener('click', () => {
-      composer.requestSubmit();
     });
 
     copyBtn.addEventListener('click', async () => {
@@ -1393,15 +1129,15 @@
 
       const payload = getPayload();
       if (!payload.topic && !payload.material) {
-        setStatus('Bitte gib mindestens ein Thema oder Lernstoff ein.', 'error');
+        setStatus('Bitte wähle ein Thema oder trage Lernstoff ein.', 'error');
         return;
       }
 
-      setBusyAndSubmitText(true);
+      setBusy(true);
       setStatus('Erzeuge neue Fragen ...');
 
       try {
-        const response = await fetch('/api/deepseek', {
+        const response = await fetch(API_ENDPOINT, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
@@ -1411,7 +1147,6 @@
 
         const responseText = await response.text();
         let data = null;
-
         try {
           data = responseText ? JSON.parse(responseText) : null;
         } catch {
@@ -1419,10 +1154,7 @@
         }
 
         if (!response.ok || !data || !data.ok) {
-          const fallback = response.status === 404
-            ? 'Der Dienst ist noch nicht erreichbar. Bitte pruefe, ob api/deepseek.js im Vercel-Root liegt.'
-            : 'Die Antwort konnte nicht geladen werden.';
-          throw new Error((data && data.error) || fallback);
+          throw new Error((data && data.error) || 'Die Antwort konnte nicht geladen werden.');
         }
 
         renderResult(data);
@@ -1431,7 +1163,7 @@
       } catch (error) {
         setStatus(error instanceof Error ? error.message : 'Unbekannter Fehler.', 'error');
       } finally {
-        setBusyAndSubmitText(false);
+        setBusy(false);
       }
     });
 
