@@ -1401,7 +1401,7 @@
       setStatus('Erzeuge neue Fragen ...');
 
       try {
-        const response = await fetch('./api/deepseek', {
+        const response = await fetch('/api/deepseek', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
@@ -1409,10 +1409,20 @@
           body: JSON.stringify(payload)
         });
 
-        const data = await response.json().catch(() => null);
+        const responseText = await response.text();
+        let data = null;
+
+        try {
+          data = responseText ? JSON.parse(responseText) : null;
+        } catch {
+          data = null;
+        }
 
         if (!response.ok || !data || !data.ok) {
-          throw new Error((data && data.error) || 'Die Antwort konnte nicht geladen werden.');
+          const fallback = response.status === 404
+            ? 'Der Dienst ist noch nicht erreichbar. Bitte pruefe, ob api/deepseek.js im Vercel-Root liegt.'
+            : 'Die Antwort konnte nicht geladen werden.';
+          throw new Error((data && data.error) || fallback);
         }
 
         renderResult(data);

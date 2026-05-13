@@ -1,6 +1,6 @@
-const DEEPSEEK_URL = 'https://api.deepseek.com/chat/completions';
-const DEFAULT_MODEL = process.env.DEEPSEEK_MODEL || 'deepseek-chat';
-const DEEPSEEK_API_KEY = process.env.Linda3Schnellmodus;
+const GENERATION_URL = 'https://api.deepseek.com/chat/completions';
+const GENERATION_MODEL = 'deepseek-chat';
+const API_KEY = process.env.Linda3Schnellmodus;
 
 function sendJson(res, statusCode, payload) {
   res.statusCode = statusCode;
@@ -181,7 +181,7 @@ async function handler(req, res) {
     sendJson(res, 200, {
       ok: true,
       route: 'deepseek',
-      ready: Boolean(DEEPSEEK_API_KEY)
+      ready: Boolean(API_KEY)
     });
     return;
   }
@@ -195,10 +195,10 @@ async function handler(req, res) {
     return;
   }
 
-  if (!DEEPSEEK_API_KEY) {
+  if (!API_KEY) {
     sendJson(res, 500, {
       ok: false,
-      error: 'Linda3Schnellmodus is missing.'
+      error: 'Servervariable Linda3Schnellmodus fehlt.'
     });
     return;
   }
@@ -231,14 +231,14 @@ async function handler(req, res) {
       language
     };
 
-    const response = await fetch(DEEPSEEK_URL, {
+    const response = await fetch(GENERATION_URL, {
       method: 'POST',
       headers: {
-        Authorization: `Bearer ${DEEPSEEK_API_KEY}`,
+        Authorization: `Bearer ${API_KEY}`,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        model: DEFAULT_MODEL,
+        model: GENERATION_MODEL,
         messages: [
           { role: 'system', content: buildSystemPrompt() },
           { role: 'user', content: buildUserPrompt(request) }
@@ -253,7 +253,7 @@ async function handler(req, res) {
     if (!response.ok) {
       sendJson(res, 502, {
         ok: false,
-        error: 'DeepSeek request failed.',
+        error: 'Die Anfrage konnte nicht verarbeitet werden.',
         details: rawPayload.slice(0, 600)
       });
       return;
@@ -265,7 +265,7 @@ async function handler(req, res) {
     } catch {
       sendJson(res, 502, {
         ok: false,
-        error: 'DeepSeek returned invalid JSON.',
+        error: 'Die Antwort hatte ein unerwartetes Format.',
         details: rawPayload.slice(0, 600)
       });
       return;
@@ -283,7 +283,7 @@ async function handler(req, res) {
     if (!content) {
       sendJson(res, 502, {
         ok: false,
-        error: 'DeepSeek response did not contain content.'
+        error: 'Die Antwort war leer.'
       });
       return;
     }
@@ -310,7 +310,7 @@ async function handler(req, res) {
       raw: structured ? '' : clampString(content, 12000),
       structured,
       meta: {
-        model: DEFAULT_MODEL
+        model: GENERATION_MODEL
       }
     });
   } catch (error) {
