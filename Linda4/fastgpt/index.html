@@ -438,6 +438,32 @@
       line-height: 1.5;
     }
 
+    .disclaimer {
+      display: grid;
+      gap: 4px;
+      margin: 0 0 12px;
+      padding: 11px 12px;
+      border-radius: var(--radius);
+      border: 1px solid rgba(249, 115, 22, 0.22);
+      background: rgba(249, 115, 22, 0.07);
+      color: #5f3412;
+      font-size: 0.86rem;
+      line-height: 1.45;
+    }
+
+    .disclaimer[hidden] {
+      display: none;
+    }
+
+    .disclaimer strong {
+      color: var(--ink);
+      font-size: 0.86rem;
+    }
+
+    .disclaimer p {
+      margin: 0;
+    }
+
     .status {
       min-height: 22px;
       margin-bottom: 12px;
@@ -789,6 +815,11 @@
           </div>
 
           <p class="summary" id="resultSummary">Wähle ein Thema und erstelle den ersten Satz.</p>
+          <div class="disclaimer" id="disclaimerBox" hidden>
+            <strong>Fachlicher Hinweis</strong>
+            <p id="disclaimerText"></p>
+            <p id="sourceText"></p>
+          </div>
           <div class="status" id="status" aria-live="polite"></div>
 
           <div class="result-items" id="resultItems">
@@ -833,6 +864,9 @@
     const healthState = document.getElementById('healthState');
     const resultTitle = document.getElementById('result-title');
     const resultSummary = document.getElementById('resultSummary');
+    const disclaimerBox = document.getElementById('disclaimerBox');
+    const disclaimerText = document.getElementById('disclaimerText');
+    const sourceText = document.getElementById('sourceText');
     const resultItems = document.getElementById('resultItems');
     const status = document.getElementById('status');
     const rawOutput = document.getElementById('rawOutput');
@@ -1001,6 +1035,12 @@
         .replace(/'/g, '&#039;');
     }
 
+    function compactSourceLabels(labels, limit = 4) {
+      if (!Array.isArray(labels) || !labels.length) return '';
+      if (labels.length <= limit) return labels.join('; ');
+      return `${labels.slice(0, limit).join('; ')}; ${labels.length - limit} weitere`;
+    }
+
     function optionLetter(index) {
       return String.fromCharCode(65 + index);
     }
@@ -1098,10 +1138,21 @@
         ['Thema', meta.topicLabel],
         ['Zielgruppe', meta.audience],
         ['Schwierigkeit', meta.difficulty],
+        ['Werte-Stand', payload.facts && payload.facts.valueStand ? payload.facts.valueStand : ''],
         ['Umfang', `${meta.count || items.length || 0} Fragen`],
         ['Sprache', meta.language],
         ['Erstellt', formatCreatedAt(meta.createdAt)]
       ].filter((entry) => entry[1]);
+      const facts = payload.facts || null;
+      const sourceLabels = facts && Array.isArray(facts.sources)
+        ? facts.sources.map((source) => source.label).filter(Boolean)
+        : [];
+      const disclaimer = facts && facts.disclaimer
+        ? facts.disclaimer
+        : 'Die Inhalte dienen der Lern- und Prüfungsvorbereitung. Sie ersetzen keine fachliche, rechtliche oder amtliche Prüfung.';
+      const sourcesLine = sourceLabels.length
+        ? `Quellenbasis: ${compactSourceLabels(sourceLabels)}.`
+        : '';
 
       return `<!doctype html>
 <html lang="de">
@@ -1324,6 +1375,25 @@
       font: inherit;
     }
 
+    .notice {
+      break-inside: avoid;
+      margin-top: 8mm;
+      padding: 4mm 5mm;
+      border: 1px solid #f2d2aa;
+      border-radius: 4mm;
+      background: #fff8ed;
+      color: #5f3412;
+      font-size: 9.5pt;
+    }
+
+    .notice strong {
+      color: #172033;
+    }
+
+    .notice p {
+      margin: 1.5mm 0 0;
+    }
+
     .footer {
       margin-top: 9mm;
       padding-top: 3mm;
@@ -1360,6 +1430,12 @@
       <h2 class="section-title">Aufgaben</h2>
       ${buildPdfItems(items, meta.mode)}
       ${raw}
+    </section>
+
+    <section class="notice">
+      <strong>Fachlicher Hinweis</strong>
+      <p>${escapeHtml(disclaimer)}</p>
+      ${sourcesLine ? `<p>${escapeHtml(sourcesLine)}</p>` : ''}
     </section>
 
     ${items.length ? `
@@ -1427,6 +1503,15 @@
       });
 
       if (!items.length && payload.raw) lines.push(payload.raw);
+
+      if (payload.facts && payload.facts.disclaimer) {
+        lines.push('');
+        lines.push(`Fachlicher Hinweis: ${payload.facts.disclaimer}`);
+        if (payload.facts.valueStand) {
+          lines.push(`Werte-Stand: ${payload.facts.valueStand}`);
+        }
+      }
+
       return lines.join('\n').trim();
     }
 
@@ -1447,6 +1532,9 @@
       resultItems.appendChild(emptyState);
       rawOutput.hidden = true;
       rawOutput.textContent = '';
+      disclaimerBox.hidden = true;
+      disclaimerText.textContent = '';
+      sourceText.textContent = '';
       resultActions.hidden = true;
       state.latest = null;
       setStatus('');
@@ -1560,6 +1648,20 @@
 
       rawOutput.hidden = true;
       rawOutput.textContent = data.raw || '';
+      if (data.facts && data.facts.disclaimer) {
+        const sourceLabels = Array.isArray(data.facts.sources)
+          ? data.facts.sources.map((source) => source.label).filter(Boolean)
+          : [];
+        disclaimerText.textContent = data.facts.disclaimer;
+        sourceText.textContent = sourceLabels.length
+          ? `Werte-Stand ${data.facts.valueStand || 'aktuell'}; Quellenbasis: ${compactSourceLabels(sourceLabels)}.`
+          : `Werte-Stand ${data.facts.valueStand || 'aktuell'}.`;
+        disclaimerBox.hidden = false;
+      } else {
+        disclaimerText.textContent = 'Die Inhalte dienen der Lern- und Prüfungsvorbereitung. Sie ersetzen keine fachliche, rechtliche oder amtliche Prüfung.';
+        sourceText.textContent = '';
+        disclaimerBox.hidden = false;
+      }
       state.latest = {
         ...data,
         exportMeta: buildExportMeta(data, items)
