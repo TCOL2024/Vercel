@@ -2,7 +2,7 @@ const PROVIDER_HOST = ['api', ['deep', 'seek'].join(''), 'com'].join('.');
 const GENERATION_URL = `https://${PROVIDER_HOST}/chat/completions`;
 const GENERATION_MODEL = [['deep', 'seek'].join(''), 'chat'].join('-');
 const CREATIVE_URL = 'https://openrouter.ai/api/v1/chat/completions';
-const CREATIVE_MODEL = 'amazon/nova-micro-v1';
+const CREATIVE_MODEL = process.env.VWLBOT_MODEL || 'google/gemini-2.5-flash';
 const API_KEY = process.env.Linda3Schnellmodus;
 const CREATIVE_API_KEY = process.env.VWLBOT;
 const SERVICE_NAME = 'Linda4Schnellmodi';
@@ -201,10 +201,14 @@ function buildSystemPrompt(socialSecurityContext, creativeMode) {
 
   if (creativeMode) {
     rules.push(
-      'Kreativ-Testmodus: Erstelle besonders kompakte, pointierte Fragen und Antworten.',
-      'Fragen sollen kurz und klar sein. Antworten maximal zwei knappe Saetze.',
-      'Vermeide lange Erklaerungen, Fülltext, ausufernde Zusammenfassungen und ueberladene Optionen.',
-      'Der Stil darf etwas frischer sein, muss aber fachlich pruefbar bleiben.'
+      'Kreativ-Testmodus mit Top-Qualitaet: Liefere praezise, didaktisch starke und sofort nutzbare Lernfragen.',
+      'Jede Frage muss fachlich korrekt, eindeutig und pruefbar sein. Keine Floskeln und kein Fuelltext.',
+      'Fragen kompakt halten: ein klarer Kern pro Frage, keine verschachtelten Satzmonster.',
+      'Antworten kompakt halten: maximal zwei kurze Saetze, aber inhaltlich vollstaendig.',
+      'Bei quiz: genau vier Antwortoptionen, nur eine eindeutig richtig, drei plausible Distraktoren.',
+      'Die korrekte Option darf nicht durch Laenge, Stil oder Signalwoerter verraten werden.',
+      'Falls Inhalte unklar sind, formuliere konservativ und erfinde keine Fakten.',
+      'Prioritaet im Kreativmodus: Qualitaet vor Menge. Wenn noetig, liefere weniger starke Fragen statt vieler schwacher.'
     );
   }
 
@@ -259,8 +263,8 @@ async function requestGeneration(request, socialSecurityContext, correctionText)
         { role: 'system', content: buildSystemPrompt(socialSecurityContext, creativeMode) },
         { role: 'user', content: buildUserPrompt(request, correctionText) }
       ],
-      temperature: creativeMode ? 0.55 : socialSecurityContext ? 0.2 : 0.35,
-      max_tokens: creativeMode ? 900 : 1800,
+      temperature: creativeMode ? 0.3 : socialSecurityContext ? 0.2 : 0.35,
+      max_tokens: creativeMode ? 1100 : 1800,
       stream: false
     })
   });
