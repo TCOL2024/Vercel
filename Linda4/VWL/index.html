@@ -140,6 +140,12 @@
       box-shadow: inset 4px 0 0 var(--accent);
     }
 
+    .mode[data-mode="kreativ"].is-active {
+      background: #fff8df;
+      border-color: var(--mark);
+      box-shadow: inset 4px 0 0 var(--mark);
+    }
+
     .mode strong {
       display: block;
       font-family: "Trebuchet MS", Verdana, sans-serif;
@@ -180,6 +186,11 @@
       height: 18px;
       margin-top: 2px;
       accent-color: var(--accent);
+    }
+
+    .toggle.is-disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
     }
 
     .toggle strong,
@@ -480,15 +491,19 @@
             <strong>Uebersetzen</strong>
             <span>Fachlich sauber und nah am Text.</span>
           </button>
+          <button class="mode" type="button" data-mode="kreativ">
+            <strong>Kreativ</strong>
+            <span>Ideen, Beispiele, Eselsbruecken ohne Unterlagen.</span>
+          </button>
         </div>
 
         <div class="option-panel">
           <h2>Optionen</h2>
-          <label class="toggle" for="fastMode">
+          <label class="toggle" id="fastModeLabel" for="fastMode">
             <input id="fastMode" type="checkbox">
             <span>
               <strong>Fastmodus</strong>
-              <small>Schneller Quellenmodus mit guenstigerem OpenAI-Modell. Dokumente bleiben im VWL-Vectorstore-Fluss.</small>
+              <small>Schneller Quellenmodus mit guenstigerem OpenAI-Modell. Nicht aktiv im Kreativmodus.</small>
             </span>
           </label>
           <div class="context-row">
@@ -499,7 +514,7 @@
 
         <div class="disclaimer">
           <strong>Hinweis</strong>
-          KI-Antworten koennen Fehler enthalten oder Quellen missverstehen. Bitte pruefungs- und unterrichtsrelevante Aussagen mit den Originalunterlagen abgleichen.
+          KI-Antworten koennen Fehler enthalten oder Quellen missverstehen. Im Kreativmodus werden keine VWL-Unterlagen genutzt; pruefungsrelevante Aussagen bitte im Quellenmodus gegenpruefen.
         </div>
       </aside>
 
@@ -534,6 +549,7 @@
     const modeTitle = document.querySelector("#modeTitle");
     const modeHint = document.querySelector("#modeHint");
     const fastModeToggle = document.querySelector("#fastMode");
+    const fastModeLabel = document.querySelector("#fastModeLabel");
     const clearContextButton = document.querySelector("#clearContext");
     const contextState = document.querySelector("#contextState");
     const modelPill = document.querySelector("#modelPill");
@@ -542,6 +558,12 @@
       "api/vwl",
       "/Linda4/api/vwl",
       "/Linda4/VWL/api/vwl",
+    ];
+    const creativeApiCandidates = [
+      "/api/vwl-kreativ",
+      "api/vwl-kreativ",
+      "/Linda4/api/vwl-kreativ",
+      "/Linda4/VWL/api/vwl-kreativ",
     ];
 
     const modeCopy = {
@@ -565,18 +587,39 @@
         hint: "Fuege Text ein und nenne Ziel: einfaches Deutsch, Englisch oder fachliche Vereinfachung.",
         placeholder: "Zum Beispiel: Uebersetze diesen Abschnitt in einfaches Deutsch: ...",
       },
+      kreativ: {
+        title: "Kreativ",
+        hint: "Ideenmodus ohne Vectorstore: kurze Beispiele, Eselsbruecken, Formulierungen und Unterrichtsimpulse mit Amazon Nova Lite via OpenRouter.",
+        placeholder: "Zum Beispiel: Gib mir 5 kreative Eselsbruecken zu Angebot und Nachfrage.",
+      },
     };
 
     let activeMode = "fragen";
     let apiEndpoint = "";
+    let creativeApiEndpoint = "";
     let apiHealth = null;
+    let creativeApiHealth = null;
     const conversationHistory = [];
+    const creativeHistory = [];
+
+    function isCreativeMode() {
+      return activeMode === "kreativ";
+    }
 
     function readyStatusText() {
+      if (isCreativeMode()) {
+        return creativeApiEndpoint ? `Kreativ-API bereit: ${creativeApiEndpoint}` : "Kreativ-API nicht gefunden";
+      }
       return apiEndpoint ? `API bereit: ${apiEndpoint}` : "Bereit";
     }
 
     function updateModelPill() {
+      if (isCreativeMode()) {
+        const model = creativeApiHealth?.model || "amazon/nova-lite-v1";
+        modelPill.textContent = `Kreativ + ${model} (ohne Vectorstore)`;
+        return;
+      }
+
       if (fastModeToggle.checked) {
         const fastModel = apiHealth?.fastModel ? ` (${apiHealth.fastModel})` : "";
         modelPill.textContent = `Fastmodus + VWL Vectorstore${fastModel}`;
@@ -586,47 +629,72 @@
       }
     }
 
+    function updateModeControls() {
+      const creative = isCreativeMode();
+      fastModeToggle.disabled = creative;
+      fastModeLabel.classList.toggle("is-disabled", creative);
+      updateContextState();
+      updateModelPill();
+      status.textContent = readyStatusText();
+    }
+
     function trimForHistory(text) {
       return String(text || "").replace(/\s+/g, " ").trim().slice(0, 1600);
     }
 
-    function updateContextState() {
-      const userTurns = conversationHistory.filter((entry) => entry.role === "user").length;
-      contextState.textContent = userTurns ? `Kontext: ${userTurns} Frage(n) im Verlauf` : "Kontext: kein Verlauf";
+    function activeHistory() {
+      return isCreativeMode() ? creativeHistory : conversationHistory;
     }
 
-    function remember(role, content) {
+    function updateContextState() {
+      const history = activeHistory();
+      const userTurns = history.filter((entry) => entry.role === "user").length;
+      const label = isCreativeMode() ? "Kreativ-Kontext" : "Kontext";
+      contextState.textContent = userTurns ? `${label}: ${userTurns} Frage(n) im Verlauf` : `${label}: kein Verlauf`;
+    }
+
+    function rememberIn(history, role, content, limit) {
       const safe = trimForHistory(content);
       if (!safe) return;
-      conversationHistory.push({ role, content: safe });
-      while (conversationHistory.length > 8) {
-        conversationHistory.shift();
+      history.push({ role, content: safe });
+      while (history.length > limit) {
+        history.shift();
       }
       updateContextState();
     }
 
-    async function detectApiEndpoint() {
-      for (const candidate of apiCandidates) {
+    async function detectEndpoint(candidates) {
+      for (const candidate of candidates) {
         try {
           const response = await fetch(candidate, { method: "GET" });
           const contentType = response.headers.get("content-type") || "";
           if (response.ok && contentType.includes("application/json")) {
-            apiEndpoint = candidate;
+            let health = null;
             try {
-              apiHealth = await response.json();
+              health = await response.json();
             } catch (error) {
-              apiHealth = null;
+              health = null;
             }
-            status.textContent = readyStatusText();
-            updateModelPill();
-            return;
+            return { endpoint: candidate, health };
           }
         } catch (error) {
           // Try the next deployment layout.
         }
       }
+      return { endpoint: "", health: null };
+    }
 
-      status.textContent = "API nicht gefunden";
+    async function detectApiEndpoints() {
+      const standard = await detectEndpoint(apiCandidates);
+      apiEndpoint = standard.endpoint;
+      apiHealth = standard.health;
+
+      const creative = await detectEndpoint(creativeApiCandidates);
+      creativeApiEndpoint = creative.endpoint;
+      creativeApiHealth = creative.health;
+
+      status.textContent = readyStatusText();
+      updateModelPill();
     }
 
     function appendMessage(text, type) {
@@ -704,13 +772,14 @@
       modeTitle.textContent = modeCopy[activeMode].title;
       modeHint.textContent = modeCopy[activeMode].hint;
       question.placeholder = modeCopy[activeMode].placeholder;
+      updateModeControls();
       question.focus();
     });
 
     fastModeToggle.addEventListener("change", updateModelPill);
 
     clearContextButton.addEventListener("click", () => {
-      conversationHistory.length = 0;
+      activeHistory().length = 0;
       updateContextState();
       appendMessage("Kontext geloescht. Die naechste Frage startet wieder ohne vorherigen Verlauf.", "bot");
       question.focus();
@@ -722,29 +791,44 @@
       const text = question.value.trim();
       if (!text) return;
 
-      if (!apiEndpoint) {
+      const creative = isCreativeMode();
+      const endpoint = creative ? creativeApiEndpoint : apiEndpoint;
+
+      if (!endpoint) {
         appendMessage(
-          "Die VWL-API wurde im Deployment nicht gefunden.\n\nPruefe in Vercel die Root Directory Einstellung: Wenn die Dateien unter Linda4/VWL liegen, muss entweder Root Directory = Linda4/VWL sein oder es muss eine Datei Linda4/api/vwl.js existieren.",
+          creative
+            ? "Die Kreativ-API wurde im Deployment nicht gefunden. Erwartet wird /api/vwl-kreativ."
+            : "Die VWL-API wurde im Deployment nicht gefunden.\n\nPruefe in Vercel die Root Directory Einstellung: Wenn die Dateien unter Linda4/VWL liegen, muss entweder Root Directory = Linda4/VWL sein oder es muss eine Datei Linda4/api/vwl.js existieren.",
           "bot"
         ).classList.add("error");
         return;
       }
 
-      const historySnapshot = conversationHistory.slice(-8);
+      const historySnapshot = creative
+        ? creativeHistory.filter((entry) => entry.role === "user").slice(-4)
+        : conversationHistory.slice(-8);
       appendMessage(text, "user");
       question.value = "";
       setLoading(true);
 
       try {
-        const response = await fetch(apiEndpoint, {
+        const payload = creative
+          ? {
+              mode: "kreativ",
+              question: text,
+              history: historySnapshot,
+            }
+          : {
+              mode: activeMode,
+              question: text,
+              history: historySnapshot,
+              fastMode: fastModeToggle.checked,
+            };
+
+        const response = await fetch(endpoint, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            mode: activeMode,
-            question: text,
-            history: historySnapshot,
-            fastMode: fastModeToggle.checked,
-          }),
+          body: JSON.stringify(payload),
         });
 
         const raw = await response.text();
@@ -769,12 +853,15 @@
         appendMessage(answer, "bot");
         appendSources(data.sources);
 
-        if (!data.context?.needsClarification) {
-          remember("user", text);
-          remember("assistant", answer);
+        if (creative) {
+          rememberIn(creativeHistory, "user", text, 8);
+          rememberIn(creativeHistory, "assistant", answer, 8);
+        } else if (!data.context?.needsClarification) {
+          rememberIn(conversationHistory, "user", text, 8);
+          rememberIn(conversationHistory, "assistant", answer, 8);
         }
       } catch (error) {
-        const node = appendMessage(`Die VWL-API ist gerade nicht erreichbar.\n${error.message}`, "bot");
+        const node = appendMessage(`Die API ist gerade nicht erreichbar.\n${error.message}`, "bot");
         node.classList.add("error");
       } finally {
         setLoading(false);
@@ -784,7 +871,7 @@
 
     updateContextState();
     updateModelPill();
-    detectApiEndpoint();
+    detectApiEndpoints();
   </script>
 </body>
 </html>
