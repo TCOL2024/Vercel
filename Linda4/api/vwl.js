@@ -1,5 +1,6 @@
 const OPENAI_RESPONSES_URL = "https://api.openai.com/v1/responses";
-const MODEL = "gpt-5.4";
+const MODEL = process.env.VWL_OPENAI_MODEL || "gpt-5.4";
+const FAST_MODEL = process.env.VWL_FAST_MODEL || process.env.VWL_FAST_RETRIEVAL_MODEL || "gpt-4.1-mini";
 
 const MODE_CONFIG = {
   fragen: {
@@ -34,6 +35,9 @@ const VECTOR_STORE_ENV_NAMES = [
   "VWL_Vectorstore",
   "VWL_VECTOR",
 ];
+const SOURCE_SNIPPET_LIMIT = 1100;
+const HISTORY_LIMIT = 8;
+const HISTORY_ITEM_LIMIT = 1600;
 
 function readFirstEnv(names) {
   for (const name of names) {
@@ -47,7 +51,7 @@ function readFirstEnv(names) {
 
 function setCors(res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
+  res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
 }
 
@@ -78,7 +82,62 @@ function readJsonBody(req) {
   });
 }
 
-function buildSystemPrompt(mode) {
+function compactText(value) {
+  return String(value || "").replace(/\s+/g, " ").trim();
+}
+
+function normalizeIntentText(value) {
+  return compactText(value)
+    .toLowerCase()
+    .replace(/\u00e4/g, "ae")
+    .replace(/\u00f6/g, "oe")
+    .replace(/\u00fc/g, "ue")
+    .replace(/\u00df/g, "ss");
+}
+
+function limitSnippet(value) {
+  const text = compactText(value);
+  if (text.length <= SOURCE_SNIPPET_LIMIT) {
+    return text;
+  }
+  return `${text.slice(0, SOURCE_SNIPPET_LIMIT - 3).trim()}...`;
+}
+
+function sanitizeHistory(history, limit = HISTORY_LIMIT) {
+  return (Array.isArray(history) ? history : [])
+    .filter((entry) => entry && typeof entry === "object")
+    .map((entry) => {
+      const roleRaw = String(entry.role || "").toLowerCase();
+      const role = roleRaw === "assistant" ? "assistant" : "user";
+      const content = compactText(entry.content || "").slice(0, HISTORY_ITEM_LIMIT);
+      if (!content) return null;
+      return { role, content };
+    })
+    .filter(Boolean)
+    .slice(-limit);
+}
+
+function needsContextClarification(question, history) {
+  if (history.length) return false;
+  const text = normalizeIntentText(question).replace(/[!?.,;:]+$/g, "");
+  if (!text) return false;
+  const exact = new Set([
+    "das",
+    "dazu",
+    "damit",
+    "weiter",
+    "mach weiter",
+    "erklaere das",
+    "erklaer das",
+    "was bedeutet das",
+    "nochmal",
+    "genauer",
+  ]);
+  if (exact.has(text)) return true;
+  return text.length < 22 && /\b(das|dazu|damit|weiter|dies|diese|dieser|dieses)\b/.test(text);
+}
+
+function buildSystemPrompt(mode, fastMode = false) {
   const modeInstruction = MODE_CONFIG[mode]?.instruction || MODE_CONFIG.fragen.instruction;
 
   return [
@@ -95,6 +154,12 @@ function buildSystemPrompt(mode) {
     "- Gib zu jeder Quelle, wenn moeglich, einen kurzen Ausschnitt oder eine sinngemaesse Fundstelle an.",
     "- Erfinde keine Dokumenttitel, Seitenzahlen oder Zitate.",
     "",
+    "Kontextregeln:",
+    "- Nutze den bisherigen Verlauf, um Anschlussfragen wie 'das', 'dazu' oder 'weiter' korrekt zu verstehen.",
+    "- Wiederhole den Verlauf nicht unnoetig; greife ihn nur auf, wenn er fuer die Antwort hilft.",
+    "- Wenn ein Bezug trotz Verlauf unklar bleibt, frage kurz nach dem gemeinten Thema.",
+    "",
+    fastMode ? "Fastmodus: Antworte besonders knapp und schnell, aber weiterhin quellenbasiert." : "",
     `Modus: ${MODE_CONFIG[mode]?.label || MODE_CONFIG.fragen.label}`,
     modeInstruction,
     "",
@@ -110,7 +175,14 @@ function buildSystemPrompt(mode) {
     "",
     "Ergaenzung:",
     "...",
-  ].join("\n");
+  ].filter(Boolean).join("\n");
+}
+
+function buildInputMessages(question, history) {
+  return [
+    ...history.map((entry) => ({ role: entry.role, content: entry.content })),
+    { role: "user", content: question },
+  ];
 }
 
 function extractTextFromResponse(data) {
@@ -129,7 +201,81 @@ function extractTextFromResponse(data) {
   return chunks.join("\n").trim();
 }
 
-function extractSources(data) {
+function textFromSearchResult(result) {
+  if (typeof result?.text === "string") return result.text;
+  if (typeof result?.content === "string") return result.content;
+  if (Array.isArray(result?.content)) {
+    return result.content
+      .map((part) => {
+        if (typeof part === "string") return part;
+        if (typeof part?.text === "string") return part.text;
+        if (typeof part?.content === "string") return part.content;
+        return "";
+      })
+      .filter(Boolean)
+      .join(" ");
+  }
+  return result?.snippet || result?.quote || "";
+}
+
+function normalizeSource(source) {
+  const title = compactText(
+    source?.filename ||
+      source?.file_name ||
+      source?.title ||
+      source?.name ||
+      source?.document ||
+      source?.file_id ||
+      "Quelle"
+  );
+  const fileId = compactText(source?.file_id || source?.fileId || "");
+  const page = compactText(source?.page || source?.page_number || source?.attributes?.page || "");
+  const scoreRaw = source?.score ?? source?.ranking_score ?? source?.similarity;
+  const score = typeof scoreRaw === "number" ? scoreRaw.toFixed(2) : compactText(scoreRaw);
+  const snippet = limitSnippet(source?.snippet || source?.quote || source?.text || textFromSearchResult(source));
+
+  if (!title && !fileId && !snippet) {
+    return null;
+  }
+
+  return {
+    title: title || fileId || "Quelle",
+    fileId: fileId || null,
+    page: page || null,
+    score: score || null,
+    snippet: snippet || null,
+  };
+}
+
+function uniqueSources(sources) {
+  const seen = new Set();
+  return sources.filter((source) => {
+    if (!source) return false;
+    const key = `${source.title}:${source.fileId || ""}:${source.page || ""}:${source.snippet || ""}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+function extractSearchResultSources(data) {
+  const sources = [];
+
+  for (const item of data.output || []) {
+    if (item.type !== "file_search_call") {
+      continue;
+    }
+
+    const results = item.search_results || item.results || [];
+    for (const result of results) {
+      sources.push(normalizeSource(result));
+    }
+  }
+
+  return uniqueSources(sources);
+}
+
+function extractAnnotationSources(data) {
   const sources = [];
 
   for (const item of data.output || []) {
@@ -147,19 +293,154 @@ function extractSources(data) {
           continue;
         }
 
-        sources.push({
-          title: fileName || fileId || "Quelle",
-          fileId: fileId || null,
-          snippet: quote || null,
-        });
+        sources.push(normalizeSource({
+          title: fileName,
+          file_id: fileId,
+          snippet: quote,
+        }));
       }
     }
   }
 
-  return sources.filter((source, index, list) => {
-    const key = `${source.title}:${source.fileId || ""}:${source.snippet || ""}`;
-    return list.findIndex((candidate) => `${candidate.title}:${candidate.fileId || ""}:${candidate.snippet || ""}` === key) === index;
+  return uniqueSources(sources);
+}
+
+function extractSources(data) {
+  return uniqueSources([
+    ...extractSearchResultSources(data),
+    ...extractAnnotationSources(data),
+  ]).slice(0, 6);
+}
+
+function extractAnswerSourceLines(answerText) {
+  const lines = String(answerText || "").split(/\r?\n/);
+  const sources = [];
+  let inSources = false;
+
+  for (const rawLine of lines) {
+    const line = rawLine.trim();
+    if (!line) continue;
+
+    if (/^quellen\s*:/i.test(line)) {
+      inSources = true;
+      continue;
+    }
+
+    if (inSources && /^(ergaenzung|erg\u00e4nzung|kurzantwort|aus den unterlagen|lernkarten|uebungsaufgaben|\u00fcbungsaufgaben)\s*:/i.test(line)) {
+      break;
+    }
+
+    if (!inSources || !/^[-*]\s+/.test(line)) {
+      continue;
+    }
+
+    const cleaned = line.replace(/^[-*]\s+/, "").trim();
+    const [rawTitle, ...rest] = cleaned.split(":");
+    const title = compactText(rest.length ? rawTitle : "Quelle aus der Antwort");
+    const snippet = limitSnippet(rest.length ? rest.join(":") : cleaned);
+
+    sources.push(normalizeSource({
+      title,
+      snippet,
+    }));
+  }
+
+  return uniqueSources(sources);
+}
+
+function enrichSourcesFromAnswer(answerText, technicalSources) {
+  const answerSources = extractAnswerSourceLines(answerText);
+  if (!answerSources.length) {
+    return technicalSources;
+  }
+
+  const technicalHasSnippets = technicalSources.some((source) => source?.snippet);
+  if (!technicalSources.length || !technicalHasSnippets) {
+    return uniqueSources(answerSources).slice(0, 6);
+  }
+
+  return uniqueSources([...technicalSources, ...answerSources]).slice(0, 6);
+}
+
+function parseJsonSafe(raw) {
+  try {
+    return raw ? JSON.parse(raw) : {};
+  } catch (error) {
+    return { raw };
+  }
+}
+
+async function callOpenAIWithFileSearch({ apiKey, vectorStoreId, model, mode, question, history, fastMode = false, maxOutputTokens }) {
+  const requestBody = {
+    model,
+    instructions: buildSystemPrompt(mode, fastMode),
+    input: buildInputMessages(question, history),
+    tools: [
+      {
+        type: "file_search",
+        vector_store_ids: [vectorStoreId],
+        max_num_results: 6,
+      },
+    ],
+    include: ["file_search_call.results"],
+  };
+
+  if (maxOutputTokens) {
+    requestBody.max_output_tokens = maxOutputTokens;
+  }
+
+  const openAiResponse = await fetch(OPENAI_RESPONSES_URL, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(requestBody),
   });
+
+  const raw = await openAiResponse.text();
+  const data = parseJsonSafe(raw);
+
+  if (!openAiResponse.ok) {
+    const error = new Error(data.error?.message || data.error || raw || "OpenAI API Fehler.");
+    error.statusCode = openAiResponse.status;
+    error.details = data.error || data;
+    throw error;
+  }
+
+  const answer = extractTextFromResponse(data);
+  const sources = enrichSourcesFromAnswer(answer, extractSources(data));
+
+  return {
+    answer,
+    sources,
+    model,
+  };
+}
+
+async function callFastOpenAIWithFallback(options) {
+  try {
+    return await callOpenAIWithFileSearch({
+      ...options,
+      model: FAST_MODEL,
+      fastMode: true,
+      maxOutputTokens: 900,
+    });
+  } catch (error) {
+    if (FAST_MODEL === MODEL) {
+      throw error;
+    }
+    const fallback = await callOpenAIWithFileSearch({
+      ...options,
+      model: MODEL,
+      fastMode: true,
+      maxOutputTokens: 900,
+    });
+    return {
+      ...fallback,
+      fastFallbackError: error.message,
+    };
+  }
 }
 
 module.exports = async function handler(req, res) {
@@ -176,6 +457,7 @@ module.exports = async function handler(req, res) {
       ok: true,
       service: "VWL-Linda 4 API",
       model: MODEL,
+      fastModel: FAST_MODEL,
       configured: {
         apiKey: Boolean(readFirstEnv(API_KEY_ENV_NAMES)),
         vectorStore: Boolean(readFirstEnv(VECTOR_STORE_ENV_NAMES)),
@@ -183,6 +465,7 @@ module.exports = async function handler(req, res) {
       expectedEnv: {
         apiKey: API_KEY_ENV_NAMES,
         vectorStore: VECTOR_STORE_ENV_NAMES,
+        optional: ["VWL_OPENAI_MODEL", "VWL_FAST_MODEL", "VWL_FAST_RETRIEVAL_MODEL"],
       },
     });
     return;
@@ -215,57 +498,53 @@ module.exports = async function handler(req, res) {
     return;
   }
 
-  const question = String(body.question || "").trim();
+  const question = String(body.question || body.prompt || body.input || "").trim();
   const mode = MODE_CONFIG[body.mode] ? body.mode : "fragen";
+  const history = sanitizeHistory(body.history || body.messages || []);
+  const preferredModel = String(body.routing?.preferred_model || "").toLowerCase();
+  const fastMode = Boolean(body.fastMode || body.schnellmodus || preferredModel === "fast");
 
   if (!question) {
     json(res, 400, { error: "Bitte eine Frage oder einen Text eingeben." });
     return;
   }
 
-  try {
-    const openAiResponse = await fetch(OPENAI_RESPONSES_URL, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
+  if (needsContextClarification(question, history)) {
+    json(res, 200, {
+      answer: "Worauf soll ich mich beziehen? Bitte nenne kurz das VWL-Thema oder stelle die Anschlussfrage zusammen mit dem Bezug.",
+      sources: [],
+      mode,
+      model: fastMode ? FAST_MODEL : MODEL,
+      context: {
+        used: false,
+        needsClarification: true,
       },
-      body: JSON.stringify({
-        model: MODEL,
-        instructions: buildSystemPrompt(mode),
-        input: [
-          {
-            role: "user",
-            content: question,
-          },
-        ],
-        tools: [
-          {
-            type: "file_search",
-            vector_store_ids: [vectorStoreId],
-          },
-        ],
-      }),
     });
+    return;
+  }
 
-    const data = await openAiResponse.json();
-
-    if (!openAiResponse.ok) {
-      json(res, openAiResponse.status, {
-        error: data.error?.message || "OpenAI API Fehler.",
-        details: data.error || data,
-      });
-      return;
-    }
+  try {
+    const result = fastMode
+      ? await callFastOpenAIWithFallback({ apiKey, vectorStoreId, mode, question, history })
+      : await callOpenAIWithFileSearch({ apiKey, vectorStoreId, model: MODEL, mode, question, history });
 
     json(res, 200, {
-      answer: extractTextFromResponse(data),
-      sources: extractSources(data),
+      answer: result.answer,
+      sources: result.sources,
       mode,
-      model: MODEL,
+      model: result.model,
+      fastMode,
+      fastProvider: fastMode ? "openai-fast-vectorstore" : null,
+      context: {
+        used: history.length > 0,
+        messages: history.length,
+      },
+      meta: {
+        fastFallbackError: result.fastFallbackError || "",
+      },
     });
   } catch (error) {
-    json(res, 500, {
+    json(res, error.statusCode || 500, {
       error: "Die VWL API konnte die Anfrage nicht verarbeiten.",
       details: error.message,
     });
