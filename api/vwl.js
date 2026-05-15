@@ -6,22 +6,22 @@ const MODE_CONFIG = {
   fragen: {
     label: "Fragen",
     instruction:
-      "Beantworte VWL-Fragen kompakt und aussagefaehig. Nutze Dokumentwissen vorrangig. Wenn die Frage unklar oder zu breit ist, stelle eine kurze Rueckfrage.",
+      "Beantworte VWL-Fragen kompakt und aussagefähig. Nutze Dokumentwissen vorrangig. Wenn die Frage unklar oder zu breit ist, stelle eine kurze Rückfrage.",
   },
   lernkarten: {
     label: "Lernkarten",
     instruction:
-      "Erstelle praegnante Lernkarten. Nutze das Format 'Vorderseite' und 'Rueckseite'. Halte die Karten pruefungsnah und vermeide Nebensaechliches.",
+      "Erstelle prägnante Lernkarten. Nutze das Format 'Vorderseite' und 'Rückseite'. Halte die Karten prüfungsnah und vermeide Nebensächliches.",
   },
   uebungen: {
-    label: "Uebungsaufgaben",
+    label: "Übungsaufgaben",
     instruction:
-      "Erstelle VWL-Uebungsaufgaben mit Loesung und kurzer Erklaerung. Bevorzuge Aufgaben, die fuer IHK-Teilnehmende praxisnah und pruefungsnah sind.",
+      "Erstelle VWL-Übungsaufgaben mit Lösung und kurzer Erklärung. Bevorzuge Aufgaben, die für IHK-Teilnehmende praxisnah und prüfungsnah sind.",
   },
   uebersetzen: {
-    label: "Uebersetzen",
+    label: "Übersetzen",
     instruction:
-      "Uebersetze oder vereinfache den Text fachlich sauber. Veraendere den Inhalt nicht unnoetig und erhalte wichtige VWL-Fachbegriffe.",
+      "Übersetze oder vereinfache den Text fachlich sauber. Verändere den Inhalt nicht unnötig und erhalte wichtige VWL-Fachbegriffe.",
   },
 };
 
@@ -141,29 +141,29 @@ function buildSystemPrompt(mode, fastMode = false) {
   const modeInstruction = MODE_CONFIG[mode]?.instruction || MODE_CONFIG.fragen.instruction;
 
   return [
-    "Du bist VWL-Linda 4, ein kompakter Lernassistent fuer Volkswirtschaftslehre.",
-    "Du unterstuetzt Teilnehmende in IHK-nahen VWL-Kursen.",
+    "Du bist VWL-Linda 4, ein kompakter Lernassistent für Volkswirtschaftslehre.",
+    "Du unterstützt Teilnehmende in IHK-nahen VWL-Kursen.",
     "",
     "Grundregeln:",
     "- Antworte kurz, klar und fachlich sauber.",
     "- Dokumentwissen aus dem VWL-Vectorstore hat Vorrang vor allgemeinem Modellwissen.",
-    "- Allgemeines VWL-Wissen darf ergaenzen, aber Dokumentinhalte nicht ueberschreiben.",
-    "- Wenn die Dokumente keine belastbare Antwort liefern, kennzeichne allgemeines Wissen als Ergaenzung.",
-    "- Wenn die Frage zu unklar ist, stelle lieber eine kurze Rueckfrage.",
+    "- Allgemeines VWL-Wissen darf ergänzen, aber Dokumentinhalte nicht überschreiben.",
+    "- Wenn die Dokumente keine belastbare Antwort liefern, kennzeichne allgemeines Wissen als Ergänzung.",
+    "- Wenn die Frage zu unklar ist, stelle lieber eine kurze Rückfrage.",
     "- Nenne Quellen, sobald du Dokumentinhalte nutzt.",
-    "- Gib zu jeder Quelle, wenn moeglich, einen kurzen Ausschnitt oder eine sinngemaesse Fundstelle an.",
+    "- Gib zu jeder Quelle, wenn möglich, einen kurzen Ausschnitt oder eine sinngemäße Fundstelle an.",
     "- Erfinde keine Dokumenttitel, Seitenzahlen oder Zitate.",
     "",
     "Kontextregeln:",
     "- Nutze den bisherigen Verlauf, um Anschlussfragen wie 'das', 'dazu' oder 'weiter' korrekt zu verstehen.",
-    "- Wiederhole den Verlauf nicht unnoetig; greife ihn nur auf, wenn er fuer die Antwort hilft.",
+    "- Wiederhole den Verlauf nicht unnötig; greife ihn nur auf, wenn er für die Antwort hilft.",
     "- Wenn ein Bezug trotz Verlauf unklar bleibt, frage kurz nach dem gemeinten Thema.",
     "",
     fastMode ? "Fastmodus: Antworte besonders knapp und schnell, aber weiterhin quellenbasiert." : "",
     `Modus: ${MODE_CONFIG[mode]?.label || MODE_CONFIG.fragen.label}`,
     modeInstruction,
     "",
-    "Gewuenschtes Ausgabeformat:",
+    "Gewünschtes Ausgabeformat:",
     "Kurzantwort:",
     "...",
     "",
@@ -173,7 +173,7 @@ function buildSystemPrompt(mode, fastMode = false) {
     "Quellen:",
     "- Dokument/Fundstelle: kurzer Ausschnitt oder Hinweis",
     "",
-    "Ergaenzung:",
+    "Ergänzung:",
     "...",
   ].filter(Boolean).join("\n");
 }
@@ -326,7 +326,7 @@ function extractAnswerSourceLines(answerText) {
       continue;
     }
 
-    if (inSources && /^(ergaenzung|erg\u00e4nzung|kurzantwort|aus den unterlagen|lernkarten|uebungsaufgaben|\u00fcbungsaufgaben)\s*:/i.test(line)) {
+    if (inSources && /^(ergaenzung|ergänzung|kurzantwort|aus den unterlagen|lernkarten|uebungsaufgaben|übungsaufgaben)\s*:/i.test(line)) {
       break;
     }
 
@@ -481,7 +481,7 @@ module.exports = async function handler(req, res) {
 
   if (!apiKey || !vectorStoreId) {
     json(res, 500, {
-      error: "VWL API ist noch nicht vollstaendig konfiguriert.",
+      error: "VWL API ist noch nicht vollständig konfiguriert.",
       missing: {
         apiKey: !apiKey,
         vectorStore: !vectorStoreId,
@@ -494,7 +494,7 @@ module.exports = async function handler(req, res) {
   try {
     body = await readJsonBody(req);
   } catch (error) {
-    json(res, 400, { error: "Ungueltiges JSON im Request." });
+    json(res, 400, { error: "Ungültiges JSON im Request." });
     return;
   }
 
