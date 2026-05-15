@@ -330,6 +330,39 @@
       box-shadow: 0 8px 18px rgba(36, 34, 79, 0.18);
     }
 
+    .creative-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 12px;
+      border: 1px solid rgba(95, 61, 196, 0.14);
+      border-radius: var(--radius);
+      background:
+        linear-gradient(135deg, rgba(95, 61, 196, 0.08), rgba(249, 115, 22, 0.06)),
+        #fff;
+    }
+
+    .creative-row p {
+      margin: 2px 0 0;
+      color: var(--muted);
+      font-size: 0.83rem;
+      line-height: 1.35;
+    }
+
+    .creative-toggle {
+      min-width: 104px;
+      color: #4c1d95;
+      background: #fff;
+      border: 1px solid rgba(95, 61, 196, 0.24);
+    }
+
+    .creative-toggle.active {
+      color: #fff;
+      background: linear-gradient(135deg, #5f3dc4, #f97316);
+      box-shadow: 0 10px 22px rgba(95, 61, 196, 0.18);
+    }
+
     .field {
       display: grid;
       gap: 7px;
@@ -709,6 +742,11 @@
         grid-template-columns: 1fr;
       }
 
+      .creative-row {
+        align-items: stretch;
+        flex-direction: column;
+      }
+
       .actions {
         justify-content: stretch;
       }
@@ -768,6 +806,14 @@
             <div class="segmented" role="tablist" aria-label="Modus wählen">
               <button type="button" class="mode-btn active" data-mode="exam" aria-pressed="true">Prüfungsfragen</button>
               <button type="button" class="mode-btn" data-mode="quiz" aria-pressed="false">Quizfragen</button>
+            </div>
+
+            <div class="creative-row">
+              <div>
+                <strong>Kreativ</strong>
+                <p>Testmodus für kompakte Fragen und Antworten.</p>
+              </div>
+              <button type="button" class="btn creative-toggle" id="creativeToggle" aria-pressed="false">Aus</button>
             </div>
 
             <div class="grid-2">
@@ -864,6 +910,7 @@
             <span class="meta-chip" id="modeChip">Prüfungsfragen</span>
             <span class="meta-chip" id="topicChip">Thema wählen</span>
             <span class="meta-chip" id="countChip">5 Fragen</span>
+            <span class="meta-chip" id="creativeChip" hidden>Kreativ</span>
           </div>
 
           <p class="summary" id="resultSummary">Wähle ein Thema und erstelle den ersten Satz.</p>
@@ -894,6 +941,7 @@
   <script>
     const state = {
       mode: 'exam',
+      creative: false,
       busy: false,
       latest: null,
       history: []
@@ -911,6 +959,7 @@
     const demoBtn = document.getElementById('demoBtn');
     const resetBtn = document.getElementById('resetBtn');
     const launchBtn = document.getElementById('launchBtn');
+    const creativeToggle = document.getElementById('creativeToggle');
     const resultActions = document.getElementById('resultActions');
     const pdfBtn = document.getElementById('pdfBtn');
     const copyBtn = document.getElementById('copyBtn');
@@ -934,6 +983,7 @@
     const modeChip = document.getElementById('modeChip');
     const topicChip = document.getElementById('topicChip');
     const countChip = document.getElementById('countChip');
+    const creativeChip = document.getElementById('creativeChip');
     const API_ENDPOINTS = ['/api/linda4-schnellmodi'];
     const GENERAL_AI_NOTICE = 'Die Inhalte dienen der Lern- und Prüfungsvorbereitung. Generative KI kann Fehler machen; prüfe wichtige Informationen vor der Verwendung.';
     const LEGAL_NOTICE = 'Linda4 kann Fehler machen. Alle Inhalte werden ohne Gewähr für Richtigkeit, Vollständigkeit, Aktualität oder Eignung für einen bestimmten Zweck bereitgestellt. Die Nutzung erfolgt eigenverantwortlich. Eine Haftung für Schäden, Nachteile, Prüfungsfolgen oder sonstige Konsequenzen aus der Nutzung der Inhalte wird, soweit gesetzlich zulässig, ausgeschlossen. Fachliche, rechtliche, steuerliche, sozialversicherungsrechtliche und prüfungsrelevante Informationen müssen vor Verwendung anhand aktueller und verbindlicher Quellen geprüft werden.';
@@ -969,6 +1019,7 @@
       modeChip.textContent = state.mode === 'quiz' ? 'Quizfragen' : 'Prüfungsfragen';
       topicChip.textContent = selectedTopicLabel();
       countChip.textContent = `${count.value || 5} Fragen`;
+      creativeChip.hidden = !state.creative;
     }
 
     function setMode(nextMode) {
@@ -981,12 +1032,21 @@
       syncPreviewMeta();
     }
 
+    function setCreative(value) {
+      state.creative = Boolean(value);
+      creativeToggle.classList.toggle('active', state.creative);
+      creativeToggle.textContent = state.creative ? 'An' : 'Aus';
+      creativeToggle.setAttribute('aria-pressed', String(state.creative));
+      syncPreviewMeta();
+    }
+
     function setBusy(value) {
       state.busy = value;
       createBtn.disabled = value;
       demoBtn.disabled = value;
       resetBtn.disabled = value;
       launchBtn.disabled = value;
+      creativeToggle.disabled = value;
       pdfBtn.disabled = value;
       copyBtn.disabled = value;
       modeButtons.forEach((button) => {
@@ -1076,6 +1136,7 @@
     function getPayload() {
       return {
         mode: state.mode,
+        creative: state.creative,
         topic: topic.value,
         material: material.value.trim(),
         audience: audience.value,
@@ -1090,6 +1151,7 @@
       const items = Array.isArray(response.items) ? response.items : [];
       state.history.push({
         mode: request.mode,
+        creative: request.creative,
         topic: request.topic,
         request: request.material,
         title: response.title || '',
@@ -1136,6 +1198,7 @@
       return {
         mode: data.mode || state.mode,
         modeLabel: (data.mode || state.mode) === 'quiz' ? 'Quizfragen' : 'Prüfungsfragen',
+        creative: Boolean(data.creative || state.creative),
         topicLabel: selectedTopicLabel(),
         audience: audience.value,
         difficulty: selectedControlText(difficulty),
@@ -1214,6 +1277,7 @@
       const raw = !items.length && payload.raw ? `<pre class="raw">${escapeHtml(payload.raw)}</pre>` : '';
       const metaRows = [
         ['Modus', meta.modeLabel],
+        ['Testmodus', meta.creative ? 'Kreativ' : ''],
         ['Thema', meta.topicLabel],
         ['Zielgruppe', meta.audience],
         ['Schwierigkeit', meta.difficulty],
@@ -1765,7 +1829,13 @@
       healthBtn.disabled = true;
       try {
         const data = await requestLinda4Schnellmodi({ method: 'GET' });
-        setHealth(data.ready ? 'Linda4Schnellmodi ist bereit.' : 'Linda4Schnellmodi ist nicht bereit.', data.ready ? 'ready' : 'error');
+        if (data.ready && data.creativeReady) {
+          setHealth('Linda4Schnellmodi und Kreativmodus sind bereit.', 'ready');
+        } else if (data.ready) {
+          setHealth('Linda4Schnellmodi ist bereit. Kreativmodus ist nicht bereit.', 'ready');
+        } else {
+          setHealth('Linda4Schnellmodi ist nicht bereit.', 'error');
+        }
       } catch (error) {
         setHealth(error instanceof Error ? error.message : 'Linda4Schnellmodi ist nicht erreichbar.', 'error');
       } finally {
@@ -1803,10 +1873,12 @@
 
     demoBtn.addEventListener('click', () => fillExample(state.mode));
     launchBtn.addEventListener('click', () => composer.requestSubmit());
+    creativeToggle.addEventListener('click', () => setCreative(!state.creative));
 
     resetBtn.addEventListener('click', () => {
       composer.reset();
       setMode('exam');
+      setCreative(false);
       countValue.textContent = count.value;
       syncPreviewMeta();
       clearResult();
@@ -1852,6 +1924,7 @@
     });
 
     setMode('exam');
+    setCreative(false);
     countValue.textContent = count.value;
     syncPreviewMeta();
     clearResult();

@@ -1,7 +1,10 @@
 const PROVIDER_HOST = ['api', ['deep', 'seek'].join(''), 'com'].join('.');
 const GENERATION_URL = `https://${PROVIDER_HOST}/chat/completions`;
 const GENERATION_MODEL = [['deep', 'seek'].join(''), 'chat'].join('-');
+const CREATIVE_URL = 'https://openrouter.ai/api/v1/chat/completions';
+const CREATIVE_MODEL = 'amazon/nova-micro-v1';
 const API_KEY = process.env.Linda3Schnellmodus;
+const CREATIVE_API_KEY = process.env.VWLBOT;
 const SERVICE_NAME = 'Linda4Schnellmodi';
 const {
   findUnsupportedSocialSecurityNumbers,
@@ -45,6 +48,7 @@ function normalizeHistory(value) {
 
   return value.slice(-4).map((entry) => ({
     mode: normalizeMode(entry && entry.mode),
+    creative: Boolean(entry && entry.creative),
     topic: clampString(entry && entry.topic, 160),
     request: clampString(entry && entry.request, 700),
     title: clampString(entry && entry.title, 180),
@@ -178,7 +182,7 @@ function normalizeItems(parsed, mode, count) {
   return source.slice(0, count).map((item, index) => normalizeItem(item, mode, index));
 }
 
-function buildSystemPrompt(socialSecurityContext) {
+function buildSystemPrompt(socialSecurityContext, creativeMode) {
   const rules = [
     'Du bist Linda4 fastgpt.',
     'Erstelle ausschliesslich Lernfragen in sauberem Deutsch oder in der gewuenschten Sprache.',
@@ -194,6 +198,15 @@ function buildSystemPrompt(socialSecurityContext) {
     'Fuer quiz: jedes Item muss question, options (4 bis 5 Optionen) und correctIndex enthalten, optional explanation.',
     'Fuer exam: jedes Item muss question und answer enthalten, optional explanation und points.'
   ];
+
+  if (creativeMode) {
+    rules.push(
+      'Kreativ-Testmodus: Erstelle besonders kompakte, pointierte Fragen und Antworten.',
+      'Fragen sollen kurz und klar sein. Antworten maximal zwei knappe Saetze.',
+      'Vermeide lange Erklaerungen, Fülltext, ausufernde Zusammenfassungen und ueberladene Optionen.',
+      'Der Stil darf etwas frischer sein, muss aber fachlich pruefbar bleiben.'
+    );
+  }
 
   if (socialSecurityContext) {
     rules.push(socialSecurityContext.promptText);
@@ -221,20 +234,33 @@ function safeFallbackTitle(mode, topic) {
 }
 
 async function requestGeneration(request, socialSecurityContext, correctionText) {
-  const response = await fetch(GENERATION_URL, {
+  const creativeMode = Boolean(request && request.creative);
+  const apiKey = creativeMode ? CREATIVE_API_KEY : API_KEY;
+  const url = creativeMode ? CREATIVE_URL : GENERATION_URL;
+  const model = creativeMode ? CREATIVE_MODEL : GENERATION_MODEL;
+
+  if (!apiKey) {
+    const error = new Error(creativeMode ? 'Kreativmodus ist nicht bereit.' : `${SERVICE_NAME} ist nicht bereit.`);
+    error.publicStatusCode = 500;
+    throw error;
+  }
+
+  const response = await fetch(url, {
     method: 'POST',
     headers: {
-      Authorization: `Bearer ${API_KEY}`,
-      'Content-Type': 'application/json'
+      Authorization: `Bearer ${apiKey}`,
+      'Content-Type': 'application/json',
+      'HTTP-Referer': 'https://linda-4.vercel.app/fastgpt/',
+      'X-Title': 'Linda4 fastgpt'
     },
     body: JSON.stringify({
-      model: GENERATION_MODEL,
+      model,
       messages: [
-        { role: 'system', content: buildSystemPrompt(socialSecurityContext) },
+        { role: 'system', content: buildSystemPrompt(socialSecurityContext, creativeMode) },
         { role: 'user', content: buildUserPrompt(request, correctionText) }
       ],
-      temperature: socialSecurityContext ? 0.2 : 0.35,
-      max_tokens: 1800,
+      temperature: creativeMode ? 0.55 : socialSecurityContext ? 0.2 : 0.35,
+      max_tokens: creativeMode ? 900 : 1800,
       stream: false
     })
   });
@@ -278,7 +304,8 @@ async function handler(req, res) {
     sendJson(res, 200, {
       ok: true,
       service: SERVICE_NAME,
-      ready: Boolean(API_KEY)
+      ready: Boolean(API_KEY),
+      creativeReady: Boolean(CREATIVE_API_KEY)
     });
     return;
   }
@@ -292,14 +319,6 @@ async function handler(req, res) {
     return;
   }
 
-  if (!API_KEY) {
-    sendJson(res, 500, {
-      ok: false,
-      error: `${SERVICE_NAME} ist nicht bereit.`
-    });
-    return;
-  }
-
   try {
     const body = await readBody(req);
     const mode = normalizeMode(body.mode);
@@ -309,6 +328,7 @@ async function handler(req, res) {
     const difficulty = normalizeDifficulty(clampString(body.difficulty, 20).toLowerCase());
     const count = toInt(body.count, 5, 3, 12);
     const language = clampString(body.language, 40) || 'Deutsch';
+    const creative = Boolean(body.creative);
     const history = normalizeHistory(body.history);
     const socialSecurityContext = getSocialSecurityValueContext({ topic, material });
 
@@ -328,6 +348,7 @@ async function handler(req, res) {
       difficulty,
       count,
       language,
+      creative,
       valueStand: socialSecurityContext ? socialSecurityContext.valueStand : '',
       history
     };
@@ -378,6 +399,7 @@ async function handler(req, res) {
       items,
       raw: structured ? '' : clampString(content, 12000),
       structured,
+      creative,
       facts: getPublicFacts(socialSecurityContext)
     });
   } catch (error) {
