@@ -40,7 +40,7 @@ const SOCIAL_SECURITY_VALUE_SET_2026 = {
   validFrom: '2026-01-01',
   checkedAt: '2026-05-13',
   disclaimer:
-    'Die Werte dienen der Lern- und Prüfungsvorbereitung. Sie ersetzen keine Rechtsberatung und keine Prüfung der jeweils aktuellen amtlichen Rechtslage.',
+    'Die Inhalte dienen der Lern- und Prüfungsvorbereitung. Beiträge, Grenzwerte, Fristen und Beträge können sich ändern und müssen vor Verwendung immer anhand aktueller amtlicher Quellen geprüft werden. Generative KI kann veraltete oder fehlerhafte Stände ausgeben; dies ersetzt keine Rechtsberatung und keine amtliche Prüfung.',
   sources: SOURCE_MAP,
   values: [
     {
@@ -362,10 +362,12 @@ function getSocialSecurityValueContext(input) {
     values,
     sources,
     promptText: [
-      `${SOCIAL_SECURITY_VALUE_SET_2026.label}, Stand ${SOCIAL_SECURITY_VALUE_SET_2026.valueStand}.`,
-      'Wenn Sozialversicherungswerte, Euro-Beträge oder Beitragssätze gebraucht werden, nutze ausschließlich die folgenden geprüften Werte oder Zahlen aus dem Lernstoff.',
-      'Erfinde keine Werte. Wenn ein benötigter Wert nicht aufgeführt ist, formuliere ohne konkrete Zahl.',
-      values.map(formatValueLine).join('\n')
+      `${SOCIAL_SECURITY_VALUE_SET_2026.label}, Bezugsjahr ${SOCIAL_SECURITY_VALUE_SET_2026.valueStand}.`,
+      'Sozialversicherungswerte sind ein sensibler, jährlich wechselnder Bereich.',
+      'Erstelle vorrangig konzeptionelle Fragen zu Bedeutung, Einordnung, Vorgehen, Prüfhinweisen und Rechenlogik.',
+      'Vermeide konkrete Euro-Beträge, Prozentwerte, Fristen und Jahreswerte, sofern sie nicht ausdrücklich im Lernstoff des Nutzers stehen.',
+      'Wenn es um BBG, Beitragsbemessungsgrenze, JAEG, Bezugsgröße, Beitragssätze, Fristen oder ähnliche Werte geht, weise in Lösung oder Hinweis darauf hin, dass der jeweils aktuelle amtliche Stand geprüft werden muss.',
+      'Erfinde keine aktuellen Werte und verwende keine alten Stände aus Modellwissen.'
     ].join('\n')
   };
 }
@@ -374,27 +376,30 @@ function addNumberToSet(set, value) {
   if (Number.isFinite(value)) set.add(Number(value).toFixed(2));
 }
 
-function collectAllowedNumbers(context, extraText) {
+function collectAllowedNumbers(context, extraText, options = {}) {
   const allowed = new Set();
   const values = context && Array.isArray(context.values) ? context.values : [];
+  const allowContextNumbers = options.allowContextNumbers !== false;
 
-  values.forEach((value) => {
-    addNumberToSet(allowed, value.monthly);
-    addNumberToSet(allowed, value.yearly);
-    addNumberToSet(allowed, value.totalPercent);
-    addNumberToSet(allowed, value.employerPercent);
-    addNumberToSet(allowed, value.employeePercent);
-    addNumberToSet(allowed, value.surchargePercent);
+  if (allowContextNumbers) {
+    values.forEach((value) => {
+      addNumberToSet(allowed, value.monthly);
+      addNumberToSet(allowed, value.yearly);
+      addNumberToSet(allowed, value.totalPercent);
+      addNumberToSet(allowed, value.employerPercent);
+      addNumberToSet(allowed, value.employeePercent);
+      addNumberToSet(allowed, value.surchargePercent);
 
-    if (Array.isArray(value.values)) {
-      value.values.forEach((entry) => {
-        addNumberToSet(allowed, entry.totalPercent);
-        addNumberToSet(allowed, entry.employerPercent);
-        addNumberToSet(allowed, entry.employeePercent);
-        addNumberToSet(allowed, entry.surchargePercent);
-      });
-    }
-  });
+      if (Array.isArray(value.values)) {
+        value.values.forEach((entry) => {
+          addNumberToSet(allowed, entry.totalPercent);
+          addNumberToSet(allowed, entry.employerPercent);
+          addNumberToSet(allowed, entry.employeePercent);
+          addNumberToSet(allowed, entry.surchargePercent);
+        });
+      }
+    });
+  }
 
   const extraMatches = String(extraText || '').match(/(\d{1,3}(?:\.\d{3})*(?:,\d+)?|\d+(?:,\d+)?)(?=\s*(?:€|Euro|Prozent|%))/gi) || [];
   extraMatches.map(normalizeNumber).filter(Boolean).forEach((number) => allowed.add(number));
@@ -409,10 +414,10 @@ function extractGuardedNumbers(text) {
     .filter((entry) => entry.normalized);
 }
 
-function findUnsupportedSocialSecurityNumbers(text, context, extraText) {
+function findUnsupportedSocialSecurityNumbers(text, context, extraText, options = {}) {
   if (!context) return [];
 
-  const allowed = collectAllowedNumbers(context, extraText);
+  const allowed = collectAllowedNumbers(context, extraText, options);
   const numbers = extractGuardedNumbers(text);
   const unsupported = [];
 

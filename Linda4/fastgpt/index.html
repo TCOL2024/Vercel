@@ -839,7 +839,8 @@
     const state = {
       mode: 'exam',
       busy: false,
-      latest: null
+      latest: null,
+      history: []
     };
 
     const composer = document.getElementById('composer');
@@ -1017,8 +1018,23 @@
         audience: audience.value,
         difficulty: difficulty.value,
         count: Number.parseInt(count.value, 10) || 5,
-        language: language.value || 'Deutsch'
+        language: language.value || 'Deutsch',
+        history: state.history.slice(-4)
       };
+    }
+
+    function rememberTurn(request, response) {
+      const items = Array.isArray(response.items) ? response.items : [];
+      state.history.push({
+        mode: request.mode,
+        topic: request.topic,
+        request: request.material,
+        title: response.title || '',
+        summary: response.summary || '',
+        questions: items.map((item) => item.question || '').filter(Boolean).slice(0, 8)
+      });
+
+      state.history = state.history.slice(-4);
     }
 
     function selectedControlText(element) {
@@ -1149,7 +1165,7 @@
         : [];
       const disclaimer = facts && facts.disclaimer
         ? facts.disclaimer
-        : 'Die Inhalte dienen der Lern- und Prüfungsvorbereitung. Sie ersetzen keine fachliche, rechtliche oder amtliche Prüfung.';
+        : 'Die Inhalte dienen der Lern- und Prüfungsvorbereitung. Beiträge, Grenzwerte, Fristen und Beträge können sich ändern. Generative KI kann veraltete oder fehlerhafte Stände ausgeben; aktuelle amtliche Quellen müssen vor Verwendung geprüft werden.';
       const sourcesLine = sourceLabels.length
         ? `Quellenbasis: ${compactSourceLabels(sourceLabels)}.`
         : '';
@@ -1537,6 +1553,7 @@
       sourceText.textContent = '';
       resultActions.hidden = true;
       state.latest = null;
+      state.history = [];
       setStatus('');
     }
 
@@ -1658,7 +1675,7 @@
           : `Werte-Stand ${data.facts.valueStand || 'aktuell'}.`;
         disclaimerBox.hidden = false;
       } else {
-        disclaimerText.textContent = 'Die Inhalte dienen der Lern- und Prüfungsvorbereitung. Sie ersetzen keine fachliche, rechtliche oder amtliche Prüfung.';
+        disclaimerText.textContent = 'Die Inhalte dienen der Lern- und Prüfungsvorbereitung. Beiträge, Grenzwerte, Fristen und Beträge können sich ändern. Generative KI kann veraltete oder fehlerhafte Stände ausgeben; aktuelle amtliche Quellen müssen vor Verwendung geprüft werden.';
         sourceText.textContent = '';
         disclaimerBox.hidden = false;
       }
@@ -1750,6 +1767,7 @@
         });
 
         renderResult(data);
+        rememberTurn(payload, data);
         syncPreviewMeta();
         setStatus('Fertig.');
       } catch (error) {
