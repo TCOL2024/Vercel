@@ -1,30 +1,52 @@
 const OPENAI_RESPONSES_URL = "https://api.openai.com/v1/responses";
-const MODEL = "gpt-5.4";
+const OPENROUTER_CHAT_URL = "https://openrouter.ai/api/v1/chat/completions";
+
+const OPENAI_MODEL = readFirstEnv(["VWL_OPENAI_MODEL"]) || "gpt-5.4";
+const CLAUDE_MODEL = readFirstEnv(["VWL_INTELLIGENT_MODEL", "VWL_CLAUDE_MODEL"]) || "anthropic/claude-3.5-haiku";
+const DEEPSEEK_MODEL = readFirstEnv(["VWL_DEEPSEEK_MODEL", "VWL_FAST_MODEL"]) || "deepseek/deepseek-chat";
 
 const MODE_CONFIG = {
   fragen: {
     label: "Fragen",
-    instruction:
-      "Beantworte VWL-Fragen kompakt und aussagefaehig. Nutze Dokumentwissen vorrangig. Wenn die Frage unklar oder zu breit ist, stelle eine kurze Rueckfrage.",
+    instruction: "Beantworte VWL-Fragen kompakt und aussagefähig. Wenn die Frage unklar oder zu breit ist, stelle eine kurze Rückfrage.",
   },
   lernkarten: {
     label: "Lernkarten",
-    instruction:
-      "Erstelle praegnante Lernkarten. Nutze das Format 'Vorderseite' und 'Rueckseite'. Halte die Karten pruefungsnah und vermeide Nebensaechliches.",
+    instruction: "Erstelle prägnante Lernkarten im Format Vorderseite und Rückseite. Halte die Karten prüfungsnah und vermeide Nebensächliches.",
   },
   uebungen: {
-    label: "Uebungsaufgaben",
-    instruction:
-      "Erstelle VWL-Uebungsaufgaben mit Loesung und kurzer Erklaerung. Bevorzuge Aufgaben, die fuer IHK-Teilnehmende praxisnah und pruefungsnah sind.",
+    label: "Übungsaufgaben",
+    instruction: "Erstelle VWL-Übungsaufgaben mit Lösung und kurzer Erklärung. Bevorzuge IHK-nahe, praxisnahe Aufgaben.",
   },
   uebersetzen: {
-    label: "Uebersetzen",
-    instruction:
-      "Uebersetze oder vereinfache den Text fachlich sauber. Veraendere den Inhalt nicht unnoetig und erhalte wichtige VWL-Fachbegriffe.",
+    label: "Übersetzen",
+    instruction: "Übersetze oder vereinfache den Text fachlich sauber. Erhalte wichtige VWL-Fachbegriffe.",
+  },
+};
+
+const PROFILE_CONFIG = {
+  schnell: {
+    provider: "openrouter",
+    model: DEEPSEEK_MODEL,
+    usesDocuments: false,
+    dataLabel: "Ohne Unterlagen",
+  },
+  intelligent: {
+    provider: "openrouter",
+    model: CLAUDE_MODEL,
+    usesDocuments: false,
+    dataLabel: "Ohne Unterlagen",
+  },
+  fortgeschritten: {
+    provider: "openai-vectorstore",
+    model: OPENAI_MODEL,
+    usesDocuments: true,
+    dataLabel: "Mit Unterlagen",
   },
 };
 
 const API_KEY_ENV_NAMES = ["VWL2026LINDA4", "OPENAI_API_KEY"];
+const OPENROUTER_KEY_ENV_NAMES = ["VWLBOT", "OPENROUTER_API_KEY", "VWL_OPENROUTER_API_KEY"];
 const VECTOR_STORE_ENV_NAMES = [
   "VWL-Vectorstore",
   "VWL_VECTOR_STORE_ID",
@@ -39,16 +61,14 @@ const SOURCE_SNIPPET_LIMIT = 900;
 function readFirstEnv(names) {
   for (const name of names) {
     const value = process.env[name];
-    if (typeof value === "string" && value.trim()) {
-      return value.trim();
-    }
+    if (typeof value === "string" && value.trim()) return value.trim();
   }
   return "";
 }
 
 function setCors(res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
+  res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
 }
 
@@ -79,66 +99,93 @@ function readJsonBody(req) {
   });
 }
 
-function buildSystemPrompt(mode) {
+function compactText(value) {
+  return String(value || "").replace(/\s+/g, " ").trim();
+}
+
+function cleanHistory(history) {
+  if (!Array.isArray(history)) return [];
+  return history
+    .filter((entry) => entry && ["user", "assistant"].includes(entry.role) && compactText(entry.content))
+    .slice(-8)
+    .map((entry) => ({
+      role: entry.role,
+      content: compactText(entry.content).slice(0, 1600),
+    }));
+}
+
+function buildSystemPrompt(mode, profile) {
   const modeInstruction = MODE_CONFIG[mode]?.instruction || MODE_CONFIG.fragen.instruction;
+  const profileConfig = PROFILE_CONFIG[profile] || PROFILE_CONFIG.fortgeschritten;
+  const documentRule = profileConfig.usesDocuments
+    ? [
+        "Nutze die Lehrgangsunterlagen vorrangig.",
+        "Allgemeines VWL-Wissen darf ergänzen, aber Dokumentinhalte nicht überschreiben.",
+        "Nenne Quellen, sobald du Dokumentinhalte nutzt.",
+        "Erfinde keine Dokumenttitel, Seitenzahlen oder Zitate.",
+      ]
+    : [
+        "Nutze keine Lehrgangsunterlagen und behaupte nicht, dass du in Dokumenten nachgesehen hast.",
+        "Wenn Quellen oder Unterlagen gefragt sind, sage kurz, dass dieses Profil ohne Unterlagen arbeitet.",
+      ];
 
   return [
-    "Du bist VWL-Linda 4, ein kompakter Lernassistent fuer Volkswirtschaftslehre.",
-    "Du unterstuetzt Teilnehmende in IHK-nahen VWL-Kursen.",
+    "Du bist VWL-Linda 4, ein kompakter Lernassistent für Volkswirtschaftslehre.",
+    "Du unterstützt Teilnehmende in IHK-nahen VWL-Kursen.",
     "",
     "Grundregeln:",
     "- Antworte kurz, klar und fachlich sauber.",
-    "- Dokumentwissen aus dem VWL-Vectorstore hat Vorrang vor allgemeinem Modellwissen.",
-    "- Allgemeines VWL-Wissen darf ergaenzen, aber Dokumentinhalte nicht ueberschreiben.",
-    "- Wenn die Dokumente keine belastbare Antwort liefern, kennzeichne allgemeines Wissen als Ergaenzung.",
-    "- Wenn die Frage zu unklar ist, stelle lieber eine kurze Rueckfrage.",
-    "- Nenne Quellen, sobald du Dokumentinhalte nutzt.",
-    "- Gib zu jeder Quelle, wenn moeglich, einen kurzen Ausschnitt oder eine sinngemaesse Fundstelle an.",
-    "- Erfinde keine Dokumenttitel, Seitenzahlen oder Zitate.",
+    "- Wenn die Frage zu unklar ist, stelle lieber eine kurze Rückfrage.",
+    "- Berücksichtige den bisherigen Chatverlauf, wenn die neue Frage darauf Bezug nimmt.",
+    ...documentRule.map((rule) => `- ${rule}`),
     "",
     `Modus: ${MODE_CONFIG[mode]?.label || MODE_CONFIG.fragen.label}`,
     modeInstruction,
     "",
-    "Gewuenschtes Ausgabeformat:",
+    "Gewünschtes Ausgabeformat, wenn passend:",
     "Kurzantwort:",
     "...",
     "",
-    "Aus den Unterlagen:",
+    "Einordnung:",
     "...",
     "",
-    "Quellen:",
-    "- Dokument/Fundstelle: kurzer Ausschnitt oder Hinweis",
-    "",
-    "Ergaenzung:",
+    "Beispiel:",
     "...",
   ].join("\n");
 }
 
-function extractTextFromResponse(data) {
-  if (typeof data.output_text === "string" && data.output_text.trim()) {
-    return data.output_text.trim();
-  }
+function buildInputMessages(question, history, mode, profile) {
+  return [
+    {
+      role: "system",
+      content: buildSystemPrompt(mode, profile),
+    },
+    ...cleanHistory(history),
+    {
+      role: "user",
+      content: question,
+    },
+  ];
+}
 
+function extractTextFromResponse(data) {
+  if (typeof data.output_text === "string" && data.output_text.trim()) return data.output_text.trim();
   const chunks = [];
   for (const item of data.output || []) {
     for (const content of item.content || []) {
-      if (content.type === "output_text" && content.text) {
-        chunks.push(content.text);
-      }
+      if (content.type === "output_text" && content.text) chunks.push(content.text);
     }
   }
   return chunks.join("\n").trim();
 }
 
-function compactText(value) {
-  return String(value || "").replace(/\s+/g, " ").trim();
+function extractOpenRouterText(data) {
+  return compactText(data?.choices?.[0]?.message?.content || "");
 }
 
 function limitSnippet(value) {
   const text = compactText(value);
-  if (text.length <= SOURCE_SNIPPET_LIMIT) {
-    return text;
-  }
+  if (text.length <= SOURCE_SNIPPET_LIMIT) return text;
   return `${text.slice(0, SOURCE_SNIPPET_LIMIT - 1).trim()}…`;
 }
 
@@ -161,24 +208,14 @@ function textFromSearchResult(result) {
 
 function normalizeSource(source) {
   const title = compactText(
-    source?.filename ||
-      source?.file_name ||
-      source?.title ||
-      source?.name ||
-      source?.document ||
-      source?.file_id ||
-      "Quelle"
+    source?.filename || source?.file_name || source?.title || source?.name || source?.document || source?.file_id || "Quelle"
   );
   const fileId = compactText(source?.file_id || source?.fileId || "");
   const page = compactText(source?.page || source?.page_number || source?.attributes?.page || "");
   const scoreRaw = source?.score ?? source?.ranking_score ?? source?.similarity;
   const score = typeof scoreRaw === "number" ? scoreRaw.toFixed(2) : compactText(scoreRaw);
   const snippet = limitSnippet(source?.snippet || source?.quote || source?.text || textFromSearchResult(source));
-
-  if (!title && !fileId && !snippet) {
-    return null;
-  }
-
+  if (!title && !fileId && !snippet) return null;
   return {
     title: title || fileId || "Quelle",
     fileId: fileId || null,
@@ -205,8 +242,7 @@ function sourceScore(source) {
 }
 
 function rankSources(sources) {
-  const unique = uniqueSources(sources);
-  const scored = unique
+  const scored = uniqueSources(sources)
     .map((source, index) => ({ source, index, score: sourceScore(source) }))
     .sort((a, b) => {
       if (a.score === null && b.score === null) return a.index - b.index;
@@ -214,10 +250,8 @@ function rankSources(sources) {
       if (b.score === null) return -1;
       return b.score - a.score;
     });
-
   const bestScore = scored.find((entry) => entry.score !== null)?.score;
   const threshold = bestScore === undefined ? null : Math.max(0.45, bestScore - 0.14);
-
   return scored
     .filter((entry) => threshold === null || entry.score === null || entry.score >= threshold)
     .map((entry) => entry.source)
@@ -226,106 +260,142 @@ function rankSources(sources) {
 
 function extractSearchResultSources(data) {
   const sources = [];
-
   for (const item of data.output || []) {
-    if (item.type !== "file_search_call") {
-      continue;
-    }
-
-    const results = item.search_results || item.results || [];
-    for (const result of results) {
-      sources.push(normalizeSource(result));
-    }
+    if (item.type !== "file_search_call") continue;
+    for (const result of item.search_results || item.results || []) sources.push(normalizeSource(result));
   }
-
   return uniqueSources(sources);
 }
 
 function extractAnnotationSources(data) {
   const sources = [];
-
   for (const item of data.output || []) {
     for (const content of item.content || []) {
-      if (content.type !== "output_text" || !Array.isArray(content.annotations)) {
-        continue;
-      }
-
+      if (content.type !== "output_text" || !Array.isArray(content.annotations)) continue;
       for (const annotation of content.annotations) {
         const fileName = annotation.filename || annotation.title || annotation.file_name;
         const fileId = annotation.file_id;
         const quote = annotation.quote || annotation.text || annotation.snippet;
-
-        if (!fileName && !fileId && !quote) {
-          continue;
-        }
-
-        sources.push(normalizeSource({
-          title: fileName,
-          file_id: fileId,
-          snippet: quote,
-        }));
+        if (!fileName && !fileId && !quote) continue;
+        sources.push(normalizeSource({ title: fileName, file_id: fileId, snippet: quote }));
       }
     }
   }
-
   return uniqueSources(sources);
 }
 
 function extractSources(data) {
-  return rankSources([
-    ...extractSearchResultSources(data),
-    ...extractAnnotationSources(data),
-  ]);
+  return rankSources([...extractSearchResultSources(data), ...extractAnnotationSources(data)]);
 }
 
-function extractAnswerSourceLines(answerText) {
-  const lines = String(answerText || "").split(/\r?\n/);
-  const sources = [];
-  let inSources = false;
-
-  for (const rawLine of lines) {
-    const line = rawLine.trim();
-    if (!line) continue;
-
-    if (/^quellen\s*:/i.test(line)) {
-      inSources = true;
-      continue;
-    }
-
-    if (inSources && /^(ergaenzung|ergänzung|kurzantwort|aus den unterlagen|lernkarten|uebungsaufgaben|übungsaufgaben)\s*:/i.test(line)) {
-      break;
-    }
-
-    if (!inSources || !/^[-*]\s+/.test(line)) {
-      continue;
-    }
-
-    const cleaned = line.replace(/^[-*]\s+/, "").trim();
-    const [rawTitle, ...rest] = cleaned.split(":");
-    const title = compactText(rest.length ? rawTitle : "Quelle aus der Antwort");
-    const snippet = limitSnippet(rest.length ? rest.join(":") : cleaned);
-
-    sources.push(normalizeSource({
-      title,
-      snippet,
-    }));
+async function callOpenRouter({ openRouterKey, profileConfig, question, history, mode, profile }) {
+  const response = await fetch(OPENROUTER_CHAT_URL, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${openRouterKey}`,
+      "Content-Type": "application/json",
+      "HTTP-Referer": "https://linda-4.vercel.app",
+      "X-Title": "VWL-Linda 4",
+    },
+    body: JSON.stringify({
+      model: profileConfig.model,
+      messages: buildInputMessages(question, history, mode, profile),
+      temperature: profile === "schnell" ? 0.2 : 0.35,
+      max_tokens: 900,
+    }),
+  });
+  const data = await response.json();
+  if (!response.ok) {
+    const message = data?.error?.message || data?.message || "OpenRouter API Fehler.";
+    const error = new Error(message);
+    error.status = response.status;
+    error.details = data?.error || data;
+    throw error;
   }
-
-  return uniqueSources(sources);
+  return {
+    answer: extractOpenRouterText(data) || "Ich habe keine Antwort erhalten.",
+    sources: [],
+    provider: "openrouter",
+    model: data?.model || profileConfig.model,
+  };
 }
 
-function enrichSourcesFromAnswer(answerText, technicalSources) {
-  const answerSources = extractAnswerSourceLines(answerText);
-  if (!answerSources.length) {
-    return technicalSources;
-  }
+async function callOpenAiVectorStore({ apiKey, vectorStoreId, profileConfig, question, history, mode, profile }) {
+  const input = [
+    ...cleanHistory(history).map((entry) => ({
+      role: entry.role,
+      content: entry.content,
+    })),
+    {
+      role: "user",
+      content: question,
+    },
+  ];
 
-  const technicalHasSnippets = technicalSources.some((source) => source?.snippet);
-  if (!technicalSources.length || !technicalHasSnippets) {
-    return rankSources(answerSources);
+  const response = await fetch(OPENAI_RESPONSES_URL, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model: profileConfig.model,
+      instructions: buildSystemPrompt(mode, profile),
+      input,
+      tools: [
+        {
+          type: "file_search",
+          vector_store_ids: [vectorStoreId],
+          max_num_results: 6,
+        },
+      ],
+      include: ["file_search_call.results"],
+    }),
+  });
+  const data = await response.json();
+  if (!response.ok) {
+    const message = data?.error?.message || "OpenAI API Fehler.";
+    const error = new Error(message);
+    error.status = response.status;
+    error.details = data?.error || data;
+    throw error;
   }
+  const answer = extractTextFromResponse(data) || "Ich habe keine Antwort erhalten.";
+  return {
+    answer,
+    sources: extractSources(data),
+    provider: "openai-vectorstore",
+    model: profileConfig.model,
+  };
+}
 
-  return rankSources([...technicalSources, ...answerSources]);
+async function callOpenAiNoDocumentsFallback({ apiKey, question, history, mode, profile }) {
+  const response = await fetch(OPENAI_RESPONSES_URL, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model: OPENAI_MODEL,
+      instructions: buildSystemPrompt(mode, profile),
+      input: cleanHistory(history).concat([{ role: "user", content: question }]),
+    }),
+  });
+  const data = await response.json();
+  if (!response.ok) {
+    const message = data?.error?.message || "OpenAI API Fehler.";
+    const error = new Error(message);
+    error.status = response.status;
+    error.details = data?.error || data;
+    throw error;
+  }
+  return {
+    answer: extractTextFromResponse(data) || "Ich habe keine Antwort erhalten.",
+    sources: [],
+    provider: "openai-no-docs-fallback",
+    model: OPENAI_MODEL,
+  };
 }
 
 module.exports = async function handler(req, res) {
@@ -341,14 +411,17 @@ module.exports = async function handler(req, res) {
     json(res, 200, {
       ok: true,
       service: "VWL-Linda 4 API",
-      model: MODEL,
+      profiles: PROFILE_CONFIG,
       configured: {
-        apiKey: Boolean(readFirstEnv(API_KEY_ENV_NAMES)),
+        openAiKey: Boolean(readFirstEnv(API_KEY_ENV_NAMES)),
+        openRouterKey: Boolean(readFirstEnv(OPENROUTER_KEY_ENV_NAMES)),
         vectorStore: Boolean(readFirstEnv(VECTOR_STORE_ENV_NAMES)),
       },
       expectedEnv: {
-        apiKey: API_KEY_ENV_NAMES,
+        openAiKey: API_KEY_ENV_NAMES,
+        openRouterKey: OPENROUTER_KEY_ENV_NAMES,
         vectorStore: VECTOR_STORE_ENV_NAMES,
+        optional: ["VWL_OPENAI_MODEL", "VWL_INTELLIGENT_MODEL", "VWL_CLAUDE_MODEL", "VWL_DEEPSEEK_MODEL", "VWL_FAST_MODEL"],
       },
     });
     return;
@@ -359,86 +432,78 @@ module.exports = async function handler(req, res) {
     return;
   }
 
-  const apiKey = readFirstEnv(API_KEY_ENV_NAMES);
-  const vectorStoreId = readFirstEnv(VECTOR_STORE_ENV_NAMES);
-
-  if (!apiKey || !vectorStoreId) {
-    json(res, 500, {
-      error: "VWL API ist noch nicht vollstaendig konfiguriert.",
-      missing: {
-        apiKey: !apiKey,
-        vectorStore: !vectorStoreId,
-      },
-    });
-    return;
-  }
-
   let body;
   try {
     body = await readJsonBody(req);
   } catch (error) {
-    json(res, 400, { error: "Ungueltiges JSON im Request." });
+    json(res, 400, { error: "Ungültiges JSON im Request." });
     return;
   }
 
   const question = String(body.question || "").trim();
   const mode = MODE_CONFIG[body.mode] ? body.mode : "fragen";
+  const profile = PROFILE_CONFIG[body.responseProfile] ? body.responseProfile : PROFILE_CONFIG[body.profile] ? body.profile : "fortgeschritten";
+  const profileConfig = PROFILE_CONFIG[profile];
+  const history = cleanHistory(body.history);
 
   if (!question) {
     json(res, 400, { error: "Bitte eine Frage oder einen Text eingeben." });
     return;
   }
 
+  const apiKey = readFirstEnv(API_KEY_ENV_NAMES);
+  const openRouterKey = readFirstEnv(OPENROUTER_KEY_ENV_NAMES);
+  const vectorStoreId = readFirstEnv(VECTOR_STORE_ENV_NAMES);
+
   try {
-    const openAiResponse = await fetch(OPENAI_RESPONSES_URL, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: MODEL,
-        instructions: buildSystemPrompt(mode),
-        input: [
-          {
-            role: "user",
-            content: question,
-          },
-        ],
-        tools: [
-          {
-            type: "file_search",
-            vector_store_ids: [vectorStoreId],
-            max_num_results: 6,
-          },
-        ],
-        include: ["file_search_call.results"],
-      }),
-    });
+    let result;
+    let fallback = false;
 
-    const data = await openAiResponse.json();
-
-    if (!openAiResponse.ok) {
-      json(res, openAiResponse.status, {
-        error: data.error?.message || "OpenAI API Fehler.",
-        details: data.error || data,
-      });
-      return;
+    if (profileConfig.provider === "openrouter") {
+      if (!openRouterKey) {
+        if (!apiKey) throw Object.assign(new Error("OpenRouter API Key fehlt."), { status: 500 });
+        result = await callOpenAiNoDocumentsFallback({ apiKey, question, history, mode, profile });
+        fallback = true;
+      } else {
+        result = await callOpenRouter({ openRouterKey, profileConfig, question, history, mode, profile });
+      }
+    } else {
+      if (!apiKey || !vectorStoreId) {
+        json(res, 500, {
+          error: "VWL API ist für Fortgeschritten noch nicht vollständig konfiguriert.",
+          missing: {
+            apiKey: !apiKey,
+            vectorStore: !vectorStoreId,
+          },
+        });
+        return;
+      }
+      result = await callOpenAiVectorStore({ apiKey, vectorStoreId, profileConfig, question, history, mode, profile });
     }
 
-    const answer = extractTextFromResponse(data);
-    const sources = enrichSourcesFromAnswer(answer, extractSources(data));
-
     json(res, 200, {
-      answer,
-      sources,
+      answer: result.answer,
+      sources: profileConfig.usesDocuments ? result.sources : [],
       mode,
-      model: MODEL,
+      responseProfile: profile,
+      provider: result.provider,
+      model: result.model,
+      dataUse: {
+        usesDocuments: profileConfig.usesDocuments,
+        label: fallback ? `${profileConfig.dataLabel} (Fallback)` : profileConfig.dataLabel,
+      },
+      context: {
+        used: history.length > 0,
+        messages: history.length,
+      },
+      meta: {
+        fallback,
+      },
     });
   } catch (error) {
-    json(res, 500, {
+    json(res, error.status || 500, {
       error: "Die VWL API konnte die Anfrage nicht verarbeiten.",
-      details: error.message,
+      details: error.details || error.message,
     });
   }
 };
