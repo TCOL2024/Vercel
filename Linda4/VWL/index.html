@@ -990,12 +990,18 @@
     }
 
     function parseAnswerSections(text) {
-      const lines = String(text || "").split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+      const rawText = String(text || "").trim();
+      const normalizedText = rawText
+        .replace(/\s+(Kurzantwort|Einordnung|Aus den Unterlagen|Beispiel|Merksatz|Ergänzung|Quellen|Lösung):/g, "\n$1:")
+        .replace(/\s+(\d+[.)]\s+)/g, "\n$1");
+      const lines = normalizedText.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
       const sections = [];
       let current = { title: "Antwort", lines: [] };
+      let foundHeading = false;
       for (const line of lines) {
         const heading = isSectionHeading(line);
         if (heading) {
+          foundHeading = true;
           if (current.lines.length) sections.push(current);
           current = { title: heading.title, lines: [] };
           if (heading.rest) current.lines.push(heading.rest);
@@ -1004,7 +1010,32 @@
         }
       }
       if (current.lines.length) sections.push(current);
+      if (!foundHeading && sections.length === 1) return buildReadableFallbackSections(rawText);
       return sections.length ? sections : [{ title: "Antwort", lines: [String(text || "").trim()] }];
+    }
+
+    function buildReadableFallbackSections(text) {
+      const cleaned = String(text || "").replace(/\s+/g, " ").trim();
+      if (!cleaned) return [{ title: "Antwort", lines: [""] }];
+
+      const sentences = cleaned.match(/[^.!?]+[.!?]+(?:\s|$)|[^.!?]+$/g)?.map((sentence) => sentence.trim()).filter(Boolean) || [cleaned];
+      if (sentences.length <= 2 && cleaned.length < 360) {
+        return [{ title: "Kurzantwort", lines: [cleaned] }];
+      }
+
+      const first = sentences.slice(0, 2).join(" ");
+      const rest = sentences.slice(2);
+      const sections = [{ title: "Kurzantwort", lines: [first] }];
+
+      if (rest.length) {
+        const grouped = [];
+        for (let index = 0; index < rest.length; index += 2) {
+          grouped.push(rest.slice(index, index + 2).join(" "));
+        }
+        sections.push({ title: "Einordnung", lines: grouped });
+      }
+
+      return sections;
     }
 
     function renderSectionLines(sectionNode, lines) {
