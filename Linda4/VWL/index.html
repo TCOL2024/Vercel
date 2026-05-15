@@ -990,9 +990,11 @@
     }
 
     function parseAnswerSections(text) {
-      const rawText = String(text || "").trim();
+      const rawText = normalizeAnswerText(text);
       const normalizedText = rawText
-        .replace(/\s+(Kurzantwort|Einordnung|Aus den Unterlagen|Beispiel|Merksatz|Ergänzung|Quellen|Lösung):/g, "\n$1:")
+        .replace(/\s+(Kurzantwort|Einordnung|Aus den Unterlagen|Beispiel|Merksatz|Ergänzung|Quellen|Lösung):/gi, "\n$1:")
+        .replace(/\s+(-\s+\*\*)/g, "\n$1")
+        .replace(/\s+(-\s+)/g, "\n$1")
         .replace(/\s+(\d+[.)]\s+)/g, "\n$1");
       const lines = normalizedText.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
       const sections = [];
@@ -1012,6 +1014,22 @@
       if (current.lines.length) sections.push(current);
       if (!foundHeading && sections.length === 1) return buildReadableFallbackSections(rawText);
       return sections.length ? sections : [{ title: "Antwort", lines: [String(text || "").trim()] }];
+    }
+
+    function normalizeAnswerText(text) {
+      return String(text || "")
+        .replace(/\\\[/g, "")
+        .replace(/\\\]/g, "")
+        .replace(/\\\(/g, "")
+        .replace(/\\\)/g, "")
+        .replace(/\\varepsilon/g, "ε")
+        .replace(/\\frac\{([^{}]+)\}\{([^{}]+)\}/g, "$1 / $2")
+        .replace(/\\%/g, "%")
+        .replace(/\\text\{([^{}]+)\}/g, "$1")
+        .replace(/\{\|?\\varepsilon\|?\}/g, "|ε|")
+        .replace(/\|\\varepsilon\|/g, "|ε|")
+        .replace(/\s{2,}/g, " ")
+        .trim();
     }
 
     function buildReadableFallbackSections(text) {
@@ -1049,15 +1067,27 @@
             sectionNode.appendChild(list);
           }
           const li = document.createElement("li");
-          li.textContent = line;
+          li.innerHTML = renderInlineText(line);
           list.appendChild(li);
         } else {
           list = null;
           const p = document.createElement("p");
-          p.textContent = rawLine;
+          p.innerHTML = renderInlineText(rawLine);
           sectionNode.appendChild(p);
         }
       }
+    }
+
+    function renderInlineText(text) {
+      const escaped = String(text || "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+      return escaped
+        .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
+        .replace(/`([^`]+)`/g, "<code>$1</code>");
     }
 
     function appendBotAnswer(text) {
