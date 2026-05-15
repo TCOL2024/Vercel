@@ -556,7 +556,7 @@
       display: grid;
       gap: 10px;
       align-content: start;
-      max-height: calc(100vh - 260px);
+      max-height: calc(100vh - 440px);
       overflow: auto;
       padding-right: 2px;
     }
@@ -658,6 +658,148 @@
       color: var(--muted);
     }
 
+    .chat-dock {
+      margin-top: 14px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: #fff;
+      overflow: visible;
+      box-shadow: 0 10px 26px rgba(22, 26, 35, 0.06);
+    }
+
+    .chat-input {
+      width: 100%;
+      min-height: 122px;
+      border: 0;
+      border-bottom: 1px solid var(--line-soft);
+      border-radius: 0;
+      resize: none;
+      padding: 16px 14px 12px;
+      font-size: 1.05rem;
+      line-height: 1.42;
+      background: #fff;
+    }
+
+    .chat-input::placeholder {
+      color: #8b92a3;
+    }
+
+    .chat-input:focus {
+      box-shadow: none;
+      border-color: var(--line-soft);
+    }
+
+    .chat-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 9px 12px;
+      background: #fff;
+      border-radius: 0 0 10px 10px;
+    }
+
+    .chat-left,
+    .chat-right {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 0;
+    }
+
+    .chat-btn {
+      min-height: 34px;
+      padding: 7px 12px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: #fff;
+      color: #1f2937;
+      font-weight: 700;
+    }
+
+    .chat-icon {
+      min-width: 34px;
+      min-height: 34px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: #fff;
+      color: #4b5565;
+      font-weight: 800;
+      line-height: 1;
+      padding: 0;
+    }
+
+    .profile-wrap {
+      position: relative;
+    }
+
+    .profile-btn {
+      min-height: 34px;
+      padding: 7px 12px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: #fff;
+      color: #111827;
+      font-weight: 800;
+    }
+
+    .profile-menu {
+      position: absolute;
+      right: 0;
+      top: calc(100% + 7px);
+      z-index: 20;
+      width: min(440px, calc(100vw - 30px));
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: #fff;
+      box-shadow: 0 20px 45px rgba(15, 23, 42, 0.2);
+      overflow: hidden;
+    }
+
+    .profile-menu[hidden] {
+      display: none;
+    }
+
+    .profile-item {
+      width: 100%;
+      text-align: left;
+      padding: 11px 13px;
+      border: 0;
+      background: #fff;
+      display: grid;
+      gap: 2px;
+    }
+
+    .profile-item + .profile-item {
+      border-top: 1px solid var(--line-soft);
+    }
+
+    .profile-item strong {
+      font-size: 1rem;
+      color: #111827;
+    }
+
+    .profile-item span {
+      font-size: 0.88rem;
+      color: #6b7280;
+      line-height: 1.34;
+    }
+
+    .profile-item.active {
+      background: #f5f6fb;
+    }
+
+    .send-btn {
+      min-width: 34px;
+      min-height: 34px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      color: #fff;
+      background: #5f3dc4;
+      font-weight: 800;
+      padding: 0 12px;
+    }
+
     .raw {
       margin: 0;
       padding: 14px;
@@ -753,6 +895,17 @@
 
       .actions .btn {
         flex: 1 1 100%;
+      }
+
+      .chat-bar {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .chat-left,
+      .chat-right {
+        width: 100%;
+        justify-content: space-between;
       }
     }
   </style>
@@ -928,6 +1081,38 @@
             </div>
           </div>
 
+          <div class="chat-dock" aria-label="Chatfenster">
+            <textarea class="chat-input" id="chatInput" placeholder="Eine Frage stellen..."></textarea>
+            <div class="chat-bar">
+              <div class="chat-left">
+                <button type="button" class="chat-btn">Daten des Chat-Agenten</button>
+                <button type="button" class="chat-icon" aria-label="Web">⊕</button>
+                <button type="button" class="chat-icon" aria-label="Datei">📎</button>
+                <button type="button" class="chat-icon" aria-label="Tools">⌘</button>
+              </div>
+              <div class="chat-right">
+                <div class="profile-wrap">
+                  <button type="button" class="profile-btn" id="profileBtn" aria-expanded="false" aria-controls="profileMenu">Intelligent ▼</button>
+                  <div class="profile-menu" id="profileMenu" hidden>
+                    <button type="button" class="profile-item" data-profile="fast">
+                      <strong>Schnell</strong>
+                      <span>Optimiert für Geschwindigkeit bei alltäglichen Aufgaben</span>
+                    </button>
+                    <button type="button" class="profile-item active" data-profile="balanced">
+                      <strong>Intelligent</strong>
+                      <span>Bringt Leistung und Geschwindigkeit in Einklang</span>
+                    </button>
+                    <button type="button" class="profile-item" data-profile="advanced">
+                      <strong>Fortgeschritten</strong>
+                      <span>Erweiterte Argumentation für komplexe Aufgaben</span>
+                    </button>
+                  </div>
+                </div>
+                <button type="button" class="send-btn" id="chatSendBtn" aria-label="Senden">➤</button>
+              </div>
+            </div>
+          </div>
+
           <pre class="raw" id="rawOutput" hidden></pre>
         </aside>
       </div>
@@ -979,12 +1164,22 @@
     const status = document.getElementById('status');
     const rawOutput = document.getElementById('rawOutput');
     const emptyState = document.getElementById('emptyState');
+    const chatInput = document.getElementById('chatInput');
+    const chatSendBtn = document.getElementById('chatSendBtn');
+    const profileBtn = document.getElementById('profileBtn');
+    const profileMenu = document.getElementById('profileMenu');
+    const profileItems = Array.from(document.querySelectorAll('.profile-item'));
     const modeButtons = Array.from(document.querySelectorAll('.mode-btn'));
     const modeChip = document.getElementById('modeChip');
     const topicChip = document.getElementById('topicChip');
     const countChip = document.getElementById('countChip');
     const creativeChip = document.getElementById('creativeChip');
     const API_ENDPOINTS = ['/api/linda4-schnellmodi'];
+    const RESPONSE_PROFILES = {
+      fast: { label: 'Schnell', difficulty: 'leicht', countShift: -1 },
+      balanced: { label: 'Intelligent', difficulty: '', countShift: 0 },
+      advanced: { label: 'Fortgeschritten', difficulty: 'schwer', countShift: 1 }
+    };
     const GENERAL_AI_NOTICE = 'Die Inhalte dienen der Lern- und Prüfungsvorbereitung. Generative KI kann Fehler machen; prüfe wichtige Informationen vor der Verwendung.';
     const LEGAL_NOTICE = 'Linda4 kann Fehler machen. Alle Inhalte werden ohne Gewähr für Richtigkeit, Vollständigkeit, Aktualität oder Eignung für einen bestimmten Zweck bereitgestellt. Die Nutzung erfolgt eigenverantwortlich. Eine Haftung für Schäden, Nachteile, Prüfungsfolgen oder sonstige Konsequenzen aus der Nutzung der Inhalte wird, soweit gesetzlich zulässig, ausgeschlossen. Fachliche, rechtliche, steuerliche, sozialversicherungsrechtliche und prüfungsrelevante Informationen müssen vor Verwendung anhand aktueller und verbindlicher Quellen geprüft werden.';
 
@@ -1049,6 +1244,8 @@
       creativeToggle.disabled = value;
       pdfBtn.disabled = value;
       copyBtn.disabled = value;
+      chatSendBtn.disabled = value;
+      profileBtn.disabled = value;
       modeButtons.forEach((button) => {
         button.disabled = value;
       });
@@ -1134,15 +1331,22 @@
     }
 
     function getPayload() {
+      const selectedProfile = state.responseProfile || 'balanced';
+      const profile = RESPONSE_PROFILES[selectedProfile] || RESPONSE_PROFILES.balanced;
+      const baseCount = Number.parseInt(count.value, 10) || 5;
+      const adjustedCount = Math.max(3, Math.min(12, baseCount + profile.countShift));
+      const resolvedDifficulty = profile.difficulty || difficulty.value;
+
       return {
         mode: state.mode,
         creative: state.creative,
         topic: topic.value,
         material: material.value.trim(),
         audience: audience.value,
-        difficulty: difficulty.value,
-        count: Number.parseInt(count.value, 10) || 5,
+        difficulty: resolvedDifficulty,
+        count: adjustedCount,
         language: language.value || 'Deutsch',
+        responseProfile: selectedProfile,
         history: state.history.slice(-4)
       };
     }
@@ -1824,6 +2028,29 @@
       resultActions.hidden = false;
     }
 
+    function setResponseProfile(profileKey) {
+      const key = RESPONSE_PROFILES[profileKey] ? profileKey : 'balanced';
+      state.responseProfile = key;
+      profileItems.forEach((item) => {
+        const active = item.dataset.profile === key;
+        item.classList.toggle('active', active);
+      });
+      profileBtn.textContent = `${RESPONSE_PROFILES[key].label} ▼`;
+      profileMenu.hidden = true;
+      profileBtn.setAttribute('aria-expanded', 'false');
+    }
+
+    function submitFromChat() {
+      const text = chatInput.value.trim();
+      if (!text) {
+        setStatus('Bitte zuerst eine Frage eingeben.', 'error');
+        return;
+      }
+
+      material.value = text;
+      composer.requestSubmit();
+    }
+
     async function runHealthcheck() {
       setHealth('Prüfe Linda4Schnellmodi ...');
       healthBtn.disabled = true;
@@ -1870,6 +2097,21 @@
     });
 
     healthBtn.addEventListener('click', runHealthcheck);
+    profileBtn.addEventListener('click', () => {
+      const shouldOpen = profileMenu.hidden;
+      profileMenu.hidden = !shouldOpen;
+      profileBtn.setAttribute('aria-expanded', String(shouldOpen));
+    });
+    profileItems.forEach((item) => {
+      item.addEventListener('click', () => setResponseProfile(item.dataset.profile));
+    });
+    chatSendBtn.addEventListener('click', submitFromChat);
+    chatInput.addEventListener('keydown', (event) => {
+      if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') {
+        event.preventDefault();
+        submitFromChat();
+      }
+    });
 
     demoBtn.addEventListener('click', () => fillExample(state.mode));
     launchBtn.addEventListener('click', () => composer.requestSubmit());
@@ -1925,6 +2167,7 @@
 
     setMode('exam');
     setCreative(false);
+    setResponseProfile('balanced');
     countValue.textContent = count.value;
     syncPreviewMeta();
     clearResult();
