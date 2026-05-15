@@ -211,6 +211,28 @@
       background: var(--panel-soft);
     }
 
+    .legal-note {
+      display: grid;
+      gap: 6px;
+      margin-top: 10px;
+      padding: 12px;
+      border: 1px solid rgba(95, 61, 196, 0.14);
+      border-radius: var(--radius);
+      background: #fff;
+      color: var(--muted);
+      font-size: 0.82rem;
+      line-height: 1.45;
+    }
+
+    .legal-note strong {
+      color: var(--ink);
+      font-size: 0.88rem;
+    }
+
+    .legal-note p {
+      margin: 0;
+    }
+
     .health-state.ready {
       color: var(--good);
       font-weight: 700;
@@ -444,11 +466,17 @@
       margin: 0 0 12px;
       padding: 11px 12px;
       border-radius: var(--radius);
-      border: 1px solid rgba(249, 115, 22, 0.22);
-      background: rgba(249, 115, 22, 0.07);
-      color: #5f3412;
+      border: 1px solid rgba(95, 61, 196, 0.14);
+      background: rgba(95, 61, 196, 0.055);
+      color: #4b5565;
       font-size: 0.86rem;
       line-height: 1.45;
+    }
+
+    .disclaimer.strong {
+      border-color: rgba(249, 115, 22, 0.22);
+      background: rgba(249, 115, 22, 0.07);
+      color: #5f3412;
     }
 
     .disclaimer[hidden] {
@@ -462,6 +490,21 @@
 
     .disclaimer p {
       margin: 0;
+    }
+
+    .site-disclaimer {
+      padding: 12px 22px 14px;
+      border-top: 1px solid var(--line-soft);
+      background: rgba(255, 255, 255, 0.82);
+      color: var(--muted);
+      font-size: 0.78rem;
+      line-height: 1.42;
+      text-align: center;
+    }
+
+    .site-disclaimer p {
+      max-width: 880px;
+      margin: 0 auto;
     }
 
     .status {
@@ -638,6 +681,11 @@
         padding: 16px;
       }
 
+      .site-disclaimer {
+        padding: 11px 14px 13px;
+        text-align: left;
+      }
+
       .section-head,
       .preview-head {
         flex-direction: column;
@@ -699,6 +747,10 @@
           <div class="health-row">
             <p class="health-state" id="healthState">Noch nicht geprüft.</p>
             <button type="button" class="btn outline" id="healthBtn">Healthcheck</button>
+          </div>
+          <div class="legal-note">
+            <strong>Haftungs- und Nutzungshinweis</strong>
+            <p id="settingsLegalText"></p>
           </div>
         </aside>
       </header>
@@ -832,6 +884,10 @@
           <pre class="raw" id="rawOutput" hidden></pre>
         </aside>
       </div>
+
+      <footer class="site-disclaimer">
+        <p id="siteLegalText"></p>
+      </footer>
     </section>
   </main>
 
@@ -863,6 +919,8 @@
     const settingsClose = document.getElementById('settingsClose');
     const healthBtn = document.getElementById('healthBtn');
     const healthState = document.getElementById('healthState');
+    const settingsLegalText = document.getElementById('settingsLegalText');
+    const siteLegalText = document.getElementById('siteLegalText');
     const resultTitle = document.getElementById('result-title');
     const resultSummary = document.getElementById('resultSummary');
     const disclaimerBox = document.getElementById('disclaimerBox');
@@ -877,6 +935,11 @@
     const topicChip = document.getElementById('topicChip');
     const countChip = document.getElementById('countChip');
     const API_ENDPOINTS = ['/api/linda4-schnellmodi'];
+    const GENERAL_AI_NOTICE = 'Die Inhalte dienen der Lern- und Prüfungsvorbereitung. Generative KI kann Fehler machen; prüfe wichtige Informationen vor der Verwendung.';
+    const LEGAL_NOTICE = 'Linda4 kann Fehler machen. Alle Inhalte werden ohne Gewähr für Richtigkeit, Vollständigkeit, Aktualität oder Eignung für einen bestimmten Zweck bereitgestellt. Die Nutzung erfolgt eigenverantwortlich. Eine Haftung für Schäden, Nachteile, Prüfungsfolgen oder sonstige Konsequenzen aus der Nutzung der Inhalte wird, soweit gesetzlich zulässig, ausgeschlossen. Fachliche, rechtliche, steuerliche, sozialversicherungsrechtliche und prüfungsrelevante Informationen müssen vor Verwendung anhand aktueller und verbindlicher Quellen geprüft werden.';
+
+    settingsLegalText.textContent = LEGAL_NOTICE;
+    siteLegalText.textContent = LEGAL_NOTICE;
 
     const examples = {
       exam: {
@@ -1165,10 +1228,11 @@
         : [];
       const disclaimer = facts && facts.disclaimer
         ? facts.disclaimer
-        : 'Die Inhalte dienen der Lern- und Prüfungsvorbereitung. Beiträge, Grenzwerte, Fristen und Beträge können sich ändern. Generative KI kann veraltete oder fehlerhafte Stände ausgeben; aktuelle amtliche Quellen müssen vor Verwendung geprüft werden.';
+        : GENERAL_AI_NOTICE;
       const sourcesLine = sourceLabels.length
         ? `Quellenbasis: ${compactSourceLabels(sourceLabels)}.`
         : '';
+      const legalNotice = LEGAL_NOTICE;
 
       return `<!doctype html>
 <html lang="de">
@@ -1452,6 +1516,7 @@
       <strong>Fachlicher Hinweis</strong>
       <p>${escapeHtml(disclaimer)}</p>
       ${sourcesLine ? `<p>${escapeHtml(sourcesLine)}</p>` : ''}
+      <p>${escapeHtml(legalNotice)}</p>
     </section>
 
     ${items.length ? `
@@ -1526,7 +1591,13 @@
         if (payload.facts.valueStand) {
           lines.push(`Werte-Stand: ${payload.facts.valueStand}`);
         }
+      } else {
+        lines.push('');
+        lines.push(`Hinweis: ${GENERAL_AI_NOTICE}`);
       }
+
+      lines.push('');
+      lines.push(`Haftungs- und Nutzungshinweis: ${LEGAL_NOTICE}`);
 
       return lines.join('\n').trim();
     }
@@ -1549,6 +1620,7 @@
       rawOutput.hidden = true;
       rawOutput.textContent = '';
       disclaimerBox.hidden = true;
+      disclaimerBox.classList.remove('strong');
       disclaimerText.textContent = '';
       sourceText.textContent = '';
       resultActions.hidden = true;
@@ -1669,13 +1741,15 @@
         const sourceLabels = Array.isArray(data.facts.sources)
           ? data.facts.sources.map((source) => source.label).filter(Boolean)
           : [];
+        disclaimerBox.classList.add('strong');
         disclaimerText.textContent = data.facts.disclaimer;
         sourceText.textContent = sourceLabels.length
           ? `Werte-Stand ${data.facts.valueStand || 'aktuell'}; Quellenbasis: ${compactSourceLabels(sourceLabels)}.`
           : `Werte-Stand ${data.facts.valueStand || 'aktuell'}.`;
         disclaimerBox.hidden = false;
       } else {
-        disclaimerText.textContent = 'Die Inhalte dienen der Lern- und Prüfungsvorbereitung. Beiträge, Grenzwerte, Fristen und Beträge können sich ändern. Generative KI kann veraltete oder fehlerhafte Stände ausgeben; aktuelle amtliche Quellen müssen vor Verwendung geprüft werden.';
+        disclaimerBox.classList.remove('strong');
+        disclaimerText.textContent = GENERAL_AI_NOTICE;
         sourceText.textContent = '';
         disclaimerBox.hidden = false;
       }
