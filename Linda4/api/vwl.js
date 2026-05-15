@@ -1,9 +1,10 @@
 const OPENAI_RESPONSES_URL = "https://api.openai.com/v1/responses";
 const OPENROUTER_CHAT_URL = "https://openrouter.ai/api/v1/chat/completions";
+const DEEPSEEK_CHAT_URL = "https://api.deepseek.com/v1/chat/completions";
 
 const OPENAI_MODEL = readFirstEnv(["VWL_OPENAI_MODEL"]) || "gpt-5.4";
 const CLAUDE_MODEL = readFirstEnv(["VWL_INTELLIGENT_MODEL", "VWL_CLAUDE_MODEL"]) || "anthropic/claude-3.5-haiku";
-const DEEPSEEK_MODEL = readFirstEnv(["VWL_DEEPSEEK_MODEL", "VWL_FAST_MODEL"]) || "deepseek/deepseek-chat";
+const DEEPSEEK_MODEL = readFirstEnv(["VWL_DEEPSEEK_MODEL", "VWL_FAST_MODEL", "DEEPSEEK_MODEL"]) || "deepseek-reasoner";
 
 const MODE_CONFIG = {
   fragen: {
@@ -26,7 +27,7 @@ const MODE_CONFIG = {
 
 const PROFILE_CONFIG = {
   schnell: {
-    provider: "openrouter",
+    provider: "deepseek",
     model: DEEPSEEK_MODEL,
     usesDocuments: false,
     dataLabel: "Ohne Unterlagen",
@@ -47,6 +48,7 @@ const PROFILE_CONFIG = {
 
 const API_KEY_ENV_NAMES = ["VWL2026LINDA4", "OPENAI_API_KEY"];
 const OPENROUTER_KEY_ENV_NAMES = ["VWLBOT", "OPENROUTER_API_KEY", "VWL_OPENROUTER_API_KEY"];
+const DEEPSEEK_KEY_ENV_NAMES = ["VWL_DEEPSEEK_API_KEY", "Linda3Schnellmodus", "DEEPSEEK_API_KEY"];
 const VECTOR_STORE_ENV_NAMES = [
   "VWL-Vectorstore",
   "VWL_VECTOR_STORE_ID",
@@ -135,6 +137,8 @@ function buildSystemPrompt(mode, profile) {
     "",
     "Grundregeln:",
     "- Antworte kurz, klar und fachlich sauber.",
+    "- Gliedere die Antwort sichtbar mit Absätzen und kurzen Zwischenüberschriften.",
+    "- Vermeide reine Fließtext-Blöcke.",
     "- Wenn die Frage zu unklar ist, stelle lieber eine kurze Rückfrage.",
     "- Berücksichtige den bisherigen Chatverlauf, wenn die neue Frage darauf Bezug nimmt.",
     ...documentRule.map((rule) => `- ${rule}`),
@@ -150,6 +154,9 @@ function buildSystemPrompt(mode, profile) {
     "...",
     "",
     "Beispiel:",
+    "...",
+    "",
+    "Merksatz:",
     "...",
   ].join("\n");
 }
@@ -320,6 +327,35 @@ async function callOpenRouter({ openRouterKey, profileConfig, question, history,
   };
 }
 
+async function callDeepSeekDirect({ deepSeekKey, profileConfig, question, history, mode, profile }) {
+  const response = await fetch(DEEPSEEK_CHAT_URL, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${deepSeekKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model: profileConfig.model,
+      messages: buildInputMessages(question, history, mode, profile),
+      max_tokens: 1400,
+    }),
+  });
+  const data = await response.json();
+  if (!response.ok) {
+    const message = data?.error?.message || data?.message || "DeepSeek API Fehler.";
+    const error = new Error(message);
+    error.status = response.status;
+    error.details = data?.error || data;
+    throw error;
+  }
+  return {
+    answer: extractOpenRouterText(data) || "Ich habe keine Antwort erhalten.",
+    sources: [],
+    provider: "deepseek",
+    model: data?.model || profileConfig.model,
+  };
+}
+
 async function callOpenAiVectorStore({ apiKey, vectorStoreId, profileConfig, question, history, mode, profile }) {
   const input = [
     ...cleanHistory(history).map((entry) => ({
@@ -415,13 +451,15 @@ module.exports = async function handler(req, res) {
       configured: {
         openAiKey: Boolean(readFirstEnv(API_KEY_ENV_NAMES)),
         openRouterKey: Boolean(readFirstEnv(OPENROUTER_KEY_ENV_NAMES)),
+        deepSeekKey: Boolean(readFirstEnv(DEEPSEEK_KEY_ENV_NAMES)),
         vectorStore: Boolean(readFirstEnv(VECTOR_STORE_ENV_NAMES)),
       },
       expectedEnv: {
         openAiKey: API_KEY_ENV_NAMES,
         openRouterKey: OPENROUTER_KEY_ENV_NAMES,
+        deepSeekKey: DEEPSEEK_KEY_ENV_NAMES,
         vectorStore: VECTOR_STORE_ENV_NAMES,
-        optional: ["VWL_OPENAI_MODEL", "VWL_INTELLIGENT_MODEL", "VWL_CLAUDE_MODEL", "VWL_DEEPSEEK_MODEL", "VWL_FAST_MODEL"],
+        optional: ["VWL_OPENAI_MODEL", "VWL_INTELLIGENT_MODEL", "VWL_CLAUDE_MODEL", "VWL_DEEPSEEK_MODEL", "VWL_FAST_MODEL", "DEEPSEEK_MODEL"],
       },
     });
     return;
@@ -453,13 +491,26 @@ module.exports = async function handler(req, res) {
 
   const apiKey = readFirstEnv(API_KEY_ENV_NAMES);
   const openRouterKey = readFirstEnv(OPENROUTER_KEY_ENV_NAMES);
+  const deepSeekKey = readFirstEnv(DEEPSEEK_KEY_ENV_NAMES);
   const vectorStoreId = readFirstEnv(VECTOR_STORE_ENV_NAMES);
 
   try {
     let result;
     let fallback = false;
 
-    if (profileConfig.provider === "openrouter") {
+    if (profileConfig.provider === "deepseek") {
+      if (!deepSeekKey) {
+        json(res, 500, {
+          error: "DeepSeek API Key fehlt für Schnell.",
+          missing: {
+            deepSeekKey: true,
+          },
+          expectedEnv: DEEPSEEK_KEY_ENV_NAMES,
+        });
+        return;
+      }
+      result = await callDeepSeekDirect({ deepSeekKey, profileConfig, question, history, mode, profile });
+    } else if (profileConfig.provider === "openrouter") {
       if (!openRouterKey) {
         if (!apiKey) throw Object.assign(new Error("OpenRouter API Key fehlt."), { status: 500 });
         result = await callOpenAiNoDocumentsFallback({ apiKey, question, history, mode, profile });
