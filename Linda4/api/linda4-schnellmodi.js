@@ -2,7 +2,7 @@ const PROVIDER_HOST = ['api', ['deep', 'seek'].join(''), 'com'].join('.');
 const GENERATION_URL = `https://${PROVIDER_HOST}/chat/completions`;
 const GENERATION_MODEL = [['deep', 'seek'].join(''), 'chat'].join('-');
 const CREATIVE_URL = 'https://openrouter.ai/api/v1/chat/completions';
-const CREATIVE_MODEL = process.env.VWLBOT_MODEL || 'google/gemini-2.5-flash';
+const CREATIVE_MODEL = 'amazon/nova-micro-v1';
 const API_KEY = process.env.Linda3Schnellmodus;
 const CREATIVE_API_KEY = process.env.VWLBOT;
 const SERVICE_NAME = 'Linda4Schnellmodi';
@@ -35,12 +35,6 @@ function normalizeMode(value) {
 function normalizeDifficulty(value) {
   const allowed = new Set(['leicht', 'mittel', 'schwer']);
   return allowed.has(value) ? value : 'mittel';
-}
-
-function normalizeResponseProfile(value) {
-  if (value === 'fast') return 'fast';
-  if (value === 'advanced') return 'advanced';
-  return 'balanced';
 }
 
 function toInt(value, fallback, min, max) {
@@ -188,7 +182,7 @@ function normalizeItems(parsed, mode, count) {
   return source.slice(0, count).map((item, index) => normalizeItem(item, mode, index));
 }
 
-function buildSystemPrompt(socialSecurityContext, creativeMode, responseProfile) {
+function buildSystemPrompt(socialSecurityContext, creativeMode) {
   const rules = [
     'Du bist Linda4 fastgpt.',
     'Erstelle ausschliesslich Lernfragen in sauberem Deutsch oder in der gewuenschten Sprache.',
@@ -207,23 +201,11 @@ function buildSystemPrompt(socialSecurityContext, creativeMode, responseProfile)
 
   if (creativeMode) {
     rules.push(
-      'Kreativ-Testmodus mit Top-Qualitaet: Liefere praezise, didaktisch starke und sofort nutzbare Lernfragen.',
-      'Jede Frage muss fachlich korrekt, eindeutig und pruefbar sein. Keine Floskeln und kein Fuelltext.',
-      'Fragen kompakt halten: ein klarer Kern pro Frage, keine verschachtelten Satzmonster.',
-      'Antworten kompakt halten: maximal zwei kurze Saetze, aber inhaltlich vollstaendig.',
-      'Bei quiz: genau vier Antwortoptionen, nur eine eindeutig richtig, drei plausible Distraktoren.',
-      'Die korrekte Option darf nicht durch Laenge, Stil oder Signalwoerter verraten werden.',
-      'Falls Inhalte unklar sind, formuliere konservativ und erfinde keine Fakten.',
-      'Prioritaet im Kreativmodus: Qualitaet vor Menge. Wenn noetig, liefere weniger starke Fragen statt vieler schwacher.'
+      'Kreativ-Testmodus: Erstelle besonders kompakte, pointierte Fragen und Antworten.',
+      'Fragen sollen kurz und klar sein. Antworten maximal zwei knappe Saetze.',
+      'Vermeide lange Erklaerungen, Fülltext, ausufernde Zusammenfassungen und ueberladene Optionen.',
+      'Der Stil darf etwas frischer sein, muss aber fachlich pruefbar bleiben.'
     );
-  }
-
-  if (responseProfile === 'fast') {
-    rules.push('Antwortprofil Schnell: kurze, direkte Loesung; maximal noetige Tiefe.');
-  } else if (responseProfile === 'advanced') {
-    rules.push('Antwortprofil Fortgeschritten: hoehere fachliche Dichte, klare Begruendung, weiterhin kompakt.');
-  } else {
-    rules.push('Antwortprofil Intelligent: ausgewogene Tiefe mit klarer Struktur und Praxisbezug.');
   }
 
   if (socialSecurityContext) {
@@ -253,7 +235,6 @@ function safeFallbackTitle(mode, topic) {
 
 async function requestGeneration(request, socialSecurityContext, correctionText) {
   const creativeMode = Boolean(request && request.creative);
-  const responseProfile = normalizeResponseProfile(request && request.responseProfile);
   const apiKey = creativeMode ? CREATIVE_API_KEY : API_KEY;
   const url = creativeMode ? CREATIVE_URL : GENERATION_URL;
   const model = creativeMode ? CREATIVE_MODEL : GENERATION_MODEL;
@@ -275,34 +256,11 @@ async function requestGeneration(request, socialSecurityContext, correctionText)
     body: JSON.stringify({
       model,
       messages: [
-        { role: 'system', content: buildSystemPrompt(socialSecurityContext, creativeMode, responseProfile) },
-        { role: 'system', content: `Profilsteuerung: ${responseProfile}` },
+        { role: 'system', content: buildSystemPrompt(socialSecurityContext, creativeMode) },
         { role: 'user', content: buildUserPrompt(request, correctionText) }
       ],
-      temperature: creativeMode
-        ? responseProfile === 'fast'
-          ? 0.2
-          : responseProfile === 'advanced'
-            ? 0.35
-            : 0.3
-        : socialSecurityContext
-          ? 0.2
-          : responseProfile === 'fast'
-            ? 0.25
-            : responseProfile === 'advanced'
-              ? 0.4
-              : 0.35,
-      max_tokens: creativeMode
-        ? responseProfile === 'fast'
-          ? 700
-          : responseProfile === 'advanced'
-            ? 1300
-            : 1100
-        : responseProfile === 'fast'
-          ? 1400
-          : responseProfile === 'advanced'
-            ? 2100
-            : 1800,
+      temperature: creativeMode ? 0.3 : socialSecurityContext ? 0.2 : 0.35,
+      max_tokens: creativeMode ? 1100 : 1800,
       stream: false
     })
   });
@@ -368,7 +326,6 @@ async function handler(req, res) {
     const material = clampString(body.material, 12000);
     const audience = clampString(body.audience, 120);
     const difficulty = normalizeDifficulty(clampString(body.difficulty, 20).toLowerCase());
-    const responseProfile = normalizeResponseProfile(clampString(body.responseProfile, 20).toLowerCase());
     const count = toInt(body.count, 5, 3, 12);
     const language = clampString(body.language, 40) || 'Deutsch';
     const creative = Boolean(body.creative);
@@ -392,7 +349,6 @@ async function handler(req, res) {
       count,
       language,
       creative,
-      responseProfile,
       valueStand: socialSecurityContext ? socialSecurityContext.valueStand : '',
       history
     };
