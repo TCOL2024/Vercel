@@ -977,6 +977,13 @@
     clearContextButton.addEventListener("click", clearActiveConversation);
     contextButton.addEventListener("click", clearActiveConversation);
 
+    question.addEventListener("keydown", (event) => {
+      if (event.key !== "Enter" || event.shiftKey || event.isComposing) return;
+      event.preventDefault();
+      if (send.disabled) return;
+      form.requestSubmit();
+    });
+
     form.addEventListener("submit", async (event) => {
       event.preventDefault();
       const text = question.value.trim();
