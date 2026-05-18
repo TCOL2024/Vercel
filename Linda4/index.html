@@ -77,12 +77,12 @@
 
   @media (min-width: 980px) {
     body {
-      padding: 16px;
+      padding: 12px;
     }
 
     #app {
-      width: min(1160px, 100%);
-      max-width: 1160px;
+      width: 100%;
+      max-width: none;
       margin-inline: auto;
       border-radius: 26px;
       box-shadow: 0 24px 70px rgba(4, 20, 45, 0.25);
@@ -305,6 +305,7 @@
 
   #chat-log {
     overflow-y: auto;
+    overflow-x: hidden;
     min-height: 0;
     padding: 14px;
     display: flex;
@@ -331,14 +332,27 @@
   }
 
   .msg-wrap {
-    width: min(100%, 820px);
+    width: min(100%, 1040px);
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  .msg-row.user .msg-wrap {
+    width: min(100%, 760px);
+  }
+
+  .msg-row.assistant .msg-wrap {
+    width: 100%;
   }
 
   .bubble {
+    width: 100%;
+    max-width: 100%;
     border-radius: 17px;
     padding: 12px 14px;
     box-shadow: 0 2px 10px rgba(9, 26, 48, 0.08);
     word-break: break-word;
+    overflow-wrap: anywhere;
   }
 
   .bubble.user {
@@ -377,8 +391,21 @@
   }
 
   .bubble.assistant.fv-bubble-result .md {
-    display: grid;
+    display: flex;
+    flex-direction: column;
     gap: 16px;
+    min-width: 0;
+  }
+
+  .bubble .md {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  .bubble .md > * {
+    max-width: 100%;
+    min-width: 0;
   }
 
   .md h1,
@@ -419,10 +446,18 @@
     font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   }
 
+  .md a {
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+
   .md table {
     width: 100%;
     border-collapse: collapse;
     min-width: 340px;
+    display: block;
+    overflow-x: auto;
+    max-width: 100%;
   }
 
   .md th,
@@ -437,8 +472,25 @@
   }
 
   .md.sozialrecht-md {
-    display: grid;
+    display: flex;
+    flex-direction: column;
     gap: 10px;
+    min-width: 0;
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .md,
+  .md p,
+  .md li,
+  .md td,
+  .md th,
+  .md section,
+  .md div,
+  .md span {
+    min-width: 0;
+    overflow-wrap: anywhere;
+    word-break: break-word;
   }
 
   .sozialrecht-topline {
@@ -458,8 +510,12 @@
   }
 
   .sozialrecht-stack {
-    display: grid;
+    display: flex;
+    flex-direction: column;
     gap: 10px;
+    min-width: 0;
+    width: 100%;
+    max-width: 100%;
   }
 
   .sozialrecht-section {
@@ -467,6 +523,9 @@
     border-radius: 13px;
     background: linear-gradient(180deg, #ffffff 0%, #f8fcfa 100%);
     padding: 10px 11px;
+    min-width: 0;
+    width: 100%;
+    max-width: 100%;
   }
 
   .sozialrecht-section.intro {
@@ -567,6 +626,7 @@
     border-radius: 11px;
     overflow: hidden;
     background: #f3f9ff;
+    min-width: 0;
   }
 
   .source-head {
@@ -585,6 +645,8 @@
 
   .source-list a {
     color: #0d58ae;
+    overflow-wrap: anywhere;
+    word-break: break-word;
   }
 
   .evidence-panel,
@@ -661,6 +723,7 @@
     padding: 10px;
     display: grid;
     gap: 8px;
+    min-width: 0;
   }
 
   .source-card {
@@ -669,6 +732,7 @@
     background: #ffffff;
     padding: 10px;
     box-shadow: 0 6px 18px rgba(32, 91, 57, 0.06);
+    min-width: 0;
   }
 
   .source-card-head {
@@ -678,6 +742,7 @@
     gap: 12px;
     margin-bottom: 8px;
     flex-wrap: wrap;
+    min-width: 0;
   }
 
   .source-card-title {
@@ -693,6 +758,11 @@
     font-family: 'Space Grotesk', sans-serif;
     font-size: 0.98rem;
     line-height: 1.35;
+    min-width: 0;
+    max-width: 100%;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+    white-space: normal;
   }
 
   .source-card-head span {
@@ -701,6 +771,7 @@
     font-family: 'Space Grotesk', sans-serif;
     font-size: 0.98rem;
     line-height: 1.35;
+    min-width: 0;
   }
 
   .source-card-head a:hover,
@@ -741,7 +812,10 @@
     padding: 8px 10px;
     white-space: pre-wrap;
     max-height: 8.8rem;
-    overflow: auto;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overflow-wrap: anywhere;
+    word-break: break-word;
   }
 
   .source-card-snippet::before {
@@ -784,6 +858,7 @@
     margin-top: 8px;
     display: flex;
     justify-content: flex-end;
+    min-width: 0;
   }
 
   .source-card-btn {
@@ -800,6 +875,9 @@
     justify-content: center;
     text-decoration: none;
     line-height: 1.2;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    word-break: break-word;
   }
 
   .source-card-btn:hover,
@@ -1726,13 +1804,18 @@
   .cards-top {
     display: flex;
     gap: 14px;
-    align-items: center;
+    align-items: flex-start;
     justify-content: space-between;
     padding: 18px 18px 16px;
+    width: min(1240px, 100%);
+    margin: 0 auto;
     border-bottom: 1px solid rgba(4, 81, 68, 0.12);
     background: rgba(255,255,255,0.72);
     backdrop-filter: blur(12px);
     box-shadow: 0 16px 36px rgba(9, 35, 29, 0.08);
+    position: sticky;
+    top: 0;
+    z-index: 6;
   }
 
   .cards-title {
@@ -1758,6 +1841,66 @@
     grid-template-columns: repeat(auto-fit, minmax(420px, 520px));
     justify-content: center;
     align-items: start;
+  }
+
+  .deck-grid {
+    width: min(1240px, 100%);
+    margin: 0 auto;
+    padding: 28px 20px 40px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 16px;
+    align-items: start;
+  }
+
+  .deck-card {
+    border: 1px solid rgba(18, 80, 150, 0.12);
+    border-radius: 22px;
+    padding: 18px;
+    background:
+      radial-gradient(240px 120px at 100% 0%, rgba(0, 120, 96, 0.10) 0%, transparent 66%),
+      linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(246,251,255,0.96) 100%);
+    box-shadow: 0 18px 42px rgba(9, 35, 29, 0.08);
+  }
+
+  .deck-card h3 {
+    margin: 12px 0 6px;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 1.1rem;
+    line-height: 1.28;
+    color: #123f72;
+  }
+
+  .deck-card p {
+    margin: 0;
+    color: #587067;
+    font-size: 0.9rem;
+    line-height: 1.55;
+  }
+
+  .deck-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: 16px;
+  }
+
+  .deck-btn {
+    border: 1px solid #bfd2ee;
+    background: #f7fbff;
+    color: #104686;
+    border-radius: 14px;
+    min-height: 42px;
+    padding: 0 14px;
+    font-weight: 800;
+    cursor: pointer;
+  }
+
+  .deck-btn.primary {
+    background: linear-gradient(135deg, #0b5e52 0%, #0d7563 100%);
+    color: #fff;
+    border: none;
+    box-shadow: 0 12px 24px rgba(10, 96, 83, 0.16);
   }
 
   .flash {
@@ -1863,6 +2006,19 @@
     border: 1px solid rgba(4, 81, 68, 0.1);
   }
 
+  .flash-chip.soft {
+    background: rgba(13, 117, 99, 0.08);
+    color: #0c6456;
+    border-color: rgba(13, 117, 99, 0.14);
+  }
+
+  .flash-chip-row {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
   .flash-kicker {
     margin: 0;
     font-size: 0.7rem;
@@ -1916,6 +2072,13 @@
     overflow: auto;
   }
 
+  .flash-answer {
+    white-space: pre-wrap;
+    font-size: 1rem;
+    line-height: 1.72;
+    color: #123f72;
+  }
+
   .flash-answer-copy {
     white-space: pre-wrap;
     font-size: 1rem;
@@ -1928,6 +2091,32 @@
     gap: 8px;
     flex-wrap: wrap;
     margin-top: auto;
+  }
+
+  .flash-meta-item {
+    flex: 1 1 150px;
+    min-width: 0;
+    border-radius: 16px;
+    padding: 10px 12px;
+    border: 1px solid rgba(18, 80, 150, 0.09);
+    background: rgba(255,255,255,0.72);
+  }
+
+  .flash-meta-label {
+    display: block;
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.09em;
+    color: #637c96;
+    font-weight: 800;
+    margin-bottom: 4px;
+  }
+
+  .flash-meta-value {
+    display: block;
+    font-size: 0.92rem;
+    color: #123f72;
+    font-weight: 700;
   }
 
   .flash-status-pill {
@@ -1983,7 +2172,7 @@
   .cards-library-panel {
     width: min(1240px, 100%);
     margin: 0 auto;
-    padding: 18px 20px 0;
+    padding: 24px 20px 0;
   }
 
   .cards-library-item {
@@ -2020,6 +2209,7 @@
     justify-content: space-between;
     gap: 12px;
     align-items: center;
+    box-shadow: 0 16px 34px rgba(9, 35, 29, 0.08);
   }
 
   .cards-library-meta {
@@ -2038,10 +2228,12 @@
 
   .practice-card {
     border: 1px solid #d2e2f6;
-    border-radius: 14px;
-    background: #fff;
-    padding: 14px;
-    box-shadow: 0 8px 20px rgba(12, 41, 74, 0.06);
+    border-radius: 18px;
+    background:
+      radial-gradient(220px 120px at 100% 0%, rgba(23, 119, 208, 0.08) 0%, transparent 66%),
+      #fff;
+    padding: 16px;
+    box-shadow: 0 16px 36px rgba(12, 41, 74, 0.08);
   }
 
   .practice-header {
@@ -2456,12 +2648,19 @@
 
   .selection-field select,
   .selection-field input,
+  .selection-field textarea,
   .selection-result-text {
     width: 100%;
     border: 1px solid #c6d8f1;
     border-radius: 10px;
     padding: 9px 10px;
     font: inherit;
+  }
+
+  .selection-field textarea {
+    min-height: 88px;
+    resize: vertical;
+    line-height: 1.45;
   }
 
   .selection-result-text {
@@ -3140,6 +3339,8 @@
 
   .source-list a {
     color: var(--accent-strong);
+    overflow-wrap: anywhere;
+    word-break: break-word;
   }
 
   .keyword-panel {
@@ -3154,6 +3355,8 @@
 
   .keyword-list a {
     color: #1e6f4d;
+    overflow-wrap: anywhere;
+    word-break: break-word;
   }
 
   .action-btn {
@@ -3551,6 +3754,423 @@
     }
   }
 
+  /* 2026-05-18: mobile usability pass.
+     CSS-only: keeps all Sozialrecht logic, checks and API routing untouched. */
+  @media (max-width: 920px) {
+    html,
+    body {
+      width: 100%;
+      max-width: 100%;
+      overflow: hidden;
+      overscroll-behavior: none;
+      font-size: 16px;
+    }
+
+    body {
+      min-height: 100dvh;
+    }
+
+    #app {
+      height: 100dvh;
+      max-height: 100dvh;
+      grid-template-rows: auto auto minmax(0, 1fr) auto auto;
+      overflow: hidden;
+    }
+
+    header {
+      grid-template-columns: minmax(0, 1fr) auto !important;
+      grid-template-areas:
+        "logo badge"
+        "reader reader"
+        "actions actions" !important;
+      gap: 6px 8px !important;
+      padding: calc(7px + env(safe-area-inset-top)) 8px 7px !important;
+      max-height: 31dvh;
+      overflow: hidden !important;
+    }
+
+    .logo {
+      font-size: 1.05rem !important;
+      line-height: 1.1;
+      letter-spacing: 0 !important;
+    }
+
+    .logo-sub {
+      display: none !important;
+    }
+
+    #domain-badge {
+      max-width: 34vw !important;
+      min-width: 0;
+      padding: 5px 8px !important;
+      font-size: 0.66rem !important;
+      letter-spacing: 0 !important;
+    }
+
+    .mobile-reader-toggle {
+      min-height: 34px;
+      padding: 5px 7px !important;
+      gap: 9px;
+      white-space: nowrap;
+      scrollbar-width: none;
+    }
+
+    .mobile-reader-toggle label,
+    .mobile-reader-toggle .label {
+      font-size: 0.74rem !important;
+      letter-spacing: 0 !important;
+      text-transform: none;
+    }
+
+    .header-actions {
+      display: flex !important;
+      flex-wrap: nowrap !important;
+      overflow-x: auto !important;
+      overflow-y: hidden !important;
+      overscroll-behavior-x: contain;
+      -webkit-overflow-scrolling: touch;
+      gap: 7px !important;
+      padding: 1px 0 3px !important;
+      scrollbar-width: none;
+    }
+
+    .header-actions::-webkit-scrollbar {
+      display: none;
+    }
+
+    .header-actions .btn-icon,
+    .header-actions .btn-icon:last-child {
+      grid-column: auto !important;
+      flex: 0 0 auto;
+      width: auto !important;
+      min-width: max-content !important;
+      min-height: 36px !important;
+      height: 36px !important;
+      padding: 0 10px !important;
+      border-radius: 11px !important;
+      font-size: 0.78rem !important;
+      line-height: 1;
+      letter-spacing: 0 !important;
+      white-space: nowrap;
+      box-shadow: 0 6px 14px rgba(6, 28, 22, 0.08) !important;
+    }
+
+    .source-toolbar {
+      min-height: 38px;
+      padding: 6px 8px !important;
+      gap: 7px !important;
+      flex-wrap: nowrap !important;
+      scrollbar-width: none;
+    }
+
+    .source-chip {
+      flex: 0 0 auto;
+      min-height: 30px;
+      padding: 6px 9px !important;
+      font-size: 0.7rem !important;
+      line-height: 1;
+      letter-spacing: 0 !important;
+    }
+
+    .smart-controls-bar {
+      min-height: 46px;
+      padding: 7px 8px !important;
+      gap: 8px !important;
+      flex-wrap: nowrap !important;
+      scrollbar-width: none;
+    }
+
+    .smart-control {
+      flex: 0 0 clamp(138px, 39vw, 172px) !important;
+      min-width: 138px !important;
+      max-width: 172px !important;
+      min-height: 38px;
+      padding: 7px 8px !important;
+      border-radius: 11px !important;
+      gap: 6px !important;
+      box-shadow: 0 6px 14px rgba(6, 28, 22, 0.07) !important;
+    }
+
+    .smart-control .label {
+      width: 100%;
+      font-size: 0.68rem !important;
+      line-height: 1.1;
+      letter-spacing: 0 !important;
+      text-transform: none;
+    }
+
+    .fastmode-choice {
+      font-size: 0.73rem;
+      gap: 4px;
+    }
+
+    #chat-log {
+      min-height: 0;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      padding: 10px 9px 0 !important;
+      padding-bottom: calc(var(--input-h) + 18px + var(--kb) + env(safe-area-inset-bottom)) !important;
+      gap: 10px;
+    }
+
+    .msg-wrap,
+    .msg-row.user .msg-wrap,
+    .msg-row.assistant .msg-wrap {
+      width: 100%;
+      max-width: 100%;
+    }
+
+    .bubble {
+      border-radius: 13px !important;
+      padding: 11px 12px !important;
+      font-size: 0.96rem !important;
+      line-height: 1.5 !important;
+      overflow-wrap: anywhere;
+      word-break: normal;
+      box-shadow: 0 5px 13px rgba(6, 28, 22, 0.07) !important;
+    }
+
+    .bubble.user {
+      max-width: 92%;
+      border-radius: 14px 14px 5px 14px !important;
+    }
+
+    .bubble.assistant {
+      max-width: 100%;
+      border-radius: 14px 14px 14px 5px !important;
+    }
+
+    .md table,
+    .source-panel,
+    .keyword-panel,
+    .case-disclaimer {
+      max-width: 100%;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .msg-actions {
+      display: flex;
+      overflow-x: auto;
+      flex-wrap: nowrap;
+      gap: 6px;
+      padding-bottom: 2px;
+      scrollbar-width: none;
+    }
+
+    .msg-actions::-webkit-scrollbar {
+      display: none;
+    }
+
+    .action-btn {
+      flex: 0 0 auto !important;
+      min-height: 34px;
+      padding: 7px 10px !important;
+      border-radius: 10px !important;
+      font-size: 0.73rem !important;
+      line-height: 1;
+      white-space: nowrap;
+    }
+
+    .input-area {
+      position: sticky;
+      bottom: 0;
+      min-height: 0;
+      gap: 7px !important;
+      padding: 8px 8px calc(8px + env(safe-area-inset-bottom)) !important;
+      box-shadow: 0 -8px 22px rgba(6, 28, 22, 0.12) !important;
+    }
+
+    .input-wrap {
+      min-width: 0;
+    }
+
+    #chat-input {
+      min-height: 48px !important;
+      max-height: 28dvh !important;
+      padding: 10px 11px !important;
+      border-radius: 13px !important;
+      font-size: 16px !important;
+      line-height: 1.35 !important;
+    }
+
+    #chat-input::placeholder {
+      font-size: 0.92rem;
+      white-space: normal;
+    }
+
+    #mic-btn,
+    #send-btn {
+      width: 48px !important;
+      height: 48px !important;
+      min-width: 48px !important;
+      flex: 0 0 48px !important;
+      border-radius: 13px !important;
+      font-size: 1rem !important;
+    }
+
+    .modal-overlay,
+    .selection-modal {
+      align-items: flex-end !important;
+      padding: 0 !important;
+    }
+
+    .modal,
+    .selection-modal-card {
+      width: 100% !important;
+      max-width: 100% !important;
+      max-height: min(88dvh, 760px) !important;
+      border-radius: 16px 16px 0 0 !important;
+      padding: 14px 12px calc(14px + env(safe-area-inset-bottom)) !important;
+      overflow: auto;
+    }
+
+    .selection-modal-actions {
+      position: sticky;
+      bottom: 0;
+      background: linear-gradient(180deg, rgba(255,255,255,0.82), #fff);
+      padding-top: 8px;
+    }
+
+    #selection-menu {
+      max-width: calc(100vw - 16px);
+      max-height: min(54dvh, 420px);
+      overflow: auto;
+    }
+
+    .clarify-dock {
+      left: 0;
+      right: 0;
+      bottom: calc(var(--input-h) + env(safe-area-inset-bottom));
+      padding: 0 8px 8px;
+    }
+
+    .clarify-card {
+      width: 100% !important;
+      max-width: 100% !important;
+      max-height: min(70dvh, calc(100dvh - var(--input-h) - 40px)) !important;
+      border-radius: 18px !important;
+      overflow: hidden;
+    }
+
+    .clarify-options {
+      max-height: 30dvh !important;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .cards-layout {
+      min-height: 100dvh;
+      max-width: 100vw;
+      overflow-x: hidden;
+    }
+
+    .cards-top {
+      flex-direction: column;
+      align-items: stretch !important;
+      gap: 10px;
+      padding: calc(10px + env(safe-area-inset-top)) 10px 10px !important;
+      position: sticky;
+      top: 0;
+      z-index: 12;
+    }
+
+    .cards-top > div:last-child {
+      display: flex !important;
+      overflow-x: auto;
+      flex-wrap: nowrap !important;
+      gap: 7px !important;
+      scrollbar-width: none;
+    }
+
+    .cards-top > div:last-child::-webkit-scrollbar {
+      display: none;
+    }
+
+    .cards-title {
+      font-size: 1.18rem !important;
+      letter-spacing: 0 !important;
+    }
+
+    .cards-sub {
+      font-size: 0.78rem;
+      line-height: 1.35;
+    }
+
+    .cards-body,
+    .deck-grid {
+      width: 100%;
+      grid-template-columns: minmax(0, 1fr) !important;
+      gap: 12px !important;
+      padding: 12px 9px calc(24px + env(safe-area-inset-bottom)) !important;
+    }
+
+    .deck-card,
+    .practice-card {
+      border-radius: 14px !important;
+      padding: 13px !important;
+    }
+
+    .flash-toggle {
+      height: min(58dvh, 350px) !important;
+      min-height: 300px !important;
+    }
+
+    .flash-face {
+      border-radius: 18px !important;
+      padding: 15px !important;
+      overflow: auto;
+    }
+
+    .flash h4 {
+      font-size: 1.12rem !important;
+      line-height: 1.28;
+      letter-spacing: 0 !important;
+    }
+
+    .flash-answer {
+      font-size: 0.95rem !important;
+      line-height: 1.55 !important;
+    }
+
+    .flash-actions {
+      grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+      gap: 7px !important;
+    }
+
+    .flash-rate-btn {
+      min-height: 42px !important;
+      border-radius: 12px !important;
+      font-size: 0.82rem !important;
+    }
+  }
+
+  @media (max-width: 420px) {
+    .header-actions .btn-icon {
+      height: 34px !important;
+      min-height: 34px !important;
+      padding: 0 9px !important;
+      font-size: 0.74rem !important;
+    }
+
+    .smart-control {
+      flex-basis: 132px !important;
+      min-width: 132px !important;
+    }
+
+    .bubble {
+      font-size: 0.94rem !important;
+    }
+
+    #mic-btn,
+    #send-btn {
+      width: 46px !important;
+      height: 46px !important;
+      min-width: 46px !important;
+      flex-basis: 46px !important;
+    }
+  }
+
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after {
       animation: none !important;
@@ -3583,7 +4203,7 @@
       <button class="btn-icon btn-primary" title="Neuer Chat" onclick="app.logic.resetHistoryAndNewChat()">Neu</button>
       <button class="btn-icon" title="Verlauf" onclick="app.ui.openModal('modal-sessions')">Verlauf</button>
       <button class="btn-icon" title="Gespeicherte Lernkarten" onclick="app.logic.openSavedCardsLibrary()">Lernkarten</button>
-      <button class="btn-icon" title="Kollektionen" onclick="app.logic.openCollectionsPage()">Kollektionen</button>
+      <button class="btn-icon" title="Kollektion öffnen" onclick="app.logic.openCollectionsPage()">Kollektion</button>
       <button class="btn-icon" title="Einstellungen" onclick="app.ui.openModal('modal-settings')">Einstellungen</button>
     </div>
   </header>
@@ -3892,14 +4512,24 @@
   const PRACTICE_KEY = 'linda3_practice';
   const CARDS_STATS_KEY = 'linda3_cards_stats';
   const CARDS_LIBRARY_KEY = 'linda3_cards_library';
-  const FLASHCARDS_API_ENDPOINT = '/api/linda3?action=flashcards';
+  const FLASHCARDS_API_ENDPOINT = '/api/linda3-beta?action=learning';
   const TRANSLATE_API_ENDPOINT = '/api/linda3?action=translate';
   const REWRITE_API_ENDPOINT = '/api/linda3?action=rewrite';
   const TTS_API_ENDPOINT = '/api/linda3?action=tts';
   const STT_API_ENDPOINT = '/api/linda3?action=stt';
   const SOZIALRECHT_ONLY_MODE = true;
   const SOZIALRECHT_DOMAIN_KEY = 'SOZIALRECHT';
-  const LEARNING_TEMPLATES_PATH = './docs/learning_templates.json';
+  const SOZIALRECHT_VECTOR_STORE = {
+    name: 'Sozialrecht2026',
+    id: 'vs_69de0362cf84819199202158e8444e16',
+    files: {
+      sozialrechtQaMarkdown: 'file-SFyyy5nhuvp2UiUieweCwi',
+      verhinderungspflege: 'file-2GV2ffyiPT5sN2fXL63SxB',
+      angehoerigePflege: 'file-DCji3R9WhwnKEvawfUHwvG',
+      krankenPflegeversicherungRentner: 'file-3qYmeg5U4otWjPAzMrP88U'
+    }
+  };
+  const BLOCKED_NON_SOZIALRECHT_KEYWORDS = ['BBiG', 'AEVO', 'IHK', 'Ausbilder', 'Ausbildereignung', 'Berufsbildungsgesetz'];
   const SOZIALRECHT_CURRICULUM_PATH = './docs/sozialrecht_sgb_i_xii.json';
   const CLAUDE_CLARIFY_MODE = true;
   const APP_VERSION = 5;
@@ -3921,16 +4551,13 @@
     ],
     quickSuggestions: [],
     modeCards: [
-      { key: "AEVO", label: "AEVO", hint: "Ausbilder-Themen" },
-      { key: "VWL", label: "VWL/BWL", hint: "Wirtschaftsbezug" },
-      { key: "PERSONAL", label: "Personal", hint: "Personalwesen" },
       { key: "SOZIALRECHT", label: "Sozialrecht", hint: "SGB I-XII" }
     ]
   };
 
   const DEFAULT_CARDS_WEBHOOK_JSON = {
     enabled: true,
-    endpointPath: "/api/linda3?action=bot",
+    endpointPath: "/api/linda3-beta?action=learning",
     minSelectionChars: 24,
     targetCount: 4,
     requireConfirmation: true,
@@ -3960,24 +4587,13 @@
 
   const DEFAULT_LEARNING_TEMPLATES = {
     version: '1.0',
-    flashcards: {
-      instruction_template:
-        'Erstelle aus dem folgenden Volltext genau {{count}} hochwertige Lernkarten. ' +
-        'Antwort ausschliesslich als JSON ohne Markdown im Format {"deckTitle":"...","cards":[{"question":"...","answer":"..."}]}. ' +
-        'Regeln: Verwende den gesamten Text als Grundlage, formuliere praezise und pruefungsorientierte Fragen, keine generischen Fragen wie "Welche Kernaussage..." oder "Was laesst sich ableiten?", keine Meta-Hinweise, jede Antwort muss konkret aus dem Text belegbar sein. ' +
-        'Nutze nur 2 oder 4 Karten, keine anderen Anzahlen. Fachmodus: {{domain}}. Volltext: {{content}}'
-    },
     practice: {
-      title_prefix: 'Uebungsaufgaben',
-      instruction_template:
-        'Analysiere den Inhalt gruendlich und erstelle durchdachte Uebungsaufgaben im Modus {{template_label}} mit Niveau {{difficulty}}. ' +
-        'Liefere JSON ohne Markdown im Format {"title":"...","questions":[{"type":"mc","question":"...","options":["..."],"correctIndices":[0],"hint":"...","solution":"...","points":2}]}. ' +
-        'Fuer MC mindestens 4 Optionen. Kontext: {{content}}',
+      title_prefix: 'Pruefungsaufgaben',
       templates: [
-        { id: 'quick_quiz', label: 'Schnelles Quiz', description: 'Kurze Wiederholung von Fakten und Definitionen', duration: '5 Minuten', default_count: 4, supports_open: false },
-        { id: 'multiple_choice', label: 'Multiple Choice', description: 'Prueft Verstaendnis auf mehreren Ebenen', duration: '10 Minuten', default_count: 6, supports_open: false },
-        { id: 'progressive', label: 'Progressive Uebung', description: 'Steigendes Niveau inkl. Transferaufgaben', duration: '15 Minuten', default_count: 6, supports_open: true },
-        { id: 'deep_dive', label: 'Deep Dive', description: 'Anwendung, Begruendung und kritisches Denken', duration: '25 Minuten', default_count: 8, supports_open: true }
+        { id: 'quick_quiz', label: 'Schnelles Quiz', description: 'Kurze Wiederholung mit klarer Pruefungslogik', duration: '5 Minuten', default_count: 4, supports_open: false },
+        { id: 'multiple_choice', label: 'Multiple Choice', description: 'IHK-nahe Fragen mit plausiblen Ablenkern', duration: '10 Minuten', default_count: 6, supports_open: false },
+        { id: 'progressive', label: 'Falltraining', description: 'Fallorientierte Aufgaben mit steigender Tiefe', duration: '15 Minuten', default_count: 6, supports_open: true },
+        { id: 'deep_dive', label: 'Pruefungsfall', description: 'Klausurfall mit Anwendung, Begruendung und Transfer', duration: '25 Minuten', default_count: 8, supports_open: true }
       ],
       difficulties: ['leicht', 'mittel', 'anspruchsvoll']
     }
@@ -5578,6 +6194,10 @@
 
         modal.classList.add('open');
         modal.setAttribute('aria-hidden', 'false');
+        window.setTimeout(() => {
+          const firstField = fieldsEl.querySelector('#selection-practice-focus') || fieldsEl.querySelector('textarea, input, select, button');
+          if (firstField && typeof firstField.focus === 'function') firstField.focus();
+        }, 0);
       },
 
       openSelectionResultModal: (title, text, opts = {}) => {
@@ -5758,55 +6378,7 @@
       },
 
       loadLearningTemplates: async () => {
-        try {
-          const res = await fetch(LEARNING_TEMPLATES_PATH, { cache: 'no-store' });
-          if (!res.ok) return;
-          const parsed = await res.json();
-          if (!parsed || typeof parsed !== 'object') return;
-
-          const flashInstruction = String(parsed?.flashcards?.instruction_template || '').trim();
-          const practiceObj = parsed?.practice && typeof parsed.practice === 'object' ? parsed.practice : {};
-          const practiceTemplates = Array.isArray(practiceObj.templates) ? practiceObj.templates : [];
-          const normalizedTemplates = practiceTemplates
-            .map((t) => {
-              if (!t || typeof t !== 'object') return null;
-              const id = String(t.id || '').trim();
-              const label = String(t.label || '').trim();
-              if (!id || !label) return null;
-              return {
-                id,
-                label,
-                description: String(t.description || '').trim(),
-                duration: String(t.duration || '').trim(),
-                default_count: Math.max(3, Math.min(12, Number(t.default_count || 6))),
-                supports_open: Boolean(t.supports_open)
-              };
-            })
-            .filter(Boolean);
-
-          learningTemplatesCache = {
-            version: String(parsed.version || DEFAULT_LEARNING_TEMPLATES.version || '1.0'),
-            flashcards: {
-              instruction_template:
-                flashInstruction || DEFAULT_LEARNING_TEMPLATES.flashcards.instruction_template
-            },
-            practice: {
-              title_prefix: String(practiceObj.title_prefix || DEFAULT_LEARNING_TEMPLATES.practice.title_prefix || 'Uebungsaufgaben').trim(),
-              instruction_template:
-                String(practiceObj.instruction_template || '').trim() ||
-                DEFAULT_LEARNING_TEMPLATES.practice.instruction_template,
-              templates: normalizedTemplates.length
-                ? normalizedTemplates
-                : structuredClone(DEFAULT_LEARNING_TEMPLATES.practice.templates),
-              difficulties: (Array.isArray(practiceObj.difficulties) ? practiceObj.difficulties : [])
-                .map((v) => String(v || '').trim())
-                .filter(Boolean)
-            }
-          };
-          if (!learningTemplatesCache.practice.difficulties.length) {
-            learningTemplatesCache.practice.difficulties = structuredClone(DEFAULT_LEARNING_TEMPLATES.practice.difficulties);
-          }
-        } catch (_) {}
+        learningTemplatesCache = structuredClone(DEFAULT_LEARNING_TEMPLATES);
       },
 
       getLearningTemplates: () => {
@@ -6048,6 +6620,9 @@
           passiveBenefits: has(/\b(passive leistung|passive leistungen|alg i|arbeitslosengeld i|kurzarbeitergeld|insolvenzgeld|uebergangsgeld|übergangsgeld)\b/) && has(/\b(arbeitslosenversicherung|sgb iii|agentur fuer arbeit|agentur für arbeit|alg i|kurzarbeitergeld|insolvenzgeld|uebergangsgeld|übergangsgeld)\b/),
           vaccinations: has(/\b(impfung|impfungen|schutzimpfung|schutzimpfungen|reiseimpfung|stiko|g-?ba|schutzimpfungsrichtlinie|schutzimpfungs-richtlinie|§\s*20i\s*sgb\s*v)\b/),
           earningCapacity: has(/\b(erwerbsminderung|erwerbsunfaehigkeit|erwerbsunfähigkeit|arbeitsmarktrente|reha vor rente|§\s*43\s*sgb\s*vi)\b/),
+          carePension: has(/\b(pflegeperson|pflegepersonen|pflegebeduerftig|pflegebedürftig|pflegegrad|pflegekasse|rentenversicherung|rentenbeitraege|rentenbeiträge|10 stunden|zwei tage|2 tage|30 stunden|§\s*3\s*sgb\s*vi|§\s*44\s*sgb\s*xi)\b/) && has(/\b(pflege|pflegt|pflegen|pflegeperson|pflegepersonen)\b/) && has(/\b(rentenversicherung|rentenbeitraege|rentenbeiträge|versicherungspflicht|soziale sicherung|30 stunden|10 stunden|zwei tage|2 tage)\b/),
+          respiteCare: has(/\b(verhinderungspflege|ersatzpflege|pflegevertretung|stundenweise verhinderung|§\s*39\s*sgb\s*xi)\b/),
+          retireeInsurance: has(/\b(kvdr|pvdr|krankenversicherung der rentner|pflegeversicherung der rentner|rentner krankenversicherung|rentner pflegeversicherung|rente krankenkasse|rentenantrag krankenversicherung)\b/),
           singleCase: asked(/\b(pruef(?:e|en|ung)|prüf(?:e|en|ung)|beurteile|bewerte|einschaetzung|einschätzung|rechtslage|fall|anspruch|darf|muss|kann .* verlangen|ist .* rechtmaessig|ist .* rechtmäßig)\b/)
         };
 
@@ -6073,6 +6648,9 @@
           profile.passiveBenefits ? 'arbeitslosenversicherung_passive_leistungen' : '',
           profile.vaccinations ? 'gkv_impfungen' : '',
           profile.earningCapacity ? 'erwerbsminderung_sgb_vi' : '',
+          profile.carePension ? 'pflegeperson_rentenversicherung' : '',
+          profile.respiteCare ? 'verhinderungspflege' : '',
+          profile.retireeInsurance ? 'kvdr_pvdr' : '',
           profile.widerspruch ? 'widerspruch_sgg' : '',
           profile.authorityLetter ? 'behoerden_kassen_schreiben' : '',
           profile.requiresSampleText ? 'mustertext_pflicht' : ''
@@ -6082,114 +6660,106 @@
       },
 
       buildSozialrechtPromptDirective: (profile = {}) => {
-        const flags = Array.isArray(profile.flags) ? profile.flags : [];
         const lines = [
           'LINDA_SOZIALRECHT_QUALITAETSSTEUERUNG:',
-          'Antworte im Fachmodus Sozialrecht auf Pruefungs- und Dozenten-Niveau. Pruefe nicht nur die Norm, sondern auch Vollstaendigkeit, Fristen, Ausnahmen, Rechtsfolgen, Buergerrechte und typische Pruefungsfallen. Bei Behoerden- oder Kassen-Schreiben bewerte zusaetzlich, ob die Aussage zu pauschal, zu streng oder unvollstaendig ist. Wenn eine Aufgabe eine Musterformulierung verlangt, liefere diese immer.',
-          `Antwortmodus: ${profile.mode || 'general'} (${profile.modeLabel || 'Allgemeine Wissensfrage'}).`
+          'Fachmodus ist SOZIALRECHT. Nutze Sozialrecht/SGB und den Sozialrecht-Vector-Store. BBiG/AEVO/IHK-Ausbildungsrecht ist in diesem Modus nur relevant, wenn die Nutzerfrage es ausdruecklich nennt.',
+          'Wenn Retrieval BBiG/AEVO/ausbildungsrechtliche Quellen liefert, die Frage aber sozialrechtlich ist: diese Quellen ignorieren und die einschlaegigen SGB-Normen verwenden.',
+          'Antworte pruefungsnah: Rechtskreis, Anspruchsgrundlage, Voraussetzungen, Subsumtion, Rechtsfolge, typische Falle.'
         ];
-
-        if (profile.mode === 'general') {
-          lines.push('Bei allgemeinen Wissensfragen: vollstaendige Systematik liefern, keine unnoetigen Rueckfragen stellen.');
+        if (profile.carePension) {
+          lines.push('Pflegeperson/Rentenversicherung: pruefe § 3 Satz 1 Nr. 1a SGB VI und § 44 SGB XI. Kernpunkte: nicht erwerbsmaessige Pflege, Pflegebeduerftiger mindestens Pflegegrad 2, haeusliche Umgebung, mindestens 10 Stunden woechentlich verteilt auf regelmaessig mindestens 2 Tage, Anspruch aus sozialer oder privater Pflege-Pflichtversicherung, Ausschluss bei regelmaessig mehr als 30 Stunden Erwerbstaetigkeit, Rechtsfolge Rentenversicherungspflicht/Beitragszahlung durch Pflegekasse/private Pflege-Pflichtversicherung.');
         }
-        if (profile.mode === 'case_review') {
-          lines.push('Bei Einzelfallpruefungen oder Schreiben: kritisch subsumieren, Gegenargumente, Rechtsfolgen, Fristen und Buergerrechte sichtbar machen.');
+        if (profile.respiteCare) {
+          lines.push(`Verhinderungspflege: nutze vorrangig das Vector-Store-Dokument ${SOZIALRECHT_VECTOR_STORE.files.verhinderungspflege} und pruefe § 39 SGB XI mit Voraussetzungen, Budget/Dauer, stundenweiser Verhinderungspflege und Angehoerigenkonstellation.`);
         }
-        if (profile.mode === 'coaching') {
-          lines.push('Im Coaching-/Pruefmodus sind kurze Rueckfragen erlaubt; am Ende dennoch ein Ergebnis mit Pruefschema ausgeben.');
+        if (profile.retireeInsurance) {
+          lines.push(`KVdR/PVdR: nutze vorrangig das Vector-Store-Dokument ${SOZIALRECHT_VECTOR_STORE.files.krankenPflegeversicherungRentner} und pruefe Vorversicherungszeit, Status, Beitragspflicht und typische Rentner-Fallen.`);
         }
-        lines.push('Pflichtsektion am Ende: "## Qualitätscheck / Prüfungsfeinschliff" mit Begriff, Voraussetzungen, Pruefungsfalle, Pauschalitaet, Frist/Ausnahme/Rechtsfolge und Qualitaetsampel.');
-
-        if (profile.authorityLetter) {
-          lines.push('Schreiben/Bescheid-Pruefung: Rechtsauffassung korrekt? vollstaendig? zu streng/pauschal? Rechte des Buergers? Hinweis-, Beratungs- und Unterstuetzungspflichten? Heilung, Nachholung, Wiedereinsetzung, Fristprobleme? Mustertext liefern, wenn verlangt.');
-        }
-        if (profile.widerspruch) {
-          lines.push('Widerspruch zwingend pruefen: Form § 84 SGG; elektronische Form § 36a SGB I; Frist 1 Monat nach Bekanntgabe; Rechtsbehelfsbelehrung § 66 SGG; Wiedereinsetzung § 67 SGG; Abhilfepruefung § 85 SGG; Beratungs-/Hinweispflichten §§ 13-15 SGB I. Eine einfache E-Mail ist grundsaetzlich nicht formwirksam, aber nicht vorschnell "Sachentscheidung unmoeglich" sagen: formunwirksam, Hinweis auf formgerechte Nachholung, Frist/Wiedereinsetzung/Belehrungsfehler pruefen.');
-        }
-        if (profile.familyInsurance) {
-          lines.push('GKV/Familienversicherung: § 10 SGB V vollstaendig pruefen; bei Kindern § 10 Abs. 3 SGB V mit 3er-Pruefung: ein Elternteil privat versichert, dieser verdient mehr als der gesetzlich versicherte Elternteil, Einkommen liegt ueber JAEG.');
-        }
-        if (profile.pkvChild) {
-          lines.push('PKV/Kindernachversicherung: § 198 VVG; kein SGB-V-Begriff; Frist 2 Monate; kein hoeherer Schutz als beim Elternteil.');
-        }
-        if (profile.passiveBenefits) {
-          lines.push('Arbeitslosenversicherung: "passive Leistungen" als Lehrbegriff kennzeichnen; typische Leistungen ALG I, Kurzarbeitergeld, Insolvenzgeld; Uebergangsgeld nicht pauschal als typische passive Leistung der Arbeitslosenversicherung einordnen.');
-        }
-        if (profile.vaccinations) {
-          lines.push('GKV-Impfungen: § 20i SGB V; STIKO empfiehlt; G-BA entscheidet ueber Schutzimpfungs-Richtlinie; Krankenkasse zahlt bei Regelleistung; Reiseimpfungen meist Satzungsleistung.');
-        }
-        if (profile.earningCapacity) {
-          lines.push('Erwerbsminderung SGB VI: § 43 SGB VI; unter 3 Stunden volle EM; 3 bis unter 6 Stunden teilweise EM; ab 6 Stunden keine EM; Arbeitsmarktrente und Reha vor Rente ergaenzen; "Erwerbsunfaehigkeit" als alten Begriff kennzeichnen.');
-        }
-        if (flags.length) lines.push(`Erkannte Spezialthemen: ${flags.join(', ')}.`);
         return lines.join('\n');
       },
+      buildSozialrechtQualityScore: () => ({ score: 0, label: 'serverseitig' }),
+      buildSozialrechtQualityCheck: (answer = '') => String(answer || '').trim(),
+      ensureSozialrechtQualityCheck: (answer = '') => String(answer || '').trim(),
 
-      buildSozialrechtQualityScore: (answer = '', sources = [], evidence = {}, profile = {}) => {
-        const raw = String(answer || '').toLowerCase();
-        let score = 78;
-        const evidenceScore = Number(evidence?.score || 0);
-        if (evidenceScore >= 70) score += 14;
-        else if (evidenceScore >= 45) score += 8;
-        else if (evidenceScore >= 25) score += 3;
-        else score -= 6;
-        if (/\bvoraussetzung|tatbestand|pruef|prüf|schema|rechtsfolge\b/i.test(raw)) score += 3;
-        if (/\bfrist|ausnahme|rechtsfolge|wiedereinsetzung|bekanntgabe\b/i.test(raw)) score += 3;
-        if (/\btypische pruefungsfalle|prüfungsfalle|falle|nicht vorschnell|zu pauschal\b/i.test(raw)) score += 3;
-        if (Array.isArray(sources) && sources.some((s) => String(s.excerpt || '').trim())) score += 4;
-        if (profile.requiresSampleText && !/\b(muster|formulierung|textvorschlag|vorschlag)\b/i.test(raw)) score -= 10;
-        if (profile.widerspruch && !/§\s*84\s*sgg/i.test(answer)) score -= 6;
-        if (profile.familyInsurance && !/§\s*10\s*sgb\s*v/i.test(answer)) score -= 6;
-        if (profile.pkvChild && !/§\s*198\s*vvg/i.test(answer)) score -= 6;
-        if (profile.earningCapacity && !/§\s*43\s*sgb\s*vi/i.test(answer)) score -= 6;
-        score = Math.max(70, Math.min(100, Math.round(score)));
-        const label = score >= 95
-          ? 'pruefungsreif / Dozenten-Niveau'
-          : (score >= 85 ? 'gut, mit Feinschliff' : 'kritisch pruefen');
-        return { score, label };
+      isBbigContaminatedSozialrechtAnswer: (question = '', answer = '') => {
+        const q = app.utils.normalizeForKeyword(question || '');
+        const a = app.utils.normalizeForKeyword(answer || '');
+        if (/\b(bbig|aevo|ausbilder|ausbildereignung|berufsbildungsgesetz)\b/.test(q)) return false;
+        return /\b(bbig|aevo|ausbilder|ausbildereignung|berufsbildungsgesetz|ihk)\b/.test(a) &&
+          /\b(sgb|sozialrecht|pflege|pflegeperson|krankenkasse|pflegekasse|rentenversicherung|arbeitslosengeld|familienversicherung)\b/.test(q);
       },
 
-      buildSozialrechtQualityCheck: (answer = '', sources = [], evidence = {}, profile = {}) => {
-        const quality = app.logic.buildSozialrechtQualityScore(answer, sources, evidence, profile);
-        const lines = [
-          '## Qualitätscheck / Prüfungsfeinschliff',
-          `- Antwortmodus: ${profile.modeLabel || 'Allgemeine Wissensfrage'}.`,
-          `- Begriff: ${profile.passiveBenefits ? '"Passive Leistungen" ist ein Lehr-/Ordnungsbegriff, kein eigener gesetzlicher Anspruch.' : (profile.pkvChild ? 'Kindernachversicherung ist PKV/VVG-Systematik, kein SGB-V-Begriff.' : (profile.earningCapacity ? '"Erwerbsunfaehigkeit" ist als alter Begriff einzuordnen; heute ist Erwerbsminderung nach SGB VI massgeblich.' : 'Bei Legaldefinitionen bitte die Norm nennen; sonst als Lehr-/Praxisbegriff kennzeichnen.'))}`,
-          '- Voraussetzungen: Wurden Anspruchsgrundlage, persoenlicher/sachlicher Anwendungsbereich, Tatbestandsmerkmale und Rechtsfolge getrennt geprueft?',
-          '- Typische Pruefungsfalle: Nicht nur die Hauptnorm nennen, sondern Ausschluesse, Sonderregeln und Wechselwirkungen mitpruefen.',
-          '- Pauschalitaet: Pauschale Aussagen nur verwenden, wenn Fristen, Ausnahmen und Rechtsfolgen nicht entscheidungserheblich sind.',
-          '- Frist/Ausnahme/Rechtsfolge: Wenn im Fall Fristen, Nachholung, Heilung, Wiedereinsetzung oder Beratungspflichten eine Rolle spielen koennen, muessen sie sichtbar geprueft werden.'
-        ];
-
-        if (profile.authorityLetter) {
-          lines.push('- Schreiben/Bescheid: Rechtsauffassung, Vollstaendigkeit, moegliche Strenge/Pauschalitaet, Buergerrechte sowie Hinweis-, Beratungs- und Unterstuetzungspflichten gesondert pruefen.');
-        }
-        if (profile.widerspruch) {
-          lines.push('- Widerspruch: § 84 SGG, § 36a SGB I, § 66 SGG, § 67 SGG, § 85 SGG und §§ 13-15 SGB I mitpruefen. Eine einfache E-Mail ist grundsaetzlich formunwirksam; entscheidend sind Nachholung, Frist, Belehrung und Wiedereinsetzung.');
-        }
-        if (profile.familyInsurance) {
-          lines.push('- Familienversicherung: § 10 SGB V vollstaendig pruefen; bei Kindern § 10 Abs. 3 SGB V mit Privatversicherung, hoeherem Einkommen des privat versicherten Elternteils und JAEG abgleichen.');
-        }
-        if (profile.pkvChild) {
-          lines.push('- PKV-Kindernachversicherung: § 198 VVG, Zwei-Monats-Frist und Begrenzung auf den Schutz des Elternteils beachten.');
-        }
-        if (profile.vaccinations) {
-          lines.push('- GKV-Impfungen: § 20i SGB V, STIKO-Empfehlung, G-BA/Schutzimpfungs-Richtlinie, Regelleistung und Reiseimpfung als moegliche Satzungsleistung trennen.');
-        }
-        if (profile.earningCapacity) {
-          lines.push('- Erwerbsminderung: § 43 SGB VI, unter 3 Stunden/3 bis unter 6 Stunden/ab 6 Stunden, Arbeitsmarktrente und Reha vor Rente pruefen.');
-        }
-        if (profile.requiresSampleText && !/\b(muster|formulierung|textvorschlag|vorschlag)\b/i.test(answer)) {
-          lines.push('- Mustertext: Die Nutzerfrage verlangt eine Formulierung; eine Antwort ohne Mustertext ist unvollstaendig.');
-        }
-        lines.push(`- Qualitätsampel: ${quality.score} % - ${quality.label}.`);
-        return lines.join('\n');
+      buildLocalSozialrechtCorrection: (profile = {}, question = '') => {
+        if (!profile.carePension) return '';
+        return [
+          '## Antwortkern',
+          'Die genannte Aussage betrifft nicht BBiG/AEVO, sondern die soziale Sicherung nicht erwerbsmaessig taetiger Pflegepersonen im Sozialrecht.',
+          '',
+          'Im Kern ist die Richtung richtig, aber sauberer ist die Formulierung: Eine nicht erwerbsmaessig taetige Pflegeperson kann in der gesetzlichen Rentenversicherung versicherungspflichtig sein. Massgeblich sind insbesondere § 3 Satz 1 Nr. 1a SGB VI und § 44 SGB XI.',
+          '',
+          '## Pruefschema',
+          '1. Die Pflegeperson pflegt eine oder mehrere pflegebeduerftige Personen mit mindestens Pflegegrad 2.',
+          '2. Die Pflege erfolgt in haeuslicher Umgebung und nicht erwerbsmaessig.',
+          '3. Der Pflegeumfang betraegt wenigstens 10 Stunden woechentlich.',
+          '4. Diese 10 Stunden sind auf regelmaessig mindestens 2 Tage in der Woche verteilt.',
+          '5. Der Pflegebeduerftige hat Anspruch auf Leistungen aus der sozialen Pflegeversicherung oder privaten Pflege-Pflichtversicherung.',
+          '6. Die Pflegeperson ist regelmaessig nicht mehr als 30 Stunden woechentlich erwerbstaetig.',
+          '',
+          '## Rechtsfolge',
+          'Sind die Voraussetzungen erfuellt, werden Rentenversicherungsbeitraege fuer die Pflegeperson entrichtet. Praktisch geht es also nicht um eine direkte Rentenzahlung an die Pflegeperson, sondern um Rentenversicherungspflicht beziehungsweise Beitragszeiten.',
+          '',
+          '## Pruefungsfalle',
+          'Nicht verwechseln: Pflegegeld/Sachleistungen fuer den Pflegebeduerftigen sind etwas anderes als die rentenrechtliche soziale Sicherung der Pflegeperson.'
+        ].join('\n');
       },
 
-      ensureSozialrechtQualityCheck: (answer = '', sources = [], evidence = {}, profile = {}) => {
-        const raw = String(answer || '').trim();
-        if (!raw || /##\s*qualit[aä]tscheck\s*\/\s*pr[uü]fungsfeinschliff/i.test(raw)) return raw;
-        return `${raw}\n\n${app.logic.buildSozialrechtQualityCheck(raw, sources, evidence, profile)}`.trim();
+      detectSozialrechtPinnedFiles: (question = '', profile = {}) => {
+        const q = app.utils.normalizeForKeyword(question || '');
+        const files = [SOZIALRECHT_VECTOR_STORE.files.sozialrechtQaMarkdown];
+        const add = (id) => {
+          if (id && !files.includes(id)) files.push(id);
+        };
+
+        if (/\b(verhinderungspflege|ersatzpflege|pflegevertretung|stundenweise verhinderung|39 sgb xi)\b/.test(q)) {
+          add(SOZIALRECHT_VECTOR_STORE.files.verhinderungspflege);
+        }
+        if (
+          profile.carePension ||
+          /\b(angehoerige pflege|angehörige pflege|angehoerigenpflege|angehörigenpflege|pflegende angehoerige|pflegende angehörige|pflegeperson|pflegepersonen|nicht erwerbsmaessige pflege|nicht erwerbsmäßige pflege|soziale sicherung der pflegeperson)\b/.test(q)
+        ) {
+          add(SOZIALRECHT_VECTOR_STORE.files.angehoerigePflege);
+        }
+        if (/\b(kvdr|pvdr|krankenversicherung der rentner|pflegeversicherung der rentner|rentner krankenversicherung|rentner pflegeversicherung|rente krankenkasse|rentenantrag krankenversicherung)\b/.test(q)) {
+          add(SOZIALRECHT_VECTOR_STORE.files.krankenPflegeversicherungRentner);
+        }
+        return files;
+      },
+
+      buildSozialrechtRetrievalConfig: (question = '', profile = {}) => {
+        const pinnedFileIds = app.logic.detectSozialrechtPinnedFiles(question, profile);
+        return {
+          provider: 'openai',
+          tool: 'file_search',
+          include: ['file_search_call.results'],
+          max_num_results: 5,
+          require_result_content: true,
+          vector_store_name: SOZIALRECHT_VECTOR_STORE.name,
+          vector_store_id: SOZIALRECHT_VECTOR_STORE.id,
+          vector_store_ids: [SOZIALRECHT_VECTOR_STORE.id],
+          pinned_file_ids: pinnedFileIds,
+          file_ids: pinnedFileIds,
+          source_files: pinnedFileIds,
+          target_file_ids: pinnedFileIds,
+          vectorStoreId: SOZIALRECHT_VECTOR_STORE.id,
+          vectorStoreIds: [SOZIALRECHT_VECTOR_STORE.id],
+          pinnedFileIds: pinnedFileIds,
+          fileIds: pinnedFileIds,
+          domain: SOZIALRECHT_DOMAIN_KEY,
+          source_label: 'Sozialrecht2026',
+          must_use_vector_store: true,
+          exclude_source_keywords: BLOCKED_NON_SOZIALRECHT_KEYWORDS,
+          forbidden_source_keywords: BLOCKED_NON_SOZIALRECHT_KEYWORDS
+        };
       },
 
       enforceSozialrechtMode: (opts = {}) => {
@@ -6692,6 +7262,16 @@
         if (profile.pkvChild) add('§ 198', 'VVG', 'PKV-Kindernachversicherung; bewusst keine SGB-V-Norm.');
         if (profile.vaccinations) add('§ 20i', 'SGB V', 'Schutzimpfungen in der gesetzlichen Krankenversicherung.');
         if (profile.earningCapacity) add('§ 43', 'SGB VI', 'Erwerbsminderung in der gesetzlichen Rentenversicherung.');
+        if (profile.carePension) {
+          add('§ 3', 'SGB VI', 'Versicherungspflicht nicht erwerbsmaessig taetiger Pflegepersonen.');
+          add('§ 44', 'SGB XI', 'Leistungen zur sozialen Sicherung der Pflegepersonen.');
+          add('§ 19', 'SGB XI', 'Begriff der Pflegeperson.');
+        }
+        if (profile.respiteCare) add('§ 39', 'SGB XI', 'Verhinderungspflege/Ersatzpflege.');
+        if (profile.retireeInsurance) {
+          add('§ 5', 'SGB V', 'Versicherungspflicht in der Krankenversicherung der Rentner, insbesondere Abs. 1 Nr. 11.');
+          add('§ 20', 'SGB XI', 'Versicherungspflicht in der sozialen Pflegeversicherung.');
+        }
         if (profile.passiveBenefits) addBook('SGB III', 'Arbeitsfoerderung: passive Leistungsbegriffe nur als Lehr-/Praxisbegriff verwenden.');
         if (profile.widerspruch) {
           add('§ 84', 'SGG', 'Form und Frist des Widerspruchs.');
@@ -7790,6 +8370,22 @@
         const sozialrechtProfile = sozialrechtDomain
           ? app.logic.analyzeSozialrechtQuestion(question, answer)
           : null;
+
+        const localSozialrechtCorrection =
+          sozialrechtDomain &&
+          app.logic.isBbigContaminatedSozialrechtAnswer(question, answer)
+            ? app.logic.buildLocalSozialrechtCorrection(sozialrechtProfile || {}, question)
+            : '';
+        if (localSozialrechtCorrection) {
+          answer = localSozialrechtCorrection;
+          sources = [];
+          backendMeta = {
+            ...backendMeta,
+            storageFallback: true,
+            storageError: 'Falscher Rechtskreis in Antwort erkannt; lokale Sozialrecht-Korrektur verwendet.'
+          };
+        }
+
         const storageUsed = Boolean(backendMeta.storageUsed || backendMeta.storage_used);
         const storageFallback = Boolean(backendMeta.storageFallback || backendMeta.storage_fallback);
         const storageError = String(backendMeta.storageError || backendMeta.storage_error || '').trim();
@@ -8423,45 +9019,63 @@
         const want = app.logic.sanitizeCardCount(requestedCount);
         const next = Array.isArray(cards) ? cards.slice(0, want) : [];
         if (next.length >= want) return next;
-        const fallback = app.logic.normalizeGeneratedCards(app.logic.buildFlashcardsFromText(sourceText), want);
-        for (const card of fallback) {
-          if (next.length >= want) break;
-          const exists = next.some((c) => c.question === card.question && c.answer === card.answer);
-          if (!exists) next.push(card);
-        }
         return next.slice(0, want);
       },
 
-      buildCardsWebhookQuestion: (text, targetCount, domain) => {
-        const safeText = app.logic.sanitizeCardsInputText(text, 9000);
-        const tpl = app.logic.getLearningTemplates();
-        const pattern =
-          String(tpl?.flashcards?.instruction_template || '').trim() ||
-          DEFAULT_LEARNING_TEMPLATES.flashcards.instruction_template;
-        return app.logic.fillTemplateVars(pattern, {
-          count: app.logic.sanitizeCardCount(targetCount),
-          domain: domain || 'Standard',
-          content: safeText
-        });
+      persistCardsLibraryEntry: (payload = {}) => {
+        const current = parseJSON(localStorage.getItem(CARDS_LIBRARY_KEY) || '[]', []);
+        const cards = app.logic.ensureCardCount(payload?.cards || [], payload?.requestedCount || payload?.cards?.length || 4, payload?.sourceText || '');
+        const stableKey = [
+          String(payload?.title || payload?.deckTitle || 'LINDA3 Lernkarten').trim(),
+          String(payload?.generatedAt || '').trim(),
+          String(payload?.originQuestion || payload?.questionText || '').trim(),
+          String(payload?.sourceText || '').trim()
+        ].join('||');
+        const entry = {
+          id: `deck_${Date.now()}`,
+          title: String(payload?.deckTitle || 'LINDA3 Lernkarten'),
+          generatedAt: String(payload?.generatedAt || app.utils.nowStamp()),
+          cards,
+          sortMode: String(payload?.sortMode || 'due'),
+          sourceType: String(payload?.sourceType || 'beta-learning-api'),
+          originQuestion: String(payload?.originQuestion || payload?.questionText || '').trim(),
+          sourceText: String(payload?.sourceText || '').trim(),
+          focus: String(payload?.focus || payload?.hint || '').trim(),
+          requestedCount: Number(payload?.requestedCount || cards.length || 4),
+          collectionLabel: 'Kollektion',
+          stableKey
+        };
+        const next = [
+          entry,
+          ...(Array.isArray(current) ? current : []).filter((item) => String(item?.stableKey || '') !== stableKey)
+        ].slice(0, 30);
+        localStorage.setItem(CARDS_LIBRARY_KEY, JSON.stringify(next));
+        return entry;
       },
 
-      requestCardsViaWebhook: async (rawText, sourceType = 'manual', count = 4) => {
+      requestCardsViaWebhook: async (rawText, sourceType = 'manual', count = 4, opts = {}) => {
         const domain = app.state.settings.domain || '';
         const targetCount = app.logic.sanitizeCardCount(count, app.state.settings.cardsWebhook?.targetCount || 4);
         const endpoint = app.logic.resolveSafeCardsEndpoint();
-        const question = app.logic.buildCardsWebhookQuestion(rawText, targetCount, domain);
+        const safeText = app.logic.sanitizeCardsInputText(rawText, 9000);
+        const selectedText = app.logic.sanitizeCardsInputText(opts.selectedText || '', 1200);
+        const originQuestion = app.logic.sanitizeCardsInputText(opts.questionText || opts.originQuestion || '', 900);
+        const userHint = app.logic.sanitizeCardsInputText(opts.hint || opts.userHint || '', 700);
 
         const res = await app.logic.fetchApi(endpoint, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            question: app.utils.truncate(question, 12000),
+            action: 'learning',
+            kind: 'flashcards',
+            count: targetCount,
             fachmodus: domain,
-            schnellmodus: false,
-            routing: {
-              preferred_model: 'default'
-            },
-            history: []
+            context: safeText,
+            selected_text: selectedText,
+            origin_question: originQuestion,
+            question_text: originQuestion,
+            user_hint: userHint,
+            hint: userHint
           })
         });
 
@@ -8494,7 +9108,7 @@
       },
 
       openPreparedCardsTab: () => {
-        const target = new URL('cards.html', window.location.href).href;
+        const target = new URL(`${window.location.pathname}?view=cards`, window.location.href).href;
         const tab = window.open('', '_blank', 'noopener');
         if (!tab) {
           app.logic.notifyPopupBlocked('Lernkarten');
@@ -8515,7 +9129,10 @@
           cards: app.logic.ensureCardCount(payload?.cards || [], payload?.requestedCount || payload?.cards?.length || 4, payload?.sourceText || '')
         };
         localStorage.setItem(CARDS_KEY, JSON.stringify(nextPayload));
-        const target = new URL('cards.html', window.location.href).href;
+        if (payload?.autoSaveToLibrary !== false) {
+          app.logic.persistCardsLibraryEntry(nextPayload);
+        }
+        const target = new URL(`${window.location.pathname}?view=cards`, window.location.href).href;
         if (targetTab && !targetTab.closed) {
           try {
             targetTab.location.href = target;
@@ -8527,13 +9144,13 @@
       },
 
       openSavedCardsLibrary: () => {
-        const target = new URL('cards.html?library=1', window.location.href).href;
+        const target = new URL(`${window.location.pathname}?view=cards&library=1`, window.location.href).href;
         const tab = window.open(target, '_blank', 'noopener');
-        if (!tab) app.logic.notifyPopupBlocked('gespeicherte Lernkarten');
+        if (!tab) app.logic.notifyPopupBlocked('Kollektion');
       },
 
       openCollectionsPage: () => {
-        const target = new URL('collections_clickable.html', window.location.href).href;
+        const target = new URL(`${window.location.pathname}?view=cards&library=1`, window.location.href).href;
         const tab = window.open(target, '_blank', 'noopener');
         if (!tab) app.logic.notifyPopupBlocked('Kollektionen');
       },
@@ -8574,19 +9191,23 @@
 
       resolveSafeCardsEndpoint: () => {
         const cfg = app.state.settings.cardsWebhook || DEFAULT_CARDS_WEBHOOK_JSON;
-        const raw = String(cfg.endpointPath || API_ENDPOINT || '/api/linda3?action=bot').trim();
-        if (!raw) return '/api/linda3?action=bot';
+        const raw = String(cfg.endpointPath || FLASHCARDS_API_ENDPOINT || '/api/linda3?action=flashcards').trim();
+        if (!raw) return FLASHCARDS_API_ENDPOINT;
+        if (/^\/api\/linda3(?:\?.*)?$/i.test(raw)) return FLASHCARDS_API_ENDPOINT;
+        if (raw === API_ENDPOINT || /action=bot(?:&|$)/i.test(raw)) return FLASHCARDS_API_ENDPOINT;
         if (raw.startsWith('/')) {
-          if (!raw.startsWith('/api/')) return '/api/linda3?action=bot';
+          if (!raw.startsWith('/api/')) return FLASHCARDS_API_ENDPOINT;
           return raw;
         }
         try {
           const u = new URL(raw, window.location.origin);
-          if (u.origin !== window.location.origin) return '/api/linda3?action=bot';
-          if (!u.pathname.startsWith('/api/')) return '/api/linda3?action=bot';
-          return `${u.pathname}${u.search}`;
+          if (u.origin !== window.location.origin) return FLASHCARDS_API_ENDPOINT;
+          if (!u.pathname.startsWith('/api/')) return FLASHCARDS_API_ENDPOINT;
+          const resolved = `${u.pathname}${u.search}`;
+          if (u.pathname === '/api/linda3') return FLASHCARDS_API_ENDPOINT;
+          return /action=bot(?:&|$)/i.test(resolved) ? FLASHCARDS_API_ENDPOINT : resolved;
         } catch (_) {
-          return '/api/linda3?action=bot';
+          return FLASHCARDS_API_ENDPOINT;
         }
       },
 
@@ -8785,7 +9406,10 @@
             deckTitle: result.deckTitle || 'Lernkarten aus Auswahl',
             sourceType: result.sourceType || 'selection-api',
             sourceText: draft.fullText || draft.text,
-            requestedCount: result.requestedCount || 4
+            originQuestion: draft.questionText || '',
+            focus: hint,
+            requestedCount: result.requestedCount || 4,
+            autoSaveToLibrary: true
           }, preparedTab);
         } catch (e) {
           if (preparedTab && !preparedTab.closed) preparedTab.close();
@@ -8795,35 +9419,25 @@
         }
       },
 
-      requestSelectionFlashcards: async ({ selectedText, fullText = '', questionText = '', count = 4 } = {}) => {
+      requestSelectionFlashcards: async ({ selectedText, fullText = '', questionText = '', count = 4, hint = '' } = {}) => {
         const domain = app.state.settings.domain || 'Standard';
         const safeCount = app.logic.sanitizeCardCount(count, 4);
         const sourceText = app.logic.buildCardSourceContext(fullText || selectedText, selectedText, questionText);
-
-        const localFallback = () => {
-          const cards = app.logic.ensureCardCount(
-            app.logic.normalizeGeneratedCards(app.logic.buildFlashcardsFromText(sourceText), safeCount),
-            safeCount,
-            sourceText
-          );
-          if (!cards.length) throw new Error('Keine Lernkarten erzeugt');
-          return {
-            cards,
-            deckTitle: 'Lernkarten aus Auswahl',
-            sourceType: 'selection-local-fallback',
-            requestedCount: safeCount
-          };
-        };
+        const userHint = app.logic.sanitizeCardsInputText(hint || '', 700);
 
         try {
-          const result = await app.logic.requestCardsViaWebhook(sourceText, 'selection', safeCount);
+          const result = await app.logic.requestCardsViaWebhook(sourceText, 'selection', safeCount, {
+            selectedText,
+            questionText,
+            hint: userHint
+          });
           return {
             ...result,
             requestedCount: safeCount,
             deckTitle: result.deckTitle || `Lernkarten ${domain}`
           };
-        } catch (_) {
-          return localFallback();
+        } catch (err) {
+          throw new Error(`Lernkarten konnten nicht erzeugt werden${err?.message ? `: ${err.message}` : ''}`);
         }
       },
 
@@ -8834,7 +9448,7 @@
       },
 
       normalizePracticeSet: (data) => {
-        const title = String(data?.title || '').trim() || 'Uebungsaufgaben';
+        const title = String(data?.title || '').trim() || 'Pruefungsaufgaben';
         const questions = (Array.isArray(data?.questions) ? data.questions : [])
           .map((q, idx) => {
             const question = String(q?.question || '').trim();
@@ -8883,130 +9497,47 @@
         return null;
       },
 
-      buildPracticeFromCards: (cards, opts) => {
-        const template = opts?.template || {};
-        const wanted = Math.max(3, Math.min(12, Number(opts?.count || template.default_count || 6)));
-        const sourceCards = Array.isArray(cards) ? cards.filter((c) => c.question && c.answer) : [];
-        const picked = sourceCards.slice(0, wanted);
-        const questions = [];
-
-        const buildDistractors = (correct, pool) => {
-          const out = [];
-          const seen = new Set([String(correct || '').toLowerCase()]);
-          for (const entry of pool) {
-            const candidate = String(entry || '').trim();
-            if (!candidate) continue;
-            const key = candidate.toLowerCase();
-            if (seen.has(key)) continue;
-            seen.add(key);
-            out.push(candidate);
-            if (out.length >= 3) break;
-          }
-          if (out.length < 3) {
-            const fallback = [
-              'Die Aussage gilt ohne weitere Voraussetzungen immer.',
-              'Die Aussage ist nur bei freiwilliger Anwendung relevant.',
-              'Die Aussage bezieht sich ausschliesslich auf Theorie ohne Praxisbezug.'
-            ];
-            for (const f of fallback) {
-              const key = f.toLowerCase();
-              if (seen.has(key)) continue;
-              out.push(f);
-              if (out.length >= 3) break;
-            }
-          }
-          return out;
-        };
-
-        picked.forEach((card, idx) => {
-          const questionText = String(card.question || '').replace(/\?+$/, '').trim();
-          const answerText = String(card.answer || '').trim();
-          const pool = sourceCards
-            .map((c) => c.answer)
-            .filter((a) => String(a || '').trim() && String(a || '').trim() !== answerText);
-          const distractors = buildDistractors(answerText, pool);
-          const options = [answerText, ...distractors].slice(0, 4);
-          options.sort((a, b) => (a > b ? 1 : -1));
-          const correctIndex = options.findIndex((o) => o === answerText);
-
-          const isOpen = Boolean(template.supports_open) && idx % 3 === 2;
-          if (isOpen) {
-            questions.push({
-              id: `open_${idx + 1}`,
-              type: 'open',
-              question: `${questionText || 'Erläutere den Zusammenhang'}. Begründe deine Antwort mit Bezug auf den markierten Inhalt.`,
-              options: [],
-              correctIndices: [],
-              hint: `Nutze die Kernaussage aus: ${answerText.slice(0, 120)}${answerText.length > 120 ? '...' : ''}`,
-              solution: answerText,
-              points: 3
-            });
-            return;
-          }
-
-          questions.push({
-            id: `mc_${idx + 1}`,
-            type: 'mc',
-            question: `${questionText || 'Welche Aussage ist fachlich korrekt'}?`,
-            options,
-            correctIndices: correctIndex >= 0 ? [correctIndex] : [0],
-            hint: `Pruefe den Abschnitt mit Fokus auf den Kernbegriff: ${questionText.split(' ').slice(0, 4).join(' ')}.`,
-            solution: answerText,
-            points: 2
-          });
-        });
-
-        return {
-          title: `${app.logic.getLearningTemplates()?.practice?.title_prefix || 'Uebungsaufgaben'} ${app.utils.nowStamp()}`,
-          templateId: template.id || 'multiple_choice',
-          templateLabel: template.label || 'Multiple Choice',
-          difficulty: String(opts?.difficulty || 'mittel'),
-          sourceType: 'selection-practice-local',
-          questions
-        };
-      },
-
       requestSelectionPractice: async (selectedText, options = {}) => {
-        const safeText = app.logic.sanitizeCardsInputText(selectedText, 1800);
+        const safeText = app.logic.sanitizeCardsInputText(options.fullText || selectedText, 4200);
+        const safeSelected = app.logic.sanitizeCardsInputText(selectedText, 1200);
         const templates = app.logic.getPracticeTemplates();
         const templateId = String(options.templateId || templates[0]?.id || 'multiple_choice');
         const template = templates.find((t) => t.id === templateId) || templates[0] || DEFAULT_LEARNING_TEMPLATES.practice.templates[0];
         const count = Math.max(3, Math.min(12, Number(options.count || template.default_count || 6)));
         const difficulty = String(options.difficulty || 'mittel');
-        const localFromCards = () => {
-          const cards = app.logic.buildFlashcardsFromText(safeText).slice(0, Math.max(6, count + 2));
-          return app.logic.buildPracticeFromCards(cards, { template, count, difficulty });
-        };
+        const focus = String(options.focus || '').trim();
+        const audience = 'Personalfachkaufleute (IHK)';
 
         try {
-          const tplCfg = app.logic.getLearningTemplates();
-          const instruction = app.logic.fillTemplateVars(
-            String(tplCfg?.practice?.instruction_template || DEFAULT_LEARNING_TEMPLATES.practice.instruction_template),
-            {
-              template_label: template.label,
-              difficulty,
-              content: safeText
-            }
-          );
-
           const res = await app.logic.fetchApi(FLASHCARDS_API_ENDPOINT, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              mode: 'exercise',
+              action: 'learning',
+              kind: 'practice',
+              fachmodus: SOZIALRECHT_DOMAIN_KEY,
+              domain: SOZIALRECHT_DOMAIN_KEY,
               template_id: template.id,
               template_label: template.label,
+              template_description: template.description,
               count,
               difficulty,
-              title: `${template.label} - ${app.state.settings.domain || 'Standard'}`,
-              source: `Markierter Text (${app.state.settings.domain || 'Standard'})`,
+              title: `${template.label} - ${audience}`,
+              source: `Markierter Text (${audience})`,
+              audience,
+              focus,
               context: safeText,
-              instruction,
+              selected_text: safeSelected,
+              origin_question: String(options.questionText || app.state.selectionDraft?.questionText || '').trim(),
+              question_text: String(options.questionText || app.state.selectionDraft?.questionText || focus || '').trim(),
+              user_hint: focus,
               economyMode: true
             })
           });
 
-          if (!res.ok) return localFromCards();
+          if (!res.ok) {
+            throw new Error(`HTTP ${res.status}`);
+          }
 
           const raw = await res.text();
           const parsedPractice = app.logic.parsePracticeApiResponse(raw);
@@ -9016,18 +9547,13 @@
               templateId: template.id,
               templateLabel: template.label,
               difficulty,
+              focus,
               sourceType: 'selection-practice-api'
             };
           }
-
-          const parsedCards = parseCardsWebhookResponse(raw);
-          if (parsedCards && Array.isArray(parsedCards.cards) && parsedCards.cards.length) {
-            return app.logic.buildPracticeFromCards(parsedCards.cards, { template, count, difficulty });
-          }
-
-          return localFromCards();
-        } catch (_) {
-          return localFromCards();
+          throw new Error('Keine Uebungsaufgaben empfangen');
+        } catch (err) {
+          throw new Error(`Uebungsaufgaben konnten nicht erzeugt werden${err?.message ? `: ${err.message}` : ''}`);
         }
       },
 
@@ -9854,7 +10380,7 @@
         const sgbLinkResolver = window.LINDA_SGB_DIRECT_LINKS || window.SGB_DIRECT_LINKS || null;
         const plainText = String(md.innerText || '').toLowerCase();
         const mentionsBBIG = /(?:\bbbig\b|berufsbildungsgesetz)/i.test(plainText);
-        if (mentionsBBIG) {
+        if (mentionsBBIG && !SOZIALRECHT_ONLY_MODE && !app.logic.isSozialrechtMeta(bubbleMeta)) {
           const hasDoc = finalSources.some((s) => String(s.url || '').includes('BBIG_V20022026.pdf'));
           if (!hasDoc) {
             finalSources.push({
@@ -10227,20 +10753,16 @@
             ? false
             : Boolean(app.state.settings.compareMode && app.state.settings.compareMode.enabled);
           const strictSourcesActive = Boolean(app.state.settings.guardrails?.groundedMode);
-          const deepseekRoutingActive = Boolean(effectiveFastMode && !strictSourcesActive);
+          const deepseekRoutingActive = Boolean(effectiveFastMode && !strictSourcesActive && !SOZIALRECHT_ONLY_MODE);
           const effectiveSources = app.state.settings.sources;
           const priorMessages = Array.isArray(s.messages) ? s.messages.slice(0, -1) : [];
           const contextWindow = app.utils.chatContext({ ...s, messages: priorMessages });
           const historyForApi = app.utils.privacyModeEnabled()
             ? []
             : contextWindow;
+          const sozialrechtProfileForPayload = app.logic.analyzeSozialrechtQuestion(text, '');
+          const sozialrechtRetrieval = app.logic.buildSozialrechtRetrievalConfig(text, sozialrechtProfileForPayload);
 
-          const sozialrechtProfile = sozialrechtDomain
-            ? app.logic.analyzeSozialrechtQuestion(text, '')
-            : null;
-          const sozialrechtDirective = sozialrechtProfile
-            ? app.logic.buildSozialrechtPromptDirective(sozialrechtProfile)
-            : '';
           const basePayloadQuestion = apiQuestionPrefix
             ? `${apiQuestionPrefix}\n\n${text}`
             : (
@@ -10248,24 +10770,23 @@
                 ? `${text}\n\n${apiQuestionSuffix}`
                 : text
             );
-          const payloadQuestion = sozialrechtDirective
-            ? `${basePayloadQuestion}\n\n${sozialrechtDirective}`
-            : basePayloadQuestion;
           const payload = {
-            question: app.utils.truncate(payloadQuestion, 4200),
+            question: app.utils.truncate(basePayloadQuestion, 4200),
             fachmodus: SOZIALRECHT_ONLY_MODE ? SOZIALRECHT_DOMAIN_KEY : (app.state.settings.domain || ''),
             schnellmodus: deepseekRoutingActive,
             history: historyForApi,
             sources: effectiveSources,
             retrieval: {
-              provider: 'openai',
-              tool: 'file_search',
-              include: ['file_search_call.results'],
-              max_num_results: 5,
-              require_result_content: true,
-              source_files: ['vorsorge_draft.md', 'Sozialrecht_Skript_draft.md'],
-              source_label: 'Wissensdatenbank Recht'
+              ...sozialrechtRetrieval
             },
+            vector_store_id: SOZIALRECHT_VECTOR_STORE.id,
+            vectorStoreId: SOZIALRECHT_VECTOR_STORE.id,
+            vector_store_ids: [SOZIALRECHT_VECTOR_STORE.id],
+            vectorStoreIds: [SOZIALRECHT_VECTOR_STORE.id],
+            file_ids: sozialrechtRetrieval.file_ids || [],
+            fileIds: sozialrechtRetrieval.file_ids || [],
+            pinned_file_ids: sozialrechtRetrieval.pinned_file_ids || [],
+            pinnedFileIds: sozialrechtRetrieval.pinned_file_ids || [],
             routing: {
               preferred_model: deepseekRoutingActive ? 'deepseek' : 'gpt-5.1',
               response_mode: expertModeEnabled ? 'expert' : 'genau'
@@ -10283,8 +10804,14 @@
               version: APP_VERSION,
               ts: new Date().toISOString(),
               privacyMode: app.utils.privacyModeEnabled(),
-              sozialrecht_mode: sozialrechtDomain,
-              sozialrecht_profile: sozialrechtProfile || null
+              sozialrecht_mode: true,
+              vector_store: {
+                provider: 'openai',
+                name: SOZIALRECHT_VECTOR_STORE.name,
+                id: SOZIALRECHT_VECTOR_STORE.id,
+                pinned_file_ids: sozialrechtRetrieval.pinned_file_ids || []
+              },
+              blocked_domains: ['BBIG', 'AEVO', 'IHK-Ausbildungsrecht']
             },
             guardrails: {
               grounded_mode: Boolean(app.state.settings.guardrails?.groundedMode),
@@ -10718,7 +11245,9 @@
             deckTitle: result.deckTitle || 'Lernkarten',
             sourceType: result.sourceType || 'last-answer-webhook',
             sourceText: text,
-            requestedCount
+            originQuestion: '',
+            requestedCount,
+            autoSaveToLibrary: true
           }, preparedTab);
         } catch (e) {
           if (preparedTab && !preparedTab.closed) preparedTab.close();
@@ -10791,7 +11320,7 @@
         <div class="cards-top">
           <div>
             <h1 class="cards-title">LINDA3 Lernkarten</h1>
-            <p class="cards-sub">${libraryMode ? `Gespeicherte Decks: ${Array.isArray(library) ? library.length : 0}` : `Deck: ${app.utils.safeText(deckPayload.deckTitle || 'Lernkarten')} • Generiert: ${app.utils.safeText(deckPayload.generatedAt || 'unbekannt')} • Karten: ${baseCards.length}`}</p>
+            <p class="cards-sub">${libraryMode ? `Kollektion: ${Array.isArray(library) ? library.length : 0} Decks` : `Deck: ${app.utils.safeText(deckPayload.deckTitle || 'Lernkarten')} • Generiert: ${app.utils.safeText(deckPayload.generatedAt || 'unbekannt')} • Karten: ${baseCards.length}`}</p>
           </div>
           <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
             ${libraryMode ? '' : `<label class="mini" for="cards-sort" style="font-weight:700;color:#f6e7a8;">Sortierung</label>
@@ -10800,8 +11329,8 @@
               <option value="alpha">A-Z</option>
               <option value="reps">Wiederholungen</option>
             </select>
-            <button class="btn-icon" id="cards-save-btn" type="button">Deck speichern</button>`}
-            <button class="btn-icon" id="cards-library-btn" type="button">Gespeicherte Decks</button>
+            <button class="btn-icon btn-primary" id="cards-save-btn" type="button">Zur Kollektion</button>`}
+            <button class="btn-icon" id="cards-library-btn" type="button">Kollektion</button>
             ${selectedDeck ? `<button class="btn-icon" id="cards-current-btn" type="button">Aktuelles Deck</button>` : ''}
             <button class="btn-icon" type="button" onclick="window.close()">Schließen</button>
           </div>
@@ -10829,18 +11358,20 @@
 
     if (libraryMode) {
       if (!Array.isArray(library) || !library.length) {
-        body.innerHTML = '<div class="state-msg">Noch keine gespeicherten Decks vorhanden. Speichere zuerst ein Kartendeck aus dem Haupttab.</div>';
+        body.innerHTML = '<div class="state-msg">Noch keine Decks in der Kollektion vorhanden. Speichere zuerst ein Kartendeck aus dem Haupttab.</div>';
         return;
       }
       body.innerHTML = `<section class="deck-grid">
         ${library.map((entry) => `
           <article class="deck-card">
             <div class="flash-chip-row">
-              <span class="flash-chip">Deck</span>
+              <span class="flash-chip">${app.utils.safeText(entry.collectionLabel || 'Kollektion')}</span>
               <span class="flash-chip soft">${Array.isArray(entry.cards) ? entry.cards.length : 0} Karten</span>
             </div>
             <h3>${app.utils.safeText(entry.title || 'LINDA3 Deck')}</h3>
             <p>Erstellt: ${app.utils.safeText(entry.generatedAt || 'unbekannt')}</p>
+            ${entry.originQuestion ? `<p><strong>Frage:</strong> ${app.utils.safeText(String(entry.originQuestion).slice(0, 140))}${String(entry.originQuestion).length > 140 ? '...' : ''}</p>` : ''}
+            ${entry.focus ? `<p><strong>Fokus:</strong> ${app.utils.safeText(String(entry.focus).slice(0, 140))}${String(entry.focus).length > 140 ? '...' : ''}</p>` : ''}
             <div class="deck-actions">
               <button class="deck-btn primary" type="button" data-open-deck="${app.utils.safeText(entry.id)}">Öffnen</button>
               <button class="deck-btn" type="button" data-delete-deck="${app.utils.safeText(entry.id)}">Löschen</button>
@@ -10928,18 +11459,13 @@
 
     if (saveBtn) {
       saveBtn.addEventListener('click', () => {
-        const current = Array.isArray(library) ? library : [];
-        const entry = {
-          id: `deck_${Date.now()}`,
-          title: String(deckPayload.deckTitle || 'LINDA3 Lernkarten'),
-          generatedAt: String(deckPayload.generatedAt || app.utils.nowStamp()),
+        app.logic.persistCardsLibraryEntry({
+          ...deckPayload,
           cards: baseCards,
           sortMode: String(sortSelect?.value || 'due')
-        };
-        const next = [entry, ...current].slice(0, 30);
-        localStorage.setItem(CARDS_LIBRARY_KEY, JSON.stringify(next));
-        saveBtn.textContent = 'Deck gespeichert';
-        setTimeout(() => { saveBtn.textContent = 'Deck speichern'; }, 1000);
+        });
+        saveBtn.textContent = 'In Kollektion';
+        setTimeout(() => { saveBtn.textContent = 'Zur Kollektion'; }, 1000);
       });
     }
 
@@ -10991,13 +11517,16 @@
       try { localStorage.removeItem(PRACTICE_KEY); } catch (_) {}
     }
     const questions = Array.isArray(payload.questions) ? payload.questions : [];
+    const focusLabel = payload.focus
+      ? ` • Fokus: ${app.utils.safeText(String(payload.focus).slice(0, 80))}${String(payload.focus).length > 80 ? '...' : ''}`
+      : '';
 
     root.innerHTML = `
       <div class="cards-layout">
         <div class="cards-top">
           <div>
             <h1 class="cards-title">LINDA3 Uebungsaufgaben</h1>
-            <p class="cards-sub">${app.utils.safeText(payload.title || 'Uebungsaufgaben')} • ${questions.length} Aufgaben • Generiert: ${app.utils.safeText(payload.generatedAt || 'unbekannt')}</p>
+            <p class="cards-sub">${app.utils.safeText(payload.title || 'Uebungsaufgaben')} • ${questions.length} Aufgaben • Generiert: ${app.utils.safeText(payload.generatedAt || 'unbekannt')}${focusLabel}</p>
           </div>
           <button class="btn-icon" onclick="window.close()">Schließen</button>
         </div>
@@ -11075,7 +11604,6 @@
     app.utils.load();
     app.logic.enforceSozialrechtMode({ save: false });
     app.logic.loadKeywordLinks();
-    app.logic.loadLearningTemplates();
     app.logic.loadSozialrechtCurriculum();
     app.ui.updateDomainUI();
     app.ui.renderSourceToolbar();
@@ -11450,17 +11978,21 @@
         title: 'Lernkarten aus Markierung',
         preview: (draft.fullText || draft.text).slice(0, 600),
         fieldsHtml:
-          '<div class="selection-field"><label for="selection-cards-count">Anzahl Lernkarten</label><select id="selection-cards-count"><option value="2">2</option><option value="4" selected>4</option></select></div><div class="mini">LINDA nutzt den gesamten vorherigen Antworttext als Grundlage und fokussiert dabei den markierten Abschnitt.</div>',
+          '<div class="selection-field"><label for="selection-cards-count">Anzahl Lernkarten</label><select id="selection-cards-count"><option value="2">2</option><option value="4" selected>4</option></select></div>' +
+          '<div class="selection-field"><label for="selection-cards-hint">Hinweis/Fokus optional</label><textarea id="selection-cards-hint" placeholder="z.B. Normenprüfung, typische Falle, Transferfrage"></textarea></div>' +
+          '<div class="mini">Beta: LINDA nutzt die Ausgangsfrage plus Sozialrecht2026-API. Die Markierung dient nur als Fokus, nicht als Rohtext-Vorlage.</div>',
         confirmLabel: 'Lernkarten erstellen',
         onConfirm: async () => {
           const count = Number(document.getElementById('selection-cards-count')?.value || 4);
+          const hint = String(document.getElementById('selection-cards-hint')?.value || '').trim();
           const preparedTab = app.logic.openPreparedCardsTab();
           try {
             const result = await app.logic.requestSelectionFlashcards({
               selectedText: draft.text,
               fullText: draft.fullText || draft.text,
               questionText: draft.questionText || '',
-              count
+              count,
+              hint
             });
             app.logic.openCardsTabWithPayload({
               cards: result.cards || [],
@@ -11470,7 +12002,10 @@
               deckTitle: result.deckTitle || 'Lernkarten aus Auswahl',
               sourceType: result.sourceType || 'selection-api',
               sourceText: draft.fullText || draft.text,
-              requestedCount: count
+              originQuestion: draft.questionText || '',
+              focus,
+              requestedCount: count,
+              autoSaveToLibrary: true
             }, preparedTab);
           } catch (err) {
             if (preparedTab && !preparedTab.closed) preparedTab.close();
@@ -11506,15 +12041,24 @@
         fieldsHtml:
           `<div class="selection-field"><label>Vorlage</label><div class="selection-template-grid">${cardsHtml}</div></div>` +
           '<div class="selection-field"><label for="selection-practice-count">Anzahl Aufgaben</label><select id="selection-practice-count"><option value="4">4</option><option value="6" selected>6</option><option value="8">8</option><option value="10">10</option></select></div>' +
-          `<div class="selection-field"><label for="selection-practice-difficulty">Niveau</label><select id="selection-practice-difficulty">${difficultyOptions}</select></div>`,
+          `<div class="selection-field"><label for="selection-practice-difficulty">Niveau</label><select id="selection-practice-difficulty">${difficultyOptions}</select></div>` +
+          '<div class="selection-field"><label for="selection-practice-focus">Aufgabenfokus</label><textarea id="selection-practice-focus" placeholder="z.B. Rechtsgrundlage, Berechnung, Frist oder Transfer"></textarea></div>',
         confirmLabel: 'Uebungsaufgaben erstellen',
         onConfirm: async () => {
           const activeTemplate = document.querySelector('.selection-template.active');
           const templateId = activeTemplate?.getAttribute('data-practice-template') || templates[0]?.id;
           const count = Number(document.getElementById('selection-practice-count')?.value || 6);
           const difficulty = String(document.getElementById('selection-practice-difficulty')?.value || 'mittel');
+          const focus = String(document.getElementById('selection-practice-focus')?.value || '').trim();
 
-          const result = await app.logic.requestSelectionPractice(draft.text, { templateId, count, difficulty });
+          const result = await app.logic.requestSelectionPractice(draft.text, {
+            templateId,
+            count,
+            difficulty,
+            focus,
+            fullText: draft.fullText || draft.text,
+            questionText: draft.questionText || ''
+          });
           app.logic.openPracticeTabWithPayload({
             ...result,
             generatedAt: app.utils.nowStamp(),
@@ -11683,3 +12227,4 @@
 <script src="./efz_check.js"></script>
 </body>
 </html>
+<script async data-explicit-opt-in="true" data-deployment-id="dpl_A8s4v7uXEL7ufnNo8maxMhCPwanP" src="https://vercel.live/_next-live/feedback/feedback.js"></script>
