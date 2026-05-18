@@ -151,13 +151,13 @@ function buildInstructions(kind, body) {
   if (kind === 'flashcards') {
     return `${base}\n\nGib ausschliesslich JSON zurueck im Schema: {"deckTitle":"...","cards":[{"question":"konkrete Pruefungsfrage","answer":"praezise Musterantwort mit Norm/Prueffalle wenn passend"}]}.
 Wichtig: Erzeuge nur sehr gute Lernkarten. Maximal 4 Karten.
-Die Lernkarten muessen die konkrete Ausgangsfrage direkt beantworten. Kein allgemeines Uberblicksdeck, wenn eine konkrete Frage gestellt wurde.
+Die Lernkarten muessen die konkrete Ausgangsfrage direkt beantworten. Kein allgemeines Ueberblicksdeck, wenn eine konkrete Frage gestellt wurde.
 Jede Karte muss wie eine saubere Lernkartei wirken:
 - vorne eine konkrete Frage ohne Floskel
 - hinten eine kurze, klare Antwort mit 2 bis 4 Punkten oder 1 kompakten Antwortsatz
 - keine Rohfragmente, keine Mischdecks, keine generischen Formulierungen
 - Titel so benennen, dass das konkrete Thema sofort sichtbar ist
-Wenn die Frage eine Anspruchs- oder Pruefungsfrage ist, dann decke nur die dafuer relevanten Bausteine ab: Voraussetzungen, Rechtsfolge, Ausschlussgründe, Fristen, Prueffallen.
+Wenn die Frage eine Anspruchs- oder Pruefungsfrage ist, dann decke nur die dafuer relevanten Bausteine ab: Voraussetzungen, Rechtsfolge, Ausschlussgruende, Fristen, Prueffallen.
 Keine generischen Fragen wie "Was ist die Kernaussage?" oder "Welcher Aspekt?"`;
   }
 
@@ -166,7 +166,7 @@ Die Aufgaben sollen pruefungsnah, klar und nicht redundant sein.
 Mindestens die Haelfte offene Transfer-/Pruefungsfragen.
 MC nur, wenn die Antwortoptionen wirklich trennscharf sind.
 Jede Loesung kurz, sauber und direkt am Fall.`;
-  }
+}
 
 function buildInput(kind, body) {
   const question = cleanText(body.origin_question || body.question_text || body.question || '', 900);
