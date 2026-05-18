@@ -1,20 +1,31 @@
 <!DOCTYPE html>
-<html lang="de">
+<html lang="de" class="auth-locked">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <meta name="description" content="HubSite fuer die Beta-Bereiche VWL-KI, Sozialrecht-KI, Linda 3 Personal und Testfragen." />
-  <title>Linda HubSite</title>
+  <meta name="description" content="Linda HubSite für die Beta-Bereiche VWL-KI, Sozialrecht-KI, Linda 3 - Personal und Testfragen." />
+  <title>Linda HubSite | Beta Navigator</title>
+  <script>
+    (() => {
+      try {
+        if (localStorage.getItem("lindaHubAccess") === "ok") {
+          document.documentElement.classList.remove("auth-locked");
+        }
+      } catch (error) {
+        // Keep the password screen visible if storage is unavailable.
+      }
+    })();
+  </script>
   <style>
     :root {
-      --bg: #eaf2fb;
-      --bg-deep: #dce9f9;
+      --bg: #ecf4fc;
+      --bg-deep: #d8e7f8;
       --panel: rgba(255, 255, 255, 0.9);
-      --text: #112238;
-      --muted: #5c718a;
-      --line: rgba(17, 34, 56, 0.1);
-      --shadow: 0 20px 60px rgba(10, 29, 54, 0.14);
-      --radius-xl: 28px;
+      --text: #0f1f34;
+      --muted: #5c7089;
+      --line: rgba(15, 31, 52, 0.1);
+      --shadow: 0 24px 70px rgba(10, 29, 54, 0.15);
+      --radius-xl: 30px;
       --radius-lg: 20px;
     }
 
@@ -33,9 +44,9 @@
       font-family: "Manrope", "Segoe UI", sans-serif;
       color: var(--text);
       background:
-        radial-gradient(900px 520px at 0% 0%, rgba(0, 91, 187, 0.14), transparent 58%),
-        radial-gradient(760px 500px at 100% 0%, rgba(0, 138, 122, 0.12), transparent 60%),
-        radial-gradient(700px 480px at 100% 100%, rgba(176, 108, 0, 0.12), transparent 60%),
+        radial-gradient(1100px 720px at 0% 0%, rgba(0, 91, 187, 0.16), transparent 56%),
+        radial-gradient(900px 620px at 100% 0%, rgba(0, 138, 122, 0.14), transparent 58%),
+        radial-gradient(700px 540px at 100% 100%, rgba(208, 79, 95, 0.12), transparent 60%),
         linear-gradient(180deg, var(--bg) 0%, var(--bg-deep) 100%);
     }
 
@@ -45,29 +56,178 @@
       inset: 0;
       pointer-events: none;
       background-image:
-        linear-gradient(rgba(17, 34, 56, 0.03) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(17, 34, 56, 0.03) 1px, transparent 1px);
-      background-size: 56px 56px;
-      mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.45), transparent 85%);
+        linear-gradient(rgba(15, 31, 52, 0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(15, 31, 52, 0.03) 1px, transparent 1px);
+      background-size: 60px 60px;
+      mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.5), transparent 85%);
       opacity: 0.55;
     }
 
+    body::after {
+      content: "";
+      position: fixed;
+      inset: auto -10% -18% auto;
+      width: 44vw;
+      max-width: 760px;
+      aspect-ratio: 1;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(255, 255, 255, 0.42) 0%, rgba(255, 255, 255, 0) 68%);
+      filter: blur(18px);
+      pointer-events: none;
+      opacity: 0.8;
+      transform: translate3d(0, 0, 0);
+    }
+
+    html.auth-locked,
+    html.auth-locked body {
+      overflow: hidden;
+    }
+
+    html.auth-locked main {
+      filter: blur(8px);
+      pointer-events: none;
+      user-select: none;
+    }
+
+    .auth-gate {
+      display: none;
+    }
+
+    html.auth-locked .auth-gate {
+      position: fixed;
+      inset: 0;
+      z-index: 1000;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+      background: rgba(236, 244, 252, 0.92);
+      backdrop-filter: blur(18px);
+    }
+
+    .auth-panel {
+      width: min(100%, 420px);
+      padding: 26px;
+      border-radius: 26px;
+      background: rgba(255, 255, 255, 0.94);
+      border: 1px solid rgba(15, 31, 52, 0.1);
+      box-shadow: 0 28px 72px rgba(10, 29, 54, 0.18);
+      color: var(--text);
+    }
+
+    .auth-panel h2 {
+      margin: 0 0 8px;
+      font-size: 1.5rem;
+      line-height: 1.15;
+    }
+
+    .auth-panel p {
+      margin: 0 0 18px;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+
+    .auth-form {
+      display: grid;
+      gap: 10px;
+    }
+
+    .auth-form input,
+    .auth-form button {
+      width: 100%;
+      min-height: 48px;
+      border-radius: 16px;
+      font: inherit;
+    }
+
+    .auth-form input {
+      padding: 0 14px;
+      color: var(--text);
+      background: #fff;
+      border: 1px solid rgba(15, 31, 52, 0.14);
+      outline: none;
+    }
+
+    .auth-form input:focus {
+      border-color: rgba(0, 91, 187, 0.45);
+      box-shadow: 0 0 0 4px rgba(0, 91, 187, 0.1);
+    }
+
+    .auth-form button {
+      border: 0;
+      color: #fff;
+      background: linear-gradient(135deg, #005bbb 0%, #1f7de1 100%);
+      font-weight: 900;
+      cursor: pointer;
+    }
+
+    .auth-error {
+      display: none;
+      margin: 2px 0 0;
+      color: #b42318;
+      font-size: 0.92rem;
+      font-weight: 800;
+    }
+
+    .auth-error.show {
+      display: block;
+    }
+
     .shell {
-      max-width: 1180px;
+      max-width: 1240px;
       margin: 0 auto;
       min-height: 100svh;
       padding: 24px;
       display: grid;
-      align-content: center;
       gap: 22px;
+      align-content: center;
       position: relative;
     }
 
-    .hero {
+    .hero-grid {
       display: grid;
+      gap: 18px;
+      align-items: stretch;
+    }
+
+    .hero {
+      animation: floatIn 720ms ease both;
+    }
+
+    .hero {
+      position: relative;
+      overflow: hidden;
+      padding: clamp(22px, 2.8vw, 30px);
+      border-radius: 34px;
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.92) 0%, rgba(247, 251, 255, 0.98) 100%);
+      border: 1px solid rgba(15, 31, 52, 0.08);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(14px);
+      display: grid;
+      gap: 18px;
+    }
+
+    .hero-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
       gap: 14px;
-      max-width: 860px;
-      animation: fadeUp 680ms ease both;
+      flex-wrap: wrap;
+    }
+
+    .hero::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(720px 220px at 0% 0%, rgba(0, 91, 187, 0.12), transparent 72%),
+        radial-gradient(680px 240px at 100% 0%, rgba(0, 138, 122, 0.12), transparent 70%),
+        radial-gradient(560px 220px at 100% 100%, rgba(208, 79, 95, 0.08), transparent 70%);
+      pointer-events: none;
+    }
+
+    .hero > * {
+      position: relative;
+      z-index: 1;
     }
 
     .eyebrow {
@@ -77,9 +237,9 @@
       width: fit-content;
       padding: 8px 12px;
       border-radius: 999px;
-      background: rgba(255, 255, 255, 0.72);
-      border: 1px solid rgba(255, 255, 255, 0.78);
-      color: #1d4975;
+      background: rgba(255, 255, 255, 0.74);
+      border: 1px solid rgba(15, 31, 52, 0.08);
+      color: #1e4977;
       font-size: 0.8rem;
       font-weight: 900;
       letter-spacing: 0.04em;
@@ -89,37 +249,41 @@
 
     h1 {
       margin: 0;
-      font-size: clamp(2.5rem, 6vw, 5.25rem);
-      line-height: 0.96;
-      letter-spacing: -0.055em;
-      max-width: 12ch;
+      font-size: clamp(2.6rem, 6vw, 5.4rem);
+      line-height: 0.94;
+      letter-spacing: -0.06em;
+      max-width: 11.5ch;
     }
 
     .intro {
       margin: 0;
       max-width: 760px;
       font-size: clamp(1rem, 2.35vw, 1.15rem);
-      line-height: 1.7;
+      line-height: 1.72;
       color: var(--muted);
     }
 
-    .meta-row {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      margin-top: 2px;
+    .trust-link {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      width: fit-content;
+      padding: 9px 12px;
+      border-radius: 999px;
+      color: #173e66;
+      background: rgba(255, 255, 255, 0.78);
+      border: 1px solid rgba(15, 31, 52, 0.08);
+      box-shadow: 0 10px 28px rgba(10, 29, 54, 0.06);
+      text-decoration: none;
+      font-size: 0.82rem;
+      font-weight: 900;
     }
 
-    .meta-chip {
-      padding: 8px 12px;
-      border-radius: 999px;
-      font-size: 0.8rem;
-      font-weight: 800;
-      letter-spacing: 0.01em;
-      border: 1px solid rgba(17, 34, 56, 0.08);
-      background: rgba(255, 255, 255, 0.74);
-      color: #304c6a;
-      box-shadow: 0 8px 22px rgba(10, 29, 54, 0.05);
+    .trust-link svg {
+      width: 16px;
+      height: 16px;
+      stroke-width: 2.2;
     }
 
     .cards {
@@ -131,34 +295,33 @@
     .card {
       --card-accent: #005bbb;
       --card-accent-rgb: 0, 91, 187;
-      --card-soft: #e8f2ff;
 
       position: relative;
       overflow: hidden;
       display: grid;
       gap: 18px;
-      min-height: 316px;
+      min-height: 318px;
       padding: 24px;
       border-radius: var(--radius-xl);
       text-decoration: none;
       color: inherit;
       background: linear-gradient(180deg, rgba(255, 255, 255, 0.94) 0%, rgba(247, 251, 255, 0.98) 100%);
-      border: 1px solid var(--line);
+      border: 1px solid rgba(15, 31, 52, 0.08);
       box-shadow: var(--shadow);
-      backdrop-filter: blur(12px);
+      backdrop-filter: blur(14px);
       transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
       isolation: isolate;
-      animation: fadeUp 700ms ease both;
+      animation: floatIn 760ms ease both;
     }
 
     .card::before {
       content: "";
       position: absolute;
-      inset: auto -30px -40px auto;
-      width: 190px;
-      height: 190px;
+      inset: auto -34px -42px auto;
+      width: 200px;
+      height: 200px;
       border-radius: 999px;
-      background: radial-gradient(circle, rgba(var(--card-accent-rgb), 0.18) 0%, rgba(255, 255, 255, 0) 72%);
+      background: radial-gradient(circle, rgba(var(--card-accent-rgb), 0.2) 0%, rgba(255, 255, 255, 0) 72%);
       pointer-events: none;
     }
 
@@ -168,7 +331,7 @@
       inset: 0 0 auto;
       height: 5px;
       background: linear-gradient(90deg, var(--card-accent) 0%, transparent 100%);
-      opacity: 0.92;
+      opacity: 0.94;
       pointer-events: none;
     }
 
@@ -181,16 +344,40 @@
     .card:focus-visible {
       transform: translateY(-5px);
       outline: none;
-      box-shadow: 0 28px 70px rgba(10, 29, 54, 0.18);
+      box-shadow: 0 30px 74px rgba(10, 29, 54, 0.18);
     }
 
     .card:focus-visible {
-      border-color: rgba(var(--card-accent-rgb), 0.28);
+      border-color: rgba(var(--card-accent-rgb), 0.3);
     }
 
     .card-head {
       display: grid;
       gap: 10px;
+    }
+
+    .card-title-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .icon-mark {
+      display: grid;
+      place-items: center;
+      width: 44px;
+      height: 44px;
+      border-radius: 14px;
+      color: var(--card-accent);
+      background: rgba(var(--card-accent-rgb), 0.12);
+      border: 1px solid rgba(var(--card-accent-rgb), 0.16);
+      flex: none;
+    }
+
+    .icon-mark svg {
+      width: 23px;
+      height: 23px;
+      stroke-width: 2.1;
     }
 
     .tag {
@@ -208,15 +395,22 @@
 
     .card h2 {
       margin: 0;
-      font-size: clamp(1.5rem, 3vw, 2.35rem);
+      font-size: clamp(1.55rem, 3vw, 2.4rem);
       line-height: 1.04;
-      letter-spacing: -0.035em;
+      letter-spacing: -0.04em;
+    }
+
+    .ai {
+      display: inline-block;
+      color: #005bbb;
+      text-shadow: 0 0 20px rgba(0, 91, 187, 0.15);
     }
 
     .card p {
       margin: 0;
       color: var(--muted);
-      line-height: 1.65;
+      line-height: 1.66;
+      font-size: 1rem;
     }
 
     .feature-list {
@@ -228,10 +422,10 @@
     .feature {
       padding: 12px 14px;
       border-radius: 18px;
-      background: rgba(255, 255, 255, 0.8);
-      border: 1px solid rgba(17, 34, 56, 0.07);
+      background: rgba(255, 255, 255, 0.84);
+      border: 1px solid rgba(15, 31, 52, 0.07);
+      line-height: 1.45;
       font-weight: 700;
-      line-height: 1.4;
     }
 
     .feature small {
@@ -239,6 +433,7 @@
       margin-top: 4px;
       color: var(--muted);
       font-weight: 600;
+      line-height: 1.45;
     }
 
     .cta {
@@ -263,74 +458,31 @@
     .card.vwl {
       --card-accent: #005bbb;
       --card-accent-rgb: 0, 91, 187;
-      --card-soft: #e8f2ff;
       animation-delay: 60ms;
     }
 
     .card.sozialrecht {
       --card-accent: #008a7a;
       --card-accent-rgb: 0, 138, 122;
-      --card-soft: #e6fbf5;
       animation-delay: 120ms;
     }
 
     .card.personal {
       --card-accent: #b06c00;
       --card-accent-rgb: 176, 108, 0;
-      --card-soft: #fff3df;
       animation-delay: 180ms;
     }
 
     .card.fragen {
       --card-accent: #d04f5f;
       --card-accent-rgb: 208, 79, 95;
-      --card-soft: #ffe8eb;
       animation-delay: 240ms;
     }
 
-    .footer {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-      padding: 18px 20px;
-      border-radius: 24px;
-      background: rgba(255, 255, 255, 0.72);
-      border: 1px solid rgba(17, 34, 56, 0.08);
-      box-shadow: 0 18px 48px rgba(10, 29, 54, 0.08);
-      animation: fadeUp 760ms ease both;
-      animation-delay: 300ms;
-    }
-
-    .footer strong {
-      display: block;
-      font-size: 0.98rem;
-      margin-bottom: 4px;
-    }
-
-    .footer span {
-      color: var(--muted);
-      line-height: 1.6;
-    }
-
-    .footer .hint {
-      padding: 9px 12px;
-      border-radius: 999px;
-      border: 1px solid rgba(17, 34, 56, 0.08);
-      background: rgba(232, 242, 255, 0.75);
-      color: #1d4975;
-      font-size: 0.8rem;
-      font-weight: 800;
-      letter-spacing: 0.03em;
-      text-transform: uppercase;
-      white-space: nowrap;
-    }
-
-    @keyframes fadeUp {
+    @keyframes floatIn {
       from {
         opacity: 0;
-        transform: translateY(14px);
+        transform: translateY(16px);
       }
       to {
         opacity: 1;
@@ -338,7 +490,11 @@
       }
     }
 
-    @media (max-width: 880px) {
+    @media (max-width: 920px) {
+      .hero-grid {
+        grid-template-columns: 1fr;
+      }
+
       .cards {
         grid-template-columns: 1fr;
       }
@@ -359,11 +515,15 @@
       }
 
       .hero {
-        gap: 12px;
+        border-radius: 24px;
       }
 
-      h1 {
-        max-width: none;
+      .hero {
+        padding: 20px;
+      }
+
+      .hero-top {
+        align-items: flex-start;
       }
 
       .card {
@@ -371,10 +531,6 @@
         border-radius: 24px;
       }
 
-      .footer {
-        padding: 16px;
-        border-radius: 20px;
-      }
     }
 
     @media (prefers-reduced-motion: reduce) {
@@ -392,126 +548,222 @@
   </style>
 </head>
 <body>
+  <section class="auth-gate" data-auth-gate aria-label="Passwortschutz">
+    <div class="auth-panel">
+      <h2>Geschützter Zugang</h2>
+      <p>Bitte gib das Passwort ein, um die Lern-AI-Assistenzen zu öffnen.</p>
+      <form class="auth-form" data-auth-form>
+        <input data-auth-input type="password" autocomplete="current-password" placeholder="Passwort" aria-label="Passwort" />
+        <button type="submit">Freischalten</button>
+        <p class="auth-error" data-auth-error>Das Passwort stimmt nicht.</p>
+      </form>
+    </div>
+  </section>
+
   <main class="shell">
-    <section class="hero">
-      <div class="eyebrow">HubSite - Beta Navigation</div>
-      <h1>Vier Wege, ein Startpunkt.</h1>
-      <p class="intro">
-        Diese Startseite verzweigt direkt in die vier Beta-Bereiche. Wähle den Einstieg, den du gerade brauchst:
-        Fachwissen, Personal oder Testfragen.
-      </p>
-      <div class="meta-row" aria-label="Kurzinformationen">
-        <span class="meta-chip">Direkter Zugriff</span>
-        <span class="meta-chip">4 Einstiege</span>
-        <span class="meta-chip">Beta-Umgebung</span>
+    <section class="hero-grid">
+      <div class="hero">
+        <div class="hero-top">
+          <div class="eyebrow">Linda KI · Lern-AI</div>
+          <a class="trust-link" href="faq.html" target="_blank" rel="noreferrer noopener" aria-label="Fragen und Datenschutz">
+            <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z" />
+              <path d="M9.1 9a3 3 0 1 1 4.4 2.7c-.9.5-1.5 1.1-1.5 2.3" />
+              <path d="M12 17h.01" />
+            </svg>
+            <span>Fragen & Datenschutz</span>
+          </a>
+        </div>
+        <h1>Deine Lern-<span class="ai">AI</span>-Assistenzen.</h1>
+        <p class="intro">
+          Wähle einfach den Bereich, den du gerade brauchst.
+        </p>
       </div>
     </section>
 
     <section class="cards" aria-label="Startziele">
-      <a class="card vwl" href="https://linda-4.vercel.app/VWL/index.html">
+      <a class="card vwl" href="https://linda-4.vercel.app/VWL/index.html" target="_blank" rel="noreferrer noopener">
         <div class="card-head">
           <div class="tag">BETA / VWL</div>
-          <h2>VWL-KI</h2>
-          <p>Der Einstieg fuer volkswirtschaftliche Fragen, Erklaerungen und schnelle Orientierung im Beta-Stand.</p>
+          <div class="card-title-row">
+            <span class="icon-mark" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 3v18h18" />
+                <path d="m7 14 4-4 3 3 5-7" />
+              </svg>
+            </span>
+            <h2>VWL-KI (BETA)</h2>
+          </div>
+          <p>Der Einstieg für volkswirtschaftliche Fragen, Erklärungen und schnelle Orientierung im Beta-Stand.</p>
         </div>
 
         <div class="feature-list">
           <div class="feature">
             Markt, Geld und Konjunktur
-            <small>Ideal fuer Lern- und Erklaerfragen.</small>
+            <small>Ideal für Lern- und Erklärfragen.</small>
           </div>
           <div class="feature">
             Schneller Zugriff auf VWL-Inhalte
-            <small>Direkt zur passenden Beta-Seite springen.</small>
+            <small>Direkt zur passenden Lernwelt.</small>
           </div>
         </div>
 
         <div class="cta">
-          <span>VWL-KI oeffnen</span>
+          <span>Starten</span>
           <span class="arrow" aria-hidden="true">→</span>
         </div>
       </a>
 
-      <a class="card sozialrecht" href="https://pfk.oldenburg-knowledge.de">
+      <a class="card sozialrecht" href="https://pfk2026.oldenburg-knowledge.de" target="_blank" rel="noreferrer noopener">
         <div class="card-head">
           <div class="tag">BETA / Sozialrecht</div>
-          <h2>Sozialrecht-KI</h2>
+          <div class="card-title-row">
+            <span class="icon-mark" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+                <path d="m12 3 8 4-8 4-8-4 8-4Z" />
+                <path d="M4 7v7c0 3 3.6 6 8 7 4.4-1 8-4 8-7V7" />
+                <path d="M9 14h6" />
+              </svg>
+            </span>
+            <h2>Sozialrecht-KI (BETA)</h2>
+          </div>
           <p>Direkter Zugang zur Sozialrecht-Umgebung von PFK Oldenburg mit klarem Fokus auf Fachfragen.</p>
         </div>
 
         <div class="feature-list">
           <div class="feature">
             Leistungen, Vorschriften und Praxis
-            <small>Geeignet fuer fachbezogene Rueckfragen.</small>
+            <small>Fachlich klar und direkt nutzbar.</small>
           </div>
           <div class="feature">
-            Fester Einstieg fuer den Bereich Sozialrecht
-            <small>Ohne Umwege in die passende Beta-Site.</small>
+            Fester Einstieg für den Bereich Sozialrecht
+            <small>Für schnelle Antworten im Alltag.</small>
           </div>
         </div>
 
         <div class="cta">
-          <span>Sozialrecht-KI oeffnen</span>
+          <span>Starten</span>
           <span class="arrow" aria-hidden="true">→</span>
         </div>
       </a>
 
-      <a class="card personal" href="https://vercel-kappa-seven-33.vercel.app/index2.html">
+      <a class="card personal" href="https://vercel-kappa-seven-33.vercel.app/index2.html" target="_blank" rel="noreferrer noopener">
         <div class="card-head">
           <div class="tag">BETA / Personal</div>
-          <h2>Linda 3 - Personal</h2>
-          <p>Die Personal-Variante fuer interne Ablaufe, Formulierungen und Aufgaben rund um HR.</p>
+          <div class="card-title-row">
+            <span class="icon-mark" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M16 21v-2a4 4 0 0 0-8 0v2" />
+                <circle cx="12" cy="7" r="4" />
+                <path d="M20 8v6" />
+                <path d="M17 11h6" />
+              </svg>
+            </span>
+            <h2>Linda 3 - Personal (Beta)</h2>
+          </div>
+          <p>Die Personal-Variante für interne Abläufe, Formulierungen und Aufgaben rund um HR.</p>
         </div>
 
         <div class="feature-list">
           <div class="feature">
             Personalthemen und Vorlagen
-            <small>Praktisch fuer den Arbeitsalltag und Tests.</small>
+            <small>Praktisch für den Arbeitsalltag.</small>
           </div>
           <div class="feature">
             Linda 3 im Beta-Stand
-            <small>Neuer Einstieg fuer den Personalbereich.</small>
+            <small>Für deinen Personalbereich.</small>
           </div>
         </div>
 
         <div class="cta">
-          <span>Linda 3 Personal oeffnen</span>
+          <span>Starten</span>
           <span class="arrow" aria-hidden="true">→</span>
         </div>
       </a>
 
-      <a class="card fragen" href="https://linda-4.vercel.app/fastgpt/index.html">
+      <a class="card fragen" href="https://linda-4.vercel.app/fastgpt/index.html" target="_blank" rel="noreferrer noopener">
         <div class="card-head">
           <div class="tag">BETA / Testfragen</div>
-          <h2>Testfragen erstellen</h2>
-          <p>Schneller Generator fuer neue Testfragen, Uebungssets und wiederholbare Lernkontrolle.</p>
+          <div class="card-title-row">
+            <span class="icon-mark" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M9 11h6" />
+                <path d="M9 15h3" />
+                <path d="M6 3h12a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z" />
+                <path d="M8 7h8" />
+              </svg>
+            </span>
+            <h2>Testfragen erstellen (Beta)</h2>
+          </div>
+          <p>Schneller Generator für neue Testfragen, Übungssets und wiederholbare Lernkontrolle.</p>
         </div>
 
         <div class="feature-list">
           <div class="feature">
             Fragen, Varianten und Wiederholung
-            <small>Gut fuer Vorbereitung und Selbsttest.</small>
+            <small>Gut für Vorbereitung und Wiederholung.</small>
           </div>
           <div class="feature">
-            Direktes Werkzeug fuer Lernsets
-            <small>Zum Erstellen neuer Fragebloecke.</small>
+            Direktes Werkzeug für Lernsets
+            <small>Zum schnellen Erstellen neuer Fragen.</small>
           </div>
         </div>
 
         <div class="cta">
-          <span>Testfragen erstellen</span>
+          <span>Starten</span>
           <span class="arrow" aria-hidden="true">→</span>
         </div>
       </a>
     </section>
 
-    <section class="footer" aria-label="Hinweis">
-      <div>
-        <strong>Startseite fuer die Beta-Welten.</strong>
-        <span>Alle Kacheln fuehren direkt in die jeweiligen Bereiche und koennen als neue Frontpage eingesetzt werden.</span>
-      </div>
-      <div class="hint">Direkt einsetzen</div>
-    </section>
   </main>
+  <script>
+    (() => {
+      const password = "SommerInOldenburg";
+      const storageKey = "lindaHubAccess";
+      const root = document.documentElement;
+      const gate = document.querySelector("[data-auth-gate]");
+      const form = document.querySelector("[data-auth-form]");
+      const input = document.querySelector("[data-auth-input]");
+      const error = document.querySelector("[data-auth-error]");
+
+      const unlock = () => {
+        root.classList.remove("auth-locked");
+        gate?.setAttribute("aria-hidden", "true");
+      };
+
+      try {
+        if (localStorage.getItem(storageKey) === "ok") {
+          unlock();
+          return;
+        }
+      } catch (storageError) {
+        // The page still unlocks for the current visit after a correct password.
+      }
+
+      gate?.setAttribute("aria-hidden", "false");
+      window.setTimeout(() => input?.focus(), 80);
+
+      form?.addEventListener("submit", (event) => {
+        event.preventDefault();
+        const value = input?.value.trim();
+
+        if (value === password) {
+          try {
+            localStorage.setItem(storageKey, "ok");
+          } catch (storageError) {
+            // Ignore unavailable storage and continue unlocking this page.
+          }
+          unlock();
+          return;
+        }
+
+        if (error) {
+          error.classList.add("show");
+        }
+        input?.select();
+      });
+    })();
+  </script>
 </body>
 </html>

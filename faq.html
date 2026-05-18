@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="de" class="auth-locked">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="description" content="Linda FAQ zu Daten, Verarbeitung und Verlauf." />
+  <title>Linda FAQ | Datenschutz, Verarbeitung und Verlauf</title>
+  <script>
+    (() => {
+      try {
+        if (localStorage.getItem("lindaHubAccess") === "ok") {
+          document.documentElement.classList.remove("auth-locked");
+        }
+      } catch (error) {
+        // Keep the password screen visible if storage is unavailable.
+      }
+    })();
+  </script>
+  <style>
+    :root {
+      --bg: #07111e;
+      --bg-deep: #0c1b31;
+      --panel: rgba(255, 255, 255, 0.08);
+      --panel-strong: rgba(255, 255, 255, 0.12);
+      --text: #f4f8ff;
+      --muted: rgba(244, 248, 255, 0.76);
+      --line: rgba(255, 255, 255, 0.12);
+      --shadow: 0 26px 80px rgba(0, 0, 0, 0.28);
+      --accent: #41d6c6;
+      --accent-strong: #00c0af;
+      --accent-warm: #ff8b7a;
+      --radius-xl: 30px;
+    }
+
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100svh;
+      font-family: "Manrope", "Segoe UI", sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(1000px 700px at 0% 0%, rgba(65, 214, 198, 0.16), transparent 58%),
+        radial-gradient(860px 620px at 100% 0%, rgba(255, 139, 122, 0.14), transparent 55%),
+        radial-gradient(760px 580px at 100% 100%, rgba(42, 122, 255, 0.12), transparent 62%),
+        linear-gradient(180deg, var(--bg) 0%, var(--bg-deep) 100%);
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background-image:
+        linear-gradient(rgba(255, 255, 255, 0.045) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.045) 1px, transparent 1px);
+      background-size: 64px 64px;
+      mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.55), transparent 88%);
+      opacity: 0.45;
+    }
+
+    html.auth-locked,
+    html.auth-locked body {
+      overflow: hidden;
+    }
+
+    html.auth-locked main {
+      filter: blur(8px);
+      pointer-events: none;
+      user-select: none;
+    }
+
+    .auth-gate {
+      display: none;
+    }
+
+    html.auth-locked .auth-gate {
+      position: fixed;
+      inset: 0;
+      z-index: 1000;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+      background: rgba(7, 17, 30, 0.88);
+      backdrop-filter: blur(18px);
+    }
+
+    .auth-panel {
+      width: min(100%, 420px);
+      padding: 26px;
+      border-radius: 26px;
+      background: rgba(255, 255, 255, 0.94);
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      box-shadow: 0 28px 72px rgba(0, 0, 0, 0.32);
+      color: #07111e;
+    }
+
+    .auth-panel h2 {
+      margin: 0 0 8px;
+      font-size: 1.5rem;
+      line-height: 1.15;
+    }
+
+    .auth-panel p {
+      margin: 0 0 18px;
+      color: rgba(7, 17, 30, 0.68);
+      line-height: 1.6;
+    }
+
+    .auth-form {
+      display: grid;
+      gap: 10px;
+    }
+
+    .auth-form input,
+    .auth-form button {
+      width: 100%;
+      min-height: 48px;
+      border-radius: 16px;
+      font: inherit;
+    }
+
+    .auth-form input {
+      padding: 0 14px;
+      color: #07111e;
+      background: #fff;
+      border: 1px solid rgba(7, 17, 30, 0.14);
+      outline: none;
+    }
+
+    .auth-form input:focus {
+      border-color: rgba(65, 214, 198, 0.55);
+      box-shadow: 0 0 0 4px rgba(65, 214, 198, 0.16);
+    }
+
+    .auth-form button {
+      border: 0;
+      color: #07111e;
+      background: linear-gradient(135deg, #41d6c6 0%, #f4f8ff 100%);
+      font-weight: 900;
+      cursor: pointer;
+    }
+
+    .auth-error {
+      display: none;
+      margin: 2px 0 0;
+      color: #b42318;
+      font-size: 0.92rem;
+      font-weight: 800;
+    }
+
+    .auth-error.show {
+      display: block;
+    }
+
+    .shell {
+      max-width: 1200px;
+      margin: 0 auto;
+      min-height: 100svh;
+      padding: 24px;
+      display: grid;
+      gap: 20px;
+      align-content: center;
+      position: relative;
+    }
+
+    .hero-grid {
+      display: grid;
+      gap: 18px;
+      align-items: stretch;
+    }
+
+    .hero,
+    .info-panel,
+    .faq-card,
+    .back-banner {
+      animation: floatIn 760ms ease both;
+    }
+
+    .hero {
+      position: relative;
+      overflow: hidden;
+      padding: clamp(22px, 2.8vw, 30px);
+      border-radius: 34px;
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.05) 100%);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(14px);
+      display: grid;
+      gap: 16px;
+    }
+
+    .hero::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(760px 220px at 0% 0%, rgba(65, 214, 198, 0.18), transparent 72%),
+        radial-gradient(620px 220px at 100% 0%, rgba(255, 139, 122, 0.16), transparent 72%);
+      pointer-events: none;
+    }
+
+    .hero > * {
+      position: relative;
+      z-index: 1;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      width: fit-content;
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      color: #b9faf4;
+      font-size: 0.8rem;
+      font-weight: 900;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(2.6rem, 6vw, 5.3rem);
+      line-height: 0.94;
+      letter-spacing: -0.06em;
+      max-width: 11.5ch;
+    }
+
+    .intro {
+      margin: 0;
+      max-width: 720px;
+      font-size: clamp(1rem, 2.25vw, 1.12rem);
+      line-height: 1.75;
+      color: var(--muted);
+    }
+
+    .chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .chip {
+      padding: 9px 12px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      color: #f4f8ff;
+      font-size: 0.8rem;
+      font-weight: 800;
+      letter-spacing: 0.02em;
+      white-space: nowrap;
+    }
+
+    .faq-grid {
+      display: grid;
+      gap: 12px;
+    }
+
+    .faq-card {
+      position: relative;
+      overflow: hidden;
+      border-radius: 28px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      box-shadow: 0 18px 50px rgba(0, 0, 0, 0.18);
+      backdrop-filter: blur(12px);
+    }
+
+    .faq-card summary {
+      list-style: none;
+      cursor: pointer;
+      padding: 22px 22px 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      font-size: clamp(1.1rem, 2.35vw, 1.5rem);
+      line-height: 1.2;
+      letter-spacing: -0.03em;
+      font-weight: 900;
+    }
+
+    .faq-card summary::-webkit-details-marker {
+      display: none;
+    }
+
+    .faq-card summary::after {
+      content: "+";
+      display: grid;
+      place-items: center;
+      width: 36px;
+      height: 36px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      color: #dffdf9;
+      font-size: 1.3rem;
+      font-weight: 700;
+      flex: none;
+      transition: transform 180ms ease, background 180ms ease;
+    }
+
+    .faq-card[open] summary::after {
+      content: "–";
+      background: rgba(65, 214, 198, 0.16);
+      transform: rotate(0deg);
+    }
+
+    .faq-answer {
+      padding: 0 22px 22px;
+      display: grid;
+      gap: 10px;
+      color: rgba(244, 248, 255, 0.88);
+      line-height: 1.72;
+      font-size: 1rem;
+    }
+
+    .faq-answer p {
+      margin: 0;
+    }
+
+    .faq-answer strong {
+      color: #fff;
+    }
+
+    .faq-card::before {
+      content: "";
+      position: absolute;
+      inset: 0 auto auto 0;
+      width: 100%;
+      height: 4px;
+      background: linear-gradient(90deg, #41d6c6 0%, #7de7dc 50%, #ff8b7a 100%);
+      pointer-events: none;
+    }
+
+    .faq-card.one {
+      animation-delay: 80ms;
+    }
+
+    .faq-card.two {
+      animation-delay: 150ms;
+    }
+
+    .faq-card.three {
+      animation-delay: 220ms;
+    }
+
+    .back-banner {
+      display: grid;
+      place-items: center;
+      padding: 18px 22px;
+      border-radius: 22px;
+      text-decoration: none;
+      color: #07111e;
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.96) 0%, rgba(234, 242, 252, 0.98) 100%);
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      box-shadow: var(--shadow);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .back-banner::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(560px 220px at 0% 0%, rgba(65, 214, 198, 0.22), transparent 72%),
+        radial-gradient(560px 220px at 100% 100%, rgba(255, 139, 122, 0.18), transparent 72%);
+      pointer-events: none;
+    }
+
+    .back-cta {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      padding: 14px 16px;
+      border-radius: 18px;
+      background: linear-gradient(135deg, #07111e 0%, #0f2b48 100%);
+      color: #fff;
+      font-weight: 900;
+      white-space: nowrap;
+      box-shadow: 0 16px 32px rgba(7, 17, 30, 0.16);
+    }
+
+    .arrow {
+      font-size: 1.15rem;
+      line-height: 1;
+    }
+
+    @keyframes floatIn {
+      from {
+        opacity: 0;
+        transform: translateY(16px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @media (max-width: 920px) {
+      .hero-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 640px) {
+      body {
+        padding: 0;
+      }
+
+      .shell {
+        padding: 16px;
+        gap: 16px;
+      }
+
+      .hero,
+      .faq-card,
+      .back-banner {
+        border-radius: 24px;
+      }
+
+      .hero {
+        padding: 18px;
+      }
+
+      .faq-card summary,
+      .faq-answer,
+      .back-banner {
+        padding-left: 18px;
+        padding-right: 18px;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      html {
+        scroll-behavior: auto;
+      }
+
+      *,
+      *::before,
+      *::after {
+        animation: none !important;
+        transition: none !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <section class="auth-gate" data-auth-gate aria-label="Passwortschutz">
+    <div class="auth-panel">
+      <h2>Geschützter Zugang</h2>
+      <p>Bitte gib das Passwort ein, um die Lern-AI-Assistenzen zu öffnen.</p>
+      <form class="auth-form" data-auth-form>
+        <input data-auth-input type="password" autocomplete="current-password" placeholder="Passwort" aria-label="Passwort" />
+        <button type="submit">Freischalten</button>
+        <p class="auth-error" data-auth-error>Das Passwort stimmt nicht.</p>
+      </form>
+    </div>
+  </section>
+
+  <main class="shell">
+    <section class="hero-grid">
+      <div class="hero">
+        <div class="eyebrow">Linda FAQ · Einfach erklärt</div>
+        <h1>Wichtige Antworten auf einen Blick.</h1>
+        <p class="intro">
+          Hier stehen die Antworten, die du im Alltag am häufigsten brauchst. Klar, kurz und leicht verständlich.
+        </p>
+        <div class="chips" aria-label="Kurzhinweise">
+          <span class="chip">Kurz & klar</span>
+          <span class="chip">Datenschutz</span>
+          <span class="chip">Verlauf</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="faq-grid" aria-label="Häufige Fragen">
+      <details class="faq-card one" open>
+        <summary>Wo werden meine Daten gespeichert?</summary>
+        <div class="faq-answer">
+          <p>
+            <strong>Gar nicht.</strong> Du erfasst weder E-Mail-Adresse, Namen, Vornamen noch Ähnliches. Deine
+            Anfragen werden im Browser-Cache gespeichert.
+          </p>
+        </div>
+      </details>
+
+      <details class="faq-card two">
+        <summary>Wo werden die Daten von OpenAI verarbeitet?</summary>
+        <div class="faq-answer">
+          <p>
+            OpenAI verarbeitet Daten auf seinen Servern in verschiedenen Regionen, unter anderem in den USA.
+          </p>
+          <p>
+            Bei API- und Business-Angeboten gelten eigene Datenregeln und Aufbewahrungsfristen.
+          </p>
+        </div>
+      </details>
+
+      <details class="faq-card three">
+        <summary>Welche Versionen von Claude (Anthropic) können genutzt werden?</summary>
+        <div class="faq-answer">
+          <p>
+            Je nach angebundener Konfiguration können Claude-Modelle aus den Familien <strong>Opus</strong>,
+            <strong>Sonnet</strong> und <strong>Haiku</strong> genutzt werden.
+          </p>
+          <p>
+            Welche konkrete Version aktiv ist, hängt von der aktuellen Einrichtung ab und kann sich mit Updates ändern.
+          </p>
+        </div>
+      </details>
+
+      <details class="faq-card four">
+        <summary>Was passiert mit meinen Angaben?</summary>
+        <div class="faq-answer">
+          <p>
+            Deine Angaben werden von der KI, zum Beispiel <strong>OpenAI</strong>, <strong>Claude</strong> oder
+            <strong>Amazon Bedrock</strong>, verarbeitet.
+          </p>
+          <p>
+            Gib niemals Vorname, Nachname, Telefonnummer, Kreditkartennummer oder andere personenbezogene Daten ein.
+            Solche Daten könnten sonst auf dem Server des KI-Anbieters gespeichert werden.
+          </p>
+        </div>
+      </details>
+
+      <details class="faq-card five">
+        <summary>Kann ich meinen Verlauf löschen?</summary>
+        <div class="faq-answer">
+          <p>
+            <strong>Ja.</strong> Entweder in der BOT-Anwendung selbst über <strong>Verlauf löschen</strong> oder du
+            leerst deinen Cache.
+          </p>
+        </div>
+      </details>
+    </section>
+
+    <a class="back-banner" href="index.html" target="_blank" rel="noreferrer noopener" aria-label="Zurück zur Hub-Site">
+      <div class="back-cta">
+        <span>Zurück zur Hub-Site</span>
+        <span class="arrow" aria-hidden="true">→</span>
+      </div>
+    </a>
+  </main>
+  <script>
+    (() => {
+      const password = "SommerInOldenburg";
+      const storageKey = "lindaHubAccess";
+      const root = document.documentElement;
+      const gate = document.querySelector("[data-auth-gate]");
+      const form = document.querySelector("[data-auth-form]");
+      const input = document.querySelector("[data-auth-input]");
+      const error = document.querySelector("[data-auth-error]");
+
+      const unlock = () => {
+        root.classList.remove("auth-locked");
+        gate?.setAttribute("aria-hidden", "true");
+      };
+
+      try {
+        if (localStorage.getItem(storageKey) === "ok") {
+          unlock();
+          return;
+        }
+      } catch (storageError) {
+        // The page still unlocks for the current visit after a correct password.
+      }
+
+      gate?.setAttribute("aria-hidden", "false");
+      window.setTimeout(() => input?.focus(), 80);
+
+      form?.addEventListener("submit", (event) => {
+        event.preventDefault();
+        const value = input?.value.trim();
+
+        if (value === password) {
+          try {
+            localStorage.setItem(storageKey, "ok");
+          } catch (storageError) {
+            // Ignore unavailable storage and continue unlocking this page.
+          }
+          unlock();
+          return;
+        }
+
+        if (error) {
+          error.classList.add("show");
+        }
+        input?.select();
+      });
+    })();
+  </script>
+</body>
+</html>
