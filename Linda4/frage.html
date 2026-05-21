@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sozialrecht – Anfrage stellen</title>
+  <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --blue:   #003087;
+      --accent: #0050c8;
+      --text:   #1a1a1a;
+      --muted:  #6b7280;
+      --border: #d1d5db;
+      --bg:     #f5f5f5;
+      --white:  #ffffff;
+    }
+
+    body {
+      font-family: 'Georgia', 'Times New Roman', serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── Top bar ── */
+    .topbar {
+      background: var(--blue);
+      height: 4px;
+    }
+
+    /* ── Header ── */
+    header {
+      background: var(--white);
+      border-bottom: 1px solid var(--border);
+      padding: 28px 0;
+    }
+
+    .header-inner {
+      max-width: 780px;
+      margin: 0 auto;
+      padding: 0 32px;
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .logo-mark {
+      width: 36px;
+      height: 36px;
+      background: var(--blue);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .logo-mark svg {
+      width: 18px;
+      height: 18px;
+      fill: #fff;
+    }
+
+    .org-name {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      font-size: 0.78rem;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--blue);
+    }
+
+    /* ── Main ── */
+    main {
+      flex: 1;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 56px 24px 72px;
+    }
+
+    .page {
+      width: 100%;
+      max-width: 780px;
+    }
+
+    /* ── Hero ── */
+    .hero {
+      margin-bottom: 48px;
+    }
+
+    .eyebrow {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 14px;
+    }
+
+    h1 {
+      font-size: clamp(1.9rem, 3.5vw, 2.6rem);
+      font-weight: 400;
+      line-height: 1.2;
+      color: var(--text);
+      letter-spacing: -0.01em;
+      margin-bottom: 18px;
+    }
+
+    .lead {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      font-size: 1rem;
+      color: var(--muted);
+      line-height: 1.7;
+      max-width: 560px;
+    }
+
+    /* ── Form card ── */
+    .card {
+      background: var(--white);
+      border: 1px solid var(--border);
+    }
+
+    /* ── Section ── */
+    .section {
+      padding: 32px 40px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .section:last-of-type { border-bottom: none; }
+
+    .section-head {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 28px;
+    }
+
+    .section-num {
+      width: 28px;
+      height: 28px;
+      background: var(--blue);
+      color: #fff;
+      font-family: 'Segoe UI', Arial, sans-serif;
+      font-size: 0.75rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .section-title {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text);
+    }
+
+    /* ── Grid ── */
+    .row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+      margin-bottom: 20px;
+    }
+
+    .field:last-child { margin-bottom: 0; }
+
+    label {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--text);
+      letter-spacing: 0.01em;
+    }
+
+    .req { color: #c00; margin-left: 2px; }
+
+    input[type="text"],
+    input[type="email"],
+    select,
+    textarea {
+      width: 100%;
+      border: 1px solid var(--border);
+      border-radius: 0;
+      padding: 10px 14px;
+      font-family: 'Segoe UI', Arial, sans-serif;
+      font-size: 0.92rem;
+      color: var(--text);
+      background: var(--white);
+      outline: none;
+      transition: border-color 0.15s;
+      -webkit-appearance: none;
+    }
+
+    input::placeholder, textarea::placeholder { color: #b0b7c3; }
+
+    input:focus, select:focus, textarea:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(0, 80, 200, 0.08);
+    }
+
+    select {
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2.5'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 14px center;
+      padding-right: 36px;
+      cursor: pointer;
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 160px;
+      line-height: 1.65;
+    }
+
+    /* ── Footer of card ── */
+    .card-footer {
+      padding: 28px 40px 36px;
+      background: #fafafa;
+      border-top: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    .notice {
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+      font-family: 'Segoe UI', Arial, sans-serif;
+      font-size: 0.8rem;
+      color: var(--muted);
+      line-height: 1.55;
+    }
+
+    .notice-dot {
+      width: 6px;
+      height: 6px;
+      background: var(--blue);
+      border-radius: 50%;
+      flex-shrink: 0;
+      margin-top: 5px;
+    }
+
+    .btn {
+      align-self: flex-start;
+      padding: 13px 36px;
+      background: var(--blue);
+      color: #fff;
+      border: none;
+      border-radius: 0;
+      font-family: 'Segoe UI', Arial, sans-serif;
+      font-size: 0.85rem;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: background 0.15s;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .btn:hover { background: #001f5b; }
+    .btn:active { background: #001040; }
+    .btn:disabled { background: #9ca3af; cursor: not-allowed; }
+
+    .btn .arrow { transition: transform 0.15s; }
+    .btn:hover .arrow { transform: translateX(4px); }
+
+    .spinner {
+      display: none;
+      width: 16px;
+      height: 16px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .btn.loading .btn-text, .btn.loading .arrow { display: none; }
+    .btn.loading .spinner { display: block; }
+
+    .toast {
+      display: none;
+      font-family: 'Segoe UI', Arial, sans-serif;
+      font-size: 0.85rem;
+      padding: 12px 18px;
+      border-left: 3px solid;
+    }
+
+    .toast.success {
+      display: block;
+      border-color: #166534;
+      background: #f0fdf4;
+      color: #166534;
+    }
+
+    .toast.error {
+      display: block;
+      border-color: #c00;
+      background: #fff5f5;
+      color: #c00;
+    }
+
+    /* ── Footer ── */
+    footer {
+      background: var(--white);
+      border-top: 1px solid var(--border);
+      padding: 20px 32px;
+    }
+
+    .footer-inner {
+      max-width: 780px;
+      margin: 0 auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-family: 'Segoe UI', Arial, sans-serif;
+      font-size: 0.75rem;
+      color: var(--muted);
+    }
+
+    @media (max-width: 580px) {
+      .section { padding: 24px 20px; }
+      .card-footer { padding: 24px 20px; }
+      .row { grid-template-columns: 1fr; }
+      .btn { align-self: stretch; justify-content: center; }
+      .footer-inner { flex-direction: column; gap: 6px; text-align: center; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="topbar"></div>
+
+<header>
+  <div class="header-inner">
+    <div class="logo-mark">
+      <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
+    </div>
+    <span class="org-name">Sozialrecht · Fachberatung</span>
+  </div>
+</header>
+
+<main>
+  <div class="page">
+
+    <div class="hero">
+      <p class="eyebrow">Beratungsanfrage</p>
+      <h1>Stell deine Anfrage –<br />du bekommst eine Antwort</h1>
+      <p class="lead">Bitte schildere deinen Fall so detailliert wie möglich. Je genauer die Beschreibung, desto hilfreicher die Antwort.</p>
+    </div>
+
+    <div class="card">
+      <form id="frageForm" novalidate>
+
+        <!-- Section 1 -->
+        <div class="section">
+          <div class="section-head">
+            <div class="section-num">1</div>
+            <span class="section-title">Ihre Kontaktdaten</span>
+          </div>
+
+          <div class="row">
+            <div class="field">
+              <label for="vorname">Vorname <span class="req">*</span></label>
+              <input type="text" id="vorname" name="vorname" placeholder="Max" required />
+            </div>
+            <div class="field">
+              <label for="nachname">Nachname <span class="req">*</span></label>
+              <input type="text" id="nachname" name="nachname" placeholder="Mustermann" required />
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="email">E-Mail-Adresse <span class="req">*</span></label>
+            <input type="email" id="email" name="email" placeholder="max.mustermann@beispiel.de" required />
+          </div>
+        </div>
+
+        <!-- Section 2 -->
+        <div class="section">
+          <div class="section-head">
+            <div class="section-num">2</div>
+            <span class="section-title">Ihr Anliegen</span>
+          </div>
+
+          <div class="field">
+            <label for="fachbereich">Fachbereich <span class="req">*</span></label>
+            <select id="fachbereich" name="fachbereich" required>
+              <option value="" disabled selected>Bitte wählen</option>
+              <option value="Sozialrecht">Sozialrecht</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label for="thema">Bereich <span class="req">*</span></label>
+            <select id="thema" name="thema" required>
+              <option value="" disabled selected>Bitte wählen</option>
+              <option value="Krankenversicherung">Krankenversicherung</option>
+              <option value="Pflegeversicherung">Pflegeversicherung</option>
+              <option value="Unfallversicherung">Unfallversicherung</option>
+              <option value="Rentenversicherung">Rentenversicherung</option>
+              <option value="Arbeitslosenversicherung">Arbeitslosenversicherung</option>
+              <option value="Sonstige">Sonstige</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Section 3 -->
+        <div class="section">
+          <div class="section-head">
+            <div class="section-num">3</div>
+            <span class="section-title">Fallbeschreibung</span>
+          </div>
+
+          <div class="field">
+            <label for="beschreibung">Beschreiben Sie Ihren Fall <span class="req">*</span></label>
+            <textarea
+              id="beschreibung"
+              name="beschreibung"
+              placeholder="Bitte schildern Sie Ihren Sachverhalt so detailliert wie möglich – relevante Daten, bisherige Bescheide, offene Fragen …"
+              required
+            ></textarea>
+          </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="card-footer">
+          <div class="notice">
+            <div class="notice-dot"></div>
+            <span>Ihre Daten werden ausschließlich zur Bearbeitung Ihrer Anfrage genutzt und nicht an Dritte weitergegeben (DSGVO-konform).</span>
+          </div>
+
+          <div>
+            <button type="submit" class="btn" id="submitBtn">
+              <span class="btn-text">Anfrage absenden</span>
+              <span class="arrow btn-text">→</span>
+              <div class="spinner"></div>
+            </button>
+          </div>
+
+          <div class="toast" id="toast"></div>
+        </div>
+
+      </form>
+    </div>
+
+  </div>
+</main>
+
+<footer>
+  <div class="footer-inner">
+    <span>Alle Angaben vertraulich · DSGVO</span>
+  </div>
+</footer>
+
+<script>
+  // ── EmailJS Konfiguration ──────────────────────────────────────────
+  // 1. Kostenloses Konto auf https://www.emailjs.com erstellen
+  // 2. Service anlegen (z.B. Gmail/GMX) → Service-ID eintragen
+  // 3. E-Mail-Template anlegen → Template-ID eintragen
+  // 4. Public Key aus Account → Settings eintragen
+  const EMAILJS_SERVICE_ID  = 'DEINE_SERVICE_ID';   // z.B. 'service_abc123'
+  const EMAILJS_TEMPLATE_ID = 'DEINE_TEMPLATE_ID';  // z.B. 'template_xyz789'
+  const EMAILJS_PUBLIC_KEY  = 'DEIN_PUBLIC_KEY';     // z.B. 'aBcDeFgHiJkLmNoPq'
+  // ─────────────────────────────────────────────────────────────────
+
+  emailjs.init({ publicKey: EMAILJS_PUBLIC_KEY });
+
+  document.getElementById('frageForm').addEventListener('submit', async function (e) {
+    e.preventDefault();
+
+    const form = e.target;
+    const btn  = document.getElementById('submitBtn');
+    const toast = document.getElementById('toast');
+
+    toast.className = 'toast';
+    toast.textContent = '';
+
+    // Validierung
+    const required = form.querySelectorAll('[required]');
+    let valid = true;
+    required.forEach(el => {
+      el.style.borderColor = '';
+      if (!el.value.trim()) { el.style.borderColor = '#c00'; valid = false; }
+    });
+    if (!valid) {
+      toast.className = 'toast error';
+      toast.textContent = 'Bitte fülle alle Pflichtfelder aus.';
+      return;
+    }
+
+    const emailEl = document.getElementById('email');
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailEl.value.trim())) {
+      emailEl.style.borderColor = '#c00';
+      toast.className = 'toast error';
+      toast.textContent = 'Bitte gib eine gültige E-Mail-Adresse ein.';
+      return;
+    }
+
+    btn.classList.add('loading');
+    btn.disabled = true;
+
+    const templateParams = {
+      vorname:      document.getElementById('vorname').value.trim(),
+      nachname:     document.getElementById('nachname').value.trim(),
+      email:        emailEl.value.trim(),
+      fachbereich:  document.getElementById('fachbereich').value,
+      thema:        document.getElementById('thema').value,
+      beschreibung: document.getElementById('beschreibung').value.trim(),
+      to_email:     'noormann@gmx.com',
+    };
+
+    try {
+      await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, templateParams);
+      toast.className = 'toast success';
+      toast.textContent = 'Deine Anfrage wurde erfolgreich übermittelt. Du bekommst eine Antwort.';
+      form.reset();
+    } catch (err) {
+      console.error('EmailJS error:', err);
+      toast.className = 'toast error';
+      toast.textContent = 'Fehler beim Senden. Bitte versuche es erneut.';
+    } finally {
+      btn.classList.remove('loading');
+      btn.disabled = false;
+    }
+  });
+</script>
+</body>
+</html>
