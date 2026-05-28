@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin – Sozialrecht Fachberatung</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --blue: #003087; --accent: #0050c8; --cyan: #0ea5e9;
+      --green: #16a34a; --amber: #d97706; --red: #dc2626;
+      --text: #111827; --muted: #6b7280; --border: #e5e7eb;
+      --bg: #f3f4f6; --white: #ffffff;
+    }
+    body { font-family: 'Segoe UI', Arial, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+    .topbar { background: linear-gradient(90deg, var(--blue), var(--accent), var(--cyan)); height: 4px; }
+    header {
+      background: var(--blue); padding: 18px 32px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .logo { display: flex; align-items: center; gap: 12px; }
+    .logo-mark { width: 32px; height: 32px; background: rgba(255,255,255,0.15); display: flex; align-items: center; justify-content: center; }
+    .logo-mark svg { width: 16px; height: 16px; fill: #fff; }
+    .logo-name { font-size: 0.78rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: #bfdbfe; }
+    .admin-badge { background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.2); padding: 4px 12px; font-size: 0.72rem; font-weight: 700; color: #fff; letter-spacing: .06em; }
+
+    main { max-width: 800px; margin: 0 auto; padding: 36px 24px 72px; }
+
+    /* Loading/Error */
+    .loading { text-align: center; padding: 60px 24px; }
+    .loading-ring { width: 44px; height: 44px; border: 3px solid #e5e7eb; border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 14px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .error-box { background: #fef2f2; border: 1px solid #fca5a5; padding: 24px; text-align: center; }
+    .error-box h2 { color: var(--red); margin-bottom: 6px; }
+
+    /* Already answered */
+    .done-box { background: #f0fdf4; border: 1px solid #86efac; padding: 20px 24px; display: flex; align-items: center; gap: 14px; font-size: 0.9rem; color: var(--green); }
+
+    .page-title { margin-bottom: 24px; }
+    .page-title h1 { font-size: 1.5rem; font-weight: 600; margin-bottom: 4px; }
+    .page-title p { color: var(--muted); font-size: 0.85rem; }
+
+    .card { background: var(--white); border: 1px solid var(--border); margin-bottom: 16px; }
+    .card-head { padding: 14px 22px; border-bottom: 1px solid var(--border); background: #fafafa; display: flex; align-items: center; gap: 10px; }
+    .card-head-label { font-size: 0.69rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+    .card-body { padding: 20px 22px; }
+
+    .meta-row { display: flex; gap: 8px; margin-bottom: 8px; font-size: 0.87rem; }
+    .meta-key { color: var(--muted); min-width: 120px; flex-shrink: 0; }
+    .meta-val { color: var(--text); font-weight: 600; }
+    a.meta-val { color: var(--accent); text-decoration: none; }
+    a.meta-val:hover { text-decoration: underline; }
+
+    .text-block { background: #f8fafc; border-left: 3px solid var(--accent); padding: 14px 18px; font-size: 0.9rem; line-height: 1.75; color: var(--text); white-space: pre-wrap; }
+    .text-block.linda4 { background: #fefce8; border-color: #eab308; color: #713f12; }
+    .text-block.einschaetzung { background: #f0f9ff; border-color: var(--cyan); color: #1e3a8a; }
+
+    .entwurf-label {
+      display: flex; align-items: center; gap: 8px;
+      font-size: 0.7rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase;
+      color: var(--amber); margin-bottom: 10px;
+    }
+
+    /* ── Rich-Text Editor ── */
+    .editor-wrap { border: 1.5px solid var(--border); transition: border-color 0.15s; }
+    .editor-wrap:focus-within { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(0,80,200,0.09); }
+
+    .editor-toolbar {
+      display: flex; align-items: center; gap: 2px; flex-wrap: wrap;
+      padding: 7px 10px; background: #f8fafc; border-bottom: 1px solid var(--border);
+    }
+    .tb-btn {
+      padding: 4px 9px; border: 1px solid transparent; background: transparent;
+      cursor: pointer; border-radius: 4px; font-size: 0.78rem; color: var(--text);
+      font-family: Arial, sans-serif; transition: all 0.12s; line-height: 1.4;
+      display: flex; align-items: center; gap: 4px;
+    }
+    .tb-btn:hover { background: #e2e8f0; border-color: #cbd5e1; }
+    .tb-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+    .tb-sep { width: 1px; height: 20px; background: var(--border); margin: 0 4px; flex-shrink: 0; }
+    .tb-color {
+      width: 22px; height: 22px; border-radius: 50%; border: 2px solid #fff;
+      box-shadow: 0 0 0 1.5px #cbd5e1; cursor: pointer; transition: transform 0.12s;
+      flex-shrink: 0;
+    }
+    .tb-color:hover { transform: scale(1.2); }
+    .tb-color.active { box-shadow: 0 0 0 2px var(--accent); }
+    .tb-color-label { font-size: 0.7rem; color: var(--muted); margin-left: 2px; }
+
+    #antwortEditor {
+      width: 100%; min-height: 220px; padding: 14px 16px;
+      font-family: Arial, sans-serif; font-size: 11pt;
+      color: var(--text); line-height: 1.75; outline: none;
+      white-space: pre-wrap; word-break: break-word;
+    }
+    #antwortEditor:empty::before {
+      content: attr(data-placeholder); color: #9ca3af; pointer-events: none;
+    }
+
+    .actions { display: flex; align-items: center; gap: 14px; margin-top: 16px; flex-wrap: wrap; }
+    .btn-send {
+      padding: 13px 36px; background: var(--blue); color: #fff; border: none;
+      font-family: 'Segoe UI', Arial, sans-serif; font-size: 0.85rem; font-weight: 700;
+      letter-spacing: .06em; text-transform: uppercase; cursor: pointer;
+      transition: background 0.15s; display: flex; align-items: center; gap: 10px;
+    }
+    .btn-send:hover { background: #001f5b; }
+    .btn-send:disabled { background: #9ca3af; cursor: not-allowed; }
+    .spinner { display: none; width: 15px; height: 15px; border: 2px solid rgba(255,255,255,0.3); border-top-color: #fff; border-radius: 50%; animation: spin 0.7s linear infinite; }
+    .btn-send.loading .send-label { display: none; }
+    .btn-send.loading .spinner { display: block; }
+
+    .btn-entwurf {
+      padding: 12px 20px; background: transparent; color: var(--amber);
+      border: 1px solid #fcd34d; font-family: 'Segoe UI', Arial, sans-serif;
+      font-size: 0.82rem; font-weight: 600; cursor: pointer; transition: all 0.15s;
+    }
+    .btn-entwurf:hover { background: #fefce8; }
+
+    .toast { display: none; margin-top: 14px; padding: 12px 18px; font-size: 0.85rem; border-left: 3px solid; }
+    .toast.success { display: block; border-color: var(--green); background: #f0fdf4; color: var(--green); }
+    .toast.error   { display: block; border-color: var(--red);   background: #fef2f2; color: var(--red); }
+
+    footer { text-align: center; padding: 16px; font-size: 0.73rem; color: var(--muted); border-top: 1px solid var(--border); background: var(--white); }
+  </style>
+</head>
+<body>
+<div class="topbar"></div>
+<header>
+  <div class="logo">
+    <div class="logo-mark"><svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg></div>
+    <span class="logo-name">Sozialrecht · Admin</span>
+  </div>
+  <div class="admin-badge">Experten-Ansicht</div>
+</header>
+
+<main>
+  <div id="loading" class="loading"><div class="loading-ring"></div><p>Fall wird geladen …</p></div>
+  <div id="error" class="error-box" style="display:none"><h2>Fehler</h2><p id="errorMsg"></p></div>
+  <div id="content" style="display:none"></div>
+</main>
+
+<footer>Sozialrecht Fachberatung · Admin-Bereich · Nur für autorisierte Nutzer</footer>
+
+<script>
+  const BASE_URL = location.origin;
+
+  // ── Rich-Text Toolbar ─────────────────────────────────────────
+  let savedRange = null;
+
+  function saveSelection() {
+    const sel = window.getSelection();
+    if (sel && sel.rangeCount > 0) savedRange = sel.getRangeAt(0).cloneRange();
+  }
+
+  function restoreSelection() {
+    const editor = document.getElementById('antwortEditor');
+    if (!editor) return;
+    editor.focus();
+    if (savedRange) {
+      const sel = window.getSelection();
+      sel.removeAllRanges();
+      sel.addRange(savedRange);
+    }
+  }
+
+  function fmt(cmd) {
+    restoreSelection();
+    document.execCommand('styleWithCSS', false, false);
+    document.execCommand(cmd, false, null);
+    updateToolbarState();
+  }
+
+  function fmtColor(color) {
+    restoreSelection();
+    document.execCommand('styleWithCSS', false, true);
+    document.execCommand('foreColor', false, color);
+    document.querySelectorAll('.tb-color').forEach(el => el.classList.remove('active'));
+    const btn = document.querySelector(`.tb-color[data-color="${color}"]`);
+    if (btn) btn.classList.add('active');
+    updateToolbarState();
+  }
+
+  function updateToolbarState() {
+    const bold = document.queryCommandState('bold');
+    const bb = document.getElementById('tbBold');
+    if (bb) bb.classList.toggle('active', bold);
+  }
+
+  // Selektion beim Verlassen des Editors speichern
+  document.addEventListener('selectionchange', () => {
+    const editor = document.getElementById('antwortEditor');
+    if (!editor) return;
+    const sel = window.getSelection();
+    if (sel && sel.rangeCount > 0 && editor.contains(sel.anchorNode)) {
+      savedRange = sel.getRangeAt(0).cloneRange();
+    }
+    updateToolbarState();
+  });
+
+  // Toolbar-Buttons sollen Fokus NICHT vom Editor nehmen
+  document.addEventListener('mousedown', e => {
+    if (e.target.closest('.editor-toolbar')) e.preventDefault();
+  });
+
+  // Strg+B shortcut
+  document.addEventListener('keydown', e => {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'b') {
+      e.preventDefault(); fmt('bold');
+    }
+  });
+
+  function copyPortalLink() {
+    const input = document.getElementById('portalLinkInput');
+    input.select();
+    navigator.clipboard.writeText(input.value).then(() => {
+      const btn = document.getElementById('btnCopy');
+      btn.textContent = '✓ Kopiert!';
+      btn.style.background = '#16a34a';
+      setTimeout(() => { btn.textContent = '📋 Link kopieren'; btn.style.background = '#0050c8'; }, 2000);
+    });
+  }
+
+  const params = new URLSearchParams(location.search);
+  const id     = params.get('id');
+  const token  = params.get('token');
+  let fallData = null;
+
+  if (!id || !token) {
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('error').style.display = 'block';
+    document.getElementById('errorMsg').textContent = 'Fehlende Parameter – bitte den Link aus der E-Mail nutzen.';
+  } else {
+    fetch(`/api/portal?id=${encodeURIComponent(id)}&token=${encodeURIComponent(token)}`)
+      .then(r => r.json())
+      .then(d => {
+        document.getElementById('loading').style.display = 'none';
+        if (d.error) {
+          document.getElementById('error').style.display = 'block';
+          document.getElementById('errorMsg').textContent = d.error;
+          return;
+        }
+        fallData = d;
+        render(d);
+      })
+      .catch(() => {
+        document.getElementById('loading').style.display = 'none';
+        document.getElementById('error').style.display = 'block';
+        document.getElementById('errorMsg').textContent = 'Verbindungsfehler.';
+      });
+  }
+
+  function fmt(iso) {
+    return new Date(iso).toLocaleString('de-DE', { timeZone: 'Europe/Berlin', dateStyle: 'long', timeStyle: 'short' });
+  }
+
+  function render(d) {
+    const c = document.getElementById('content');
+    c.style.display = 'block';
+
+    const beantwortet = d.status === 'beantwortet';
+
+    c.innerHTML = `
+      <div class="page-title">
+        <h1>${d.vorname} ${d.nachname} – ${d.thema}</h1>
+        <p>Eingegangen am ${fmt(d.created)}${beantwortet ? ' · <strong style="color:var(--green)">✓ Bereits beantwortet</strong>' : ''}</p>
+      </div>
+
+      ${beantwortet ? `<div class="done-box">✓ Dieser Fall wurde bereits beantwortet. Antwort wurde an ${d.email} gesendet.</div>` : ''}
+
+      <div class="card">
+        <div class="card-head"><span class="card-head-label">Anfrage</span></div>
+        <div class="card-body">
+          <div class="meta-row"><span class="meta-key">Name</span><span class="meta-val">${d.vorname} ${d.nachname}</span></div>
+          <div class="meta-row"><span class="meta-key">E-Mail</span><a class="meta-val" href="mailto:${d.email}">${d.email}</a></div>
+          <div class="meta-row"><span class="meta-key">Fachbereich</span><span class="meta-val">${d.fachbereich}</span></div>
+          <div class="meta-row" style="margin-bottom:16px;"><span class="meta-key">Themenbereich</span><span class="meta-val">${d.thema}</span></div>
+          <div class="text-block">${d.beschreibung}</div>
+        </div>
+      </div>
+
+      <div class="card" style="border-color:#0050c8;">
+        <div class="card-head" style="background:#eff6ff;">
+          <span class="card-head-label" style="color:#1d4ed8;">🔗 Portal-Link für ${d.vorname}</span>
+        </div>
+        <div class="card-body" style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+          <input id="portalLinkInput" readonly value="${BASE_URL}/portal.html?id=${d.id}"
+            style="flex:1;min-width:200px;border:1.5px solid #bfdbfe;padding:10px 14px;font-size:0.85rem;color:#1e3a8a;background:#f0f9ff;outline:none;" />
+          <button onclick="copyPortalLink()" id="btnCopy"
+            style="padding:10px 20px;background:#0050c8;color:#fff;border:none;font-weight:700;font-size:0.82rem;cursor:pointer;white-space:nowrap;">
+            📋 Link kopieren
+          </button>
+          <a href="mailto:${d.email}?subject=Deine Anfrage – ${d.thema}&body=Hallo ${d.vorname},%0A%0Adeine Anfrage wurde beantwortet. Hier ist dein persönlicher Portal-Link:%0A%0A${encodeURIComponent(BASE_URL + '/portal.html?id=' + d.id)}%0A%0AMit freundlichen Grüßen"
+            style="padding:10px 20px;background:#16a34a;color:#fff;font-weight:700;font-size:0.82rem;text-decoration:none;white-space:nowrap;">
+            ✉️ Per Mail senden
+          </a>
+        </div>
+      </div>
+
+      ${d.einschaetzung ? `
+      <div class="card">
+        <div class="card-head"><span class="card-head-label">🤖 Linda4 Einschätzung</span></div>
+        <div class="card-body"><div class="text-block einschaetzung">${d.einschaetzung}</div></div>
+      </div>` : ''}
+
+      <div class="card" id="antwortCard">
+        <div class="card-head"><span class="card-head-label">✍️ Deine Antwort an ${d.vorname}</span></div>
+        <div class="card-body">
+          ${d.linda4Entwurf ? `
+          <div class="entwurf-label">💡 Linda4-Entwurf (zum Übernehmen oder Bearbeiten)</div>
+          <div class="text-block linda4" id="entwurfBox" style="margin-bottom:16px;cursor:pointer;" title="Klicken um in Antwortfeld zu übernehmen">${d.linda4Entwurf}</div>
+          <button class="btn-entwurf" id="btnEntwurf">↓ Entwurf übernehmen</button>
+          <div style="height:16px;"></div>` : ''}
+          <div class="editor-wrap">
+            <div class="editor-toolbar" id="editorToolbar">
+              <button class="tb-btn" id="tbBold" title="Fett (Strg+B)" onclick="fmt('bold')"><b>B</b></button>
+              <div class="tb-sep"></div>
+              <span class="tb-color-label">Farbe:</span>
+              <div class="tb-color" style="background:#dc2626;" title="Rot"        onclick="fmtColor('#dc2626')"  data-color="#dc2626"></div>
+              <div class="tb-color" style="background:#d97706;" title="Orange"     onclick="fmtColor('#d97706')"  data-color="#d97706"></div>
+              <div class="tb-color" style="background:#16a34a;" title="Grün"       onclick="fmtColor('#16a34a')"  data-color="#16a34a"></div>
+              <div class="tb-color" style="background:#2563eb;" title="Blau"       onclick="fmtColor('#2563eb')"  data-color="#2563eb"></div>
+              <div class="tb-color" style="background:#7c3aed;" title="Lila"       onclick="fmtColor('#7c3aed')"  data-color="#7c3aed"></div>
+              <div class="tb-color" style="background:#0f172a;" title="Schwarz"    onclick="fmtColor('#0f172a')"  data-color="#0f172a"></div>
+              <div class="tb-sep"></div>
+              <button class="tb-btn" title="Formatierung entfernen" onclick="fmt('removeFormat')" style="font-size:0.72rem;">✕ Reset</button>
+            </div>
+            <div id="antwortEditor"
+              contenteditable="${beantwortet ? 'false' : 'true'}"
+              data-placeholder="Deine Antwort an ${d.vorname} …"
+              style="${beantwortet ? 'opacity:.7;background:#f9fafb;' : ''}"
+            >${beantwortet ? (d.antwort || '') : ''}</div>
+          </div>
+          <div class="actions">
+            <button class="btn-send" id="btnSenden" ${beantwortet ? 'disabled' : ''}>
+              <span class="send-label">${beantwortet ? 'Bereits gesendet' : 'Antwort absenden →'}</span>
+              <div class="spinner"></div>
+            </button>
+            <span style="font-size:0.78rem;color:var(--muted);">Wird per E-Mail an ${d.email} gesendet</span>
+          </div>
+          <div class="toast" id="toast"></div>
+        </div>
+      </div>`;
+
+    // Absenden
+    // Entwurf in Editor übernehmen
+    const btnE2 = document.getElementById('btnEntwurf');
+    if (btnE2) {
+      btnE2.addEventListener('click', () => {
+        const editor = document.getElementById('antwortEditor');
+        editor.innerText = d.linda4Entwurf;
+        editor.focus();
+      });
+      document.getElementById('entwurfBox').addEventListener('click', () => {
+        const editor = document.getElementById('antwortEditor');
+        editor.innerText = d.linda4Entwurf;
+        editor.focus();
+      });
+    }
+
+    document.getElementById('btnSenden').addEventListener('click', async function () {
+      const editor    = document.getElementById('antwortEditor');
+      const antwortHtml = editor.innerHTML.trim();
+      const antwortText = editor.innerText.trim();
+      const toast = document.getElementById('toast');
+      toast.className = 'toast';
+
+      if (!antwortText) {
+        toast.className = 'toast error';
+        toast.textContent = 'Bitte eine Antwort eingeben.';
+        return;
+      }
+
+      this.classList.add('loading'); this.disabled = true;
+
+      try {
+        const res = await fetch('/api/antwort', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id, token, antwort: antwortHtml }),
+        });
+        const data = await res.json();
+        if (res.ok && data.ok) {
+          toast.className = 'toast success';
+          toast.textContent = `✓ Antwort wurde an ${fallData.email} gesendet und im Portal gespeichert.`;
+          this.querySelector('.send-label').textContent = 'Gesendet ✓';
+        } else {
+          throw new Error(data.error || 'Fehler');
+        }
+      } catch (e) {
+        toast.className = 'toast error';
+        toast.textContent = 'Fehler: ' + e.message;
+        this.classList.remove('loading'); this.disabled = false;
+      }
+    });
+  }
+</script>
+</body>
+</html>

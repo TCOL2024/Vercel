@@ -4,22 +4,25 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Sozialrecht – Anfrage stellen</title>
-  <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --blue:   #003087;
-      --accent: #0050c8;
-      --text:   #1a1a1a;
-      --muted:  #6b7280;
-      --border: #d1d5db;
-      --bg:     #f5f5f5;
-      --white:  #ffffff;
+      --blue:    #003087;
+      --blue2:   #001f5b;
+      --accent:  #0050c8;
+      --cyan:    #0ea5e9;
+      --text:    #111827;
+      --muted:   #6b7280;
+      --border:  #e5e7eb;
+      --bg:      #f3f4f6;
+      --white:   #ffffff;
+      --green:   #16a34a;
+      --red:     #dc2626;
     }
 
     body {
-      font-family: 'Georgia', 'Times New Roman', serif;
+      font-family: 'Segoe UI', Arial, sans-serif;
       background: var(--bg);
       color: var(--text);
       min-height: 100vh;
@@ -29,7 +32,7 @@
 
     /* ── Top bar ── */
     .topbar {
-      background: var(--blue);
+      background: linear-gradient(90deg, var(--blue) 0%, var(--accent) 60%, var(--cyan) 100%);
       height: 4px;
     }
 
@@ -37,165 +40,184 @@
     header {
       background: var(--white);
       border-bottom: 1px solid var(--border);
-      padding: 28px 0;
+      padding: 20px 0;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.06);
     }
 
     .header-inner {
-      max-width: 780px;
+      max-width: 860px;
       margin: 0 auto;
       padding: 0 32px;
       display: flex;
       align-items: center;
-      gap: 20px;
+      justify-content: space-between;
+    }
+
+    .logo-wrap {
+      display: flex;
+      align-items: center;
+      gap: 14px;
     }
 
     .logo-mark {
-      width: 36px;
-      height: 36px;
+      width: 34px; height: 34px;
       background: var(--blue);
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      display: flex; align-items: center; justify-content: center;
       flex-shrink: 0;
     }
-
-    .logo-mark svg {
-      width: 18px;
-      height: 18px;
-      fill: #fff;
-    }
+    .logo-mark svg { width: 17px; height: 17px; fill: #fff; }
 
     .org-name {
-      font-family: 'Segoe UI', Arial, sans-serif;
-      font-size: 0.78rem;
-      font-weight: 600;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
+      font-size: 0.8rem; font-weight: 700;
+      letter-spacing: 0.1em; text-transform: uppercase;
       color: var(--blue);
+    }
+
+    .header-badge {
+      display: flex; align-items: center; gap: 6px;
+      background: #eff6ff; border: 1px solid #bfdbfe;
+      border-radius: 20px; padding: 5px 12px;
+      font-size: 0.73rem; font-weight: 600;
+      color: var(--accent); letter-spacing: 0.04em;
+    }
+    .header-badge::before {
+      content: '';
+      width: 7px; height: 7px;
+      background: var(--cyan); border-radius: 50%;
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50%       { opacity: 0.5; transform: scale(1.3); }
+    }
+
+    /* ── Hero ── */
+    .hero-band {
+      background: linear-gradient(135deg, var(--blue) 0%, #1e3a8a 60%, #1e40af 100%);
+      color: #fff;
+      padding: 52px 32px 48px;
+      text-align: center;
+    }
+
+    .hero-eyebrow {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 20px; padding: 5px 16px;
+      font-size: 0.72rem; font-weight: 700;
+      letter-spacing: 0.12em; text-transform: uppercase;
+      color: #bfdbfe; margin-bottom: 20px;
+    }
+
+    .hero-band h1 {
+      font-size: clamp(1.8rem, 3.5vw, 2.5rem);
+      font-weight: 300; line-height: 1.2;
+      letter-spacing: -0.02em; margin-bottom: 14px;
+    }
+    .hero-band h1 strong { font-weight: 700; color: #fff; }
+
+    .hero-band p {
+      font-size: 1rem; color: #93c5fd; line-height: 1.7;
+      max-width: 520px; margin: 0 auto 28px;
+    }
+
+    /* ── Steps progress ── */
+    .steps-bar {
+      display: flex; align-items: center; justify-content: center;
+      gap: 0; margin-top: 8px;
+    }
+    .step-item {
+      display: flex; flex-direction: column; align-items: center;
+      gap: 6px; opacity: 0.45; transition: opacity 0.3s;
+    }
+    .step-item.active { opacity: 1; }
+    .step-item.done   { opacity: 0.75; }
+
+    .step-circle {
+      width: 30px; height: 30px;
+      border: 2px solid rgba(255,255,255,0.4);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.75rem; font-weight: 700; color: #fff;
+      transition: background 0.3s, border-color 0.3s;
+    }
+    .step-item.active .step-circle {
+      background: var(--cyan); border-color: var(--cyan);
+    }
+    .step-item.done .step-circle {
+      background: rgba(255,255,255,0.2); border-color: rgba(255,255,255,0.4);
+    }
+    .step-label { font-size: 0.65rem; color: rgba(255,255,255,0.7); letter-spacing: 0.06em; white-space: nowrap; }
+
+    .step-connector {
+      width: 48px; height: 1px;
+      background: rgba(255,255,255,0.2);
+      margin: 0 4px; margin-bottom: 20px;
     }
 
     /* ── Main ── */
     main {
-      flex: 1;
-      display: flex;
-      align-items: flex-start;
-      justify-content: center;
-      padding: 56px 24px 72px;
+      flex: 1; padding: 40px 24px 72px;
+      display: flex; justify-content: center;
     }
+    .page { width: 100%; max-width: 860px; }
 
-    .page {
-      width: 100%;
-      max-width: 780px;
-    }
-
-    /* ── Hero ── */
-    .hero {
-      margin-bottom: 48px;
-    }
-
-    .eyebrow {
-      font-family: 'Segoe UI', Arial, sans-serif;
-      font-size: 0.72rem;
-      font-weight: 700;
-      letter-spacing: 0.14em;
-      text-transform: uppercase;
-      color: var(--accent);
-      margin-bottom: 14px;
-    }
-
-    h1 {
-      font-size: clamp(1.9rem, 3.5vw, 2.6rem);
-      font-weight: 400;
-      line-height: 1.2;
-      color: var(--text);
-      letter-spacing: -0.01em;
-      margin-bottom: 18px;
-    }
-
-    .lead {
-      font-family: 'Segoe UI', Arial, sans-serif;
-      font-size: 1rem;
-      color: var(--muted);
-      line-height: 1.7;
-      max-width: 560px;
-    }
-
-    /* ── Form card ── */
+    /* ── Card ── */
     .card {
       background: var(--white);
       border: 1px solid var(--border);
+      border-radius: 2px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+      overflow: hidden;
     }
 
     /* ── Section ── */
     .section {
       padding: 32px 40px;
       border-bottom: 1px solid var(--border);
+      transition: background 0.2s;
     }
-
     .section:last-of-type { border-bottom: none; }
 
     .section-head {
-      display: flex;
-      align-items: center;
-      gap: 14px;
-      margin-bottom: 28px;
+      display: flex; align-items: center;
+      gap: 14px; margin-bottom: 26px;
     }
 
     .section-num {
-      width: 28px;
-      height: 28px;
-      background: var(--blue);
-      color: #fff;
-      font-family: 'Segoe UI', Arial, sans-serif;
-      font-size: 0.75rem;
-      font-weight: 700;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-shrink: 0;
+      width: 28px; height: 28px;
+      background: var(--blue); color: #fff;
+      font-size: 0.72rem; font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; border-radius: 2px;
     }
-
     .section-title {
-      font-family: 'Segoe UI', Arial, sans-serif;
-      font-size: 0.72rem;
-      font-weight: 700;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
+      font-size: 0.72rem; font-weight: 700;
+      letter-spacing: 0.1em; text-transform: uppercase;
       color: var(--text);
     }
-
-    /* ── Grid ── */
-    .row {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 20px;
+    .section-hint {
+      margin-left: auto;
+      font-size: 0.72rem; color: var(--muted);
     }
 
-    .field {
-      display: flex;
-      flex-direction: column;
-      gap: 7px;
-      margin-bottom: 20px;
-    }
+    /* ── Fields ── */
+    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
 
+    .field { display: flex; flex-direction: column; gap: 7px; margin-bottom: 18px; }
     .field:last-child { margin-bottom: 0; }
 
     label {
-      font-family: 'Segoe UI', Arial, sans-serif;
-      font-size: 0.78rem;
-      font-weight: 600;
-      color: var(--text);
-      letter-spacing: 0.01em;
+      font-size: 0.78rem; font-weight: 600;
+      color: var(--text); letter-spacing: 0.01em;
     }
+    .req { color: var(--red); margin-left: 2px; }
 
-    .req { color: #c00; margin-left: 2px; }
-
-    input[type="text"],
-    input[type="email"],
-    select,
-    textarea {
+    input[type="text"], input[type="email"], select, textarea {
       width: 100%;
-      border: 1px solid var(--border);
+      border: 1.5px solid var(--border);
       border-radius: 0;
       padding: 10px 14px;
       font-family: 'Segoe UI', Arial, sans-serif;
@@ -203,146 +225,403 @@
       color: var(--text);
       background: var(--white);
       outline: none;
-      transition: border-color 0.15s;
+      transition: border-color 0.15s, box-shadow 0.15s;
       -webkit-appearance: none;
     }
-
-    input::placeholder, textarea::placeholder { color: #b0b7c3; }
-
+    input::placeholder, textarea::placeholder { color: #c4cad3; }
     input:focus, select:focus, textarea:focus {
       border-color: var(--accent);
-      box-shadow: 0 0 0 3px rgba(0, 80, 200, 0.08);
+      box-shadow: 0 0 0 3px rgba(0,80,200,0.09);
     }
+    input.valid { border-color: #86efac; }
 
     select {
       background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2.5'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
       background-repeat: no-repeat;
       background-position: right 14px center;
-      padding-right: 36px;
-      cursor: pointer;
+      padding-right: 36px; cursor: pointer;
+    }
+    /* ── Apple-style Plausi-Buttons ── */
+    #plausiBtns {
+      background: #f5f5f7; border-radius: 14px; padding: 18px 18px 14px;
+    }
+    #plausiBtns > div:first-child {
+      font-size: 11px; font-weight: 600; letter-spacing: .06em;
+      text-transform: uppercase; color: #86868b; margin-bottom: 11px;
+    }
+    #plausiBtnList { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .plausi-btn {
+      display: flex; align-items: center; gap: 11px;
+      padding: 11px 14px; border: none; border-radius: 10px;
+      background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.08), 0 0 0 1px rgba(0,0,0,.06);
+      font-family: 'Segoe UI', Arial, sans-serif; font-size: 0.84rem;
+      color: #1d1d1f; cursor: pointer; text-align: left; width: 100%;
+      transition: box-shadow 0.18s, background 0.18s, transform 0.1s;
+    }
+    .plausi-btn:hover {
+      box-shadow: 0 3px 10px rgba(0,0,0,.12), 0 0 0 1px rgba(0,48,135,.2);
+      transform: translateY(-1px);
+    }
+    .plausi-btn:active { transform: scale(0.97); }
+    .plausi-btn.active {
+      background: var(--blue); color: #fff;
+      box-shadow: 0 4px 14px rgba(0,48,135,.35);
+    }
+    .plausi-btn.active .plausi-check { border-color: rgba(255,255,255,.5); background: rgba(255,255,255,.2); }
+    .plausi-btn.active .plausi-check::after { opacity: 1; }
+    .plausi-btn.active .plausi-label { color: #fff; font-weight: 600; }
+    .plausi-check {
+      width: 20px; height: 20px; border: 1.5px solid #d1d5db; border-radius: 50%;
+      flex-shrink: 0; position: relative; transition: all 0.18s; background: #f5f5f7;
+    }
+    .plausi-check::after {
+      content: '✓'; position: absolute; inset: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; font-weight: 800; color: #fff; opacity: 0; transition: opacity 0.15s;
+    }
+    .plausi-label { font-size: 0.84rem; line-height: 1.3; }
+    #plausiBtnHint {
+      margin-top: 12px; font-size: 0.76rem; color: #6b7280;
+      text-align: center; padding: 6px 0;
+    }
+    @media (max-width: 480px) { #plausiBtnList { grid-template-columns: 1fr; } }
+
+    textarea { resize: vertical; min-height: 160px; line-height: 1.65; }
+
+    /* Char counter */
+    .field-meta {
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .char-count {
+      font-size: 0.72rem; color: var(--muted); text-align: right;
+    }
+    .char-count.good  { color: var(--green); font-weight: 600; }
+    .char-count.short { color: #f59e0b; }
+
+    /* ── Locked section ── */
+    .section-locked {
+      position: relative;
+    }
+    .section-locked::after {
+      content: '';
+      position: absolute; inset: 0;
+      background: rgba(249,250,251,0.75);
+      pointer-events: none;
+      transition: opacity 0.4s;
+    }
+    .section-locked.unlocked::after { opacity: 0; pointer-events: none; }
+    .lock-hint {
+      display: flex; align-items: center; gap: 8px;
+      font-size: 0.78rem; color: var(--muted);
+      margin-top: 10px; transition: opacity 0.3s;
+    }
+    .lock-hint.hidden { opacity: 0; pointer-events: none; }
+
+    /* AI hint */
+    .ai-hint {
+      display: flex; align-items: flex-start; gap: 10px;
+      background: #eff6ff; border: 1px solid #bfdbfe;
+      padding: 10px 14px; margin-top: 10px;
+      font-size: 0.78rem; color: #1e40af; line-height: 1.5;
+    }
+    .ai-hint-icon { font-size: 1rem; flex-shrink: 0; margin-top: 1px; }
+
+    /* ── Upload ── */
+    .upload-area {
+      border: 2px dashed var(--border);
+      padding: 22px; text-align: center; cursor: pointer;
+      transition: all 0.15s;
+      font-size: 0.85rem; color: var(--muted);
+    }
+    .upload-area:hover, .upload-area.dragover {
+      border-color: var(--accent); background: #eff6ff; color: var(--accent);
+    }
+    .upload-area input[type="file"] { display: none; }
+    .upload-icon { font-size: 1.4rem; margin-bottom: 6px; display: block; }
+    .upload-name {
+      margin-top: 8px; font-size: 0.8rem;
+      color: var(--green); font-weight: 600;
     }
 
-    textarea {
-      resize: vertical;
-      min-height: 160px;
-      line-height: 1.65;
-    }
-
-    /* ── Footer of card ── */
+    /* ── Card Footer ── */
     .card-footer {
       padding: 28px 40px 36px;
-      background: #fafafa;
+      background: #f9fafb;
       border-top: 1px solid var(--border);
-      display: flex;
-      flex-direction: column;
-      gap: 18px;
+      display: flex; flex-direction: column; gap: 16px;
     }
 
     .notice {
-      display: flex;
-      gap: 12px;
-      align-items: flex-start;
-      font-family: 'Segoe UI', Arial, sans-serif;
-      font-size: 0.8rem;
-      color: var(--muted);
-      line-height: 1.55;
+      display: flex; gap: 10px; align-items: flex-start;
+      font-size: 0.78rem; color: var(--muted); line-height: 1.5;
+    }
+    .notice-dot {
+      width: 5px; height: 5px;
+      background: var(--blue); border-radius: 50%;
+      flex-shrink: 0; margin-top: 6px;
     }
 
-    .notice-dot {
-      width: 6px;
-      height: 6px;
-      background: var(--blue);
-      border-radius: 50%;
-      flex-shrink: 0;
-      margin-top: 5px;
-    }
+    .btn-row { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
 
     .btn {
-      align-self: flex-start;
-      padding: 13px 36px;
-      background: var(--blue);
-      color: #fff;
-      border: none;
-      border-radius: 0;
+      padding: 13px 32px;
+      background: var(--blue); color: #fff;
+      border: none; border-radius: 0;
       font-family: 'Segoe UI', Arial, sans-serif;
-      font-size: 0.85rem;
-      font-weight: 600;
-      letter-spacing: 0.05em;
-      text-transform: uppercase;
-      cursor: pointer;
-      transition: background 0.15s;
-      display: flex;
-      align-items: center;
-      gap: 10px;
+      font-size: 0.85rem; font-weight: 700;
+      letter-spacing: 0.06em; text-transform: uppercase;
+      cursor: pointer; transition: background 0.15s;
+      display: flex; align-items: center; gap: 10px;
     }
-
-    .btn:hover { background: #001f5b; }
-    .btn:active { background: #001040; }
+    .btn:hover { background: var(--blue2); }
     .btn:disabled { background: #9ca3af; cursor: not-allowed; }
-
     .btn .arrow { transition: transform 0.15s; }
-    .btn:hover .arrow { transform: translateX(4px); }
+    .btn:hover:not(:disabled) .arrow { transform: translateX(4px); }
+
+    .btn-secondary {
+      padding: 12px 24px;
+      background: transparent; color: var(--muted);
+      border: 1px solid var(--border); border-radius: 0;
+      font-family: 'Segoe UI', Arial, sans-serif;
+      font-size: 0.82rem; font-weight: 600;
+      cursor: pointer; transition: border-color 0.15s, color 0.15s;
+    }
+    .btn-secondary:hover { border-color: var(--accent); color: var(--accent); }
 
     .spinner {
-      display: none;
-      width: 16px;
-      height: 16px;
+      display: none; width: 15px; height: 15px;
       border: 2px solid rgba(255,255,255,0.3);
-      border-top-color: #fff;
-      border-radius: 50%;
+      border-top-color: #fff; border-radius: 50%;
       animation: spin 0.7s linear infinite;
     }
-
     @keyframes spin { to { transform: rotate(360deg); } }
     .btn.loading .btn-text, .btn.loading .arrow { display: none; }
     .btn.loading .spinner { display: block; }
 
     .toast {
+      display: none; font-size: 0.85rem;
+      padding: 12px 18px; border-left: 3px solid;
+    }
+    .toast.success { display: block; border-color: var(--green); background: #f0fdf4; color: var(--green); }
+    .toast.error   { display: block; border-color: var(--red);   background: #fef2f2; color: var(--red); }
+
+    /* ── MODAL ── */
+    .modal-backdrop {
       display: none;
+      position: fixed; inset: 0; z-index: 100;
+      background: rgba(0,20,60,0.55);
+      backdrop-filter: blur(6px);
+      align-items: center; justify-content: center;
+      padding: 24px;
+    }
+    .modal-backdrop.open { display: flex; }
+
+    .modal {
+      background: var(--white);
+      width: 100%; max-width: 600px;
+      max-height: 90vh;
+      display: flex; flex-direction: column;
+      border-radius: 2px;
+      box-shadow: 0 24px 60px rgba(0,0,0,0.25);
+      animation: slideUp 0.25s ease;
+    }
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateY(16px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .modal-header {
+      padding: 24px 28px 20px;
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+
+    .modal-label {
+      display: flex; align-items: center; gap: 8px;
+      font-size: 0.7rem; font-weight: 700;
+      letter-spacing: 0.12em; text-transform: uppercase;
+      color: var(--accent); margin-bottom: 6px;
+    }
+    .modal-label::before {
+      content: '';
+      display: inline-block;
+      width: 20px; height: 2px;
+      background: var(--cyan);
+    }
+
+    .modal-header h2 {
+      font-size: 1.2rem; font-weight: 600;
+      color: var(--text); margin-bottom: 4px;
+    }
+    .modal-header p {
+      font-size: 0.8rem; color: var(--muted);
+    }
+
+    .modal-body {
+      padding: 24px 28px;
+      overflow-y: auto; flex: 1;
+    }
+
+    /* Loading state */
+    .modal-loading {
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 16px; padding: 32px;
+      text-align: center;
+    }
+    .modal-loading-ring {
+      width: 44px; height: 44px;
+      border: 3px solid #e5e7eb;
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    .modal-loading p {
+      font-size: 0.88rem; color: var(--muted);
+    }
+    .modal-loading strong {
+      display: block; font-size: 1rem; color: var(--text); margin-bottom: 4px;
+    }
+
+    /* AI result */
+    .ai-result { display: none; }
+
+    .ai-tag {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: #eff6ff; border: 1px solid #bfdbfe;
+      border-radius: 2px; padding: 4px 12px;
+      font-size: 0.72rem; font-weight: 700;
+      color: var(--accent); letter-spacing: 0.06em;
+      text-transform: uppercase; margin-bottom: 14px;
+    }
+
+    .ai-text {
+      font-size: 0.95rem; line-height: 1.75;
+      color: var(--text); border-left: 3px solid var(--cyan);
+      padding-left: 16px; margin-bottom: 18px;
+    }
+
+    .ai-disclaimer {
+      font-size: 0.76rem; color: var(--muted);
+      background: #f9fafb; border: 1px solid var(--border);
+      padding: 10px 14px; line-height: 1.5;
+    }
+    .ai-disclaimer strong { color: var(--text); }
+
+    /* ── Checklisten-Panel ── */
+    .checklist-panel {
+      position: fixed; top: 0; right: -320px; width: 300px; height: 100vh;
+      background: #fff; border-left: 1px solid var(--border);
+      box-shadow: -4px 0 20px rgba(0,0,0,0.12);
+      z-index: 1100; transition: right 0.35s cubic-bezier(0.4,0,0.2,1);
+      display: flex; flex-direction: column; overflow: hidden;
+    }
+    .checklist-panel.open { right: 0; }
+    .checklist-panel-head {
+      background: linear-gradient(135deg, var(--blue), var(--accent));
+      padding: 18px 20px; flex-shrink: 0;
+    }
+    .checklist-panel-head h3 { color: #fff; font-size: 0.9rem; margin: 0 0 4px; }
+    .checklist-panel-head p  { color: #bfdbfe; font-size: 0.73rem; margin: 0; }
+    .checklist-progress-bar  { height: 3px; background: rgba(255,255,255,0.2); margin-top: 12px; }
+    .checklist-progress-fill { height: 100%; background: #34d399; transition: width 0.4s; }
+    .checklist-body { flex: 1; overflow-y: auto; padding: 16px; }
+    .checklist-item {
+      display: flex; align-items: flex-start; gap: 10px;
+      padding: 10px 12px; margin-bottom: 8px;
+      border: 1px solid var(--border); background: #fafafa;
+      transition: all 0.2s;
+    }
+    .checklist-item.done   { background: #f0fdf4; border-color: #86efac; }
+    .checklist-item.active { background: #eff6ff; border-color: #93c5fd; }
+    .checklist-dot {
+      width: 22px; height: 22px; border-radius: 50%; flex-shrink: 0; margin-top: 1px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.7rem; font-weight: 700;
+      border: 2px solid var(--border); background: #fff; color: var(--muted);
+      transition: all 0.2s;
+    }
+    .checklist-item.done   .checklist-dot { background: #16a34a; border-color: #16a34a; color: #fff; }
+    .checklist-item.active .checklist-dot { background: var(--accent); border-color: var(--accent); color: #fff; }
+    .checklist-item-text { font-size: 0.8rem; color: var(--text); line-height: 1.4; flex: 1; }
+    .checklist-item.done .checklist-item-text { color: var(--muted); text-decoration: line-through; }
+    .checklist-item.active .checklist-item-text { font-weight: 600; color: var(--accent); }
+    .checklist-summary { padding: 12px 16px; border-top: 1px solid var(--border); font-size: 0.75rem; color: var(--muted); text-align: center; }
+
+    /* Rückfragen */
+    .rueckfragen-box { display: none; }
+    .rueckfragen-intro {
+      font-size: 0.88rem; color: var(--muted);
+      margin-bottom: 18px; line-height: 1.6;
+    }
+    .rueckfrage-item { margin-bottom: 16px; }
+    .rueckfrage-item label {
+      display: block; font-size: 0.83rem; font-weight: 600;
+      color: var(--text); margin-bottom: 6px;
+    }
+    .rueckfrage-item textarea {
+      width: 100%; border: 1.5px solid var(--border);
+      padding: 9px 12px; font-family: 'Segoe UI', Arial, sans-serif;
+      font-size: 0.88rem; color: var(--text); outline: none;
+      resize: vertical; min-height: 64px; line-height: 1.5;
+      transition: border-color 0.15s;
+    }
+    .rueckfrage-item textarea:focus { border-color: var(--accent); }
+
+    .modal-footer {
+      padding: 18px 28px 24px;
+      border-top: 1px solid var(--border);
+      flex-shrink: 0;
+      display: flex; gap: 12px; flex-wrap: wrap;
+    }
+
+    .btn-send {
+      flex: 1; min-width: 180px;
+      padding: 13px 24px;
+      background: var(--blue); color: #fff;
+      border: none; font-family: 'Segoe UI', Arial, sans-serif;
+      font-size: 0.85rem; font-weight: 700;
+      letter-spacing: 0.05em; text-transform: uppercase;
+      cursor: pointer; transition: background 0.15s;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+    }
+    .btn-send:hover { background: var(--blue2); }
+    .btn-send:disabled { background: #9ca3af; cursor: not-allowed; }
+    .btn-send .spinner { display: none; }
+    .btn-send.loading .send-label { display: none; }
+    .btn-send.loading .spinner { display: block; }
+
+    .btn-back {
+      padding: 12px 20px;
+      background: transparent; color: var(--muted);
+      border: 1px solid var(--border);
       font-family: 'Segoe UI', Arial, sans-serif;
-      font-size: 0.85rem;
-      padding: 12px 18px;
-      border-left: 3px solid;
+      font-size: 0.82rem; font-weight: 600;
+      cursor: pointer; transition: all 0.15s;
     }
-
-    .toast.success {
-      display: block;
-      border-color: #166534;
-      background: #f0fdf4;
-      color: #166534;
-    }
-
-    .toast.error {
-      display: block;
-      border-color: #c00;
-      background: #fff5f5;
-      color: #c00;
-    }
+    .btn-back:hover { border-color: var(--muted); color: var(--text); }
 
     /* ── Footer ── */
     footer {
-      background: var(--white);
-      border-top: 1px solid var(--border);
-      padding: 20px 32px;
+      background: var(--white); border-top: 1px solid var(--border);
+      padding: 18px 32px;
     }
-
     .footer-inner {
-      max-width: 780px;
-      margin: 0 auto;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      font-family: 'Segoe UI', Arial, sans-serif;
-      font-size: 0.75rem;
-      color: var(--muted);
+      max-width: 860px; margin: 0 auto;
+      display: flex; justify-content: space-between; align-items: center;
+      font-size: 0.74rem; color: var(--muted);
     }
 
-    @media (max-width: 580px) {
-      .section { padding: 24px 20px; }
-      .card-footer { padding: 24px 20px; }
+    @media (max-width: 600px) {
+      .section { padding: 22px 20px; }
+      .card-footer { padding: 22px 20px; }
       .row { grid-template-columns: 1fr; }
-      .btn { align-self: stretch; justify-content: center; }
-      .footer-inner { flex-direction: column; gap: 6px; text-align: center; }
+      .btn { width: 100%; justify-content: center; }
+      .hero-band { padding: 36px 20px 32px; }
+      .step-connector { width: 24px; }
+      .modal-footer { flex-direction: column; }
+      .btn-send, .btn-back { width: 100%; justify-content: center; }
+      .footer-inner { flex-direction: column; gap: 4px; }
     }
   </style>
 </head>
@@ -352,67 +631,93 @@
 
 <header>
   <div class="header-inner">
-    <div class="logo-mark">
-      <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
+    <div class="logo-wrap">
+      <div class="logo-mark">
+        <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
+      </div>
+      <span class="org-name">Sozialrecht · Fachberatung</span>
     </div>
-    <span class="org-name">Sozialrecht · Fachberatung</span>
+    <div class="header-badge">Linda4 KI aktiv</div>
   </div>
 </header>
 
+<!-- Hero -->
+<div class="hero-band">
+  <div class="hero-eyebrow">Beratungsanfrage · Sozialrecht</div>
+  <h1>Stell deine Anfrage –<br /><strong>du bekommst eine Antwort</strong></h1>
+  <p>Bitte schildere deinen Fall so detailliert wie möglich.<br />Linda4 gibt dir vor dem Absenden eine erste Einschätzung.</p>
+
+  <div class="steps-bar">
+    <div class="step-item active" id="step1">
+      <div class="step-circle">1</div>
+      <span class="step-label">KONTAKT</span>
+    </div>
+    <div class="step-connector"></div>
+    <div class="step-item" id="step2">
+      <div class="step-circle">2</div>
+      <span class="step-label">ANLIEGEN</span>
+    </div>
+    <div class="step-connector"></div>
+    <div class="step-item" id="step3">
+      <div class="step-circle">3</div>
+      <span class="step-label">BESCHREIBUNG</span>
+    </div>
+    <div class="step-connector"></div>
+    <div class="step-item" id="step4">
+      <div class="step-circle">✦</div>
+      <span class="step-label">KI-ANALYSE</span>
+    </div>
+  </div>
+</div>
+
 <main>
   <div class="page">
-
-    <div class="hero">
-      <p class="eyebrow">Beratungsanfrage</p>
-      <h1>Stell deine Anfrage –<br />du bekommst eine Antwort</h1>
-      <p class="lead">Bitte schildere deinen Fall so detailliert wie möglich. Je genauer die Beschreibung, desto hilfreicher die Antwort.</p>
-    </div>
-
     <div class="card">
       <form id="frageForm" novalidate>
 
         <!-- Section 1 -->
-        <div class="section">
+        <div class="section" id="secKontakt">
           <div class="section-head">
             <div class="section-num">1</div>
-            <span class="section-title">Ihre Kontaktdaten</span>
+            <span class="section-title">Deine Kontaktdaten</span>
+            <span class="section-hint">Alle * Felder sind Pflichtfelder</span>
           </div>
 
           <div class="row">
             <div class="field">
               <label for="vorname">Vorname <span class="req">*</span></label>
-              <input type="text" id="vorname" name="vorname" placeholder="Max" required />
+              <input type="text" id="vorname" placeholder="Max" required />
             </div>
             <div class="field">
               <label for="nachname">Nachname <span class="req">*</span></label>
-              <input type="text" id="nachname" name="nachname" placeholder="Mustermann" required />
+              <input type="text" id="nachname" placeholder="Mustermann" required />
             </div>
           </div>
 
           <div class="field">
             <label for="email">E-Mail-Adresse <span class="req">*</span></label>
-            <input type="email" id="email" name="email" placeholder="max.mustermann@beispiel.de" required />
+            <input type="email" id="email" placeholder="max.mustermann@beispiel.de" required />
           </div>
         </div>
 
         <!-- Section 2 -->
-        <div class="section">
+        <div class="section" id="secAnliegen">
           <div class="section-head">
             <div class="section-num">2</div>
-            <span class="section-title">Ihr Anliegen</span>
+            <span class="section-title">Dein Anliegen</span>
           </div>
 
           <div class="field">
             <label for="fachbereich">Fachbereich <span class="req">*</span></label>
-            <select id="fachbereich" name="fachbereich" required>
+            <select id="fachbereich" required>
               <option value="" disabled selected>Bitte wählen</option>
               <option value="Sozialrecht">Sozialrecht</option>
             </select>
           </div>
 
           <div class="field">
-            <label for="thema">Bereich <span class="req">*</span></label>
-            <select id="thema" name="thema" required>
+            <label for="thema">Themenbereich <span class="req">*</span></label>
+            <select id="thema" required>
               <option value="" disabled selected>Bitte wählen</option>
               <option value="Krankenversicherung">Krankenversicherung</option>
               <option value="Pflegeversicherung">Pflegeversicherung</option>
@@ -424,123 +729,570 @@
           </div>
         </div>
 
+        <!-- Plausibilisierungs-Buttons -->
+        <div id="plausiBtns" style="display:none;margin-bottom:16px;">
+          <div>Worum geht es genau? <span style="font-weight:400;text-transform:none;letter-spacing:0;">(mehrere möglich)</span></div>
+          <div id="plausiBtnList"></div>
+          <div id="plausiBtnHint" style="margin-top:10px;font-size:0.78rem;color:var(--muted);display:none;">
+            ✓ Auswahl wird automatisch in deine Beschreibung übernommen
+          </div>
+        </div>
+
         <!-- Section 3 -->
-        <div class="section">
+        <div class="section section-locked" id="secBeschreibung">
           <div class="section-head">
             <div class="section-num">3</div>
             <span class="section-title">Fallbeschreibung</span>
           </div>
 
+          <div class="lock-hint" id="lockHint">🔒 Bitte zuerst den Themenbereich wählen</div>
+
           <div class="field">
-            <label for="beschreibung">Beschreiben Sie Ihren Fall <span class="req">*</span></label>
+            <div class="field-meta">
+              <label for="beschreibung">Beschreibe deinen Fall <span class="req">*</span></label>
+              <span class="char-count short" id="charCount">0 Zeichen</span>
+            </div>
             <textarea
               id="beschreibung"
-              name="beschreibung"
-              placeholder="Bitte schildern Sie Ihren Sachverhalt so detailliert wie möglich – relevante Daten, bisherige Bescheide, offene Fragen …"
+              placeholder="Bitte schildere deinen Sachverhalt so detailliert wie möglich – relevante Daten, bisherige Bescheide, Ablehnungen, offene Fragen …"
               required
             ></textarea>
+            <div class="ai-hint">
+              <span class="ai-hint-icon">🤖</span>
+              <span>Linda4 liest deinen Text vor dem Absenden und gibt dir eine <strong>erste unverbindliche Einschätzung</strong> – je mehr du schreibst, desto präziser die Analyse.</span>
+            </div>
+          </div>
+
+          <div class="field">
+            <label>Dokument anhängen <span style="font-weight:400;color:var(--muted)">(optional)</span></label>
+            <div class="upload-area" id="uploadArea" onclick="document.getElementById('dateiUpload').click()">
+              <input type="file" id="dateiUpload" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" />
+              <span class="upload-icon">📎</span>
+              PDF, Word oder Bild · max. 5 MB<br />
+              <small style="opacity:.7">Klicken oder Datei hierher ziehen</small>
+            </div>
+            <div class="upload-name" id="uploadName"></div>
           </div>
         </div>
 
-        <!-- Footer -->
+        <!-- Card Footer -->
         <div class="card-footer">
           <div class="notice">
             <div class="notice-dot"></div>
-            <span>Ihre Daten werden ausschließlich zur Bearbeitung Ihrer Anfrage genutzt und nicht an Dritte weitergegeben (DSGVO-konform).</span>
+            <span>Deine Daten werden ausschließlich zur Bearbeitung deiner Anfrage genutzt und nicht an Dritte weitergegeben (DSGVO-konform).</span>
           </div>
-
-          <div>
-            <button type="submit" class="btn" id="submitBtn">
-              <span class="btn-text">Anfrage absenden</span>
+          <div class="btn-row">
+            <button type="submit" class="btn" id="analyseBtn">
+              <span class="btn-text">KI-Analyse starten</span>
               <span class="arrow btn-text">→</span>
               <div class="spinner"></div>
             </button>
           </div>
-
           <div class="toast" id="toast"></div>
         </div>
 
       </form>
     </div>
-
   </div>
 </main>
 
 <footer>
   <div class="footer-inner">
     <span>Alle Angaben vertraulich · DSGVO</span>
+    <span>pfk2026.oldenburg-knowledge.de</span>
   </div>
 </footer>
 
+<!-- ── MODAL ── -->
+<!-- Checklisten-Panel -->
+<div class="checklist-panel" id="checklistPanel">
+  <div class="checklist-panel-head">
+    <h3>📋 Rückfragen-Checkliste</h3>
+    <p>Beantworte alle Punkte für eine präzise Analyse</p>
+    <div class="checklist-progress-bar">
+      <div class="checklist-progress-fill" id="checklistFill" style="width:0%"></div>
+    </div>
+  </div>
+  <div class="checklist-body" id="checklistBody"></div>
+  <div class="checklist-summary" id="checklistSummary">0 von 0 beantwortet</div>
+</div>
+
+<div class="modal-backdrop" id="modalBackdrop">
+  <div class="modal" role="dialog" aria-modal="true">
+
+    <div class="modal-header">
+      <div class="modal-label">Linda4 · KI-Voranalyse</div>
+      <h2>Erste Einschätzung zu deinem Fall</h2>
+      <p>Unverbindlich · Keine Rechtsberatung · Wird nicht gespeichert</p>
+    </div>
+
+    <div class="modal-body">
+      <!-- Loading -->
+      <div class="modal-loading" id="modalLoading">
+        <div class="modal-loading-ring"></div>
+        <div>
+          <strong>Linda4 analysiert deinen Fall …</strong>
+          <p>Das dauert nur einen Moment.</p>
+        </div>
+      </div>
+
+      <!-- Rückfragen -->
+      <div class="rueckfragen-box" id="rueckfragenBox">
+        <p class="rueckfragen-intro">
+          🤔 Linda4 hat noch ein paar kurze Rückfragen, um deinen Fall besser einschätzen zu können.
+          Beantworte sie kurz – dann bekommst du eine präzisere Einschätzung.
+        </p>
+        <div id="rueckfragenList"></div>
+      </div>
+
+      <!-- Result -->
+      <div class="ai-result" id="aiResult">
+        <div class="ai-tag" id="aiTag">🔍 Erste Einschätzung</div>
+        <div class="ai-text" id="aiText"></div>
+        <div id="docBadge" style="display:none;margin-bottom:12px;"></div>
+        <div class="ai-disclaimer">
+          <strong>Hinweis:</strong> Diese Einschätzung ist rein informativ und stellt keine Rechtsberatung dar.
+          Nach dem Absenden wird dein Fall von einem Experten geprüft – du erhältst eine fundierte Antwort.
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-footer" id="modalFooter" style="display:none">
+      <button class="btn-back" id="btnBack">← Zurück &amp; bearbeiten</button>
+      <button class="btn-send" id="btnWeiter" style="display:none">
+        <span class="send-label">Antworten absenden →</span>
+        <div class="spinner"></div>
+      </button>
+      <button class="btn-send" id="btnSend" style="display:none">
+        <span class="send-label">Anfrage jetzt absenden →</span>
+        <div class="spinner"></div>
+      </button>
+    </div>
+
+  </div>
+</div>
+
 <script>
-  // ── EmailJS Konfiguration ──────────────────────────────────────────
-  // 1. Kostenloses Konto auf https://www.emailjs.com erstellen
-  // 2. Service anlegen (z.B. Gmail/GMX) → Service-ID eintragen
-  // 3. E-Mail-Template anlegen → Template-ID eintragen
-  // 4. Public Key aus Account → Settings eintragen
-  const EMAILJS_SERVICE_ID  = 'DEINE_SERVICE_ID';   // z.B. 'service_abc123'
-  const EMAILJS_TEMPLATE_ID = 'DEINE_TEMPLATE_ID';  // z.B. 'template_xyz789'
-  const EMAILJS_PUBLIC_KEY  = 'DEIN_PUBLIC_KEY';     // z.B. 'aBcDeFgHiJkLmNoPq'
-  // ─────────────────────────────────────────────────────────────────
+  // ── Globaler State ─────────────────────────────────────────────
+  let aktuelleEinschaetzung = '';
 
-  emailjs.init({ publicKey: EMAILJS_PUBLIC_KEY });
-
-  document.getElementById('frageForm').addEventListener('submit', async function (e) {
-    e.preventDefault();
-
-    const form = e.target;
-    const btn  = document.getElementById('submitBtn');
-    const toast = document.getElementById('toast');
-
-    toast.className = 'toast';
-    toast.textContent = '';
-
-    // Validierung
-    const required = form.querySelectorAll('[required]');
-    let valid = true;
-    required.forEach(el => {
-      el.style.borderColor = '';
-      if (!el.value.trim()) { el.style.borderColor = '#c00'; valid = false; }
+  // ── Step indicator ──────────────────────────────────────────────
+  function highlightStep(n) {
+    ['step1','step2','step3','step4'].forEach((id, i) => {
+      const el = document.getElementById(id);
+      el.classList.remove('active','done');
+      if (i + 1 < n) el.classList.add('done');
+      if (i + 1 === n) el.classList.add('active');
     });
-    if (!valid) {
+  }
+
+  // Activate steps on scroll
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (!e.isIntersecting) return;
+      if (e.target.id === 'secKontakt')     highlightStep(1);
+      if (e.target.id === 'secAnliegen')    highlightStep(2);
+      if (e.target.id === 'secBeschreibung') highlightStep(3);
+    });
+  }, { threshold: 0.4 });
+  ['secKontakt','secAnliegen','secBeschreibung'].forEach(id => obs.observe(document.getElementById(id)));
+
+  // ── Feature ②: Geführter Flow – Section 3 sperren ─────────────
+  const themaEl   = document.getElementById('thema');
+  const secBeschr = document.getElementById('secBeschreibung');
+  const lockHint  = document.getElementById('lockHint');
+
+  function unlockBeschreibung() {
+    secBeschr.classList.add('unlocked');
+    lockHint.classList.add('hidden');
+    secBeschr.querySelectorAll('textarea, input[type="file"]').forEach(el => el.removeAttribute('disabled'));
+  }
+
+  // Beim Laden: Section 3 sperren
+  secBeschr.querySelectorAll('textarea, input[type="file"]').forEach(el => el.setAttribute('disabled', 'disabled'));
+
+  // ── Plausibilisierungs-Buttons ────────────────────────────────
+  const PLAUSI = {
+    'Krankenversicherung': [
+      'Antrag abgelehnt', 'Leistung verweigert', 'Kostenübernahme unklar',
+      'Widerspruch einlegen', 'Krankengeld', 'Wahltarif / Zusatzversicherung',
+      'Familienversicherung', 'Beitragsstreit', 'Sonstiges'
+    ],
+    'Pflegeversicherung': [
+      'Pflegegrad beantragen', 'Pflegegrad abgelehnt', 'Höherstufung',
+      'Widerspruch Gutachten', 'Pflegegeld vs. Sachleistung', 'Kurzzeitpflege',
+      'Verhinderungspflege', 'Hilfsmittel', 'Sonstiges'
+    ]
+  };
+
+  let plausiBtnAuswahl = [];
+
+  function zeigePlausiBtns(thema) {
+    const container = document.getElementById('plausiBtns');
+    const list      = document.getElementById('plausiBtnList');
+    const hint      = document.getElementById('plausiBtnHint');
+    plausiBtnAuswahl = [];
+
+    if (!PLAUSI[thema]) { container.style.display = 'none'; return; }
+
+    list.innerHTML = '';
+    PLAUSI[thema].forEach(label => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'plausi-btn';
+      btn.innerHTML = `<div class="plausi-check"></div><span class="plausi-label">${label}</span>`;
+      btn.addEventListener('click', () => {
+        btn.classList.toggle('active');
+        if (btn.classList.contains('active')) {
+          plausiBtnAuswahl.push(label);
+        } else {
+          plausiBtnAuswahl = plausiBtnAuswahl.filter(v => v !== label);
+        }
+        aktualisiereHinweis();
+      });
+      list.appendChild(btn);
+    });
+
+    container.style.display = 'block';
+    hint.style.display = 'none';
+  }
+
+  function aktualisiereHinweis() {
+    const hint = document.getElementById('plausiBtnHint');
+    hint.style.display = plausiBtnAuswahl.length > 0 ? 'block' : 'none';
+  }
+
+  function getPlausiPrefix() {
+    if (plausiBtnAuswahl.length === 0) return '';
+    return `Betroffene Bereiche: ${plausiBtnAuswahl.join(', ')}\n\n`;
+  }
+
+  themaEl.addEventListener('change', () => {
+    if (themaEl.value) {
+      zeigePlausiBtns(themaEl.value);
+      unlockBeschreibung();
+    }
+  });
+
+  // ── Char counter ──────────────────────────────────────────────
+  const beschEl   = document.getElementById('beschreibung');
+  const charCount = document.getElementById('charCount');
+  beschEl.addEventListener('input', () => {
+    const n = beschEl.value.length;
+    charCount.textContent = n + ' Zeichen';
+    charCount.className = 'char-count ' + (n >= 120 ? 'good' : 'short');
+  });
+
+  // ── Upload ───────────────────────────────────────────────────
+  const uploadArea  = document.getElementById('uploadArea');
+  const dateiUpload = document.getElementById('dateiUpload');
+  const uploadName  = document.getElementById('uploadName');
+
+  uploadArea.addEventListener('dragover', e => { e.preventDefault(); uploadArea.classList.add('dragover'); });
+  uploadArea.addEventListener('dragleave', () => uploadArea.classList.remove('dragover'));
+  uploadArea.addEventListener('drop', e => {
+    e.preventDefault(); uploadArea.classList.remove('dragover');
+    if (e.dataTransfer.files[0]) {
+      dateiUpload.files = e.dataTransfer.files;
+      uploadName.textContent = '✓ ' + e.dataTransfer.files[0].name;
+    }
+  });
+  dateiUpload.addEventListener('change', () => {
+    uploadName.textContent = dateiUpload.files[0] ? '✓ ' + dateiUpload.files[0].name : '';
+  });
+
+  function toBase64(file) {
+    return new Promise((res, rej) => {
+      const r = new FileReader();
+      r.onload  = () => res(r.result.split(',')[1]);
+      r.onerror = rej;
+      r.readAsDataURL(file);
+    });
+  }
+
+  // ── Validation ────────────────────────────────────────────────
+  function validate() {
+    const toast = document.getElementById('toast');
+    toast.className = 'toast'; toast.textContent = '';
+
+    const fields = ['vorname','nachname','email','fachbereich','thema','beschreibung'];
+    let ok = true;
+    fields.forEach(id => {
+      const el = document.getElementById(id);
+      el.style.borderColor = '';
+      if (!el.value.trim()) { el.style.borderColor = '#dc2626'; ok = false; }
+    });
+    if (!ok) {
       toast.className = 'toast error';
       toast.textContent = 'Bitte fülle alle Pflichtfelder aus.';
-      return;
+      return false;
     }
 
     const emailEl = document.getElementById('email');
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailEl.value.trim())) {
-      emailEl.style.borderColor = '#c00';
+      emailEl.style.borderColor = '#dc2626';
       toast.className = 'toast error';
       toast.textContent = 'Bitte gib eine gültige E-Mail-Adresse ein.';
-      return;
+      return false;
     }
+    return true;
+  }
 
-    btn.classList.add('loading');
-    btn.disabled = true;
+  // ── Modal helpers ─────────────────────────────────────────────
+  const backdrop = document.getElementById('modalBackdrop');
+  function openModal()  { backdrop.classList.add('open'); document.body.style.overflow = 'hidden'; }
+  function closeModal() {
+    backdrop.classList.remove('open');
+    document.body.style.overflow = '';
+    closeChecklist();
+  }
 
-    const templateParams = {
-      vorname:      document.getElementById('vorname').value.trim(),
-      nachname:     document.getElementById('nachname').value.trim(),
-      email:        emailEl.value.trim(),
-      fachbereich:  document.getElementById('fachbereich').value,
-      thema:        document.getElementById('thema').value,
-      beschreibung: document.getElementById('beschreibung').value.trim(),
-      to_email:     'noormann@gmx.com',
-    };
+  // Close on backdrop click
+  backdrop.addEventListener('click', e => { if (e.target === backdrop) closeModal(); });
+
+  document.getElementById('btnBack').addEventListener('click', closeModal);
+
+  // ── Checklisten-Panel ─────────────────────────────────────────
+  const checklistPanel = document.getElementById('checklistPanel');
+
+  function openChecklist()  { checklistPanel.classList.add('open'); }
+  function closeChecklist() { checklistPanel.classList.remove('open'); }
+
+  function buildChecklist(fragen) {
+    const body    = document.getElementById('checklistBody');
+    const summary = document.getElementById('checklistSummary');
+    const fill    = document.getElementById('checklistFill');
+
+    body.innerHTML = fragen.map((frage, i) => `
+      <div class="checklist-item ${i === 0 ? 'active' : ''}" id="cl-item-${i}">
+        <div class="checklist-dot" id="cl-dot-${i}">${i + 1}</div>
+        <div class="checklist-item-text">${frage}</div>
+      </div>`).join('');
+
+    summary.textContent = `0 von ${fragen.length} beantwortet`;
+    fill.style.width = '0%';
+    openChecklist();
+
+    // Live-Update beim Tippen
+    setTimeout(() => {
+      const textareas = document.querySelectorAll('#rueckfragenList textarea');
+      textareas.forEach((ta, i) => {
+        ta.addEventListener('input', () => updateChecklist(textareas, fragen.length));
+        ta.addEventListener('focus', () => setActiveItem(i, textareas.length));
+      });
+    }, 100);
+  }
+
+  function setActiveItem(activeIndex, total) {
+    for (let i = 0; i < total; i++) {
+      const item = document.getElementById(`cl-item-${i}`);
+      if (!item) continue;
+      const ta = document.querySelector(`#rueckfragenList textarea[data-index="${i}"]`);
+      const done = ta && ta.value.trim().length > 2;
+      item.classList.toggle('active', i === activeIndex && !done);
+    }
+  }
+
+  function updateChecklist(textareas, total) {
+    let done = 0;
+    textareas.forEach((ta, i) => {
+      const item = document.getElementById(`cl-item-${i}`);
+      const dot  = document.getElementById(`cl-dot-${i}`);
+      if (!item) return;
+      const filled = ta.value.trim().length > 2;
+      if (filled) {
+        done++;
+        item.classList.add('done');
+        item.classList.remove('active');
+        dot.textContent = '✓';
+      } else {
+        item.classList.remove('done');
+        dot.textContent = i + 1;
+      }
+    });
+    document.getElementById('checklistFill').style.width = `${Math.round(done / total * 100)}%`;
+    document.getElementById('checklistSummary').textContent = `${done} von ${total} beantwortet`;
+  }
+
+  // ── Step 1: Form submit → KI-Analyse ─────────────────────────
+  document.getElementById('frageForm').addEventListener('submit', async function (e) {
+    e.preventDefault();
+    if (!validate()) return;
+
+    const btn = document.getElementById('analyseBtn');
+    btn.classList.add('loading'); btn.disabled = true;
+    highlightStep(4);
 
     try {
-      await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, templateParams);
-      toast.className = 'toast success';
-      toast.textContent = 'Deine Anfrage wurde erfolgreich übermittelt. Du bekommst eine Antwort.';
-      form.reset();
-    } catch (err) {
-      console.error('EmailJS error:', err);
-      toast.className = 'toast error';
-      toast.textContent = 'Fehler beim Senden. Bitte versuche es erneut.';
+      openModal();
+      document.getElementById('modalLoading').style.display = 'flex';
+      document.getElementById('aiResult').style.display = 'none';
+      document.getElementById('modalFooter').style.display = 'none';
+
+      // Datei für Voranalyse vorbereiten
+      const vorFile = dateiUpload.files[0];
+      const vorPayload = {
+        thema:        document.getElementById('thema').value,
+        beschreibung: getPlausiPrefix() + document.getElementById('beschreibung').value.trim(),
+      };
+      if (vorFile && vorFile.size <= 5 * 1024 * 1024) {
+        vorPayload.attachment     = await toBase64(vorFile);
+        vorPayload.attachmentName = vorFile.name;
+        vorPayload.attachmentType = vorFile.type;
+      }
+
+      await runVoranalyse(vorPayload);
+
+    } catch {
+      document.getElementById('modalLoading').style.display = 'none';
+      document.getElementById('aiText').textContent = 'Die KI-Analyse ist gerade nicht verfügbar. Du kannst die Anfrage trotzdem absenden.';
+      document.getElementById('aiResult').style.display = 'block';
+      document.getElementById('modalFooter').style.display = 'flex';
     } finally {
-      btn.classList.remove('loading');
-      btn.disabled = false;
+      btn.classList.remove('loading'); btn.disabled = false;
+    }
+  });
+
+  // ── Voranalyse ausführen (auch nach Rückfragen) ───────────────
+  async function runVoranalyse(payload) {
+    document.getElementById('modalLoading').style.display  = 'flex';
+    document.getElementById('aiResult').style.display      = 'none';
+    document.getElementById('rueckfragenBox').style.display= 'none';
+    document.getElementById('modalFooter').style.display   = 'none';
+
+    let data;
+    try {
+      const res = await fetch('/api/voranalyse', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      data = await res.json();
+    } catch {
+      data = { modus: 'einschaetzung', einschaetzung: 'Die KI-Analyse ist gerade nicht verfügbar. Du kannst die Anfrage trotzdem absenden.' };
+    }
+
+    document.getElementById('modalLoading').style.display = 'none';
+    document.getElementById('modalFooter').style.display  = 'flex';
+
+    if (data.modus === 'rueckfragen' && data.rueckfragen?.length) {
+      // ── Feature ③: Rückfragen anzeigen ─────────────────────
+      const list = document.getElementById('rueckfragenList');
+      list.innerHTML = data.rueckfragen.map((frage, i) => `
+        <div class="rueckfrage-item">
+          <label for="rf${i}">${frage}</label>
+          <textarea id="rf${i}" data-frage="${frage.replace(/"/g,'&quot;')}" data-index="${i}" placeholder="Deine Antwort …"></textarea>
+        </div>`).join('');
+      document.getElementById('rueckfragenBox').style.display = 'block';
+      document.getElementById('btnWeiter').style.display      = 'flex';
+      document.getElementById('btnSend').style.display        = 'none';
+      aktuelleEinschaetzung = '';
+
+      // ── Checkliste aufbauen ───────────────────────────────
+      buildChecklist(data.rueckfragen);
+    } else {
+      // ── Einschätzung anzeigen ───────────────────────────────
+      closeChecklist();
+      aktuelleEinschaetzung = data.einschaetzung || '';
+      document.getElementById('aiText').textContent = aktuelleEinschaetzung || 'Analyse nicht verfügbar.';
+
+      const docBadge = document.getElementById('docBadge');
+      if (data.docHinweis) {
+        docBadge.style.display = 'block';
+        docBadge.innerHTML = `<span style="display:inline-flex;align-items:center;gap:6px;background:#f0fdf4;border:1px solid #86efac;padding:5px 12px;font-size:0.75rem;font-weight:600;color:#166534;">✓ Dokument einbezogen ${data.docHinweis}</span>`;
+      } else {
+        docBadge.style.display = 'none';
+      }
+
+      document.getElementById('aiResult').style.display  = 'block';
+      document.getElementById('btnWeiter').style.display = 'none';
+      document.getElementById('btnSend').style.display   = 'flex';
+    }
+  }
+
+  // ── Weiter nach Rückfragen ────────────────────────────────────
+  document.getElementById('btnWeiter').addEventListener('click', async function () {
+    const btn = this;
+    const textareas = document.querySelectorAll('#rueckfragenList textarea');
+    const antworten = {};
+    textareas.forEach(ta => { antworten[ta.dataset.frage] = ta.value.trim() || '(keine Angabe)'; });
+
+    btn.classList.add('loading'); btn.disabled = true;
+
+    const vorPayload = {
+      thema:        document.getElementById('thema').value,
+      beschreibung: getPlausiPrefix() + document.getElementById('beschreibung').value.trim(),
+      antworten,
+    };
+    const vorFile = dateiUpload.files[0];
+    if (vorFile && vorFile.size <= 5 * 1024 * 1024) {
+      vorPayload.attachment     = await toBase64(vorFile);
+      vorPayload.attachmentName = vorFile.name;
+      vorPayload.attachmentType = vorFile.type;
+    }
+
+    btn.classList.remove('loading'); btn.disabled = false;
+    await runVoranalyse(vorPayload);
+  });
+
+  // ── Step 2: Tatsächlich absenden ─────────────────────────────
+  document.getElementById('btnSend').addEventListener('click', async function () {
+    const btn = this;
+    btn.classList.add('loading'); btn.disabled = true;
+
+    const payload = {
+      vorname:        document.getElementById('vorname').value.trim(),
+      nachname:       document.getElementById('nachname').value.trim(),
+      email:          document.getElementById('email').value.trim(),
+      fachbereich:    document.getElementById('fachbereich').value,
+      thema:          document.getElementById('thema').value,
+      beschreibung:   getPlausiPrefix() + document.getElementById('beschreibung').value.trim(),
+      einschaetzung:  aktuelleEinschaetzung || '',
+    };
+
+    const file = dateiUpload.files[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        closeModal();
+        const toast = document.getElementById('toast');
+        toast.className = 'toast error';
+        toast.textContent = 'Datei ist zu groß (max. 5 MB).';
+        btn.classList.remove('loading'); btn.disabled = false;
+        return;
+      }
+      payload.attachment     = await toBase64(file);
+      payload.attachmentName = file.name;
+      payload.attachmentType = file.type;
+    }
+
+    try {
+      const res  = await fetch('/api/anfrage', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+
+      if (res.ok && data.ok) {
+        closeModal();
+        document.getElementById('frageForm').reset();
+        document.getElementById('uploadName').textContent = '';
+        charCount.textContent = '0 Zeichen'; charCount.className = 'char-count short';
+        highlightStep(1);
+        const toast = document.getElementById('toast');
+        toast.className = 'toast success';
+        toast.textContent = '✓ Deine Anfrage wurde erfolgreich übermittelt. Du bekommst eine Antwort.';
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      } else {
+        throw new Error(data.error || 'Unbekannter Fehler');
+      }
+    } catch (err) {
+      closeModal();
+      const toast = document.getElementById('toast');
+      toast.className = 'toast error';
+      toast.textContent = 'Fehler beim Senden: ' + err.message;
+    } finally {
+      btn.classList.remove('loading'); btn.disabled = false;
     }
   });
 </script>
