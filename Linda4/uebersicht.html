@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <!-- Niemals indexieren / nicht über Suchmaschinen auffindbar -->
+  <meta name="robots" content="noindex, nofollow, noarchive, nosnippet, noimageindex" />
+  <meta name="googlebot" content="noindex, nofollow" />
+  <meta name="referrer" content="no-referrer" />
+  <title>Fallübersicht – Intern</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --blue: #003087; --accent: #0050c8; --cyan: #0ea5e9;
+      --green: #16a34a; --amber: #d97706; --red: #dc2626;
+      --text: #111827; --muted: #6b7280; --border: #e5e7eb;
+      --bg: #f3f4f6; --white: #ffffff;
+    }
+    body { font-family: 'Segoe UI', Arial, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+    .topbar { background: linear-gradient(90deg, var(--blue), var(--accent), var(--cyan)); height: 4px; }
+    header {
+      background: var(--white); border-bottom: 1px solid var(--border);
+      padding: 18px 32px; display: flex; align-items: center; justify-content: space-between;
+      position: sticky; top: 0; z-index: 10; box-shadow: 0 1px 4px rgba(0,0,0,0.06); gap: 16px; flex-wrap: wrap;
+    }
+    .logo { display: flex; align-items: center; gap: 12px; }
+    .logo-mark { width: 32px; height: 32px; background: var(--blue); display: flex; align-items: center; justify-content: center; }
+    .logo-mark svg { width: 16px; height: 16px; fill: #fff; }
+    .logo-name { font-size: 0.78rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--blue); }
+    .refresh-btn {
+      padding: 9px 18px; background: var(--white); color: var(--blue); border: 1.5px solid var(--border);
+      font: inherit; font-size: 0.8rem; font-weight: 600; cursor: pointer; border-radius: 2px;
+    }
+    .refresh-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+    main { max-width: 1080px; margin: 0 auto; padding: 32px 24px 72px; }
+
+    .page-hero { margin-bottom: 22px; }
+    .page-hero h1 { font-size: 1.5rem; font-weight: 600; margin-bottom: 4px; }
+    .page-hero p { color: var(--muted); font-size: 0.86rem; }
+
+    /* Stats */
+    .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 22px; }
+    .stat { background: var(--white); border: 1px solid var(--border); padding: 16px 18px; border-radius: 2px; }
+    .stat-num { font-size: 1.6rem; font-weight: 700; line-height: 1; }
+    .stat-label { font-size: 0.72rem; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); margin-top: 7px; }
+    .stat.total .stat-num { color: var(--blue); }
+    .stat.offen .stat-num { color: var(--amber); }
+    .stat.done  .stat-num { color: var(--green); }
+    .stat.rueck .stat-num { color: var(--accent); }
+
+    /* Toolbar */
+    .toolbar { display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; align-items: center; }
+    .search { flex: 1; min-width: 220px; position: relative; }
+    .search input {
+      width: 100%; padding: 11px 14px 11px 38px; border: 1.5px solid var(--border);
+      font: inherit; font-size: 0.9rem; outline: none; border-radius: 2px; background: var(--white);
+    }
+    .search input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(0,80,200,0.09); }
+    .search svg { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); width: 16px; height: 16px; fill: var(--muted); }
+    .filters { display: flex; gap: 6px; }
+    .filter-btn {
+      padding: 9px 15px; background: var(--white); border: 1.5px solid var(--border); color: var(--muted);
+      font: inherit; font-size: 0.78rem; font-weight: 600; cursor: pointer; border-radius: 2px;
+    }
+    .filter-btn.active { background: var(--blue); color: #fff; border-color: var(--blue); }
+
+    /* List */
+    .case-list { display: flex; flex-direction: column; gap: 8px; }
+    .case {
+      background: var(--white); border: 1px solid var(--border); border-radius: 2px;
+      padding: 14px 18px; display: grid; grid-template-columns: 1fr auto; gap: 8px 16px;
+      cursor: pointer; transition: border-color .12s, box-shadow .12s, transform .06s; text-decoration: none; color: inherit;
+    }
+    .case:hover { border-color: var(--accent); box-shadow: 0 2px 10px rgba(0,48,135,0.08); }
+    .case:active { transform: translateY(1px); }
+    .case-main { min-width: 0; }
+    .case-top { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 4px; }
+    .case-name { font-weight: 700; font-size: 0.96rem; }
+    .case-thema { font-size: 0.74rem; font-weight: 700; letter-spacing: .04em; color: var(--accent); background: #eff6ff; padding: 2px 9px; border-radius: 2px; }
+    .case-snippet { font-size: 0.83rem; color: var(--muted); line-height: 1.5; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+    .case-side { display: flex; flex-direction: column; align-items: flex-end; gap: 7px; white-space: nowrap; }
+    .case-date { font-size: 0.74rem; color: var(--muted); }
+
+    .badge { display: inline-flex; align-items: center; gap: 6px; padding: 4px 11px; font-size: 0.7rem; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; border-radius: 2px; }
+    .badge .dot { width: 6px; height: 6px; border-radius: 50%; }
+    .badge.offen       { background: #fff7ed; border: 1px solid #fed7aa; color: var(--amber); }
+    .badge.offen .dot  { background: var(--amber); }
+    .badge.beantwortet      { background: #f0fdf4; border: 1px solid #86efac; color: var(--green); }
+    .badge.beantwortet .dot { background: var(--green); }
+    .badge.rueck { background: #eff6ff; border: 1px solid #bfdbfe; color: var(--accent); }
+    .badge.rueck .dot { background: var(--accent); }
+
+    /* States */
+    .state { text-align: center; padding: 70px 24px; color: var(--muted); }
+    .state.lock h2 { color: var(--red); margin-bottom: 8px; }
+    .loading-ring { width: 44px; height: 44px; border: 3px solid #e5e7eb; border-top-color: var(--accent); border-radius: 50%; animation: spin .8s linear infinite; margin: 0 auto 16px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .empty { background: var(--white); border: 1px dashed var(--border); padding: 48px; text-align: center; color: var(--muted); border-radius: 2px; }
+
+    footer { background: var(--white); border-top: 1px solid var(--border); padding: 16px 32px; text-align: center; font-size: 0.74rem; color: var(--muted); }
+
+    @media (max-width: 720px) {
+      .stats { grid-template-columns: repeat(2, 1fr); }
+      .case { grid-template-columns: 1fr; }
+      .case-side { align-items: flex-start; flex-direction: row; flex-wrap: wrap; }
+    }
+  </style>
+</head>
+<body>
+<div class="topbar"></div>
+<header>
+  <div class="logo">
+    <div class="logo-mark"><svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg></div>
+    <span class="logo-name">Sozialrecht · Fallübersicht (intern)</span>
+  </div>
+  <button class="refresh-btn" id="refreshBtn" type="button" style="display:none">↻ Aktualisieren</button>
+</header>
+
+<main>
+  <div id="loading" class="state">
+    <div class="loading-ring"></div>
+    <p>Fälle werden geladen …</p>
+  </div>
+
+  <div id="lock" class="state lock" style="display:none">
+    <h2>🔒 Kein Zugriff</h2>
+    <p>Diese Seite ist nur mit gültigem Zugangs-Token erreichbar.</p>
+  </div>
+
+  <div id="content" style="display:none">
+    <div class="page-hero">
+      <h1>Fallübersicht</h1>
+      <p id="subline">Alle eingegangenen Anfragen auf einen Blick.</p>
+    </div>
+
+    <div class="stats">
+      <div class="stat total"><div class="stat-num" id="sTotal">–</div><div class="stat-label">Fälle gesamt</div></div>
+      <div class="stat offen"><div class="stat-num" id="sOffen">–</div><div class="stat-label">In Bearbeitung</div></div>
+      <div class="stat done"><div class="stat-num" id="sDone">–</div><div class="stat-label">Beantwortet</div></div>
+      <div class="stat rueck"><div class="stat-num" id="sRueck">–</div><div class="stat-label">Offene Rückfragen</div></div>
+    </div>
+
+    <div class="toolbar">
+      <div class="search">
+        <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27a6.5 6.5 0 1 0-.7.7l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0A4.5 4.5 0 1 1 14 9.5 4.5 4.5 0 0 1 9.5 14z"/></svg>
+        <input id="search" type="text" placeholder="Suche nach Name, Thema, Fachbereich …" autocomplete="off" />
+      </div>
+      <div class="filters">
+        <button class="filter-btn active" data-f="alle" type="button">Alle</button>
+        <button class="filter-btn" data-f="offen" type="button">Offen</button>
+        <button class="filter-btn" data-f="beantwortet" type="button">Beantwortet</button>
+        <button class="filter-btn" data-f="rueck" type="button">Rückfragen</button>
+      </div>
+    </div>
+
+    <div class="case-list" id="list"></div>
+    <div class="empty" id="empty" style="display:none">Keine Fälle gefunden.</div>
+  </div>
+</main>
+
+<footer>Interne Ansicht · Vertraulich · Nur zu Schulungszwecken · Nicht über Suchmaschinen auffindbar</footer>
+
+<script>
+  const params = new URLSearchParams(location.search);
+  const token = params.get('token') || '';
+  let alleFaelle = [];
+  let aktFilter = 'alle';
+
+  const $ = id => document.getElementById(id);
+
+  function fmt(iso) {
+    if (!iso) return '–';
+    return new Date(iso).toLocaleString('de-DE', { timeZone: 'Europe/Berlin', dateStyle: 'medium', timeStyle: 'short' });
+  }
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  }
+
+  function load() {
+    $('loading').style.display = 'block';
+    $('content').style.display = 'none';
+    $('lock').style.display = 'none';
+    fetch(`/api/fall?action=uebersicht&token=${encodeURIComponent(token)}`, { headers: { 'Accept': 'application/json' } })
+      .then(r => r.json().then(d => ({ ok: r.ok, d })))
+      .then(({ ok, d }) => {
+        $('loading').style.display = 'none';
+        if (!ok || d.error) { $('lock').style.display = 'block'; return; }
+        alleFaelle = d.faelle || [];
+        $('sTotal').textContent = d.count || 0;
+        $('sOffen').textContent = d.offen || 0;
+        $('sDone').textContent  = d.beantwortet || 0;
+        $('sRueck').textContent = d.offeneRueck || 0;
+        $('subline').textContent = `${d.count || 0} Anfrage(n) · Stand ${fmt(new Date().toISOString())}`;
+        $('content').style.display = 'block';
+        $('refreshBtn').style.display = 'inline-block';
+        applyFilter();
+      })
+      .catch(() => { $('loading').style.display = 'none'; $('lock').style.display = 'block'; });
+  }
+
+  function applyFilter() {
+    const q = $('search').value.trim().toLowerCase();
+    let list = alleFaelle.slice();
+    if (aktFilter === 'offen')        list = list.filter(f => f.status !== 'beantwortet');
+    else if (aktFilter === 'beantwortet') list = list.filter(f => f.status === 'beantwortet');
+    else if (aktFilter === 'rueck')   list = list.filter(f => f.offeneNachfragen > 0);
+    if (q) list = list.filter(f =>
+      (`${f.vorname} ${f.nachname}`).toLowerCase().includes(q) ||
+      (f.thema || '').toLowerCase().includes(q) ||
+      (f.fachbereich || '').toLowerCase().includes(q) ||
+      (f.snippet || '').toLowerCase().includes(q));
+    render(list);
+  }
+
+  function render(list) {
+    const wrap = $('list');
+    $('empty').style.display = list.length ? 'none' : 'block';
+    wrap.innerHTML = list.map(f => {
+      const beantwortet = f.status === 'beantwortet';
+      const detailUrl = `/admin.html?id=${encodeURIComponent(f.id)}&token=${encodeURIComponent(token)}`;
+      return `
+        <a class="case" href="${detailUrl}">
+          <div class="case-main">
+            <div class="case-top">
+              <span class="case-name">${esc(f.vorname)} ${esc(f.nachname)}</span>
+              <span class="case-thema">${esc(f.thema)}</span>
+              ${f.fachbereich ? `<span style="font-size:0.74rem;color:var(--muted);">${esc(f.fachbereich)}</span>` : ''}
+            </div>
+            <div class="case-snippet">${esc(f.snippet) || '<em>Keine Beschreibung</em>'}</div>
+          </div>
+          <div class="case-side">
+            <span class="case-date">${fmt(f.created)}</span>
+            <span class="badge ${beantwortet ? 'beantwortet' : 'offen'}"><span class="dot"></span>${beantwortet ? 'Beantwortet' : 'Offen'}</span>
+            ${f.offeneNachfragen > 0 ? `<span class="badge rueck"><span class="dot"></span>${f.offeneNachfragen} Rückfrage${f.offeneNachfragen > 1 ? 'n' : ''}</span>` : ''}
+          </div>
+        </a>`;
+    }).join('');
+  }
+
+  if (!token) {
+    $('loading').style.display = 'none';
+    $('lock').style.display = 'block';
+  } else {
+    load();
+    $('search').addEventListener('input', applyFilter);
+    $('refreshBtn').addEventListener('click', load);
+    document.querySelectorAll('.filter-btn').forEach(b => b.addEventListener('click', () => {
+      document.querySelectorAll('.filter-btn').forEach(x => x.classList.remove('active'));
+      b.classList.add('active'); aktFilter = b.dataset.f; applyFilter();
+    }));
+  }
+</script>
+</body>
+</html>
