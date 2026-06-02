@@ -415,13 +415,15 @@
     }
     function paragraph(txt, o) {
       o = o || {};
-      doc.setCharSpace(0);
       const size = o.size||10, lh = o.lh||15.5, x = (o.x||M), w = (o.w||CW);
       const color = o.color||DARK;
-      doc.setFont('helvetica', o.bold ? 'bold' : 'normal'); doc.setFontSize(size);
+      const weight = o.bold ? 'bold' : 'normal';
       const lines = doc.splitTextToSize(String(txt||''), w - (o.bg ? 28 : 0));
       for (const line of lines) {
         ensure(lh);
+        // Font-State IMMER neu setzen – newPage()/footer() verändert ihn
+        doc.setCharSpace(0);
+        doc.setFont('helvetica', weight); doc.setFontSize(size);
         if (o.bg) { doc.setFillColor(...o.bg); doc.rect(x-14, y-11, w+8, lh, 'F'); }
         if (o.bar){ doc.setFillColor(...o.bar); doc.rect(x-14, y-11, 3, lh, 'F'); }
         doc.setTextColor(...color);

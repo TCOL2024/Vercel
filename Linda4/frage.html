@@ -664,6 +664,71 @@
       font-size: 0.74rem; color: var(--muted);
     }
 
+    /* ── Fiktive-Daten-Warnung ── */
+    .fiktiv-warn {
+      display: flex; align-items: flex-start; gap: 12px;
+      background: #fff7ed; border: 1.5px solid #fed7aa;
+      padding: 14px 18px; margin-bottom: 22px;
+      font-size: 0.85rem; color: #92400e; line-height: 1.55;
+    }
+    .fiktiv-warn-icon { font-size: 1.1rem; flex-shrink: 0; margin-top: 1px; }
+    .fiktiv-warn strong { font-weight: 700; color: #78350f; }
+
+    /* ── Datenschutz-Disclaimer ── */
+    .dsgvo-block {
+      background: #f8fafc; border: 1.5px solid var(--border);
+      padding: 14px 18px; font-size: 0.82rem; color: var(--text);
+    }
+    .dsgvo-check-label {
+      display: flex; align-items: flex-start; gap: 10px;
+      cursor: pointer; user-select: none; line-height: 1.55;
+    }
+    .dsgvo-check-label input[type="checkbox"] { display: none; }
+    .dsgvo-checkmark {
+      width: 19px; height: 19px; min-width: 19px;
+      border: 2px solid var(--border); border-radius: 3px;
+      display: flex; align-items: center; justify-content: center;
+      margin-top: 2px; background: #fff; flex-shrink: 0;
+      transition: background .15s, border-color .15s;
+    }
+    .dsgvo-check-label input:checked ~ .dsgvo-checkmark {
+      background: var(--green); border-color: var(--green);
+    }
+    .dsgvo-checkmark::after { content: ''; display: none; }
+    .dsgvo-check-label input:checked ~ .dsgvo-checkmark::after {
+      display: block; content: '✓'; color: #fff;
+      font-size: 11px; font-weight: 800; line-height: 1;
+    }
+    .dsgvo-text { flex: 1; }
+    .dsgvo-toggle {
+      background: none; border: none; color: var(--accent); cursor: pointer;
+      font: inherit; font-size: 0.77rem; font-weight: 600;
+      padding: 0 0 0 4px; text-decoration: underline; text-underline-offset: 2px;
+      white-space: nowrap;
+    }
+    .dsgvo-toggle:hover { color: var(--blue); }
+    .dsgvo-details {
+      margin-top: 14px; padding-top: 14px;
+      border-top: 1px solid var(--border);
+      display: flex; flex-direction: column; gap: 14px;
+    }
+    .dsgvo-section-head {
+      font-size: 0.79rem; font-weight: 700; color: var(--text);
+      margin-bottom: 5px;
+    }
+    .dsgvo-details p {
+      font-size: 0.8rem; color: var(--muted); line-height: 1.65; margin: 0;
+    }
+    .dsgvo-details a { color: var(--accent); text-underline-offset: 2px; }
+    .dsgvo-note {
+      background: #fff7ed; border-left: 3px solid #f59e0b;
+      padding: 10px 14px; font-size: 0.78rem; color: #78350f; line-height: 1.5;
+    }
+    .dsgvo-required {
+      font-size: 0.76rem; color: var(--red); margin-top: 8px; display: none;
+    }
+    .dsgvo-required.visible { display: block; }
+
     @media (max-width: 600px) {
       .section { padding: 22px 20px; }
       .card-footer { padding: 22px 20px; }
@@ -733,6 +798,14 @@
             <div class="section-num">1</div>
             <span class="section-title">Deine Kontaktdaten</span>
             <span class="section-hint">Alle * Felder sind Pflichtfelder</span>
+          </div>
+
+          <div class="fiktiv-warn">
+            <span class="fiktiv-warn-icon">⚠️</span>
+            <div>
+              <strong>Nur fiktive Daten verwenden!</strong><br>
+              Diese Plattform dient ausschließlich zu Schulungszwecken. Es dürfen keinerlei echte personenbezogene Daten eingegeben werden – weder echte Namen, Adressen, Versicherungsnummern noch tatsächliche Falldetails. Bitte verwende ausschließlich <strong>erfundene Namen und fiktive Sachverhalte</strong>.
+            </div>
           </div>
 
           <div class="row">
@@ -829,12 +902,39 @@
 
         <!-- Card Footer -->
         <div class="card-footer">
-          <div class="notice">
-            <div class="notice-dot"></div>
-            <span>Deine Daten werden ausschließlich zur Bearbeitung deiner Anfrage genutzt und nicht an Dritte weitergegeben (DSGVO-konform).</span>
+
+          <!-- Datenschutz-Disclaimer -->
+          <div class="dsgvo-block">
+            <label class="dsgvo-check-label">
+              <input type="checkbox" id="dsgvoCheck" />
+              <span class="dsgvo-checkmark"></span>
+              <span class="dsgvo-text">
+                Ich bestätige, dass ich ausschließlich <strong>fiktive Daten</strong> verwendet habe, und nehme zur Kenntnis, dass meine Eingaben zur KI-gestützten Voranalyse an <strong>OpenAI</strong> übertragen und auf <strong>Vercel-Servern</strong> gespeichert werden.
+                <button type="button" class="dsgvo-toggle" id="dsgvoToggle" aria-expanded="false">Details anzeigen ▸</button>
+              </span>
+            </label>
+
+            <div class="dsgvo-details" id="dsgvoDetails" style="display:none">
+              <div>
+                <div class="dsgvo-section-head">🤖 a) Verwendung von OpenAI</div>
+                <p>Deine Fallbeschreibung und alle weiteren Eingaben werden zur KI-gestützten Voranalyse an die <strong>OpenAI API</strong> übertragen. OpenAI verarbeitet diese Daten gemäß seiner <a href="https://openai.com/policies/privacy-policy" target="_blank" rel="noopener noreferrer">Datenschutzrichtlinie</a>. Die Übertragung erfolgt verschlüsselt (TLS/HTTPS). OpenAI verwendet API-Anfragen standardmäßig <strong>nicht zum Training</strong> seiner Modelle (§ 3 OpenAI API Usage Policy).</p>
+              </div>
+              <div>
+                <div class="dsgvo-section-head">🗄️ b) Speicherung auf Vercel-Servern</div>
+                <p>Deine Anfrage – inklusive der eingegebenen Kontaktangaben, Fallbeschreibung und KI-Einschätzung – wird in einer Datenbank auf <strong>Vercel-Infrastruktur</strong> (Upstash Redis) gespeichert. Vercel ist ein US-amerikanischer Cloud-Dienstleister; die Datenbankserver liegen in der EU-Region. Die Daten werden ausschließlich zur Bearbeitung dieser Übungsanfrage im Rahmen der Schulung genutzt und <strong>nicht an Dritte weitergegeben</strong>.</p>
+              </div>
+              <div class="dsgvo-note">
+                <strong>Hinweis:</strong> Diese Plattform dient ausschließlich zu Schulungszwecken und ist keine echte Rechtsberatung. Alle Fälle und Antworten sind fiktiver Natur. Echte personenbezogene Daten dürfen nicht eingegeben werden.
+              </div>
+            </div>
+
+            <div class="dsgvo-required" id="dsgvoRequired">
+              ↑ Bitte bestätige den Datenschutz-Hinweis, um fortfahren zu können.
+            </div>
           </div>
+
           <div class="btn-row">
-            <button type="submit" class="btn" id="analyseBtn">
+            <button type="submit" class="btn" id="analyseBtn" disabled style="opacity:0.55">
               <span class="btn-text">KI-Analyse starten</span>
               <span class="arrow btn-text">→</span>
               <div class="spinner"></div>
@@ -1110,6 +1210,13 @@
       emailEl.style.borderColor = '#dc2626';
       toast.className = 'toast error';
       toast.textContent = 'Bitte gib eine gültige E-Mail-Adresse ein.';
+      return false;
+    }
+
+    if (!document.getElementById('dsgvoCheck').checked) {
+      document.getElementById('dsgvoRequired').classList.add('visible');
+      toast.className = 'toast error';
+      toast.textContent = 'Bitte bestätige den Datenschutz-Hinweis.';
       return false;
     }
     return true;
@@ -1393,6 +1500,28 @@
   document.getElementById('aiFollowupBtn').addEventListener('click', askFollowup);
   document.getElementById('aiFollowupInput').addEventListener('keydown', e => {
     if (e.key === 'Enter') { e.preventDefault(); askFollowup(); }
+  });
+
+  // ── Datenschutz-Disclaimer ────────────────────────────────────
+  const dsgvoCheck    = document.getElementById('dsgvoCheck');
+  const dsgvoToggle   = document.getElementById('dsgvoToggle');
+  const dsgvoDetails  = document.getElementById('dsgvoDetails');
+  const dsgvoRequired = document.getElementById('dsgvoRequired');
+  const analyseBtnEl  = document.getElementById('analyseBtn');
+
+  dsgvoCheck.addEventListener('change', () => {
+    const ok = dsgvoCheck.checked;
+    analyseBtnEl.disabled = !ok;
+    analyseBtnEl.style.opacity = ok ? '' : '0.55';
+    if (ok) dsgvoRequired.classList.remove('visible');
+  });
+
+  dsgvoToggle.addEventListener('click', e => {
+    e.preventDefault();
+    const open = dsgvoDetails.style.display !== 'none';
+    dsgvoDetails.style.display = open ? 'none' : 'block';
+    dsgvoToggle.textContent = open ? 'Details anzeigen ▸' : 'Details ausblenden ▴';
+    dsgvoToggle.setAttribute('aria-expanded', String(!open));
   });
 
   // ── Weiter nach Rückfragen ────────────────────────────────────

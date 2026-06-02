@@ -8,6 +8,8 @@
   <meta name="googlebot" content="noindex, nofollow" />
   <meta name="referrer" content="no-referrer" />
   <title>Fallübersicht – Intern</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
@@ -58,22 +60,36 @@
     }
     .search input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(0,80,200,0.09); }
     .search svg { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); width: 16px; height: 16px; fill: var(--muted); }
-    .filters { display: flex; gap: 6px; }
+    .filters { display: flex; gap: 6px; flex-wrap: wrap; }
     .filter-btn {
       padding: 9px 15px; background: var(--white); border: 1.5px solid var(--border); color: var(--muted);
       font: inherit; font-size: 0.78rem; font-weight: 600; cursor: pointer; border-radius: 2px;
     }
     .filter-btn.active { background: var(--blue); color: #fff; border-color: var(--blue); }
-
-    /* List */
-    .case-list { display: flex; flex-direction: column; gap: 8px; }
-    .case {
-      background: var(--white); border: 1px solid var(--border); border-radius: 2px;
-      padding: 14px 18px; display: grid; grid-template-columns: 1fr auto; gap: 8px 16px;
-      cursor: pointer; transition: border-color .12s, box-shadow .12s, transform .06s; text-decoration: none; color: inherit;
+    .btn-xls {
+      padding: 9px 16px; background: var(--green); color: #fff; border: none;
+      font: inherit; font-size: 0.78rem; font-weight: 600; cursor: pointer; border-radius: 2px;
+      white-space: nowrap; display: inline-flex; align-items: center; gap: 6px;
     }
-    .case:hover { border-color: var(--accent); box-shadow: 0 2px 10px rgba(0,48,135,0.08); }
+    .btn-xls:hover { background: #15803d; }
+
+    /* Case list */
+    .case-list { display: flex; flex-direction: column; gap: 8px; }
+
+    /* Case card wrapper – gets the border and hover */
+    .case-wrap {
+      background: var(--white); border: 1px solid var(--border); border-radius: 2px;
+      transition: border-color .12s, box-shadow .12s;
+    }
+    .case-wrap:hover { border-color: var(--accent); box-shadow: 0 2px 10px rgba(0,48,135,0.08); }
+
+    /* Inner link – grid layout */
+    .case {
+      padding: 14px 18px; display: grid; grid-template-columns: 1fr auto; gap: 8px 16px;
+      text-decoration: none; color: inherit; transition: transform .06s; cursor: pointer;
+    }
     .case:active { transform: translateY(1px); }
+
     .case-main { min-width: 0; }
     .case-top { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 4px; }
     .case-name { font-weight: 700; font-size: 0.96rem; }
@@ -85,6 +101,23 @@
     .case-rating .rs { letter-spacing: 1px; font-size: 0.92rem; line-height: 1; }
     .case-rating .rs .on { color: #f5b301; }
     .case-rating .rs .off { color: #d4d8e0; }
+
+    /* Action bar below each card */
+    .case-actions {
+      padding: 6px 14px 8px; border-top: 1px solid var(--border);
+      display: flex; gap: 6px; align-items: center;
+    }
+    .case-wrap:hover .case-actions { border-top-color: rgba(0,80,200,0.12); }
+    .btn-case {
+      background: var(--white); border: 1.5px solid var(--border); color: var(--muted);
+      font: inherit; font-size: 0.74rem; font-weight: 600; padding: 4px 11px; border-radius: 2px;
+      cursor: pointer; display: inline-flex; align-items: center; gap: 5px;
+      transition: color .1s, border-color .1s, background .1s;
+    }
+    .btn-case:hover { background: #f9fafb; }
+    .btn-case:disabled { opacity: .5; cursor: not-allowed; }
+    .btn-case-pdf:hover { color: var(--accent); border-color: var(--accent); }
+    .btn-case-del:hover { color: var(--red); border-color: var(--red); }
 
     .badge { display: inline-flex; align-items: center; gap: 6px; padding: 4px 11px; font-size: 0.7rem; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; border-radius: 2px; }
     .badge .dot { width: 6px; height: 6px; border-radius: 50%; }
@@ -103,6 +136,27 @@
     .empty { background: var(--white); border: 1px dashed var(--border); padding: 48px; text-align: center; color: var(--muted); border-radius: 2px; }
 
     footer { background: var(--white); border-top: 1px solid var(--border); padding: 16px 32px; text-align: center; font-size: 0.74rem; color: var(--muted); }
+
+    /* Delete modal */
+    .modal-overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.45);
+      display: flex; align-items: center; justify-content: center; z-index: 100;
+    }
+    .modal {
+      background: var(--white); border-radius: 4px; padding: 28px 32px;
+      max-width: 440px; width: 90%; box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+    }
+    .modal-title { font-size: 1.05rem; font-weight: 700; margin-bottom: 8px; color: var(--red); }
+    .modal-sub { font-size: 0.88rem; color: var(--muted); margin-bottom: 16px; }
+    .modal-label { font-size: 0.8rem; font-weight: 600; display: block; margin-bottom: 6px; }
+    .modal-textarea { width: 100%; padding: 10px 12px; border: 1.5px solid var(--border); font: inherit; font-size: 0.88rem; border-radius: 2px; resize: vertical; outline: none; }
+    .modal-textarea:focus { border-color: var(--accent); }
+    .modal-btns { display: flex; gap: 10px; margin-top: 18px; justify-content: flex-end; }
+    .btn-secondary { padding: 9px 18px; background: white; border: 1.5px solid var(--border); font: inherit; font-size: 0.84rem; font-weight: 600; cursor: pointer; border-radius: 2px; color: var(--muted); }
+    .btn-secondary:hover { border-color: var(--text); color: var(--text); }
+    .btn-danger { padding: 9px 18px; background: var(--red); color: white; border: none; font: inherit; font-size: 0.84rem; font-weight: 600; cursor: pointer; border-radius: 2px; display: inline-flex; align-items: center; gap: 7px; }
+    .btn-danger:hover { background: #b91c1c; }
+    .btn-danger:disabled { background: #fca5a5; cursor: not-allowed; }
 
     @media (max-width: 720px) {
       .stats { grid-template-columns: repeat(2, 1fr); }
@@ -156,6 +210,10 @@
         <button class="filter-btn" data-f="beantwortet" type="button">Beantwortet</button>
         <button class="filter-btn" data-f="rueck" type="button">Rückfragen</button>
       </div>
+      <button class="btn-xls" id="xlsBtn" type="button">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+        XLS-Export
+      </button>
     </div>
 
     <div class="case-list" id="list"></div>
@@ -165,11 +223,29 @@
 
 <footer>Interne Ansicht · Vertraulich · Nur zu Schulungszwecken · Nicht über Suchmaschinen auffindbar</footer>
 
+<!-- Löschen-Modal -->
+<div id="delModal" class="modal-overlay" style="display:none">
+  <div class="modal">
+    <h3 class="modal-title">Anfrage löschen</h3>
+    <p id="delName" class="modal-sub"></p>
+    <label class="modal-label" for="delGrund">Löschgrund <span style="font-weight:400;color:var(--muted)">(optional)</span></label>
+    <textarea id="delGrund" class="modal-textarea" rows="3" placeholder="z. B. Test-Eintrag, Duplikat, auf Wunsch des Ratsuchenden …"></textarea>
+    <div class="modal-btns">
+      <button id="delCancel" type="button" class="btn-secondary">Abbrechen</button>
+      <button id="delConfirm" type="button" class="btn-danger">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+        Endgültig löschen
+      </button>
+    </div>
+  </div>
+</div>
+
 <script>
   const params = new URLSearchParams(location.search);
   const token = params.get('token') || '';
   let alleFaelle = [];
   let aktFilter = 'alle';
+  let deleteTarget = null;
 
   const $ = id => document.getElementById(id);
 
@@ -177,10 +253,273 @@
     if (!iso) return '–';
     return new Date(iso).toLocaleString('de-DE', { timeZone: 'Europe/Berlin', dateStyle: 'medium', timeStyle: 'short' });
   }
+  function fmtDate(iso) {
+    if (!iso) return '–';
+    return new Date(iso).toLocaleString('de-DE', { timeZone: 'Europe/Berlin', dateStyle: 'short' });
+  }
   function esc(s) {
     return String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   }
 
+  /* ── PDF-Hilfsfunktionen ─────────────────────────────────────────────────── */
+  function htmlToText(html) {
+    if (!html) return '';
+    return String(html)
+      .replace(/<\s*br\s*\/?>/gi, '\n')
+      .replace(/<\/(p|div|li|h[1-6]|tr)>/gi, '\n')
+      .replace(/<li[^>]*>/gi, '•  ')
+      .replace(/<[^>]+>/g, '')
+      .replace(/&nbsp;/gi, ' ').replace(/&amp;/gi, '&')
+      .replace(/&lt;/gi, '<').replace(/&gt;/gi, '>')
+      .replace(/&quot;/gi, '"').replace(/&#0?39;/gi, "'")
+      .replace(/\*\*(.+?)\*\*/g, '$1').replace(/(^|[\s(])\*([^*\n]+)\*/g, '$1$2')
+      .replace(/^\s*#{1,6}\s+/gm, '')
+      .replace(/\n{3,}/g, '\n\n').replace(/[ \t]+\n/g, '\n').trim();
+  }
+
+  function parseFollowups(block) {
+    const lines = String(block).split('\n');
+    const out = []; let cur = null, mode = null;
+    for (const raw of lines) {
+      const line = raw.trim();
+      const mF = line.match(/^F:\s*(.*)$/);
+      const mA = line.match(/^A:\s*(.*)$/);
+      if (mF) { if (cur) out.push(cur); cur = { frage: mF[1], antwort: '' }; mode = 'f'; }
+      else if (mA && cur) { cur.antwort = mA[1]; mode = 'a'; }
+      else if (cur && line) { cur[mode === 'a' ? 'antwort' : 'frage'] += ' ' + line; }
+    }
+    if (cur) out.push(cur);
+    return out.filter(p => p.frage);
+  }
+
+  function generateCasePDF(d) {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ unit: 'pt', format: 'a4' });
+    const W = doc.internal.pageSize.getWidth();
+    const H = doc.internal.pageSize.getHeight();
+    const M = 50, CW = W - M * 2;
+    const BLUE=[0,48,135], ACCENT=[0,80,200], CYAN=[14,165,233], GREEN=[22,163,74],
+          GRAY=[107,114,128], DARK=[31,41,55], HINT=[190,215,255];
+    let y = 0, page = 1;
+
+    function footer() {
+      doc.setDrawColor(229,231,235); doc.setLineWidth(0.5);
+      doc.line(M, H-48, W-M, H-48);
+      doc.setFont('helvetica','normal'); doc.setFontSize(7.5); doc.setTextColor(...GRAY);
+      doc.text('Vertraulich · Nur zu Schulungszwecken · Keine echten Daten · Keine Rechtsberatung', M, H-32);
+      doc.text('pfk2026.oldenburg-knowledge.de', M, H-21);
+      doc.text('Seite ' + page, W - M, H-21, { align: 'right' });
+    }
+    function newPage() { footer(); doc.addPage(); page++; y = M + 6; }
+    function ensure(h) { if (y + h > H - 64) newPage(); }
+
+    function sectionLabel(txt, color) {
+      ensure(34); y += 6;
+      doc.setFont('helvetica','bold'); doc.setFontSize(8.5); doc.setTextColor(...(color||ACCENT));
+      doc.setCharSpace(1.2);
+      doc.text(txt.toUpperCase(), M, y);
+      doc.setCharSpace(0);
+      y += 7;
+      doc.setDrawColor(...(color||ACCENT)); doc.setLineWidth(1.2);
+      doc.line(M, y, M + CW, y);
+      y += 16;
+    }
+
+    function paragraph(txt, o) {
+      o = o || {};
+      const size = o.size||10, lh = o.lh||15.5, x = (o.x||M), w = (o.w||CW);
+      const color = o.color||DARK;
+      const weight = o.bold ? 'bold' : 'normal';
+      const lines = doc.splitTextToSize(String(txt||''), w - (o.bg ? 28 : 0));
+      for (const line of lines) {
+        ensure(lh);
+        doc.setCharSpace(0);
+        doc.setFont('helvetica', weight); doc.setFontSize(size);
+        if (o.bg) { doc.setFillColor(...o.bg); doc.rect(x-14, y-11, w+8, lh, 'F'); }
+        if (o.bar){ doc.setFillColor(...o.bar); doc.rect(x-14, y-11, 3, lh, 'F'); }
+        doc.setTextColor(...color);
+        doc.text(line, x + (o.bg ? 8 : 0), y);
+        y += lh;
+      }
+    }
+
+    // Kopfband
+    doc.setFillColor(...BLUE); doc.rect(0, 0, W, 120, 'F');
+    doc.setFillColor(...CYAN); doc.rect(0, 120, W, 4, 'F');
+    doc.setFont('helvetica','bold'); doc.setFontSize(9); doc.setTextColor(...HINT);
+    doc.setCharSpace(1.8);
+    doc.text('SOZIALRECHT · FACHBERATUNG', M, 48);
+    doc.setCharSpace(0);
+    doc.setFontSize(21); doc.setTextColor(255,255,255);
+    doc.text('Persönliche Experteneinschätzung', M, 80);
+    doc.setFont('helvetica','normal'); doc.setFontSize(10.5); doc.setTextColor(200,220,255);
+    doc.text(d.thema || '', M, 103);
+    y = 152;
+
+    // Stammdaten-Karte
+    const rows = [
+      ['Name', `${d.vorname||''} ${d.nachname||''}`.trim()],
+      ['Fachbereich', d.fachbereich || '—'],
+      ['Themenbereich', d.thema || '—'],
+      ['Eingegangen am', d.created ? fmt(d.created) : '—'],
+    ];
+    if (d.antwortDatum) rows.push(['Beantwortet am', fmt(d.antwortDatum)]);
+    if (d.bewertung)    rows.push(['Bewertung', `${d.bewertung} von 5 Sternen`]);
+    const cardH = rows.length * 19 + 24;
+    ensure(cardH);
+    doc.setFillColor(247,248,250); doc.rect(M-14, y-14, CW+28, cardH, 'F');
+    doc.setDrawColor(...ACCENT); doc.setLineWidth(2); doc.line(M-14, y-14, M-14, y-14+cardH);
+    rows.forEach(([k, v]) => {
+      doc.setFont('helvetica','normal'); doc.setFontSize(9); doc.setTextColor(...GRAY);
+      doc.text(k, M, y);
+      doc.setFont('helvetica','bold'); doc.setFontSize(9.5); doc.setTextColor(...DARK);
+      doc.text(doc.splitTextToSize(String(v), CW-130), M + 130, y);
+      y += 19;
+    });
+    y += 18;
+
+    // Fallbeschreibung
+    sectionLabel('Deine Fallbeschreibung', BLUE);
+    paragraph(htmlToText(d.beschreibung), {});
+    y += 8;
+
+    // Linda4 Einschätzung
+    if (d.einschaetzung) {
+      const full = htmlToText(d.einschaetzung);
+      const parts = full.split(/—\s*Ergänzende Fragen an Linda4\s*—/);
+      const basis = parts[0].trim();
+      const followups = parts[1] ? parseFollowups(parts[1]) : [];
+      sectionLabel('Linda4 – Erste Einschätzung', CYAN);
+      paragraph(basis, { bg: [240,249,255], bar: CYAN, color: [30,58,138] });
+      paragraph('Unverbindlich · Keine Rechtsberatung · Nur zur Orientierung', { size: 7.8, color: GRAY });
+      y += 8;
+      if (followups.length) {
+        sectionLabel('Ergänzende Fragen an Linda4', CYAN);
+        followups.forEach(f => {
+          paragraph('Frage: ' + f.frage, { bg: [240,249,255], bar: CYAN, color: [30,58,138], size: 9.5 });
+          paragraph(f.antwort, { bg: [248,250,252], bar: [148,163,184], color: DARK, size: 9.5 });
+          y += 6;
+        });
+      }
+    }
+
+    // Expertenantwort
+    if (d.antwort) {
+      sectionLabel('Antwort des Experten', GREEN);
+      paragraph(htmlToText(d.antwort), { bg: [240,253,244], bar: GREEN, color: [20,83,45], lh: 16 });
+      y += 8;
+    }
+
+    // Rückfragen
+    const beantwortet = (d.nachfragen || []).filter(n => n.antwort);
+    if (beantwortet.length) {
+      sectionLabel('Rückfragen & Antworten', ACCENT);
+      beantwortet.forEach(nf => {
+        paragraph('Frage: ' + htmlToText(nf.frage), { bg: [239,246,255], bar: ACCENT, color: [30,58,138], size: 9.5 });
+        paragraph(htmlToText(nf.antwort), { bg: [240,253,244], bar: GREEN, color: [20,83,45], size: 9.5 });
+        y += 6;
+      });
+    }
+
+    footer();
+    const safe = (d.thema || 'Sozialrecht').replace(/[^a-zA-Z0-9äöüÄÖÜß]+/g, '_').slice(0, 40);
+    doc.save(`Sozialrecht_${safe}_${String(d.id||'').slice(0,8)}.pdf`);
+  }
+
+  /* ── PDF-Button pro Fall ─────────────────────────────────────────────────── */
+  async function openCasePDF(id) {
+    const btn = document.querySelector(`.btn-case-pdf[data-id="${id}"]`);
+    const origHTML = btn ? btn.innerHTML : '';
+    if (btn) { btn.textContent = '…'; btn.disabled = true; }
+    try {
+      const r = await fetch(`/api/fall?action=portal&id=${encodeURIComponent(id)}&token=${encodeURIComponent(token)}`);
+      if (!r.ok) throw new Error('http ' + r.status);
+      const d = await r.json();
+      generateCasePDF(d);
+    } catch(e) {
+      console.error('PDF-Fehler:', e);
+      alert('PDF konnte nicht erstellt werden.');
+    } finally {
+      if (btn) { btn.innerHTML = origHTML; btn.disabled = false; }
+    }
+  }
+
+  /* ── XLS-Export ─────────────────────────────────────────────────────────── */
+  function exportXLS() {
+    const header = ['ID', 'Datum', 'Name', 'Thema', 'Fachbereich', 'Status', 'Bewertung', 'Beantwortet am', 'Beschreibung', 'Antwort', 'Rückfragen'];
+    const rows = alleFaelle.map(f => {
+      const nfText = (f.nachfragen || []).map(n => `F: ${n.frage||''}\nA: ${n.antwort||''}`).join('\n\n');
+      return [
+        f.id,
+        fmtDate(f.created),
+        `${f.vorname||''} ${f.nachname||''}`.trim(),
+        f.thema || '',
+        f.fachbereich || '',
+        f.status === 'beantwortet' ? 'Beantwortet' : 'Offen',
+        f.bewertung ? `${f.bewertung}/5` : '',
+        fmtDate(f.antwortDatum),
+        f.beschreibung || f.snippet || '',
+        f.antwort || '',
+        nfText,
+      ];
+    });
+    const ws = XLSX.utils.aoa_to_sheet([header, ...rows]);
+    ws['!cols'] = [
+      {wch:14},{wch:12},{wch:22},{wch:22},{wch:18},
+      {wch:14},{wch:10},{wch:12},{wch:50},{wch:60},{wch:40},
+    ];
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Fälle');
+    const date = new Date().toISOString().slice(0,10);
+    XLSX.writeFile(wb, `Sozialrecht_Faelle_${date}.xlsx`);
+  }
+
+  /* ── Löschen-Modal ──────────────────────────────────────────────────────── */
+  function openDeleteModal(id, name) {
+    deleteTarget = id;
+    $('delName').textContent = `Anfrage von: ${name}`;
+    $('delGrund').value = '';
+    $('delModal').style.display = 'flex';
+    setTimeout(() => $('delGrund').focus(), 80);
+  }
+
+  function closeDeleteModal() {
+    $('delModal').style.display = 'none';
+    deleteTarget = null;
+  }
+
+  $('delCancel').addEventListener('click', closeDeleteModal);
+  $('delModal').addEventListener('click', e => { if (e.target === $('delModal')) closeDeleteModal(); });
+
+  $('delConfirm').addEventListener('click', async () => {
+    if (!deleteTarget) return;
+    const id = deleteTarget;
+    const grund = $('delGrund').value.trim();
+    const btn = $('delConfirm');
+    const origHTML = btn.innerHTML;
+    btn.textContent = 'Wird gelöscht …'; btn.disabled = true;
+    try {
+      const r = await fetch('/api/fall?action=loeschen', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, token, grund }),
+      });
+      if (!r.ok) throw new Error('http ' + r.status);
+      alleFaelle = alleFaelle.filter(f => f.id !== id);
+      $('sTotal').textContent = alleFaelle.length;
+      $('sOffen').textContent = alleFaelle.filter(f => f.status !== 'beantwortet').length;
+      $('sDone').textContent  = alleFaelle.filter(f => f.status === 'beantwortet').length;
+      closeDeleteModal();
+      applyFilter();
+    } catch(e) {
+      console.error('Löschen fehlgeschlagen:', e);
+      btn.textContent = 'Fehler – erneut versuchen';
+    } finally {
+      btn.innerHTML = origHTML; btn.disabled = false;
+    }
+  });
+
+  /* ── Lade-Funktion ──────────────────────────────────────────────────────── */
   function load() {
     $('loading').style.display = 'block';
     $('content').style.display = 'none';
@@ -206,9 +545,9 @@
   function applyFilter() {
     const q = $('search').value.trim().toLowerCase();
     let list = alleFaelle.slice();
-    if (aktFilter === 'offen')        list = list.filter(f => f.status !== 'beantwortet');
+    if (aktFilter === 'offen')            list = list.filter(f => f.status !== 'beantwortet');
     else if (aktFilter === 'beantwortet') list = list.filter(f => f.status === 'beantwortet');
-    else if (aktFilter === 'rueck')   list = list.filter(f => f.offeneNachfragen > 0);
+    else if (aktFilter === 'rueck')       list = list.filter(f => f.offeneNachfragen > 0);
     if (q) list = list.filter(f =>
       (`${f.vorname} ${f.nachname}`).toLowerCase().includes(q) ||
       (f.thema || '').toLowerCase().includes(q) ||
@@ -221,7 +560,7 @@
     n = Math.max(0, Math.min(5, Math.round(Number(n) || 0)));
     let s = '';
     for (let i = 1; i <= 5; i++) s += `<span class="${i <= n ? 'on' : 'off'}">★</span>`;
-    return `<span class="case-rating" title="Bewertung des Empfängers: ${n} von 5"><span class="rs">${s}</span> ${n}/5</span>`;
+    return `<span class="case-rating" title="Bewertung: ${n}/5"><span class="rs">${s}</span> ${n}/5</span>`;
   }
 
   function render(list) {
@@ -230,25 +569,44 @@
     wrap.innerHTML = list.map(f => {
       const beantwortet = f.status === 'beantwortet';
       const detailUrl = `/admin.html?id=${encodeURIComponent(f.id)}&token=${encodeURIComponent(token)}`;
+      const safeName = esc(`${f.vorname} ${f.nachname}`.trim());
       return `
-        <a class="case" href="${detailUrl}">
-          <div class="case-main">
-            <div class="case-top">
-              <span class="case-name">${esc(f.vorname)} ${esc(f.nachname)}</span>
-              <span class="case-thema">${esc(f.thema)}</span>
-              ${f.fachbereich ? `<span style="font-size:0.74rem;color:var(--muted);">${esc(f.fachbereich)}</span>` : ''}
+        <div class="case-wrap">
+          <a class="case" href="${detailUrl}">
+            <div class="case-main">
+              <div class="case-top">
+                <span class="case-name">${esc(f.vorname)} ${esc(f.nachname)}</span>
+                <span class="case-thema">${esc(f.thema)}</span>
+                ${f.fachbereich ? `<span style="font-size:0.74rem;color:var(--muted);">${esc(f.fachbereich)}</span>` : ''}
+              </div>
+              <div class="case-snippet">${esc(f.snippet) || '<em>Keine Beschreibung</em>'}</div>
             </div>
-            <div class="case-snippet">${esc(f.snippet) || '<em>Keine Beschreibung</em>'}</div>
+            <div class="case-side">
+              <span class="case-date">${fmt(f.created)}</span>
+              <span class="badge ${beantwortet ? 'beantwortet' : 'offen'}"><span class="dot"></span>${beantwortet ? 'Beantwortet' : 'Offen'}</span>
+              ${f.offeneNachfragen > 0 ? `<span class="badge rueck"><span class="dot"></span>${f.offeneNachfragen} Rückfrage${f.offeneNachfragen > 1 ? 'n' : ''}</span>` : ''}
+              ${f.bewertung ? stars(f.bewertung) : ''}
+            </div>
+          </a>
+          <div class="case-actions">
+            <button class="btn-case btn-case-pdf" data-id="${f.id}" type="button">
+              <svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>PDF
+            </button>
+            <button class="btn-case btn-case-del" data-id="${f.id}" data-name="${safeName}" type="button">
+              <svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>Löschen
+            </button>
           </div>
-          <div class="case-side">
-            <span class="case-date">${fmt(f.created)}</span>
-            <span class="badge ${beantwortet ? 'beantwortet' : 'offen'}"><span class="dot"></span>${beantwortet ? 'Beantwortet' : 'Offen'}</span>
-            ${f.offeneNachfragen > 0 ? `<span class="badge rueck"><span class="dot"></span>${f.offeneNachfragen} Rückfrage${f.offeneNachfragen > 1 ? 'n' : ''}</span>` : ''}
-            ${f.bewertung ? stars(f.bewertung) : ''}
-          </div>
-        </a>`;
+        </div>`;
     }).join('');
   }
+
+  // Event-Delegation für Aktions-Buttons (PDF + Löschen)
+  $('list').addEventListener('click', e => {
+    const pdf = e.target.closest('.btn-case-pdf');
+    const del = e.target.closest('.btn-case-del');
+    if (pdf) { e.preventDefault(); openCasePDF(pdf.dataset.id); }
+    if (del) { e.preventDefault(); openDeleteModal(del.dataset.id, del.dataset.name); }
+  });
 
   if (!token) {
     $('loading').style.display = 'none';
@@ -257,6 +615,7 @@
     load();
     $('search').addEventListener('input', applyFilter);
     $('refreshBtn').addEventListener('click', load);
+    $('xlsBtn').addEventListener('click', exportXLS);
     document.querySelectorAll('.filter-btn').forEach(b => b.addEventListener('click', () => {
       document.querySelectorAll('.filter-btn').forEach(x => x.classList.remove('active'));
       b.classList.add('active'); aktFilter = b.dataset.f; applyFilter();
