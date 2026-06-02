@@ -86,6 +86,7 @@ export default async function handler(req, res) {
   if (action === 'uebersicht')       return handleUebersicht(req, res);
   if (action === 'bewertung')        return handleBewertung(req, res);
   if (action === 'loeschen')         return handleLoeschen(req, res);
+  if (action === 'voice')            return handleVoice(req, res);
   return handleAnfrage(req, res);
 }
 
@@ -190,6 +191,83 @@ async function handleLoeschen(req, res) {
     console.error('KV Del Fehler:', e.message);
     return res.status(500).json({ error: 'Löschen fehlgeschlagen' });
   }
+}
+
+// ── VOICE (Linda Sprach-Assistent, tts-1 + gpt-4o-mini) ──────────────────────
+async function handleVoice(req, res) {
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+  res.setHeader('Cache-Control', 'no-store');
+
+  const apiKey = process.env.Sozialrecht2026 || process.env.OPENAI_API_KEY;
+  if (!apiKey) return res.status(500).json({ error: 'KI nicht konfiguriert' });
+
+  const { step, text, verlauf } = req.body || {};
+
+  // TTS: tts-1 mit nova (weibliche Stimme, günstigstes Modell)
+  async function tts(input) {
+    const r = await fetch('https://api.openai.com/v1/audio/speech', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ model: 'tts-1', voice: 'nova', input, response_format: 'mp3' }),
+    });
+    if (!r.ok) throw new Error('TTS ' + r.status);
+    return Buffer.from(await r.arrayBuffer()).toString('base64');
+  }
+
+  // LLM: gpt-4o-mini (günstig, kein gpt-5.x)
+  async function llm(messages) {
+    const r = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ model: 'gpt-4o-mini', messages, max_tokens: 300, temperature: 0.2 }),
+    });
+    if (!r.ok) throw new Error('LLM ' + r.status);
+    return (await r.json()).choices?.[0]?.message?.content?.trim() || '';
+  }
+
+  // ── Begrüßung ──
+  if (step === 'greeting') {
+    const gruss = 'Hallo, ich bin Linda und helfe Dir gerne bei sozialversicherungsrechtlichen Fragen. Formuliere mir kurz und kompakt um was es geht.';
+    try {
+      const audio = await tts(gruss);
+      return res.status(200).json({ ok: true, text: gruss, audio });
+    } catch (e) {
+      console.error('Voice greeting error:', e.message);
+      return res.status(500).json({ error: 'Sprachausgabe nicht verfügbar' });
+    }
+  }
+
+  // ── Erste Analyse oder Rückfrage ──
+  if (step === 'analyse' || step === 'followup') {
+    if (!text || !String(text).trim()) return res.status(400).json({ error: 'Kein Text' });
+    const userText = String(text).trim().slice(0, 1000);
+    const isFollowup = step === 'followup';
+
+    const messages = [
+      { role: 'system', content: `Du bist Linda, eine freundliche KI-Assistentin für deutsches Sozialrecht. Antworte kurz und klar auf Deutsch (max. 4 Sätze). Nenne das relevante SGB falls passend. Keine Rechtsberatung.${isFollowup ? ' Das ist die letzte Antwort im Beta-Modus – schließe mit dem Hinweis, die Anfrage schriftlich einzureichen.' : ''}` },
+    ];
+    if (isFollowup && Array.isArray(verlauf) && verlauf.length) {
+      verlauf.forEach(v => { messages.push({ role: 'user', content: v.user }); messages.push({ role: 'assistant', content: v.linda }); });
+    }
+    messages.push({ role: 'user', content: userText });
+
+    let responseText;
+    try { responseText = await llm(messages); } catch (e) {
+      console.error('Voice LLM error:', e.message);
+      return res.status(502).json({ error: 'Analyse fehlgeschlagen' });
+    }
+
+    try {
+      const audio = await tts(responseText);
+      return res.status(200).json({ ok: true, text: responseText, audio, final: isFollowup });
+    } catch (e) {
+      console.error('Voice TTS error:', e.message);
+      // Text ohne Audio zurückgeben
+      return res.status(200).json({ ok: true, text: responseText, audio: null, final: isFollowup });
+    }
+  }
+
+  return res.status(400).json({ error: 'Unbekannter Step' });
 }
 
 // ── Intent-Klassifikation (parallel, günstiges Modell, max. 80 Tokens) ───────
