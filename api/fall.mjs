@@ -84,6 +84,8 @@ export default async function handler(req, res) {
   if (action === 'nachfrage')        return handleNachfrage(req, res);
   if (action === 'nachfrageantwort') return handleNachfrageAntwort(req, res);
   if (action === 'uebersicht')       return handleUebersicht(req, res);
+  if (action === 'bewertung')        return handleBewertung(req, res);
+  if (action === 'loeschen')         return handleLoeschen(req, res);
   return handleAnfrage(req, res);
 }
 
@@ -111,9 +113,14 @@ async function handleUebersicht(req, res) {
         vorname: f.vorname || '', nachname: f.nachname || '',
         thema: f.thema || '', fachbereich: f.fachbereich || '',
         status: f.status || 'offen', antwortDatum: f.antwortDatum || null,
+        bewertung: Number.isFinite(+f.bewertung) && +f.bewertung > 0 ? +f.bewertung : null,
+        bewertungDatum: f.bewertungDatum || null,
         offeneNachfragen: nf.filter(n => n && !n.antwort).length,
         nachfragenGesamt: nf.length,
         snippet: String(f.beschreibung || '').replace(/\s+/g, ' ').trim().slice(0, 160),
+        beschreibung: String(f.beschreibung || ''),
+        antwort: String(f.antwort || ''),
+        nachfragen: nf,
       });
     }
     faelle.sort((a, b) => new Date(b.created || 0) - new Date(a.created || 0));
@@ -126,6 +133,62 @@ async function handleUebersicht(req, res) {
   } catch (e) {
     console.error('Uebersicht Fehler:', e.message);
     return res.status(500).json({ error: 'Fehler beim Laden' });
+  }
+}
+
+// ── BEWERTUNG (Empfänger bewertet die Experten-Antwort mit 1–5 Sternen) ──────
+async function handleBewertung(req, res) {
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+  res.setHeader('Cache-Control', 'no-store');
+
+  const { id, rating } = req.body || {};
+  const stars = Math.round(Number(rating));
+  if (!id || !Number.isFinite(stars) || stars < 1 || stars > 5) {
+    return res.status(400).json({ error: 'Ungültige Bewertung' });
+  }
+
+  let fall;
+  try {
+    const raw = await kv.get(`fall:${id}`);
+    if (!raw) return res.status(404).json({ error: 'Fall nicht gefunden' });
+    fall = typeof raw === 'string' ? JSON.parse(raw) : raw;
+  } catch (e) {
+    console.error('KV Fehler (Bewertung):', e.message);
+    return res.status(500).json({ error: 'Datenbankfehler' });
+  }
+
+  // Bewertung erst möglich, wenn eine Antwort vorliegt
+  if (!fall.antwort) return res.status(409).json({ error: 'Noch keine Antwort vorhanden' });
+
+  fall.bewertung = stars;
+  fall.bewertungDatum = new Date().toISOString();
+
+  try {
+    await kv.set(`fall:${id}`, JSON.stringify(fall), { ex: 60 * 60 * 24 * 180 });
+  } catch (e) {
+    console.error('KV Update Fehler (Bewertung):', e.message);
+    return res.status(500).json({ error: 'Speichern fehlgeschlagen' });
+  }
+
+  return res.status(200).json({ ok: true, bewertung: stars });
+}
+
+// ── LÖSCHEN (Admin löscht Fall mit optionalem Grund) ─────────────────────────
+async function handleLoeschen(req, res) {
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+  res.setHeader('Cache-Control', 'no-store');
+
+  const { id, token, grund } = req.body || {};
+  if (token !== ADMIN_TOKEN) return res.status(403).json({ error: 'Nicht autorisiert' });
+  if (!id) return res.status(400).json({ error: 'Fehlende ID' });
+
+  try {
+    await kv.del(`fall:${id}`);
+    console.log(`Fall ${id} gelöscht. Grund: ${grund || '–'}`);
+    return res.status(200).json({ ok: true });
+  } catch (e) {
+    console.error('KV Del Fehler:', e.message);
+    return res.status(500).json({ error: 'Löschen fehlgeschlagen' });
   }
 }
 
@@ -377,6 +440,8 @@ async function handlePortal(req, res) {
       thema: fall.thema, fachbereich: fall.fachbereich,
       beschreibung: fall.beschreibung, einschaetzung: fall.einschaetzung,
       status: fall.status, antwort: fall.antwort, antwortDatum: fall.antwortDatum,
+      bewertung: Number.isFinite(+fall.bewertung) && +fall.bewertung > 0 ? +fall.bewertung : null,
+      bewertungDatum: fall.bewertungDatum || null,
       nachfragen: Array.isArray(fall.nachfragen) ? fall.nachfragen : [],
       ...(isAdmin ? { email: fall.email, linda4Entwurf: fall.linda4Entwurf } : {}),
     });
