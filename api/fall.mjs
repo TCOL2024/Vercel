@@ -83,7 +83,50 @@ export default async function handler(req, res) {
   if (action === 'antwort')          return handleAntwort(req, res);
   if (action === 'nachfrage')        return handleNachfrage(req, res);
   if (action === 'nachfrageantwort') return handleNachfrageAntwort(req, res);
+  if (action === 'uebersicht')       return handleUebersicht(req, res);
   return handleAnfrage(req, res);
+}
+
+// ── 0. ÜBERSICHT (alle Fälle – nur mit Admin-Token) ──────────────────────────
+async function handleUebersicht(req, res) {
+  if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
+  // Niemals von Suchmaschinen indexieren
+  res.setHeader('X-Robots-Tag', 'noindex, nofollow, noarchive');
+  res.setHeader('Cache-Control', 'no-store');
+  if (req.query.token !== ADMIN_TOKEN) return res.status(403).json({ error: 'Nicht autorisiert' });
+
+  try {
+    let keys = [];
+    try { keys = await kv.keys('fall:*'); } catch (e) { console.error('KV keys:', e.message); }
+    const raws = keys.length ? await Promise.all(keys.map(k => kv.get(k).catch(() => null))) : [];
+
+    const faelle = [];
+    for (const raw of raws) {
+      if (!raw) continue;
+      const f = typeof raw === 'string' ? JSON.parse(raw) : raw;
+      if (!f || !f.id) continue;
+      const nf = Array.isArray(f.nachfragen) ? f.nachfragen : [];
+      faelle.push({
+        id: f.id, created: f.created || null,
+        vorname: f.vorname || '', nachname: f.nachname || '',
+        thema: f.thema || '', fachbereich: f.fachbereich || '',
+        status: f.status || 'offen', antwortDatum: f.antwortDatum || null,
+        offeneNachfragen: nf.filter(n => n && !n.antwort).length,
+        nachfragenGesamt: nf.length,
+        snippet: String(f.beschreibung || '').replace(/\s+/g, ' ').trim().slice(0, 160),
+      });
+    }
+    faelle.sort((a, b) => new Date(b.created || 0) - new Date(a.created || 0));
+
+    const offen        = faelle.filter(f => f.status !== 'beantwortet').length;
+    const beantwortet  = faelle.filter(f => f.status === 'beantwortet').length;
+    const offeneRueck  = faelle.reduce((s, f) => s + f.offeneNachfragen, 0);
+
+    return res.status(200).json({ ok: true, count: faelle.length, offen, beantwortet, offeneRueck, faelle });
+  } catch (e) {
+    console.error('Uebersicht Fehler:', e.message);
+    return res.status(500).json({ error: 'Fehler beim Laden' });
+  }
 }
 
 // ── 1. VORANALYSE ────────────────────────────────────────────────────────────
