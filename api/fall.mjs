@@ -10,7 +10,7 @@ const RESEND_FROM  = 'Sozialrecht Fachberatung <anfrage@resend.dev>';
 
 // Für die KI-Voranalyse wird ausschließlich GPT-5.4 verwendet.
 // (Per Env-Variable überschreibbar, falls OpenAI eine andere Modell-ID erwartet.)
-const KI_MODEL = process.env.VORANALYSE_MODEL || 'gpt-5.4';
+const KI_MODEL = process.env.VORANALYSE_MODEL || 'gpt-5.1';
 
 // Baut die richtigen Parameter je nach Modell-Generation.
 // GPT-5- und o-Modelle: max_completion_tokens + nur Default-Temperatur.
