@@ -192,6 +192,30 @@ async function handleLoeschen(req, res) {
   }
 }
 
+// ── Intent-Klassifikation (parallel, günstiges Modell, max. 80 Tokens) ───────
+// Gibt { sgb, bereich, typ, komplexitaet } oder null zurück.
+async function classifyIntent(apiKey, thema, beschreibung) {
+  try {
+    const r = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'gpt-4o-mini',
+        messages: [{ role: 'user', content:
+          `Klassifiziere diese Anfrage im deutschen Sozialrecht kurz.\nThema: ${thema}\nBeschreibung: ${String(beschreibung).slice(0, 400)}\n` +
+          `Antworte als JSON: {"sgb":"SGB V","bereich":"Krankenversicherung","typ":"Leistungsantrag|Widerspruch|Erstantrag|Sonstiges","komplexitaet":"niedrig|mittel|hoch"}`
+        }],
+        max_tokens: 80,
+        response_format: { type: 'json_object' },
+      }),
+    });
+    if (!r.ok) return null;
+    const d = await r.json();
+    const k = JSON.parse(d.choices?.[0]?.message?.content || 'null');
+    return k && k.sgb ? k : null;
+  } catch { return null; }
+}
+
 // ── 1. VORANALYSE ────────────────────────────────────────────────────────────
 async function handleVoranalyse(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
@@ -275,13 +299,18 @@ Regeln: Bei unter 80 Zeichen IMMER rueckfragen. Fragen spezifisch für ${thema}.
     : baseText;
 
   try {
-    const result = await chatCompletion({
-      apiKey,
-      messages: [{ role: 'system', content: systemPrompt }, { role: 'user', content: userContent }],
-      maxTokens: antwortLaenge === 'ausfuehrlich' ? 900 : 450,
-      temperature: 0.15,
-      jsonMode: !istNachfrage, // JSON für initial + direktEinschaetzung; plain text nur für Nachfragen
-    });
+    // Intent-Klassifikation und Hauptanalyse parallel starten
+    const [klassifikation, result] = await Promise.all([
+      (!istNachfrage) ? classifyIntent(apiKey, thema, String(beschreibung || '')) : Promise.resolve(null),
+      chatCompletion({
+        apiKey,
+        messages: [{ role: 'system', content: systemPrompt }, { role: 'user', content: userContent }],
+        maxTokens: antwortLaenge === 'ausfuehrlich' ? 900 : 500,
+        temperature: 0.15,
+        jsonMode: !istNachfrage, // JSON für initial + direktEinschaetzung; plain text nur für Nachfragen
+      }),
+    ]);
+
     if (!result.ok) {
       console.error('OpenAI Voranalyse-Fehler:', result.status, String(result.error).slice(0, 300));
       return res.status(502).json({ error: 'KI-Analyse fehlgeschlagen' });
@@ -299,12 +328,12 @@ Regeln: Bei unter 80 Zeichen IMMER rueckfragen. Fragen spezifisch für ${thema}.
       : [];
 
     if (direktEinschaetzung) {
-      return res.status(200).json({ modus: 'einschaetzung', einschaetzung: parsed.einschaetzung || raw, paragrafen, rueckfragen: null, antwortLaenge });
+      return res.status(200).json({ modus: 'einschaetzung', einschaetzung: parsed.einschaetzung || raw, paragrafen, klassifikation, rueckfragen: null, antwortLaenge });
     }
 
     // Initiale Analyse (ggf. mit Rückfragen)
     const docHinweis = attachment ? (isImage ? ' (Bild analysiert)' : isPdf ? ' (PDF ausgewertet)' : isDocx ? ' (Dokument ausgewertet)' : '') : '';
-    return res.status(200).json({ ...parsed, paragrafen, docHinweis, antwortLaenge });
+    return res.status(200).json({ ...parsed, paragrafen, klassifikation, docHinweis, antwortLaenge });
   } catch (err) {
     console.error('Voranalyse error:', err);
     return res.status(500).json({ error: 'Interner Fehler' });
