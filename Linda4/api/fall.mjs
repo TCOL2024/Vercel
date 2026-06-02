@@ -85,6 +85,7 @@ export default async function handler(req, res) {
   if (action === 'nachfrageantwort') return handleNachfrageAntwort(req, res);
   if (action === 'uebersicht')       return handleUebersicht(req, res);
   if (action === 'bewertung')        return handleBewertung(req, res);
+  if (action === 'loeschen')         return handleLoeschen(req, res);
   return handleAnfrage(req, res);
 }
 
@@ -117,6 +118,9 @@ async function handleUebersicht(req, res) {
         offeneNachfragen: nf.filter(n => n && !n.antwort).length,
         nachfragenGesamt: nf.length,
         snippet: String(f.beschreibung || '').replace(/\s+/g, ' ').trim().slice(0, 160),
+        beschreibung: String(f.beschreibung || ''),
+        antwort: String(f.antwort || ''),
+        nachfragen: nf,
       });
     }
     faelle.sort((a, b) => new Date(b.created || 0) - new Date(a.created || 0));
@@ -169,6 +173,25 @@ async function handleBewertung(req, res) {
   return res.status(200).json({ ok: true, bewertung: stars });
 }
 
+// ── LÖSCHEN (Admin löscht Fall mit optionalem Grund) ─────────────────────────
+async function handleLoeschen(req, res) {
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+  res.setHeader('Cache-Control', 'no-store');
+
+  const { id, token, grund } = req.body || {};
+  if (token !== ADMIN_TOKEN) return res.status(403).json({ error: 'Nicht autorisiert' });
+  if (!id) return res.status(400).json({ error: 'Fehlende ID' });
+
+  try {
+    await kv.del(`fall:${id}`);
+    console.log(`Fall ${id} gelöscht. Grund: ${grund || '–'}`);
+    return res.status(200).json({ ok: true });
+  } catch (e) {
+    console.error('KV Del Fehler:', e.message);
+    return res.status(500).json({ error: 'Löschen fehlgeschlagen' });
+  }
+}
+
 // ── 1. VORANALYSE ────────────────────────────────────────────────────────────
 async function handleVoranalyse(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
@@ -201,7 +224,9 @@ Antworte auf Deutsch, ohne Juristenjargon. Beginne direkt mit der Antwort. Keine
 ${hatAntworten ? 'Der User hat bereits Rückfragen beantwortet – beziehe diese Antworten explizit ein.' : ''}
 Gib eine fundierte, UNVERBINDLICHE Einschätzung.
 ${laengeInstruktion}
-Antworte auf Deutsch. Beginne direkt mit der inhaltlichen Einschätzung. Keine Rechtsberatung.`
+Antworte IMMER als gültiges JSON:
+{"einschaetzung":"...","paragrafen":["§ XX SGB XX"]}
+Regeln: paragrafen = bis zu 4 relevante §§ aus dem deutschen Sozialgesetzbuch, z. B. "§ 37 SGB V", "§ 14 SGB XI". Falls kein konkreter § passt: leeres Array []. Keine Rechtsberatung. Antworte auf Deutsch.`
     : `Du bist Linda4, eine KI-Assistentin für deutsches Sozialrecht.
 Analysiere die Fallbeschreibung und entscheide:
 
@@ -212,7 +237,7 @@ B) Ist die Beschreibung zu kurz, unklar oder fehlen wichtige Infos?
    → Stelle 1-2 gezielte Rückfragen um den Fall besser einschätzen zu können.
 
 Antworte IMMER als gültiges JSON:
-{"modus":"einschaetzung"|"rueckfragen","einschaetzung":"..."|null,"rueckfragen":["Frage 1?"]|null}
+{"modus":"einschaetzung"|"rueckfragen","einschaetzung":"..."|null,"rueckfragen":["Frage 1?"]|null,"paragrafen":["§ XX SGB XX"]|[]}
 
 Regeln: Bei unter 80 Zeichen IMMER rueckfragen. Fragen spezifisch für ${thema}. Antworte auf Deutsch.`;
 
@@ -255,7 +280,7 @@ Regeln: Bei unter 80 Zeichen IMMER rueckfragen. Fragen spezifisch für ${thema}.
       messages: [{ role: 'system', content: systemPrompt }, { role: 'user', content: userContent }],
       maxTokens: antwortLaenge === 'ausfuehrlich' ? 900 : 450,
       temperature: 0.15,
-      jsonMode: !direktEinschaetzung,
+      jsonMode: !istNachfrage, // JSON für initial + direktEinschaetzung; plain text nur für Nachfragen
     });
     if (!result.ok) {
       console.error('OpenAI Voranalyse-Fehler:', result.status, String(result.error).slice(0, 300));
@@ -263,13 +288,23 @@ Regeln: Bei unter 80 Zeichen IMMER rueckfragen. Fragen spezifisch für ${thema}.
     }
 
     const raw = result.content;
-    if (istNachfrage)        return res.status(200).json({ modus: 'nachfrage', antwort: raw, antwortLaenge });
-    if (direktEinschaetzung) return res.status(200).json({ modus: 'einschaetzung', einschaetzung: raw, rueckfragen: null, antwortLaenge });
+    // Nachfragen: plain text, kein JSON
+    if (istNachfrage) return res.status(200).json({ modus: 'nachfrage', antwort: raw, antwortLaenge });
 
+    // Alle anderen Pfade liefern JSON (direktEinschaetzung + initial)
     let parsed;
-    try { parsed = JSON.parse(raw); } catch { parsed = { modus: 'einschaetzung', einschaetzung: raw, rueckfragen: null }; }
+    try { parsed = JSON.parse(raw); } catch { parsed = { modus: 'einschaetzung', einschaetzung: raw, rueckfragen: null, paragrafen: [] }; }
+    const paragrafen = Array.isArray(parsed.paragrafen)
+      ? parsed.paragrafen.filter(p => p && typeof p === 'string').slice(0, 4)
+      : [];
+
+    if (direktEinschaetzung) {
+      return res.status(200).json({ modus: 'einschaetzung', einschaetzung: parsed.einschaetzung || raw, paragrafen, rueckfragen: null, antwortLaenge });
+    }
+
+    // Initiale Analyse (ggf. mit Rückfragen)
     const docHinweis = attachment ? (isImage ? ' (Bild analysiert)' : isPdf ? ' (PDF ausgewertet)' : isDocx ? ' (Dokument ausgewertet)' : '') : '';
-    return res.status(200).json({ ...parsed, docHinweis, antwortLaenge });
+    return res.status(200).json({ ...parsed, paragrafen, docHinweis, antwortLaenge });
   } catch (err) {
     console.error('Voranalyse error:', err);
     return res.status(500).json({ error: 'Interner Fehler' });
@@ -296,7 +331,9 @@ async function handleAnfrage(req, res) {
   const fallDaten = {
     id, created: new Date().toISOString(),
     vorname, nachname, email, fachbereich, thema, beschreibung,
-    einschaetzung: einschaetzung || '', linda4Entwurf: '',
+    einschaetzung: einschaetzung || '',
+    paragrafen: Array.isArray(req.body.paragrafen) ? req.body.paragrafen.filter(p => p && typeof p === 'string').slice(0, 4) : [],
+    linda4Entwurf: '',
     status: 'offen', antwort: null, antwortDatum: null, nachfragen: [],
   };
 
@@ -416,6 +453,7 @@ async function handlePortal(req, res) {
       vorname: fall.vorname, nachname: fall.nachname,
       thema: fall.thema, fachbereich: fall.fachbereich,
       beschreibung: fall.beschreibung, einschaetzung: fall.einschaetzung,
+      paragrafen: Array.isArray(fall.paragrafen) ? fall.paragrafen : [],
       status: fall.status, antwort: fall.antwort, antwortDatum: fall.antwortDatum,
       bewertung: Number.isFinite(+fall.bewertung) && +fall.bewertung > 0 ? +fall.bewertung : null,
       bewertungDatum: fall.bewertungDatum || null,
