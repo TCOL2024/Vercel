@@ -3,15 +3,41 @@ import { createRequire } from 'module';
 const require = createRequire(import.meta.url);
 const kv = new Redis({ url: process.env.KV_REST_API_URL, token: process.env.KV_REST_API_TOKEN });
 
-const BASE_URL    = process.env.PORTAL_BASE_URL || 'https://pfk2026.oldenburg-knowledge.de';
-const ADMIN_TOKEN = process.env.ADMIN_TOKEN || 'SozR2026Expert';
+const BASE_URL     = process.env.PORTAL_BASE_URL || 'https://pfk2026.oldenburg-knowledge.de';
+const ADMIN_TOKEN  = process.env.ADMIN_TOKEN || 'SozR2026Expert';
+const EXPERT_EMAIL = process.env.EXPERT_EMAIL || 'noormann@gmx.com';
+const RESEND_FROM  = 'Sozialrecht Fachberatung <anfrage@resend.dev>';
+
+// Für die KI-Voranalyse wird ausschließlich GPT-5.4 verwendet.
+const KI_MODEL = 'gpt-5.4';
+
+// HTML-Escaping für nutzergenerierte Texte in E-Mails
+function esc(s) {
+  return String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+}
+
+// Einheitlicher Resend-Mailversand
+async function sendMail({ to, subject, html, replyTo, attachments }) {
+  const key = process.env.RESEND_API_KEY;
+  if (!key) throw new Error('mail-not-configured');
+  return fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${key}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      from: RESEND_FROM, to: [to], subject, html, reply_to: replyTo,
+      ...(attachments ? { attachments } : {}),
+    }),
+  });
+}
 
 export default async function handler(req, res) {
   const action = req.query.action || (req.method === 'GET' ? 'portal' : 'anfrage');
 
-  if (action === 'voranalyse') return handleVoranalyse(req, res);
-  if (action === 'portal')     return handlePortal(req, res);
-  if (action === 'antwort')    return handleAntwort(req, res);
+  if (action === 'voranalyse')       return handleVoranalyse(req, res);
+  if (action === 'portal')           return handlePortal(req, res);
+  if (action === 'antwort')          return handleAntwort(req, res);
+  if (action === 'nachfrage')        return handleNachfrage(req, res);
+  if (action === 'nachfrageantwort') return handleNachfrageAntwort(req, res);
   return handleAnfrage(req, res);
 }
 
@@ -25,19 +51,34 @@ async function handleVoranalyse(req, res) {
   const apiKey = process.env.Sozialrecht2026 || process.env.OPENAI_API_KEY;
   if (!apiKey) return res.status(500).json({ error: 'KI nicht konfiguriert' });
 
-  const hatAntworten = antworten && Object.keys(antworten).length > 0;
+  const hatAntworten       = antworten && Object.keys(antworten).length > 0;
+  const forceEinschaetzung = req.body.forceEinschaetzung === true;
+  const userFrage          = (req.body.userFrage || '').toString().trim().slice(0, 600);
+  const istNachfrage       = userFrage.length > 0;
+  const direktEinschaetzung = hatAntworten || forceEinschaetzung || istNachfrage;
 
-  const systemPrompt = hatAntworten
+  // Der User kann zwischen einer kompakten und einer ausführlichen Antwort wählen.
+  const antwortLaenge = req.body.antwortLaenge === 'ausfuehrlich' ? 'ausfuehrlich' : 'kompakt';
+  const laengeInstruktion = antwortLaenge === 'ausfuehrlich'
+    ? `Gib eine AUSFÜHRLICHE Einschätzung in 3-4 kurzen Absätzen: ordne den Sachverhalt rechtlich ein, nenne die einschlägigen Normen (konkretes SGB / §), erläutere mögliche Ansprüche samt Voraussetzungen und beschreibe sinnvolle nächste Schritte. Klar strukturiert, verständlich, ohne Juristenjargon.`
+    : `Gib eine KOMPAKTE Einschätzung in 3-4 Sätzen: nur das Wesentliche, das relevante SGB falls passend, ohne Ausschweifungen.`;
+
+  const systemPrompt = istNachfrage
     ? `Du bist Linda4, eine KI-Assistentin für deutsches Sozialrecht.
-Der User hat bereits Rückfragen beantwortet. Gib jetzt eine fundierte, UNVERBINDLICHE Einschätzung (4-6 Sätze).
-Beziehe die Antworten auf die Rückfragen explizit ein.
-Nenne das relevante SGB wenn passend. Antworte auf Deutsch. Kein Juristenjargon.
-Beginne direkt mit der inhaltlichen Einschätzung. Keine Rechtsberatung.`
+Der User hat zu deiner bisherigen Einschätzung eine ergänzende Frage. Beantworte AUSSCHLIESSLICH diese Frage – konkret, unverbindlich und bezogen auf den geschilderten Fall.
+${laengeInstruktion}
+Antworte auf Deutsch, ohne Juristenjargon. Beginne direkt mit der Antwort. Keine Rechtsberatung.`
+    : direktEinschaetzung
+    ? `Du bist Linda4, eine KI-Assistentin für deutsches Sozialrecht.
+${hatAntworten ? 'Der User hat bereits Rückfragen beantwortet – beziehe diese Antworten explizit ein.' : ''}
+Gib eine fundierte, UNVERBINDLICHE Einschätzung.
+${laengeInstruktion}
+Antworte auf Deutsch. Beginne direkt mit der inhaltlichen Einschätzung. Keine Rechtsberatung.`
     : `Du bist Linda4, eine KI-Assistentin für deutsches Sozialrecht.
 Analysiere die Fallbeschreibung und entscheide:
 
 A) Ist die Beschreibung ausreichend klar und detailliert?
-   → Gib eine erste UNVERBINDLICHE Einschätzung (4-5 Sätze). Nenne das relevante SGB wenn passend.
+   → Gib eine erste UNVERBINDLICHE Einschätzung. ${laengeInstruktion} Nenne das relevante SGB wenn passend.
 
 B) Ist die Beschreibung zu kurz, unklar oder fehlen wichtige Infos?
    → Stelle 1-2 gezielte Rückfragen um den Fall besser einschätzen zu können.
@@ -68,7 +109,14 @@ Regeln: Bei unter 80 Zeichen IMMER rueckfragen. Fragen spezifisch für ${thema}.
   const antwortBlock = hatAntworten
     ? '\n\nAntworten auf Rückfragen:\n' + Object.entries(antworten).map(([f, a]) => `- ${f}\n  → ${a}`).join('\n')
     : '';
-  const baseText = `Themenbereich: ${thema}\n\nFallbeschreibung:\n${beschreibung}${antwortBlock}${docText ? `\n\n--- Dokument (${attachmentName}) ---\n${docText}` : ''}`;
+  const einschaetzungContext = (istNachfrage && req.body.bisherigeEinschaetzung)
+    ? `\n\nBisherige Einschätzung von Linda4:\n${req.body.bisherigeEinschaetzung}`
+    : '';
+  const verlaufContext = (istNachfrage && Array.isArray(req.body.verlauf) && req.body.verlauf.length)
+    ? '\n\nBisherige ergänzende Fragen:\n' + req.body.verlauf.map(v => `- Frage: ${v.frage}\n  Antwort: ${v.antwort}`).join('\n')
+    : '';
+  const frageBlock = istNachfrage ? `\n\nErgänzende Frage des Users:\n${userFrage}` : '';
+  const baseText = `Themenbereich: ${thema}\n\nFallbeschreibung:\n${beschreibung}${antwortBlock}${einschaetzungContext}${verlaufContext}${frageBlock}${docText ? `\n\n--- Dokument (${attachmentName}) ---\n${docText}` : ''}`;
   const userContent = (attachment && isImage)
     ? [{ type: 'text', text: baseText }, { type: 'image_url', image_url: { url: `data:${attachmentType};base64,${attachment}`, detail: 'high' } }]
     : baseText;
@@ -78,21 +126,23 @@ Regeln: Bei unter 80 Zeichen IMMER rueckfragen. Fragen spezifisch für ${thema}.
       method: 'POST',
       headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: 'gpt-4o',
+        model: KI_MODEL,
         messages: [{ role: 'system', content: systemPrompt }, { role: 'user', content: userContent }],
-        max_tokens: 500, temperature: 0.15,
-        ...(hatAntworten ? {} : { response_format: { type: 'json_object' } }),
+        max_tokens: antwortLaenge === 'ausfuehrlich' ? 900 : 450,
+        temperature: 0.15,
+        ...(direktEinschaetzung ? {} : { response_format: { type: 'json_object' } }),
       }),
     });
     if (!response.ok) return res.status(502).json({ error: 'KI-Analyse fehlgeschlagen' });
 
     const raw = (await response.json()).choices?.[0]?.message?.content?.trim() || '';
-    if (hatAntworten) return res.status(200).json({ modus: 'einschaetzung', einschaetzung: raw, rueckfragen: null });
+    if (istNachfrage)        return res.status(200).json({ modus: 'nachfrage', antwort: raw, antwortLaenge });
+    if (direktEinschaetzung) return res.status(200).json({ modus: 'einschaetzung', einschaetzung: raw, rueckfragen: null, antwortLaenge });
 
     let parsed;
     try { parsed = JSON.parse(raw); } catch { parsed = { modus: 'einschaetzung', einschaetzung: raw, rueckfragen: null }; }
     const docHinweis = attachment ? (isImage ? ' (Bild analysiert)' : isPdf ? ' (PDF ausgewertet)' : isDocx ? ' (Dokument ausgewertet)' : '') : '';
-    return res.status(200).json({ ...parsed, docHinweis });
+    return res.status(200).json({ ...parsed, docHinweis, antwortLaenge });
   } catch (err) {
     console.error('Voranalyse error:', err);
     return res.status(500).json({ error: 'Interner Fehler' });
@@ -120,7 +170,7 @@ async function handleAnfrage(req, res) {
     id, created: new Date().toISOString(),
     vorname, nachname, email, fachbereich, thema, beschreibung,
     einschaetzung: einschaetzung || '', linda4Entwurf: '',
-    status: 'offen', antwort: null, antwortDatum: null,
+    status: 'offen', antwort: null, antwortDatum: null, nachfragen: [],
   };
 
   try {
@@ -135,7 +185,7 @@ async function handleAnfrage(req, res) {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          model: 'gpt-4o',
+          model: KI_MODEL,
           messages: [
             { role: 'system', content: `Du bist Linda4, eine KI-Assistentin für deutsches Sozialrecht.
 Erstelle einen professionellen Antwort-ENTWURF für einen Sozialrechts-Experten.
@@ -245,6 +295,7 @@ async function handlePortal(req, res) {
       thema: fall.thema, fachbereich: fall.fachbereich,
       beschreibung: fall.beschreibung, einschaetzung: fall.einschaetzung,
       status: fall.status, antwort: fall.antwort, antwortDatum: fall.antwortDatum,
+      nachfragen: Array.isArray(fall.nachfragen) ? fall.nachfragen : [],
       ...(isAdmin ? { email: fall.email, linda4Entwurf: fall.linda4Entwurf } : {}),
     });
   } catch (e) {
@@ -313,4 +364,114 @@ async function handleAntwort(req, res) {
 
   if (!mailRes.ok) console.warn('User-Antwort-Mail fehlgeschlagen:', await mailRes.text());
   return res.status(200).json({ ok: true });
+}
+
+// ── 5. NACHFRAGE (User stellt Rückfrage zur Antwort) ─────────────────────────
+async function handleNachfrage(req, res) {
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+
+  const { id, frage } = req.body || {};
+  if (!id || !frage || !String(frage).trim()) return res.status(400).json({ error: 'Fehlende Felder' });
+  const frageText = String(frage).trim().slice(0, 2000);
+
+  let fall;
+  try {
+    const raw = await kv.get(`fall:${id}`);
+    if (!raw) return res.status(404).json({ error: 'Fall nicht gefunden' });
+    fall = typeof raw === 'string' ? JSON.parse(raw) : raw;
+  } catch (e) {
+    return res.status(500).json({ error: 'Datenbankfehler' });
+  }
+
+  // Rückfragen sind erst möglich, wenn bereits eine Antwort vorliegt
+  if (!fall.antwort) return res.status(409).json({ error: 'Rückfragen sind erst möglich, sobald eine Antwort vorliegt.' });
+
+  if (!Array.isArray(fall.nachfragen)) fall.nachfragen = [];
+  if (fall.nachfragen.filter(n => !n.antwort).length >= 5)
+    return res.status(429).json({ error: 'Es sind bereits offene Rückfragen vorhanden. Bitte warte auf die Antwort.' });
+
+  fall.nachfragen.push({ frage: frageText, gestelltAm: new Date().toISOString(), antwort: null, beantwortetAm: null });
+
+  try {
+    await kv.set(`fall:${id}`, JSON.stringify(fall), { ex: 60 * 60 * 24 * 180 });
+  } catch (e) { console.error('KV Update Fehler:', e.message); }
+
+  const adminLink = `${BASE_URL}/admin.html?id=${id}&token=${ADMIN_TOKEN}`;
+  const ts = new Date().toLocaleString('de-DE', { timeZone: 'Europe/Berlin' });
+  const html = `<div style="font-family:Arial,sans-serif;max-width:620px;margin:0 auto;">
+    <div style="background:linear-gradient(135deg,#002A5C,#1e40af);padding:24px 32px;">
+      <h1 style="color:#fff;margin:0;font-size:19px;">Neue Rückfrage – ${esc(fall.thema)}</h1>
+      <p style="color:#bfdbfe;margin:6px 0 0;font-size:13px;">${ts} · ${esc(fall.vorname)} ${esc(fall.nachname)}</p>
+    </div>
+    <div style="background:#fff;padding:24px 32px;border:1px solid #e2e8f0;border-top:none;">
+      <p style="font-size:14px;color:#374151;margin:0 0 14px;">${esc(fall.vorname)} hat eine Rückfrage zur bereits gesendeten Antwort gestellt:</p>
+      <div style="background:#f8fafc;border-left:3px solid #2563eb;padding:14px 18px;font-size:14px;color:#1e293b;line-height:1.7;white-space:pre-wrap;margin-bottom:20px;">${esc(frageText)}</div>
+      <div style="background:#002A5C;padding:14px 18px;text-align:center;">
+        <a href="${adminLink}" style="color:#fff;font-weight:700;font-size:14px;text-decoration:none;">→ Rückfrage beantworten</a>
+      </div>
+    </div>
+  </div>`;
+
+  try {
+    const r = await sendMail({ to: EXPERT_EMAIL, subject: `[Rückfrage] ${fall.thema} – ${fall.vorname} ${fall.nachname}`, html, replyTo: fall.email });
+    if (!r.ok) console.warn('Experten-Benachrichtigung fehlgeschlagen:', await r.text());
+  } catch (e) { console.warn('Mailversand übersprungen:', e.message); }
+
+  return res.status(200).json({ ok: true, nachfragen: fall.nachfragen });
+}
+
+// ── 6. NACHFRAGE-ANTWORT (Experte beantwortet eine Rückfrage) ────────────────
+async function handleNachfrageAntwort(req, res) {
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+
+  const { id, token, index, antwort } = req.body || {};
+  if (!id || antwort == null || index == null) return res.status(400).json({ error: 'Fehlende Felder' });
+  if (token !== ADMIN_TOKEN) return res.status(403).json({ error: 'Nicht autorisiert' });
+  const antwortText = String(antwort).trim();
+  if (!antwortText) return res.status(400).json({ error: 'Antwort ist leer' });
+
+  let fall;
+  try {
+    const raw = await kv.get(`fall:${id}`);
+    if (!raw) return res.status(404).json({ error: 'Fall nicht gefunden' });
+    fall = typeof raw === 'string' ? JSON.parse(raw) : raw;
+  } catch (e) {
+    return res.status(500).json({ error: 'Datenbankfehler' });
+  }
+
+  const i = Number(index);
+  if (!Array.isArray(fall.nachfragen) || !fall.nachfragen[i])
+    return res.status(404).json({ error: 'Rückfrage nicht gefunden' });
+
+  fall.nachfragen[i].antwort = antwortText;
+  fall.nachfragen[i].beantwortetAm = new Date().toISOString();
+
+  try {
+    await kv.set(`fall:${id}`, JSON.stringify(fall), { ex: 60 * 60 * 24 * 180 });
+  } catch (e) { console.error('KV Update Fehler:', e.message); }
+
+  const portalLink = `${BASE_URL}/portal.html?id=${id}`;
+  const ts = new Date().toLocaleString('de-DE', { timeZone: 'Europe/Berlin' });
+  const html = `<div style="font-family:Arial,sans-serif;max-width:620px;margin:0 auto;">
+    <div style="background:linear-gradient(135deg,#002A5C,#1e40af);padding:24px 32px;">
+      <h1 style="color:#fff;margin:0;font-size:19px;">Antwort auf deine Rückfrage ✓</h1>
+      <p style="color:#bfdbfe;margin:6px 0 0;font-size:13px;">${ts}</p>
+    </div>
+    <div style="background:#fff;padding:24px 32px;border:1px solid #e2e8f0;border-top:none;">
+      <p style="font-size:15px;color:#1e293b;margin:0 0 14px;">Hallo ${esc(fall.vorname)},</p>
+      <p style="font-size:14px;color:#374151;margin:0 0 16px;line-height:1.7;">deine Rückfrage zum Thema <strong>${esc(fall.thema)}</strong> wurde beantwortet:</p>
+      <div style="background:#eff6ff;border-left:3px solid #2563eb;padding:12px 16px;font-size:13px;color:#1e3a8a;line-height:1.6;margin-bottom:10px;"><strong>Deine Frage:</strong><br/>${esc(fall.nachfragen[i].frage)}</div>
+      <div style="background:#f0fdf4;border-left:3px solid #16a34a;padding:14px 18px;font-size:14px;color:#14532d;line-height:1.8;white-space:pre-wrap;margin-bottom:20px;">${esc(antwortText)}</div>
+      <div style="background:#002A5C;padding:14px 18px;text-align:center;">
+        <a href="${portalLink}" style="color:#fff;font-weight:700;font-size:14px;text-decoration:none;">→ Zum Fall-Portal</a>
+      </div>
+    </div>
+  </div>`;
+
+  try {
+    const r = await sendMail({ to: fall.email, subject: `Antwort auf deine Rückfrage – ${fall.thema}`, html, replyTo: EXPERT_EMAIL });
+    if (!r.ok) console.warn('User-Nachfrage-Mail fehlgeschlagen:', await r.text());
+  } catch (e) { console.warn('Mailversand übersprungen:', e.message); }
+
+  return res.status(200).json({ ok: true, nachfragen: fall.nachfragen });
 }
