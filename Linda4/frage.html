@@ -530,6 +530,36 @@
     .laenge-btn.active { background: var(--accent); color: #fff; }
     .laenge-btn:disabled { cursor: wait; opacity: 0.65; }
 
+    /* ── Ergänzende Fragen an Linda4 ── */
+    .ai-followup { margin-top: 16px; border-top: 1px solid var(--border); padding-top: 16px; }
+    .ai-followup-head { font-size: 0.8rem; font-weight: 700; color: var(--text); margin-bottom: 12px; }
+    .ai-followup-thread { display: flex; flex-direction: column; gap: 10px; margin-bottom: 12px; }
+    .ai-followup-thread:empty { display: none; }
+    .fu-q {
+      align-self: flex-end; max-width: 85%; background: var(--accent); color: #fff;
+      padding: 9px 14px; border-radius: 12px 12px 2px 12px;
+      font-size: 0.88rem; line-height: 1.5; white-space: pre-wrap;
+    }
+    .fu-a {
+      align-self: flex-start; max-width: 90%; background: #f1f5f9; color: var(--text);
+      padding: 10px 14px; border-radius: 12px 12px 12px 2px; border-left: 3px solid var(--cyan);
+      font-size: 0.9rem; line-height: 1.6; white-space: pre-wrap;
+    }
+    .fu-a.pending { color: var(--muted); font-style: italic; }
+    .ai-followup-form { display: flex; gap: 8px; }
+    .ai-followup-form input {
+      flex: 1; padding: 10px 14px; font-family: inherit; font-size: 0.9rem;
+      border: 1.5px solid var(--border); border-radius: 2px; outline: none; color: var(--text);
+    }
+    .ai-followup-form input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(0,80,200,0.09); }
+    .ai-followup-form button {
+      padding: 10px 20px; background: var(--blue); color: #fff; border: none;
+      font-family: inherit; font-size: 0.84rem; font-weight: 700; cursor: pointer;
+      white-space: nowrap; transition: background 0.15s;
+    }
+    .ai-followup-form button:hover { background: var(--accent); }
+    .ai-followup-form button:disabled { background: #9ca3af; cursor: wait; }
+
     /* ── Checklisten-Panel ── */
     .checklist-panel {
       position: fixed; top: 0; right: -320px; width: 300px; height: 100vh;
@@ -883,6 +913,17 @@
           <strong>Hinweis:</strong> Diese Einschätzung ist rein informativ und stellt keine Rechtsberatung dar.
           Nach dem Absenden wird dein Fall von einem Experten geprüft – du erhältst eine fundierte Antwort.
         </div>
+
+        <!-- Ergänzende Fragen an Linda4 (noch vor dem Absenden) -->
+        <div class="ai-followup" id="aiFollowup" style="display:none">
+          <div class="ai-followup-head">💬 Noch etwas unklar? Frag Linda4 direkt</div>
+          <div class="ai-followup-thread" id="aiFollowupThread"></div>
+          <div class="ai-followup-form">
+            <input type="text" id="aiFollowupInput" maxlength="600" autocomplete="off"
+              placeholder="z. B. „Welche Frist gilt hier?“ – Enter zum Senden" />
+            <button type="button" id="aiFollowupBtn">Fragen</button>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -906,6 +947,11 @@
   let aktuelleEinschaetzung = '';
   let antwortLaengeAktuell  = 'kompakt';   // 'kompakt' | 'ausfuehrlich'
   let letzteVoranalysePayload = null;      // für Umschalten der Antwortlänge
+  let aiVerlauf = [];                       // ergänzende Fragen an Linda4 [{frage, antwort}]
+
+  function escHtml(s) {
+    return String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  }
 
   // ── Step indicator ──────────────────────────────────────────────
   function highlightStep(n) {
@@ -1160,8 +1206,9 @@
       document.getElementById('aiResult').style.display = 'none';
       document.getElementById('modalFooter').style.display = 'none';
 
-      // Jede neue Analyse startet kompakt
+      // Jede neue Analyse startet kompakt und ohne ergänzende Fragen
       antwortLaengeAktuell = 'kompakt';
+      aiVerlauf = [];
 
       // Datei für Voranalyse vorbereiten
       const vorFile = dateiUpload.files[0];
@@ -1182,6 +1229,7 @@
       document.getElementById('modalLoading').style.display = 'none';
       document.getElementById('aiText').textContent = 'Die KI-Analyse ist gerade nicht verfügbar. Du kannst die Anfrage trotzdem absenden.';
       document.getElementById('aiLaenge').style.display = 'none';
+      document.getElementById('aiFollowup').style.display = 'none';
       document.getElementById('aiResult').style.display = 'block';
       document.getElementById('modalFooter').style.display = 'flex';
     } finally {
@@ -1223,6 +1271,7 @@
       document.getElementById('btnWeiter').style.display      = 'flex';
       document.getElementById('btnSend').style.display        = 'none';
       document.getElementById('aiLaenge').style.display       = 'none';
+      document.getElementById('aiFollowup').style.display     = 'none';
       aktuelleEinschaetzung = '';
 
       // ── Checkliste aufbauen ───────────────────────────────
@@ -1238,6 +1287,10 @@
       if (data.antwortLaenge) antwortLaengeAktuell = data.antwortLaenge;
       setLaengeButtons(antwortLaengeAktuell, false);
       document.getElementById('aiLaenge').style.display = 'flex';
+
+      // Ergänzende Fragen an Linda4 ermöglichen
+      document.getElementById('aiFollowup').style.display = 'block';
+      renderFollowupThread();
 
       const docBadge = document.getElementById('docBadge');
       if (data.docHinweis) {
@@ -1290,6 +1343,58 @@
     b.addEventListener('click', () => reanalyseLaenge(b.dataset.laenge));
   });
 
+  // ── Ergänzende Fragen an Linda4 (vor dem Absenden) ────────────
+  function renderFollowupThread() {
+    const el = document.getElementById('aiFollowupThread');
+    el.innerHTML = aiVerlauf.map(v => `
+      <div class="fu-q">${escHtml(v.frage)}</div>
+      <div class="fu-a${v.antwort ? '' : ' pending'}">${v.antwort ? escHtml(v.antwort) : 'Linda4 denkt nach …'}</div>
+    `).join('');
+  }
+
+  async function askFollowup() {
+    const input = document.getElementById('aiFollowupInput');
+    const btn   = document.getElementById('aiFollowupBtn');
+    const frage = input.value.trim();
+    if (frage.length < 3) { input.focus(); return; }
+
+    const eintrag = { frage, antwort: '' };
+    aiVerlauf.push(eintrag);
+    input.value = '';
+    btn.disabled = true; input.disabled = true;
+    renderFollowupThread();
+
+    const base = letzteVoranalysePayload || {
+      thema:        document.getElementById('thema').value,
+      beschreibung: getPlausiPrefix() + document.getElementById('beschreibung').value.trim(),
+    };
+    try {
+      const res = await fetch('/api/fall?action=voranalyse', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...base,
+          userFrage:             frage,
+          bisherigeEinschaetzung: aktuelleEinschaetzung,
+          verlauf:               aiVerlauf.slice(0, -1).filter(v => v.antwort),
+          antwortLaenge:         antwortLaengeAktuell,
+        }),
+      });
+      const data = await res.json();
+      eintrag.antwort = data.antwort || 'Dazu kann Linda4 gerade nichts Genaues sagen – stell die Frage gern dem Experten.';
+    } catch {
+      eintrag.antwort = 'Die Antwort ist gerade nicht verfügbar. Du kannst die Frage später dem Experten stellen.';
+    } finally {
+      renderFollowupThread();
+      btn.disabled = false; input.disabled = false; input.focus();
+    }
+  }
+
+  document.getElementById('aiFollowupBtn').addEventListener('click', askFollowup);
+  document.getElementById('aiFollowupInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter') { e.preventDefault(); askFollowup(); }
+  });
+
   // ── Weiter nach Rückfragen ────────────────────────────────────
   document.getElementById('btnWeiter').addEventListener('click', async function () {
     const btn = this;
@@ -1321,6 +1426,14 @@
     const btn = this;
     btn.classList.add('loading'); btn.disabled = true;
 
+    // Einschätzung + ggf. ergänzende Fragen für den Experten bündeln
+    let einschaetzungFinal = aktuelleEinschaetzung || '';
+    const beantworteteFragen = aiVerlauf.filter(v => v.antwort);
+    if (beantworteteFragen.length) {
+      einschaetzungFinal += '\n\n— Ergänzende Fragen an Linda4 —\n' +
+        beantworteteFragen.map(v => `F: ${v.frage}\nA: ${v.antwort}`).join('\n\n');
+    }
+
     const payload = {
       vorname:        document.getElementById('vorname').value.trim(),
       nachname:       document.getElementById('nachname').value.trim(),
@@ -1328,7 +1441,7 @@
       fachbereich:    document.getElementById('fachbereich').value,
       thema:          document.getElementById('thema').value,
       beschreibung:   getPlausiPrefix() + document.getElementById('beschreibung').value.trim(),
-      einschaetzung:  aktuelleEinschaetzung || '',
+      einschaetzung:  einschaetzungFinal,
     };
 
     const file = dateiUpload.files[0];
