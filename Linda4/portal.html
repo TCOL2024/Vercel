@@ -73,6 +73,18 @@
     .antwort-box { background: #f0fdf4; border-left: 3px solid var(--green); padding: 16px 20px; font-size: 0.92rem; color: #14532d; line-height: 1.8; white-space: pre-wrap; }
     .antwort-date { font-size: 0.75rem; color: var(--muted); margin-top: 10px; }
 
+    /* Sterne-Bewertung */
+    .rating-box { margin-top: 18px; padding-top: 16px; border-top: 1px solid #e2e8f0; display: flex; flex-direction: column; gap: 8px; }
+    .rating-q { font-size: 0.82rem; font-weight: 600; color: #1e293b; }
+    .stars { display: inline-flex; gap: 4px; }
+    .star { background: none; border: none; cursor: pointer; font-size: 1.7rem; line-height: 1; color: #d4d8e0; padding: 0 1px; transition: color .12s ease, transform .12s ease; }
+    .star:hover { transform: scale(1.14); }
+    .star.on { color: #f5b301; }
+    .star:disabled { cursor: default; }
+    .star:disabled:hover { transform: none; }
+    .rating-msg { font-size: 0.78rem; color: var(--muted); min-height: 1.1em; }
+    .rating-msg.ok { color: var(--green); font-weight: 600; }
+
     /* Warte-Hinweis */
     .warte-box { display: flex; align-items: flex-start; gap: 14px; background: #fff7ed; border: 1px solid #fed7aa; padding: 16px 20px; font-size: 0.88rem; color: #92400e; line-height: 1.6; }
     .warte-icon { font-size: 1.2rem; flex-shrink: 0; }
@@ -227,6 +239,17 @@
               </button>
               <span class="pdf-hint">Professionelles Dokument · zum Ausdrucken oder Archivieren</span>
             </div>
+            <div class="rating-box" id="ratingBox">
+              <span class="rating-q" id="ratingQ"></span>
+              <div class="stars" id="stars" role="radiogroup" aria-label="Bewertung der Antwort">
+                <button class="star" type="button" data-v="1" aria-label="1 Stern">★</button>
+                <button class="star" type="button" data-v="2" aria-label="2 Sterne">★</button>
+                <button class="star" type="button" data-v="3" aria-label="3 Sterne">★</button>
+                <button class="star" type="button" data-v="4" aria-label="4 Sterne">★</button>
+                <button class="star" type="button" data-v="5" aria-label="5 Sterne">★</button>
+              </div>
+              <span class="rating-msg" id="ratingMsg"></span>
+            </div>
           ` : `
             <div class="warte-box">
               <span class="warte-icon">⏳</span>
@@ -257,6 +280,62 @@
 
     bindNachfrage();
     bindPdf();
+    bindRating(d);
+  }
+
+  // 5-Sterne-Bewertung der Experten-Antwort durch den Empfänger
+  function bindRating(d) {
+    const box = document.getElementById('ratingBox');
+    if (!box) return;
+    const stars = Array.from(box.querySelectorAll('.star'));
+    const q   = document.getElementById('ratingQ');
+    const msg = document.getElementById('ratingMsg');
+    let current = Number(d.bewertung) || 0;
+    let locked  = current > 0;
+
+    const paint = n => stars.forEach(s => s.classList.toggle('on', Number(s.dataset.v) <= n));
+
+    if (locked) {
+      q.textContent = 'Deine Bewertung dieser Antwort';
+      paint(current);
+      stars.forEach(s => { s.disabled = true; });
+      msg.textContent = 'Danke für deine Bewertung!';
+      msg.classList.add('ok');
+      return;
+    }
+
+    q.textContent = 'Wie hilfreich war diese Antwort?';
+    paint(0);
+    stars.forEach(s => {
+      const v = Number(s.dataset.v);
+      s.addEventListener('mouseenter', () => { if (!locked) paint(v); });
+      s.addEventListener('focus',      () => { if (!locked) paint(v); });
+      s.addEventListener('click',      () => submit(v));
+    });
+    box.querySelector('.stars').addEventListener('mouseleave', () => { if (!locked) paint(current); });
+
+    async function submit(v) {
+      if (locked) return;
+      locked = true; current = v; paint(v);
+      stars.forEach(s => { s.disabled = true; });
+      msg.classList.remove('ok'); msg.textContent = 'Wird gespeichert …';
+      try {
+        const r = await fetch('/api/fall?action=bewertung', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: d.id, rating: v }),
+        });
+        if (!r.ok) throw new Error('http ' + r.status);
+        q.textContent = 'Deine Bewertung dieser Antwort';
+        msg.textContent = 'Danke für deine Bewertung!'; msg.classList.add('ok');
+        if (fallData) fallData.bewertung = v;
+      } catch (e) {
+        console.error('Bewertung fehlgeschlagen:', e);
+        locked = false; current = 0; paint(0);
+        stars.forEach(s => { s.disabled = false; });
+        msg.textContent = 'Speichern fehlgeschlagen – bitte erneut versuchen.';
+      }
+    }
   }
 
   function bindPdf() {
@@ -279,8 +358,26 @@
       .replace(/&nbsp;/gi, ' ').replace(/&amp;/gi, '&')
       .replace(/&lt;/gi, '<').replace(/&gt;/gi, '>')
       .replace(/&quot;/gi, '"').replace(/&#0?39;/gi, "'")
+      .replace(/\*\*(.+?)\*\*/g, '$1').replace(/(^|[\s(])\*([^*\n]+)\*/g, '$1$2')
+      .replace(/^\s*#{1,6}\s+/gm, '')
       .replace(/\n{3,}/g, '\n\n').replace(/[ \t]+\n/g, '\n')
       .trim();
+  }
+
+  // Zerlegt den "F: … / A: …"-Block in strukturierte Frage/Antwort-Paare
+  function parseFollowups(block) {
+    const lines = String(block).split('\n');
+    const out = []; let cur = null, mode = null;
+    for (const raw of lines) {
+      const line = raw.trim();
+      const mF = line.match(/^F:\s*(.*)$/);
+      const mA = line.match(/^A:\s*(.*)$/);
+      if (mF) { if (cur) out.push(cur); cur = { frage: mF[1], antwort: '' }; mode = 'f'; }
+      else if (mA && cur) { cur.antwort = mA[1]; mode = 'a'; }
+      else if (cur && line) { cur[mode === 'a' ? 'antwort' : 'frage'] += ' ' + line; }
+    }
+    if (cur) out.push(cur);
+    return out.filter(f => f.frage);
   }
 
   function generatePDF() {
@@ -308,7 +405,9 @@
     function sectionLabel(txt, color) {
       ensure(34); y += 6;
       doc.setFont('helvetica','bold'); doc.setFontSize(8.5); doc.setTextColor(...(color||ACCENT));
-      doc.text(txt.toUpperCase(), M, y, { charSpace: 1.2 });
+      doc.setCharSpace(1.2);
+      doc.text(txt.toUpperCase(), M, y);
+      doc.setCharSpace(0);
       y += 7;
       doc.setDrawColor(...(color||ACCENT)); doc.setLineWidth(1.2);
       doc.line(M, y, M + CW, y);
@@ -316,6 +415,7 @@
     }
     function paragraph(txt, o) {
       o = o || {};
+      doc.setCharSpace(0);
       const size = o.size||10, lh = o.lh||15.5, x = (o.x||M), w = (o.w||CW);
       const color = o.color||DARK;
       doc.setFont('helvetica', o.bold ? 'bold' : 'normal'); doc.setFontSize(size);
@@ -334,7 +434,9 @@
     doc.setFillColor(...BLUE); doc.rect(0, 0, W, 120, 'F');
     doc.setFillColor(...CYAN);  doc.rect(0, 120, W, 4, 'F');
     doc.setFont('helvetica','bold'); doc.setFontSize(9); doc.setTextColor(...HINT);
-    doc.text('SOZIALRECHT · FACHBERATUNG', M, 48, { charSpace: 1.8 });
+    doc.setCharSpace(1.8);
+    doc.text('SOZIALRECHT · FACHBERATUNG', M, 48);
+    doc.setCharSpace(0);
     doc.setFontSize(21); doc.setTextColor(255,255,255);
     doc.text('Persönliche Experteneinschätzung', M, 80);
     doc.setFont('helvetica','normal'); doc.setFontSize(10.5); doc.setTextColor(200,220,255);
@@ -367,12 +469,26 @@
     paragraph(htmlToText(d.beschreibung), {});
     y += 8;
 
-    // ── Linda4 Einschätzung
+    // ── Linda4 Einschätzung (+ ggf. ergänzende Fragen an Linda4)
     if (d.einschaetzung) {
+      const full = htmlToText(d.einschaetzung);
+      const parts = full.split(/—\s*Ergänzende Fragen an Linda4\s*—/);
+      const basis = parts[0].trim();
+      const followups = parts[1] ? parseFollowups(parts[1]) : [];
+
       sectionLabel('Linda4 – Erste Einschätzung', CYAN);
-      paragraph(htmlToText(d.einschaetzung), { bg: [240,249,255], bar: CYAN, color: [30,58,138] });
+      paragraph(basis, { bg: [240,249,255], bar: CYAN, color: [30,58,138] });
       paragraph('Unverbindlich · Keine Rechtsberatung · Nur zur Orientierung', { size: 7.8, color: GRAY });
       y += 8;
+
+      if (followups.length) {
+        sectionLabel('Ergänzende Fragen an Linda4', CYAN);
+        followups.forEach(f => {
+          paragraph('Frage: ' + f.frage, { bg: [240,249,255], bar: CYAN, color: [30,58,138], size: 9.5 });
+          paragraph(f.antwort, { bg: [248,250,252], bar: [148,163,184], color: DARK, size: 9.5 });
+          y += 6;
+        });
+      }
     }
 
     // ── Expertenantwort

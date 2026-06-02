@@ -81,6 +81,10 @@
     .case-snippet { font-size: 0.83rem; color: var(--muted); line-height: 1.5; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
     .case-side { display: flex; flex-direction: column; align-items: flex-end; gap: 7px; white-space: nowrap; }
     .case-date { font-size: 0.74rem; color: var(--muted); }
+    .case-rating { display: inline-flex; align-items: center; gap: 5px; font-size: 0.74rem; color: var(--muted); }
+    .case-rating .rs { letter-spacing: 1px; font-size: 0.92rem; line-height: 1; }
+    .case-rating .rs .on { color: #f5b301; }
+    .case-rating .rs .off { color: #d4d8e0; }
 
     .badge { display: inline-flex; align-items: center; gap: 6px; padding: 4px 11px; font-size: 0.7rem; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; border-radius: 2px; }
     .badge .dot { width: 6px; height: 6px; border-radius: 50%; }
@@ -213,6 +217,13 @@
     render(list);
   }
 
+  function stars(n) {
+    n = Math.max(0, Math.min(5, Math.round(Number(n) || 0)));
+    let s = '';
+    for (let i = 1; i <= 5; i++) s += `<span class="${i <= n ? 'on' : 'off'}">★</span>`;
+    return `<span class="case-rating" title="Bewertung des Empfängers: ${n} von 5"><span class="rs">${s}</span> ${n}/5</span>`;
+  }
+
   function render(list) {
     const wrap = $('list');
     $('empty').style.display = list.length ? 'none' : 'block';
@@ -233,6 +244,7 @@
             <span class="case-date">${fmt(f.created)}</span>
             <span class="badge ${beantwortet ? 'beantwortet' : 'offen'}"><span class="dot"></span>${beantwortet ? 'Beantwortet' : 'Offen'}</span>
             ${f.offeneNachfragen > 0 ? `<span class="badge rueck"><span class="dot"></span>${f.offeneNachfragen} Rückfrage${f.offeneNachfragen > 1 ? 'n' : ''}</span>` : ''}
+            ${f.bewertung ? stars(f.bewertung) : ''}
           </div>
         </a>`;
     }).join('');
