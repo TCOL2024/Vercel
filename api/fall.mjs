@@ -277,7 +277,7 @@ Format: Persönliche Anrede (Du-Form), 3-5 Absätze, freundlicher professionelle
 Ende mit [Expertenunterschrift]. Antworte auf Deutsch.` },
           { role: 'user', content: `Thema: ${thema}\nBeschreibung:\n${beschreibung}\nEinschätzung:\n${einschaetzung || 'keine'}` },
         ],
-        maxTokens: 600, temperature: 0.2,
+        maxTokens: 1800, temperature: 0.2,
       });
       entwurf = r.ok ? r.content : '';
     } catch (e) { console.error('Entwurf fehlgeschlagen:', e.message); }
