@@ -80,7 +80,7 @@
     }
     .card-head.ai-head .card-head-label { color: rgba(255,255,255,0.8); position: relative; }
 
-    /* §§ Zitations-Badges */
+    /* §§ Zitations-Badges (klickbar) */
     .paragrafen-row { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 12px; }
     .para-badge {
       display: inline-flex; align-items: center;
@@ -88,7 +88,9 @@
       border: 1px solid rgba(147,197,253,0.25);
       border-radius: 4px; padding: 4px 11px;
       font-size: 0.71rem; font-weight: 700; letter-spacing: 0.03em;
+      text-decoration: none;
     }
+    a.para-badge:hover { background: #0f2a48; border-color: rgba(147,197,253,0.55); }
 
     .einschaetzung-box { background: #f0f9ff; border-left: 3px solid var(--cyan); padding: 14px 18px; font-size: 0.9rem; color: #1e3a8a; line-height: 1.75; }
     .einschaetzung-disclaimer { font-size: 0.74rem; color: var(--muted); margin-top: 10px; }
@@ -244,7 +246,7 @@
           <div class="einschaetzung-box">${d.einschaetzung}</div>
           ${d.paragrafen && d.paragrafen.length ? `
           <div class="paragrafen-row">
-            ${d.paragrafen.map(p => `<span class="para-badge">${esc(String(p))}</span>`).join('')}
+            ${d.paragrafen.map(p => paraBadge(String(p))).join('')}
           </div>` : ''}
           <p class="einschaetzung-disclaimer">Unverbindlich · Keine Rechtsberatung · Nur zur Orientierung</p>
         </div>
@@ -545,6 +547,26 @@
 
   function esc(s) {
     return String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  }
+
+  // §§ URL-Builder (gesetze-im-internet.de)
+  function romanToNum(r) {
+    const v = { I:1, V:5, X:10, L:50, C:100 };
+    let n = 0; const s = r.toUpperCase();
+    for (let i = 0; i < s.length; i++) { const c = v[s[i]]||0, nx = v[s[i+1]]||0; n += c < nx ? -c : c; }
+    return n;
+  }
+  function buildParaUrl(badge) {
+    const m = String(badge).match(/§\s*(\d+[a-zA-Z]?)\s+SGB\s+([IVXLC]+)/i);
+    if (!m) return null;
+    const num = romanToNum(m[2]);
+    return num ? `https://www.gesetze-im-internet.de/sgb_${num}/__${m[1]}.html` : null;
+  }
+  function paraBadge(p) {
+    const url = buildParaUrl(p);
+    return url
+      ? `<a href="${url}" target="_blank" rel="noopener noreferrer" class="para-badge">${esc(p)}</a>`
+      : `<span class="para-badge">${esc(p)}</span>`;
   }
 
   function renderThread(nachfragen) {

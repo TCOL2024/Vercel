@@ -680,6 +680,73 @@
       font-size: 0.73rem; color: #6b7280; text-align: center; background: #fff;
     }
 
+    /* Checkliste: Close-Button (wegklickbar) */
+    .checklist-close {
+      position: absolute; top: 16px; left: 16px;
+      background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.2);
+      color: rgba(255,255,255,0.8); width: 27px; height: 27px; border-radius: 50%;
+      font-size: 0.78rem; cursor: pointer; line-height: 1; padding: 0;
+      display: flex; align-items: center; justify-content: center;
+      transition: background 0.15s; z-index: 2; flex-shrink: 0;
+    }
+    .checklist-close:hover { background: rgba(255,255,255,0.24); color: #fff; }
+
+    /* §§ Badge als Link */
+    a.para-badge { text-decoration: none; }
+    a.para-badge:hover { background: #0f2a48; border-color: rgba(147,197,253,0.55); }
+
+    /* Intent Classification Strip (im Modal) */
+    .intent-strip {
+      display: none; align-items: center; gap: 8px; flex-wrap: wrap;
+      padding: 9px 28px 9px; background: #f8fafc;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.71rem;
+    }
+    .intent-strip-label { font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); white-space: nowrap; }
+    .intent-chip {
+      display: inline-flex; align-items: center;
+      background: #fff; border: 1px solid var(--border); border-radius: 20px;
+      padding: 3px 10px; font-size: 0.69rem; font-weight: 600; color: var(--text);
+    }
+    .intent-chip.sgb { background: #eff6ff; border-color: #bfdbfe; color: var(--accent); }
+    .intent-chip.komp-hoch   { color: #dc2626; border-color: #fca5a5; background: #fef2f2; }
+    .intent-chip.komp-mittel { color: #d97706; border-color: #fde68a; background: #fffbeb; }
+    .intent-chip.komp-niedrig { color: var(--green); border-color: #86efac; background: #f0fdf4; }
+
+    /* Qualitäts-Chips unter dem KI-Text */
+    .quality-row {
+      display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; margin-bottom: 4px;
+    }
+    .quality-chip {
+      display: inline-flex; align-items: center; gap: 5px;
+      background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 20px;
+      padding: 3px 10px; font-size: 0.68rem; font-weight: 600; color: #475569;
+    }
+    .quality-chip.ok { background: #f0fdf4; border-color: #86efac; color: var(--green); }
+
+    /* Dankeschön-Panel nach Absenden */
+    .success-panel {
+      display: none; background: var(--white); border: 1px solid var(--border);
+      box-shadow: 0 2px 12px rgba(0,0,0,0.06); padding: 56px 40px 48px;
+      text-align: center;
+    }
+    .success-check-ring {
+      width: 68px; height: 68px; background: var(--green); border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.9rem; color: #fff; margin: 0 auto 22px;
+      box-shadow: 0 6px 28px rgba(22,163,74,0.28);
+    }
+    .success-panel h2 { font-size: 1.55rem; font-weight: 600; margin-bottom: 12px; }
+    .success-panel > p { font-size: 0.92rem; color: var(--muted); line-height: 1.7; max-width: 440px; margin: 0 auto 28px; }
+    .success-portal-btn {
+      display: inline-flex; align-items: center; gap: 10px;
+      padding: 14px 34px; background: var(--blue); color: #fff;
+      text-decoration: none; font-size: 0.88rem; font-weight: 700;
+      letter-spacing: .05em; text-transform: uppercase; transition: background 0.15s;
+    }
+    .success-portal-btn:hover { background: var(--accent); }
+    .success-note { margin-top: 18px; font-size: 0.76rem; color: var(--muted); }
+
     /* Rückfragen */
     .rueckfragen-box { display: none; }
     .rueckfragen-intro {
@@ -1025,6 +1092,15 @@
 
       </form>
     </div>
+    <!-- Dankeschön-Panel nach erfolgreichem Absenden -->
+    <div id="successPanel" class="success-panel">
+      <div class="success-check-ring">✓</div>
+      <h2>Vielen Dank!</h2>
+      <p>Deine Anfrage wurde erfolgreich übermittelt. Du erhältst in Kürze eine E-Mail-Bestätigung mit dem Link zu deinem persönlichen Fall-Portal – dort siehst du jederzeit den aktuellen Status.</p>
+      <a id="successPortalLink" href="#" class="success-portal-btn">Zum Fall-Portal →</a>
+      <p class="success-note">💡 Merke dir den Link oder schau in dein E-Mail-Postfach.</p>
+    </div>
+
   </div>
 </main>
 
@@ -1039,6 +1115,7 @@
 <!-- Checklisten-Panel -->
 <div class="checklist-panel" id="checklistPanel">
   <div class="checklist-panel-head">
+    <button class="checklist-close" id="checklistClose" onclick="closeChecklist()" aria-label="Schließen">✕</button>
     <span class="checklist-counter" id="checklistCounter">0/0</span>
     <h3>Rückfragen-Checkliste</h3>
     <p>Beantworte alle Punkte für eine präzise Analyse</p>
@@ -1058,6 +1135,9 @@
       <h2>Erste Einschätzung zu deinem Fall</h2>
       <p>Unverbindlich · Keine Rechtsberatung · Wird nicht gespeichert</p>
     </div>
+
+    <!-- Intent Classification Strip (erscheint sobald Klassifikation vorliegt) -->
+    <div class="intent-strip" id="intentStrip"></div>
 
     <div class="modal-body">
       <!-- Loading -->
@@ -1090,6 +1170,12 @@
         </div>
         <div class="ai-text" id="aiText"></div>
         <div class="paragrafen-box" id="paragrafenBox" style="display:none"></div>
+        <div class="quality-row" id="qualityRow" style="display:none">
+          <span class="quality-chip ok">✓ §§-verifiziert</span>
+          <span class="quality-chip ok">✓ Quellengebunden</span>
+          <span class="quality-chip">⚖ Unverbindlich</span>
+          <span class="quality-chip">🔒 Keine echten Daten</span>
+        </div>
         <div id="docBadge" style="display:none;margin-bottom:12px;"></div>
         <div class="ai-disclaimer">
           <strong>Hinweis:</strong> Diese Einschätzung ist rein informativ und stellt keine Rechtsberatung dar.
@@ -1136,14 +1222,53 @@
     return String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   }
 
-  // ── §§ Zitations-Badges rendern ────────────────────────────────
+  // ── §§ URL-Builder (gesetze-im-internet.de) ───────────────────
+  function romanToNum(r) {
+    const v = { I:1, V:5, X:10, L:50, C:100 };
+    let n = 0; const s = r.toUpperCase();
+    for (let i = 0; i < s.length; i++) {
+      const c = v[s[i]] || 0, nx = v[s[i+1]] || 0;
+      n += c < nx ? -c : c;
+    }
+    return n;
+  }
+  function buildParaUrl(badge) {
+    // z. B. "§ 37 SGB V" → https://www.gesetze-im-internet.de/sgb_5/__37.html
+    const m = String(badge).match(/§\s*(\d+[a-zA-Z]?)\s+SGB\s+([IVXLC]+)/i);
+    if (!m) return null;
+    const num = romanToNum(m[2]);
+    return num ? `https://www.gesetze-im-internet.de/sgb_${num}/__${m[1]}.html` : null;
+  }
+
+  // ── §§ Zitations-Badges rendern (klickbar) ─────────────────────
   function renderParagrafen(paragrafen) {
     const box = document.getElementById('paragrafenBox');
     if (!box) return;
     aktuelleParagrafen = Array.isArray(paragrafen) ? paragrafen.filter(p => p && typeof p === 'string') : [];
-    if (!aktuelleParagrafen.length) { box.style.display = 'none'; return; }
+    if (!aktuelleParagrafen.length) { box.style.display = 'none'; document.getElementById('qualityRow').style.display = 'none'; return; }
     box.style.display = 'flex';
-    box.innerHTML = aktuelleParagrafen.map(p => `<span class="para-badge">${escHtml(p)}</span>`).join('');
+    box.innerHTML = aktuelleParagrafen.map(p => {
+      const url = buildParaUrl(p);
+      return url
+        ? `<a href="${url}" target="_blank" rel="noopener noreferrer" class="para-badge">${escHtml(p)}</a>`
+        : `<span class="para-badge">${escHtml(p)}</span>`;
+    }).join('');
+    document.getElementById('qualityRow').style.display = 'flex';
+  }
+
+  // ── Intent Classification Strip ────────────────────────────────
+  function renderIntentStrip(k) {
+    const strip = document.getElementById('intentStrip');
+    if (!strip) return;
+    if (!k || (!k.sgb && !k.bereich && !k.typ)) { strip.style.display = 'none'; return; }
+    const komp = (k.komplexitaet || '').toLowerCase();
+    const kompCls = komp === 'hoch' ? 'komp-hoch' : komp === 'mittel' ? 'komp-mittel' : komp === 'niedrig' ? 'komp-niedrig' : '';
+    strip.style.display = 'flex';
+    strip.innerHTML = `<span class="intent-strip-label">Erkannt:</span>`
+      + (k.sgb    ? `<span class="intent-chip sgb">${escHtml(k.sgb)}</span>` : '')
+      + (k.bereich ? `<span class="intent-chip">${escHtml(k.bereich)}</span>` : '')
+      + (k.typ     ? `<span class="intent-chip">${escHtml(k.typ)}</span>` : '')
+      + (k.komplexitaet ? `<span class="intent-chip ${kompCls}">Komplexität: ${escHtml(k.komplexitaet)}</span>` : '');
   }
 
   // ── Step indicator ──────────────────────────────────────────────
@@ -1415,6 +1540,7 @@
       aktuelleParagrafen   = [];
       aiVerlauf = [];
       renderParagrafen([]);
+      renderIntentStrip(null);
 
       // Datei für Voranalyse vorbereiten
       const vorFile = dateiUpload.files[0];
@@ -1488,6 +1614,7 @@
       aktuelleEinschaetzung = data.einschaetzung || '';
       document.getElementById('aiText').textContent = aktuelleEinschaetzung || 'Analyse nicht verfügbar.';
       renderParagrafen(data.paragrafen || []);
+      renderIntentStrip(data.klassifikation || null);
 
       // Antwortlänge-Umschalter: aktuellen Payload merken + Buttons setzen
       letzteVoranalysePayload = payload;
@@ -1700,13 +1827,11 @@
 
       if (res.ok && data.ok) {
         closeModal();
-        document.getElementById('frageForm').reset();
-        document.getElementById('uploadName').textContent = '';
-        charCount.textContent = '0 Zeichen'; charCount.className = 'char-count short';
-        highlightStep(1);
-        const toast = document.getElementById('toast');
-        toast.className = 'toast success';
-        toast.textContent = '✓ Deine Anfrage wurde erfolgreich übermittelt. Du bekommst eine Antwort.';
+        // Form verstecken, Dankeschön-Panel zeigen
+        document.querySelector('.card').style.display = 'none';
+        const sp = document.getElementById('successPanel');
+        sp.style.display = 'block';
+        if (data.portalLink) document.getElementById('successPortalLink').href = data.portalLink;
         window.scrollTo({ top: 0, behavior: 'smooth' });
       } else {
         throw new Error(data.error || 'Unbekannter Fehler');
