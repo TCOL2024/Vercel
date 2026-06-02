@@ -9,7 +9,18 @@ const EXPERT_EMAIL = process.env.EXPERT_EMAIL || 'noormann@gmx.com';
 const RESEND_FROM  = 'Sozialrecht Fachberatung <anfrage@resend.dev>';
 
 // Für die KI-Voranalyse wird ausschließlich GPT-5.4 verwendet.
-const KI_MODEL = 'gpt-5.4';
+// (Per Env-Variable überschreibbar, falls OpenAI eine andere Modell-ID erwartet.)
+const KI_MODEL = process.env.VORANALYSE_MODEL || 'gpt-5.4';
+
+// Baut die richtigen Parameter je nach Modell-Generation.
+// GPT-5- und o-Modelle: max_completion_tokens + nur Default-Temperatur.
+// Ältere Modelle (gpt-4o etc.): max_tokens + frei wählbare Temperatur.
+function modelParams(model, { maxTokens, temperature, jsonMode }) {
+  const nextGen = /^(gpt-5|o[0-9])/i.test(model);
+  const p = nextGen ? { max_completion_tokens: maxTokens } : { max_tokens: maxTokens, temperature };
+  if (jsonMode) p.response_format = { type: 'json_object' };
+  return p;
+}
 
 // HTML-Escaping für nutzergenerierte Texte in E-Mails
 function esc(s) {
@@ -53,7 +64,9 @@ async function handleVoranalyse(req, res) {
 
   const hatAntworten       = antworten && Object.keys(antworten).length > 0;
   const forceEinschaetzung = req.body.forceEinschaetzung === true;
-  const direktEinschaetzung = hatAntworten || forceEinschaetzung;
+  const userFrage          = (req.body.userFrage || '').toString().trim().slice(0, 600);
+  const istNachfrage       = userFrage.length > 0;
+  const direktEinschaetzung = hatAntworten || forceEinschaetzung || istNachfrage;
 
   // Der User kann zwischen einer kompakten und einer ausführlichen Antwort wählen.
   const antwortLaenge = req.body.antwortLaenge === 'ausfuehrlich' ? 'ausfuehrlich' : 'kompakt';
@@ -61,7 +74,12 @@ async function handleVoranalyse(req, res) {
     ? `Gib eine AUSFÜHRLICHE Einschätzung in 3-4 kurzen Absätzen: ordne den Sachverhalt rechtlich ein, nenne die einschlägigen Normen (konkretes SGB / §), erläutere mögliche Ansprüche samt Voraussetzungen und beschreibe sinnvolle nächste Schritte. Klar strukturiert, verständlich, ohne Juristenjargon.`
     : `Gib eine KOMPAKTE Einschätzung in 3-4 Sätzen: nur das Wesentliche, das relevante SGB falls passend, ohne Ausschweifungen.`;
 
-  const systemPrompt = direktEinschaetzung
+  const systemPrompt = istNachfrage
+    ? `Du bist Linda4, eine KI-Assistentin für deutsches Sozialrecht.
+Der User hat zu deiner bisherigen Einschätzung eine ergänzende Frage. Beantworte AUSSCHLIESSLICH diese Frage – konkret, unverbindlich und bezogen auf den geschilderten Fall.
+${laengeInstruktion}
+Antworte auf Deutsch, ohne Juristenjargon. Beginne direkt mit der Antwort. Keine Rechtsberatung.`
+    : direktEinschaetzung
     ? `Du bist Linda4, eine KI-Assistentin für deutsches Sozialrecht.
 ${hatAntworten ? 'Der User hat bereits Rückfragen beantwortet – beziehe diese Antworten explizit ein.' : ''}
 Gib eine fundierte, UNVERBINDLICHE Einschätzung.
@@ -102,7 +120,14 @@ Regeln: Bei unter 80 Zeichen IMMER rueckfragen. Fragen spezifisch für ${thema}.
   const antwortBlock = hatAntworten
     ? '\n\nAntworten auf Rückfragen:\n' + Object.entries(antworten).map(([f, a]) => `- ${f}\n  → ${a}`).join('\n')
     : '';
-  const baseText = `Themenbereich: ${thema}\n\nFallbeschreibung:\n${beschreibung}${antwortBlock}${docText ? `\n\n--- Dokument (${attachmentName}) ---\n${docText}` : ''}`;
+  const einschaetzungContext = (istNachfrage && req.body.bisherigeEinschaetzung)
+    ? `\n\nBisherige Einschätzung von Linda4:\n${req.body.bisherigeEinschaetzung}`
+    : '';
+  const verlaufContext = (istNachfrage && Array.isArray(req.body.verlauf) && req.body.verlauf.length)
+    ? '\n\nBisherige ergänzende Fragen:\n' + req.body.verlauf.map(v => `- Frage: ${v.frage}\n  Antwort: ${v.antwort}`).join('\n')
+    : '';
+  const frageBlock = istNachfrage ? `\n\nErgänzende Frage des Users:\n${userFrage}` : '';
+  const baseText = `Themenbereich: ${thema}\n\nFallbeschreibung:\n${beschreibung}${antwortBlock}${einschaetzungContext}${verlaufContext}${frageBlock}${docText ? `\n\n--- Dokument (${attachmentName}) ---\n${docText}` : ''}`;
   const userContent = (attachment && isImage)
     ? [{ type: 'text', text: baseText }, { type: 'image_url', image_url: { url: `data:${attachmentType};base64,${attachment}`, detail: 'high' } }]
     : baseText;
@@ -114,14 +139,20 @@ Regeln: Bei unter 80 Zeichen IMMER rueckfragen. Fragen spezifisch für ${thema}.
       body: JSON.stringify({
         model: KI_MODEL,
         messages: [{ role: 'system', content: systemPrompt }, { role: 'user', content: userContent }],
-        max_tokens: antwortLaenge === 'ausfuehrlich' ? 900 : 450,
-        temperature: 0.15,
-        ...(direktEinschaetzung ? {} : { response_format: { type: 'json_object' } }),
+        ...modelParams(KI_MODEL, {
+          maxTokens: antwortLaenge === 'ausfuehrlich' ? 900 : 450,
+          temperature: 0.15,
+          jsonMode: !direktEinschaetzung,
+        }),
       }),
     });
-    if (!response.ok) return res.status(502).json({ error: 'KI-Analyse fehlgeschlagen' });
+    if (!response.ok) {
+      console.error('OpenAI Voranalyse-Fehler:', response.status, await response.text());
+      return res.status(502).json({ error: 'KI-Analyse fehlgeschlagen' });
+    }
 
     const raw = (await response.json()).choices?.[0]?.message?.content?.trim() || '';
+    if (istNachfrage)        return res.status(200).json({ modus: 'nachfrage', antwort: raw, antwortLaenge });
     if (direktEinschaetzung) return res.status(200).json({ modus: 'einschaetzung', einschaetzung: raw, rueckfragen: null, antwortLaenge });
 
     let parsed;
@@ -178,7 +209,7 @@ Format: Persönliche Anrede (Du-Form), 3-5 Absätze, freundlicher professionelle
 Ende mit [Expertenunterschrift]. Antworte auf Deutsch.` },
             { role: 'user', content: `Thema: ${thema}\nBeschreibung:\n${beschreibung}\nEinschätzung:\n${einschaetzung || 'keine'}` },
           ],
-          max_tokens: 600, temperature: 0.2,
+          ...modelParams(KI_MODEL, { maxTokens: 600, temperature: 0.2 }),
         }),
       });
       const d = await r.json();
