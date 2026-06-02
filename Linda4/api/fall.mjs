@@ -83,7 +83,90 @@ export default async function handler(req, res) {
   if (action === 'antwort')          return handleAntwort(req, res);
   if (action === 'nachfrage')        return handleNachfrage(req, res);
   if (action === 'nachfrageantwort') return handleNachfrageAntwort(req, res);
+  if (action === 'uebersicht')       return handleUebersicht(req, res);
+  if (action === 'bewertung')        return handleBewertung(req, res);
   return handleAnfrage(req, res);
+}
+
+// ── 0. ÜBERSICHT (alle Fälle – nur mit Admin-Token) ──────────────────────────
+async function handleUebersicht(req, res) {
+  if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
+  // Niemals von Suchmaschinen indexieren
+  res.setHeader('X-Robots-Tag', 'noindex, nofollow, noarchive');
+  res.setHeader('Cache-Control', 'no-store');
+  if (req.query.token !== ADMIN_TOKEN) return res.status(403).json({ error: 'Nicht autorisiert' });
+
+  try {
+    let keys = [];
+    try { keys = await kv.keys('fall:*'); } catch (e) { console.error('KV keys:', e.message); }
+    const raws = keys.length ? await Promise.all(keys.map(k => kv.get(k).catch(() => null))) : [];
+
+    const faelle = [];
+    for (const raw of raws) {
+      if (!raw) continue;
+      const f = typeof raw === 'string' ? JSON.parse(raw) : raw;
+      if (!f || !f.id) continue;
+      const nf = Array.isArray(f.nachfragen) ? f.nachfragen : [];
+      faelle.push({
+        id: f.id, created: f.created || null,
+        vorname: f.vorname || '', nachname: f.nachname || '',
+        thema: f.thema || '', fachbereich: f.fachbereich || '',
+        status: f.status || 'offen', antwortDatum: f.antwortDatum || null,
+        bewertung: Number.isFinite(+f.bewertung) && +f.bewertung > 0 ? +f.bewertung : null,
+        bewertungDatum: f.bewertungDatum || null,
+        offeneNachfragen: nf.filter(n => n && !n.antwort).length,
+        nachfragenGesamt: nf.length,
+        snippet: String(f.beschreibung || '').replace(/\s+/g, ' ').trim().slice(0, 160),
+      });
+    }
+    faelle.sort((a, b) => new Date(b.created || 0) - new Date(a.created || 0));
+
+    const offen        = faelle.filter(f => f.status !== 'beantwortet').length;
+    const beantwortet  = faelle.filter(f => f.status === 'beantwortet').length;
+    const offeneRueck  = faelle.reduce((s, f) => s + f.offeneNachfragen, 0);
+
+    return res.status(200).json({ ok: true, count: faelle.length, offen, beantwortet, offeneRueck, faelle });
+  } catch (e) {
+    console.error('Uebersicht Fehler:', e.message);
+    return res.status(500).json({ error: 'Fehler beim Laden' });
+  }
+}
+
+// ── BEWERTUNG (Empfänger bewertet die Experten-Antwort mit 1–5 Sternen) ──────
+async function handleBewertung(req, res) {
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+  res.setHeader('Cache-Control', 'no-store');
+
+  const { id, rating } = req.body || {};
+  const stars = Math.round(Number(rating));
+  if (!id || !Number.isFinite(stars) || stars < 1 || stars > 5) {
+    return res.status(400).json({ error: 'Ungültige Bewertung' });
+  }
+
+  let fall;
+  try {
+    const raw = await kv.get(`fall:${id}`);
+    if (!raw) return res.status(404).json({ error: 'Fall nicht gefunden' });
+    fall = typeof raw === 'string' ? JSON.parse(raw) : raw;
+  } catch (e) {
+    console.error('KV Fehler (Bewertung):', e.message);
+    return res.status(500).json({ error: 'Datenbankfehler' });
+  }
+
+  // Bewertung erst möglich, wenn eine Antwort vorliegt
+  if (!fall.antwort) return res.status(409).json({ error: 'Noch keine Antwort vorhanden' });
+
+  fall.bewertung = stars;
+  fall.bewertungDatum = new Date().toISOString();
+
+  try {
+    await kv.set(`fall:${id}`, JSON.stringify(fall), { ex: 60 * 60 * 24 * 180 });
+  } catch (e) {
+    console.error('KV Update Fehler (Bewertung):', e.message);
+    return res.status(500).json({ error: 'Speichern fehlgeschlagen' });
+  }
+
+  return res.status(200).json({ ok: true, bewertung: stars });
 }
 
 // ── 1. VORANALYSE ────────────────────────────────────────────────────────────
@@ -175,11 +258,8 @@ Regeln: Bei unter 80 Zeichen IMMER rueckfragen. Fragen spezifisch für ${thema}.
       jsonMode: !direktEinschaetzung,
     });
     if (!result.ok) {
-      return res.status(502).json({
-        error: 'KI-Analyse fehlgeschlagen',
-        detail: `OpenAI ${result.status}: ${String(result.error).slice(0, 600)}`,
-        tried: MODEL_FALLBACKS,
-      });
+      console.error('OpenAI Voranalyse-Fehler:', result.status, String(result.error).slice(0, 300));
+      return res.status(502).json({ error: 'KI-Analyse fehlgeschlagen' });
     }
 
     const raw = result.content;
@@ -237,7 +317,7 @@ Format: Persönliche Anrede (Du-Form), 3-5 Absätze, freundlicher professionelle
 Ende mit [Expertenunterschrift]. Antworte auf Deutsch.` },
           { role: 'user', content: `Thema: ${thema}\nBeschreibung:\n${beschreibung}\nEinschätzung:\n${einschaetzung || 'keine'}` },
         ],
-        maxTokens: 600, temperature: 0.2,
+        maxTokens: 1800, temperature: 0.2,
       });
       entwurf = r.ok ? r.content : '';
     } catch (e) { console.error('Entwurf fehlgeschlagen:', e.message); }
@@ -337,6 +417,8 @@ async function handlePortal(req, res) {
       thema: fall.thema, fachbereich: fall.fachbereich,
       beschreibung: fall.beschreibung, einschaetzung: fall.einschaetzung,
       status: fall.status, antwort: fall.antwort, antwortDatum: fall.antwortDatum,
+      bewertung: Number.isFinite(+fall.bewertung) && +fall.bewertung > 0 ? +fall.bewertung : null,
+      bewertungDatum: fall.bewertungDatum || null,
       nachfragen: Array.isArray(fall.nachfragen) ? fall.nachfragen : [],
       ...(isAdmin ? { email: fall.email, linda4Entwurf: fall.linda4Entwurf } : {}),
     });
