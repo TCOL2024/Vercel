@@ -250,8 +250,12 @@
       });
   }
 
-  function fmt(iso) {
+  function fmtDate(iso) {
     return new Date(iso).toLocaleString('de-DE', { timeZone: 'Europe/Berlin', dateStyle: 'long', timeStyle: 'short' });
+  }
+
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   }
 
   function render(d) {
@@ -263,7 +267,7 @@
     c.innerHTML = `
       <div class="page-title">
         <h1>${d.vorname} ${d.nachname} – ${d.thema}</h1>
-        <p>Eingegangen am ${fmt(d.created)}${beantwortet ? ' · <strong style="color:var(--green)">✓ Bereits beantwortet</strong>' : ''}</p>
+        <p>Eingegangen am ${fmtDate(d.created)}${beantwortet ? ' · <strong style="color:var(--green)">✓ Bereits beantwortet</strong>' : ''}</p>
       </div>
 
       ${beantwortet ? `<div class="done-box">✓ Dieser Fall wurde bereits beantwortet. Antwort wurde an ${d.email} gesendet.</div>` : ''}
@@ -340,7 +344,15 @@
           </div>
           <div class="toast" id="toast"></div>
         </div>
-      </div>`;
+      </div>
+
+      ${(d.nachfragen && d.nachfragen.length) ? `
+      <div class="card" id="nfCard">
+        <div class="card-head"><span class="card-head-label">💬 Rückfragen von ${esc(d.vorname)}</span></div>
+        <div class="card-body" id="nfBody">${renderNfAdmin(d.nachfragen)}</div>
+      </div>` : ''}`;
+
+    bindNfAnswers();
 
     // Absenden
     // Entwurf in Editor übernehmen
@@ -392,6 +404,64 @@
         toast.textContent = 'Fehler: ' + e.message;
         this.classList.remove('loading'); this.disabled = false;
       }
+    });
+  }
+
+  // ── Rückfragen des Users anzeigen & beantworten ───────────────
+  function renderNfAdmin(nachfragen) {
+    return nachfragen.map((nf, i) => `
+      <div style="border:1px solid var(--border);margin-bottom:14px;">
+        <div style="background:#eff6ff;border-left:3px solid var(--accent);padding:12px 16px;">
+          <span style="float:right;font-size:0.7rem;color:var(--muted);">${fmtDate(nf.gestelltAm)}</span>
+          <div style="font-size:0.66rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:5px;">Rückfrage</div>
+          <div style="font-size:0.9rem;line-height:1.7;white-space:pre-wrap;">${esc(nf.frage)}</div>
+        </div>
+        ${nf.antwort ? `
+        <div style="background:#f0fdf4;border-left:3px solid var(--green);padding:12px 16px;">
+          <span style="float:right;font-size:0.7rem;color:var(--muted);">${fmtDate(nf.beantwortetAm)}</span>
+          <div style="font-size:0.66rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:5px;">Deine Antwort</div>
+          <div style="font-size:0.9rem;line-height:1.7;color:#14532d;white-space:pre-wrap;">${esc(nf.antwort)}</div>
+        </div>` : `
+        <div style="padding:12px 16px;">
+          <textarea class="nf-answer" data-index="${i}" placeholder="Antwort auf diese Rückfrage …"
+            style="width:100%;min-height:80px;resize:vertical;padding:10px 12px;font-family:Arial,sans-serif;font-size:11pt;line-height:1.6;border:1.5px solid var(--border);outline:none;"></textarea>
+          <div style="margin-top:10px;">
+            <button class="btn-send nf-send" data-index="${i}" style="padding:10px 24px;">
+              <span class="send-label">Rückfrage beantworten →</span>
+              <div class="spinner"></div>
+            </button>
+          </div>
+        </div>`}
+      </div>`).join('');
+  }
+
+  function bindNfAnswers() {
+    document.querySelectorAll('.nf-send').forEach(btn => {
+      btn.addEventListener('click', async function () {
+        const idx = Number(this.dataset.index);
+        const ta  = document.querySelector(`.nf-answer[data-index="${idx}"]`);
+        const antwort = ta ? ta.value.trim() : '';
+        if (!antwort) { if (ta) ta.focus(); return; }
+        this.classList.add('loading'); this.disabled = true;
+        try {
+          const res = await fetch('/api/fall?action=nachfrageantwort', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id, token, index: idx, antwort }),
+          });
+          const data = await res.json();
+          if (res.ok && data.ok) {
+            if (fallData) fallData.nachfragen = data.nachfragen;
+            document.getElementById('nfBody').innerHTML = renderNfAdmin(data.nachfragen);
+            bindNfAnswers();
+          } else {
+            throw new Error(data.error || 'Fehler');
+          }
+        } catch (e) {
+          this.classList.remove('loading'); this.disabled = false;
+          alert('Fehler: ' + e.message);
+        }
+      });
     });
   }
 </script>

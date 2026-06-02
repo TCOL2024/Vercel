@@ -77,6 +77,35 @@
     .warte-box { display: flex; align-items: flex-start; gap: 14px; background: #fff7ed; border: 1px solid #fed7aa; padding: 16px 20px; font-size: 0.88rem; color: #92400e; line-height: 1.6; }
     .warte-icon { font-size: 1.2rem; flex-shrink: 0; }
 
+    /* Rückfragen-Thread */
+    .nf-item { border: 1px solid var(--border); margin-bottom: 12px; overflow: hidden; }
+    .nf-q { background: #eff6ff; border-left: 3px solid var(--accent); padding: 12px 16px; }
+    .nf-a { background: #f0fdf4; border-left: 3px solid var(--green); padding: 12px 16px; }
+    .nf-label { display: inline-block; font-size: 0.66rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin-bottom: 5px; }
+    .nf-date { float: right; font-size: 0.7rem; color: var(--muted); font-weight: 400; }
+    .nf-text { font-size: 0.9rem; line-height: 1.7; color: var(--text); white-space: pre-wrap; }
+    .nf-a .nf-text { color: #14532d; }
+    .nf-pending { padding: 10px 16px; font-size: 0.82rem; color: var(--amber); background: #fff7ed; }
+    .nf-empty { font-size: 0.86rem; color: var(--muted); margin-bottom: 14px; }
+    .nf-form textarea {
+      width: 100%; min-height: 90px; resize: vertical; padding: 12px 14px;
+      font-family: inherit; font-size: 0.9rem; color: var(--text); line-height: 1.6;
+      border: 1.5px solid var(--border); outline: none;
+    }
+    .nf-form textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(0,80,200,0.09); }
+    .nf-form-row { display: flex; align-items: center; gap: 12px; margin-top: 10px; flex-wrap: wrap; }
+    .nf-btn {
+      padding: 11px 26px; background: var(--blue); color: #fff; border: none;
+      font-family: inherit; font-size: 0.82rem; font-weight: 700; letter-spacing: .04em;
+      cursor: pointer; transition: background 0.15s;
+    }
+    .nf-btn:hover { background: var(--accent); }
+    .nf-btn:disabled { background: #9ca3af; cursor: not-allowed; }
+    .nf-hint { font-size: 0.76rem; color: var(--muted); }
+    .nf-msg { margin-top: 10px; font-size: 0.82rem; padding: 10px 14px; border-left: 3px solid; display: none; }
+    .nf-msg.ok  { display: block; border-color: var(--green); background: #f0fdf4; color: #14532d; }
+    .nf-msg.err { display: block; border-color: #dc2626; background: #fef2f2; color: #dc2626; }
+
     footer { background: var(--white); border-top: 1px solid var(--border); padding: 16px 32px; text-align: center; font-size: 0.74rem; color: var(--muted); }
 
     @media (max-width: 540px) { main { padding: 24px 16px 48px; } .card-head, .card-body { padding: 14px 16px; } }
@@ -185,7 +214,86 @@
             </div>
           `}
         </div>
-      </div>`;
+      </div>
+
+      ${d.antwort ? `
+      <div class="card">
+        <div class="card-head"><span class="card-head-label">💬 Rückfragen zur Antwort</span></div>
+        <div class="card-body">
+          <div id="nfThread">${renderThread(d.nachfragen)}</div>
+          <div class="nf-form">
+            <textarea id="nfInput" maxlength="2000" placeholder="Du hast noch eine Rückfrage zur Antwort? Stelle sie hier – der Experte wird benachrichtigt."></textarea>
+            <div class="nf-form-row">
+              <button class="nf-btn" id="nfBtn" type="button">Rückfrage senden</button>
+              <span class="nf-hint">Du wirst per E-Mail informiert, sobald geantwortet wurde.</span>
+            </div>
+            <div class="nf-msg" id="nfMsg"></div>
+          </div>
+        </div>
+      </div>` : ''}`;
+
+    bindNachfrage();
+  }
+
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  }
+
+  function renderThread(nachfragen) {
+    if (!nachfragen || !nachfragen.length)
+      return '<p class="nf-empty">Noch keine Rückfragen gestellt.</p>';
+    return nachfragen.map(nf => `
+      <div class="nf-item">
+        <div class="nf-q">
+          <span class="nf-date">${fmt(nf.gestelltAm)}</span>
+          <span class="nf-label">Deine Rückfrage</span>
+          <div class="nf-text">${esc(nf.frage)}</div>
+        </div>
+        ${nf.antwort ? `
+        <div class="nf-a">
+          <span class="nf-date">${fmt(nf.beantwortetAm)}</span>
+          <span class="nf-label">Antwort vom Experten</span>
+          <div class="nf-text">${esc(nf.antwort)}</div>
+        </div>` : `<div class="nf-pending">⏳ Wird beantwortet …</div>`}
+      </div>`).join('');
+  }
+
+  function bindNachfrage() {
+    const btn = document.getElementById('nfBtn');
+    if (!btn) return;
+    btn.addEventListener('click', async () => {
+      const input = document.getElementById('nfInput');
+      const msg   = document.getElementById('nfMsg');
+      const frage = input.value.trim();
+      msg.className = 'nf-msg';
+      if (frage.length < 3) {
+        msg.className = 'nf-msg err';
+        msg.textContent = 'Bitte formuliere deine Rückfrage etwas ausführlicher.';
+        return;
+      }
+      btn.disabled = true; btn.textContent = 'Wird gesendet …';
+      try {
+        const res = await fetch('/api/fall?action=nachfrage', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id, frage }),
+        });
+        const data = await res.json();
+        if (res.ok && data.ok) {
+          input.value = '';
+          document.getElementById('nfThread').innerHTML = renderThread(data.nachfragen);
+          msg.className = 'nf-msg ok';
+          msg.textContent = '✓ Deine Rückfrage wurde übermittelt. Du wirst per E-Mail informiert.';
+        } else {
+          throw new Error(data.error || 'Unbekannter Fehler');
+        }
+      } catch (err) {
+        msg.className = 'nf-msg err';
+        msg.textContent = 'Fehler: ' + err.message;
+      } finally {
+        btn.disabled = false; btn.textContent = 'Rückfrage senden';
+      }
+    });
   }
 </script>
 </body>

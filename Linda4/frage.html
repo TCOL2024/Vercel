@@ -508,6 +508,28 @@
     }
     .ai-disclaimer strong { color: var(--text); }
 
+    /* ── Antwortlänge: Kompakt / Ausführlich ── */
+    .ai-laenge {
+      display: flex; align-items: center; gap: 10px;
+      flex-wrap: wrap; margin-bottom: 14px;
+    }
+    .ai-laenge-label {
+      font-size: 0.72rem; font-weight: 700; letter-spacing: 0.04em;
+      text-transform: uppercase; color: var(--muted);
+    }
+    .ai-laenge-toggle {
+      display: inline-flex; border: 1px solid var(--border);
+      border-radius: 2px; overflow: hidden; background: #fff;
+    }
+    .laenge-btn {
+      background: #fff; border: none; padding: 6px 16px;
+      font-family: inherit; font-size: 0.78rem; font-weight: 600;
+      color: var(--muted); cursor: pointer; transition: background 0.15s, color 0.15s;
+    }
+    .laenge-btn + .laenge-btn { border-left: 1px solid var(--border); }
+    .laenge-btn.active { background: var(--accent); color: #fff; }
+    .laenge-btn:disabled { cursor: wait; opacity: 0.65; }
+
     /* ── Checklisten-Panel ── */
     .checklist-panel {
       position: fixed; top: 0; right: -320px; width: 300px; height: 100vh;
@@ -848,6 +870,13 @@
       <!-- Result -->
       <div class="ai-result" id="aiResult">
         <div class="ai-tag" id="aiTag">🔍 Erste Einschätzung</div>
+        <div class="ai-laenge" id="aiLaenge" style="display:none">
+          <span class="ai-laenge-label">Antwort:</span>
+          <div class="ai-laenge-toggle">
+            <button type="button" class="laenge-btn active" data-laenge="kompakt">Kompakt</button>
+            <button type="button" class="laenge-btn" data-laenge="ausfuehrlich">Ausführlich</button>
+          </div>
+        </div>
         <div class="ai-text" id="aiText"></div>
         <div id="docBadge" style="display:none;margin-bottom:12px;"></div>
         <div class="ai-disclaimer">
@@ -875,6 +904,8 @@
 <script>
   // ── Globaler State ─────────────────────────────────────────────
   let aktuelleEinschaetzung = '';
+  let antwortLaengeAktuell  = 'kompakt';   // 'kompakt' | 'ausfuehrlich'
+  let letzteVoranalysePayload = null;      // für Umschalten der Antwortlänge
 
   // ── Step indicator ──────────────────────────────────────────────
   function highlightStep(n) {
@@ -1129,11 +1160,15 @@
       document.getElementById('aiResult').style.display = 'none';
       document.getElementById('modalFooter').style.display = 'none';
 
+      // Jede neue Analyse startet kompakt
+      antwortLaengeAktuell = 'kompakt';
+
       // Datei für Voranalyse vorbereiten
       const vorFile = dateiUpload.files[0];
       const vorPayload = {
         thema:        document.getElementById('thema').value,
         beschreibung: getPlausiPrefix() + document.getElementById('beschreibung').value.trim(),
+        antwortLaenge: antwortLaengeAktuell,
       };
       if (vorFile && vorFile.size <= 5 * 1024 * 1024) {
         vorPayload.attachment     = await toBase64(vorFile);
@@ -1146,6 +1181,7 @@
     } catch {
       document.getElementById('modalLoading').style.display = 'none';
       document.getElementById('aiText').textContent = 'Die KI-Analyse ist gerade nicht verfügbar. Du kannst die Anfrage trotzdem absenden.';
+      document.getElementById('aiLaenge').style.display = 'none';
       document.getElementById('aiResult').style.display = 'block';
       document.getElementById('modalFooter').style.display = 'flex';
     } finally {
@@ -1186,6 +1222,7 @@
       document.getElementById('rueckfragenBox').style.display = 'block';
       document.getElementById('btnWeiter').style.display      = 'flex';
       document.getElementById('btnSend').style.display        = 'none';
+      document.getElementById('aiLaenge').style.display       = 'none';
       aktuelleEinschaetzung = '';
 
       // ── Checkliste aufbauen ───────────────────────────────
@@ -1195,6 +1232,12 @@
       closeChecklist();
       aktuelleEinschaetzung = data.einschaetzung || '';
       document.getElementById('aiText').textContent = aktuelleEinschaetzung || 'Analyse nicht verfügbar.';
+
+      // Antwortlänge-Umschalter: aktuellen Payload merken + Buttons setzen
+      letzteVoranalysePayload = payload;
+      if (data.antwortLaenge) antwortLaengeAktuell = data.antwortLaenge;
+      setLaengeButtons(antwortLaengeAktuell, false);
+      document.getElementById('aiLaenge').style.display = 'flex';
 
       const docBadge = document.getElementById('docBadge');
       if (data.docHinweis) {
@@ -1210,6 +1253,43 @@
     }
   }
 
+  // ── Antwortlänge umschalten: Kompakt / Ausführlich ────────────
+  function setLaengeButtons(laenge, disabled) {
+    document.querySelectorAll('#aiLaenge .laenge-btn').forEach(b => {
+      b.classList.toggle('active', b.dataset.laenge === laenge);
+      b.disabled = !!disabled;
+    });
+  }
+
+  async function reanalyseLaenge(laenge) {
+    if (!letzteVoranalysePayload || laenge === antwortLaengeAktuell) return;
+    antwortLaengeAktuell = laenge;
+    setLaengeButtons(laenge, true);
+    const aiTextEl = document.getElementById('aiText');
+    aiTextEl.style.opacity = '0.45';
+    try {
+      const res = await fetch('/api/fall?action=voranalyse', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...letzteVoranalysePayload, antwortLaenge: laenge, forceEinschaetzung: true }),
+      });
+      const data = await res.json();
+      if (data.einschaetzung) {
+        aktuelleEinschaetzung   = data.einschaetzung;
+        aiTextEl.textContent    = aktuelleEinschaetzung;
+        letzteVoranalysePayload = { ...letzteVoranalysePayload, antwortLaenge: laenge, forceEinschaetzung: true };
+      }
+    } catch { /* vorhandenen Text behalten */ }
+    finally {
+      aiTextEl.style.opacity = '1';
+      setLaengeButtons(antwortLaengeAktuell, false);
+    }
+  }
+
+  document.querySelectorAll('#aiLaenge .laenge-btn').forEach(b => {
+    b.addEventListener('click', () => reanalyseLaenge(b.dataset.laenge));
+  });
+
   // ── Weiter nach Rückfragen ────────────────────────────────────
   document.getElementById('btnWeiter').addEventListener('click', async function () {
     const btn = this;
@@ -1223,6 +1303,7 @@
       thema:        document.getElementById('thema').value,
       beschreibung: getPlausiPrefix() + document.getElementById('beschreibung').value.trim(),
       antworten,
+      antwortLaenge: antwortLaengeAktuell,
     };
     const vorFile = dateiUpload.files[0];
     if (vorFile && vorFile.size <= 5 * 1024 * 1024) {
