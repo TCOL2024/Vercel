@@ -67,6 +67,29 @@
 
     .beschreibung-text { font-size: 0.92rem; line-height: 1.75; color: var(--text); white-space: pre-wrap; }
 
+    /* Oscar-inspired: Linda4 card head mit dark navy + dot-grid */
+    .card-head.ai-head {
+      background: #001228;
+      position: relative; overflow: hidden;
+    }
+    .card-head.ai-head::before {
+      content: '';
+      position: absolute; inset: 0;
+      background-image: radial-gradient(circle, rgba(255,255,255,0.055) 1px, transparent 1px);
+      background-size: 18px 18px; pointer-events: none;
+    }
+    .card-head.ai-head .card-head-label { color: rgba(255,255,255,0.8); position: relative; }
+
+    /* §§ Zitations-Badges */
+    .paragrafen-row { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 12px; }
+    .para-badge {
+      display: inline-flex; align-items: center;
+      background: #001228; color: #93c5fd;
+      border: 1px solid rgba(147,197,253,0.25);
+      border-radius: 4px; padding: 4px 11px;
+      font-size: 0.71rem; font-weight: 700; letter-spacing: 0.03em;
+    }
+
     .einschaetzung-box { background: #f0f9ff; border-left: 3px solid var(--cyan); padding: 14px 18px; font-size: 0.9rem; color: #1e3a8a; line-height: 1.75; }
     .einschaetzung-disclaimer { font-size: 0.74rem; color: var(--muted); margin-top: 10px; }
 
@@ -216,9 +239,13 @@
 
       ${d.einschaetzung ? `
       <div class="card">
-        <div class="card-head"><span class="card-head-label">🤖 Linda4 – Erste Einschätzung</span></div>
+        <div class="card-head ai-head"><span class="card-head-label">🤖 Linda4 – Erste Einschätzung</span></div>
         <div class="card-body">
           <div class="einschaetzung-box">${d.einschaetzung}</div>
+          ${d.paragrafen && d.paragrafen.length ? `
+          <div class="paragrafen-row">
+            ${d.paragrafen.map(p => `<span class="para-badge">${esc(String(p))}</span>`).join('')}
+          </div>` : ''}
           <p class="einschaetzung-disclaimer">Unverbindlich · Keine Rechtsberatung · Nur zur Orientierung</p>
         </div>
       </div>` : ''}

@@ -434,13 +434,23 @@
       padding: 24px 28px 20px;
       border-bottom: 1px solid var(--border);
       flex-shrink: 0;
+      /* Oscar-inspired: dark navy + dot-grid */
+      background: #001228;
+      position: relative; overflow: hidden;
+    }
+    .modal-header::before {
+      content: '';
+      position: absolute; inset: 0;
+      background-image: radial-gradient(circle, rgba(255,255,255,0.055) 1px, transparent 1px);
+      background-size: 18px 18px; pointer-events: none;
     }
 
     .modal-label {
       display: flex; align-items: center; gap: 8px;
       font-size: 0.7rem; font-weight: 700;
       letter-spacing: 0.12em; text-transform: uppercase;
-      color: var(--accent); margin-bottom: 6px;
+      color: rgba(255,255,255,0.5); margin-bottom: 6px;
+      position: relative;
     }
     .modal-label::before {
       content: '';
@@ -451,10 +461,26 @@
 
     .modal-header h2 {
       font-size: 1.2rem; font-weight: 600;
-      color: var(--text); margin-bottom: 4px;
+      color: #fff; margin-bottom: 4px;
+      position: relative;
     }
     .modal-header p {
-      font-size: 0.8rem; color: var(--muted);
+      font-size: 0.8rem; color: rgba(255,255,255,0.45);
+      position: relative;
+    }
+
+    /* §§ Zitations-Badges (Oscar-style pill) */
+    .paragrafen-box {
+      display: flex; flex-wrap: wrap; gap: 7px;
+      margin: 4px 0 14px;
+    }
+    .para-badge {
+      display: inline-flex; align-items: center;
+      background: #001228; color: #93c5fd;
+      border: 1px solid rgba(147,197,253,0.3);
+      border-radius: 4px; padding: 4px 11px;
+      font-size: 0.71rem; font-weight: 700;
+      letter-spacing: 0.03em;
     }
 
     .modal-body {
@@ -560,45 +586,99 @@
     .ai-followup-form button:hover { background: var(--accent); }
     .ai-followup-form button:disabled { background: #9ca3af; cursor: wait; }
 
-    /* ── Checklisten-Panel ── */
+    /* ── Checklisten-Panel (Oscar-AI-inspired) ── */
     .checklist-panel {
-      position: fixed; top: 0; right: -320px; width: 300px; height: 100vh;
-      background: #fff; border-left: 1px solid var(--border);
-      box-shadow: -4px 0 20px rgba(0,0,0,0.12);
-      z-index: 1100; transition: right 0.35s cubic-bezier(0.4,0,0.2,1);
+      position: fixed; top: 0; right: -344px; width: 324px; height: 100vh;
+      background: #fff; border-left: 1px solid #e2e6ed;
+      box-shadow: -8px 0 48px rgba(0,18,48,0.16);
+      z-index: 1100; transition: right 0.38s cubic-bezier(0.22,1,0.36,1);
       display: flex; flex-direction: column; overflow: hidden;
     }
     .checklist-panel.open { right: 0; }
+
     .checklist-panel-head {
-      background: linear-gradient(135deg, var(--blue), var(--accent));
-      padding: 18px 20px; flex-shrink: 0;
+      background: #001228;
+      padding: 22px 20px 18px; flex-shrink: 0;
+      position: relative; overflow: hidden;
     }
-    .checklist-panel-head h3 { color: #fff; font-size: 0.9rem; margin: 0 0 4px; }
-    .checklist-panel-head p  { color: #bfdbfe; font-size: 0.73rem; margin: 0; }
-    .checklist-progress-bar  { height: 3px; background: rgba(255,255,255,0.2); margin-top: 12px; }
-    .checklist-progress-fill { height: 100%; background: #34d399; transition: width 0.4s; }
-    .checklist-body { flex: 1; overflow-y: auto; padding: 16px; }
+    /* Dot-grid texture (Oscar-style subtle pattern) */
+    .checklist-panel-head::before {
+      content: '';
+      position: absolute; inset: 0;
+      background-image: radial-gradient(circle, rgba(255,255,255,0.055) 1px, transparent 1px);
+      background-size: 18px 18px; pointer-events: none;
+    }
+    .checklist-counter {
+      position: absolute; top: 20px; right: 18px;
+      background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.18);
+      border-radius: 20px; padding: 3px 10px;
+      font-size: 0.68rem; font-weight: 700;
+      color: rgba(255,255,255,0.75); letter-spacing: .06em;
+      font-variant-numeric: tabular-nums;
+    }
+    .checklist-panel-head h3 {
+      color: #fff; font-size: 0.9rem; font-weight: 700;
+      margin: 0 0 3px; letter-spacing: .01em;
+    }
+    .checklist-panel-head p { color: rgba(255,255,255,0.45); font-size: 0.72rem; margin: 0; }
+    .checklist-progress-bar {
+      height: 4px; background: rgba(255,255,255,0.1);
+      margin-top: 16px; border-radius: 2px; overflow: hidden;
+    }
+    .checklist-progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #0ea5e9 0%, #38bdf8 100%);
+      transition: width 0.45s cubic-bezier(0.4,0,0.2,1);
+      border-radius: 2px;
+    }
+
+    .checklist-body {
+      flex: 1; overflow-y: auto; padding: 14px 12px; background: #f5f7fa;
+    }
+    .checklist-body::-webkit-scrollbar { width: 4px; }
+    .checklist-body::-webkit-scrollbar-track { background: transparent; }
+    .checklist-body::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 2px; }
+
     .checklist-item {
-      display: flex; align-items: flex-start; gap: 10px;
-      padding: 10px 12px; margin-bottom: 8px;
-      border: 1px solid var(--border); background: #fafafa;
-      transition: all 0.2s;
+      display: flex; align-items: flex-start; gap: 12px;
+      padding: 12px 14px; margin-bottom: 7px;
+      background: #fff; border: 1px solid #e8ecf0;
+      border-left: 3px solid transparent; border-radius: 8px;
+      transition: border-color .22s, background .22s, box-shadow .22s, transform .15s;
     }
-    .checklist-item.done   { background: #f0fdf4; border-color: #86efac; }
-    .checklist-item.active { background: #eff6ff; border-color: #93c5fd; }
+    .checklist-item:hover { box-shadow: 0 2px 8px rgba(0,20,60,0.06); }
+    .checklist-item.done {
+      background: #f0fdf4; border-color: #bbf7d0;
+      border-left-color: #16a34a;
+    }
+    .checklist-item.active {
+      background: #fff; border-color: #c7d9f8;
+      border-left-color: #0050c8;
+      box-shadow: 0 2px 12px rgba(0,80,200,0.09);
+    }
     .checklist-dot {
-      width: 22px; height: 22px; border-radius: 50%; flex-shrink: 0; margin-top: 1px;
+      width: 24px; height: 24px; min-width: 24px; border-radius: 50%;
       display: flex; align-items: center; justify-content: center;
-      font-size: 0.7rem; font-weight: 700;
-      border: 2px solid var(--border); background: #fff; color: var(--muted);
-      transition: all 0.2s;
+      font-size: 0.68rem; font-weight: 800;
+      border: 2px solid #e0e4ea; background: #fff; color: #a0aab5;
+      transition: all 0.22s ease; flex-shrink: 0;
     }
-    .checklist-item.done   .checklist-dot { background: #16a34a; border-color: #16a34a; color: #fff; }
-    .checklist-item.active .checklist-dot { background: var(--accent); border-color: var(--accent); color: #fff; }
-    .checklist-item-text { font-size: 0.8rem; color: var(--text); line-height: 1.4; flex: 1; }
-    .checklist-item.done .checklist-item-text { color: var(--muted); text-decoration: line-through; }
-    .checklist-item.active .checklist-item-text { font-weight: 600; color: var(--accent); }
-    .checklist-summary { padding: 12px 16px; border-top: 1px solid var(--border); font-size: 0.75rem; color: var(--muted); text-align: center; }
+    .checklist-item.done   .checklist-dot {
+      background: #16a34a; border-color: #16a34a; color: #fff;
+    }
+    .checklist-item.active .checklist-dot {
+      background: #0050c8; border-color: #0050c8; color: #fff;
+    }
+    .checklist-item-text {
+      font-size: 0.81rem; color: #374151; line-height: 1.45; flex: 1; padding-top: 2px;
+    }
+    .checklist-item.done   .checklist-item-text { color: #9ca3af; text-decoration: line-through; }
+    .checklist-item.active .checklist-item-text { font-weight: 600; color: #1e3a8a; }
+
+    .checklist-summary {
+      padding: 10px 18px 14px; border-top: 1px solid #e8ecf0;
+      font-size: 0.73rem; color: #6b7280; text-align: center; background: #fff;
+    }
 
     /* Rückfragen */
     .rueckfragen-box { display: none; }
@@ -959,7 +1039,8 @@
 <!-- Checklisten-Panel -->
 <div class="checklist-panel" id="checklistPanel">
   <div class="checklist-panel-head">
-    <h3>📋 Rückfragen-Checkliste</h3>
+    <span class="checklist-counter" id="checklistCounter">0/0</span>
+    <h3>Rückfragen-Checkliste</h3>
     <p>Beantworte alle Punkte für eine präzise Analyse</p>
     <div class="checklist-progress-bar">
       <div class="checklist-progress-fill" id="checklistFill" style="width:0%"></div>
@@ -1008,6 +1089,7 @@
           </div>
         </div>
         <div class="ai-text" id="aiText"></div>
+        <div class="paragrafen-box" id="paragrafenBox" style="display:none"></div>
         <div id="docBadge" style="display:none;margin-bottom:12px;"></div>
         <div class="ai-disclaimer">
           <strong>Hinweis:</strong> Diese Einschätzung ist rein informativ und stellt keine Rechtsberatung dar.
@@ -1045,12 +1127,23 @@
 <script>
   // ── Globaler State ─────────────────────────────────────────────
   let aktuelleEinschaetzung = '';
+  let aktuelleParagrafen    = [];          // §§ Zitations-Badges aus Linda4 Voranalyse
   let antwortLaengeAktuell  = 'kompakt';   // 'kompakt' | 'ausfuehrlich'
   let letzteVoranalysePayload = null;      // für Umschalten der Antwortlänge
   let aiVerlauf = [];                       // ergänzende Fragen an Linda4 [{frage, antwort}]
 
   function escHtml(s) {
     return String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  }
+
+  // ── §§ Zitations-Badges rendern ────────────────────────────────
+  function renderParagrafen(paragrafen) {
+    const box = document.getElementById('paragrafenBox');
+    if (!box) return;
+    aktuelleParagrafen = Array.isArray(paragrafen) ? paragrafen.filter(p => p && typeof p === 'string') : [];
+    if (!aktuelleParagrafen.length) { box.style.display = 'none'; return; }
+    box.style.display = 'flex';
+    box.innerHTML = aktuelleParagrafen.map(p => `<span class="para-badge">${escHtml(p)}</span>`).join('');
   }
 
   // ── Step indicator ──────────────────────────────────────────────
@@ -1255,6 +1348,8 @@
 
     summary.textContent = `0 von ${fragen.length} beantwortet`;
     fill.style.width = '0%';
+    const counter = document.getElementById('checklistCounter');
+    if (counter) counter.textContent = `0/${fragen.length}`;
     openChecklist();
 
     // Live-Update beim Tippen
@@ -1296,6 +1391,8 @@
     });
     document.getElementById('checklistFill').style.width = `${Math.round(done / total * 100)}%`;
     document.getElementById('checklistSummary').textContent = `${done} von ${total} beantwortet`;
+    const ctr = document.getElementById('checklistCounter');
+    if (ctr) ctr.textContent = `${done}/${total}`;
   }
 
   // ── Step 1: Form submit → KI-Analyse ─────────────────────────
@@ -1315,7 +1412,9 @@
 
       // Jede neue Analyse startet kompakt und ohne ergänzende Fragen
       antwortLaengeAktuell = 'kompakt';
+      aktuelleParagrafen   = [];
       aiVerlauf = [];
+      renderParagrafen([]);
 
       // Datei für Voranalyse vorbereiten
       const vorFile = dateiUpload.files[0];
@@ -1388,6 +1487,7 @@
       closeChecklist();
       aktuelleEinschaetzung = data.einschaetzung || '';
       document.getElementById('aiText').textContent = aktuelleEinschaetzung || 'Analyse nicht verfügbar.';
+      renderParagrafen(data.paragrafen || []);
 
       // Antwortlänge-Umschalter: aktuellen Payload merken + Buttons setzen
       letzteVoranalysePayload = payload;
@@ -1437,6 +1537,7 @@
       if (data.einschaetzung) {
         aktuelleEinschaetzung   = data.einschaetzung;
         aiTextEl.textContent    = aktuelleEinschaetzung;
+        renderParagrafen(data.paragrafen || []);
         letzteVoranalysePayload = { ...letzteVoranalysePayload, antwortLaenge: laenge, forceEinschaetzung: true };
       }
     } catch { /* vorhandenen Text behalten */ }
@@ -1571,6 +1672,7 @@
       thema:          document.getElementById('thema').value,
       beschreibung:   getPlausiPrefix() + document.getElementById('beschreibung').value.trim(),
       einschaetzung:  einschaetzungFinal,
+      paragrafen:     aktuelleParagrafen,
     };
 
     const file = dateiUpload.files[0];
