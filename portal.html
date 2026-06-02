@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mein Fall – Sozialrecht Portal</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --blue: #003087; --accent: #0050c8; --cyan: #0ea5e9;
+      --green: #16a34a; --amber: #d97706;
+      --text: #111827; --muted: #6b7280; --border: #e5e7eb;
+      --bg: #f3f4f6; --white: #ffffff;
+    }
+    body { font-family: 'Segoe UI', Arial, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+    .topbar { background: linear-gradient(90deg, var(--blue), var(--accent), var(--cyan)); height: 4px; }
+    header {
+      background: var(--white); border-bottom: 1px solid var(--border);
+      padding: 18px 32px; display: flex; align-items: center; justify-content: space-between;
+      position: sticky; top: 0; z-index: 10; box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+    }
+    .logo { display: flex; align-items: center; gap: 12px; }
+    .logo-mark { width: 32px; height: 32px; background: var(--blue); display: flex; align-items: center; justify-content: center; }
+    .logo-mark svg { width: 16px; height: 16px; fill: #fff; }
+    .logo-name { font-size: 0.78rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--blue); }
+
+    main { max-width: 720px; margin: 0 auto; padding: 40px 24px 72px; }
+
+    /* Loading */
+    .loading { text-align: center; padding: 80px 24px; }
+    .loading-ring { width: 48px; height: 48px; border: 3px solid #e5e7eb; border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 16px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .loading p { color: var(--muted); font-size: 0.9rem; }
+
+    /* Error */
+    .error-box { background: #fef2f2; border: 1px solid #fca5a5; padding: 24px; text-align: center; border-radius: 2px; }
+    .error-box h2 { color: #dc2626; margin-bottom: 8px; }
+    .error-box p { color: #6b7280; font-size: 0.9rem; }
+
+    /* Status badge */
+    .status-badge {
+      display: inline-flex; align-items: center; gap: 7px;
+      padding: 6px 14px; font-size: 0.76rem; font-weight: 700;
+      letter-spacing: .06em; text-transform: uppercase; border-radius: 2px;
+    }
+    .status-badge.offen     { background: #fff7ed; border: 1px solid #fed7aa; color: var(--amber); }
+    .status-badge.beantwortet { background: #f0fdf4; border: 1px solid #86efac; color: var(--green); }
+    .status-dot { width: 7px; height: 7px; border-radius: 50%; }
+    .status-badge.offen .status-dot { background: var(--amber); animation: pulse 2s infinite; }
+    .status-badge.beantwortet .status-dot { background: var(--green); }
+    @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:.4; } }
+
+    /* Hero */
+    .page-hero { margin-bottom: 28px; }
+    .page-hero h1 { font-size: 1.6rem; font-weight: 600; margin-bottom: 6px; }
+    .page-hero p { color: var(--muted); font-size: 0.88rem; }
+
+    /* Card */
+    .card { background: var(--white); border: 1px solid var(--border); margin-bottom: 16px; overflow: hidden; }
+    .card-head { padding: 16px 24px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; background: #fafafa; }
+    .card-head-label { font-size: 0.7rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+    .card-body { padding: 20px 24px; }
+
+    .meta-grid { display: grid; grid-template-columns: 140px 1fr; gap: 10px; font-size: 0.88rem; }
+    .meta-key { color: var(--muted); }
+    .meta-val { color: var(--text); font-weight: 600; }
+
+    .beschreibung-text { font-size: 0.92rem; line-height: 1.75; color: var(--text); white-space: pre-wrap; }
+
+    .einschaetzung-box { background: #f0f9ff; border-left: 3px solid var(--cyan); padding: 14px 18px; font-size: 0.9rem; color: #1e3a8a; line-height: 1.75; }
+    .einschaetzung-disclaimer { font-size: 0.74rem; color: var(--muted); margin-top: 10px; }
+
+    .antwort-box { background: #f0fdf4; border-left: 3px solid var(--green); padding: 16px 20px; font-size: 0.92rem; color: #14532d; line-height: 1.8; white-space: pre-wrap; }
+    .antwort-date { font-size: 0.75rem; color: var(--muted); margin-top: 10px; }
+
+    /* Warte-Hinweis */
+    .warte-box { display: flex; align-items: flex-start; gap: 14px; background: #fff7ed; border: 1px solid #fed7aa; padding: 16px 20px; font-size: 0.88rem; color: #92400e; line-height: 1.6; }
+    .warte-icon { font-size: 1.2rem; flex-shrink: 0; }
+
+    /* Rückfragen-Thread */
+    .nf-item { border: 1px solid var(--border); margin-bottom: 12px; overflow: hidden; }
+    .nf-q { background: #eff6ff; border-left: 3px solid var(--accent); padding: 12px 16px; }
+    .nf-a { background: #f0fdf4; border-left: 3px solid var(--green); padding: 12px 16px; }
+    .nf-label { display: inline-block; font-size: 0.66rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin-bottom: 5px; }
+    .nf-date { float: right; font-size: 0.7rem; color: var(--muted); font-weight: 400; }
+    .nf-text { font-size: 0.9rem; line-height: 1.7; color: var(--text); white-space: pre-wrap; }
+    .nf-a .nf-text { color: #14532d; }
+    .nf-pending { padding: 10px 16px; font-size: 0.82rem; color: var(--amber); background: #fff7ed; }
+    .nf-empty { font-size: 0.86rem; color: var(--muted); margin-bottom: 14px; }
+    .nf-form textarea {
+      width: 100%; min-height: 90px; resize: vertical; padding: 12px 14px;
+      font-family: inherit; font-size: 0.9rem; color: var(--text); line-height: 1.6;
+      border: 1.5px solid var(--border); outline: none;
+    }
+    .nf-form textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(0,80,200,0.09); }
+    .nf-form-row { display: flex; align-items: center; gap: 12px; margin-top: 10px; flex-wrap: wrap; }
+    .nf-btn {
+      padding: 11px 26px; background: var(--blue); color: #fff; border: none;
+      font-family: inherit; font-size: 0.82rem; font-weight: 700; letter-spacing: .04em;
+      cursor: pointer; transition: background 0.15s;
+    }
+    .nf-btn:hover { background: var(--accent); }
+    .nf-btn:disabled { background: #9ca3af; cursor: not-allowed; }
+    .nf-hint { font-size: 0.76rem; color: var(--muted); }
+    .nf-msg { margin-top: 10px; font-size: 0.82rem; padding: 10px 14px; border-left: 3px solid; display: none; }
+    .nf-msg.ok  { display: block; border-color: var(--green); background: #f0fdf4; color: #14532d; }
+    .nf-msg.err { display: block; border-color: #dc2626; background: #fef2f2; color: #dc2626; }
+
+    footer { background: var(--white); border-top: 1px solid var(--border); padding: 16px 32px; text-align: center; font-size: 0.74rem; color: var(--muted); }
+
+    /* PDF-Button */
+    .pdf-row { margin-top: 16px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+    .pdf-btn {
+      display: inline-flex; align-items: center; gap: 9px;
+      padding: 12px 22px; background: var(--blue); color: #fff; border: none;
+      font-family: inherit; font-size: 0.84rem; font-weight: 700; letter-spacing: .03em;
+      cursor: pointer; transition: background 0.15s, transform 0.1s; border-radius: 2px;
+    }
+    .pdf-btn:hover { background: var(--accent); }
+    .pdf-btn:active { transform: translateY(1px); }
+    .pdf-btn svg { width: 16px; height: 16px; fill: currentColor; }
+    .pdf-hint { font-size: 0.76rem; color: var(--muted); }
+
+    @media (max-width: 540px) { main { padding: 24px 16px 48px; } .card-head, .card-body { padding: 14px 16px; } }
+  </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+</head>
+<body>
+<div class="topbar"></div>
+<header>
+  <div class="logo">
+    <div class="logo-mark"><svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg></div>
+    <span class="logo-name">Sozialrecht · Mein Fall-Portal</span>
+  </div>
+</header>
+
+<main>
+  <div id="loading" class="loading">
+    <div class="loading-ring"></div>
+    <p>Fall wird geladen …</p>
+  </div>
+  <div id="error" class="error-box" style="display:none">
+    <h2>Fall nicht gefunden</h2>
+    <p>Der Link ist möglicherweise abgelaufen oder ungültig.</p>
+  </div>
+  <div id="content" style="display:none"></div>
+</main>
+
+<footer>Alle Angaben vertraulich · DSGVO-konform · pfk2026.oldenburg-knowledge.de</footer>
+
+<script>
+  const id = new URLSearchParams(location.search).get('id');
+  let fallData = null;
+
+  if (!id) {
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('error').style.display = 'block';
+  } else {
+    fetch(`/api/fall?action=portal&id=${encodeURIComponent(id)}`)
+      .then(r => r.json())
+      .then(d => {
+        document.getElementById('loading').style.display = 'none';
+        if (d.error) { document.getElementById('error').style.display = 'block'; return; }
+        render(d);
+      })
+      .catch(() => {
+        document.getElementById('loading').style.display = 'none';
+        document.getElementById('error').style.display = 'block';
+      });
+  }
+
+  function fmt(iso) {
+    return new Date(iso).toLocaleString('de-DE', { timeZone: 'Europe/Berlin', dateStyle: 'long', timeStyle: 'short' });
+  }
+
+  function render(d) {
+    fallData = d;
+    const content = document.getElementById('content');
+    content.style.display = 'block';
+
+    const offen = d.status !== 'beantwortet';
+
+    content.innerHTML = `
+      <div class="page-hero">
+        <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:10px;">
+          <h1>Dein Fall – ${d.thema}</h1>
+          <span class="status-badge ${d.status}"><span class="status-dot"></span>${offen ? 'In Bearbeitung' : 'Beantwortet'}</span>
+        </div>
+        <p>Eingegangen am ${fmt(d.created)}</p>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><span class="card-head-label">Deine Angaben</span></div>
+        <div class="card-body">
+          <div class="meta-grid" style="margin-bottom:16px;">
+            <span class="meta-key">Name</span><span class="meta-val">${d.vorname} ${d.nachname}</span>
+            <span class="meta-key">Fachbereich</span><span class="meta-val">${d.fachbereich}</span>
+            <span class="meta-key">Themenbereich</span><span class="meta-val">${d.thema}</span>
+          </div>
+          <p style="font-size:0.7rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:8px;">Fallbeschreibung</p>
+          <div class="beschreibung-text">${d.beschreibung}</div>
+        </div>
+      </div>
+
+      ${d.einschaetzung ? `
+      <div class="card">
+        <div class="card-head"><span class="card-head-label">🤖 Linda4 – Erste Einschätzung</span></div>
+        <div class="card-body">
+          <div class="einschaetzung-box">${d.einschaetzung}</div>
+          <p class="einschaetzung-disclaimer">Unverbindlich · Keine Rechtsberatung · Nur zur Orientierung</p>
+        </div>
+      </div>` : ''}
+
+      <div class="card">
+        <div class="card-head">
+          <span class="card-head-label">Expertenantwort</span>
+          <span class="status-badge ${d.status}" style="font-size:0.68rem;padding:4px 10px;">${offen ? 'Ausstehend' : 'Eingegangen'}</span>
+        </div>
+        <div class="card-body">
+          ${d.antwort ? `
+            <div class="antwort-box">${d.antwort}</div>
+            <p class="antwort-date">Beantwortet am ${fmt(d.antwortDatum)}</p>
+            <div class="pdf-row">
+              <button class="pdf-btn" id="pdfBtn" type="button">
+                <svg viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+                Antwort als PDF speichern
+              </button>
+              <span class="pdf-hint">Professionelles Dokument · zum Ausdrucken oder Archivieren</span>
+            </div>
+          ` : `
+            <div class="warte-box">
+              <span class="warte-icon">⏳</span>
+              <div>
+                <strong>Deine Anfrage wird bearbeitet.</strong><br/>
+                Du erhältst eine E-Mail sobald die Antwort vorliegt – schau auch hier rein.
+              </div>
+            </div>
+          `}
+        </div>
+      </div>
+
+      ${d.antwort ? `
+      <div class="card">
+        <div class="card-head"><span class="card-head-label">💬 Rückfragen zur Antwort</span></div>
+        <div class="card-body">
+          <div id="nfThread">${renderThread(d.nachfragen)}</div>
+          <div class="nf-form">
+            <textarea id="nfInput" maxlength="2000" placeholder="Du hast noch eine Rückfrage zur Antwort? Stelle sie hier – der Experte wird benachrichtigt."></textarea>
+            <div class="nf-form-row">
+              <button class="nf-btn" id="nfBtn" type="button">Rückfrage senden</button>
+              <span class="nf-hint">Du wirst per E-Mail informiert, sobald geantwortet wurde.</span>
+            </div>
+            <div class="nf-msg" id="nfMsg"></div>
+          </div>
+        </div>
+      </div>` : ''}`;
+
+    bindNachfrage();
+    bindPdf();
+  }
+
+  function bindPdf() {
+    const btn = document.getElementById('pdfBtn');
+    if (!btn) return;
+    btn.addEventListener('click', () => {
+      try { generatePDF(); }
+      catch (e) { console.error(e); alert('PDF konnte nicht erstellt werden.'); }
+    });
+  }
+
+  // Wandelt den (ggf. HTML-formatierten) Antworttext in sauberen Fließtext um
+  function htmlToText(html) {
+    if (!html) return '';
+    return String(html)
+      .replace(/<\s*br\s*\/?>/gi, '\n')
+      .replace(/<\/(p|div|li|h[1-6]|tr)>/gi, '\n')
+      .replace(/<li[^>]*>/gi, '•  ')
+      .replace(/<[^>]+>/g, '')
+      .replace(/&nbsp;/gi, ' ').replace(/&amp;/gi, '&')
+      .replace(/&lt;/gi, '<').replace(/&gt;/gi, '>')
+      .replace(/&quot;/gi, '"').replace(/&#0?39;/gi, "'")
+      .replace(/\*\*(.+?)\*\*/g, '$1').replace(/(^|[\s(])\*([^*\n]+)\*/g, '$1$2')
+      .replace(/^\s*#{1,6}\s+/gm, '')
+      .replace(/\n{3,}/g, '\n\n').replace(/[ \t]+\n/g, '\n')
+      .trim();
+  }
+
+  // Zerlegt den "F: … / A: …"-Block in strukturierte Frage/Antwort-Paare
+  function parseFollowups(block) {
+    const lines = String(block).split('\n');
+    const out = []; let cur = null, mode = null;
+    for (const raw of lines) {
+      const line = raw.trim();
+      const mF = line.match(/^F:\s*(.*)$/);
+      const mA = line.match(/^A:\s*(.*)$/);
+      if (mF) { if (cur) out.push(cur); cur = { frage: mF[1], antwort: '' }; mode = 'f'; }
+      else if (mA && cur) { cur.antwort = mA[1]; mode = 'a'; }
+      else if (cur && line) { cur[mode === 'a' ? 'antwort' : 'frage'] += ' ' + line; }
+    }
+    if (cur) out.push(cur);
+    return out.filter(f => f.frage);
+  }
+
+  function generatePDF() {
+    const d = fallData;
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ unit: 'pt', format: 'a4' });
+    const W = doc.internal.pageSize.getWidth();
+    const H = doc.internal.pageSize.getHeight();
+    const M = 50, CW = W - M * 2;
+    const BLUE=[0,48,135], ACCENT=[0,80,200], CYAN=[14,165,233], GREEN=[22,163,74],
+          GRAY=[107,114,128], DARK=[31,41,55], HINT=[190,215,255];
+    let y = 0, page = 1;
+
+    function footer() {
+      doc.setDrawColor(229,231,235); doc.setLineWidth(0.5);
+      doc.line(M, H-48, W-M, H-48);
+      doc.setFont('helvetica','normal'); doc.setFontSize(7.5); doc.setTextColor(...GRAY);
+      doc.text('Vertraulich · Nur zu Schulungszwecken · Keine echten Daten · Keine Rechtsberatung', M, H-32);
+      doc.text('pfk2026.oldenburg-knowledge.de', M, H-21);
+      doc.text('Seite ' + page, W - M, H-21, { align: 'right' });
+    }
+    function newPage() { footer(); doc.addPage(); page++; y = M + 6; }
+    function ensure(h) { if (y + h > H - 64) newPage(); }
+
+    function sectionLabel(txt, color) {
+      ensure(34); y += 6;
+      doc.setFont('helvetica','bold'); doc.setFontSize(8.5); doc.setTextColor(...(color||ACCENT));
+      doc.setCharSpace(1.2);
+      doc.text(txt.toUpperCase(), M, y);
+      doc.setCharSpace(0);
+      y += 7;
+      doc.setDrawColor(...(color||ACCENT)); doc.setLineWidth(1.2);
+      doc.line(M, y, M + CW, y);
+      y += 16;
+    }
+    function paragraph(txt, o) {
+      o = o || {};
+      doc.setCharSpace(0);
+      const size = o.size||10, lh = o.lh||15.5, x = (o.x||M), w = (o.w||CW);
+      const color = o.color||DARK;
+      doc.setFont('helvetica', o.bold ? 'bold' : 'normal'); doc.setFontSize(size);
+      const lines = doc.splitTextToSize(String(txt||''), w - (o.bg ? 28 : 0));
+      for (const line of lines) {
+        ensure(lh);
+        if (o.bg) { doc.setFillColor(...o.bg); doc.rect(x-14, y-11, w+8, lh, 'F'); }
+        if (o.bar){ doc.setFillColor(...o.bar); doc.rect(x-14, y-11, 3, lh, 'F'); }
+        doc.setTextColor(...color);
+        doc.text(line, x + (o.bg ? 8 : 0), y);
+        y += lh;
+      }
+    }
+
+    // ── Kopfband
+    doc.setFillColor(...BLUE); doc.rect(0, 0, W, 120, 'F');
+    doc.setFillColor(...CYAN);  doc.rect(0, 120, W, 4, 'F');
+    doc.setFont('helvetica','bold'); doc.setFontSize(9); doc.setTextColor(...HINT);
+    doc.setCharSpace(1.8);
+    doc.text('SOZIALRECHT · FACHBERATUNG', M, 48);
+    doc.setCharSpace(0);
+    doc.setFontSize(21); doc.setTextColor(255,255,255);
+    doc.text('Persönliche Experteneinschätzung', M, 80);
+    doc.setFont('helvetica','normal'); doc.setFontSize(10.5); doc.setTextColor(200,220,255);
+    doc.text(d.thema || '', M, 103);
+    y = 152;
+
+    // ── Stammdaten-Karte
+    const rows = [
+      ['Name', `${d.vorname||''} ${d.nachname||''}`.trim()],
+      ['Fachbereich', d.fachbereich || '—'],
+      ['Themenbereich', d.thema || '—'],
+      ['Eingegangen am', d.created ? fmt(d.created) : '—'],
+    ];
+    if (d.antwortDatum) rows.push(['Beantwortet am', fmt(d.antwortDatum)]);
+    const cardH = rows.length * 19 + 24;
+    ensure(cardH);
+    doc.setFillColor(247,248,250); doc.rect(M-14, y-14, CW+28, cardH, 'F');
+    doc.setDrawColor(...ACCENT); doc.setLineWidth(2); doc.line(M-14, y-14, M-14, y-14+cardH);
+    rows.forEach(([k, v]) => {
+      doc.setFont('helvetica','normal'); doc.setFontSize(9); doc.setTextColor(...GRAY);
+      doc.text(k, M, y);
+      doc.setFont('helvetica','bold'); doc.setFontSize(9.5); doc.setTextColor(...DARK);
+      doc.text(doc.splitTextToSize(String(v), CW-130), M + 130, y);
+      y += 19;
+    });
+    y += 18;
+
+    // ── Fallbeschreibung
+    sectionLabel('Deine Fallbeschreibung', BLUE);
+    paragraph(htmlToText(d.beschreibung), {});
+    y += 8;
+
+    // ── Linda4 Einschätzung (+ ggf. ergänzende Fragen an Linda4)
+    if (d.einschaetzung) {
+      const full = htmlToText(d.einschaetzung);
+      const parts = full.split(/—\s*Ergänzende Fragen an Linda4\s*—/);
+      const basis = parts[0].trim();
+      const followups = parts[1] ? parseFollowups(parts[1]) : [];
+
+      sectionLabel('Linda4 – Erste Einschätzung', CYAN);
+      paragraph(basis, { bg: [240,249,255], bar: CYAN, color: [30,58,138] });
+      paragraph('Unverbindlich · Keine Rechtsberatung · Nur zur Orientierung', { size: 7.8, color: GRAY });
+      y += 8;
+
+      if (followups.length) {
+        sectionLabel('Ergänzende Fragen an Linda4', CYAN);
+        followups.forEach(f => {
+          paragraph('Frage: ' + f.frage, { bg: [240,249,255], bar: CYAN, color: [30,58,138], size: 9.5 });
+          paragraph(f.antwort, { bg: [248,250,252], bar: [148,163,184], color: DARK, size: 9.5 });
+          y += 6;
+        });
+      }
+    }
+
+    // ── Expertenantwort
+    if (d.antwort) {
+      sectionLabel('Antwort des Experten', GREEN);
+      paragraph(htmlToText(d.antwort), { bg: [240,253,244], bar: GREEN, color: [20,83,45], lh: 16 });
+      y += 8;
+    }
+
+    // ── Beantwortete Rückfragen
+    const beantwortet = (d.nachfragen || []).filter(n => n.antwort);
+    if (beantwortet.length) {
+      sectionLabel('Rückfragen & Antworten', ACCENT);
+      beantwortet.forEach(nf => {
+        paragraph('Frage: ' + htmlToText(nf.frage), { bg: [239,246,255], bar: ACCENT, color: [30,58,138], size: 9.5 });
+        paragraph(htmlToText(nf.antwort), { bg: [240,253,244], bar: GREEN, color: [20,83,45], size: 9.5 });
+        y += 6;
+      });
+    }
+
+    footer();
+    const safe = (d.thema || 'Sozialrecht').replace(/[^a-zA-Z0-9äöüÄÖÜß]+/g, '_').slice(0, 40);
+    doc.save(`Sozialrecht_${safe}_${String(id).slice(0,8)}.pdf`);
+  }
+
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  }
+
+  function renderThread(nachfragen) {
+    if (!nachfragen || !nachfragen.length)
+      return '<p class="nf-empty">Noch keine Rückfragen gestellt.</p>';
+    return nachfragen.map(nf => `
+      <div class="nf-item">
+        <div class="nf-q">
+          <span class="nf-date">${fmt(nf.gestelltAm)}</span>
+          <span class="nf-label">Deine Rückfrage</span>
+          <div class="nf-text">${esc(nf.frage)}</div>
+        </div>
+        ${nf.antwort ? `
+        <div class="nf-a">
+          <span class="nf-date">${fmt(nf.beantwortetAm)}</span>
+          <span class="nf-label">Antwort vom Experten</span>
+          <div class="nf-text">${esc(nf.antwort)}</div>
+        </div>` : `<div class="nf-pending">⏳ Wird beantwortet …</div>`}
+      </div>`).join('');
+  }
+
+  function bindNachfrage() {
+    const btn = document.getElementById('nfBtn');
+    if (!btn) return;
+    btn.addEventListener('click', async () => {
+      const input = document.getElementById('nfInput');
+      const msg   = document.getElementById('nfMsg');
+      const frage = input.value.trim();
+      msg.className = 'nf-msg';
+      if (frage.length < 3) {
+        msg.className = 'nf-msg err';
+        msg.textContent = 'Bitte formuliere deine Rückfrage etwas ausführlicher.';
+        return;
+      }
+      btn.disabled = true; btn.textContent = 'Wird gesendet …';
+      try {
+        const res = await fetch('/api/fall?action=nachfrage', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id, frage }),
+        });
+        const data = await res.json();
+        if (res.ok && data.ok) {
+          input.value = '';
+          document.getElementById('nfThread').innerHTML = renderThread(data.nachfragen);
+          msg.className = 'nf-msg ok';
+          msg.textContent = '✓ Deine Rückfrage wurde übermittelt. Du wirst per E-Mail informiert.';
+        } else {
+          throw new Error(data.error || 'Unbekannter Fehler');
+        }
+      } catch (err) {
+        msg.className = 'nf-msg err';
+        msg.textContent = 'Fehler: ' + err.message;
+      } finally {
+        btn.disabled = false; btn.textContent = 'Rückfrage senden';
+      }
+    });
+  }
+</script>
+</body>
+</html>
