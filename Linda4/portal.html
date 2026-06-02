@@ -108,8 +108,22 @@
 
     footer { background: var(--white); border-top: 1px solid var(--border); padding: 16px 32px; text-align: center; font-size: 0.74rem; color: var(--muted); }
 
+    /* PDF-Button */
+    .pdf-row { margin-top: 16px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+    .pdf-btn {
+      display: inline-flex; align-items: center; gap: 9px;
+      padding: 12px 22px; background: var(--blue); color: #fff; border: none;
+      font-family: inherit; font-size: 0.84rem; font-weight: 700; letter-spacing: .03em;
+      cursor: pointer; transition: background 0.15s, transform 0.1s; border-radius: 2px;
+    }
+    .pdf-btn:hover { background: var(--accent); }
+    .pdf-btn:active { transform: translateY(1px); }
+    .pdf-btn svg { width: 16px; height: 16px; fill: currentColor; }
+    .pdf-hint { font-size: 0.76rem; color: var(--muted); }
+
     @media (max-width: 540px) { main { padding: 24px 16px 48px; } .card-head, .card-body { padding: 14px 16px; } }
   </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </head>
 <body>
 <div class="topbar"></div>
@@ -136,6 +150,7 @@
 
 <script>
   const id = new URLSearchParams(location.search).get('id');
+  let fallData = null;
 
   if (!id) {
     document.getElementById('loading').style.display = 'none';
@@ -159,6 +174,7 @@
   }
 
   function render(d) {
+    fallData = d;
     const content = document.getElementById('content');
     content.style.display = 'block';
 
@@ -204,6 +220,13 @@
           ${d.antwort ? `
             <div class="antwort-box">${d.antwort}</div>
             <p class="antwort-date">Beantwortet am ${fmt(d.antwortDatum)}</p>
+            <div class="pdf-row">
+              <button class="pdf-btn" id="pdfBtn" type="button">
+                <svg viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+                Antwort als PDF speichern
+              </button>
+              <span class="pdf-hint">Professionelles Dokument · zum Ausdrucken oder Archivieren</span>
+            </div>
           ` : `
             <div class="warte-box">
               <span class="warte-icon">⏳</span>
@@ -233,6 +256,146 @@
       </div>` : ''}`;
 
     bindNachfrage();
+    bindPdf();
+  }
+
+  function bindPdf() {
+    const btn = document.getElementById('pdfBtn');
+    if (!btn) return;
+    btn.addEventListener('click', () => {
+      try { generatePDF(); }
+      catch (e) { console.error(e); alert('PDF konnte nicht erstellt werden.'); }
+    });
+  }
+
+  // Wandelt den (ggf. HTML-formatierten) Antworttext in sauberen Fließtext um
+  function htmlToText(html) {
+    if (!html) return '';
+    return String(html)
+      .replace(/<\s*br\s*\/?>/gi, '\n')
+      .replace(/<\/(p|div|li|h[1-6]|tr)>/gi, '\n')
+      .replace(/<li[^>]*>/gi, '•  ')
+      .replace(/<[^>]+>/g, '')
+      .replace(/&nbsp;/gi, ' ').replace(/&amp;/gi, '&')
+      .replace(/&lt;/gi, '<').replace(/&gt;/gi, '>')
+      .replace(/&quot;/gi, '"').replace(/&#0?39;/gi, "'")
+      .replace(/\n{3,}/g, '\n\n').replace(/[ \t]+\n/g, '\n')
+      .trim();
+  }
+
+  function generatePDF() {
+    const d = fallData;
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ unit: 'pt', format: 'a4' });
+    const W = doc.internal.pageSize.getWidth();
+    const H = doc.internal.pageSize.getHeight();
+    const M = 50, CW = W - M * 2;
+    const BLUE=[0,48,135], ACCENT=[0,80,200], CYAN=[14,165,233], GREEN=[22,163,74],
+          GRAY=[107,114,128], DARK=[31,41,55], HINT=[190,215,255];
+    let y = 0, page = 1;
+
+    function footer() {
+      doc.setDrawColor(229,231,235); doc.setLineWidth(0.5);
+      doc.line(M, H-48, W-M, H-48);
+      doc.setFont('helvetica','normal'); doc.setFontSize(7.5); doc.setTextColor(...GRAY);
+      doc.text('Vertraulich · Nur zu Schulungszwecken · Keine echten Daten · Keine Rechtsberatung', M, H-32);
+      doc.text('pfk2026.oldenburg-knowledge.de', M, H-21);
+      doc.text('Seite ' + page, W - M, H-21, { align: 'right' });
+    }
+    function newPage() { footer(); doc.addPage(); page++; y = M + 6; }
+    function ensure(h) { if (y + h > H - 64) newPage(); }
+
+    function sectionLabel(txt, color) {
+      ensure(34); y += 6;
+      doc.setFont('helvetica','bold'); doc.setFontSize(8.5); doc.setTextColor(...(color||ACCENT));
+      doc.text(txt.toUpperCase(), M, y, { charSpace: 1.2 });
+      y += 7;
+      doc.setDrawColor(...(color||ACCENT)); doc.setLineWidth(1.2);
+      doc.line(M, y, M + CW, y);
+      y += 16;
+    }
+    function paragraph(txt, o) {
+      o = o || {};
+      const size = o.size||10, lh = o.lh||15.5, x = (o.x||M), w = (o.w||CW);
+      const color = o.color||DARK;
+      doc.setFont('helvetica', o.bold ? 'bold' : 'normal'); doc.setFontSize(size);
+      const lines = doc.splitTextToSize(String(txt||''), w - (o.bg ? 28 : 0));
+      for (const line of lines) {
+        ensure(lh);
+        if (o.bg) { doc.setFillColor(...o.bg); doc.rect(x-14, y-11, w+8, lh, 'F'); }
+        if (o.bar){ doc.setFillColor(...o.bar); doc.rect(x-14, y-11, 3, lh, 'F'); }
+        doc.setTextColor(...color);
+        doc.text(line, x + (o.bg ? 8 : 0), y);
+        y += lh;
+      }
+    }
+
+    // ── Kopfband
+    doc.setFillColor(...BLUE); doc.rect(0, 0, W, 120, 'F');
+    doc.setFillColor(...CYAN);  doc.rect(0, 120, W, 4, 'F');
+    doc.setFont('helvetica','bold'); doc.setFontSize(9); doc.setTextColor(...HINT);
+    doc.text('SOZIALRECHT · FACHBERATUNG', M, 48, { charSpace: 1.8 });
+    doc.setFontSize(21); doc.setTextColor(255,255,255);
+    doc.text('Persönliche Experteneinschätzung', M, 80);
+    doc.setFont('helvetica','normal'); doc.setFontSize(10.5); doc.setTextColor(200,220,255);
+    doc.text(d.thema || '', M, 103);
+    y = 152;
+
+    // ── Stammdaten-Karte
+    const rows = [
+      ['Name', `${d.vorname||''} ${d.nachname||''}`.trim()],
+      ['Fachbereich', d.fachbereich || '—'],
+      ['Themenbereich', d.thema || '—'],
+      ['Eingegangen am', d.created ? fmt(d.created) : '—'],
+    ];
+    if (d.antwortDatum) rows.push(['Beantwortet am', fmt(d.antwortDatum)]);
+    const cardH = rows.length * 19 + 24;
+    ensure(cardH);
+    doc.setFillColor(247,248,250); doc.rect(M-14, y-14, CW+28, cardH, 'F');
+    doc.setDrawColor(...ACCENT); doc.setLineWidth(2); doc.line(M-14, y-14, M-14, y-14+cardH);
+    rows.forEach(([k, v]) => {
+      doc.setFont('helvetica','normal'); doc.setFontSize(9); doc.setTextColor(...GRAY);
+      doc.text(k, M, y);
+      doc.setFont('helvetica','bold'); doc.setFontSize(9.5); doc.setTextColor(...DARK);
+      doc.text(doc.splitTextToSize(String(v), CW-130), M + 130, y);
+      y += 19;
+    });
+    y += 18;
+
+    // ── Fallbeschreibung
+    sectionLabel('Deine Fallbeschreibung', BLUE);
+    paragraph(htmlToText(d.beschreibung), {});
+    y += 8;
+
+    // ── Linda4 Einschätzung
+    if (d.einschaetzung) {
+      sectionLabel('Linda4 – Erste Einschätzung', CYAN);
+      paragraph(htmlToText(d.einschaetzung), { bg: [240,249,255], bar: CYAN, color: [30,58,138] });
+      paragraph('Unverbindlich · Keine Rechtsberatung · Nur zur Orientierung', { size: 7.8, color: GRAY });
+      y += 8;
+    }
+
+    // ── Expertenantwort
+    if (d.antwort) {
+      sectionLabel('Antwort des Experten', GREEN);
+      paragraph(htmlToText(d.antwort), { bg: [240,253,244], bar: GREEN, color: [20,83,45], lh: 16 });
+      y += 8;
+    }
+
+    // ── Beantwortete Rückfragen
+    const beantwortet = (d.nachfragen || []).filter(n => n.antwort);
+    if (beantwortet.length) {
+      sectionLabel('Rückfragen & Antworten', ACCENT);
+      beantwortet.forEach(nf => {
+        paragraph('Frage: ' + htmlToText(nf.frage), { bg: [239,246,255], bar: ACCENT, color: [30,58,138], size: 9.5 });
+        paragraph(htmlToText(nf.antwort), { bg: [240,253,244], bar: GREEN, color: [20,83,45], size: 9.5 });
+        y += 6;
+      });
+    }
+
+    footer();
+    const safe = (d.thema || 'Sozialrecht').replace(/[^a-zA-Z0-9äöüÄÖÜß]+/g, '_').slice(0, 40);
+    doc.save(`Sozialrecht_${safe}_${String(id).slice(0,8)}.pdf`);
   }
 
   function esc(s) {
