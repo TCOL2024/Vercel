@@ -8,9 +8,13 @@ const ADMIN_TOKEN  = process.env.ADMIN_TOKEN || 'SozR2026Expert';
 const EXPERT_EMAIL = process.env.EXPERT_EMAIL || 'noormann@gmx.com';
 const RESEND_FROM  = 'Sozialrecht Fachberatung <anfrage@resend.dev>';
 
-// Für die KI-Voranalyse wird ausschließlich GPT-5.4 verwendet.
+// Für die KI-Voranalyse wird vorrangig GPT-5.1 verwendet.
 // (Per Env-Variable überschreibbar, falls OpenAI eine andere Modell-ID erwartet.)
 const KI_MODEL = process.env.VORANALYSE_MODEL || 'gpt-5.1';
+// Reihenfolge der Modelle, die nacheinander probiert werden.
+// Falls die bevorzugte Modell-ID vom Account nicht unterstützt wird,
+// fällt der Aufruf automatisch auf ein garantiert verfügbares Modell zurück.
+const MODEL_FALLBACKS = [...new Set([KI_MODEL, 'gpt-4o', 'gpt-4o-mini'])];
 
 // Baut die richtigen Parameter je nach Modell-Generation.
 // GPT-5- und o-Modelle: max_completion_tokens + nur Default-Temperatur.
@@ -20,6 +24,35 @@ function modelParams(model, { maxTokens, temperature, jsonMode }) {
   const p = nextGen ? { max_completion_tokens: maxTokens } : { max_tokens: maxTokens, temperature };
   if (jsonMode) p.response_format = { type: 'json_object' };
   return p;
+}
+
+// Ruft die OpenAI Chat-Completions-API auf und probiert bei Modell-/Parameter-
+// Fehlern automatisch die nächste Modell-ID. Gibt { ok, content, model, status,
+// error } zurück, damit der Aufrufer im Fehlerfall die echte Ursache kennt.
+async function chatCompletion({ apiKey, messages, maxTokens, temperature, jsonMode }) {
+  let lastStatus = 0, lastError = '';
+  for (const model of MODEL_FALLBACKS) {
+    let response;
+    try {
+      response = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ model, messages, ...modelParams(model, { maxTokens, temperature, jsonMode }) }),
+      });
+    } catch (e) {
+      lastStatus = 0; lastError = e.message; continue;
+    }
+    if (response.ok) {
+      const content = (await response.json()).choices?.[0]?.message?.content?.trim() || '';
+      return { ok: true, content, model };
+    }
+    lastStatus = response.status;
+    lastError = await response.text();
+    console.error(`OpenAI-Fehler (${model}):`, lastStatus, lastError.slice(0, 300));
+    // Bei Auth-/Rate-Fehlern bringt ein anderes Modell nichts → abbrechen.
+    if (lastStatus === 401 || lastStatus === 403 || lastStatus === 429) break;
+  }
+  return { ok: false, status: lastStatus, error: lastError };
 }
 
 // HTML-Escaping für nutzergenerierte Texte in E-Mails
@@ -133,25 +166,22 @@ Regeln: Bei unter 80 Zeichen IMMER rueckfragen. Fragen spezifisch für ${thema}.
     : baseText;
 
   try {
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: KI_MODEL,
-        messages: [{ role: 'system', content: systemPrompt }, { role: 'user', content: userContent }],
-        ...modelParams(KI_MODEL, {
-          maxTokens: antwortLaenge === 'ausfuehrlich' ? 900 : 450,
-          temperature: 0.15,
-          jsonMode: !direktEinschaetzung,
-        }),
-      }),
+    const result = await chatCompletion({
+      apiKey,
+      messages: [{ role: 'system', content: systemPrompt }, { role: 'user', content: userContent }],
+      maxTokens: antwortLaenge === 'ausfuehrlich' ? 900 : 450,
+      temperature: 0.15,
+      jsonMode: !direktEinschaetzung,
     });
-    if (!response.ok) {
-      console.error('OpenAI Voranalyse-Fehler:', response.status, await response.text());
-      return res.status(502).json({ error: 'KI-Analyse fehlgeschlagen' });
+    if (!result.ok) {
+      return res.status(502).json({
+        error: 'KI-Analyse fehlgeschlagen',
+        detail: `OpenAI ${result.status}: ${String(result.error).slice(0, 600)}`,
+        tried: MODEL_FALLBACKS,
+      });
     }
 
-    const raw = (await response.json()).choices?.[0]?.message?.content?.trim() || '';
+    const raw = result.content;
     if (istNachfrage)        return res.status(200).json({ modus: 'nachfrage', antwort: raw, antwortLaenge });
     if (direktEinschaetzung) return res.status(200).json({ modus: 'einschaetzung', einschaetzung: raw, rueckfragen: null, antwortLaenge });
 
@@ -197,23 +227,18 @@ async function handleAnfrage(req, res) {
   let entwurf = '';
   if (apiKey) {
     try {
-      const r = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          model: KI_MODEL,
-          messages: [
-            { role: 'system', content: `Du bist Linda4, eine KI-Assistentin für deutsches Sozialrecht.
+      const r = await chatCompletion({
+        apiKey,
+        messages: [
+          { role: 'system', content: `Du bist Linda4, eine KI-Assistentin für deutsches Sozialrecht.
 Erstelle einen professionellen Antwort-ENTWURF für einen Sozialrechts-Experten.
 Format: Persönliche Anrede (Du-Form), 3-5 Absätze, freundlicher professioneller Ton.
 Ende mit [Expertenunterschrift]. Antworte auf Deutsch.` },
-            { role: 'user', content: `Thema: ${thema}\nBeschreibung:\n${beschreibung}\nEinschätzung:\n${einschaetzung || 'keine'}` },
-          ],
-          ...modelParams(KI_MODEL, { maxTokens: 600, temperature: 0.2 }),
-        }),
+          { role: 'user', content: `Thema: ${thema}\nBeschreibung:\n${beschreibung}\nEinschätzung:\n${einschaetzung || 'keine'}` },
+        ],
+        maxTokens: 600, temperature: 0.2,
       });
-      const d = await r.json();
-      entwurf = d.choices?.[0]?.message?.content?.trim() || '';
+      entwurf = r.ok ? r.content : '';
     } catch (e) { console.error('Entwurf fehlgeschlagen:', e.message); }
   }
 
