@@ -526,6 +526,10 @@
       color: var(--text); border-left: 3px solid var(--cyan);
       padding-left: 16px; margin-bottom: 18px;
     }
+    .ai-text p { margin: 0 0 0.7em; }
+    .ai-text p:last-child { margin-bottom: 0; }
+    .ai-text strong { color: var(--blue); font-weight: 700; }
+    .ai-text em { font-style: italic; }
 
     .ai-disclaimer {
       font-size: 0.76rem; color: var(--muted);
@@ -569,8 +573,12 @@
     .fu-a {
       align-self: flex-start; max-width: 90%; background: #f1f5f9; color: var(--text);
       padding: 10px 14px; border-radius: 12px 12px 12px 2px; border-left: 3px solid var(--cyan);
-      font-size: 0.9rem; line-height: 1.6; white-space: pre-wrap;
+      font-size: 0.9rem; line-height: 1.6;
     }
+    .fu-a p { margin: 0 0 0.5em; }
+    .fu-a p:last-child { margin-bottom: 0; }
+    .fu-a strong { color: var(--blue); font-weight: 700; }
+    .fu-a em { font-style: italic; }
     .fu-a.pending { color: var(--muted); font-style: italic; }
     .ai-followup-form { display: flex; gap: 8px; }
     .ai-followup-form input {
@@ -752,6 +760,145 @@
     @keyframes iconPulse { 0%,100%{opacity:1} 50%{opacity:.4} }
     .icon-pulse { animation: iconPulse 2.4s ease-in-out infinite; }
 
+    /* ── Voice-Modus (Linda Sprach-Assistent) ────────────────── */
+    .voice-btn {
+      display: flex; align-items: center; gap: 8px;
+      padding: 11px 18px; background: transparent;
+      color: var(--blue); border: 1.5px solid #c7d9f8;
+      font-family: 'Segoe UI', Arial, sans-serif;
+      font-size: 0.82rem; font-weight: 700; cursor: pointer;
+      transition: all 0.15s; white-space: nowrap; flex-shrink: 0;
+    }
+    .voice-btn:hover { background: #eff6ff; border-color: var(--accent); color: var(--accent); }
+
+    .voice-modal {
+      display: none; position: fixed; inset: 0; z-index: 200;
+      background: rgba(0,20,60,0.6); backdrop-filter: blur(8px);
+      align-items: flex-end; justify-content: center;
+    }
+    .voice-modal.open { display: flex; }
+
+    .voice-sheet {
+      width: 100%; max-width: 500px;
+      background: #fff; border-radius: 18px 18px 0 0;
+      max-height: 82vh; display: flex; flex-direction: column;
+      animation: vSheetUp 0.34s cubic-bezier(0.22,1,0.36,1);
+    }
+    @keyframes vSheetUp { from { transform: translateY(64px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+    .voice-head {
+      background: #001228; border-radius: 18px 18px 0 0;
+      padding: 18px 22px 16px; flex-shrink: 0;
+      position: relative; overflow: hidden;
+    }
+    .voice-head::before {
+      content: ''; position: absolute; inset: 0;
+      background-image: radial-gradient(circle, rgba(255,255,255,0.055) 1px, transparent 1px);
+      background-size: 18px 18px; pointer-events: none;
+    }
+    .voice-head-title {
+      font-size: 0.9rem; font-weight: 700; color: #fff;
+      display: flex; align-items: center; gap: 8px; position: relative;
+    }
+    .voice-head-sub {
+      font-size: 0.69rem; color: rgba(255,255,255,0.45);
+      position: relative; margin-top: 3px;
+    }
+    .voice-head-close {
+      position: absolute; top: 13px; right: 14px; z-index: 1;
+      background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.2);
+      color: rgba(255,255,255,0.75); width: 27px; height: 27px; border-radius: 50%;
+      font-size: 0.78rem; cursor: pointer; display: flex; align-items: center; justify-content: center;
+      transition: background 0.15s;
+    }
+    .voice-head-close:hover { background: rgba(255,255,255,0.24); color: #fff; }
+
+    .voice-conv {
+      flex: 1; overflow-y: auto; padding: 14px 16px 6px;
+      display: flex; flex-direction: column; gap: 10px; min-height: 80px;
+    }
+    .voice-conv::-webkit-scrollbar { width: 4px; }
+    .voice-conv::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 2px; }
+
+    .vb-linda { display: flex; gap: 10px; align-items: flex-start; }
+    .v-avatar {
+      width: 36px; height: 36px; min-width: 36px;
+      background: linear-gradient(135deg, #001228, #0050c8);
+      border-radius: 50%; display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 2px 10px rgba(0,80,200,0.28); transition: box-shadow 0.3s;
+    }
+    .v-avatar.speaking { animation: vAvatarPulse 1.1s ease-in-out infinite; }
+    @keyframes vAvatarPulse {
+      0%,100% { box-shadow: 0 2px 10px rgba(0,80,200,0.28); }
+      50%      { box-shadow: 0 2px 26px rgba(0,80,200,0.55), 0 0 0 7px rgba(0,80,200,0.09); }
+    }
+    .v-bubble {
+      flex: 1; background: #f1f5f9; border-radius: 10px 10px 10px 2px;
+      padding: 10px 13px; font-size: 0.87rem; line-height: 1.6; color: var(--text);
+    }
+    .v-bubble p { margin: 0 0 0.4em; }
+    .v-bubble p:last-child { margin-bottom: 0; }
+    .v-bubble strong { font-weight: 700; }
+    .v-bubble.pending { color: var(--muted); font-style: italic; }
+
+    /* ── Quellen-Toggle (Idee B) ── */
+    .vb-linda-col { display: flex; flex-direction: column; flex: 1; gap: 5px; }
+    .v-src-toggle {
+      display: inline-flex; align-items: center; gap: 5px;
+      background: none; border: 1px solid #d1d5db; border-radius: 6px;
+      padding: 4px 10px; font-size: 0.75rem; color: var(--muted);
+      cursor: pointer; transition: background 0.15s, color 0.15s; align-self: flex-start;
+    }
+    .v-src-toggle:hover { background: #f1f5f9; color: var(--text); }
+    .v-src-list {
+      display: none; flex-direction: column; gap: 7px;
+      background: #f8fafc; border: 1px solid #e5e7eb;
+      border-radius: 8px; padding: 10px 12px;
+    }
+    .v-src-list.open { display: flex; }
+    .v-src-item { font-size: 0.78rem; line-height: 1.55; }
+    .v-src-name {
+      display: inline-flex; align-items: center; gap: 4px;
+      font-weight: 700; color: var(--blue); margin-bottom: 2px;
+    }
+    .v-src-auszug {
+      color: var(--muted); font-style: italic;
+      border-left: 2px solid var(--cyan); padding-left: 8px; margin-top: 3px;
+    }
+    .v-bubble-user {
+      background: var(--accent); color: #fff;
+      border-radius: 10px 10px 2px 10px; align-self: flex-end;
+      padding: 10px 13px; font-size: 0.87rem; line-height: 1.6; max-width: 85%;
+    }
+
+    .voice-footer { padding: 10px 16px 22px; flex-shrink: 0; display: flex; flex-direction: column; gap: 7px; }
+    .v-status { font-size: 0.77rem; color: var(--muted); text-align: center; min-height: 20px; }
+
+    .v-mic-btn {
+      display: flex; align-items: center; justify-content: center; gap: 9px;
+      padding: 13px; background: var(--blue); color: #fff; border: none;
+      border-radius: 10px; font-family: 'Segoe UI', Arial, sans-serif;
+      font-size: 0.86rem; font-weight: 700; cursor: pointer;
+      transition: background 0.15s, transform 0.1s;
+    }
+    .v-mic-btn:hover:not(:disabled) { background: var(--accent); }
+    .v-mic-btn:active:not(:disabled) { transform: scale(0.98); }
+    .v-mic-btn:disabled { background: #9ca3af; cursor: not-allowed; }
+    .v-mic-btn.recording { background: #dc2626; }
+    .v-mic-btn.recording:hover { background: #b91c1c; }
+
+    .v-fill-btn {
+      display: none; align-items: center; justify-content: center; gap: 8px;
+      padding: 12px; background: var(--green); color: #fff; border: none;
+      border-radius: 10px; font-family: 'Segoe UI', Arial, sans-serif;
+      font-size: 0.84rem; font-weight: 700; cursor: pointer; transition: background 0.15s;
+    }
+    .v-fill-btn:hover { background: #15803d; }
+    .v-beta-note {
+      display: none; font-size: 0.71rem; color: var(--muted); text-align: center;
+      background: #f8fafc; border-radius: 6px; padding: 6px 10px;
+    }
+
     /* Rückfragen */
     .rueckfragen-box { display: none; }
     .rueckfragen-intro {
@@ -804,6 +951,42 @@
       cursor: pointer; transition: all 0.15s;
     }
     .btn-back:hover { border-color: var(--muted); color: var(--text); }
+
+    /* ── Anonym-Toggle ── */
+    .anonym-toggle-row {
+      display: flex; align-items: center; gap: 12px;
+      margin-bottom: 18px; padding: 12px 16px;
+      background: #f8fafc; border: 1.5px solid var(--border);
+      border-radius: 10px; cursor: pointer; user-select: none;
+      transition: border-color 0.15s, background 0.15s;
+    }
+    .anonym-toggle-row:hover { border-color: #94a3b8; background: #f1f5f9; }
+    .anonym-toggle-row.active { border-color: var(--accent); background: #eff6ff; }
+    .anonym-switch {
+      width: 38px; height: 22px; background: #d1d5db; border-radius: 11px;
+      position: relative; flex-shrink: 0; transition: background 0.2s;
+    }
+    .anonym-switch::after {
+      content: ''; position: absolute; top: 3px; left: 3px;
+      width: 16px; height: 16px; background: #fff; border-radius: 50%;
+      transition: transform 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    }
+    .anonym-toggle-row.active .anonym-switch { background: var(--accent); }
+    .anonym-toggle-row.active .anonym-switch::after { transform: translateX(16px); }
+    .anonym-toggle-text { flex: 1; }
+    .anonym-toggle-label { font-size: 0.87rem; font-weight: 700; color: var(--text); }
+    .anonym-toggle-sub   { font-size: 0.75rem; color: var(--muted); margin-top: 1px; }
+
+    .anonym-info {
+      display: none; background: #fefce8; border: 1.5px solid #fbbf24;
+      border-radius: 8px; padding: 12px 16px; margin-bottom: 18px;
+      font-size: 0.82rem; line-height: 1.6; color: #78350f;
+    }
+    .anonym-info strong { color: #92400e; }
+    .anonym-info.visible { display: block; }
+
+    .kontakt-fields { transition: opacity 0.2s; }
+    .kontakt-fields.hidden { opacity: 0.35; pointer-events: none; }
 
     /* ── Footer ── */
     footer {
@@ -960,20 +1143,51 @@
             </div>
           </div>
 
-          <div class="row">
-            <div class="field">
-              <label for="vorname">Vorname <span class="req">*</span></label>
-              <input type="text" id="vorname" placeholder="Max" required />
-            </div>
-            <div class="field">
-              <label for="nachname">Nachname <span class="req">*</span></label>
-              <input type="text" id="nachname" placeholder="Mustermann" required />
+          <!-- Anonym-Toggle -->
+          <div class="anonym-toggle-row" id="anonymToggleRow" role="checkbox" aria-checked="false" tabindex="0">
+            <div class="anonym-switch" id="anonymSwitch"></div>
+            <div class="anonym-toggle-text">
+              <div class="anonym-toggle-label">
+                <svg class="si" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:5px"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/><line x1="18" y1="8" x2="23" y2="13"/><line x1="23" y1="8" x2="18" y2="13"/></svg>
+                Anonym einreichen
+              </div>
+              <div class="anonym-toggle-sub">Keine Namens- oder E-Mail-Speicherung · DSGVO-konform</div>
             </div>
           </div>
 
-          <div class="field">
-            <label for="email">E-Mail-Adresse <span class="req">*</span></label>
-            <input type="email" id="email" placeholder="max.mustermann@beispiel.de" required />
+          <!-- Hinweis wenn anonym aktiv -->
+          <div class="anonym-info" id="anonymInfo">
+            <strong>Anonym-Modus aktiv:</strong> Dein Name und deine E-Mail werden weder gespeichert noch übermittelt.
+            Ergebnis und Expertenantwort sind <strong>ausschließlich über deinen persönlichen Falllink</strong> abrufbar —
+            bitte den Link nach dem Absenden sichern.
+          </div>
+
+          <!-- Kontaktfelder (werden bei Anonym ausgeblendet) -->
+          <div class="kontakt-fields" id="kontaktFields">
+            <div class="row">
+              <div class="field">
+                <label for="vorname">Vorname <span class="req">*</span></label>
+                <input type="text" id="vorname" placeholder="Max" />
+              </div>
+              <div class="field">
+                <label for="nachname">Nachname <span class="req">*</span></label>
+                <input type="text" id="nachname" placeholder="Mustermann" />
+              </div>
+            </div>
+            <div class="field">
+              <label for="email">E-Mail-Adresse <span class="req">*</span></label>
+              <input type="email" id="email" placeholder="max.mustermann@beispiel.de" />
+            </div>
+          </div>
+
+          <!-- Mobilnummer – optional, für alle sichtbar (auch anonym) -->
+          <div class="field mobil-field" id="mobilField">
+            <label for="mobil">
+              <svg class="si" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:5px;vertical-align:-1px"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+              Mobilnummer <span style="color:var(--muted);font-weight:400;font-size:0.8rem;">(optional – für SMS-Link)</span>
+            </label>
+            <input type="tel" id="mobil" placeholder="+49 151 12345678" autocomplete="tel" />
+            <div class="field-hint" style="margin-top:4px;font-size:0.75rem;color:var(--muted);">Einmalig den Falllink per SMS erhalten – Nummer wird <strong>nicht gespeichert</strong>.</div>
           </div>
         </div>
 
@@ -1091,6 +1305,10 @@
               <span class="arrow btn-text">→</span>
               <div class="spinner"></div>
             </button>
+            <button type="button" class="voice-btn" id="voiceBtn">
+              <svg class="si" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+              Mit Linda sprechen
+            </button>
           </div>
           <div class="toast" id="toast"></div>
         </div>
@@ -1101,9 +1319,24 @@
     <div id="successPanel" class="success-panel">
       <div class="success-check-ring">✓</div>
       <h2>Vielen Dank!</h2>
-      <p>Deine Anfrage wurde erfolgreich übermittelt. Du erhältst in Kürze eine E-Mail-Bestätigung mit dem Link zu deinem persönlichen Fall-Portal – dort siehst du jederzeit den aktuellen Status.</p>
+      <p id="successTextNormal">Deine Anfrage wurde erfolgreich übermittelt. Du erhältst in Kürze eine E-Mail-Bestätigung mit dem Link zu deinem persönlichen Fall-Portal – dort siehst du jederzeit den aktuellen Status.</p>
       <a id="successPortalLink" href="#" class="success-portal-btn">Zum Fall-Portal →</a>
-      <p class="success-note">💡 Merke dir den Link oder schau in dein E-Mail-Postfach.</p>
+      <p class="success-note">
+        <svg class="si" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        Merke dir den Link oder schau in dein E-Mail-Postfach.
+      </p>
+      <!-- SMS-Bestätigung (nur wenn Mobilnummer angegeben) -->
+      <div id="successSmsHint" style="display:none;margin-top:12px;background:#f0fdf4;border:1.5px solid #86efac;border-radius:10px;padding:12px 16px;font-size:0.84rem;color:#166534;line-height:1.6;max-width:440px;text-align:left;">
+        <strong>📱 SMS wurde gesendet</strong> – der Falllink wurde an deine Mobilnummer verschickt.
+      </div>
+      <!-- Anonym-Hinweis: nur sichtbar wenn anonym eingereicht -->
+      <div id="successAnonymHint" style="display:none;margin-top:16px;background:#fefce8;border:1.5px solid #fbbf24;border-radius:10px;padding:14px 18px;font-size:0.84rem;color:#78350f;line-height:1.6;max-width:440px;text-align:left;">
+        <strong>⚠️ Anonym eingereicht — kein E-Mail-Versand.</strong><br>
+        Dein Falllink ist der <strong>einzige Weg</strong>, die Expertenantwort zu erhalten.
+        Bitte jetzt kopieren und sichern:
+        <br><br>
+        <code id="successLinkText" style="font-size:0.78rem;word-break:break-all;background:#fff8dc;padding:4px 8px;border-radius:4px;display:block;margin-top:4px;"></code>
+      </div>
     </div>
 
   </div>
@@ -1115,6 +1348,33 @@
     <span>pfk2026.oldenburg-knowledge.de</span>
   </div>
 </footer>
+
+<!-- ── VOICE MODAL ── -->
+<div class="voice-modal" id="voiceModal">
+  <div class="voice-sheet">
+    <div class="voice-head">
+      <button class="voice-head-close" onclick="closeVoiceModal()" aria-label="Schließen">✕</button>
+      <div class="voice-head-title">
+        <svg class="si" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.85)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z"/></svg>
+        Linda – Sprach-Assistent
+      </div>
+      <div class="voice-head-sub">Beta · max. 1 Rückfrage · weibliche Stimme</div>
+    </div>
+    <div class="voice-conv" id="voiceConv"></div>
+    <div class="voice-footer">
+      <div class="v-status" id="vStatus"></div>
+      <button class="v-mic-btn" id="vMicBtn" disabled>
+        <svg class="si" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+        <span id="vMicLabel">Bitte warten …</span>
+      </button>
+      <button class="v-fill-btn" id="vFillBtn">
+        <svg class="si" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        Anfrage schriftlich einreichen
+      </button>
+      <div class="v-beta-note" id="vBetaNote">Beta-Modus · Eine Rückfrage möglich · Dann schriftliche Einreichung empfohlen</div>
+    </div>
+  </div>
+</div>
 
 <!-- ── MODAL ── -->
 <!-- Checklisten-Panel -->
@@ -1175,6 +1435,7 @@
         </div>
         <div class="ai-text" id="aiText"></div>
         <div class="paragrafen-box" id="paragrafenBox" style="display:none"></div>
+        <div id="quellenBox" style="display:none;margin-bottom:12px;"></div>
         <div class="quality-row" id="qualityRow" style="display:none">
           <span class="quality-chip ok"><svg class="si" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" style="margin-right:4px"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg>§§-verifiziert</span>
           <span class="quality-chip ok"><svg class="si" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" style="margin-right:4px"><polyline points="20 6 9 17 4 12"/></svg>Quellengebunden</span>
@@ -1227,6 +1488,20 @@
     return String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   }
 
+  // Markdown → sicheres HTML (erst escapen, dann Muster ersetzen)
+  function md2html(s) {
+    let t = escHtml(s);
+    // **fett** → <strong>
+    t = t.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+    // *kursiv* → <em>  (nur wenn nicht schon strong)
+    t = t.replace(/\*([^*\n]+?)\*/g, '<em>$1</em>');
+    // Doppelter Zeilenumbruch → Absatz
+    t = t.replace(/\n\n+/g, '</p><p>');
+    // Einfacher Zeilenumbruch → <br>
+    t = t.replace(/\n/g, '<br>');
+    return '<p>' + t + '</p>';
+  }
+
   // ── §§ URL-Builder (gesetze-im-internet.de) ───────────────────
   function romanToNum(r) {
     const v = { I:1, V:5, X:10, L:50, C:100 };
@@ -1262,6 +1537,29 @@
   }
 
   // ── Intent Classification Strip ────────────────────────────────
+  // Quellen aus Vector Store im Modal anzeigen
+  function renderQuellenModal(quellen) {
+    const box = document.getElementById('quellenBox');
+    if (!box) return;
+    if (!quellen || !quellen.length) { box.style.display = 'none'; box.innerHTML = ''; return; }
+
+    const items = quellen.map(function(q) {
+      const auszug = q.auszug
+        ? '<div style="color:#64748b;font-style:italic;border-left:2px solid #0ea5e9;padding-left:8px;margin-top:4px;font-size:0.77rem;line-height:1.5;">„' + escHtml(q.auszug.slice(0, 260)) + (q.auszug.length >= 260 ? ' …' : '') + '"</div>'
+        : '';
+      return '<div style="margin-bottom:8px;">'
+        + '<div style="font-weight:700;color:#003087;font-size:0.8rem;display:flex;align-items:center;gap:5px;">'
+        + '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>'
+        + escHtml(q.datei) + '</div>' + auszug + '</div>';
+    }).join('');
+
+    box.innerHTML = '<div style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:8px;padding:10px 14px;">'
+      + '<div style="font-size:0.72rem;font-weight:700;letter-spacing:0.06em;color:#0369a1;margin-bottom:8px;display:flex;align-items:center;gap:5px;">'
+      + '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>'
+      + 'GEPRÜFTE QUELLEN (' + quellen.length + ')</div>' + items + '</div>';
+    box.style.display = 'block';
+  }
+
   function renderIntentStrip(k) {
     const strip = document.getElementById('intentStrip');
     if (!strip) return;
@@ -1383,6 +1681,36 @@
     charCount.className = 'char-count ' + (n >= 120 ? 'good' : 'short');
   });
 
+  // ── Vorbefüllung aus Linda3 (?vorbefuellung=...) ─────────────
+  (function() {
+    const params = new URLSearchParams(window.location.search);
+    const vorbefuellung = params.get('vorbefuellung');
+    if (!vorbefuellung) return;
+    const text = decodeURIComponent(vorbefuellung).trim().slice(0, 3000);
+    if (!text) return;
+
+    // Fachbereich + Thema automatisch setzen
+    const fachbereichEl = document.getElementById('fachbereich');
+    if (fachbereichEl && !fachbereichEl.value) {
+      fachbereichEl.value = 'Sozialrecht';
+      fachbereichEl.dispatchEvent(new Event('change'));
+    }
+
+    // Beschreibung vorbefüllen
+    beschEl.value = text;
+    beschEl.dispatchEvent(new Event('input'));
+
+    // Hinweis-Banner über dem Textarea
+    const hint = document.createElement('div');
+    hint.style.cssText = 'background:#eff6ff;border:1.5px solid #bae6fd;border-radius:8px;padding:10px 14px;font-size:0.8rem;color:#1e40af;margin-bottom:10px;display:flex;align-items:flex-start;gap:8px;';
+    hint.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:1px"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z"/></svg>'
+      + '<span><strong>Aus Linda3 übernommen</strong> – dein Chat-Verlauf wurde vorausgefüllt. Bitte wähle noch ein Thema und ergänze fehlende Details.</span>';
+    beschEl.parentNode.insertBefore(hint, beschEl);
+
+    // Scroll zu Beschreibung
+    setTimeout(() => beschEl.scrollIntoView({ behavior: 'smooth', block: 'center' }), 400);
+  })();
+
   // ── Upload ───────────────────────────────────────────────────
   const uploadArea  = document.getElementById('uploadArea');
   const dateiUpload = document.getElementById('dateiUpload');
@@ -1410,14 +1738,43 @@
     });
   }
 
+  // ── Anonym-Toggle ─────────────────────────────────────────────
+  let istAnonym = false;
+
+  function toggleAnonym() {
+    istAnonym = !istAnonym;
+    const row    = document.getElementById('anonymToggleRow');
+    const info   = document.getElementById('anonymInfo');
+    const fields = document.getElementById('kontaktFields');
+    row.classList.toggle('active', istAnonym);
+    row.setAttribute('aria-checked', istAnonym);
+    info.classList.toggle('visible', istAnonym);
+    fields.classList.toggle('hidden', istAnonym);
+    // Felder leeren + disabled wenn anonym
+    ['vorname','nachname','email'].forEach(id => {
+      const el = document.getElementById(id);
+      el.disabled = istAnonym;
+      if (istAnonym) { el.value = ''; el.style.borderColor = ''; }
+    });
+  }
+
+  document.getElementById('anonymToggleRow').addEventListener('click', toggleAnonym);
+  document.getElementById('anonymToggleRow').addEventListener('keydown', e => {
+    if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); toggleAnonym(); }
+  });
+
   // ── Validation ────────────────────────────────────────────────
   function validate() {
     const toast = document.getElementById('toast');
     toast.className = 'toast'; toast.textContent = '';
 
-    const fields = ['vorname','nachname','email','fachbereich','thema','beschreibung'];
+    // Pflichtfelder: bei Anonym nur Fachbereich, Thema, Beschreibung
+    const pflichtfelder = istAnonym
+      ? ['fachbereich','thema','beschreibung']
+      : ['vorname','nachname','email','fachbereich','thema','beschreibung'];
+
     let ok = true;
-    fields.forEach(id => {
+    pflichtfelder.forEach(id => {
       const el = document.getElementById(id);
       el.style.borderColor = '';
       if (!el.value.trim()) { el.style.borderColor = '#dc2626'; ok = false; }
@@ -1428,12 +1785,14 @@
       return false;
     }
 
-    const emailEl = document.getElementById('email');
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailEl.value.trim())) {
-      emailEl.style.borderColor = '#dc2626';
-      toast.className = 'toast error';
-      toast.textContent = 'Bitte gib eine gültige E-Mail-Adresse ein.';
-      return false;
+    if (!istAnonym) {
+      const emailEl = document.getElementById('email');
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailEl.value.trim())) {
+        emailEl.style.borderColor = '#dc2626';
+        toast.className = 'toast error';
+        toast.textContent = 'Bitte gib eine gültige E-Mail-Adresse ein.';
+        return false;
+      }
     }
 
     if (!document.getElementById('dsgvoCheck').checked) {
@@ -1546,6 +1905,7 @@
       aiVerlauf = [];
       renderParagrafen([]);
       renderIntentStrip(null);
+      renderQuellenModal([]);
 
       // Datei für Voranalyse vorbereiten
       const vorFile = dateiUpload.files[0];
@@ -1564,7 +1924,7 @@
 
     } catch {
       document.getElementById('modalLoading').style.display = 'none';
-      document.getElementById('aiText').textContent = 'Die KI-Analyse ist gerade nicht verfügbar. Du kannst die Anfrage trotzdem absenden.';
+      document.getElementById('aiText').innerHTML = md2html('Die KI-Analyse ist gerade nicht verfügbar. Du kannst die Anfrage trotzdem absenden.');
       document.getElementById('aiLaenge').style.display = 'none';
       document.getElementById('aiFollowup').style.display = 'none';
       document.getElementById('aiResult').style.display = 'block';
@@ -1617,9 +1977,10 @@
       // ── Einschätzung anzeigen ───────────────────────────────
       closeChecklist();
       aktuelleEinschaetzung = data.einschaetzung || '';
-      document.getElementById('aiText').textContent = aktuelleEinschaetzung || 'Analyse nicht verfügbar.';
+      document.getElementById('aiText').innerHTML = md2html(aktuelleEinschaetzung || 'Analyse nicht verfügbar.');
       renderParagrafen(data.paragrafen || []);
       renderIntentStrip(data.klassifikation || null);
+      renderQuellenModal(data.quellen || []);
 
       // Antwortlänge-Umschalter: aktuellen Payload merken + Buttons setzen
       letzteVoranalysePayload = payload;
@@ -1668,8 +2029,9 @@
       const data = await res.json();
       if (data.einschaetzung) {
         aktuelleEinschaetzung   = data.einschaetzung;
-        aiTextEl.textContent    = aktuelleEinschaetzung;
+        aiTextEl.innerHTML      = md2html(aktuelleEinschaetzung);
         renderParagrafen(data.paragrafen || []);
+        renderQuellenModal(data.quellen || []);
         letzteVoranalysePayload = { ...letzteVoranalysePayload, antwortLaenge: laenge, forceEinschaetzung: true };
       }
     } catch { /* vorhandenen Text behalten */ }
@@ -1688,7 +2050,7 @@
     const el = document.getElementById('aiFollowupThread');
     el.innerHTML = aiVerlauf.map(v => `
       <div class="fu-q">${escHtml(v.frage)}</div>
-      <div class="fu-a${v.antwort ? '' : ' pending'}">${v.antwort ? escHtml(v.antwort) : 'Linda4 denkt nach …'}</div>
+      <div class="fu-a${v.antwort ? '' : ' pending'}">${v.antwort ? md2html(v.antwort) : 'Linda4 denkt nach …'}</div>
     `).join('');
   }
 
@@ -1797,9 +2159,11 @@
     }
 
     const payload = {
-      vorname:        document.getElementById('vorname').value.trim(),
-      nachname:       document.getElementById('nachname').value.trim(),
-      email:          document.getElementById('email').value.trim(),
+      anonym:         istAnonym,
+      vorname:        istAnonym ? '' : document.getElementById('vorname').value.trim(),
+      nachname:       istAnonym ? '' : document.getElementById('nachname').value.trim(),
+      email:          istAnonym ? '' : document.getElementById('email').value.trim(),
+      mobil:          (document.getElementById('mobil').value || '').trim(),
       fachbereich:    document.getElementById('fachbereich').value,
       thema:          document.getElementById('thema').value,
       beschreibung:   getPlausiPrefix() + document.getElementById('beschreibung').value.trim(),
@@ -1832,11 +2196,24 @@
 
       if (res.ok && data.ok) {
         closeModal();
-        // Form verstecken, Dankeschön-Panel zeigen
         document.querySelector('.card').style.display = 'none';
         const sp = document.getElementById('successPanel');
         sp.style.display = 'block';
-        if (data.portalLink) document.getElementById('successPortalLink').href = data.portalLink;
+        if (data.portalLink) {
+          document.getElementById('successPortalLink').href = data.portalLink;
+          const linkText = document.getElementById('successLinkText');
+          if (linkText) linkText.textContent = data.portalLink;
+        }
+        // Bei Anonym: Hinweis dass kein E-Mail kommt
+        const anonymHint = document.getElementById('successAnonymHint');
+        if (anonymHint) anonymHint.style.display = istAnonym ? 'block' : 'none';
+        const normalText = document.getElementById('successTextNormal');
+        if (normalText) normalText.textContent = istAnonym
+          ? 'Deine anonyme Anfrage wurde übermittelt. Es wird keine E-Mail gesendet – bitte sichere den Falllink unten.'
+          : 'Deine Anfrage wurde erfolgreich übermittelt. Du erhältst in Kürze eine E-Mail-Bestätigung mit dem Link zu deinem persönlichen Fall-Portal.';
+        // SMS-Bestätigung
+        const smsHint = document.getElementById('successSmsHint');
+        if (smsHint) smsHint.style.display = data.smsSent ? 'block' : 'none';
         window.scrollTo({ top: 0, behavior: 'smooth' });
       } else {
         throw new Error(data.error || 'Unbekannter Fehler');
@@ -1849,6 +2226,406 @@
     } finally {
       btn.classList.remove('loading'); btn.disabled = false;
     }
+  });
+
+  // ══════════════════════════════════════════════════════════════
+  // VOICE-ASSISTENT — Linda Sprach-Modus
+  // ══════════════════════════════════════════════════════════════
+  const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+  let voiceVerlauf      = [];   // [{role:'user'|'linda', text}]
+  let voiceRecording    = false;
+  let voiceDone         = false; // true after 1 follow-up answered
+  let voiceLastUserText = '';
+  let voiceCurrentAudio = null;
+  let voiceRecognizer   = null;
+  let voiceGreeted      = false;
+  let vCurrentLinda     = null; // { bubble, col } — pending Linda bubble
+
+  // ── Avatar helper ──────────────────────────────────────────────
+  function getAvatar() { return document.querySelector('.v-avatar'); }
+
+  function setAvatarSpeaking(on) {
+    const av = getAvatar();
+    if (av) av.classList.toggle('speaking', on);
+  }
+
+  // ── Bubble helpers ─────────────────────────────────────────────
+  function addLindaBubble(text, pending = false) {
+    const conv = document.getElementById('voiceConv');
+    const row  = document.createElement('div');
+    row.className = 'vb-linda';
+    row.innerHTML = `
+      <div class="v-avatar">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.9)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z"/></svg>
+      </div>
+      <div class="vb-linda-col">
+        <div class="v-bubble${pending ? ' pending' : ''}">${text}</div>
+      </div>`;
+    conv.appendChild(row);
+    conv.scrollTop = conv.scrollHeight;
+    return {
+      bubble:  row.querySelector('.v-bubble'),
+      col:     row.querySelector('.vb-linda-col'),
+    };
+  }
+
+  // Quellen unter Linda-Bubble rendern (Idee B)
+  // Keine verschachtelten Template-Literals — DOM-API statt innerHTML
+  function renderQuellen(col, quellen) {
+    if (!quellen || !quellen.length) return;
+
+    // Toggle-Button
+    const btn = document.createElement('button');
+    btn.className = 'v-src-toggle';
+    btn.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg><span> Quellen anzeigen (' + quellen.length + ')</span>';
+    // Note: innerHTML backtick-free, deliberately using string concatenation
+
+    // Quellen-Liste
+    const list = document.createElement('div');
+    list.className = 'v-src-list';
+    quellen.forEach(function(q) {
+      const item = document.createElement('div');
+      item.className = 'v-src-item';
+
+      const nameDiv = document.createElement('div');
+      nameDiv.className = 'v-src-name';
+      nameDiv.innerHTML = '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>';
+      nameDiv.appendChild(document.createTextNode(' ' + (q.datei || 'Dokument')));
+      item.appendChild(nameDiv);
+
+      if (q.auszug) {
+        const auszugDiv = document.createElement('div');
+        auszugDiv.className = 'v-src-auszug';
+        auszugDiv.textContent = '„' + q.auszug.slice(0, 280) + (q.auszug.length >= 280 ? ' …' : '') + '“';
+        item.appendChild(auszugDiv);
+      }
+      list.appendChild(item);
+    });
+
+    // Toggle-Logik
+    btn.addEventListener('click', function() {
+      const open = list.classList.toggle('open');
+      // Sicherer Text-Update ohne DOM-Manipulation der SVG
+      const span = btn.querySelector('span') || document.createElement('span');
+      span.textContent = open
+        ? ' Quellen ausblenden (' + quellen.length + ')'
+        : ' Quellen anzeigen ('   + quellen.length + ')';
+      if (!btn.querySelector('span')) btn.appendChild(span);
+    });
+
+    col.appendChild(btn);
+    col.appendChild(list);
+    document.getElementById('voiceConv').scrollTop = 99999;
+  }
+
+  function addUserBubble(text) {
+    const conv = document.getElementById('voiceConv');
+    const div  = document.createElement('div');
+    div.className = 'v-bubble-user';
+    div.textContent = text;
+    conv.appendChild(div);
+    conv.scrollTop = conv.scrollHeight;
+  }
+
+  // ── TTS audio playback ─────────────────────────────────────────
+  function playVoiceAudio(base64) {
+    return new Promise(resolve => {
+      if (!base64) { resolve(); return; }
+      if (voiceCurrentAudio) { voiceCurrentAudio.pause(); voiceCurrentAudio = null; }
+      const audio = new Audio('data:audio/mp3;base64,' + base64);
+      voiceCurrentAudio = audio;
+      setAvatarSpeaking(true);
+      audio.onended = () => { setAvatarSpeaking(false); voiceCurrentAudio = null; resolve(); };
+      audio.onerror = () => { setAvatarSpeaking(false); voiceCurrentAudio = null; resolve(); };
+      audio.play().catch(() => { setAvatarSpeaking(false); resolve(); });
+    });
+  }
+
+  // ── Status line ────────────────────────────────────────────────
+  function setVStatus(msg) {
+    const el = document.getElementById('vStatus');
+    if (el) el.textContent = msg;
+  }
+
+  // ── Open / Close modal ─────────────────────────────────────────
+  // Safari-Erkennung (inkl. iOS Safari, aber nicht Chrome/Firefox auf iOS)
+  const isSafari = /^((?!chrome|crios|fxios|android).)*safari/i.test(navigator.userAgent);
+
+  function showVoiceUnsupported(msg) {
+    const toast = document.getElementById('toast');
+    if (toast) {
+      toast.className = 'toast error';
+      toast.textContent = msg;
+      setTimeout(() => { toast.className = 'toast'; }, 5000);
+    }
+    // Kleinen Hinweis direkt am Voice-Button anzeigen
+    const btn = document.getElementById('voiceBtn');
+    if (btn) {
+      const hint = document.createElement('div');
+      hint.style.cssText = 'font-size:0.72rem;color:#dc2626;margin-top:5px;line-height:1.4;max-width:260px;';
+      hint.textContent = msg;
+      // Nur einmal einfügen
+      if (!btn.parentNode.querySelector('.voice-browser-hint')) {
+        hint.className = 'voice-browser-hint';
+        btn.parentNode.insertBefore(hint, btn.nextSibling);
+      }
+    }
+  }
+
+  function openVoiceModal() {
+    if (!SpeechRec) {
+      showVoiceUnsupported('Spracherkennung nicht verfügbar. Bitte Chrome oder Edge nutzen.');
+      return;
+    }
+    if (isSafari) {
+      showVoiceUnsupported('Safari unterstützt Spracherkennung leider nicht zuverlässig. Bitte Chrome oder Edge verwenden.');
+      return;
+    }
+    // Datenschutz-Häkchen muss gesetzt sein
+    const dsgvo = document.getElementById('dsgvoCheck');
+    if (!dsgvo || !dsgvo.checked) {
+      // Checkbox kurz hervorheben und zur Sektion scrollen
+      const block = document.querySelector('.dsgvo-block');
+      if (block) {
+        block.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        block.style.transition = 'box-shadow 0.2s';
+        block.style.boxShadow = '0 0 0 3px rgba(220,38,38,0.45)';
+        block.style.borderRadius = '8px';
+        setTimeout(() => { block.style.boxShadow = ''; }, 1800);
+      }
+      // Kurze Toast-Meldung
+      const toast = document.getElementById('toast');
+      if (toast) {
+        toast.className = 'toast error';
+        toast.textContent = 'Bitte zuerst den Datenschutz-Hinweis bestätigen.';
+        setTimeout(() => { toast.className = 'toast'; }, 3500);
+      }
+      return;
+    }
+    const modal = document.getElementById('voiceModal');
+    modal.classList.add('open');
+    document.body.style.overflow = 'hidden';
+    voiceVerlauf      = [];
+    voiceRecording    = false;
+    voiceDone         = false;
+    voiceLastUserText = '';
+    voiceGreeted      = false;
+    vCurrentLinda     = null;
+    document.getElementById('voiceConv').innerHTML = '';
+    document.getElementById('vFillBtn').style.display = 'none';
+    document.getElementById('vBetaNote').style.display = 'none';
+    const micBtn = document.getElementById('vMicBtn');
+    micBtn.disabled = true;
+    micBtn.classList.remove('recording');
+    document.getElementById('vMicLabel').textContent = 'Bitte warten …';
+    setVStatus('');
+
+    // Mikrofon-Berechtigung sofort während User-Gesture anfordern —
+    // verhindert, dass der Permission-Dialog die SpeechRecognition abbricht
+    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+      navigator.mediaDevices.getUserMedia({ audio: true })
+        .then(function(stream) { stream.getTracks().forEach(function(t) { t.stop(); }); })
+        .catch(function() { /* Fehler kommt später bei rec.start() */ });
+    }
+
+    startVoiceGreeting();
+  }
+
+  function closeVoiceModal() {
+    // Stop any running recognizer
+    if (voiceRecognizer) { try { voiceRecognizer.abort(); } catch(e) {} voiceRecognizer = null; }
+    if (voiceCurrentAudio) { voiceCurrentAudio.pause(); voiceCurrentAudio = null; }
+    setAvatarSpeaking(false);
+    voiceRecording = false;
+    const modal = document.getElementById('voiceModal');
+    modal.classList.remove('open');
+    document.body.style.overflow = '';
+  }
+
+  // ── Step: greeting ─────────────────────────────────────────────
+  async function startVoiceGreeting() {
+    setVStatus('Linda spricht …');
+    // Show pending Linda bubble
+    vCurrentLinda = addLindaBubble('…', true);
+    try {
+      const res  = await fetch('/api/fall?action=voice', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ step: 'greeting' }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Fehler');
+
+      vCurrentLinda.bubble.innerHTML = md2html(data.text);
+      vCurrentLinda.bubble.classList.remove('pending');
+      voiceVerlauf.push({ role: 'linda', text: data.text });
+      voiceGreeted = true;
+
+      await playVoiceAudio(data.audio);
+      setVStatus('');
+      enableMic();
+    } catch(err) {
+      vCurrentLinda.bubble.textContent = 'Verbindungsfehler. Bitte Modal schließen und erneut versuchen.';
+      vCurrentLinda.bubble.classList.remove('pending');
+      setVStatus('Fehler bei der Verbindung.');
+    }
+  }
+
+  // ── Enable mic button ──────────────────────────────────────────
+  function enableMic() {
+    if (voiceDone) return;
+    const micBtn = document.getElementById('vMicBtn');
+    micBtn.disabled = false;
+    document.getElementById('vMicLabel').textContent = 'Sprechen';
+    setVStatus('Tippe den Mikrofon-Button und sprich.');
+  }
+
+  // ── Web Speech API: listen ─────────────────────────────────────
+  function startVoiceListening() {
+    if (voiceRecording || voiceDone) return;
+    voiceRecording = true;
+
+    const micBtn = document.getElementById('vMicBtn');
+    micBtn.classList.add('recording');
+    document.getElementById('vMicLabel').textContent = 'Aufnahme läuft …';
+    setVStatus('Sprich jetzt. Aufnahme stoppt automatisch bei Pause.');
+
+    const rec = new SpeechRec();
+    voiceRecognizer = rec;
+    rec.lang = 'de-DE';
+    rec.interimResults = false;
+    rec.maxAlternatives = 1;
+
+    rec.onresult = (event) => {
+      const transcript = event.results[0][0].transcript.trim();
+      voiceLastUserText = transcript;
+    };
+
+    rec.onend = () => {
+      voiceRecording = false;
+      voiceRecognizer = null;
+      micBtn.classList.remove('recording');
+      micBtn.disabled = true;
+      document.getElementById('vMicLabel').textContent = 'Bitte warten …';
+
+      if (voiceLastUserText) {
+        handleVoiceUserInput(voiceLastUserText);
+        voiceLastUserText = '';
+      } else {
+        setVStatus('Keine Sprache erkannt. Bitte erneut versuchen.');
+        if (!voiceDone) enableMic();
+      }
+    };
+
+    rec.onerror = (event) => {
+      voiceRecording = false;
+      voiceRecognizer = null;
+      micBtn.classList.remove('recording');
+      const msg = event.error === 'no-speech'
+        ? 'Keine Sprache erkannt. Bitte erneut versuchen.'
+        : `Spracherkennungsfehler: ${event.error}`;
+      setVStatus(msg);
+      if (!voiceDone) enableMic();
+    };
+
+    rec.start();
+  }
+
+  // ── Handle user voice input → API ─────────────────────────────
+  async function handleVoiceUserInput(userText) {
+    addUserBubble(userText);
+    voiceVerlauf.push({ role: 'user', text: userText });
+
+    // Determine step: first user message = 'analyse', second = 'followup'
+    const userMessages = voiceVerlauf.filter(v => v.role === 'user');
+    const step = userMessages.length <= 1 ? 'analyse' : 'followup';
+
+    // Build history pairs {user, linda} from voiceVerlauf EXCLUDING the current message
+    const history = voiceVerlauf.slice(0, -1);
+    const verlaufPairs = [];
+    for (let i = 0; i < history.length; i++) {
+      if (history[i].role === 'user' && history[i + 1]?.role === 'linda') {
+        verlaufPairs.push({ user: history[i].text, linda: history[i + 1].text });
+        i++; // skip linda entry, already consumed
+      }
+    }
+
+    setVStatus('Linda denkt …');
+    vCurrentLinda = addLindaBubble('…', true);
+
+    try {
+      const res  = await fetch('/api/fall?action=voice', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ step, text: userText, verlauf: verlaufPairs }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Fehler');
+
+      vCurrentLinda.bubble.innerHTML = md2html(data.text);
+      vCurrentLinda.bubble.classList.remove('pending');
+      voiceVerlauf.push({ role: 'linda', text: data.text });
+
+      // Quellen anzeigen falls Pflege-Thema (Idee B)
+      if (data.quellen && data.quellen.length) {
+        renderQuellen(vCurrentLinda.col, data.quellen);
+      }
+
+      setVStatus('');
+      await playVoiceAudio(data.audio);
+
+      if (data.final) {
+        voiceDone = true;
+        document.getElementById('vMicBtn').disabled = true;
+        document.getElementById('vMicLabel').textContent = 'Limit erreicht';
+        document.getElementById('vFillBtn').style.display = 'flex';
+        document.getElementById('vBetaNote').style.display = 'block';
+        setVStatus('Beta-Limit: Einmalige Rückfrage ausgeschöpft.');
+      } else {
+        enableMic();
+      }
+    } catch(err) {
+      vCurrentLinda.bubble.textContent = 'Verbindungsfehler: ' + err.message;
+      vCurrentLinda.bubble.classList.remove('pending');
+      setVStatus('Fehler. Bitte erneut versuchen.');
+      if (!voiceDone) enableMic();
+    }
+  }
+
+  // ── Event listeners ────────────────────────────────────────────
+  document.getElementById('voiceBtn').addEventListener('click', openVoiceModal);
+
+  document.getElementById('vMicBtn').addEventListener('click', function () {
+    if (voiceRecording) return; // already recording, let onend handle it
+    startVoiceListening();
+  });
+
+  document.getElementById('vFillBtn').addEventListener('click', function () {
+    // Vollständiges Gespräch strukturiert in Beschreibung übernehmen
+    const lines = [];
+    for (const v of voiceVerlauf) {
+      if (v.role === 'user')  lines.push('Ich: ' + v.text);
+      if (v.role === 'linda') lines.push('Linda: ' + v.text);
+    }
+    const fullText = lines.join('\n\n');
+    if (fullText) {
+      const ta = document.getElementById('beschreibung');
+      if (ta) {
+        ta.value = fullText;
+        ta.dispatchEvent(new Event('input'));
+      }
+    }
+    closeVoiceModal();
+    // Scroll beschreibung into view
+    setTimeout(() => {
+      const ta = document.getElementById('beschreibung');
+      if (ta) { ta.focus(); ta.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+    }, 200);
+  });
+
+  // Close modal on backdrop click
+  document.getElementById('voiceModal').addEventListener('click', function(e) {
+    if (e.target === this) closeVoiceModal();
   });
 </script>
 </body>
