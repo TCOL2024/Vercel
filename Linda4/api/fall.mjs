@@ -1,4 +1,4 @@
-// build: v2026-06-02-fallback (Cache-Bust: erzwingt Neukompilierung der Funktion)
+// build: v20260603-1328-06-02-fallback (Cache-Bust: erzwingt Neukompilierung der Funktion)
 import { Redis } from '@upstash/redis';
 import { createRequire } from 'module';
 const require = createRequire(import.meta.url);
@@ -193,6 +193,88 @@ async function handleLoeschen(req, res) {
   }
 }
 
+// ── VECTOR STORE — Pflege-Suche (module-level, genutzt von Voice + Voranalyse) ─
+const VECTOR_STORE_ID = 'vs_69de0362cf84819199202158e8444e16';
+const PFLEGE_RE = /pflege(?:grad|kasse|bed[uü]rf|vers|heim|geld|antrag|zeit)?|sgb\s*xi\b|pfleges(?:tufe|atz)|medizinischer?\s*dienst\b|mdk\b|spitex|tagespflege|kurzzeitpflege|verhinderungspflege|pflegeperson/i;
+
+async function llmMitQuellen(apiKey, systemPrompt, messages) {
+  // Konvertiere messages-Array ins Responses-API-Format
+  // System-Message herausfiltern, Instructions separat übergeben
+  const inputMessages = messages.filter(m => m.role !== 'system');
+
+  const body = {
+    model: 'gpt-5.1',
+    instructions: systemPrompt,
+    input: inputMessages,
+    tools: [{ type: 'file_search', vector_store_ids: [VECTOR_STORE_ID] }],
+    // Ohne diesen Parameter liefert die API die Quell-Texte NICHT mit
+    include: ['file_search_call.results'],
+  };
+
+  const r = await fetch('https://api.openai.com/v1/responses', {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+
+  if (!r.ok) {
+    const errText = await r.text();
+    console.error('Responses API Fehler:', r.status, errText.slice(0, 300));
+    throw new Error('LLM-Responses ' + r.status);
+  }
+
+  const data = await r.json();
+
+  // Detailliertes Logging für Debugging
+  const outputTypes = (data.output || []).map(o => o.type);
+  console.log('Responses API output types:', JSON.stringify(outputTypes));
+
+  // Quellen aus file_search_call extrahieren
+  // Benötigt include:['file_search_call.results'] im Request
+  const searchCall = (data.output || []).find(o =>
+    o.type === 'file_search_call' || o.type === 'tool_call'
+  );
+  if (searchCall) {
+    console.log('searchCall keys:', JSON.stringify(Object.keys(searchCall)));
+    console.log('searchCall.status:', searchCall.status);
+    console.log('searchCall.results type:', typeof searchCall.results,
+      Array.isArray(searchCall.results) ? 'len=' + searchCall.results.length : '');
+  } else {
+    console.log('searchCall: nicht gefunden in output');
+  }
+
+  // results sind bei Responses API direkt unter searchCall.results
+  const rawResults = Array.isArray(searchCall?.results) ? searchCall.results : [];
+
+  console.log('rawResults count:', rawResults.length,
+    rawResults.length ? '| first score:' + rawResults[0]?.score + ' | keys:' + JSON.stringify(Object.keys(rawResults[0] || {})) : '');
+
+  const quellen = rawResults
+    .filter(q => (q.score || 0) >= 0.1)   // niedrige Schwelle
+    .slice(0, 3)
+    .map(q => ({
+      datei:  q.filename || q.file_name || q.title || 'Dokument',
+      auszug: (q.text || q.content || q.snippet || '').trim().slice(0, 300),
+    }))
+    .filter(q => q.datei || q.auszug);
+
+  // Antworttext aus message-Output
+  const msgOut = (data.output || []).find(o => o.type === 'message');
+  const contentItem = msgOut?.content?.[0];
+  let text = (
+    contentItem?.text ||
+    contentItem?.output_text ||
+    (typeof contentItem === 'string' ? contentItem : '') ||
+    data.output_text || ''
+  ).trim();
+
+  // Inline-Zitate entfernen 【N†name】
+  text = text.replace(/【\d+†[^】]*】/g, '').replace(/\s{2,}/g, ' ').trim();
+
+  console.log('llmMitQuellen result: text length', text.length, '| quellen:', quellen.length);
+  return { text, quellen };
+}
+
 // ── VOICE (Linda Sprach-Assistent, tts-1 + gpt-4o-mini) ──────────────────────
 async function handleVoice(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
@@ -203,26 +285,52 @@ async function handleVoice(req, res) {
 
   const { step, text, verlauf } = req.body || {};
 
-  // TTS: tts-1 mit nova (weibliche Stimme, günstigstes Modell)
+  // TTS: Azure Neural (bevorzugt) → OpenAI nova (Fallback)
   async function tts(input) {
-    const r = await fetch('https://api.openai.com/v1/audio/speech', {
-      method: 'POST',
-      headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ model: 'tts-1', voice: 'nova', input, response_format: 'mp3' }),
-    });
-    if (!r.ok) throw new Error('TTS ' + r.status);
-    return Buffer.from(await r.arrayBuffer()).toString('base64');
+    const azureKey    = process.env.AZURE_SPEECH_KEY;
+    const azureRegion = process.env.AZURE_SPEECH_REGION || 'germanywestcentral';
+    const azureVoice  = process.env.AZURE_SPEECH_VOICE  || 'de-DE-SeraphinaMultilingualNeural';
+
+    if (azureKey) {
+      // ── Azure Cognitive Services TTS ──────────────────────────
+      // Erst Token holen (oder direkt Key als Ocp-Apim-Subscription-Key)
+      const ssml = `<speak version='1.0' xml:lang='de-DE'><voice name='${azureVoice}'>${input.replace(/[<>&"]/g, c => ({ '<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;' }[c]))}</voice></speak>`;
+      const r = await fetch(`https://${azureRegion}.tts.speech.microsoft.com/cognitiveservices/v1`, {
+        method: 'POST',
+        headers: {
+          'Ocp-Apim-Subscription-Key': azureKey,
+          'Content-Type': 'application/ssml+xml',
+          'X-Microsoft-OutputFormat': 'audio-24khz-48kbitrate-mono-mp3',
+          'User-Agent': 'Linda4-SocialLaw',
+        },
+        body: ssml,
+      });
+      if (r.ok) return Buffer.from(await r.arrayBuffer()).toString('base64');
+      console.warn('Azure TTS fehlgeschlagen (' + r.status + '), Fallback auf OpenAI');
+    }
+
+    // ── OpenAI gpt-4o-mini-tts (GPT-4 basiert) → Fallback tts-1-hd ─
+    const ttsModels = ['gpt-4o-mini-tts', 'tts-1-hd'];
+    let ttsOk = false;
+    for (const ttsModel of ttsModels) {
+      const r2 = await fetch('https://api.openai.com/v1/audio/speech', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ model: ttsModel, voice: 'coral', input, response_format: 'mp3' }),
+      });
+      if (r2.ok) { ttsOk = true; return Buffer.from(await r2.arrayBuffer()).toString('base64'); }
+      console.warn(`TTS ${ttsModel} fehlgeschlagen (${r2.status}), nächster Versuch…`);
+    }
+    if (!ttsOk) throw new Error('Alle TTS-Modelle fehlgeschlagen');
   }
 
-  // LLM: gpt-4o-mini (günstig, kein gpt-5.x)
+  // Pflege-Erkennung + LLM-Funktionen jetzt module-level (PFLEGE_RE, llmMitQuellen)
+
+  // LLM Standard: GPT-5.1 via vorhandenen chatCompletion-Helper
   async function llm(messages) {
-    const r = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ model: 'gpt-4o-mini', messages, max_tokens: 300, temperature: 0.2 }),
-    });
-    if (!r.ok) throw new Error('LLM ' + r.status);
-    return (await r.json()).choices?.[0]?.message?.content?.trim() || '';
+    const result = await chatCompletion({ apiKey, messages, maxTokens: 400, temperature: 0.2 });
+    if (!result.ok) throw new Error('LLM ' + result.status);
+    return { text: result.content, quellen: [] };
   }
 
   // ── Begrüßung ──
@@ -240,30 +348,45 @@ async function handleVoice(req, res) {
   // ── Erste Analyse oder Rückfrage ──
   if (step === 'analyse' || step === 'followup') {
     if (!text || !String(text).trim()) return res.status(400).json({ error: 'Kein Text' });
-    const userText = String(text).trim().slice(0, 1000);
+    const userText   = String(text).trim().slice(0, 1000);
     const isFollowup = step === 'followup';
+    const istPflege  = PFLEGE_RE.test(userText) ||
+                       (Array.isArray(verlauf) && verlauf.some(v => PFLEGE_RE.test(v.user || '') || PFLEGE_RE.test(v.linda || '')));
+
+    const systemPrompt = `Du bist Linda, eine freundliche KI-Assistentin für deutsches Sozialrecht. Antworte kurz und klar auf Deutsch (max. 4 Sätze). Nenne das relevante SGB falls passend. Keine Rechtsberatung.${istPflege ? ' Nutze die bereitgestellten Quelldokumente zum SGB XI.' : ''}${isFollowup ? ' Das ist die letzte Antwort im Beta-Modus – schließe mit dem Hinweis, die Anfrage schriftlich einzureichen.' : ''}`;
 
     const messages = [
-      { role: 'system', content: `Du bist Linda, eine freundliche KI-Assistentin für deutsches Sozialrecht. Antworte kurz und klar auf Deutsch (max. 4 Sätze). Nenne das relevante SGB falls passend. Keine Rechtsberatung.${isFollowup ? ' Das ist die letzte Antwort im Beta-Modus – schließe mit dem Hinweis, die Anfrage schriftlich einzureichen.' : ''}` },
+      { role: 'system', content: systemPrompt },
+      ...(Array.isArray(verlauf) ? verlauf.flatMap(v => [
+        { role: 'user',      content: v.user  },
+        { role: 'assistant', content: v.linda },
+      ]) : []),
+      { role: 'user', content: userText },
     ];
-    if (isFollowup && Array.isArray(verlauf) && verlauf.length) {
-      verlauf.forEach(v => { messages.push({ role: 'user', content: v.user }); messages.push({ role: 'assistant', content: v.linda }); });
-    }
-    messages.push({ role: 'user', content: userText });
 
-    let responseText;
-    try { responseText = await llm(messages); } catch (e) {
+    let responseText, quellen = [];
+    try {
+      if (istPflege) {
+        // Responses API + Vektor-Suche im SGB-XI-Store
+        const result = await llmMitQuellen(apiKey, systemPrompt, messages);
+        responseText = result.text;
+        quellen      = result.quellen;
+        console.log(`Voice Pflege: ${quellen.length} Quelle(n) gefunden`);
+      } else {
+        const result = await llm(messages);
+        responseText = result.text;
+      }
+    } catch (e) {
       console.error('Voice LLM error:', e.message);
       return res.status(502).json({ error: 'Analyse fehlgeschlagen' });
     }
 
     try {
       const audio = await tts(responseText);
-      return res.status(200).json({ ok: true, text: responseText, audio, final: isFollowup });
+      return res.status(200).json({ ok: true, text: responseText, audio, quellen, final: isFollowup });
     } catch (e) {
       console.error('Voice TTS error:', e.message);
-      // Text ohne Audio zurückgeben
-      return res.status(200).json({ ok: true, text: responseText, audio: null, final: isFollowup });
+      return res.status(200).json({ ok: true, text: responseText, audio: null, quellen, final: isFollowup });
     }
   }
 
@@ -376,16 +499,51 @@ Regeln: Bei unter 80 Zeichen IMMER rueckfragen. Fragen spezifisch für ${thema}.
     ? [{ type: 'text', text: baseText }, { type: 'image_url', image_url: { url: `data:${attachmentType};base64,${attachment}`, detail: 'high' } }]
     : baseText;
 
+  // Pflege-Thema erkennen für selektive Vector-Store-Nutzung
+  // Kein direktEinschaetzung-Gate: bei Pflege immer direkt mit Vector Store antworten
+  const istPflegeThema = !istNachfrage &&
+    PFLEGE_RE.test(thema + ' ' + String(beschreibung || '').slice(0, 500));
+
   try {
-    // Intent-Klassifikation und Hauptanalyse parallel starten
+    // Intent-Klassifikation parallel starten (nur bei Erstanfrage)
+    const klassifikationPromise = (!istNachfrage)
+      ? classifyIntent(apiKey, thema, String(beschreibung || ''))
+      : Promise.resolve(null);
+
+    let raw, quellen = [];
+
+    if (istPflegeThema) {
+      // Pflege: Responses API + Vector Store (parallel mit Klassifikation)
+      console.log('Voranalyse: Pflege-Thema erkannt, nutze Vector Store');
+      const [klassifikation, pflegeResult] = await Promise.all([
+        klassifikationPromise,
+        llmMitQuellen(apiKey, systemPrompt, [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: typeof userContent === 'string' ? userContent : JSON.stringify(userContent) },
+        ]),
+      ]);
+      raw     = pflegeResult.text;
+      quellen = pflegeResult.quellen;
+      console.log('Voranalyse Pflege: quellen=' + quellen.length);
+
+      // JSON wrappen wenn nötig (Responses API gibt manchmal plain text zurück)
+      let parsed;
+      try { parsed = JSON.parse(raw); }
+      catch { parsed = { modus: 'einschaetzung', einschaetzung: raw, rueckfragen: null, paragrafen: [] }; }
+      const paragrafen = Array.isArray(parsed.paragrafen)
+        ? parsed.paragrafen.filter(p => p && typeof p === 'string').slice(0, 4) : [];
+      return res.status(200).json({ modus: 'einschaetzung', einschaetzung: parsed.einschaetzung || raw, paragrafen, quellen, klassifikation, rueckfragen: null, antwortLaenge });
+    }
+
+    // Standard-Pfad: chatCompletion mit MODEL_FALLBACKS
     const [klassifikation, result] = await Promise.all([
-      (!istNachfrage) ? classifyIntent(apiKey, thema, String(beschreibung || '')) : Promise.resolve(null),
+      klassifikationPromise,
       chatCompletion({
         apiKey,
         messages: [{ role: 'system', content: systemPrompt }, { role: 'user', content: userContent }],
         maxTokens: antwortLaenge === 'ausfuehrlich' ? 900 : 500,
         temperature: 0.15,
-        jsonMode: !istNachfrage, // JSON für initial + direktEinschaetzung; plain text nur für Nachfragen
+        jsonMode: !istNachfrage,
       }),
     ]);
 
@@ -394,24 +552,20 @@ Regeln: Bei unter 80 Zeichen IMMER rueckfragen. Fragen spezifisch für ${thema}.
       return res.status(502).json({ error: 'KI-Analyse fehlgeschlagen' });
     }
 
-    const raw = result.content;
-    // Nachfragen: plain text, kein JSON
+    raw = result.content;
     if (istNachfrage) return res.status(200).json({ modus: 'nachfrage', antwort: raw, antwortLaenge });
 
-    // Alle anderen Pfade liefern JSON (direktEinschaetzung + initial)
     let parsed;
     try { parsed = JSON.parse(raw); } catch { parsed = { modus: 'einschaetzung', einschaetzung: raw, rueckfragen: null, paragrafen: [] }; }
     const paragrafen = Array.isArray(parsed.paragrafen)
-      ? parsed.paragrafen.filter(p => p && typeof p === 'string').slice(0, 4)
-      : [];
+      ? parsed.paragrafen.filter(p => p && typeof p === 'string').slice(0, 4) : [];
 
     if (direktEinschaetzung) {
-      return res.status(200).json({ modus: 'einschaetzung', einschaetzung: parsed.einschaetzung || raw, paragrafen, klassifikation, rueckfragen: null, antwortLaenge });
+      return res.status(200).json({ modus: 'einschaetzung', einschaetzung: parsed.einschaetzung || raw, paragrafen, quellen: [], klassifikation, rueckfragen: null, antwortLaenge });
     }
 
-    // Initiale Analyse (ggf. mit Rückfragen)
     const docHinweis = attachment ? (isImage ? ' (Bild analysiert)' : isPdf ? ' (PDF ausgewertet)' : isDocx ? ' (Dokument ausgewertet)' : '') : '';
-    return res.status(200).json({ ...parsed, paragrafen, klassifikation, docHinweis, antwortLaenge });
+    return res.status(200).json({ ...parsed, paragrafen, quellen: [], klassifikation, docHinweis, antwortLaenge });
   } catch (err) {
     console.error('Voranalyse error:', err);
     return res.status(500).json({ error: 'Interner Fehler' });
@@ -422,14 +576,23 @@ Regeln: Bei unter 80 Zeichen IMMER rueckfragen. Fragen spezifisch für ${thema}.
 async function handleAnfrage(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  const { vorname, nachname, email, fachbereich, thema, beschreibung,
+  const { anonym, fachbereich, thema, beschreibung,
           attachment, attachmentName, attachmentType, einschaetzung } = req.body;
+  const istAnonym = !!anonym;
 
-  if (!vorname || !nachname || !email || !fachbereich || !thema || !beschreibung)
+  // Bei anonymer Einreichung: keine Personendaten speichern
+  const vorname = istAnonym ? 'Anonym' : (req.body.vorname || '').trim();
+  const nachname = istAnonym ? ''       : (req.body.nachname || '').trim();
+  const email    = istAnonym ? ''       : (req.body.email    || '').trim();
+  // Mobilnummer: optional, wird NICHT gespeichert, nur für SMS-Versand
+  const mobil = (req.body.mobil || '').trim().replace(/\s+/g, '');
+  console.log('SMS-Feld empfangen:', mobil ? 'hat Wert (' + mobil.slice(0,4) + '***)' : 'leer');
+
+  if ((!istAnonym && (!vorname || !nachname || !email)) || !fachbereich || !thema || !beschreibung)
     return res.status(400).json({ error: 'Pflichtfelder fehlen' });
 
   const RESEND_API_KEY = process.env.RESEND_API_KEY;
-  if (!RESEND_API_KEY) return res.status(500).json({ error: 'E-Mail-Dienst nicht konfiguriert' });
+  if (!RESEND_API_KEY && !istAnonym) return res.status(500).json({ error: 'E-Mail-Dienst nicht konfiguriert' });
 
   const apiKey = process.env.Sozialrecht2026 || process.env.OPENAI_API_KEY;
   const ts     = new Date().toLocaleString('de-DE', { timeZone: 'Europe/Berlin' });
@@ -477,6 +640,27 @@ Ende mit [Expertenunterschrift]. Antworte auf Deutsch.` },
   const portalLink = `${BASE_URL}/portal.html?id=${id}`;
   const adminLink  = `${BASE_URL}/admin.html?id=${id}&token=${ADMIN_TOKEN}`;
 
+  // Hilfsfunktion: SMS per seven.io senden
+  async function sendSms(phone, message) {
+    const sevenKey = process.env.SEVEN_API_KEY;
+    if (!sevenKey) { console.warn('SEVEN_API_KEY nicht gesetzt'); return false; }
+    console.log('SMS senden an:', phone.slice(0,4) + '***');
+    try {
+      const r = await fetch('https://gateway.seven.io/api/sms', {
+        method: 'POST',
+        headers: { 'X-Api-Key': sevenKey, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ to: phone, text: message }),
+      });
+      const text = await r.text();
+      console.log('seven.io Antwort:', text);
+      // 100 = Erfolg, 101 = Teilerfolg
+      return text.trim() === '100' || text.trim() === '101';
+    } catch (e) {
+      console.warn('SMS fehlgeschlagen:', e.message);
+      return false;
+    }
+  }
+
   const expertHtml = `<div style="font-family:Arial,sans-serif;max-width:640px;margin:0 auto;">
     <div style="background:linear-gradient(135deg,#002A5C,#1e40af);padding:28px 36px;">
       <h1 style="color:#fff;margin:0;font-size:20px;">Neue Anfrage – Sozialrecht</h1>
@@ -484,9 +668,11 @@ Ende mit [Expertenunterschrift]. Antworte auf Deutsch.` },
     </div>
     <div style="background:#fff;padding:28px 36px;border:1px solid #e2e8f0;border-top:none;">
       <table style="width:100%;border-collapse:collapse;margin-bottom:22px;font-size:14px;">
-        <tr><td style="color:#64748b;width:130px;padding:5px 0;">Name:</td><td style="font-weight:600;">${vorname} ${nachname}</td></tr>
-        <tr><td style="color:#64748b;padding:5px 0;">E-Mail:</td><td><a href="mailto:${email}" style="color:#2563eb;">${email}</a></td></tr>
-        <tr><td style="color:#64748b;padding:5px 0;">Thema:</td><td><span style="background:#eff6ff;color:#1d4ed8;font-size:12px;font-weight:700;padding:2px 10px;">${thema}</span></td></tr>
+        ${istAnonym
+          ? `<tr><td style="color:#64748b;width:130px;padding:5px 0;">Einreicher:</td><td style="font-weight:600;color:#92400e;">Anonym (keine Personendaten)</td></tr>`
+          : `<tr><td style="color:#64748b;width:130px;padding:5px 0;">Name:</td><td style="font-weight:600;">${esc(vorname)} ${esc(nachname)}</td></tr>
+        <tr><td style="color:#64748b;padding:5px 0;">E-Mail:</td><td><a href="mailto:${esc(email)}" style="color:#2563eb;">${esc(email)}</a></td></tr>`}
+        <tr><td style="color:#64748b;padding:5px 0;">Thema:</td><td><span style="background:#eff6ff;color:#1d4ed8;font-size:12px;font-weight:700;padding:2px 10px;">${esc(thema)}</span></td></tr>
       </table>
       <h3 style="color:#1e293b;font-size:13px;text-transform:uppercase;letter-spacing:.06em;border-bottom:1px solid #e2e8f0;padding-bottom:8px;margin:0 0 12px;">Fallbeschreibung</h3>
       <div style="background:#f8fafc;border-left:3px solid #2563eb;padding:14px 18px;font-size:14px;color:#334155;line-height:1.7;white-space:pre-wrap;margin-bottom:22px;">${beschreibung}</div>
@@ -528,9 +714,22 @@ Ende mit [Expertenunterschrift]. Antworte auf Deutsch.` },
       }),
     });
 
+  if (istAnonym || !RESEND_API_KEY) {
+    // Anonym: nur Expert-Mail (ohne Personendaten), keine User-Bestätigung
+    if (RESEND_API_KEY) {
+      try {
+        const r1 = await sendMail(EXPERT_EMAIL, `[${thema}] Anonym – Neue Anfrage`, expertHtml, null);
+        if (!r1.ok) console.warn('Anonym Expert-Mail fehlgeschlagen:', await r1.text());
+      } catch(e) { console.warn('Mail-Fehler (anonym):', e.message); }
+    }
+    let smsSent = false;
+    if (mobil) smsSent = await sendSms(mobil, `Dein Sozialrecht-Falllink: ${portalLink}`);
+    return res.status(200).json({ ok: true, portalLink, smsSent });
+  }
+
   const [r1, r2] = await Promise.all([
-    sendMail('noormann@gmx.com', `[${thema}] ${vorname} ${nachname} – Neue Anfrage`, expertHtml, email),
-    sendMail(email, `Deine Anfrage ist eingegangen – ${thema}`, userHtml, 'noormann@gmx.com'),
+    sendMail(EXPERT_EMAIL, `[${thema}] ${vorname} ${nachname} – Neue Anfrage`, expertHtml, email),
+    sendMail(email, `Deine Anfrage ist eingegangen – ${thema}`, userHtml, EXPERT_EMAIL),
   ]);
 
   if (!r1.ok) {
@@ -539,7 +738,9 @@ Ende mit [Expertenunterschrift]. Antworte auf Deutsch.` },
   }
   if (!r2.ok) console.warn('User-Bestätigung fehlgeschlagen:', await r2.text());
 
-  return res.status(200).json({ ok: true, portalLink });
+  let smsSent = false;
+  if (mobil) smsSent = await sendSms(mobil, `Dein Sozialrecht-Falllink: ${portalLink}`);
+  return res.status(200).json({ ok: true, portalLink, smsSent });
 }
 
 // ── 3. PORTAL (Fall abrufen) ─────────────────────────────────────────────────
