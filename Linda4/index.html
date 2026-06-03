@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<title>LINDA3 - Lernassistentin (28.05.2026)</title>
+<title>LINDA3 - Lernassistentin</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
@@ -202,6 +202,135 @@
     background: linear-gradient(135deg, var(--brand) 0%, #1f77d8 100%);
     border: none;
     color: #fff;
+  }
+
+  .linda4-cta {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    height: 34px;
+    padding: 0 11px;
+    border-radius: 11px;
+    border: 1px solid #004a98;
+    background: #0059b8;
+    color: #fff;
+    text-decoration: none;
+    font-size: 0.76rem;
+    font-weight: 800;
+    line-height: 1;
+    white-space: nowrap;
+    box-shadow: 0 8px 16px rgba(0, 89, 184, 0.16);
+    transition: background-color 0.16s ease, border-color 0.16s ease, transform 0.16s ease;
+  }
+
+  .linda4-cta:hover,
+  .linda4-cta:focus-visible {
+    background: #004b9b;
+    border-color: #003f83;
+    color: #fff;
+    outline: none;
+    transform: translateY(-1px);
+  }
+
+  .linda4-cta-icon {
+    font-size: 0.9rem;
+    line-height: 1;
+  }
+
+  .linda4-cta-label-mobile {
+    display: none;
+  }
+
+  .linda4-banner-row {
+    margin-top: -2px;
+  }
+
+  .linda4-banner-row .msg-wrap {
+    width: min(100%, 760px);
+  }
+
+  .linda4-banner {
+    position: relative;
+    background: #eff6ff;
+    border: 1px solid #bae6fd;
+    border-radius: 16px;
+    padding: 14px 42px 14px 14px;
+    box-shadow: 0 8px 24px rgba(37, 99, 235, 0.08);
+    color: #123a6f;
+  }
+
+  .linda4-banner-copy {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .linda4-banner-text {
+    margin: 0;
+    font-size: 0.95rem;
+    line-height: 1.5;
+    font-weight: 700;
+  }
+
+  .linda4-banner-link {
+    align-self: flex-start;
+    color: #0059b8;
+    font-weight: 800;
+    text-decoration: none;
+  }
+
+  .linda4-banner-link:hover,
+  .linda4-banner-link:focus-visible {
+    text-decoration: underline;
+    outline: none;
+  }
+
+  .linda4-banner-close {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 28px;
+    height: 28px;
+    border: 0;
+    border-radius: 999px;
+    background: transparent;
+    color: #2b5e95;
+    font-size: 1.05rem;
+    line-height: 1;
+    cursor: pointer;
+  }
+
+  .linda4-banner-close:hover,
+  .linda4-banner-close:focus-visible {
+    background: rgba(0, 89, 184, 0.08);
+    outline: none;
+  }
+
+  @media (max-width: 720px) {
+    .linda4-cta {
+      padding: 0 9px;
+      gap: 5px;
+      font-size: 0.72rem;
+      border-radius: 10px;
+    }
+
+    .linda4-cta-label-full {
+      display: none;
+    }
+
+    .linda4-cta-label-mobile {
+      display: inline;
+    }
+
+    .linda4-banner {
+      padding: 13px 38px 13px 13px;
+    }
+
+    .linda4-banner-text {
+      font-size: 0.9rem;
+    }
   }
 
   .source-toolbar {
@@ -4199,6 +4328,11 @@
       </label>
     </div>
     <div id="domain-badge" class="pill">Standard</div>
+    <a class="linda4-cta" href="https://pfk2026.oldenburg-knowledge.de/frage.html" target="_blank" rel="noopener noreferrer" aria-label="Komplexen Fall einreichen bei Linda4" title="Komplexen Fall einreichen bei Linda4">
+      <span class="linda4-cta-icon" aria-hidden="true">📋</span>
+      <span class="linda4-cta-label linda4-cta-label-full">Komplexen Fall einreichen → Linda4</span>
+      <span class="linda4-cta-label linda4-cta-label-mobile">Linda4</span>
+    </a>
     <div class="header-actions">
       <button class="btn-icon btn-primary" title="Neuer Chat" onclick="app.logic.resetHistoryAndNewChat()">Neu</button>
       <button class="btn-icon" title="Verlauf" onclick="app.ui.openModal('modal-sessions')">Verlauf</button>
@@ -4584,6 +4718,8 @@
   };
   const LINDA_TIMEOUT_NOTICE = '\n\n[Antwort unvollständig – Linda hat das Zeitlimit erreicht. Bitte erneut versuchen oder Schnellmodus aktivieren.]';
   const LINDA_RETRY_FAILED_NOTICE = '\n\n[Erneut unterbrochen. Bitte versuche es später erneut.]';
+  const LINDA4_BANNER_SESSION_KEY = 'linda4.bannerShown';
+  const LINDA4_FRAGE_URL = 'https://pfk2026.oldenburg-knowledge.de/frage.html';
 
   const DEFAULT_LEARNING_TEMPLATES = {
     version: '1.0',
@@ -5256,6 +5392,46 @@
         }
 
         return app.utils.truncate(parts.join('\n'), 1100);
+      },
+      isLinda3AnswerMessage: (message) => {
+        if (!message || typeof message !== 'object') return false;
+        if (String(message.role || '') !== 'assistant') return false;
+        const meta = (message.meta && typeof message.meta === 'object') ? message.meta : {};
+        if (meta.module === 'fv-check') return false;
+        if (meta.timeoutRetry) return false;
+        const hasCompare = Boolean(message.compare && typeof message.compare === 'object');
+        const content = String(message.content || '').trim();
+        if (!hasCompare && (!content || /^❌/.test(content))) return false;
+        return hasCompare || Boolean(meta.question);
+      },
+      countLinda3Answers: (session = app.logic.activeSession()) => {
+        return (session?.messages || []).reduce((count, message) => count + (app.logic.isLinda3AnswerMessage(message) ? 1 : 0), 0);
+      },
+      buildLinda4PrefillText: (session = app.logic.activeSession()) => {
+        const recentUserText = (session?.messages || [])
+          .filter((message) => String(message?.role || '') === 'user')
+          .map((message) => String(message?.content || '').replace(/\s+/g, ' ').trim())
+          .filter(Boolean)
+          .slice(-3);
+        if (!recentUserText.length) return '';
+        return app.utils.truncate(recentUserText.map((text, idx) => `${idx + 1}. ${text}`).join('\n'), 500).trim();
+      },
+      buildLinda4Href: (session = app.logic.activeSession(), includePrefill = false) => {
+        if (!includePrefill) return LINDA4_FRAGE_URL;
+        const prefill = app.logic.buildLinda4PrefillText(session);
+        return prefill ? `${LINDA4_FRAGE_URL}?vorbefuellung=${encodeURIComponent(prefill)}` : LINDA4_FRAGE_URL;
+      },
+      hasShownLinda4Banner: () => {
+        try {
+          return sessionStorage.getItem(LINDA4_BANNER_SESSION_KEY) === '1';
+        } catch (_) {
+          return false;
+        }
+      },
+      markLinda4BannerShown: () => {
+        try {
+          sessionStorage.setItem(LINDA4_BANNER_SESSION_KEY, '1');
+        } catch (_) {}
       },
       chatContext: (session) => {
         return (session?.messages || [])
@@ -6046,6 +6222,62 @@
           app.logic.decorateBubble(md, deepseekData?.sources || [], deepseekData?.meta || {});
         }
         return row;
+      },
+
+      createLinda4Banner: (session = app.logic.activeSession()) => {
+        const row = document.createElement('div');
+        row.className = 'msg-row assistant linda4-banner-row';
+
+        const wrap = document.createElement('div');
+        wrap.className = 'msg-wrap';
+
+        const banner = document.createElement('div');
+        banner.className = 'linda4-banner';
+        banner.setAttribute('role', 'note');
+
+        const close = document.createElement('button');
+        close.type = 'button';
+        close.className = 'linda4-banner-close';
+        close.setAttribute('aria-label', 'Hinweis schließen');
+        close.textContent = '×';
+        close.addEventListener('click', () => {
+          row.remove();
+          app.logic.markLinda4BannerShown();
+        });
+
+        const copy = document.createElement('div');
+        copy.className = 'linda4-banner-copy';
+
+        const text = document.createElement('p');
+        text.className = 'linda4-banner-text';
+        text.textContent = 'Dein Fall klingt komplex – möchtest du ihn formal einreichen und eine Experten-Einschätzung erhalten?';
+
+        const link = document.createElement('a');
+        link.className = 'linda4-banner-link';
+        link.href = app.logic.buildLinda4Href(session, true);
+        link.target = '_blank';
+        link.rel = 'noopener noreferrer';
+        link.textContent = '→ Jetzt bei Linda4 einreichen';
+
+        copy.appendChild(text);
+        copy.appendChild(link);
+        banner.appendChild(close);
+        banner.appendChild(copy);
+        wrap.appendChild(banner);
+        row.appendChild(wrap);
+        return row;
+      },
+
+      maybeShowLinda4Banner: (anchorRow, options = {}) => {
+        if (!anchorRow || app.logic.hasShownLinda4Banner()) return null;
+        const responseCount = Number.isFinite(Number(options.responseCount))
+          ? Number(options.responseCount)
+          : app.logic.countLinda3Answers(options.session);
+        if (responseCount !== 3) return null;
+        const banner = app.ui.createLinda4Banner(options.session);
+        anchorRow.after(banner);
+        app.logic.markLinda4BannerShown();
+        return banner;
       },
 
       appendLindaRetryButton: (row, retryMeta = {}) => {
@@ -7719,6 +7951,7 @@
         s.messages.push({ role: 'assistant', content, sources: nextSources, meta });
         const bubble = app.ui.createBubble('assistant', content, nextSources, meta);
         app.ui.log.appendChild(bubble);
+        app.ui.maybeShowLinda4Banner(bubble, { session: s, responseCount: app.logic.countLinda3Answers(s) });
         app.ui.scrollBottom();
         app.utils.save();
         return bubble;
@@ -8688,19 +8921,27 @@
 
         const s = app.logic.activeSession();
         if (!s) return;
+        let linda4Count = 0;
 
         s.messages.forEach((m) => {
           if (m.role === 'assistant' && m.compare && typeof m.compare === 'object') {
-            app.ui.log.appendChild(
-              app.ui.createCompareBubble(
-                m.compare.make || { answer: '' },
-                m.compare.deepseek || { answer: '' }
-              )
+            const bubble = app.ui.createCompareBubble(
+              m.compare.make || { answer: '' },
+              m.compare.deepseek || { answer: '' }
             );
+            app.ui.log.appendChild(bubble);
+            if (app.logic.isLinda3AnswerMessage(m)) {
+              linda4Count += 1;
+              app.ui.maybeShowLinda4Banner(bubble, { session: s, responseCount: linda4Count });
+            }
             return;
           }
           const bubble = app.ui.createBubble(m.role, m.content, m.sources || [], m.meta || {});
           app.ui.log.appendChild(bubble);
+          if (app.logic.isLinda3AnswerMessage(m)) {
+            linda4Count += 1;
+            app.ui.maybeShowLinda4Banner(bubble, { session: s, responseCount: linda4Count });
+          }
         });
 
         app.logic.maybeShowModeCards();
@@ -10924,6 +11165,10 @@
               }
               speaking.remove();
             }
+            app.ui.maybeShowLinda4Banner(app.ui.log.lastElementChild, {
+              session: s,
+              responseCount: app.logic.countLinda3Answers(s)
+            });
           } else {
             const primaryEndpoint = deepseekRoutingActive ? DEEPSEEK_API_ENDPOINT : API_ENDPOINT;
             let parsed;
@@ -10957,6 +11202,10 @@
             }
             s.messages.push({ role: 'assistant', content: enriched.answer, sources: enriched.sources, meta: enriched.meta });
             app.ui.log.appendChild(app.ui.createBubble('assistant', enriched.answer, enriched.sources, enriched.meta));
+            app.ui.maybeShowLinda4Banner(app.ui.log.lastElementChild, {
+              session: s,
+              responseCount: app.logic.countLinda3Answers(s)
+            });
             if (
               CLAUDE_CLARIFY_MODE &&
               enriched?.meta?.clarificationRequested &&
@@ -11045,6 +11294,10 @@
               const fallbackEnriched = app.logic.enrichAssistantResponse(fallbackParsed, text, fallbackPayload, { channel: 'timeout-fallback' });
               s.messages.push({ role: 'assistant', content: fallbackEnriched.answer, sources: fallbackEnriched.sources || [], meta: fallbackEnriched.meta });
               app.ui.log.appendChild(app.ui.createBubble('assistant', fallbackEnriched.answer, fallbackEnriched.sources || [], fallbackEnriched.meta));
+              app.ui.maybeShowLinda4Banner(app.ui.log.lastElementChild, {
+                session: s,
+                responseCount: app.logic.countLinda3Answers(s)
+              });
               app.ui.log.appendChild(
                 app.ui.createBubble(
                   'assistant',
