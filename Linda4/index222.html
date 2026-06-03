@@ -5125,14 +5125,13 @@
     return app.logic.activeSession();
   };
 
-  const getLinda4MutationUserTexts = () => {
-    const userTexts = (getLinda4MutationSession()?.messages || [])
-      .filter((message) => String(message?.role || '') === 'user')
-      .map((message) => String(message?.content || '').trim())
-      .filter(Boolean)
-      .join(' / ')
-      .slice(0, 800);
-    return userTexts;
+  const getLinda4MutationVerlaufText = () => {
+    const verlauf = (getLinda4MutationSession()?.messages || [])
+      .filter((message) => String(message?.role || '') === 'user' || String(message?.role || '') === 'assistant')
+      .map((message) => (String(message?.role || '') === 'user' ? 'Ich: ' : 'Linda: ') + String(message?.content || ''))
+      .join('\n\n')
+      .slice(0, 2500);
+    return verlauf;
   };
 
   const hasLinda4MutationBannerShown = () => {
@@ -5182,8 +5181,8 @@
     const thirdRow = assistantRows[2];
     if (!thirdRow) return false;
 
-    const userTexts = getLinda4MutationUserTexts();
-    const linda4Url = '/frage.html?vorbefuellung=' + encodeURIComponent(userTexts);
+    const verlauf = getLinda4MutationVerlaufText();
+    const linda4Url = '/frage.html?vorbefuellung=' + encodeURIComponent(verlauf);
     const banner = createLinda4MutationBanner(linda4Url);
 
     markLinda4MutationBannerShown();
@@ -5541,13 +5540,12 @@
       },
       countLinda3Answers: (session = app.logic.activeSession()) => countLinda3AnswersFromSession(session),
       buildLinda4PrefillText: (session = app.logic.activeSession()) => {
-        const recentUserText = (session?.messages || [])
-          .filter((message) => String(message?.role || '') === 'user')
-          .map((message) => String(message?.content || '').replace(/\s+/g, ' ').trim())
-          .filter(Boolean)
-          .slice(-3);
-        if (!recentUserText.length) return '';
-        return app.utils.truncate(recentUserText.map((text, idx) => `${idx + 1}. ${text}`).join('\n'), 500).trim();
+        const verlauf = (session?.messages || [])
+          .filter((message) => String(message?.role || '') === 'user' || String(message?.role || '') === 'assistant')
+          .map((message) => (String(message?.role || '') === 'user' ? 'Ich: ' : 'Linda: ') + String(message?.content || ''))
+          .join('\n\n')
+          .slice(0, 2500);
+        return verlauf.trim();
       },
       buildLinda4Href: (session = app.logic.activeSession(), includePrefill = false) => {
         if (!includePrefill) return LINDA4_FRAGE_URL;
