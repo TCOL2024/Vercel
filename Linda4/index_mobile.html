@@ -4502,8 +4502,8 @@
   const API_ENDPOINT = '/api/linda3?action=bot';
   const DEEPSEEK_API_ENDPOINT = '/api/linda3?action=deepseek';
   const HEALTH_API_ENDPOINT = '/api/linda3?action=health';
-  const LEGACY_API_ORIGIN = 'https://vercel-kappa-seven-33.vercel.app';
-  const BBIG_PDF_PATH = 'https://vercel-kappa-seven-33.vercel.app/2026/document/BBIG_V20022026.pdf';
+  const LEGACY_API_ORIGIN = 'https://pfk2026.oldenburg-knowledge.de';
+  const BBIG_PDF_PATH = 'https://pfk2026.oldenburg-knowledge.de/2026/document/BBIG_V20022026.pdf';
   const DIRECTORY_LINKS_PATH = './directory_links.json';
   const DIRECTORY_KEYWORD_MATCHING_ENABLED = false;
   const STORAGE_KEY = 'linda3_state';
@@ -6505,7 +6505,7 @@
 
       isLindaApiEndpoint: (endpoint) => {
         const raw = String(endpoint || '').trim();
-        return /^\/api\/linda3(?:\?|$)/i.test(raw) || /^https?:\/\/[^?#]+\/api\/linda3(?:\?|$)/i.test(raw);
+        return /^\/api\/linda3(?:-beta)?(?:\?|$)/i.test(raw) || /^https?:\/\/[^?#]+\/api\/linda3(?:-beta)?(?:\?|$)/i.test(raw);
       },
 
       toAbsoluteEndpoint: (endpoint, origin = '') => {
@@ -6528,10 +6528,17 @@
         const isLindaApi = app.logic.isLindaApiEndpoint(endpoint);
         if (status === 404 && isLindaApi) {
           const targetOrigin = app.logic.endpointOrigin(finalUrl || endpoint);
+          const endpointPath = (() => {
+            try {
+              return new URL(String(finalUrl || endpoint), window.location.origin).pathname || '/api/linda3';
+            } catch (_) {
+              return String(endpoint || '/api/linda3').split('?')[0] || '/api/linda3';
+            }
+          })();
           const extra = targetOrigin && targetOrigin !== window.location.origin
             ? ` Auch das Fallback-Backend unter ${targetOrigin} hat keinen Treffer geliefert.`
             : '';
-          return `HTTP 404: /api/linda3 wurde auf diesem Deployment nicht gefunden.${extra} Es fehlt das Backend oder die API-Zieladresse ist falsch.`;
+          return `HTTP 404: ${endpointPath} wurde auf diesem Deployment nicht gefunden.${extra} Es fehlt das Backend oder die API-Zieladresse ist falsch.`;
         }
         return `HTTP ${status}${detail}`;
       },

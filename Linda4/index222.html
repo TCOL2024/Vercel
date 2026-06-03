@@ -4719,6 +4719,10 @@
   const LINDA_TIMEOUT_NOTICE = '\n\n[Antwort unvollständig – Linda hat das Zeitlimit erreicht. Bitte erneut versuchen oder Schnellmodus aktivieren.]';
   const LINDA_RETRY_FAILED_NOTICE = '\n\n[Erneut unterbrochen. Bitte versuche es später erneut.]';
   const LINDA4_BANNER_SESSION_KEY = 'linda4.bannerShown';
+  const getLinda4BannerSessionKey = (session = app.logic.activeSession()) => {
+    const sessionId = String(session?.id || app.state?.activeId || 'global').trim() || 'global';
+    return `${LINDA4_BANNER_SESSION_KEY}:${sessionId}`;
+  };
   const LINDA4_FRAGE_URL = 'https://pfk2026.oldenburg-knowledge.de/frage.html';
 
   const DEFAULT_LEARNING_TEMPLATES = {
@@ -5550,16 +5554,16 @@
         const prefill = app.logic.buildLinda4PrefillText(session);
         return prefill ? `${LINDA4_FRAGE_URL}?vorbefuellung=${encodeURIComponent(prefill)}` : LINDA4_FRAGE_URL;
       },
-      hasShownLinda4Banner: () => {
+      hasShownLinda4Banner: (session = app.logic.activeSession()) => {
         try {
-          return sessionStorage.getItem(LINDA4_BANNER_SESSION_KEY) === '1';
+          return sessionStorage.getItem(getLinda4BannerSessionKey(session)) === '1';
         } catch (_) {
           return false;
         }
       },
-      markLinda4BannerShown: () => {
+      markLinda4BannerShown: (session = app.logic.activeSession()) => {
         try {
-          sessionStorage.setItem(LINDA4_BANNER_SESSION_KEY, '1');
+          sessionStorage.setItem(getLinda4BannerSessionKey(session), '1');
         } catch (_) {}
       },
       chatContext: (session) => {
@@ -6371,7 +6375,7 @@
         close.textContent = '×';
         close.addEventListener('click', () => {
           row.remove();
-          app.logic.markLinda4BannerShown();
+          app.logic.markLinda4BannerShown(session);
         });
 
         const copy = document.createElement('div');
@@ -6399,14 +6403,15 @@
 
       maybeShowLinda4Banner: (anchorRow, options = {}) => {
         try {
-          if (!anchorRow || app.logic.hasShownLinda4Banner()) return null;
+          const session = options.session || app.logic.activeSession();
+          if (!anchorRow || app.logic.hasShownLinda4Banner(session)) return null;
           const responseCount = Number.isFinite(Number(options.responseCount))
             ? Number(options.responseCount)
-            : countLinda3AnswersFromSession(options.session);
+            : countLinda3AnswersFromSession(session);
           if (responseCount !== 3) return null;
-          const banner = app.ui.createLinda4Banner(options.session);
+          const banner = app.ui.createLinda4Banner(session);
           anchorRow.after(banner);
-          app.logic.markLinda4BannerShown();
+          app.logic.markLinda4BannerShown(session);
           return banner;
         } catch (err) {
           console.warn('Linda4 banner skipped', err);
