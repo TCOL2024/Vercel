@@ -1,9 +1,10 @@
 const OPENAI_RESPONSES_URL = "https://api.openai.com/v1/responses";
 const OPENROUTER_CHAT_URL = "https://openrouter.ai/api/v1/chat/completions";
+const DEEPSEEK_CHAT_URL = "https://api.deepseek.com/v1/chat/completions";
 
-const OPENAI_MODEL = process.env.VWL_OPENAI_MODEL || "gpt-5.4";
-const CLAUDE_MODEL = process.env.VWL_INTELLIGENT_MODEL || process.env.VWL_CLAUDE_MODEL || "anthropic/claude-3.5-haiku";
-const DEEPSEEK_MODEL = process.env.VWL_DEEPSEEK_MODEL || process.env.VWL_FAST_MODEL || "deepseek/deepseek-chat";
+const OPENAI_MODEL = readFirstEnv(["VWL_OPENAI_MODEL"]) || "gpt-5.4";
+const CLAUDE_MODEL = readFirstEnv(["VWL_INTELLIGENT_MODEL", "VWL_CLAUDE_MODEL"]) || "anthropic/claude-3.5-haiku";
+const DEEPSEEK_MODEL = readFirstEnv(["VWL_DEEPSEEK_MODEL", "VWL_FAST_MODEL", "DEEPSEEK_MODEL"]) || "deepseek-reasoner";
 
 const MODE_CONFIG = {
   fragen: {
@@ -12,47 +13,42 @@ const MODE_CONFIG = {
   },
   lernkarten: {
     label: "Lernkarten",
-    instruction: "Erstelle prägnante Lernkarten im Format 'Vorderseite' und 'Rückseite'. Halte die Karten prüfungsnah und vermeide Nebensächliches.",
+    instruction: "Erstelle prägnante Lernkarten im Format Vorderseite und Rückseite. Halte die Karten prüfungsnah und vermeide Nebensächliches.",
   },
   uebungen: {
     label: "Übungsaufgaben",
-    instruction: "Erstelle VWL-Übungsaufgaben mit Lösung und kurzer Erklärung. Bevorzuge Aufgaben, die für IHK-Teilnehmende praxisnah und prüfungsnah sind.",
+    instruction: "Erstelle VWL-Übungsaufgaben mit Lösung und kurzer Erklärung. Bevorzuge IHK-nahe, praxisnahe Aufgaben.",
   },
   uebersetzen: {
     label: "Übersetzen",
-    instruction: "Übersetze oder vereinfache den Text fachlich sauber. Verändere den Inhalt nicht unnötig und erhalte wichtige VWL-Fachbegriffe.",
+    instruction: "Übersetze oder vereinfache den Text fachlich sauber. Erhalte wichtige VWL-Fachbegriffe.",
   },
 };
 
 const PROFILE_CONFIG = {
   schnell: {
-    provider: "openrouter",
+    provider: "deepseek",
     model: DEEPSEEK_MODEL,
     usesDocuments: false,
-    label: "Schnell",
     dataLabel: "Ohne Unterlagen",
-    maxTokens: 750,
   },
   intelligent: {
     provider: "openrouter",
     model: CLAUDE_MODEL,
     usesDocuments: false,
-    label: "Intelligent",
     dataLabel: "Ohne Unterlagen",
-    maxTokens: 950,
   },
   fortgeschritten: {
     provider: "openai-vectorstore",
     model: OPENAI_MODEL,
     usesDocuments: true,
-    label: "Fortgeschritten",
     dataLabel: "Mit Unterlagen",
-    maxTokens: 1400,
   },
 };
 
-const OPENAI_API_KEY_ENV_NAMES = ["VWL2026LINDA4", "OPENAI_API_KEY"];
-const OPENROUTER_API_KEY_ENV_NAMES = ["VWLBOT", "OPENROUTER_API_KEY", "VWL_OPENROUTER_API_KEY"];
+const API_KEY_ENV_NAMES = ["VWL2026LINDA4", "OPENAI_API_KEY"];
+const OPENROUTER_KEY_ENV_NAMES = ["VWLBOT", "OPENROUTER_API_KEY", "VWL_OPENROUTER_API_KEY"];
+const DEEPSEEK_KEY_ENV_NAMES = ["VWL_DEEPSEEK_API_KEY", "Linda3Schnellmodus", "DEEPSEEK_API_KEY"];
 const VECTOR_STORE_ENV_NAMES = [
   "VWL-Vectorstore",
   "VWL_VECTOR_STORE_ID",
@@ -62,10 +58,7 @@ const VECTOR_STORE_ENV_NAMES = [
   "VWL_Vectorstore",
   "VWL_VECTOR",
 ];
-
-const SOURCE_SNIPPET_LIMIT = 1100;
-const HISTORY_LIMIT = 8;
-const HISTORY_ITEM_LIMIT = 1600;
+const SOURCE_SNIPPET_LIMIT = 900;
 
 function readFirstEnv(names) {
   for (const name of names) {
@@ -98,7 +91,11 @@ function readJsonBody(req) {
       }
     });
     req.on("end", () => {
-      try { resolve(body ? JSON.parse(body) : {}); } catch (error) { reject(error); }
+      try {
+        resolve(body ? JSON.parse(body) : {});
+      } catch (error) {
+        reject(error);
+      }
     });
     req.on("error", reject);
   });
@@ -108,51 +105,30 @@ function compactText(value) {
   return String(value || "").replace(/\s+/g, " ").trim();
 }
 
-function sanitizeHistory(history, limit = HISTORY_LIMIT) {
-  return (Array.isArray(history) ? history : [])
-    .filter((entry) => entry && typeof entry === "object")
-    .map((entry) => {
-      const roleRaw = String(entry.role || "").toLowerCase();
-      const role = roleRaw === "assistant" ? "assistant" : "user";
-      const content = compactText(entry.content || "").slice(0, HISTORY_ITEM_LIMIT);
-      return content ? { role, content } : null;
-    })
-    .filter(Boolean)
-    .slice(-limit);
-}
-
-function normalizeIntentText(value) {
-  return compactText(value)
-    .toLowerCase()
-    .replace(/\u00e4/g, "ae")
-    .replace(/\u00f6/g, "oe")
-    .replace(/\u00fc/g, "ue")
-    .replace(/\u00df/g, "ss");
-}
-
-function needsContextClarification(question, history) {
-  if (history.length) return false;
-  const text = normalizeIntentText(question).replace(/[!?.,;:]+$/g, "");
-  if (!text) return false;
-  const exact = new Set(["das", "dazu", "damit", "weiter", "mach weiter", "erklaere das", "erklaer das", "was bedeutet das", "nochmal", "genauer"]);
-  if (exact.has(text)) return true;
-  return text.length < 22 && /\b(das|dazu|damit|weiter|dies|diese|dieser|dieses)\b/.test(text);
+function cleanHistory(history) {
+  if (!Array.isArray(history)) return [];
+  return history
+    .filter((entry) => entry && ["user", "assistant"].includes(entry.role) && compactText(entry.content))
+    .slice(-8)
+    .map((entry) => ({
+      role: entry.role,
+      content: compactText(entry.content).slice(0, 1600),
+    }));
 }
 
 function buildSystemPrompt(mode, profile) {
   const modeInstruction = MODE_CONFIG[mode]?.instruction || MODE_CONFIG.fragen.instruction;
-  const profileConfig = PROFILE_CONFIG[profile] || PROFILE_CONFIG.intelligent;
-  const documentRules = profileConfig.usesDocuments
+  const profileConfig = PROFILE_CONFIG[profile] || PROFILE_CONFIG.fortgeschritten;
+  const documentRule = profileConfig.usesDocuments
     ? [
-        "- Nutze die Lehrgangsunterlagen aus dem Vector Store vorrangig.",
-        "- Allgemeines VWL-Wissen darf ergänzen, aber Dokumentinhalte nicht überschreiben.",
-        "- Nenne Quellen, sobald du Dokumentinhalte nutzt.",
-        "- Erfinde keine Dokumenttitel, Seitenzahlen oder Zitate.",
+        "Nutze die Lehrgangsunterlagen vorrangig.",
+        "Allgemeines VWL-Wissen darf ergänzen, aber Dokumentinhalte nicht überschreiben.",
+        "Nenne Quellen, sobald du Dokumentinhalte nutzt.",
+        "Erfinde keine Dokumenttitel, Seitenzahlen oder Zitate.",
       ]
     : [
-        "- Du nutzt keine Lehrgangsunterlagen und keinen Vector Store.",
-        "- Antworte aus allgemeinem VWL-Wissen und aus dem direkten Nutzertext.",
-        "- Nenne keine Dokumentquellen und behaupte keinen Zugriff auf Unterlagen.",
+        "Nutze keine Lehrgangsunterlagen und behaupte nicht, dass du in Dokumenten nachgesehen hast.",
+        "Wenn Quellen oder Unterlagen gefragt sind, sage kurz, dass dieses Profil ohne Unterlagen arbeitet.",
       ];
 
   return [
@@ -161,38 +137,48 @@ function buildSystemPrompt(mode, profile) {
     "",
     "Grundregeln:",
     "- Antworte kurz, klar und fachlich sauber.",
+    "- Gliedere die Antwort sichtbar mit Absätzen und kurzen Zwischenüberschriften.",
+    "- Vermeide reine Fließtext-Blöcke.",
+    "- Schreibe jede Überschrift auf eine eigene Zeile.",
+    "- Schreibe Aufzählungspunkte jeweils auf eigene Zeilen.",
+    "- Verwende keine LaTeX-Delimiter wie \\[ \\] oder \\( \\); Formeln bitte als gut lesbaren Klartext schreiben.",
     "- Wenn die Frage zu unklar ist, stelle lieber eine kurze Rückfrage.",
-    ...documentRules,
-    "- Wiederhole den Verlauf nicht unnötig; nutze ihn nur, wenn er hilft.",
+    "- Berücksichtige den bisherigen Chatverlauf, wenn die neue Frage darauf Bezug nimmt.",
+    ...documentRule.map((rule) => `- ${rule}`),
     "",
     `Modus: ${MODE_CONFIG[mode]?.label || MODE_CONFIG.fragen.label}`,
-    `Antwortprofil: ${profileConfig.label}`,
     modeInstruction,
     "",
-    "Gewünschtes Ausgabeformat:",
+    "Gewünschtes Ausgabeformat, wenn passend:",
     "Kurzantwort:",
-    "...",
+    "1-3 kurze Sätze.",
     "",
-    profileConfig.usesDocuments ? "Aus den Unterlagen:" : "Einordnung:",
-    "...",
+    "Einordnung:",
+    "2-4 kurze Sätze oder Bulletpoints.",
     "",
-    profileConfig.usesDocuments ? "Quellen:" : "Hinweis:",
-    profileConfig.usesDocuments ? "- Dokument/Fundstelle: kurzer Ausschnitt oder Hinweis" : "- Ohne Lehrgangsunterlagen beantwortet.",
+    "Beispiel:",
+    "kurzes Beispiel.",
     "",
-    "Ergänzung:",
-    "...",
+    "Merksatz:",
+    "ein Satz.",
   ].join("\n");
 }
 
-function buildInputMessages(question, history) {
-  return [...history.map((entry) => ({ role: entry.role, content: entry.content })), { role: "user", content: question }];
+function buildInputMessages(question, history, mode, profile) {
+  return [
+    {
+      role: "system",
+      content: buildSystemPrompt(mode, profile),
+    },
+    ...cleanHistory(history),
+    {
+      role: "user",
+      content: question,
+    },
+  ];
 }
 
-function parseJsonSafe(raw) {
-  try { return raw ? JSON.parse(raw) : {}; } catch (error) { return { raw }; }
-}
-
-function extractOpenAIText(data) {
+function extractTextFromResponse(data) {
   if (typeof data.output_text === "string" && data.output_text.trim()) return data.output_text.trim();
   const chunks = [];
   for (const item of data.output || []) {
@@ -204,13 +190,13 @@ function extractOpenAIText(data) {
 }
 
 function extractOpenRouterText(data) {
-  return compactText(data?.choices?.[0]?.message?.content || data?.output_text || "");
+  return compactText(data?.choices?.[0]?.message?.content || "");
 }
 
 function limitSnippet(value) {
   const text = compactText(value);
   if (text.length <= SOURCE_SNIPPET_LIMIT) return text;
-  return `${text.slice(0, SOURCE_SNIPPET_LIMIT - 3).trim()}...`;
+  return `${text.slice(0, SOURCE_SNIPPET_LIMIT - 1).trim()}…`;
 }
 
 function textFromSearchResult(result) {
@@ -231,25 +217,55 @@ function textFromSearchResult(result) {
 }
 
 function normalizeSource(source) {
-  const title = compactText(source?.filename || source?.file_name || source?.title || source?.name || source?.document || source?.file_id || "Quelle");
+  const title = compactText(
+    source?.filename || source?.file_name || source?.title || source?.name || source?.document || source?.file_id || "Quelle"
+  );
   const fileId = compactText(source?.file_id || source?.fileId || "");
   const page = compactText(source?.page || source?.page_number || source?.attributes?.page || "");
   const scoreRaw = source?.score ?? source?.ranking_score ?? source?.similarity;
   const score = typeof scoreRaw === "number" ? scoreRaw.toFixed(2) : compactText(scoreRaw);
   const snippet = limitSnippet(source?.snippet || source?.quote || source?.text || textFromSearchResult(source));
   if (!title && !fileId && !snippet) return null;
-  return { title: title || fileId || "Quelle", fileId: fileId || null, page: page || null, score: score || null, snippet: snippet || null };
+  return {
+    title: title || fileId || "Quelle",
+    fileId: fileId || null,
+    page: page || null,
+    score: score || null,
+    snippet: snippet || null,
+  };
 }
 
 function uniqueSources(sources) {
   const seen = new Set();
   return sources.filter((source) => {
     if (!source) return false;
-    const key = `${source.title}:${source.fileId || ""}:${source.page || ""}:${source.snippet || ""}`;
+    const key = `${source.title}:${source.page || ""}:${source.snippet || ""}`;
     if (seen.has(key)) return false;
     seen.add(key);
     return true;
   });
+}
+
+function sourceScore(source) {
+  const score = Number(source?.score);
+  return Number.isFinite(score) ? score : null;
+}
+
+function rankSources(sources) {
+  const scored = uniqueSources(sources)
+    .map((source, index) => ({ source, index, score: sourceScore(source) }))
+    .sort((a, b) => {
+      if (a.score === null && b.score === null) return a.index - b.index;
+      if (a.score === null) return 1;
+      if (b.score === null) return -1;
+      return b.score - a.score;
+    });
+  const bestScore = scored.find((entry) => entry.score !== null)?.score;
+  const threshold = bestScore === undefined ? null : Math.max(0.45, bestScore - 0.14);
+  return scored
+    .filter((entry) => threshold === null || entry.score === null || entry.score >= threshold)
+    .map((entry) => entry.source)
+    .slice(0, 4);
 }
 
 function extractSearchResultSources(data) {
@@ -279,74 +295,145 @@ function extractAnnotationSources(data) {
 }
 
 function extractSources(data) {
-  return uniqueSources([...extractSearchResultSources(data), ...extractAnnotationSources(data)]).slice(0, 6);
+  return rankSources([...extractSearchResultSources(data), ...extractAnnotationSources(data)]);
 }
 
-async function callOpenRouter({ apiKey, model, mode, profile, question, history, maxTokens }) {
+async function callOpenRouter({ openRouterKey, profileConfig, question, history, mode, profile }) {
   const response = await fetch(OPENROUTER_CHAT_URL, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${openRouterKey}`,
+      "Content-Type": "application/json",
+      "HTTP-Referer": "https://linda-4.vercel.app",
+      "X-Title": "VWL-Linda 4",
+    },
+    body: JSON.stringify({
+      model: profileConfig.model,
+      messages: buildInputMessages(question, history, mode, profile),
+      temperature: profile === "schnell" ? 0.2 : 0.35,
+      max_tokens: 900,
+    }),
+  });
+  const data = await response.json();
+  if (!response.ok) {
+    const message = data?.error?.message || data?.message || "OpenRouter API Fehler.";
+    const error = new Error(message);
+    error.status = response.status;
+    error.details = data?.error || data;
+    throw error;
+  }
+  return {
+    answer: extractOpenRouterText(data) || "Ich habe keine Antwort erhalten.",
+    sources: [],
+    provider: "openrouter",
+    model: data?.model || profileConfig.model,
+  };
+}
+
+async function callDeepSeekDirect({ deepSeekKey, profileConfig, question, history, mode, profile }) {
+  const response = await fetch(DEEPSEEK_CHAT_URL, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${deepSeekKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model: profileConfig.model,
+      messages: buildInputMessages(question, history, mode, profile),
+      max_tokens: 1400,
+    }),
+  });
+  const data = await response.json();
+  if (!response.ok) {
+    const message = data?.error?.message || data?.message || "DeepSeek API Fehler.";
+    const error = new Error(message);
+    error.status = response.status;
+    error.details = data?.error || data;
+    throw error;
+  }
+  return {
+    answer: extractOpenRouterText(data) || "Ich habe keine Antwort erhalten.",
+    sources: [],
+    provider: "deepseek",
+    model: data?.model || profileConfig.model,
+  };
+}
+
+async function callOpenAiVectorStore({ apiKey, vectorStoreId, profileConfig, question, history, mode, profile }) {
+  const input = [
+    ...cleanHistory(history).map((entry) => ({
+      role: entry.role,
+      content: entry.content,
+    })),
+    {
+      role: "user",
+      content: question,
+    },
+  ];
+
+  const response = await fetch(OPENAI_RESPONSES_URL, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${apiKey}`,
       "Content-Type": "application/json",
-      "HTTP-Referer": "https://linda-4.vercel.app/VWL/index.html",
-      "X-Title": "VWL-Linda 4",
     },
     body: JSON.stringify({
-      model,
-      messages: [
-        { role: "system", content: buildSystemPrompt(mode, profile) },
-        ...history,
-        { role: "user", content: question },
+      model: profileConfig.model,
+      instructions: buildSystemPrompt(mode, profile),
+      input,
+      tools: [
+        {
+          type: "file_search",
+          vector_store_ids: [vectorStoreId],
+          max_num_results: 6,
+        },
       ],
-      temperature: profile === "schnell" ? 0.25 : 0.45,
-      top_p: 0.9,
-      max_tokens: maxTokens,
-      stream: false,
+      include: ["file_search_call.results"],
     }),
   });
-  const raw = await response.text();
-  const data = parseJsonSafe(raw);
+  const data = await response.json();
   if (!response.ok) {
-    const error = new Error(data.error?.message || data.error || raw || "OpenRouter API Fehler.");
-    error.statusCode = response.status;
-    error.details = data.error || data;
+    const message = data?.error?.message || "OpenAI API Fehler.";
+    const error = new Error(message);
+    error.status = response.status;
+    error.details = data?.error || data;
     throw error;
   }
-  return { answer: extractOpenRouterText(data), sources: [], model: data.model || model, provider: "openrouter" };
+  const answer = extractTextFromResponse(data) || "Ich habe keine Antwort erhalten.";
+  return {
+    answer,
+    sources: extractSources(data),
+    provider: "openai-vectorstore",
+    model: profileConfig.model,
+  };
 }
 
-async function callOpenAI({ apiKey, model, mode, profile, question, history, vectorStoreId, maxTokens }) {
-  const requestBody = {
-    model,
-    instructions: buildSystemPrompt(mode, profile),
-    input: buildInputMessages(question, history),
-    max_output_tokens: maxTokens,
-  };
-  if (vectorStoreId) {
-    requestBody.tools = [{ type: "file_search", vector_store_ids: [vectorStoreId], max_num_results: 6 }];
-    requestBody.include = ["file_search_call.results"];
-  }
+async function callOpenAiNoDocumentsFallback({ apiKey, question, history, mode, profile }) {
   const response = await fetch(OPENAI_RESPONSES_URL, {
     method: "POST",
-    headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-    body: JSON.stringify(requestBody),
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model: OPENAI_MODEL,
+      instructions: buildSystemPrompt(mode, profile),
+      input: cleanHistory(history).concat([{ role: "user", content: question }]),
+    }),
   });
-  const raw = await response.text();
-  const data = parseJsonSafe(raw);
+  const data = await response.json();
   if (!response.ok) {
-    const error = new Error(data.error?.message || data.error || raw || "OpenAI API Fehler.");
-    error.statusCode = response.status;
-    error.details = data.error || data;
+    const message = data?.error?.message || "OpenAI API Fehler.";
+    const error = new Error(message);
+    error.status = response.status;
+    error.details = data?.error || data;
     throw error;
   }
-  return { answer: extractOpenAIText(data), sources: vectorStoreId ? extractSources(data) : [], model, provider: vectorStoreId ? "openai-vectorstore" : "openai" };
-}
-
-function dataUseFor(profile, fallback = false) {
-  const config = PROFILE_CONFIG[profile] || PROFILE_CONFIG.intelligent;
   return {
-    usesDocuments: config.usesDocuments,
-    label: fallback ? `${config.dataLabel} (Fallback)` : config.dataLabel,
+    answer: extractTextFromResponse(data) || "Ich habe keine Antwort erhalten.",
+    sources: [],
+    provider: "openai-no-docs-fallback",
+    model: OPENAI_MODEL,
   };
 }
 
@@ -359,29 +446,23 @@ module.exports = async function handler(req, res) {
     return;
   }
 
-  const openAiKey = readFirstEnv(OPENAI_API_KEY_ENV_NAMES);
-  const openRouterKey = readFirstEnv(OPENROUTER_API_KEY_ENV_NAMES);
-  const vectorStoreId = readFirstEnv(VECTOR_STORE_ENV_NAMES);
-
   if (req.method === "GET") {
     json(res, 200, {
       ok: true,
       service: "VWL-Linda 4 API",
-      profiles: {
-        schnell: { provider: "openrouter", model: DEEPSEEK_MODEL, usesDocuments: false },
-        intelligent: { provider: "openrouter", model: CLAUDE_MODEL, usesDocuments: false },
-        fortgeschritten: { provider: "openai-vectorstore", model: OPENAI_MODEL, usesDocuments: true },
-      },
+      profiles: PROFILE_CONFIG,
       configured: {
-        openAiKey: Boolean(openAiKey),
-        openRouterKey: Boolean(openRouterKey),
-        vectorStore: Boolean(vectorStoreId),
+        openAiKey: Boolean(readFirstEnv(API_KEY_ENV_NAMES)),
+        openRouterKey: Boolean(readFirstEnv(OPENROUTER_KEY_ENV_NAMES)),
+        deepSeekKey: Boolean(readFirstEnv(DEEPSEEK_KEY_ENV_NAMES)),
+        vectorStore: Boolean(readFirstEnv(VECTOR_STORE_ENV_NAMES)),
       },
       expectedEnv: {
-        openAiKey: OPENAI_API_KEY_ENV_NAMES,
-        openRouterKey: OPENROUTER_API_KEY_ENV_NAMES,
+        openAiKey: API_KEY_ENV_NAMES,
+        openRouterKey: OPENROUTER_KEY_ENV_NAMES,
+        deepSeekKey: DEEPSEEK_KEY_ENV_NAMES,
         vectorStore: VECTOR_STORE_ENV_NAMES,
-        optional: ["VWL_OPENAI_MODEL", "VWL_INTELLIGENT_MODEL", "VWL_CLAUDE_MODEL", "VWL_DEEPSEEK_MODEL", "VWL_FAST_MODEL"],
+        optional: ["VWL_OPENAI_MODEL", "VWL_INTELLIGENT_MODEL", "VWL_CLAUDE_MODEL", "VWL_DEEPSEEK_MODEL", "VWL_FAST_MODEL", "DEEPSEEK_MODEL"],
       },
     });
     return;
@@ -400,70 +481,83 @@ module.exports = async function handler(req, res) {
     return;
   }
 
-  const question = String(body.question || body.prompt || body.input || "").trim();
+  const question = String(body.question || "").trim();
   const mode = MODE_CONFIG[body.mode] ? body.mode : "fragen";
-  const history = sanitizeHistory(body.history || body.messages || []);
-  const requestedProfile = String(body.responseProfile || body.profile || "intelligent").toLowerCase();
-  const responseProfile = PROFILE_CONFIG[requestedProfile] ? requestedProfile : "intelligent";
-  const profileConfig = PROFILE_CONFIG[responseProfile];
+  const profile = PROFILE_CONFIG[body.responseProfile] ? body.responseProfile : PROFILE_CONFIG[body.profile] ? body.profile : "fortgeschritten";
+  const profileConfig = PROFILE_CONFIG[profile];
+  const history = cleanHistory(body.history);
 
   if (!question) {
     json(res, 400, { error: "Bitte eine Frage oder einen Text eingeben." });
     return;
   }
 
-  if (needsContextClarification(question, history)) {
-    json(res, 200, {
-      answer: "Worauf soll ich mich beziehen? Bitte nenne kurz das VWL-Thema oder stelle die Anschlussfrage zusammen mit dem Bezug.",
-      sources: [],
-      mode,
-      responseProfile,
-      dataUse: dataUseFor(responseProfile),
-      context: { used: false, needsClarification: true },
-    });
-    return;
-  }
+  const apiKey = readFirstEnv(API_KEY_ENV_NAMES);
+  const openRouterKey = readFirstEnv(OPENROUTER_KEY_ENV_NAMES);
+  const deepSeekKey = readFirstEnv(DEEPSEEK_KEY_ENV_NAMES);
+  const vectorStoreId = readFirstEnv(VECTOR_STORE_ENV_NAMES);
 
   try {
     let result;
     let fallback = false;
 
-    if (profileConfig.provider === "openai-vectorstore") {
-      if (!openAiKey || !vectorStoreId) {
-        json(res, 500, { error: "Fortgeschritten ist noch nicht vollständig konfiguriert.", missing: { openAiKey: !openAiKey, vectorStore: !vectorStoreId } });
+    if (profileConfig.provider === "deepseek") {
+      if (!deepSeekKey) {
+        json(res, 500, {
+          error: "DeepSeek API Key fehlt für Schnell.",
+          missing: {
+            deepSeekKey: true,
+          },
+          expectedEnv: DEEPSEEK_KEY_ENV_NAMES,
+        });
         return;
       }
-      result = await callOpenAI({ apiKey: openAiKey, model: OPENAI_MODEL, mode, profile: responseProfile, question, history, vectorStoreId, maxTokens: profileConfig.maxTokens });
-    } else {
+      result = await callDeepSeekDirect({ deepSeekKey, profileConfig, question, history, mode, profile });
+    } else if (profileConfig.provider === "openrouter") {
       if (!openRouterKey) {
-        json(res, 500, { error: "OpenRouter ist noch nicht konfiguriert.", missing: { openRouterKey: true } });
+        if (!apiKey) throw Object.assign(new Error("OpenRouter API Key fehlt."), { status: 500 });
+        result = await callOpenAiNoDocumentsFallback({ apiKey, question, history, mode, profile });
+        fallback = true;
+      } else {
+        result = await callOpenRouter({ openRouterKey, profileConfig, question, history, mode, profile });
+      }
+    } else {
+      if (!apiKey || !vectorStoreId) {
+        json(res, 500, {
+          error: "VWL API ist für Fortgeschritten noch nicht vollständig konfiguriert.",
+          missing: {
+            apiKey: !apiKey,
+            vectorStore: !vectorStoreId,
+          },
+        });
         return;
       }
-      try {
-        result = await callOpenRouter({ apiKey: openRouterKey, model: profileConfig.model, mode, profile: responseProfile, question, history, maxTokens: profileConfig.maxTokens });
-      } catch (error) {
-        if (!openAiKey) throw error;
-        fallback = true;
-        result = await callOpenAI({ apiKey: openAiKey, model: OPENAI_MODEL, mode, profile: responseProfile, question, history, vectorStoreId: "", maxTokens: profileConfig.maxTokens });
-      }
+      result = await callOpenAiVectorStore({ apiKey, vectorStoreId, profileConfig, question, history, mode, profile });
     }
 
     json(res, 200, {
-      answer: result.answer || "Ich habe keine Antwort erhalten.",
-      sources: result.sources || [],
+      answer: result.answer,
+      sources: profileConfig.usesDocuments ? result.sources : [],
       mode,
-      responseProfile,
+      responseProfile: profile,
       provider: result.provider,
       model: result.model,
-      dataUse: dataUseFor(responseProfile, fallback),
-      context: { used: history.length > 0, messages: history.length },
-      meta: { fallback },
+      dataUse: {
+        usesDocuments: profileConfig.usesDocuments,
+        label: fallback ? `${profileConfig.dataLabel} (Fallback)` : profileConfig.dataLabel,
+      },
+      context: {
+        used: history.length > 0,
+        messages: history.length,
+      },
+      meta: {
+        fallback,
+      },
     });
   } catch (error) {
-    json(res, error.statusCode || 500, {
+    json(res, error.status || 500, {
       error: "Die VWL API konnte die Anfrage nicht verarbeiten.",
-      details: error.message,
-      dataUse: dataUseFor(responseProfile),
+      details: error.details || error.message,
     });
   }
 };
