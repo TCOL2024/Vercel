@@ -186,15 +186,6 @@
     function fmtDate(iso) { if (!iso || !/^\d{4}-\d{2}-\d{2}/.test(iso)) return iso || '-'; const [y,m,d] = iso.slice(0,10).split('-'); return d + '.' + m + '.' + y; }
     function num(v) { const n = Number(v); return Number.isFinite(n) ? n : 0; }
 
-    function requireAccess() {
-      const raw = storageRead(SESSION_KEY, null);
-      const session = raw && typeof raw === 'object' && raw.username ? raw : null;
-      if (!session) {
-        window.location.href = 'Benutzerverwaltung.html?next=QuickLog_Modul.html';
-        return false;
-      }
-      return true;
-    }
 
     function loadKurse() {
       const list = storageRead(KURS_STORAGE_KEY, []);
@@ -367,7 +358,6 @@ END:VCALENDAR`;
       clearError();
     });
 
-    if (!requireAccess()) return;
     loadKurse();
   </script>
 </body>
