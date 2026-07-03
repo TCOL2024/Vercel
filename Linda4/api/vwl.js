@@ -3,7 +3,7 @@ const OPENROUTER_CHAT_URL = "https://openrouter.ai/api/v1/chat/completions";
 const DEEPSEEK_CHAT_URL = "https://api.deepseek.com/v1/chat/completions";
 
 const OPENAI_MODEL = readFirstEnv(["VWL_OPENAI_MODEL"]) || "gpt-5.4";
-const CLAUDE_MODEL = readFirstEnv(["VWL_INTELLIGENT_MODEL", "VWL_CLAUDE_MODEL"]) || "anthropic/claude-3.5-haiku";
+const CLAUDE_MODEL = "openrouter/auto";
 const DEEPSEEK_MODEL = readFirstEnv(["VWL_DEEPSEEK_MODEL", "VWL_FAST_MODEL", "DEEPSEEK_MODEL"]) || "deepseek-reasoner";
 
 const MODE_CONFIG = {
@@ -190,7 +190,25 @@ function extractTextFromResponse(data) {
 }
 
 function extractOpenRouterText(data) {
-  return compactText(data?.choices?.[0]?.message?.content || "");
+  const content = data?.choices?.[0]?.message?.content;
+
+  if (typeof content === "string") return compactText(content);
+
+  if (Array.isArray(content)) {
+    return compactText(
+      content
+        .map((part) => {
+          if (typeof part === "string") return part;
+          if (typeof part?.text === "string") return part.text;
+          if (typeof part?.content === "string") return part.content;
+          return "";
+        })
+        .filter(Boolean)
+        .join(" ")
+    );
+  }
+
+  return "";
 }
 
 function limitSnippet(value) {
@@ -462,7 +480,7 @@ module.exports = async function handler(req, res) {
         openRouterKey: OPENROUTER_KEY_ENV_NAMES,
         deepSeekKey: DEEPSEEK_KEY_ENV_NAMES,
         vectorStore: VECTOR_STORE_ENV_NAMES,
-        optional: ["VWL_OPENAI_MODEL", "VWL_INTELLIGENT_MODEL", "VWL_CLAUDE_MODEL", "VWL_DEEPSEEK_MODEL", "VWL_FAST_MODEL", "DEEPSEEK_MODEL"],
+        optional: ["VWL_OPENAI_MODEL", "VWL_DEEPSEEK_MODEL", "VWL_FAST_MODEL", "DEEPSEEK_MODEL"],
       },
     });
     return;
