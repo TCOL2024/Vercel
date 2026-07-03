@@ -1,4 +1,4 @@
-// build: v20260603-1328-06-02-fallback (Cache-Bust: erzwingt Neukompilierung der Funktion)
+// build: v20260703-mbppv-fix (Fixes: PFLEGE_RE inkl. MB/PPV, Vector Store auch bei Nachfragen, Zitier-Guardrail)
 import { Redis } from '@upstash/redis';
 import { createRequire } from 'module';
 const require = createRequire(import.meta.url);
@@ -16,6 +16,16 @@ const KI_MODEL = process.env.VORANALYSE_MODEL || 'gpt-5.1';
 // Falls die bevorzugte Modell-ID vom Account nicht unterstützt wird,
 // fällt der Aufruf automatisch auf ein garantiert verfügbares Modell zurück.
 const MODEL_FALLBACKS = [...new Set([KI_MODEL, 'gpt-4o', 'gpt-4o-mini'])];
+
+// ── ZITIER-GUARDRAIL (wird an alle System-Prompts angehängt) ─────────────────
+// Verhindert konstruierte Wortlaute/Fundstellen und fixiert den Rechtsstand.
+const ZITAT_GUARDRAIL = `
+
+WICHTIG – Quellenbindung:
+- Wörtliche Zitate von Gesetzes- oder Bedingungstexten (SGB, MB/PPV, Tarif PV) NUR, wenn der Wortlaut in den bereitgestellten Quelldokumenten enthalten ist.
+- Liegt kein passendes Quelldokument vor, antworte: "Dazu liegt mir kein Quelldokument vor." Konstruiere NIEMALS einen Wortlaut oder eine Fundstelle.
+- Rechtsstand: die ab 1.7.2025 geltende Fassung (u.a. § 42a SGB XI Gemeinsamer Jahresbetrag; hälftige Pflegegeld-Fortzahlung bis zu 8 Wochen); Beträge und Rechengrößen mit Stand 2026.
+- Nenne bei jeder normbezogenen Aussage die Fundstelle (§, Abs., Gesetz bzw. MB/PPV, ggf. Nr. Tarif PV).`;
 
 // Baut die richtigen Parameter je nach Modell-Generation.
 // GPT-5- und o-Modelle: max_completion_tokens + nur Default-Temperatur.
@@ -195,7 +205,10 @@ async function handleLoeschen(req, res) {
 
 // ── VECTOR STORE — Pflege-Suche (module-level, genutzt von Voice + Voranalyse) ─
 const VECTOR_STORE_ID = 'vs_69de0362cf84819199202158e8444e16';
-const PFLEGE_RE = /pflege(?:grad|kasse|bed[uü]rf|vers|heim|geld|antrag|zeit)?|sgb\s*xi\b|pfleges(?:tufe|atz)|medizinischer?\s*dienst\b|mdk\b|spitex|tagespflege|kurzzeitpflege|verhinderungspflege|pflegeperson/i;
+// FIX 2: Regex erweitert um PPV-Begriffe (MB/PPV, Musterbedingungen, Tarif PV,
+// Ersatzpflege, Entlastungsbetrag, Medicproof) – vorher griff der Vector Store
+// bei rein vertraglichen PPV-Fragen nicht.
+const PFLEGE_RE = /pflege(?:grad|kasse|bed[uü]rf|vers|heim|geld|antrag|zeit)?|sgb\s*xi\b|mb\s*\/?\s*ppv|\bppv\b|musterbedingungen|tarif\s*pv\b|pfleges(?:tufe|atz)|medizinischer?\s*dienst\b|mdk\b|medicproof|spitex|tagespflege|kurzzeitpflege|verhinderungspflege|ersatzpflege|entlastungsbetrag|pflegeperson/i;
 
 async function llmMitQuellen(apiKey, systemPrompt, messages) {
   // Konvertiere messages-Array ins Responses-API-Format
@@ -250,7 +263,7 @@ async function llmMitQuellen(apiKey, systemPrompt, messages) {
     rawResults.length ? '| first score:' + rawResults[0]?.score + ' | keys:' + JSON.stringify(Object.keys(rawResults[0] || {})) : '');
 
   const quellen = rawResults
-    .filter(q => (q.score || 0) >= 0.1)   // niedrige Schwelle
+    .filter(q => (q.score || 0) >= 0.1)   // niedrige Schwelle; nach MB/PPV-Upload ggf. auf 0.3 anheben
     .slice(0, 3)
     .map(q => ({
       datei:  q.filename || q.file_name || q.title || 'Dokument',
@@ -353,7 +366,8 @@ async function handleVoice(req, res) {
     const istPflege  = PFLEGE_RE.test(userText) ||
                        (Array.isArray(verlauf) && verlauf.some(v => PFLEGE_RE.test(v.user || '') || PFLEGE_RE.test(v.linda || '')));
 
-    const systemPrompt = `Du bist Linda, eine freundliche KI-Assistentin für deutsches Sozialrecht. Antworte kurz und klar auf Deutsch (max. 4 Sätze). Nenne das relevante SGB falls passend. Keine Rechtsberatung.${istPflege ? ' Nutze die bereitgestellten Quelldokumente zum SGB XI.' : ''}${isFollowup ? ' Das ist die letzte Antwort im Beta-Modus – schließe mit dem Hinweis, die Anfrage schriftlich einzureichen.' : ''}`;
+    // FIX 3: Zitier-Guardrail auch im Voice-Prompt
+    const systemPrompt = `Du bist Linda, eine freundliche KI-Assistentin für deutsches Sozialrecht. Antworte kurz und klar auf Deutsch (max. 4 Sätze). Nenne das relevante SGB falls passend. Keine Rechtsberatung.${istPflege ? ' Nutze die bereitgestellten Quelldokumente zum SGB XI und zu den MB/PPV.' : ''}${isFollowup ? ' Das ist die letzte Antwort im Beta-Modus – schließe mit dem Hinweis, die Anfrage schriftlich einzureichen.' : ''}${ZITAT_GUARDRAIL}`;
 
     const messages = [
       { role: 'system', content: systemPrompt },
@@ -367,7 +381,7 @@ async function handleVoice(req, res) {
     let responseText, quellen = [];
     try {
       if (istPflege) {
-        // Responses API + Vektor-Suche im SGB-XI-Store
+        // Responses API + Vektor-Suche im SGB-XI-/MB-PPV-Store
         const result = await llmMitQuellen(apiKey, systemPrompt, messages);
         responseText = result.text;
         quellen      = result.quellen;
@@ -439,11 +453,12 @@ async function handleVoranalyse(req, res) {
     ? `Gib eine AUSFÜHRLICHE Einschätzung in 3-4 kurzen Absätzen: ordne den Sachverhalt rechtlich ein, nenne die einschlägigen Normen (konkretes SGB / §), erläutere mögliche Ansprüche samt Voraussetzungen und beschreibe sinnvolle nächste Schritte. Klar strukturiert, verständlich, ohne Juristenjargon.`
     : `Gib eine KOMPAKTE Einschätzung in 3-4 Sätzen: nur das Wesentliche, das relevante SGB falls passend, ohne Ausschweifungen.`;
 
+  // FIX 3: ZITAT_GUARDRAIL an alle drei Prompt-Varianten angehängt
   const systemPrompt = istNachfrage
     ? `Du bist Linda4, eine KI-Assistentin für deutsches Sozialrecht.
 Der User hat zu deiner bisherigen Einschätzung eine ergänzende Frage. Beantworte AUSSCHLIESSLICH diese Frage – konkret, unverbindlich und bezogen auf den geschilderten Fall.
 ${laengeInstruktion}
-Antworte auf Deutsch, ohne Juristenjargon. Beginne direkt mit der Antwort. Keine Rechtsberatung.`
+Antworte auf Deutsch, ohne Juristenjargon. Beginne direkt mit der Antwort. Keine Rechtsberatung.${ZITAT_GUARDRAIL}`
     : direktEinschaetzung
     ? `Du bist Linda4, eine KI-Assistentin für deutsches Sozialrecht.
 ${hatAntworten ? 'Der User hat bereits Rückfragen beantwortet – beziehe diese Antworten explizit ein.' : ''}
@@ -451,7 +466,7 @@ Gib eine fundierte, UNVERBINDLICHE Einschätzung.
 ${laengeInstruktion}
 Antworte IMMER als gültiges JSON:
 {"einschaetzung":"...","paragrafen":["§ XX SGB XX"]}
-Regeln: paragrafen = bis zu 4 relevante §§ aus dem deutschen Sozialgesetzbuch, z. B. "§ 37 SGB V", "§ 14 SGB XI". Falls kein konkreter § passt: leeres Array []. Keine Rechtsberatung. Antworte auf Deutsch.`
+Regeln: paragrafen = bis zu 4 relevante §§ aus dem deutschen Sozialgesetzbuch, z. B. "§ 37 SGB V", "§ 14 SGB XI". Falls kein konkreter § passt: leeres Array []. Keine Rechtsberatung. Antworte auf Deutsch.${ZITAT_GUARDRAIL}`
     : `Du bist Linda4, eine KI-Assistentin für deutsches Sozialrecht.
 Analysiere die Fallbeschreibung und entscheide:
 
@@ -464,7 +479,7 @@ B) Ist die Beschreibung zu kurz, unklar oder fehlen wichtige Infos?
 Antworte IMMER als gültiges JSON:
 {"modus":"einschaetzung"|"rueckfragen","einschaetzung":"..."|null,"rueckfragen":["Frage 1?"]|null,"paragrafen":["§ XX SGB XX"]|[]}
 
-Regeln: Bei unter 80 Zeichen IMMER rueckfragen. Fragen spezifisch für ${thema}. Antworte auf Deutsch.`;
+Regeln: Bei unter 80 Zeichen IMMER rueckfragen. Fragen spezifisch für ${thema}. Antworte auf Deutsch.${ZITAT_GUARDRAIL}`;
 
   const isImage = attachmentType?.startsWith('image/');
   const isPdf   = attachmentType === 'application/pdf' || attachmentName?.toLowerCase().endsWith('.pdf');
@@ -499,10 +514,12 @@ Regeln: Bei unter 80 Zeichen IMMER rueckfragen. Fragen spezifisch für ${thema}.
     ? [{ type: 'text', text: baseText }, { type: 'image_url', image_url: { url: `data:${attachmentType};base64,${attachment}`, detail: 'high' } }]
     : baseText;
 
-  // Pflege-Thema erkennen für selektive Vector-Store-Nutzung
-  // Kein direktEinschaetzung-Gate: bei Pflege immer direkt mit Vector Store antworten
-  const istPflegeThema = !istNachfrage &&
-    PFLEGE_RE.test(thema + ' ' + String(beschreibung || '').slice(0, 500));
+  // FIX 1: Pflege-Erkennung gilt jetzt AUCH für Nachfragen – vorher umgingen
+  // ergänzende Fragen (istNachfrage) immer den Vector Store und liefen ohne
+  // Retrieval über das generische Modellwissen (Ursache der Halluzinationen).
+  // userFrage fließt zusätzlich in die Erkennung ein.
+  const istPflegeThema =
+    PFLEGE_RE.test(thema + ' ' + String(beschreibung || '').slice(0, 500) + ' ' + userFrage);
 
   try {
     // Intent-Klassifikation parallel starten (nur bei Erstanfrage)
@@ -514,7 +531,7 @@ Regeln: Bei unter 80 Zeichen IMMER rueckfragen. Fragen spezifisch für ${thema}.
 
     if (istPflegeThema) {
       // Pflege: Responses API + Vector Store (parallel mit Klassifikation)
-      console.log('Voranalyse: Pflege-Thema erkannt, nutze Vector Store');
+      console.log('Voranalyse: Pflege-Thema erkannt, nutze Vector Store' + (istNachfrage ? ' (Nachfrage)' : ''));
       const [klassifikation, pflegeResult] = await Promise.all([
         klassifikationPromise,
         llmMitQuellen(apiKey, systemPrompt, [
@@ -525,6 +542,12 @@ Regeln: Bei unter 80 Zeichen IMMER rueckfragen. Fragen spezifisch für ${thema}.
       raw     = pflegeResult.text;
       quellen = pflegeResult.quellen;
       console.log('Voranalyse Pflege: quellen=' + quellen.length);
+
+      // FIX 1 (Fortsetzung): Nachfragen liefern Plain-Text im nachfrage-Format
+      // zurück – wie der Standard-Pfad, aber jetzt quellengebunden.
+      if (istNachfrage) {
+        return res.status(200).json({ modus: 'nachfrage', antwort: raw, quellen, antwortLaenge });
+      }
 
       // JSON wrappen wenn nötig (Responses API gibt manchmal plain text zurück)
       let parsed;
@@ -621,7 +644,7 @@ async function handleAnfrage(req, res) {
           { role: 'system', content: `Du bist Linda4, eine KI-Assistentin für deutsches Sozialrecht.
 Erstelle einen professionellen Antwort-ENTWURF für einen Sozialrechts-Experten.
 Format: Persönliche Anrede (Du-Form), 3-5 Absätze, freundlicher professioneller Ton.
-Ende mit [Expertenunterschrift]. Antworte auf Deutsch.` },
+Ende mit [Expertenunterschrift]. Antworte auf Deutsch.${ZITAT_GUARDRAIL}` },
           { role: 'user', content: `Thema: ${thema}\nBeschreibung:\n${beschreibung}\nEinschätzung:\n${einschaetzung || 'keine'}` },
         ],
         maxTokens: 1800, temperature: 0.2,
@@ -701,7 +724,7 @@ Ende mit [Expertenunterschrift]. Antworte auf Deutsch.` },
     </div>
   </div>`;
 
-  const sendMail = (to, subject, html, replyTo) =>
+  const sendMailLocal = (to, subject, html, replyTo) =>
     fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${RESEND_API_KEY}`, 'Content-Type': 'application/json' },
@@ -718,7 +741,7 @@ Ende mit [Expertenunterschrift]. Antworte auf Deutsch.` },
     // Anonym: nur Expert-Mail (ohne Personendaten), keine User-Bestätigung
     if (RESEND_API_KEY) {
       try {
-        const r1 = await sendMail(EXPERT_EMAIL, `[${thema}] Anonym – Neue Anfrage`, expertHtml, null);
+        const r1 = await sendMailLocal(EXPERT_EMAIL, `[${thema}] Anonym – Neue Anfrage`, expertHtml, null);
         if (!r1.ok) console.warn('Anonym Expert-Mail fehlgeschlagen:', await r1.text());
       } catch(e) { console.warn('Mail-Fehler (anonym):', e.message); }
     }
@@ -728,8 +751,8 @@ Ende mit [Expertenunterschrift]. Antworte auf Deutsch.` },
   }
 
   const [r1, r2] = await Promise.all([
-    sendMail(EXPERT_EMAIL, `[${thema}] ${vorname} ${nachname} – Neue Anfrage`, expertHtml, email),
-    sendMail(email, `Deine Anfrage ist eingegangen – ${thema}`, userHtml, EXPERT_EMAIL),
+    sendMailLocal(EXPERT_EMAIL, `[${thema}] ${vorname} ${nachname} – Neue Anfrage`, expertHtml, email),
+    sendMailLocal(email, `Deine Anfrage ist eingegangen – ${thema}`, userHtml, EXPERT_EMAIL),
   ]);
 
   if (!r1.ok) {
