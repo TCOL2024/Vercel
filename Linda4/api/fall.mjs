@@ -1,10 +1,13 @@
-// build: v20260703-mbppv-fix-gpt56-luna
-// Fixes: PFLEGE_RE inkl. MB/PPV, Vector Store auch bei Nachfragen, Zitier-Guardrail
-// Update: GPT-5.6 Luna als Standardmodell mit robustem Fallback
+// build: v20260703-mbppv-fix-gpt55-flex
+// Fixes: PFLEGE_RE inkl. MB/PPV, Vector Store auch bei Nachfragen,
+// Zitier-Guardrail, Rückfrage-Dialog repariert, JSON-Code in Antworten verhindert,
+// GPT-5.5 Flex als Standard.
+
 import { Redis } from '@upstash/redis';
 import { createRequire } from 'module';
 
 const require = createRequire(import.meta.url);
+
 const kv = new Redis({
   url: process.env.KV_REST_API_URL,
   token: process.env.KV_REST_API_TOKEN,
@@ -16,12 +19,15 @@ const EXPERT_EMAIL = process.env.EXPERT_EMAIL || 'noormann@gmx.com';
 const RESEND_FROM  = 'Sozialrecht Fachberatung <anfrage@resend.dev>';
 
 // ── MODELLSTEUERUNG ──────────────────────────────────────────────────────────
-// Standardmodell: GPT-5.6 Luna
-// Offizielle Modell-ID laut OpenAI: gpt-5.6-luna
-// Per Env-Variable überschreibbar.
-const KI_MODEL = process.env.VORANALYSE_MODEL || process.env.OPENAI_MODEL || 'gpt-5.6-luna';
+// Standard: GPT-5.5 im Flex-Modus.
+// Flex ist kein eigener Modellname, sondern service_tier: "flex".
+const KI_MODEL = process.env.VORANALYSE_MODEL || process.env.OPENAI_MODEL || 'gpt-5.5';
+const OPENAI_SERVICE_TIER = process.env.OPENAI_SERVICE_TIER || 'flex';
 
-// GPT-5.6 ist aktuell Preview. Deshalb bleibt ein robuster Fallback wichtig.
+// Falls Flex wegen Ressourcenmangel oder Modellverfügbarkeit scheitert,
+// wird automatisch derselbe Request mit service_tier: "auto" versucht.
+const OPENAI_FLEX_FALLBACK_TO_AUTO = process.env.OPENAI_FLEX_FALLBACK_TO_AUTO !== 'false';
+
 const MODEL_FALLBACKS = [...new Set([
   KI_MODEL,
   'gpt-5.1',
@@ -29,12 +35,9 @@ const MODEL_FALLBACKS = [...new Set([
   'gpt-4o-mini',
 ])];
 
-// Klassifikation kann separat gesteuert werden.
-// Standard: ebenfalls KI_MODEL, fällt aber über chatCompletion automatisch zurück.
 const CLASSIFIER_MODEL = process.env.CLASSIFIER_MODEL || KI_MODEL;
 
 // ── ZITIER-GUARDRAIL ─────────────────────────────────────────────────────────
-// Verhindert konstruierte Wortlaute/Fundstellen und fixiert den Rechtsstand.
 const ZITAT_GUARDRAIL = `
 
 WICHTIG – Quellenbindung:
@@ -43,22 +46,99 @@ WICHTIG – Quellenbindung:
 - Rechtsstand: die ab 1.7.2025 geltende Fassung (u.a. § 42a SGB XI Gemeinsamer Jahresbetrag; hälftige Pflegegeld-Fortzahlung bis zu 8 Wochen); Beträge und Rechengrößen mit Stand 2026.
 - Nenne bei jeder normbezogenen Aussage die Fundstelle (§, Abs., Gesetz bzw. MB/PPV, ggf. Nr. Tarif PV).`;
 
-// Baut die richtigen Parameter je nach Modell-Generation.
-// GPT-5- und o-Modelle: max_completion_tokens + nur Default-Temperatur.
-// Ältere Modelle, z. B. gpt-4o: max_tokens + frei wählbare Temperatur.
+// ── MODELLPARAMETER ──────────────────────────────────────────────────────────
 function modelParams(model, { maxTokens, temperature, jsonMode }) {
   const nextGen = /^(gpt-5|o[0-9])/i.test(model);
+
   const p = nextGen
     ? { max_completion_tokens: maxTokens }
     : { max_tokens: maxTokens, temperature };
 
-  if (jsonMode) p.response_format = { type: 'json_object' };
+  if (jsonMode) {
+    p.response_format = { type: 'json_object' };
+  }
+
   return p;
 }
 
-// Ruft die OpenAI Chat-Completions-API auf und probiert bei Modell-/Parameter-
-// Fehlern automatisch die nächste Modell-ID.
-// Gibt { ok, content, model, status, error } zurück.
+// ── TEXT-/JSON-HELPER ────────────────────────────────────────────────────────
+function esc(s) {
+  return String(s ?? '').replace(/[&<>"]/g, c => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+  }[c]));
+}
+
+function cleanModelText(s) {
+  return String(s ?? '')
+    .trim()
+    .replace(/^```(?:json|javascript|js|html|text)?\s*/i, '')
+    .replace(/```$/i, '')
+    .trim();
+}
+
+function tryParseJsonPayload(raw) {
+  const cleaned = cleanModelText(raw);
+
+  try {
+    return JSON.parse(cleaned);
+  } catch {}
+
+  const firstObj = cleaned.indexOf('{');
+  const lastObj = cleaned.lastIndexOf('}');
+
+  if (firstObj >= 0 && lastObj > firstObj) {
+    try {
+      return JSON.parse(cleaned.slice(firstObj, lastObj + 1));
+    } catch {}
+  }
+
+  return null;
+}
+
+function unwrapModelAnswer(raw) {
+  const cleaned = cleanModelText(raw);
+  const parsed = tryParseJsonPayload(cleaned);
+
+  if (!parsed || typeof parsed !== 'object') return cleaned;
+
+  if (typeof parsed.einschaetzung === 'string' && parsed.einschaetzung.trim()) {
+    return parsed.einschaetzung.trim();
+  }
+
+  if (typeof parsed.antwort === 'string' && parsed.antwort.trim()) {
+    return parsed.antwort.trim();
+  }
+
+  if (Array.isArray(parsed.rueckfragen) && parsed.rueckfragen.length) {
+    return parsed.rueckfragen.filter(Boolean).join('\n\n');
+  }
+
+  return cleaned;
+}
+
+function serviceTiersForRequest() {
+  if (OPENAI_SERVICE_TIER === 'flex' && OPENAI_FLEX_FALLBACK_TO_AUTO) {
+    return ['flex', 'auto'];
+  }
+  return [OPENAI_SERVICE_TIER];
+}
+
+function isFlexUnavailable(status, errorText, serviceTier) {
+  if (serviceTier !== 'flex') return false;
+
+  if (status === 429) return true;
+
+  if (status === 400) {
+    return /flex|service_tier|service tier|not available|unsupported|unavailable/i.test(String(errorText || ''));
+  }
+
+  return false;
+}
+
+// ── OPENAI CHAT COMPLETIONS MIT FALLBACK ─────────────────────────────────────
 async function chatCompletion({
   apiKey,
   messages,
@@ -70,59 +150,84 @@ async function chatCompletion({
   let lastStatus = 0;
   let lastError = '';
 
+  const tiers = serviceTiersForRequest();
+
   for (const model of modelList) {
-    let response;
+    for (const serviceTier of tiers) {
+      let response;
 
-    try {
-      response = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${apiKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
+      try {
+        response = await fetch('https://api.openai.com/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${apiKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            model,
+            messages,
+            service_tier: serviceTier,
+            ...modelParams(model, { maxTokens, temperature, jsonMode }),
+          }),
+        });
+      } catch (e) {
+        lastStatus = 0;
+        lastError = e.message;
+        console.error(`OpenAI Netzwerkfehler (${model}, tier=${serviceTier}):`, e.message);
+        continue;
+      }
+
+      if (response.ok) {
+        const data = await response.json();
+        const content = cleanModelText(data.choices?.[0]?.message?.content || '');
+
+        return {
+          ok: true,
+          content,
           model,
-          messages,
-          ...modelParams(model, { maxTokens, temperature, jsonMode }),
-        }),
-      });
-    } catch (e) {
-      lastStatus = 0;
-      lastError = e.message;
-      continue;
+          serviceTier,
+        };
+      }
+
+      lastStatus = response.status;
+      lastError = await response.text();
+
+      console.error(
+        `OpenAI-Fehler (${model}, tier=${serviceTier}):`,
+        lastStatus,
+        String(lastError).slice(0, 300)
+      );
+
+      if (lastStatus === 401) {
+        return { ok: false, status: lastStatus, error: lastError };
+      }
+
+      if (isFlexUnavailable(lastStatus, lastError, serviceTier) && OPENAI_FLEX_FALLBACK_TO_AUTO) {
+        continue;
+      }
+
+      if (lastStatus === 403 || lastStatus === 404) {
+        break;
+      }
+
+      if (lastStatus === 429) {
+        return { ok: false, status: lastStatus, error: lastError };
+      }
+
+      if (lastStatus === 400) {
+        break;
+      }
     }
-
-    if (response.ok) {
-      const data = await response.json();
-      const content = data.choices?.[0]?.message?.content?.trim() || '';
-      return { ok: true, content, model };
-    }
-
-    lastStatus = response.status;
-    lastError = await response.text();
-
-    console.error(`OpenAI-Fehler (${model}):`, lastStatus, lastError.slice(0, 300));
-
-    // 401 = API-Key falsch, 429 = Rate Limit/Quota.
-    // 403/404 kann bei Preview-Modellen "kein Zugriff/Modell nicht freigeschaltet" bedeuten.
-    // Deshalb bei 403/404 weiter zum Fallback.
-    if (lastStatus === 401 || lastStatus === 429) break;
   }
 
-  return { ok: false, status: lastStatus, error: lastError };
+  return {
+    ok: false,
+    status: lastStatus,
+    error: lastError,
+  };
 }
 
-// HTML-Escaping für nutzergenerierte Texte in E-Mails
-function esc(s) {
-  return String(s ?? '').replace(/[&<>"]/g, c => ({
-    '&': '&amp;',
-    '<': '&lt;',
-    '>': '&gt;',
-    '"': '&quot;',
-  }[c]));
-}
-
-// Einheitlicher Resend-Mailversand
+// ── RESEND-MAILVERSAND ───────────────────────────────────────────────────────
 async function sendMail({ to, subject, html, replyTo, attachments }) {
   const key = process.env.RESEND_API_KEY;
   if (!key) throw new Error('mail-not-configured');
@@ -144,6 +249,7 @@ async function sendMail({ to, subject, html, replyTo, attachments }) {
   });
 }
 
+// ── MAIN HANDLER ─────────────────────────────────────────────────────────────
 export default async function handler(req, res) {
   const action = req.query.action || (req.method === 'GET' ? 'portal' : 'anfrage');
 
@@ -296,7 +402,7 @@ async function handleLoeschen(req, res) {
   }
 }
 
-// ── VECTOR STORE — Pflege-Suche ──────────────────────────────────────────────
+// ── VECTOR STORE — PFLEGE-SUCHE ──────────────────────────────────────────────
 const VECTOR_STORE_ID = 'vs_69de0362cf84819199202158e8444e16';
 
 const PFLEGE_RE = /pflege(?:grad|kasse|bed[uü]rf|vers|heim|geld|antrag|zeit)?|sgb\s*xi\b|mb\s*\/?\s*ppv|\bppv\b|musterbedingungen|tarif\s*pv\b|pfleges(?:tufe|atz)|medizinischer?\s*dienst\b|mdk\b|medicproof|spitex|tagespflege|kurzzeitpflege|verhinderungspflege|ersatzpflege|entlastungsbetrag|pflegeperson/i;
@@ -307,111 +413,133 @@ async function llmMitQuellen(apiKey, systemPrompt, messages) {
   let lastStatus = 0;
   let lastError = '';
 
+  const tiers = serviceTiersForRequest();
+
   for (const model of MODEL_FALLBACKS) {
-    const body = {
-      model,
-      instructions: systemPrompt,
-      input: inputMessages,
-      tools: [{ type: 'file_search', vector_store_ids: [VECTOR_STORE_ID] }],
-      include: ['file_search_call.results'],
-    };
+    for (const serviceTier of tiers) {
+      const body = {
+        model,
+        instructions: systemPrompt,
+        input: inputMessages,
+        service_tier: serviceTier,
+        tools: [{ type: 'file_search', vector_store_ids: [VECTOR_STORE_ID] }],
+        include: ['file_search_call.results'],
+      };
 
-    let r;
+      let r;
 
-    try {
-      r = await fetch('https://api.openai.com/v1/responses', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${apiKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(body),
-      });
-    } catch (e) {
-      lastStatus = 0;
-      lastError = e.message;
-      console.error(`Responses API Netzwerkfehler (${model}):`, e.message);
-      continue;
-    }
+      try {
+        r = await fetch('https://api.openai.com/v1/responses', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${apiKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(body),
+        });
+      } catch (e) {
+        lastStatus = 0;
+        lastError = e.message;
+        console.error(`Responses API Netzwerkfehler (${model}, tier=${serviceTier}):`, e.message);
+        continue;
+      }
 
-    if (!r.ok) {
-      lastStatus = r.status;
-      lastError = await r.text();
+      if (!r.ok) {
+        lastStatus = r.status;
+        lastError = await r.text();
 
-      console.error(`Responses API Fehler (${model}):`, lastStatus, lastError.slice(0, 300));
+        console.error(
+          `Responses API Fehler (${model}, tier=${serviceTier}):`,
+          lastStatus,
+          String(lastError).slice(0, 300)
+        );
 
-      // 401 = Key falsch, 429 = Limit/Quota.
-      // 403/404 kann bei Preview-Modellen "kein Modellzugriff" bedeuten.
-      if (lastStatus === 401 || lastStatus === 429) break;
-      continue;
-    }
+        if (lastStatus === 401) {
+          throw new Error(`LLM-Responses nicht autorisiert (${lastStatus})`);
+        }
 
-    const data = await r.json();
+        if (isFlexUnavailable(lastStatus, lastError, serviceTier) && OPENAI_FLEX_FALLBACK_TO_AUTO) {
+          continue;
+        }
 
-    const outputTypes = (data.output || []).map(o => o.type);
-    console.log('Responses API output types:', JSON.stringify(outputTypes), '| model:', model);
+        if (lastStatus === 403 || lastStatus === 404) {
+          break;
+        }
 
-    const searchCall = (data.output || []).find(o =>
-      o.type === 'file_search_call' || o.type === 'tool_call'
-    );
+        if (lastStatus === 429) {
+          throw new Error(`LLM-Responses Rate Limit (${lastStatus})`);
+        }
 
-    if (searchCall) {
-      console.log('searchCall keys:', JSON.stringify(Object.keys(searchCall)));
-      console.log('searchCall.status:', searchCall.status);
-      console.log(
-        'searchCall.results type:',
-        typeof searchCall.results,
-        Array.isArray(searchCall.results) ? 'len=' + searchCall.results.length : ''
+        if (lastStatus === 400) {
+          break;
+        }
+
+        continue;
+      }
+
+      const data = await r.json();
+
+      const outputTypes = (data.output || []).map(o => o.type);
+      console.log('Responses API output types:', JSON.stringify(outputTypes), '| model:', model, '| tier:', serviceTier);
+
+      const searchCall = (data.output || []).find(o =>
+        o.type === 'file_search_call' || o.type === 'tool_call'
       );
-    } else {
-      console.log('searchCall: nicht gefunden in output');
+
+      if (searchCall) {
+        console.log('searchCall keys:', JSON.stringify(Object.keys(searchCall)));
+        console.log('searchCall.status:', searchCall.status);
+        console.log(
+          'searchCall.results type:',
+          typeof searchCall.results,
+          Array.isArray(searchCall.results) ? 'len=' + searchCall.results.length : ''
+        );
+      } else {
+        console.log('searchCall: nicht gefunden in output');
+      }
+
+      const rawResults = Array.isArray(searchCall?.results) ? searchCall.results : [];
+
+      const quellen = rawResults
+        .filter(q => (q.score || 0) >= 0.1)
+        .slice(0, 3)
+        .map(q => ({
+          datei: q.filename || q.file_name || q.title || 'Dokument',
+          auszug: (q.text || q.content || q.snippet || '').trim().slice(0, 300),
+        }))
+        .filter(q => q.datei || q.auszug);
+
+      const msgOut = (data.output || []).find(o => o.type === 'message');
+      const contentItem = msgOut?.content?.[0];
+
+      let text = (
+        contentItem?.text ||
+        contentItem?.output_text ||
+        (typeof contentItem === 'string' ? contentItem : '') ||
+        data.output_text ||
+        ''
+      );
+
+      text = cleanModelText(text)
+        .replace(/【\d+†[^】]*】/g, '')
+        .replace(/\s{2,}/g, ' ')
+        .trim();
+
+      console.log(
+        'llmMitQuellen result:',
+        'model=', model,
+        '| tier=', serviceTier,
+        '| text length=', text.length,
+        '| quellen=', quellen.length
+      );
+
+      return {
+        text,
+        quellen,
+        model,
+        serviceTier,
+      };
     }
-
-    const rawResults = Array.isArray(searchCall?.results) ? searchCall.results : [];
-
-    console.log(
-      'rawResults count:',
-      rawResults.length,
-      rawResults.length
-        ? '| first score:' + rawResults[0]?.score + ' | keys:' + JSON.stringify(Object.keys(rawResults[0] || {}))
-        : ''
-    );
-
-    const quellen = rawResults
-      .filter(q => (q.score || 0) >= 0.1)
-      .slice(0, 3)
-      .map(q => ({
-        datei: q.filename || q.file_name || q.title || 'Dokument',
-        auszug: (q.text || q.content || q.snippet || '').trim().slice(0, 300),
-      }))
-      .filter(q => q.datei || q.auszug);
-
-    const msgOut = (data.output || []).find(o => o.type === 'message');
-    const contentItem = msgOut?.content?.[0];
-
-    let text = (
-      contentItem?.text ||
-      contentItem?.output_text ||
-      (typeof contentItem === 'string' ? contentItem : '') ||
-      data.output_text ||
-      ''
-    ).trim();
-
-    text = text
-      .replace(/【\d+†[^】]*】/g, '')
-      .replace(/\s{2,}/g, ' ')
-      .trim();
-
-    console.log(
-      'llmMitQuellen result: model',
-      model,
-      '| text length',
-      text.length,
-      '| quellen:',
-      quellen.length
-    );
-
-    return { text, quellen, model };
   }
 
   throw new Error(`LLM-Responses fehlgeschlagen (${lastStatus}): ${String(lastError).slice(0, 300)}`);
@@ -494,7 +622,12 @@ async function handleVoice(req, res) {
 
     if (!result.ok) throw new Error('LLM ' + result.status);
 
-    return { text: result.content, quellen: [], model: result.model };
+    return {
+      text: unwrapModelAnswer(result.content),
+      quellen: [],
+      model: result.model,
+      serviceTier: result.serviceTier,
+    };
   }
 
   if (step === 'greeting') {
@@ -541,13 +674,15 @@ async function handleVoice(req, res) {
     try {
       if (istPflege) {
         const result = await llmMitQuellen(apiKey, systemPrompt, messages);
-        responseText = result.text;
+        responseText = unwrapModelAnswer(result.text);
         quellen = result.quellen;
-        console.log(`Voice Pflege: ${quellen.length} Quelle(n) gefunden | model=${result.model}`);
+
+        console.log(`Voice Pflege: ${quellen.length} Quelle(n) gefunden | model=${result.model} | tier=${result.serviceTier}`);
       } else {
         const result = await llm(messages);
         responseText = result.text;
-        console.log(`Voice Standard: model=${result.model}`);
+
+        console.log(`Voice Standard: model=${result.model} | tier=${result.serviceTier}`);
       }
     } catch (e) {
       console.error('Voice LLM error:', e.message);
@@ -578,7 +713,7 @@ async function handleVoice(req, res) {
   return res.status(400).json({ error: 'Unbekannter Step' });
 }
 
-// ── Intent-Klassifikation ────────────────────────────────────────────────────
+// ── INTENT-KLASSIFIKATION ────────────────────────────────────────────────────
 async function classifyIntent(apiKey, thema, beschreibung) {
   try {
     const result = await chatCompletion({
@@ -599,7 +734,7 @@ async function classifyIntent(apiKey, thema, beschreibung) {
 
     if (!result.ok) return null;
 
-    const k = JSON.parse(result.content || 'null');
+    const k = tryParseJsonPayload(result.content);
     return k && k.sgb ? k : null;
   } catch {
     return null;
@@ -764,44 +899,55 @@ Regeln: Bei unter 80 Zeichen IMMER rueckfragen. Fragen spezifisch für ${thema}.
       raw = pflegeResult.text;
       quellen = pflegeResult.quellen;
 
-      console.log('Voranalyse Pflege: quellen=' + quellen.length + ' | model=' + pflegeResult.model);
+      console.log(
+        'Voranalyse Pflege: quellen=' + quellen.length +
+        ' | model=' + pflegeResult.model +
+        ' | tier=' + pflegeResult.serviceTier
+      );
 
       if (istNachfrage) {
         return res.status(200).json({
           modus: 'nachfrage',
-          antwort: raw,
+          antwort: unwrapModelAnswer(raw),
           quellen,
           antwortLaenge,
           model: pflegeResult.model,
+          serviceTier: pflegeResult.serviceTier,
         });
       }
 
-      let parsed;
+      const parsed = tryParseJsonPayload(raw);
 
-      try {
-        parsed = JSON.parse(raw);
-      } catch {
-        parsed = {
-          modus: 'einschaetzung',
-          einschaetzung: raw,
-          rueckfragen: null,
-          paragrafen: [],
-        };
+      if (parsed && parsed.modus === 'rueckfragen' && Array.isArray(parsed.rueckfragen)) {
+        return res.status(200).json({
+          modus: 'rueckfragen',
+          einschaetzung: null,
+          rueckfragen: parsed.rueckfragen.filter(Boolean).slice(0, 2),
+          paragrafen: Array.isArray(parsed.paragrafen)
+            ? parsed.paragrafen.filter(p => p && typeof p === 'string').slice(0, 4)
+            : [],
+          quellen,
+          klassifikation,
+          antwortLaenge,
+          model: pflegeResult.model,
+          serviceTier: pflegeResult.serviceTier,
+        });
       }
 
-      const paragrafen = Array.isArray(parsed.paragrafen)
+      const paragrafen = parsed && Array.isArray(parsed.paragrafen)
         ? parsed.paragrafen.filter(p => p && typeof p === 'string').slice(0, 4)
         : [];
 
       return res.status(200).json({
         modus: 'einschaetzung',
-        einschaetzung: parsed.einschaetzung || raw,
+        einschaetzung: unwrapModelAnswer(parsed?.einschaetzung || raw),
         paragrafen,
         quellen,
         klassifikation,
         rueckfragen: null,
         antwortLaenge,
         model: pflegeResult.model,
+        serviceTier: pflegeResult.serviceTier,
       });
     }
 
@@ -829,20 +975,19 @@ Regeln: Bei unter 80 Zeichen IMMER rueckfragen. Fragen spezifisch für ${thema}.
     if (istNachfrage) {
       return res.status(200).json({
         modus: 'nachfrage',
-        antwort: raw,
+        antwort: unwrapModelAnswer(raw),
         antwortLaenge,
         model: result.model,
+        serviceTier: result.serviceTier,
       });
     }
 
-    let parsed;
+    let parsed = tryParseJsonPayload(raw);
 
-    try {
-      parsed = JSON.parse(raw);
-    } catch {
+    if (!parsed) {
       parsed = {
         modus: 'einschaetzung',
-        einschaetzung: raw,
+        einschaetzung: unwrapModelAnswer(raw),
         rueckfragen: null,
         paragrafen: [],
       };
@@ -855,13 +1000,14 @@ Regeln: Bei unter 80 Zeichen IMMER rueckfragen. Fragen spezifisch für ${thema}.
     if (direktEinschaetzung) {
       return res.status(200).json({
         modus: 'einschaetzung',
-        einschaetzung: parsed.einschaetzung || raw,
+        einschaetzung: unwrapModelAnswer(parsed.einschaetzung || raw),
         paragrafen,
         quellen: [],
         klassifikation,
         rueckfragen: null,
         antwortLaenge,
         model: result.model,
+        serviceTier: result.serviceTier,
       });
     }
 
@@ -875,14 +1021,32 @@ Regeln: Bei unter 80 Zeichen IMMER rueckfragen. Fragen spezifisch für ${thema}.
             : ''
       : '';
 
+    if (parsed.modus === 'rueckfragen' && Array.isArray(parsed.rueckfragen)) {
+      return res.status(200).json({
+        modus: 'rueckfragen',
+        einschaetzung: null,
+        rueckfragen: parsed.rueckfragen.filter(Boolean).slice(0, 2),
+        paragrafen,
+        quellen: [],
+        klassifikation,
+        docHinweis,
+        antwortLaenge,
+        model: result.model,
+        serviceTier: result.serviceTier,
+      });
+    }
+
     return res.status(200).json({
-      ...parsed,
+      modus: 'einschaetzung',
+      einschaetzung: unwrapModelAnswer(parsed.einschaetzung || raw),
+      rueckfragen: null,
       paragrafen,
       quellen: [],
       klassifikation,
       docHinweis,
       antwortLaenge,
       model: result.model,
+      serviceTier: result.serviceTier,
     });
   } catch (err) {
     console.error('Voranalyse error:', err);
@@ -907,11 +1071,12 @@ async function handleAnfrage(req, res) {
 
   const istAnonym = !!anonym;
 
-  const vorname = istAnonym ? 'Anonym' : (req.body.vorname || '').trim();
-  const nachname = istAnonym ? '' : (req.body.nachname || '').trim();
-  const email = istAnonym ? '' : (req.body.email || '').trim();
+  const vorname  = istAnonym ? 'Anonym' : (req.body.vorname || '').trim();
+  const nachname = istAnonym ? ''        : (req.body.nachname || '').trim();
+  const email    = istAnonym ? ''        : (req.body.email || '').trim();
 
   const mobil = (req.body.mobil || '').trim().replace(/\s+/g, '');
+
   console.log('SMS-Feld empfangen:', mobil ? 'hat Wert (' + mobil.slice(0, 4) + '***)' : 'leer');
 
   if ((!istAnonym && (!vorname || !nachname || !email)) || !fachbereich || !thema || !beschreibung) {
@@ -919,6 +1084,7 @@ async function handleAnfrage(req, res) {
   }
 
   const RESEND_API_KEY = process.env.RESEND_API_KEY;
+
   if (!RESEND_API_KEY && !istAnonym) {
     return res.status(500).json({ error: 'E-Mail-Dienst nicht konfiguriert' });
   }
@@ -976,8 +1142,11 @@ Ende mit [Expertenunterschrift]. Antworte auf Deutsch.${ZITAT_GUARDRAIL}`,
         temperature: 0.2,
       });
 
-      entwurf = r.ok ? r.content : '';
-      if (r.ok) console.log('Linda4 Entwurf Modell:', r.model);
+      entwurf = r.ok ? unwrapModelAnswer(r.content) : '';
+
+      if (r.ok) {
+        console.log('Linda4 Entwurf Modell:', r.model, '| tier:', r.serviceTier);
+      }
     } catch (e) {
       console.error('Entwurf fehlgeschlagen:', e.message);
     }
@@ -993,7 +1162,7 @@ Ende mit [Expertenunterschrift]. Antworte auf Deutsch.${ZITAT_GUARDRAIL}`,
   }
 
   const portalLink = `${BASE_URL}/portal.html?id=${id}`;
-  const adminLink = `${BASE_URL}/admin.html?id=${id}&token=${ADMIN_TOKEN}`;
+  const adminLink  = `${BASE_URL}/admin.html?id=${id}&token=${ADMIN_TOKEN}`;
 
   async function sendSms(phone, message) {
     const sevenKey = process.env.SEVEN_API_KEY;
@@ -1019,6 +1188,7 @@ Ende mit [Expertenunterschrift]. Antworte auf Deutsch.${ZITAT_GUARDRAIL}`,
       });
 
       const text = await r.text();
+
       console.log('seven.io Antwort:', text);
 
       return text.trim() === '100' || text.trim() === '101';
@@ -1041,12 +1211,16 @@ Ende mit [Expertenunterschrift]. Antworte auf Deutsch.${ZITAT_GUARDRAIL}`,
         <tr><td style="color:#64748b;padding:5px 0;">E-Mail:</td><td><a href="mailto:${esc(email)}" style="color:#2563eb;">${esc(email)}</a></td></tr>`}
         <tr><td style="color:#64748b;padding:5px 0;">Thema:</td><td><span style="background:#eff6ff;color:#1d4ed8;font-size:12px;font-weight:700;padding:2px 10px;">${esc(thema)}</span></td></tr>
       </table>
+
       <h3 style="color:#1e293b;font-size:13px;text-transform:uppercase;letter-spacing:.06em;border-bottom:1px solid #e2e8f0;padding-bottom:8px;margin:0 0 12px;">Fallbeschreibung</h3>
       <div style="background:#f8fafc;border-left:3px solid #2563eb;padding:14px 18px;font-size:14px;color:#334155;line-height:1.7;white-space:pre-wrap;margin-bottom:22px;">${esc(beschreibung)}</div>
+
       ${einschaetzung ? `<h3 style="color:#1e293b;font-size:13px;text-transform:uppercase;letter-spacing:.06em;border-bottom:1px solid #e2e8f0;padding-bottom:8px;margin:0 0 12px;">Linda4 Einschätzung</h3>
       <div style="background:#eff6ff;border-left:3px solid #0ea5e9;padding:14px 18px;font-size:14px;color:#1e3a8a;line-height:1.7;margin-bottom:22px;">${esc(einschaetzung)}</div>` : ''}
+
       ${entwurf ? `<h3 style="color:#1e293b;font-size:13px;text-transform:uppercase;letter-spacing:.06em;border-bottom:1px solid #e2e8f0;padding-bottom:8px;margin:0 0 12px;">Linda4 Entwurf</h3>
       <div style="background:#fefce8;border-left:3px solid #eab308;padding:14px 18px;font-size:14px;color:#713f12;line-height:1.7;white-space:pre-wrap;margin-bottom:22px;">${esc(entwurf)}</div>` : ''}
+
       <div style="background:#002A5C;padding:16px 20px;text-align:center;margin-top:8px;">
         <a href="${adminLink}" style="color:#fff;font-weight:700;font-size:14px;text-decoration:none;">→ Antwort bearbeiten &amp; absenden</a>
       </div>
@@ -1119,7 +1293,9 @@ Ende mit [Expertenunterschrift]. Antworte auf Deutsch.${ZITAT_GUARDRAIL}`,
     return res.status(500).json({ error: 'E-Mail konnte nicht gesendet werden' });
   }
 
-  if (!r2.ok) console.warn('User-Bestätigung fehlgeschlagen:', await r2.text());
+  if (!r2.ok) {
+    console.warn('User-Bestätigung fehlgeschlagen:', await r2.text());
+  }
 
   let smsSent = false;
   if (mobil) smsSent = await sendSms(mobil, `Dein Sozialrecht-Falllink: ${portalLink}`);
@@ -1132,10 +1308,12 @@ async function handlePortal(req, res) {
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
 
   const { id, token } = req.query;
+
   if (!id) return res.status(400).json({ error: 'Keine ID angegeben' });
 
   try {
     const raw = await kv.get(`fall:${id}`);
+
     if (!raw) return res.status(404).json({ error: 'Fall nicht gefunden' });
 
     const fall = typeof raw === 'string' ? JSON.parse(raw) : raw;
@@ -1175,13 +1353,18 @@ async function handleAntwort(req, res) {
   if (token !== ADMIN_TOKEN) return res.status(403).json({ error: 'Nicht autorisiert' });
 
   const RESEND_API_KEY = process.env.RESEND_API_KEY;
-  if (!RESEND_API_KEY) return res.status(500).json({ error: 'E-Mail-Dienst nicht konfiguriert' });
+
+  if (!RESEND_API_KEY) {
+    return res.status(500).json({ error: 'E-Mail-Dienst nicht konfiguriert' });
+  }
 
   let fall;
 
   try {
     const raw = await kv.get(`fall:${id}`);
+
     if (!raw) return res.status(404).json({ error: 'Fall nicht gefunden' });
+
     fall = typeof raw === 'string' ? JSON.parse(raw) : raw;
   } catch {
     return res.status(500).json({ error: 'Datenbankfehler' });
@@ -1254,7 +1437,9 @@ async function handleNachfrage(req, res) {
 
   try {
     const raw = await kv.get(`fall:${id}`);
+
     if (!raw) return res.status(404).json({ error: 'Fall nicht gefunden' });
+
     fall = typeof raw === 'string' ? JSON.parse(raw) : raw;
   } catch {
     return res.status(500).json({ error: 'Datenbankfehler' });
@@ -1312,7 +1497,9 @@ async function handleNachfrage(req, res) {
       replyTo: fall.email,
     });
 
-    if (!r.ok) console.warn('Experten-Benachrichtigung fehlgeschlagen:', await r.text());
+    if (!r.ok) {
+      console.warn('Experten-Benachrichtigung fehlgeschlagen:', await r.text());
+    }
   } catch (e) {
     console.warn('Mailversand übersprungen:', e.message);
   }
@@ -1347,7 +1534,9 @@ async function handleNachfrageAntwort(req, res) {
 
   try {
     const raw = await kv.get(`fall:${id}`);
+
     if (!raw) return res.status(404).json({ error: 'Fall nicht gefunden' });
+
     fall = typeof raw === 'string' ? JSON.parse(raw) : raw;
   } catch {
     return res.status(500).json({ error: 'Datenbankfehler' });
@@ -1395,7 +1584,9 @@ async function handleNachfrageAntwort(req, res) {
       replyTo: EXPERT_EMAIL,
     });
 
-    if (!r.ok) console.warn('User-Nachfrage-Mail fehlgeschlagen:', await r.text());
+    if (!r.ok) {
+      console.warn('User-Nachfrage-Mail fehlgeschlagen:', await r.text());
+    }
   } catch (e) {
     console.warn('Mailversand übersprungen:', e.message);
   }
