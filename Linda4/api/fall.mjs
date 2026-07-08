@@ -1,7 +1,7 @@
-// build: v20260703-mbppv-fix-gpt55-flex
+// build: v20260708-gpt51-default
 // Fixes: PFLEGE_RE inkl. MB/PPV, Vector Store auch bei Nachfragen,
 // Zitier-Guardrail, Rückfrage-Dialog repariert, JSON-Code in Antworten verhindert,
-// GPT-5.5 Flex als Standard.
+// GPT-5.1 Flex als Standard (günstigeres Modell).
 
 import { Redis } from '@upstash/redis';
 import { createRequire } from 'module';
@@ -19,9 +19,9 @@ const EXPERT_EMAIL = process.env.EXPERT_EMAIL || 'noormann@gmx.com';
 const RESEND_FROM  = 'Sozialrecht Fachberatung <anfrage@resend.dev>';
 
 // ── MODELLSTEUERUNG ──────────────────────────────────────────────────────────
-// Standard: GPT-5.5 im Flex-Modus.
+// Standard: GPT-5.1 im Flex-Modus (günstiger als GPT-5.5).
 // Flex ist kein eigener Modellname, sondern service_tier: "flex".
-const KI_MODEL = process.env.VORANALYSE_MODEL || process.env.OPENAI_MODEL || 'gpt-5.5';
+const KI_MODEL = process.env.VORANALYSE_MODEL || process.env.OPENAI_MODEL || 'gpt-5.1';
 const OPENAI_SERVICE_TIER = process.env.OPENAI_SERVICE_TIER || 'flex';
 
 // Falls Flex wegen Ressourcenmangel oder Modellverfügbarkeit scheitert,
