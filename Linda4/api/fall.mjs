@@ -1,4 +1,4 @@
-// build: v20260708-gpt51-default
+// build: v20260708-vectorrouting-kiveto
 // Fixes: PFLEGE_RE inkl. MB/PPV, Vector Store auch bei Nachfragen,
 // Zitier-Guardrail, Rückfrage-Dialog repariert, JSON-Code in Antworten verhindert,
 // GPT-5.1 Flex als Standard (günstigeres Modell).
@@ -44,9 +44,10 @@ const CLASSIFIER_MODEL = process.env.CLASSIFIER_MODEL || KI_MODEL;
 const ZITAT_GUARDRAIL = `
 
 WICHTIG – Quellenbindung:
-- Wurden über die Dateisuche passende Quellendokumente gefunden, MUSST du eine inhaltliche Einschätzung in eigenen Worten geben, die sich auf diese Quellen stützt. Verweigere die Einschätzung in diesem Fall NICHT.
-- Wörtliche Zitate von Gesetzes- oder Bedingungstexten (SGB, MB/PPV, Tarif PV) NUR, wenn der exakte Wortlaut in den gefundenen Quelldokumenten enthalten ist. Ist kein wörtliches Zitat möglich, aber Inhalt vorhanden, fasse den Inhalt sinngemäß zusammen statt zu zitieren.
-- Der Satz "Dazu liegt mir kein Quelldokument vor." ist ausschließlich zu verwenden, wenn die Dateisuche NICHTS thematisch Passendes liefert – NICHT, wenn lediglich kein exaktes Zitat möglich ist.
+- Gib IMMER eine inhaltliche, hilfreiche Einschätzung – unabhängig davon, ob passende Quellendokumente gefunden wurden. Verweigere niemals die Antwort selbst.
+- Wurden über die Dateisuche thematisch passende Quellendokumente gefunden, stütze deine Einschätzung auf diese und nenne die Fundstelle (§, Abs., Gesetz bzw. MB/PPV/MB-KK, ggf. Nr. Tarif).
+- Wörtliche Zitate von Gesetzes- oder Bedingungstexten NUR, wenn der exakte Wortlaut in den gefundenen Quelldokumenten enthalten ist. Ist kein wörtliches Zitat möglich, aber Inhalt vorhanden, fasse den Inhalt sinngemäß zusammen statt zu zitieren.
+- Wurde KEIN thematisch passendes Quellendokument gefunden, gib trotzdem deine fundierte fachliche Einschätzung aus deinem allgemeinen Wissen und ergänze am Ende ausschließlich den Hinweis: "Hinweis: Es liegen keine Quellen aus Deinem Lernumfeld vor." Verwende diesen Hinweis NICHT, wenn passende Quellen vorhanden sind.
 - Konstruiere NIEMALS einen Wortlaut oder eine Fundstelle, die nicht in den Quelldokumenten steht.
 - Rechtsstand: die ab 1.7.2025 geltende Fassung (u.a. § 42a SGB XI Gemeinsamer Jahresbetrag; hälftige Pflegegeld-Fortzahlung bis zu 8 Wochen); Beträge und Rechengrößen mit Stand 2026.
 - Nenne bei jeder normbezogenen Aussage die Fundstelle (§, Abs., Gesetz bzw. MB/PPV, ggf. Nr. Tarif PV).`;
@@ -412,6 +413,60 @@ const VECTOR_STORE_ID = 'vs_69de0362cf84819199202158e8444e16';
 
 const PFLEGE_RE = /pflege(?:grad|kasse|bed[uü]rf|vers|heim|geld|antrag|zeit)?|sgb\s*xi\b|mb\s*\/?\s*ppv|\bppv\b|musterbedingungen|tarif\s*pv\b|pfleges(?:tufe|atz)|medizinischer?\s*dienst\b|mdk\b|medicproof|spitex|tagespflege|kurzzeitpflege|verhinderungspflege|ersatzpflege|entlastungsbetrag|pflegeperson/i;
 
+// Themenbereich-Dropdown (frage.html) → direkte Zuordnung, ob der Vector Store
+// durchsucht werden soll. Deckt SGB V, VI, VII, XI ab (Arbeitslosenversicherung/
+// SGB III bewusst außen vor). "Sonstige" ist uneindeutig und wird per
+// KI-Klassifikation (classifyIntent) entschieden, nicht per Stichwort.
+const VECTOR_TOPICS = new Set(['Krankenversicherung', 'Pflegeversicherung', 'Unfallversicherung', 'Rentenversicherung']);
+const VECTOR_SGB    = new Set(['SGB IV', 'SGB V', 'SGB VI', 'SGB VII', 'SGB XI']);
+
+// Score allein reicht nicht: der Embedding-Score reagiert auf gemeinsames
+// Vokabular (z.B. "SGB XI", "Leistungsanspruch"), nicht auf inhaltliche
+// Passgenauigkeit zur konkreten Frage. Deshalb zusätzlich ein günstiger
+// KI-Veto-Call, der jeden Kandidaten gegen die tatsächliche Frage liest und
+// nur wirklich passende Treffer freigibt (max. 2). Score-Floor UND KI-Veto
+// müssen beide zustimmen, bevor eine Quelle angezeigt wird.
+const QUELLEN_SCORE_FLOOR = 0.5;
+
+async function kiVetoQuellen(apiKey, frage, kandidaten) {
+  if (!kandidaten.length) return [];
+
+  try {
+    const liste = kandidaten
+      .map((k, i) => `[${i}] (Score ${k.score}) ${k.datei}: "${k.auszug.slice(0, 220)}"`)
+      .join('\n');
+
+    const result = await chatCompletion({
+      apiKey,
+      messages: [{
+        role: 'user',
+        content:
+          `Frage/Fall: ${frage}\n\n` +
+          `Kandidaten-Textstellen:\n${liste}\n\n` +
+          `Welche dieser Textstellen sind inhaltlich WIRKLICH passend zur Beantwortung der Frage ` +
+          `(nicht nur gemeinsames Vokabular, sondern tatsächlich einschlägig)? ` +
+          `Antworte NUR als JSON: {"relevante": [Indizes]}. Maximal 2 Indizes, leeres Array wenn keine wirklich passt.`,
+      }],
+      maxTokens: 60,
+      temperature: 0,
+      jsonMode: true,
+    });
+
+    if (!result.ok) return [];
+
+    const parsed = tryParseJsonPayload(result.content);
+
+    const relevante = Array.isArray(parsed?.relevante)
+      ? parsed.relevante.filter(i => Number.isInteger(i) && i >= 0 && i < kandidaten.length)
+      : [];
+
+    return relevante.slice(0, 2);
+  } catch (e) {
+    console.error('KI-Veto Quellen fehlgeschlagen:', e.message);
+    return [];
+  }
+}
+
 async function llmMitQuellen(apiKey, systemPrompt, messages) {
   const inputMessages = messages.filter(m => m.role !== 'system');
 
@@ -503,12 +558,9 @@ async function llmMitQuellen(apiKey, systemPrompt, messages) {
         console.log('searchCall: nicht gefunden in output');
       }
 
-         const rawResults = Array.isArray(searchCall?.results) ? searchCall.results : [];
+      const rawResults = Array.isArray(searchCall?.results) ? searchCall.results : [];
 
-      // Kalibrierungsphase: alle Kandidaten mit sichtbarem Score zurückgeben
-      // (nicht nur die bisherigen Top 3 ab Score 0.1), um die reale
-      // Score-Verteilung für die Schwellenwert-Findung beurteilen zu können.
-      const quellen = rawResults
+      const rawCandidates = rawResults
         .slice()
         .sort((a, b) => (b.score || 0) - (a.score || 0))
         .slice(0, 6)
@@ -518,6 +570,19 @@ async function llmMitQuellen(apiKey, systemPrompt, messages) {
           score: typeof q.score === 'number' ? Math.round(q.score * 1000) / 1000 : null,
         }))
         .filter(q => q.datei || q.auszug);
+
+      // Zweifache Freigabe: Score-Floor (Code) UND KI-Veto (liest jeden
+      // Kandidaten gegen die konkrete Frage) müssen beide zustimmen, bevor
+      // eine Quelle als "geprüft" angezeigt wird. Max. 2 Quellen.
+      const ueberSchwelle = rawCandidates.filter(q => (q.score || 0) >= QUELLEN_SCORE_FLOOR);
+
+      const letzteNachricht = inputMessages[inputMessages.length - 1];
+      const frageText = typeof letzteNachricht?.content === 'string'
+        ? letzteNachricht.content
+        : JSON.stringify(letzteNachricht?.content || '');
+
+      const relevanteIndizes = await kiVetoQuellen(apiKey, frageText, ueberSchwelle);
+      const quellen = relevanteIndizes.map(i => ueberSchwelle[i]).filter(Boolean);
 
       const msgOut = (data.output || []).find(o => o.type === 'message');
       const contentItem = msgOut?.content?.[0];
@@ -878,20 +943,34 @@ Regeln: Bei unter 80 Zeichen IMMER rueckfragen. Fragen spezifisch für ${thema}.
     ]
     : baseText;
 
-  const istPflegeThema = PFLEGE_RE.test(
+  const klassifikationPromise = !istNachfrage
+    ? classifyIntent(apiKey, thema, String(beschreibung || ''))
+    : Promise.resolve(null);
+
+  // 1) Themenbereich-Dropdown direkt zuordnen (kostenlos, kein Extra-Call).
+  // 2) Freitext-Stichwörter als Sicherheitsnetz (z. B. bei Nachfragen ohne
+  //    erneutes Dropdown, oder wenn die Beschreibung eindeutig Pflege-Begriffe
+  //    enthält, obwohl ein anderer Themenbereich gewählt wurde).
+  // 3) Nur bei "Sonstige" (uneindeutig) die KI-Klassifikation als Rückfallebene
+  //    heranziehen – einziger Fall, in dem wir vor der Routing-Entscheidung
+  //    auf die Klassifikation warten müssen.
+  let istVectorThema = VECTOR_TOPICS.has(thema) || PFLEGE_RE.test(
     thema + ' ' + String(beschreibung || '').slice(0, 500) + ' ' + userFrage
   );
 
-  try {
-    const klassifikationPromise = !istNachfrage
-      ? classifyIntent(apiKey, thema, String(beschreibung || ''))
-      : Promise.resolve(null);
+  if (!istVectorThema && !istNachfrage && thema === 'Sonstige') {
+    const vorabKlassifikation = await klassifikationPromise;
+    if (vorabKlassifikation && VECTOR_SGB.has(vorabKlassifikation.sgb)) {
+      istVectorThema = true;
+    }
+  }
 
+  try {
     let raw;
     let quellen = [];
 
-    if (istPflegeThema) {
-      console.log('Voranalyse: Pflege-Thema erkannt, nutze Vector Store' + (istNachfrage ? ' (Nachfrage)' : ''));
+    if (istVectorThema) {
+      console.log('Voranalyse: Vector-Store-Thema erkannt (' + thema + ')' + (istNachfrage ? ' (Nachfrage)' : ''));
 
       const [klassifikation, pflegeResult] = await Promise.all([
         klassifikationPromise,
@@ -910,7 +989,7 @@ Regeln: Bei unter 80 Zeichen IMMER rueckfragen. Fragen spezifisch für ${thema}.
       quellen = pflegeResult.quellen;
 
       console.log(
-        'Voranalyse Pflege: quellen=' + quellen.length +
+        'Voranalyse Vector Store: quellen=' + quellen.length +
         ' | model=' + pflegeResult.model +
         ' | tier=' + pflegeResult.serviceTier
       );
