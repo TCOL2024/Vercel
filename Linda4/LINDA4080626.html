@@ -1,0 +1,1289 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Linda4</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;650;750&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.8/purify.min.js"></script>
+<style>
+  :root {
+    --bg: #f7f7f4;
+    --panel: #ffffff;
+    --ink: #1b1d1f;
+    --muted: #646b73;
+    --line: #dcded8;
+    --soft: #eceee8;
+    --brand: #166c5a;
+    --brand-2: #0f5145;
+    --warn: #9a3412;
+    --shadow: 0 18px 42px rgba(24, 31, 27, 0.12);
+    --input-h: 118px;
+    --safe-bottom: env(safe-area-inset-bottom);
+  }
+
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; margin: 0; }
+  body {
+    font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    color: var(--ink);
+    background: var(--bg);
+    line-height: 1.45;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+
+  button, textarea, input, select { font: inherit; }
+  button { cursor: pointer; }
+
+  .app {
+    min-height: 100dvh;
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    max-width: 980px;
+    margin: 0 auto;
+    background: var(--bg);
+  }
+
+  .topbar {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: max(10px, env(safe-area-inset-top)) 12px 10px;
+    border-bottom: 1px solid var(--line);
+    background: rgba(247, 247, 244, 0.94);
+    backdrop-filter: blur(14px);
+  }
+
+  .brand { flex: 1; min-width: 0; }
+  .brand h1 { margin: 0; font-size: 1.15rem; letter-spacing: 0; }
+  .brand p {
+    margin: 1px 0 0;
+    color: var(--muted);
+    font-size: 0.78rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .icon-btn, .plain-btn, .send-btn {
+    border: 1px solid var(--line);
+    background: var(--panel);
+    color: var(--ink);
+    border-radius: 8px;
+    min-height: 42px;
+    padding: 0 12px;
+    font-weight: 750;
+  }
+
+  .icon-btn {
+    width: 42px;
+    padding: 0;
+    display: inline-grid;
+    place-items: center;
+    font-size: 1.08rem;
+  }
+
+  .plain-btn.primary, .send-btn {
+    border-color: var(--brand);
+    background: var(--brand);
+    color: #fff;
+  }
+
+  .plain-btn.warn { color: var(--warn); }
+
+  .chat {
+    min-height: 0;
+    overflow-y: auto;
+    padding: 16px 12px calc(var(--input-h) + 24px);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    scroll-behavior: smooth;
+  }
+
+  .welcome {
+    margin: auto 0;
+    padding: 18px 4px;
+    display: grid;
+    gap: 12px;
+  }
+
+  .welcome h2 {
+    margin: 0;
+    font-size: clamp(1.75rem, 8vw, 3.25rem);
+    line-height: 1;
+    letter-spacing: 0;
+  }
+
+  .welcome p {
+    max-width: 620px;
+    margin: 0;
+    color: var(--muted);
+    font-size: 1rem;
+  }
+
+  .quick-row {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    padding-bottom: 4px;
+  }
+
+  .quick-row button {
+    white-space: nowrap;
+    border: 1px solid var(--line);
+    background: var(--panel);
+    color: var(--ink);
+    border-radius: 999px;
+    padding: 9px 12px;
+    font-weight: 650;
+  }
+
+  .msg { display: flex; width: 100%; }
+  .msg.user { justify-content: flex-end; }
+  .bubble {
+    width: fit-content;
+    max-width: min(780px, 100%);
+    padding: 12px 13px;
+    border-radius: 14px;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    box-shadow: 0 2px 10px rgba(24, 31, 27, 0.05);
+    overflow-wrap: anywhere;
+  }
+  .msg.user .bubble {
+    background: #173f37;
+    border-color: #173f37;
+    color: #fff;
+    border-bottom-right-radius: 5px;
+  }
+  .msg.assistant .bubble { border-bottom-left-radius: 5px; }
+  .bubble .md > :first-child { margin-top: 0; }
+  .bubble .md > :last-child { margin-bottom: 0; }
+  .bubble a { color: var(--brand-2); font-weight: 650; }
+  .msg.user .bubble a { color: #fff; }
+  .bubble table { width: 100%; border-collapse: collapse; display: block; overflow-x: auto; }
+  .bubble th, .bubble td { border: 1px solid var(--line); padding: 7px; text-align: left; }
+  .bubble pre { overflow-x: auto; background: #f1f2ed; padding: 10px; border-radius: 8px; }
+
+  .meta-line {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px;
+    margin-top: 10px;
+  }
+  .meta-pill {
+    border: 1px solid #cbd8d2;
+    background: #f4faf7;
+    color: #244f45;
+    border-radius: 999px;
+    padding: 5px 8px;
+    font-size: 0.78rem;
+    font-weight: 650;
+  }
+  details.sources {
+    margin-top: 10px;
+    border-top: 1px solid var(--line);
+    padding-top: 8px;
+    color: var(--muted);
+    font-size: 0.9rem;
+  }
+  details.sources a { display: inline-block; margin-top: 5px; }
+
+  .composer {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 12;
+    padding: 8px 10px calc(8px + var(--safe-bottom));
+    background: linear-gradient(180deg, rgba(247,247,244,0), var(--bg) 18%);
+  }
+  .composer-inner {
+    max-width: 980px;
+    margin: 0 auto;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    background: var(--panel);
+    box-shadow: var(--shadow);
+    padding: 8px;
+    display: grid;
+    gap: 8px;
+  }
+  .depth-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+  }
+  .depth-row input { position: absolute; opacity: 0; pointer-events: none; }
+  .depth-row label {
+    text-align: center;
+    border: 1px solid transparent;
+    background: var(--soft);
+    border-radius: 8px;
+    padding: 8px 4px;
+    color: #37413d;
+    font-size: 0.86rem;
+    font-weight: 750;
+  }
+  .depth-row input:checked + span,
+  .depth-row label:has(input:checked) {
+    background: #e3f3ed;
+    border-color: #9cc7b9;
+    color: var(--brand-2);
+  }
+  .input-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    gap: 8px;
+    align-items: end;
+  }
+  textarea {
+    width: 100%;
+    min-height: 48px;
+    max-height: 168px;
+    resize: none;
+    border: 0;
+    outline: none;
+    padding: 10px 8px;
+    color: var(--ink);
+    background: transparent;
+  }
+  .send-btn {
+    width: 48px;
+    height: 48px;
+    padding: 0;
+    font-size: 1.2rem;
+  }
+  .send-btn.stop { background: #7c2d12; border-color: #7c2d12; }
+  .mic-btn {
+    width: 48px;
+    height: 48px;
+    border: 1px solid var(--line);
+    background: var(--soft);
+    color: var(--ink);
+    border-radius: 8px;
+    font-weight: 750;
+    display: none;
+  }
+  .mic-btn.show { display: inline-grid; place-items: center; }
+  .mic-btn.recording { background: #fee2e2; border-color: #fca5a5; color: #991b1b; }
+
+  .sheet-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 30;
+    background: rgba(15, 20, 18, 0.32);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 160ms ease;
+  }
+  .sheet-backdrop.open { opacity: 1; pointer-events: auto; }
+  .sheet {
+    position: fixed;
+    z-index: 31;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    max-height: min(88dvh, 760px);
+    overflow-y: auto;
+    background: var(--panel);
+    border-radius: 16px 16px 0 0;
+    box-shadow: 0 -24px 52px rgba(15, 20, 18, 0.22);
+    transform: translateY(105%);
+    transition: transform 180ms ease;
+    padding: 12px 14px calc(16px + var(--safe-bottom));
+  }
+  .sheet.open { transform: translateY(0); }
+  .sheet-head {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    background: var(--panel);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--line);
+  }
+  .sheet h2 { margin: 0; font-size: 1.1rem; }
+  .settings-grid { display: grid; gap: 14px; padding-top: 12px; }
+  .section {
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 12px;
+    display: grid;
+    gap: 10px;
+  }
+  .section h3 { margin: 0; font-size: 0.98rem; }
+  .hint { margin: 0; color: var(--muted); font-size: 0.88rem; }
+  .field { display: grid; gap: 6px; }
+  .field label, .toggle-row label { font-weight: 650; font-size: 0.92rem; }
+  .field input, .field select {
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    min-height: 42px;
+    padding: 8px 10px;
+    background: #fff;
+  }
+  .toggle-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    min-height: 38px;
+  }
+  .toggle-row input { width: 22px; height: 22px; }
+  .button-row { display: flex; flex-wrap: wrap; gap: 8px; }
+  .session-list { display: grid; gap: 7px; }
+  .session-item {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: #fff;
+    padding: 9px 10px;
+    text-align: left;
+  }
+  .session-item.active { border-color: var(--brand); background: #f2faf6; }
+
+  .toast {
+    position: fixed;
+    left: 50%;
+    bottom: calc(var(--input-h) + 18px);
+    transform: translateX(-50%);
+    z-index: 50;
+    max-width: calc(100vw - 24px);
+    background: #1d2421;
+    color: #fff;
+    border-radius: 999px;
+    padding: 10px 14px;
+    font-size: 0.9rem;
+    box-shadow: var(--shadow);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 150ms ease;
+  }
+  .toast.show { opacity: 1; }
+
+  .loading {
+    display: inline-flex;
+    gap: 5px;
+    align-items: center;
+    min-width: 56px;
+  }
+  .loading span {
+    width: 8px;
+    height: 8px;
+    border-radius: 999px;
+    background: #8a948f;
+    animation: blink 1s infinite ease-in-out;
+  }
+  .loading span:nth-child(2) { animation-delay: 120ms; }
+  .loading span:nth-child(3) { animation-delay: 240ms; }
+  @keyframes blink { 0%, 100% { opacity: 0.32; } 50% { opacity: 1; } }
+
+  @media (min-width: 760px) {
+    body { background: #eceee8; }
+    .app { min-height: min(100dvh, 980px); }
+    .topbar { border-left: 1px solid var(--line); border-right: 1px solid var(--line); }
+    .sheet {
+      left: 50%;
+      right: auto;
+      width: min(720px, calc(100vw - 28px));
+      border-radius: 16px;
+      bottom: 14px;
+      transform: translate(-50%, calc(100% + 28px));
+    }
+    .sheet.open { transform: translate(-50%, 0); }
+    .settings-grid { grid-template-columns: 1fr 1fr; align-items: start; }
+    .section.wide { grid-column: 1 / -1; }
+  }
+
+  @media (max-width: 430px) {
+    .topbar { padding-left: 10px; padding-right: 10px; }
+    .brand h1 { font-size: 1.05rem; }
+    .icon-btn { width: 40px; min-height: 40px; }
+    .plain-btn { min-height: 40px; padding: 0 10px; }
+    .bubble { max-width: 94%; }
+  }
+</style>
+</head>
+<body>
+<main class="app">
+  <header class="topbar">
+    <div class="brand">
+      <h1>Linda4</h1>
+      <p id="status-line">Sozialrecht · bereit</p>
+    </div>
+    <button class="icon-btn" id="new-chat" type="button" aria-label="Neuer Chat" title="Neuer Chat">+</button>
+    <button class="icon-btn" id="open-settings" type="button" aria-label="Einstellungen" title="Einstellungen">≡</button>
+  </header>
+
+  <section class="chat" id="chat-log" aria-live="polite">
+    <div class="welcome" id="welcome">
+      <h2>Was soll Linda4 klären?</h2>
+      <p>Fachmodus Sozialrecht ist gesetzt. Wähle nur noch die Tiefe und stelle deine Frage.</p>
+      <div class="quick-row">
+        <button type="button" data-prompt="Erkläre mir kurz § 10 SGB V zur Familienversicherung.">§ 10 SGB V kurz</button>
+        <button type="button" data-prompt="Prüfe einen Sozialrechtsfall strukturiert nach Anspruchsgrundlage, Voraussetzungen und Ergebnis.">Fall prüfen</button>
+        <button type="button" data-prompt="Mach mir drei Prüfungsfragen zu meinem letzten Thema.">Prüfungsfragen</button>
+      </div>
+    </div>
+  </section>
+
+  <form class="composer" id="composer">
+    <div class="composer-inner">
+      <div class="depth-row" aria-label="Antworttiefe">
+        <label><input type="radio" name="depth" value="kurz"><span>Kurz</span></label>
+        <label><input type="radio" name="depth" value="genau" checked><span>Genau</span></label>
+        <label><input type="radio" name="depth" value="tief"><span>Tief</span></label>
+      </div>
+      <div class="input-row">
+        <textarea id="chat-input" rows="1" placeholder="Frage eingeben..."></textarea>
+        <button class="mic-btn" id="mic-btn" type="button" aria-label="Spracheingabe">●</button>
+        <button class="send-btn" id="send-btn" type="submit" aria-label="Senden">→</button>
+      </div>
+    </div>
+  </form>
+</main>
+
+<div class="sheet-backdrop" id="sheet-backdrop"></div>
+<aside class="sheet" id="settings-sheet" aria-hidden="true" aria-label="Einstellungen">
+  <div class="sheet-head">
+    <h2>Einstellungen</h2>
+    <button class="icon-btn" id="close-settings" type="button" aria-label="Schließen">x</button>
+  </div>
+  <div class="settings-grid">
+    <section class="section">
+      <h3>Chat</h3>
+      <div class="field">
+        <label for="inp-name">Name optional</label>
+        <input id="inp-name" type="text" placeholder="z.B. Jens">
+      </div>
+      <div class="field">
+        <label for="inp-depth-default">Standardtiefe</label>
+        <select id="inp-depth-default">
+          <option value="kurz">Kurz</option>
+          <option value="genau">Genau</option>
+          <option value="tief">Tief</option>
+        </select>
+      </div>
+      <p class="hint">Fachmodus ist fest auf Sozialrecht gesetzt.</p>
+    </section>
+
+    <section class="section">
+      <h3>Antwortqualität</h3>
+      <div class="toggle-row"><label for="inp-grounded">Quellenmodus strikt</label><input id="inp-grounded" type="checkbox"></div>
+      <div class="toggle-row"><label for="inp-strict">Unklare Quellen abfangen</label><input id="inp-strict" type="checkbox"></div>
+      <div class="toggle-row"><label for="inp-clarify">Rückfragen erlauben</label><input id="inp-clarify" type="checkbox"></div>
+      <div class="toggle-row"><label for="inp-pii">Datenschutz-Hinweise</label><input id="inp-pii" type="checkbox"></div>
+      <div class="toggle-row"><label for="inp-evidence">Quellen in Antworten zeigen</label><input id="inp-evidence" type="checkbox"></div>
+    </section>
+
+    <section class="section">
+      <h3>Wissensbereiche</h3>
+      <div id="source-list"></div>
+      <p class="hint">Diese Schalter bleiben erhalten, liegen aber nicht mehr im Hauptbildschirm.</p>
+    </section>
+
+    <section class="section">
+      <h3>Werkzeuge</h3>
+      <div class="toggle-row"><label for="inp-fast">Schnellmodus</label><input id="inp-fast" type="checkbox"></div>
+      <div class="toggle-row"><label for="inp-compare">Antwortvergleich</label><input id="inp-compare" type="checkbox"></div>
+      <div class="toggle-row"><label for="inp-voice">Spracheingabe anzeigen</label><input id="inp-voice" type="checkbox"></div>
+      <div class="button-row">
+        <button class="plain-btn" id="health-check" type="button">Health prüfen</button>
+        <button class="plain-btn" id="open-cards" type="button">Lernkarten</button>
+        <button class="plain-btn" id="open-case" type="button">Fall einreichen</button>
+      </div>
+      <p class="hint" id="health-status">API noch nicht geprüft.</p>
+    </section>
+
+    <section class="section wide">
+      <h3>Verlauf</h3>
+      <div class="button-row">
+        <button class="plain-btn primary" id="save-settings" type="button">Speichern</button>
+        <button class="plain-btn warn" id="clear-history" type="button">Verlauf löschen</button>
+      </div>
+      <div class="session-list" id="session-list"></div>
+    </section>
+  </div>
+</aside>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(() => {
+  "use strict";
+
+  const API_ENDPOINT = "/api/linda3?action=bot";
+  const DEEPSEEK_ENDPOINT = "/api/linda3?action=deepseek";
+  const HEALTH_ENDPOINT = "/api/linda3?action=health";
+  const LEGACY_API_ORIGIN = "https://vercel-kappa-seven-33.vercel.app";
+  const CASE_URL = "https://pfk2026.oldenburg-knowledge.de/frage.html";
+  const STORAGE_KEY = "linda4_simple_state_v1";
+  const CARDS_KEY = "linda3_cards";
+  const SOZIALRECHT_DOMAIN_KEY = "SOZIALRECHT";
+  const SOZIALRECHT_VECTOR_STORE = {
+    name: "Sozialrecht2026",
+    id: "vs_69de0362cf84819199202158e8444e16",
+    files: {
+      sozialrechtQaMarkdown: "file-SFyyy5nhuvp2UiUieweCwi",
+      verhinderungspflege: "file-2GV2ffyiPT5sN2fXL63SxB",
+      angehoerigePflege: "file-DCji3R9WhwnKEvawfUHwvG",
+      krankenPflegeversicherungRentner: "file-3qYmeg5U4otWjPAzMrP88U"
+    }
+  };
+  const SOURCE_DEFS = [
+    { key: "llm", label: "Basiswissen", default: true },
+    { key: "web", label: "Aktuelle Informationen", default: true },
+    { key: "script", label: "Unterlagen", default: true },
+    { key: "ilias", label: "Kursraum ILIAS", default: false },
+    { key: "directory", label: "Lernverzeichnis", default: false }
+  ];
+
+  const DEFAULT_STATE = {
+    sessions: [],
+    activeId: "",
+    settings: {
+      name: "",
+      depth: "genau",
+      fastMode: false,
+      compareMode: false,
+      voiceInput: false,
+      sources: Object.fromEntries(SOURCE_DEFS.map((s) => [s.key, s.default])),
+      guardrails: {
+        groundedMode: true,
+        strictUnknown: true,
+        clarificationMode: true,
+        piiShield: true
+      },
+      assistant: {
+        showEvidence: true
+      }
+    }
+  };
+
+  const state = loadState();
+  const el = {
+    log: document.getElementById("chat-log"),
+    welcome: document.getElementById("welcome"),
+    input: document.getElementById("chat-input"),
+    mic: document.getElementById("mic-btn"),
+    form: document.getElementById("composer"),
+    send: document.getElementById("send-btn"),
+    status: document.getElementById("status-line"),
+    sheet: document.getElementById("settings-sheet"),
+    backdrop: document.getElementById("sheet-backdrop"),
+    toast: document.getElementById("toast")
+  };
+  let currentController = null;
+  let recognition = null;
+
+  function clone(obj) {
+    return JSON.parse(JSON.stringify(obj));
+  }
+
+  function loadState() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      const parsed = raw ? JSON.parse(raw) : {};
+      return mergeState(clone(DEFAULT_STATE), parsed || {});
+    } catch (_) {
+      return clone(DEFAULT_STATE);
+    }
+  }
+
+  function mergeState(base, incoming) {
+    return {
+      ...base,
+      ...incoming,
+      settings: {
+        ...base.settings,
+        ...(incoming.settings || {}),
+        sources: { ...base.settings.sources, ...((incoming.settings || {}).sources || {}) },
+        guardrails: { ...base.settings.guardrails, ...((incoming.settings || {}).guardrails || {}) },
+        assistant: { ...base.settings.assistant, ...((incoming.settings || {}).assistant || {}) }
+      },
+      sessions: Array.isArray(incoming.sessions) ? incoming.sessions : base.sessions
+    };
+  }
+
+  function saveState() {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    } catch (_) {}
+  }
+
+  function uid() {
+    return "s_" + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+  }
+
+  function activeSession() {
+    return state.sessions.find((s) => s.id === state.activeId);
+  }
+
+  function ensureSession() {
+    let session = activeSession();
+    if (session) return session;
+    session = { id: uid(), name: "Neuer Chat", ts: Date.now(), messages: [] };
+    state.sessions.unshift(session);
+    state.activeId = session.id;
+    saveState();
+    return session;
+  }
+
+  function safeText(value) {
+    return String(value || "").replace(/[&<>"']/g, (c) => ({
+      "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;"
+    }[c]));
+  }
+
+  function normalizeAnswer(raw) {
+    const text = String(raw || "").trim();
+    if (!text) return "";
+    const parsed = parseJson(text);
+    if (parsed && typeof parsed === "object") {
+      return String(parsed.answer || parsed.response || parsed.text || parsed.output || text).trim();
+    }
+    const embedded = text.match(/\{[\s\S]*\}/);
+    if (embedded) {
+      const obj = parseJson(embedded[0]);
+      if (obj && typeof obj === "object" && (obj.answer || obj.text)) {
+        return String(obj.answer || obj.text).trim();
+      }
+    }
+    return text.replace(/__LINDA_DONE__/g, "").replace(/__LINDA_TIMEOUT__/g, "").trim();
+  }
+
+  function parseJson(raw) {
+    try { return JSON.parse(raw); } catch (_) { return null; }
+  }
+
+  function parseApiAnswer(raw) {
+    const parsed = parseJson(raw);
+    if (parsed && typeof parsed === "object") {
+      return {
+        answer: normalizeAnswer(parsed.answer || parsed.response || parsed.text || raw),
+        sources: Array.isArray(parsed.sources) ? parsed.sources : [],
+        meta: parsed.meta && typeof parsed.meta === "object" ? parsed.meta : {}
+      };
+    }
+    return { answer: normalizeAnswer(raw), sources: [], meta: {} };
+  }
+
+  function renderMarkdown(text) {
+    const source = normalizeAnswer(text);
+    if (window.marked && window.DOMPurify) {
+      const html = marked.parse(source);
+      return DOMPurify.sanitize(html, {
+        ALLOWED_TAGS: ["p","br","strong","em","ul","ol","li","h1","h2","h3","h4","pre","code","blockquote","table","thead","tbody","tr","th","td","a"],
+        ALLOWED_ATTR: ["href","target","rel"]
+      });
+    }
+    return safeText(source).replace(/\n/g, "<br>");
+  }
+
+  function sanitizeSources(items) {
+    return (Array.isArray(items) ? items : [])
+      .map((item) => {
+        if (!item || typeof item !== "object") return null;
+        const title = String(item.title || item.name || item.label || item.source || "Quelle").trim();
+        const url = String(item.url || item.href || item.link || "").trim();
+        const excerpt = String(item.excerpt || item.snippet || item.text || "").trim();
+        const section = String(item.section || item.page || item.loc || "").trim();
+        return { title, url, excerpt, section };
+      })
+      .filter(Boolean)
+      .slice(0, 8);
+  }
+
+  function appendMessage(role, content, opts = {}) {
+    hideWelcome();
+    const row = document.createElement("div");
+    row.className = `msg ${role}`;
+    const bubble = document.createElement("div");
+    bubble.className = "bubble";
+    const md = document.createElement("div");
+    md.className = "md";
+    md.innerHTML = role === "assistant" ? renderMarkdown(content) : safeText(content).replace(/\n/g, "<br>");
+    bubble.appendChild(md);
+
+    if (role === "assistant") {
+      const sources = sanitizeSources(opts.sources || []);
+      const meta = opts.meta || {};
+      const metaLine = document.createElement("div");
+      metaLine.className = "meta-line";
+      if (meta.model) metaLine.innerHTML += `<span class="meta-pill">${safeText(meta.model)}</span>`;
+      if (opts.depth) metaLine.innerHTML += `<span class="meta-pill">Tiefe: ${safeText(opts.depth)}</span>`;
+      if (sources.length && state.settings.assistant.showEvidence) {
+        metaLine.innerHTML += `<span class="meta-pill">${sources.length} Quelle${sources.length === 1 ? "" : "n"}</span>`;
+      }
+      if (metaLine.children.length) bubble.appendChild(metaLine);
+      if (sources.length && state.settings.assistant.showEvidence) {
+        const details = document.createElement("details");
+        details.className = "sources";
+        details.innerHTML = `<summary>Quellen anzeigen</summary>${sources.map((s) => `
+          <div>
+            <strong>${safeText(s.title)}</strong>${s.section ? ` · ${safeText(s.section)}` : ""}
+            ${s.url ? `<br><a href="${safeText(s.url)}" target="_blank" rel="noopener noreferrer">${safeText(s.url)}</a>` : ""}
+            ${s.excerpt ? `<p>${safeText(s.excerpt)}</p>` : ""}
+          </div>
+        `).join("")}`;
+        bubble.appendChild(details);
+      }
+    }
+    row.appendChild(bubble);
+    el.log.appendChild(row);
+    scrollBottom();
+    return row;
+  }
+
+  function appendLoading() {
+    hideWelcome();
+    const row = document.createElement("div");
+    row.className = "msg assistant";
+    row.innerHTML = '<div class="bubble"><div class="loading"><span></span><span></span><span></span></div></div>';
+    el.log.appendChild(row);
+    scrollBottom();
+    return row;
+  }
+
+  function hideWelcome() {
+    if (el.welcome) el.welcome.hidden = true;
+  }
+
+  function showWelcomeIfEmpty() {
+    const session = activeSession();
+    if (el.welcome) el.welcome.hidden = Boolean(session && session.messages && session.messages.length);
+  }
+
+  function scrollBottom() {
+    requestAnimationFrame(() => {
+      el.log.scrollTop = el.log.scrollHeight;
+    });
+  }
+
+  function setSending(sending) {
+    el.input.disabled = sending;
+    el.send.classList.toggle("stop", sending);
+    el.send.textContent = sending ? "■" : "→";
+    el.status.textContent = sending ? "Sozialrecht · Linda4 denkt" : buildStatusLine();
+  }
+
+  function buildStatusLine() {
+    const activeSources = Object.values(state.settings.sources).filter(Boolean).length;
+    return `Sozialrecht · ${state.settings.depth} · ${activeSources} Quellen aktiv`;
+  }
+
+  function activeDepth() {
+    const checked = document.querySelector('input[name="depth"]:checked');
+    return checked ? checked.value : state.settings.depth || "genau";
+  }
+
+  function depthInstruction(depth) {
+    if (depth === "kurz") {
+      return "Antworte kurz, direkt und prüfungstauglich. Maximal 5 knappe Punkte, keine langen Vorreden.";
+    }
+    if (depth === "tief") {
+      return "Antworte vertieft: Rechtskreis, Anspruchsgrundlage, Voraussetzungen, Subsumtion, Rechtsfolge, typische Prüfungsfalle und Quellenhinweise.";
+    }
+    return "Antworte genau und strukturiert: Kernaussage, Rechtsgrundlage, Prüfungsschritte und kurzes Fazit.";
+  }
+
+  function normalizeForKeyword(text) {
+    return String(text || "")
+      .toLowerCase()
+      .replace(/[ä]/g, "ae")
+      .replace(/[ö]/g, "oe")
+      .replace(/[ü]/g, "ue")
+      .replace(/[ß]/g, "ss")
+      .replace(/[^a-z0-9\s]/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+  }
+
+  function pinnedFilesFor(question) {
+    const q = normalizeForKeyword(question);
+    const files = [SOZIALRECHT_VECTOR_STORE.files.sozialrechtQaMarkdown];
+    const add = (id) => { if (id && !files.includes(id)) files.push(id); };
+    if (/\b(verhinderungspflege|ersatzpflege|pflegevertretung|39 sgb xi)\b/.test(q)) add(SOZIALRECHT_VECTOR_STORE.files.verhinderungspflege);
+    if (/\b(pflegeperson|pflegepersonen|angehoerige pflege|pflegende angehoerige|rentenversicherung|44 sgb xi|3 sgb vi)\b/.test(q)) add(SOZIALRECHT_VECTOR_STORE.files.angehoerigePflege);
+    if (/\b(kvdr|pvdr|krankenversicherung der rentner|pflegeversicherung der rentner)\b/.test(q)) add(SOZIALRECHT_VECTOR_STORE.files.krankenPflegeversicherungRentner);
+    return files;
+  }
+
+  function chatContext(session) {
+    return (session.messages || [])
+      .filter((m) => m.role === "user" || m.role === "assistant")
+      .slice(-8)
+      .map((m) => ({ role: m.role, content: String(m.content || "").slice(0, 1800) }));
+  }
+
+  function toAbsoluteEndpoint(endpoint, origin = "") {
+    if (/^https?:\/\//i.test(endpoint)) return endpoint;
+    if (!origin && window.location.protocol === "file:" && endpoint.startsWith("/api/linda3")) {
+      return `${LEGACY_API_ORIGIN}${endpoint}`;
+    }
+    const base = String(origin || "").replace(/\/$/, "");
+    return base ? `${base}${endpoint}` : endpoint;
+  }
+
+  async function fetchApi(endpoint, options = {}) {
+    const primary = toAbsoluteEndpoint(endpoint);
+    const legacy = endpoint.startsWith("/api/linda3") ? toAbsoluteEndpoint(endpoint, LEGACY_API_ORIGIN) : "";
+    let res;
+    try {
+      res = await fetch(primary, options);
+    } catch (err) {
+      if (!legacy) throw err;
+      return fetch(legacy, options);
+    }
+    if (res.status === 404 && legacy) return fetch(legacy, options);
+    return res;
+  }
+
+  async function requestAnswer(payload, endpoint, signal) {
+    const controller = new AbortController();
+    const timer = window.setTimeout(() => controller.abort(), payload.routing.response_mode === "expert" ? 90000 : 65000);
+    if (signal) {
+      if (signal.aborted) controller.abort();
+      else signal.addEventListener("abort", () => controller.abort(), { once: true });
+    }
+    try {
+      const res = await fetchApi(endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+        signal: controller.signal
+      });
+      const raw = await res.text();
+      if (!res.ok) {
+        const parsed = parseJson(raw);
+        throw new Error(parsed?.error || parsed?.message || `HTTP ${res.status}`);
+      }
+      return parseApiAnswer(raw);
+    } finally {
+      window.clearTimeout(timer);
+    }
+  }
+
+  async function sendMessage(textOverride = "") {
+    if (currentController) {
+      currentController.abort();
+      return;
+    }
+
+    const text = String(textOverride || el.input.value || "").trim();
+    if (!text) return;
+
+    const session = ensureSession();
+    const depth = activeDepth();
+    state.settings.depth = depth;
+    const displayText = state.settings.name ? `${state.settings.name}: ${text}` : text;
+    const files = pinnedFilesFor(text);
+    const question = `${depthInstruction(depth)}\n\nNutzerfrage:\n${text}`.trim();
+
+    if (!textOverride) {
+      el.input.value = "";
+      autoGrowInput();
+    }
+
+    session.messages.push({ role: "user", content: displayText, ts: Date.now() });
+    if (!session.name || session.name === "Neuer Chat") session.name = text.slice(0, 54);
+    session.ts = Date.now();
+    appendMessage("user", displayText);
+    const loading = appendLoading();
+    saveState();
+
+    const strictSources = Boolean(state.settings.guardrails.groundedMode);
+    const deepseekActive = Boolean(state.settings.fastMode && !strictSources);
+    const compareActive = Boolean(state.settings.compareMode);
+    currentController = new AbortController();
+    setSending(true);
+
+    const basePayload = {
+      question,
+      fachmodus: SOZIALRECHT_DOMAIN_KEY,
+      schnellmodus: deepseekActive,
+      history: chatContext(session).slice(0, -1),
+      sources: state.settings.sources,
+      retrieval: {
+        provider: "openai",
+        tool: "file_search",
+        include: ["file_search_call.results"],
+        max_num_results: depth === "tief" ? 8 : 5,
+        require_result_content: true,
+        vector_store_name: SOZIALRECHT_VECTOR_STORE.name,
+        vector_store_id: SOZIALRECHT_VECTOR_STORE.id,
+        vector_store_ids: [SOZIALRECHT_VECTOR_STORE.id],
+        pinned_file_ids: files,
+        file_ids: files,
+        domain: SOZIALRECHT_DOMAIN_KEY,
+        source_label: "Sozialrecht2026",
+        must_use_vector_store: true
+      },
+      vector_store_id: SOZIALRECHT_VECTOR_STORE.id,
+      vectorStoreId: SOZIALRECHT_VECTOR_STORE.id,
+      vector_store_ids: [SOZIALRECHT_VECTOR_STORE.id],
+      vectorStoreIds: [SOZIALRECHT_VECTOR_STORE.id],
+      file_ids: files,
+      fileIds: files,
+      pinned_file_ids: files,
+      pinnedFileIds: files,
+      routing: {
+        preferred_model: deepseekActive ? "deepseek" : "gpt-5.1",
+        response_mode: depth === "tief" ? "expert" : depth
+      },
+      ilias: {
+        enabled: Boolean(state.settings.sources.ilias),
+        mode: "manual-links",
+        courseId: "",
+        keywords: []
+      },
+      clientMeta: {
+        app: "Linda4",
+        ui: "simple-mobile",
+        ts: new Date().toISOString(),
+        depth,
+        sozialrecht_mode: true,
+        vector_store: {
+          provider: "openai",
+          name: SOZIALRECHT_VECTOR_STORE.name,
+          id: SOZIALRECHT_VECTOR_STORE.id,
+          pinned_file_ids: files
+        }
+      },
+      guardrails: {
+        grounded_mode: Boolean(state.settings.guardrails.groundedMode),
+        strict_unknown: Boolean(state.settings.guardrails.strictUnknown),
+        clarification_mode: Boolean(state.settings.guardrails.clarificationMode),
+        pii_shield: Boolean(state.settings.guardrails.piiShield)
+      },
+      assistantPrefs: {
+        show_evidence: Boolean(state.settings.assistant.showEvidence),
+        show_followups: false,
+        show_learning_path: false
+      }
+    };
+
+    try {
+      let result;
+      if (compareActive && deepseekActive) {
+        const [a, b] = await Promise.allSettled([
+          requestAnswer({ ...basePayload, schnellmodus: false, routing: { preferred_model: "gpt-5.1", response_mode: depth === "tief" ? "expert" : depth } }, API_ENDPOINT, currentController.signal),
+          requestAnswer(basePayload, DEEPSEEK_ENDPOINT, currentController.signal)
+        ]);
+        const left = a.status === "fulfilled" ? a.value.answer : `GPT-Route fehlgeschlagen: ${a.reason?.message || "unbekannt"}`;
+        const right = b.status === "fulfilled" ? b.value.answer : `Schnellroute fehlgeschlagen: ${b.reason?.message || "unbekannt"}`;
+        result = {
+          answer: `## Genau\n\n${left}\n\n## Schnell\n\n${right}`,
+          sources: [...sanitizeSources(a.value?.sources || []), ...sanitizeSources(b.value?.sources || [])],
+          meta: { model: "Vergleich" }
+        };
+      } else {
+        result = await requestAnswer(basePayload, deepseekActive ? DEEPSEEK_ENDPOINT : API_ENDPOINT, currentController.signal);
+      }
+      loading.remove();
+      const answer = normalizeAnswer(result.answer || "");
+      session.messages.push({ role: "assistant", content: answer, sources: result.sources || [], meta: result.meta || {}, ts: Date.now(), depth });
+      appendMessage("assistant", answer, { sources: result.sources, meta: result.meta, depth });
+      session.ts = Date.now();
+      saveState();
+    } catch (err) {
+      loading.remove();
+      const aborted = err?.name === "AbortError" || /aborted/i.test(String(err?.message || ""));
+      const message = aborted
+        ? "Anfrage abgebrochen."
+        : `Linda4 konnte gerade nicht antworten: ${err?.message || "unbekannter Fehler"}`;
+      session.messages.push({ role: "assistant", content: message, sources: [], meta: { error: true }, ts: Date.now(), depth });
+      appendMessage("assistant", message, { depth });
+      saveState();
+    } finally {
+      currentController = null;
+      setSending(false);
+      renderSessions();
+    }
+  }
+
+  function switchSession(id) {
+    state.activeId = id;
+    saveState();
+    renderChat();
+    closeSettings();
+  }
+
+  function renderChat() {
+    Array.from(el.log.children).forEach((child) => {
+      if (child !== el.welcome) child.remove();
+    });
+    const session = activeSession();
+    if (!session || !session.messages.length) {
+      showWelcomeIfEmpty();
+      return;
+    }
+    hideWelcome();
+    session.messages.forEach((m) => {
+      appendMessage(m.role, m.content, { sources: m.sources, meta: m.meta, depth: m.depth });
+    });
+    scrollBottom();
+  }
+
+  function newChat() {
+    const session = { id: uid(), name: "Neuer Chat", ts: Date.now(), messages: [] };
+    state.sessions.unshift(session);
+    state.activeId = session.id;
+    saveState();
+    renderChat();
+    renderSessions();
+    el.input.focus();
+  }
+
+  function clearHistory() {
+    if (!confirm("Verlauf wirklich löschen?")) return;
+    state.sessions = [];
+    state.activeId = "";
+    saveState();
+    renderChat();
+    renderSessions();
+    toast("Verlauf gelöscht");
+  }
+
+  function renderSettingsForm() {
+    document.getElementById("inp-name").value = state.settings.name || "";
+    document.getElementById("inp-depth-default").value = state.settings.depth || "genau";
+    document.getElementById("inp-grounded").checked = Boolean(state.settings.guardrails.groundedMode);
+    document.getElementById("inp-strict").checked = Boolean(state.settings.guardrails.strictUnknown);
+    document.getElementById("inp-clarify").checked = Boolean(state.settings.guardrails.clarificationMode);
+    document.getElementById("inp-pii").checked = Boolean(state.settings.guardrails.piiShield);
+    document.getElementById("inp-evidence").checked = Boolean(state.settings.assistant.showEvidence);
+    document.getElementById("inp-fast").checked = Boolean(state.settings.fastMode);
+    document.getElementById("inp-compare").checked = Boolean(state.settings.compareMode);
+    document.getElementById("inp-voice").checked = Boolean(state.settings.voiceInput);
+    renderSourceList();
+    renderSessions();
+  }
+
+  function renderSourceList() {
+    const wrap = document.getElementById("source-list");
+    wrap.innerHTML = SOURCE_DEFS.map((src) => `
+      <div class="toggle-row">
+        <label for="src-${src.key}">${safeText(src.label)}</label>
+        <input id="src-${src.key}" type="checkbox" data-source="${src.key}" ${state.settings.sources[src.key] ? "checked" : ""}>
+      </div>
+    `).join("");
+  }
+
+  function renderSessions() {
+    const list = document.getElementById("session-list");
+    const sessions = state.sessions.slice(0, 12);
+    if (!sessions.length) {
+      list.innerHTML = '<p class="hint">Noch kein Verlauf.</p>';
+      return;
+    }
+    list.innerHTML = sessions.map((s) => `
+      <button class="session-item ${s.id === state.activeId ? "active" : ""}" type="button" data-session="${safeText(s.id)}">
+        <span>${safeText(s.name || "Neuer Chat")}</span>
+        <small>${new Date(s.ts || Date.now()).toLocaleDateString("de-DE")}</small>
+      </button>
+    `).join("");
+  }
+
+  function saveSettingsFromForm() {
+    state.settings.name = document.getElementById("inp-name").value.trim();
+    state.settings.depth = document.getElementById("inp-depth-default").value || "genau";
+    state.settings.guardrails.groundedMode = document.getElementById("inp-grounded").checked;
+    state.settings.guardrails.strictUnknown = document.getElementById("inp-strict").checked;
+    state.settings.guardrails.clarificationMode = document.getElementById("inp-clarify").checked;
+    state.settings.guardrails.piiShield = document.getElementById("inp-pii").checked;
+    state.settings.assistant.showEvidence = document.getElementById("inp-evidence").checked;
+    state.settings.fastMode = document.getElementById("inp-fast").checked;
+    state.settings.compareMode = document.getElementById("inp-compare").checked;
+    state.settings.voiceInput = document.getElementById("inp-voice").checked;
+    document.querySelectorAll("[data-source]").forEach((input) => {
+      state.settings.sources[input.getAttribute("data-source")] = input.checked;
+    });
+    saveState();
+    syncDepthRadios();
+    syncVoiceButton();
+    updateStatus();
+    closeSettings();
+    toast("Einstellungen gespeichert");
+  }
+
+  function openSettings() {
+    renderSettingsForm();
+    el.sheet.classList.add("open");
+    el.backdrop.classList.add("open");
+    el.sheet.setAttribute("aria-hidden", "false");
+  }
+
+  function closeSettings() {
+    el.sheet.classList.remove("open");
+    el.backdrop.classList.remove("open");
+    el.sheet.setAttribute("aria-hidden", "true");
+  }
+
+  async function healthCheck() {
+    const box = document.getElementById("health-status");
+    box.textContent = "Prüfe API...";
+    try {
+      const res = await fetchApi(HEALTH_ENDPOINT, { method: "GET" });
+      const raw = await res.text();
+      const parsed = parseJson(raw) || {};
+      if (!res.ok) throw new Error(parsed.error || `HTTP ${res.status}`);
+      box.textContent = parsed.ok ? "API OK." : "API erreichbar, aber unvollständig konfiguriert.";
+    } catch (err) {
+      box.textContent = `Health-Check fehlgeschlagen: ${err.message || "unbekannt"}`;
+    }
+  }
+
+  function openCards() {
+    const url = new URL(`${window.location.pathname}?view=cards&library=1`, window.location.href).href;
+    const tab = window.open(url, "_blank", "noopener");
+    if (!tab) toast("Popup für Lernkarten wurde blockiert");
+  }
+
+  function openCase() {
+    const session = activeSession();
+    const lastMessages = (session?.messages || []).slice(-6).map((m) => `${m.role}: ${m.content}`).join("\n\n");
+    const url = new URL(CASE_URL);
+    if (lastMessages) url.searchParams.set("prefill", lastMessages.slice(0, 1800));
+    window.open(url.href, "_blank", "noopener");
+  }
+
+  function autoGrowInput() {
+    el.input.style.height = "auto";
+    el.input.style.height = Math.min(el.input.scrollHeight, 168) + "px";
+  }
+
+  function syncVoiceButton() {
+    const supported = Boolean(window.SpeechRecognition || window.webkitSpeechRecognition);
+    el.mic.classList.toggle("show", Boolean(state.settings.voiceInput && supported));
+    if (state.settings.voiceInput && !supported) {
+      el.mic.classList.remove("show");
+    }
+  }
+
+  function startVoiceInput() {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      toast("Spracheingabe wird in diesem Browser nicht unterstützt");
+      return;
+    }
+    if (recognition) {
+      recognition.stop();
+      return;
+    }
+    recognition = new SpeechRecognition();
+    recognition.lang = "de-DE";
+    recognition.interimResults = true;
+    recognition.continuous = false;
+    let finalText = "";
+    recognition.onstart = () => el.mic.classList.add("recording");
+    recognition.onresult = (event) => {
+      let interim = "";
+      for (let i = event.resultIndex; i < event.results.length; i += 1) {
+        const chunk = event.results[i][0]?.transcript || "";
+        if (event.results[i].isFinal) finalText += chunk;
+        else interim += chunk;
+      }
+      const base = el.input.dataset.voiceBase || el.input.value;
+      el.input.value = `${base}${base && (finalText || interim) ? " " : ""}${finalText || interim}`.trimStart();
+      autoGrowInput();
+    };
+    recognition.onerror = () => toast("Spracheingabe abgebrochen");
+    recognition.onend = () => {
+      el.mic.classList.remove("recording");
+      recognition = null;
+      el.input.dataset.voiceBase = "";
+      el.input.focus();
+    };
+    el.input.dataset.voiceBase = el.input.value.trim();
+    recognition.start();
+  }
+
+  function syncDepthRadios() {
+    const depth = state.settings.depth || "genau";
+    const radio = document.querySelector(`input[name="depth"][value="${depth}"]`);
+    if (radio) radio.checked = true;
+  }
+
+  function updateStatus() {
+    el.status.textContent = buildStatusLine();
+  }
+
+  function toast(message) {
+    el.toast.textContent = message;
+    el.toast.classList.add("show");
+    window.setTimeout(() => el.toast.classList.remove("show"), 1800);
+  }
+
+  function bindEvents() {
+    document.getElementById("open-settings").addEventListener("click", openSettings);
+    document.getElementById("close-settings").addEventListener("click", closeSettings);
+    document.getElementById("sheet-backdrop").addEventListener("click", closeSettings);
+    document.getElementById("new-chat").addEventListener("click", newChat);
+    document.getElementById("save-settings").addEventListener("click", saveSettingsFromForm);
+    document.getElementById("clear-history").addEventListener("click", clearHistory);
+    document.getElementById("health-check").addEventListener("click", healthCheck);
+    document.getElementById("open-cards").addEventListener("click", openCards);
+    document.getElementById("open-case").addEventListener("click", openCase);
+    document.getElementById("session-list").addEventListener("click", (event) => {
+      const item = event.target.closest("[data-session]");
+      if (item) switchSession(item.getAttribute("data-session"));
+    });
+    el.mic.addEventListener("click", startVoiceInput);
+    document.querySelectorAll("[data-prompt]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        el.input.value = btn.getAttribute("data-prompt") || "";
+        autoGrowInput();
+        el.input.focus();
+      });
+    });
+    document.querySelectorAll('input[name="depth"]').forEach((radio) => {
+      radio.addEventListener("change", () => {
+        state.settings.depth = activeDepth();
+        saveState();
+        updateStatus();
+      });
+    });
+    el.input.addEventListener("input", autoGrowInput);
+    el.input.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" && !event.shiftKey) {
+        event.preventDefault();
+        sendMessage();
+      }
+    });
+    el.form.addEventListener("submit", (event) => {
+      event.preventDefault();
+      sendMessage();
+    });
+  }
+
+  function init() {
+    ensureSession();
+    bindEvents();
+    syncDepthRadios();
+    updateStatus();
+    syncVoiceButton();
+    renderChat();
+    renderSessions();
+    autoGrowInput();
+  }
+
+  init();
+})();
+</script>
+</body>
+</html>
