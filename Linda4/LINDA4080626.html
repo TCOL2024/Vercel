@@ -375,6 +375,49 @@
   }
   .toast.show { opacity: 1; }
 
+  .consent-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 80;
+    background: rgba(15, 20, 18, 0.42);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 18px;
+  }
+  .consent-overlay.open { display: flex; }
+  .consent-card {
+    width: min(520px, 100%);
+    background: #fff;
+    color: var(--ink);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    box-shadow: var(--shadow);
+    padding: 16px;
+    display: grid;
+    gap: 12px;
+  }
+  .consent-card h2 {
+    margin: 0;
+    font-size: 1.15rem;
+  }
+  .consent-card p {
+    margin: 0;
+    color: var(--muted);
+  }
+  .consent-check {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 9px;
+    align-items: start;
+    line-height: 1.35;
+  }
+  .consent-check input {
+    width: 22px;
+    height: 22px;
+    margin: 0;
+  }
+
   .loading {
     display: inline-flex;
     gap: 5px;
@@ -505,7 +548,10 @@
         <button class="plain-btn" id="health-check" type="button">Health prüfen</button>
         <button class="plain-btn" id="open-cards" type="button">Lernkarten</button>
         <button class="plain-btn" id="open-case" type="button">Fall einreichen</button>
+        <button class="plain-btn" id="pick-files" type="button">Anhänge öffnen</button>
       </div>
+      <input id="file-picker" type="file" multiple hidden>
+      <div class="session-list" id="attachment-list"></div>
       <p class="hint" id="health-status">API noch nicht geprüft.</p>
     </section>
 
@@ -521,6 +567,22 @@
 </aside>
 
 <div class="toast" id="toast"></div>
+
+<div class="consent-overlay" id="consent-overlay" role="dialog" aria-modal="true" aria-labelledby="consent-title">
+  <section class="consent-card">
+    <h2 id="consent-title">Datenschutz-Hinweis</h2>
+    <p>Linda4 verarbeitet deine Eingaben zur Beantwortung über angebundene KI- und Wissensdienste. Bitte gib keine personenbezogenen oder vertraulichen Daten ein, wenn sie für die Frage nicht nötig sind.</p>
+    <label class="consent-check">
+      <input type="checkbox" id="consent-data">
+      <span>Ich habe verstanden, dass meine Eingaben zur Antwortverarbeitung an die angebundenen Dienste übermittelt werden können.</span>
+    </label>
+    <label class="consent-check">
+      <input type="checkbox" id="consent-privacy">
+      <span>Ich anonymisiere Namen, Nummern und sensible Angaben soweit möglich selbst.</span>
+    </label>
+    <button class="plain-btn primary" id="accept-consent" type="button" disabled>Akzeptieren und starten</button>
+  </section>
+</div>
 
 <script>
 (() => {
@@ -575,6 +637,7 @@
   };
 
   const state = loadState();
+  const attachments = [];
   const el = {
     log: document.getElementById("chat-log"),
     welcome: document.getElementById("welcome"),
@@ -589,6 +652,7 @@
   };
   let currentController = null;
   let recognition = null;
+  let consentAccepted = false;
 
   function clone(obj) {
     return JSON.parse(JSON.stringify(obj));
@@ -804,10 +868,10 @@
   function normalizeForKeyword(text) {
     return String(text || "")
       .toLowerCase()
-      .replace(/[ä]/g, "ae")
-      .replace(/[ö]/g, "oe")
-      .replace(/[ü]/g, "ue")
-      .replace(/[ß]/g, "ss")
+      .replace(/\u00e4/g, "ae")
+      .replace(/\u00f6/g, "oe")
+      .replace(/\u00fc/g, "ue")
+      .replace(/\u00df/g, "ss")
       .replace(/[^a-z0-9\s]/g, " ")
       .replace(/\s+/g, " ")
       .trim();
@@ -879,6 +943,11 @@
   }
 
   async function sendMessage(textOverride = "") {
+    if (!hasConsent()) {
+      showConsent();
+      return;
+    }
+
     if (currentController) {
       currentController.abort();
       return;
@@ -907,7 +976,7 @@
     saveState();
 
     const strictSources = Boolean(state.settings.guardrails.groundedMode);
-    const deepseekActive = Boolean(state.settings.fastMode && !strictSources);
+    const deepseekActive = depth === "kurz" || Boolean(state.settings.fastMode && !strictSources);
     const compareActive = Boolean(state.settings.compareMode);
     currentController = new AbortController();
     setSending(true);
@@ -956,6 +1025,7 @@
         ui: "simple-mobile",
         ts: new Date().toISOString(),
         depth,
+        route: deepseekActive ? "deepseek" : "gpt-5.1",
         sozialrecht_mode: true,
         vector_store: {
           provider: "openai",
@@ -1099,6 +1169,21 @@
     `).join("");
   }
 
+  function renderAttachments() {
+    const list = document.getElementById("attachment-list");
+    if (!list) return;
+    if (!attachments.length) {
+      list.innerHTML = '<p class="hint">Keine Anhänge in dieser Sitzung ausgewählt.</p>';
+      return;
+    }
+    list.innerHTML = attachments.map((file, index) => `
+      <button class="session-item" type="button" data-attachment="${index}">
+        <span>${safeText(file.name)}</span>
+        <small>${Math.ceil(file.size / 1024)} KB</small>
+      </button>
+    `).join("");
+  }
+
   function saveSettingsFromForm() {
     state.settings.name = document.getElementById("inp-name").value.trim();
     state.settings.depth = document.getElementById("inp-depth-default").value || "genau";
@@ -1160,6 +1245,28 @@
     const url = new URL(CASE_URL);
     if (lastMessages) url.searchParams.set("prefill", lastMessages.slice(0, 1800));
     window.open(url.href, "_blank", "noopener");
+  }
+
+  function pickFiles() {
+    document.getElementById("file-picker").click();
+  }
+
+  function addPickedFiles(event) {
+    const files = Array.from(event.target.files || []);
+    files.forEach((file) => {
+      const url = URL.createObjectURL(file);
+      attachments.push({ name: file.name, size: file.size, type: file.type, url });
+    });
+    event.target.value = "";
+    renderAttachments();
+    if (files.length) toast(`${files.length} Anhang${files.length === 1 ? "" : "e"} bereit`);
+  }
+
+  function openAttachment(index) {
+    const item = attachments[Number(index)];
+    if (!item) return;
+    const tab = window.open(item.url, "_blank", "noopener");
+    if (!tab) toast("Popup für Anhang wurde blockiert");
   }
 
   function autoGrowInput() {
@@ -1229,6 +1336,32 @@
     window.setTimeout(() => el.toast.classList.remove("show"), 1800);
   }
 
+  function hasConsent() {
+    return consentAccepted;
+  }
+
+  function showConsent() {
+    document.getElementById("consent-overlay").classList.add("open");
+  }
+
+  function hideConsent() {
+    document.getElementById("consent-overlay").classList.remove("open");
+  }
+
+  function syncConsentButton() {
+    const data = document.getElementById("consent-data");
+    const privacy = document.getElementById("consent-privacy");
+    const accept = document.getElementById("accept-consent");
+    accept.disabled = !(data.checked && privacy.checked);
+  }
+
+  function acceptConsent() {
+    if (!document.getElementById("consent-data").checked || !document.getElementById("consent-privacy").checked) return;
+    consentAccepted = true;
+    hideConsent();
+    el.input.focus();
+  }
+
   function bindEvents() {
     document.getElementById("open-settings").addEventListener("click", openSettings);
     document.getElementById("close-settings").addEventListener("click", closeSettings);
@@ -1239,9 +1372,18 @@
     document.getElementById("health-check").addEventListener("click", healthCheck);
     document.getElementById("open-cards").addEventListener("click", openCards);
     document.getElementById("open-case").addEventListener("click", openCase);
+    document.getElementById("pick-files").addEventListener("click", pickFiles);
+    document.getElementById("file-picker").addEventListener("change", addPickedFiles);
+    document.getElementById("consent-data").addEventListener("change", syncConsentButton);
+    document.getElementById("consent-privacy").addEventListener("change", syncConsentButton);
+    document.getElementById("accept-consent").addEventListener("click", acceptConsent);
     document.getElementById("session-list").addEventListener("click", (event) => {
       const item = event.target.closest("[data-session]");
       if (item) switchSession(item.getAttribute("data-session"));
+    });
+    document.getElementById("attachment-list").addEventListener("click", (event) => {
+      const item = event.target.closest("[data-attachment]");
+      if (item) openAttachment(item.getAttribute("data-attachment"));
     });
     el.mic.addEventListener("click", startVoiceInput);
     document.querySelectorAll("[data-prompt]").forEach((btn) => {
@@ -1279,7 +1421,10 @@
     syncVoiceButton();
     renderChat();
     renderSessions();
+    renderAttachments();
     autoGrowInput();
+    syncConsentButton();
+    if (!hasConsent()) showConsent();
   }
 
   init();
