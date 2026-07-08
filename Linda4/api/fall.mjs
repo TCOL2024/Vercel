@@ -503,14 +503,19 @@ async function llmMitQuellen(apiKey, systemPrompt, messages) {
         console.log('searchCall: nicht gefunden in output');
       }
 
-      const rawResults = Array.isArray(searchCall?.results) ? searchCall.results : [];
+         const rawResults = Array.isArray(searchCall?.results) ? searchCall.results : [];
 
+      // Kalibrierungsphase: alle Kandidaten mit sichtbarem Score zurückgeben
+      // (nicht nur die bisherigen Top 3 ab Score 0.1), um die reale
+      // Score-Verteilung für die Schwellenwert-Findung beurteilen zu können.
       const quellen = rawResults
-        .filter(q => (q.score || 0) >= 0.1)
-        .slice(0, 3)
+        .slice()
+        .sort((a, b) => (b.score || 0) - (a.score || 0))
+        .slice(0, 6)
         .map(q => ({
           datei: q.filename || q.file_name || q.title || 'Dokument',
           auszug: (q.text || q.content || q.snippet || '').trim().slice(0, 300),
+          score: typeof q.score === 'number' ? Math.round(q.score * 1000) / 1000 : null,
         }))
         .filter(q => q.datei || q.auszug);
 
