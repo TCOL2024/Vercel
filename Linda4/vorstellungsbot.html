@@ -1,0 +1,389 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#173f35">
+  <title>Startklar – deine Vorstellungsrunde</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --forest: #173f35;
+      --forest-2: #245f4f;
+      --lime: #dff36d;
+      --lime-soft: #f3facb;
+      --cream: #fbfaf4;
+      --paper: #fffef9;
+      --ink: #17221f;
+      --muted: #63716c;
+      --line: #dfe5df;
+      --danger: #a63d40;
+      --shadow: 0 18px 50px rgba(23, 63, 53, .12);
+    }
+
+    * { box-sizing: border-box; }
+    html, body { margin: 0; min-height: 100%; }
+    body {
+      background: var(--cream);
+      color: var(--ink);
+      font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    button, textarea { font: inherit; }
+    button { -webkit-tap-highlight-color: transparent; }
+
+    .app {
+      min-height: 100dvh;
+      display: grid;
+      grid-template-rows: auto auto minmax(0, 1fr) auto;
+      background:
+        radial-gradient(circle at 95% 4%, rgba(223, 243, 109, .45), transparent 27%),
+        var(--cream);
+    }
+
+    .topbar {
+      min-height: 68px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: calc(10px + env(safe-area-inset-top)) 16px 10px;
+      background: rgba(251, 250, 244, .9);
+      border-bottom: 1px solid rgba(23, 63, 53, .08);
+      backdrop-filter: blur(16px);
+      z-index: 5;
+    }
+
+    .mark {
+      width: 42px;
+      height: 42px;
+      display: grid;
+      place-items: center;
+      flex: 0 0 auto;
+      border-radius: 14px;
+      background: var(--forest);
+      color: var(--lime);
+      font-size: 21px;
+      font-weight: 900;
+      transform: rotate(-2deg);
+    }
+
+    .brand { min-width: 0; flex: 1; }
+    .brand strong { display: block; font-size: 17px; letter-spacing: -.02em; }
+    .brand span { display: block; margin-top: 2px; color: var(--muted); font-size: 12px; }
+
+    .reset {
+      min-width: 44px;
+      min-height: 44px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: rgba(255, 255, 255, .75);
+      color: var(--forest);
+      cursor: pointer;
+      font-size: 19px;
+    }
+    .reset:focus-visible, .send:focus-visible, textarea:focus-visible { outline: 3px solid rgba(36, 95, 79, .25); outline-offset: 2px; }
+
+    .journey {
+      padding: 10px 16px 11px;
+      background: var(--paper);
+      border-bottom: 1px solid var(--line);
+      overflow: hidden;
+    }
+
+    .journey-head { display: flex; justify-content: space-between; gap: 12px; color: var(--muted); font-size: 11px; font-weight: 750; }
+    .journey-head strong { color: var(--forest); }
+    .track { height: 5px; margin-top: 8px; overflow: hidden; border-radius: 999px; background: #e7ebe7; }
+    .track span { display: block; width: 8%; height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--forest-2), #76a94f); transition: width .35s ease; }
+
+    .chat {
+      overflow-y: auto;
+      overscroll-behavior: contain;
+      padding: 22px 14px 28px;
+      scroll-behavior: smooth;
+    }
+
+    .chat-inner { width: 100%; max-width: 740px; margin: 0 auto; }
+
+    .welcome {
+      padding: 18px;
+      margin-bottom: 22px;
+      border: 1px solid rgba(23, 63, 53, .1);
+      border-radius: 24px;
+      background: linear-gradient(145deg, #fffef9, #f4f8df);
+      box-shadow: 0 12px 30px rgba(23, 63, 53, .06);
+    }
+    .eyebrow { display: inline-block; margin-bottom: 8px; color: var(--forest-2); font-size: 11px; font-weight: 850; letter-spacing: .08em; text-transform: uppercase; }
+    .welcome h1 { max-width: 540px; margin: 0; font-size: clamp(25px, 7vw, 38px); line-height: 1.08; letter-spacing: -.04em; }
+    .welcome p { max-width: 590px; margin: 12px 0 0; color: var(--muted); font-size: 14px; line-height: 1.55; }
+
+    .row { display: flex; align-items: flex-end; gap: 8px; margin: 13px 0; animation: enter .25s ease both; }
+    .row.user { justify-content: flex-end; }
+    .avatar {
+      width: 30px; height: 30px; display: grid; place-items: center; flex: 0 0 auto;
+      border-radius: 11px; background: var(--forest); color: var(--lime); font-size: 13px; font-weight: 900;
+    }
+    .bubble { max-width: min(84%, 580px); padding: 12px 14px; border-radius: 18px; font-size: 15px; line-height: 1.5; white-space: pre-wrap; overflow-wrap: anywhere; }
+    .assistant .bubble { background: var(--paper); border: 1px solid var(--line); border-bottom-left-radius: 6px; box-shadow: 0 5px 18px rgba(23, 63, 53, .05); }
+    .user .bubble { background: var(--forest); color: #fff; border-bottom-right-radius: 6px; }
+    .bubble strong { color: inherit; }
+
+    .typing .bubble { display: flex; align-items: center; gap: 5px; min-height: 45px; }
+    .dot { width: 7px; height: 7px; border-radius: 50%; background: #789188; animation: bounce 1s infinite; }
+    .dot:nth-child(2) { animation-delay: .14s; }
+    .dot:nth-child(3) { animation-delay: .28s; }
+
+    .error { margin: 8px 38px 0; color: var(--danger); font-size: 13px; }
+
+    .composer-wrap {
+      padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
+      border-top: 1px solid rgba(23, 63, 53, .1);
+      background: rgba(251, 250, 244, .94);
+      backdrop-filter: blur(18px);
+    }
+    .composer { width: 100%; max-width: 740px; margin: 0 auto; display: flex; align-items: flex-end; gap: 8px; }
+    textarea {
+      width: 100%; min-height: 48px; max-height: 132px; resize: none;
+      padding: 13px 14px; border: 1px solid #cfd8d2; border-radius: 17px;
+      background: var(--paper); color: var(--ink); line-height: 1.35; box-shadow: 0 5px 18px rgba(23, 63, 53, .05);
+    }
+    textarea::placeholder { color: #89938f; }
+    .send {
+      width: 48px; height: 48px; display: grid; place-items: center; flex: 0 0 auto;
+      border: 0; border-radius: 16px; background: var(--lime); color: var(--forest);
+      font-size: 20px; font-weight: 900; cursor: pointer; box-shadow: 0 8px 22px rgba(74, 100, 41, .2);
+    }
+    .send:disabled, textarea:disabled { opacity: .55; cursor: wait; }
+
+    @keyframes enter { from { opacity: 0; transform: translateY(7px); } }
+    @keyframes bounce { 0%, 60%, 100% { transform: translateY(0); } 30% { transform: translateY(-5px); } }
+
+    @media (min-width: 800px) {
+      body { padding: 18px; background: #e7eee8; }
+      .app { max-width: 880px; min-height: calc(100dvh - 36px); height: calc(100dvh - 36px); margin: 0 auto; overflow: hidden; border-radius: 30px; box-shadow: var(--shadow); }
+      .topbar { padding-top: 10px; }
+      .chat { padding-inline: 28px; }
+      .welcome { padding: 26px; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; transition-duration: .01ms !important; }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <header class="topbar">
+      <div class="mark" aria-hidden="true">S</div>
+      <div class="brand">
+        <strong>Startklar</strong>
+        <span>Dein Coach für die Vorstellungsrunde</span>
+      </div>
+      <button class="reset" id="reset" type="button" title="Gespräch neu starten" aria-label="Gespräch neu starten">↻</button>
+    </header>
+
+    <section class="journey" aria-label="Fortschritt">
+      <div class="journey-head"><strong id="stepLabel">Kennenlernen</strong><span id="stepCount">Schritt 1 von 6</span></div>
+      <div class="track" aria-hidden="true"><span id="progress"></span></div>
+    </section>
+
+    <section class="chat" id="chat" aria-live="polite">
+      <div class="chat-inner" id="messages">
+        <div class="welcome">
+          <span class="eyebrow">Mini-Coaching · ca. 3 Minuten</span>
+          <h1>Mach aus ein paar Fakten eine starke Vorstellung.</h1>
+          <p>Ich frage dich Schritt für Schritt und formuliere am Ende einen kurzen Text, der wirklich nach dir klingt.</p>
+        </div>
+      </div>
+    </section>
+
+    <div class="composer-wrap">
+      <form class="composer" id="form">
+        <textarea id="input" rows="1" maxlength="1000" autocomplete="off" enterkeyhint="send" aria-label="Deine Antwort" placeholder="Deine Antwort …"></textarea>
+        <button class="send" id="send" type="submit" aria-label="Antwort senden">↑</button>
+      </form>
+    </div>
+  </main>
+
+  <script>
+    (() => {
+      const API = '/api/vorstellungsbot';
+      const STORAGE_KEY = 'startklar_chat_v1';
+      const initialMessage = 'Hi! Ich mache dich startklar für deine Vorstellungsrunde. Wie heißt du mit Vornamen?';
+      const stageMeta = {
+        name: ['Kennenlernen', 1, 8], age: ['Kennenlernen', 1, 14],
+        hobbies: ['Deine Interessen', 2, 26], hobby_followup: ['Deine Interessen', 2, 34],
+        job: ['Deine Ausbildung', 3, 48], extra: ['Deine Persönlichkeit', 4, 64],
+        draft: ['Dein Text', 5, 80], feedback: ['Feinschliff', 6, 92],
+        revision: ['Feinschliff', 6, 96], done: ['Geschafft', 6, 100]
+      };
+
+      const chat = document.getElementById('chat');
+      const messagesEl = document.getElementById('messages');
+      const form = document.getElementById('form');
+      const input = document.getElementById('input');
+      const send = document.getElementById('send');
+      const reset = document.getElementById('reset');
+      const stepLabel = document.getElementById('stepLabel');
+      const stepCount = document.getElementById('stepCount');
+      const progress = document.getElementById('progress');
+      let busy = false;
+      let state = loadState();
+
+      function loadState() {
+        try {
+          const saved = JSON.parse(sessionStorage.getItem(STORAGE_KEY));
+          if (saved && Array.isArray(saved.history)) return saved;
+        } catch (_) {}
+        return { history: [{ role: 'assistant', content: initialMessage }], stage: 'name', profile: {} };
+      }
+
+      function saveState() {
+        try { sessionStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch (_) {}
+      }
+
+      function formatMessage(text) {
+        const fragment = document.createDocumentFragment();
+        String(text || '').split(/\n/).forEach((line, index, lines) => {
+          const match = line.match(/^\*\*(.+?)\*\*$/);
+          if (match) {
+            const strong = document.createElement('strong');
+            strong.textContent = match[1];
+            fragment.appendChild(strong);
+          } else {
+            fragment.appendChild(document.createTextNode(line.replace(/\*\*(.+?)\*\*/g, '$1')));
+          }
+          if (index < lines.length - 1) fragment.appendChild(document.createElement('br'));
+        });
+        return fragment;
+      }
+
+      function addMessage(role, content, animate = true) {
+        const row = document.createElement('div');
+        row.className = `row ${role}`;
+        if (!animate) row.style.animation = 'none';
+        if (role === 'assistant') {
+          const avatar = document.createElement('div');
+          avatar.className = 'avatar';
+          avatar.textContent = 'S';
+          avatar.setAttribute('aria-hidden', 'true');
+          row.appendChild(avatar);
+        }
+        const bubble = document.createElement('div');
+        bubble.className = 'bubble';
+        bubble.appendChild(formatMessage(content));
+        row.appendChild(bubble);
+        messagesEl.appendChild(row);
+        scrollDown();
+        return row;
+      }
+
+      function showTyping() {
+        const row = document.createElement('div');
+        row.className = 'row assistant typing';
+        row.id = 'typing';
+        row.innerHTML = '<div class="avatar" aria-hidden="true">S</div><div class="bubble" aria-label="Startklar schreibt"><i class="dot"></i><i class="dot"></i><i class="dot"></i></div>';
+        messagesEl.appendChild(row);
+        scrollDown();
+      }
+
+      function showError(message) {
+        const error = document.createElement('div');
+        error.className = 'error';
+        error.textContent = message;
+        messagesEl.appendChild(error);
+        scrollDown();
+      }
+
+      function scrollDown() { requestAnimationFrame(() => { chat.scrollTop = chat.scrollHeight; }); }
+
+      function updateProgress() {
+        const meta = stageMeta[state.stage] || stageMeta.name;
+        stepLabel.textContent = meta[0];
+        stepCount.textContent = `Schritt ${meta[1]} von 6`;
+        progress.style.width = `${meta[2]}%`;
+        const placeholders = {
+          name: 'Dein Vorname …', age: 'Dein Alter …', hobbies: 'Nenne mindestens zwei Hobbys …',
+          hobby_followup: 'Erzähl kurz davon …', job: 'Dein Ausbildungsberuf …', extra: 'Was soll noch mit rein? …',
+          draft: 'Deine Antwort …', feedback: 'Passt der Text für dich? …', revision: 'Was soll anders werden? …', done: 'Noch etwas? …'
+        };
+        input.placeholder = placeholders[state.stage] || 'Deine Antwort …';
+      }
+
+      function render() {
+        messagesEl.querySelectorAll('.row, .error').forEach((node) => node.remove());
+        state.history.forEach((item) => addMessage(item.role, item.content, false));
+        updateProgress();
+        scrollDown();
+      }
+
+      function autoSize() {
+        input.style.height = 'auto';
+        input.style.height = `${Math.min(input.scrollHeight, 132)}px`;
+      }
+
+      async function submitMessage(text) {
+        if (busy || !text.trim()) return;
+        const message = text.trim();
+        const historyBefore = state.history.slice();
+        state.history.push({ role: 'user', content: message });
+        addMessage('user', message);
+        input.value = '';
+        autoSize();
+        busy = true;
+        input.disabled = true;
+        send.disabled = true;
+        showTyping();
+
+        try {
+          const response = await fetch(API, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ message, history: historyBefore })
+          });
+          const data = await response.json().catch(() => ({}));
+          document.getElementById('typing')?.remove();
+          if (!response.ok || !data.reply) throw new Error(data.error || 'Die Antwort hat nicht geklappt.');
+          state.history.push({ role: 'assistant', content: data.reply });
+          state.stage = data.stage || state.stage;
+          state.profile = data.profile || state.profile;
+          addMessage('assistant', data.reply);
+          updateProgress();
+          saveState();
+        } catch (error) {
+          document.getElementById('typing')?.remove();
+          state.history.pop();
+          showError(`${error.message || 'Es gab ein Problem.'} Deine Antwort wurde nicht gespeichert – versuche es bitte noch einmal.`);
+        } finally {
+          busy = false;
+          input.disabled = false;
+          send.disabled = false;
+          input.focus();
+        }
+      }
+
+      form.addEventListener('submit', (event) => {
+        event.preventDefault();
+        submitMessage(input.value);
+      });
+      input.addEventListener('input', autoSize);
+      input.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter' && !event.shiftKey && !event.isComposing) {
+          event.preventDefault();
+          form.requestSubmit();
+        }
+      });
+      reset.addEventListener('click', () => {
+        if (state.history.length > 2 && !window.confirm('Möchtest du wirklich eine neue Runde starten?')) return;
+        sessionStorage.removeItem(STORAGE_KEY);
+        state = { history: [{ role: 'assistant', content: initialMessage }], stage: 'name', profile: {} };
+        render();
+        input.focus();
+      });
+
+      render();
+      input.focus();
+    })();
+  </script>
+</body>
+</html>
