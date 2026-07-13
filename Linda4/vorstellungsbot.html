@@ -177,7 +177,7 @@
       <div class="mark" aria-hidden="true">S</div>
       <div class="brand">
         <strong>Startklar</strong>
-        <span>Dein Coach für die Vorstellungsrunde</span>
+        <span id="brandSub">Dein Coach für die Vorstellungsrunde</span>
       </div>
       <button class="reset" id="reset" type="button" title="Gespräch neu starten" aria-label="Gespräch neu starten">↻</button>
     </header>
@@ -190,9 +190,9 @@
     <section class="chat" id="chat" aria-live="polite">
       <div class="chat-inner" id="messages">
         <div class="welcome">
-          <span class="eyebrow">Mini-Coaching · ca. 3 Minuten</span>
-          <h1>Mach aus ein paar Fakten eine starke Vorstellung.</h1>
-          <p>Ich frage dich Schritt für Schritt und formuliere am Ende einen kurzen Text, der wirklich nach dir klingt.</p>
+          <span class="eyebrow" id="eyebrow">Mini-Coaching · ca. 3 Minuten</span>
+          <h1 id="welcomeTitle">Mach aus ein paar Fakten eine starke Vorstellung.</h1>
+          <p id="welcomeText">Ich frage dich Schritt für Schritt und formuliere am Ende einen kurzen Text, der wirklich nach dir klingt.</p>
         </div>
       </div>
     </section>
@@ -208,15 +208,48 @@
   <script>
     (() => {
       const API = '/api/vorstellungsbot';
-      const STORAGE_KEY = 'startklar_chat_v1';
-      const initialMessage = 'Hi! Ich mache dich startklar für deine Vorstellungsrunde. Wie heißt du mit Vornamen?';
-      const stageMeta = {
-        name: ['Kennenlernen', 1, 8], age: ['Kennenlernen', 1, 14],
-        hobbies: ['Deine Interessen', 2, 26], hobby_followup: ['Deine Interessen', 2, 34],
-        job: ['Deine Ausbildung', 3, 48], extra: ['Deine Persönlichkeit', 4, 64],
+      const targetGroup = new URLSearchParams(window.location.search).get('zielgruppe');
+      const isFachwirt = targetGroup === 'fachwirte';
+      const isRakf = targetGroup === 'rakf';
+      const audience = isRakf ? 'rakf' : (isFachwirt ? 'fachwirte' : 'azubis');
+      const botInitial = isRakf ? 'P' : (isFachwirt ? 'A' : 'S');
+      const STORAGE_KEY = isRakf ? 'promptbuddy_rakf_chat_v1' : (isFachwirt ? 'aufstieg_fachwirte_chat_v3' : 'startklar_chat_v3');
+      const initialMessage = isRakf
+        ? 'Hi! Ich bin dein PromptBuddy für die RAKF-Methode. Schreib einfach kurz etwas in den Chat – dann zeige ich dir drei Wege zum Üben.'
+        : (isFachwirt
+          ? 'Willkommen! Ich unterstütze dich bei deiner Vorstellungsrunde in der Fachwirt-Weiterbildung. Wie heißt du mit Vornamen?'
+          : 'Hi! Ich mache dich startklar für deine Vorstellungsrunde. Wie heißt du mit Vornamen?');
+      const azubiStageMeta = {
+        name: ['Kennenlernen', 1, 6], path: ['Dein Weg', 1, 14],
+        occupation: ['Deine Ausbildung', 2, 25], age: ['Kennenlernen', 2, 32],
+        hobbies: ['Deine Interessen', 3, 44], hobby_followup: ['Deine Interessen', 3, 50],
+        qualification: ['Deine Weiterbildung', 2, 28], background: ['Deine Berufspraxis', 3, 42],
+        motivation: ['Dein Ziel', 4, 55], strengths: ['Deine Stärken', 4, 65],
+        job: ['Deine Ausbildung', 2, 25], extra: ['Deine Persönlichkeit', 4, 72],
         draft: ['Dein Text', 5, 80], feedback: ['Feinschliff', 6, 92],
         revision: ['Feinschliff', 6, 96], done: ['Geschafft', 6, 100]
       };
+      const fachwirtStageMeta = {
+        name: ['Kennenlernen', 1, 6], path: ['Dein Weg', 1, 14],
+        occupation: ['Deine Ausbildung', 2, 26], age: ['Kennenlernen', 2, 34],
+        hobbies: ['Deine Interessen', 3, 46], hobby_followup: ['Deine Interessen', 3, 52],
+        background: ['Berufspraxis', 3, 42],
+        qualification: ['Dein Fachwirt', 3, 38], motivation: ['Dein Ziel', 4, 54],
+        strengths: ['Deine Stärken', 5, 68], extra: ['Dein Profil', 5, 76],
+        draft: ['Dein Text', 6, 86], feedback: ['Feinschliff', 6, 94],
+        revision: ['Feinschliff', 6, 97], done: ['Geschafft', 6, 100]
+      };
+      const rakfStageMeta = {
+        choice: ['Dein Lernweg', 1, 15],
+        coach_job: ['RAKF verstehen', 2, 34], coach_exam: ['Dein Kontext', 3, 52],
+        coach_result: ['Dein RAKF-Prompt', 4, 88],
+        evaluate_prompt: ['Prompt einreichen', 2, 42], evaluation: ['RAKF-Feedback', 4, 92],
+        scenario_request: ['Anlass wählen', 2, 38], scenario_prompt: ['Prompt schreiben', 3, 65],
+        scenario_evaluation: ['RAKF-Feedback', 4, 92], done: ['Stark gemacht', 4, 100]
+      };
+      const stageMeta = isRakf ? rakfStageMeta : (isFachwirt ? fachwirtStageMeta : azubiStageMeta);
+      const totalSteps = isRakf ? 4 : 6;
+      const initialStage = isRakf ? 'choice' : 'name';
 
       const chat = document.getElementById('chat');
       const messagesEl = document.getElementById('messages');
@@ -230,12 +263,34 @@
       let busy = false;
       let state = loadState();
 
+      if (isRakf) {
+        input.maxLength = 2000;
+        document.title = 'PromptBuddy – RAKF-Training';
+        document.querySelector('.mark').textContent = 'P';
+        document.querySelector('.brand strong').textContent = 'PromptBuddy';
+        document.getElementById('brandSub').textContent = 'Dein Coach für die RAKF-Methode';
+        document.getElementById('eyebrow').textContent = 'KI-Training · RAKF praktisch anwenden';
+        document.getElementById('welcomeTitle').textContent = 'Mach aus deiner Idee einen richtig guten Prompt.';
+        document.getElementById('welcomeText').textContent = 'Lass dich coachen, hole dir Feedback zu deinem Prompt oder trainiere an einem Anlass aus deinem Ausbildungsalltag.';
+      } else if (isFachwirt) {
+        document.title = 'Aufstieg – deine Fachwirt-Vorstellung';
+        document.querySelector('.mark').textContent = 'A';
+        document.querySelector('.brand strong').textContent = 'Aufstieg';
+        document.getElementById('brandSub').textContent = 'Dein Coach für die Fachwirt-Runde';
+        document.getElementById('eyebrow').textContent = 'Fachwirt-Coaching · ca. 4 Minuten';
+        document.getElementById('welcomeTitle').textContent = 'Bring dein berufliches Profil auf den Punkt.';
+        document.getElementById('welcomeText').textContent = 'Aus Berufspraxis, Fachwirt-Ziel und Motivation entsteht eine Vorstellung, die kompetent klingt und trotzdem nach dir.';
+      } else {
+        document.getElementById('welcomeTitle').textContent = 'Deine Vorstellung, passend zu deinem Weg.';
+        document.getElementById('welcomeText').textContent = 'Ob Ausbildung oder Weiterbildung: Ich frage zuerst, was du machst, und passe das Coaching danach an dich an.';
+      }
+
       function loadState() {
         try {
           const saved = JSON.parse(sessionStorage.getItem(STORAGE_KEY));
           if (saved && Array.isArray(saved.history)) return saved;
         } catch (_) {}
-        return { history: [{ role: 'assistant', content: initialMessage }], stage: 'name', profile: {} };
+        return { history: [{ role: 'assistant', content: initialMessage }], stage: initialStage, profile: {} };
       }
 
       function saveState() {
@@ -265,7 +320,7 @@
         if (role === 'assistant') {
           const avatar = document.createElement('div');
           avatar.className = 'avatar';
-          avatar.textContent = 'S';
+          avatar.textContent = botInitial;
           avatar.setAttribute('aria-hidden', 'true');
           row.appendChild(avatar);
         }
@@ -282,7 +337,7 @@
         const row = document.createElement('div');
         row.className = 'row assistant typing';
         row.id = 'typing';
-        row.innerHTML = '<div class="avatar" aria-hidden="true">S</div><div class="bubble" aria-label="Startklar schreibt"><i class="dot"></i><i class="dot"></i><i class="dot"></i></div>';
+        row.innerHTML = `<div class="avatar" aria-hidden="true">${botInitial}</div><div class="bubble" aria-label="Der Coach schreibt"><i class="dot"></i><i class="dot"></i><i class="dot"></i></div>`;
         messagesEl.appendChild(row);
         scrollDown();
       }
@@ -298,14 +353,23 @@
       function scrollDown() { requestAnimationFrame(() => { chat.scrollTop = chat.scrollHeight; }); }
 
       function updateProgress() {
-        const meta = stageMeta[state.stage] || stageMeta.name;
+        const meta = stageMeta[state.stage] || stageMeta[initialStage];
         stepLabel.textContent = meta[0];
-        stepCount.textContent = `Schritt ${meta[1]} von 6`;
+        stepCount.textContent = `Schritt ${meta[1]} von ${totalSteps}`;
         progress.style.width = `${meta[2]}%`;
         const placeholders = {
-          name: 'Dein Vorname …', age: 'Dein Alter …', hobbies: 'Nenne mindestens zwei Hobbys …',
+          name: 'Dein Vorname …', path: 'Ausbildung oder Weiterbildung? …',
+          occupation: 'Wie heißt dein Ausbildungsberuf genau? …',
+          age: 'Dein Alter …', hobbies: 'Nenne mindestens zwei Hobbys …',
           hobby_followup: 'Erzähl kurz davon …', job: 'Dein Ausbildungsberuf …', extra: 'Was soll noch mit rein? …',
-          draft: 'Deine Antwort …', feedback: 'Passt der Text für dich? …', revision: 'Was soll anders werden? …', done: 'Noch etwas? …'
+          background: 'Dein Beruf und deine Erfahrung …', qualification: 'Welchen Fachwirt strebst du an? …',
+          motivation: 'Warum machst du den Fachwirt? …', strengths: 'Nenne mindestens zwei Stärken …',
+          draft: 'Deine Antwort …', feedback: 'Passt der Text für dich? …', revision: 'Was soll anders werden? …',
+          choice: 'Schreib a, b oder c …', coach_job: 'Dein Ausbildungsberuf …', coach_exam: 'Wann ist deine Prüfung? …',
+          coach_result: 'Was möchtest du anpassen? …', evaluate_prompt: 'Füge hier deinen Prompt ein …',
+          evaluation: 'Überarbeiten oder anderer Weg? …', scenario_request: 'Was möchtest du üben? …',
+          scenario_prompt: 'Schreib jetzt deinen RAKF-Prompt …', scenario_evaluation: 'Überarbeiten, neuer Anlass oder anderer Weg? …',
+          done: 'Noch etwas? …'
         };
         input.placeholder = placeholders[state.stage] || 'Deine Antwort …';
       }
@@ -339,11 +403,18 @@
           const response = await fetch(API, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ message, history: historyBefore })
+            body: JSON.stringify({ message, history: historyBefore, audience })
           });
-          const data = await response.json().catch(() => ({}));
+          const responseText = await response.text();
+          let data = {};
+          try { data = JSON.parse(responseText); } catch (_) {}
           document.getElementById('typing')?.remove();
-          if (!response.ok || !data.reply) throw new Error(data.error || 'Die Antwort hat nicht geklappt.');
+          if (!response.ok || !data.reply) {
+            const fallback = response.status === 404
+              ? 'Der Bot-Endpunkt ist auf diesem Deployment noch nicht verfügbar (404).'
+              : `Die Antwort hat nicht geklappt${response.status ? ` (HTTP ${response.status})` : ''}.`;
+            throw new Error(data.error || fallback);
+          }
           state.history.push({ role: 'assistant', content: data.reply });
           state.stage = data.stage || state.stage;
           state.profile = data.profile || state.profile;
@@ -376,7 +447,7 @@
       reset.addEventListener('click', () => {
         if (state.history.length > 2 && !window.confirm('Möchtest du wirklich eine neue Runde starten?')) return;
         sessionStorage.removeItem(STORAGE_KEY);
-        state = { history: [{ role: 'assistant', content: initialMessage }], stage: 'name', profile: {} };
+        state = { history: [{ role: 'assistant', content: initialMessage }], stage: initialStage, profile: {} };
         render();
         input.focus();
       });
