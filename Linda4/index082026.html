@@ -1,0 +1,1459 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#0f5db8" />
+  <title>Linda - Modernisierte Chatseite 08/2026</title>
+  <link rel="manifest" href="manifest.json" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="Linda" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.1.6/purify.min.js"></script>
+  <script src="ki-pruefungen-form.js"></script>
+  <style>
+    :root {
+      --bg-1: #edf5ff;
+      --bg-2: #f8fbff;
+      --bg-3: #eef4f9;
+      --panel: rgba(255, 255, 255, 0.92);
+      --panel-strong: rgba(255, 255, 255, 0.98);
+      --ink: #14243a;
+      --ink-soft: #54677f;
+      --brand: #0f5db8;
+      --brand-deep: #083b78;
+      --mint: #12b58a;
+      --danger: #d03c57;
+      --line: rgba(126, 157, 193, 0.22);
+      --shadow-lg: 0 28px 72px rgba(8, 21, 42, 0.2);
+      --shadow-md: 0 14px 30px rgba(10, 30, 58, 0.1);
+      --radius-xl: 28px;
+      --radius-lg: 20px;
+      --radius-md: 16px;
+      --header-h: 76px;
+      --composer-h: 86px;
+      --safe-bottom: env(safe-area-inset-bottom, 0px);
+    }
+
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html,
+    body {
+      margin: 0;
+      min-height: 100%;
+      font-family: 'Manrope', system-ui, sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(1200px 720px at 100% 0%, rgba(117, 179, 255, 0.28) 0%, transparent 58%),
+        radial-gradient(900px 540px at 0% 110%, rgba(156, 245, 208, 0.16) 0%, transparent 54%),
+        linear-gradient(180deg, var(--bg-1) 0%, var(--bg-2) 42%, var(--bg-3) 100%);
+      background-attachment: fixed;
+      -webkit-text-size-adjust: 100%;
+      text-size-adjust: 100%;
+    }
+
+    body {
+      display: flex;
+      justify-content: center;
+      padding: 16px;
+    }
+
+    body::before,
+    body::after {
+      content: '';
+      position: fixed;
+      inset: auto;
+      pointer-events: none;
+      border-radius: 50%;
+      z-index: 0;
+    }
+
+    body::before {
+      width: 420px;
+      height: 420px;
+      top: -120px;
+      right: -140px;
+      background: radial-gradient(circle, rgba(15, 93, 184, 0.15) 0%, rgba(15, 93, 184, 0) 68%);
+    }
+
+    body::after {
+      width: 460px;
+      height: 460px;
+      left: -170px;
+      bottom: -180px;
+      background: radial-gradient(circle, rgba(18, 181, 138, 0.14) 0%, rgba(18, 181, 138, 0) 70%);
+    }
+
+    .app-shell {
+      position: relative;
+      z-index: 1;
+      width: min(1320px, 100%);
+      min-height: calc(100dvh - 32px);
+      border-radius: var(--radius-xl);
+      overflow: hidden;
+      border: 1px solid rgba(137, 168, 207, 0.18);
+      box-shadow: var(--shadow-lg);
+      background:
+        radial-gradient(820px 260px at 100% 0%, rgba(15, 93, 184, 0.06) 0%, transparent 65%),
+        linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(246, 250, 255, 0.98) 100%);
+      display: grid;
+      grid-template-columns: 290px minmax(0, 1fr);
+    }
+
+    .sidebar {
+      position: relative;
+      padding: 1.2rem;
+      color: #fff;
+      background:
+        radial-gradient(320px 220px at 50% 0%, rgba(255, 255, 255, 0.16) 0%, transparent 68%),
+        linear-gradient(180deg, #0f5db8 0%, #083b78 100%);
+      border-right: 1px solid rgba(255, 255, 255, 0.14);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .sidebar::after {
+      content: '';
+      position: absolute;
+      inset: auto -48px -84px auto;
+      width: 200px;
+      height: 200px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(255, 255, 255, 0.16) 0%, rgba(255, 255, 255, 0) 70%);
+      pointer-events: none;
+    }
+
+    .portrait {
+      border-radius: 24px;
+      overflow: hidden;
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      box-shadow: 0 24px 60px rgba(2, 14, 38, 0.32);
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    .portrait img {
+      display: block;
+      width: 100%;
+      aspect-ratio: 1 / 1.12;
+      object-fit: cover;
+    }
+
+    .brand {
+      display: grid;
+      gap: 0.2rem;
+    }
+
+    .brand h1 {
+      margin: 0;
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 1.8rem;
+      letter-spacing: 0.02em;
+      color: #fff;
+    }
+
+    .brand p {
+      margin: 0;
+      font-size: 0.9rem;
+      line-height: 1.55;
+      color: rgba(255, 255, 255, 0.86);
+    }
+
+    .feature-list {
+      display: grid;
+      gap: 0.7rem;
+      margin-top: 0.2rem;
+    }
+
+    .feature-item {
+      display: flex;
+      gap: 0.7rem;
+      align-items: flex-start;
+      padding: 0.85rem 0.9rem;
+      border-radius: 16px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      backdrop-filter: blur(8px);
+    }
+
+    .feature-item i {
+      margin-top: 0.12rem;
+      color: #90f0cc;
+    }
+
+    .feature-item span {
+      font-size: 0.88rem;
+      line-height: 1.45;
+      color: rgba(255, 255, 255, 0.88);
+    }
+
+    .sidebar-foot {
+      margin-top: auto;
+      padding-top: 0.8rem;
+      font-size: 0.8rem;
+      line-height: 1.5;
+      color: rgba(255, 255, 255, 0.82);
+    }
+
+    .main {
+      min-width: 0;
+      display: grid;
+      grid-template-rows: var(--header-h) minmax(0, 1fr) var(--composer-h);
+      background:
+        radial-gradient(650px 300px at 100% 0%, rgba(15, 93, 184, 0.08) 0%, transparent 70%),
+        radial-gradient(520px 260px at 0% 100%, rgba(18, 181, 138, 0.08) 0%, transparent 72%),
+        linear-gradient(180deg, #f7fbff 0%, #edf4fb 100%);
+    }
+
+    .header {
+      position: sticky;
+      top: 0;
+      z-index: 5;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      padding: 1rem 1.1rem;
+      background: rgba(255, 255, 255, 0.8);
+      backdrop-filter: blur(14px);
+      border-bottom: 1px solid rgba(125, 154, 193, 0.2);
+    }
+
+    .header-copy {
+      min-width: 0;
+      display: grid;
+      gap: 0.15rem;
+    }
+
+    .eyebrow {
+      font-size: 0.74rem;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #0f5db8;
+    }
+
+    .title-row {
+      display: flex;
+      align-items: center;
+      gap: 0.7rem;
+      flex-wrap: wrap;
+    }
+
+    .title-row h2 {
+      margin: 0;
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: clamp(1.08rem, 1.8vw, 1.45rem);
+      color: #123a70;
+    }
+
+    .subtitle {
+      margin: 0;
+      font-size: 0.9rem;
+      line-height: 1.45;
+      color: var(--ink-soft);
+    }
+
+    .header-badges {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      min-height: 34px;
+      padding: 0 0.85rem;
+      border-radius: 999px;
+      border: 1px solid rgba(15, 93, 184, 0.14);
+      background: linear-gradient(135deg, #edf5ff 0%, #f4fbff 100%);
+      color: #0f5db8;
+      font-size: 0.78rem;
+      font-weight: 800;
+      white-space: nowrap;
+      box-shadow: 0 8px 16px rgba(11, 79, 158, 0.08);
+    }
+
+    .icon-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 42px;
+      height: 42px;
+      border: 1px solid rgba(126, 157, 193, 0.18);
+      border-radius: 14px;
+      background: linear-gradient(180deg, #ffffff 0%, #eef4fb 100%);
+      color: #39567d;
+      box-shadow: 0 6px 16px rgba(11, 31, 60, 0.06);
+      cursor: pointer;
+      font: inherit;
+      font-weight: 800;
+      transition: transform 0.16s ease, box-shadow 0.16s ease, background-color 0.16s ease;
+    }
+
+    .icon-btn:hover,
+    .icon-btn:focus-visible {
+      transform: translateY(-1px);
+      box-shadow: 0 10px 22px rgba(11, 31, 60, 0.09);
+      outline: none;
+    }
+
+    .icon-btn.primary {
+      color: #fff;
+      background: linear-gradient(135deg, #0f5db8 0%, #1c82d6 100%);
+      border-color: rgba(15, 93, 184, 0.22);
+    }
+
+    .toolbar {
+      display: flex;
+      gap: 0.6rem;
+      overflow-x: auto;
+      padding: 0.85rem 1.1rem;
+      background: rgba(250, 253, 255, 0.88);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid rgba(126, 157, 193, 0.18);
+    }
+
+    .toolbar::-webkit-scrollbar,
+    #chat::-webkit-scrollbar,
+    .modal-content::-webkit-scrollbar {
+      width: 10px;
+      height: 10px;
+    }
+
+    .toolbar::-webkit-scrollbar-thumb,
+    #chat::-webkit-scrollbar-thumb,
+    .modal-content::-webkit-scrollbar-thumb {
+      background: rgba(15, 93, 184, 0.18);
+      border-radius: 999px;
+    }
+
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      min-height: 34px;
+      padding: 0 0.85rem;
+      border-radius: 999px;
+      border: 1px solid rgba(126, 157, 193, 0.22);
+      background: rgba(255, 255, 255, 0.95);
+      color: #324b6e;
+      font-size: 0.8rem;
+      font-weight: 700;
+      white-space: nowrap;
+      cursor: pointer;
+      transition: transform 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease;
+    }
+
+    .chip:hover {
+      transform: translateY(-1px);
+      border-color: rgba(15, 93, 184, 0.28);
+      box-shadow: 0 10px 20px rgba(10, 30, 58, 0.08);
+    }
+
+    .chip.on {
+      background: linear-gradient(135deg, #eaf4ff 0%, #eefcff 100%);
+      color: #0f5db8;
+      border-color: rgba(15, 93, 184, 0.24);
+    }
+
+    .chip input {
+      position: absolute;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    #chat {
+      overflow-y: auto;
+      min-height: 0;
+      padding: 1rem 1rem calc(1rem + 12px);
+      display: flex;
+      flex-direction: column;
+      gap: 0.95rem;
+      background:
+        radial-gradient(650px 300px at 100% 0%, rgba(15, 93, 184, 0.08) 0%, transparent 70%),
+        radial-gradient(520px 260px at 0% 100%, rgba(18, 181, 138, 0.08) 0%, transparent 72%),
+        linear-gradient(180deg, #f7fbff 0%, #edf4fb 100%);
+    }
+
+    .message {
+      max-width: min(78%, 860px);
+      padding: 0.92rem 1rem;
+      border-radius: 1.2rem;
+      box-shadow: var(--shadow-md);
+      line-height: 1.6;
+      font-size: 1rem;
+      word-wrap: break-word;
+      overflow-wrap: anywhere;
+    }
+
+    .message strong {
+      font-family: 'Space Grotesk', sans-serif;
+      letter-spacing: 0.01em;
+    }
+
+    .bot {
+      align-self: flex-start;
+      background: rgba(255, 255, 255, 0.96);
+      border: 1px solid rgba(138, 166, 202, 0.24);
+    }
+
+    .user {
+      align-self: flex-end;
+      background: linear-gradient(135deg, #0f5db8 0%, #1a82d6 100%);
+      color: #fff;
+    }
+
+    .message img,
+    .message video,
+    .message iframe {
+      max-width: 100%;
+      border-radius: 14px;
+    }
+
+    .message a {
+      color: inherit;
+      text-decoration: underline;
+    }
+
+    .composer {
+      position: sticky;
+      bottom: 0;
+      z-index: 5;
+      display: flex;
+      align-items: flex-end;
+      gap: 0.55rem;
+      padding: 0.85rem 0.95rem calc(0.85rem + var(--safe-bottom));
+      background: rgba(255, 255, 255, 0.86);
+      backdrop-filter: blur(14px);
+      border-top: 1px solid rgba(125, 154, 193, 0.22);
+      box-shadow: 0 -10px 26px rgba(11, 31, 60, 0.08);
+    }
+
+    .input-wrap {
+      position: relative;
+      flex: 1;
+      min-width: 0;
+    }
+
+    #chat-input {
+      width: 100%;
+      min-height: 50px;
+      max-height: 180px;
+      resize: none;
+      padding: 0.95rem 1rem;
+      border: 1px solid rgba(125, 154, 193, 0.22);
+      border-radius: 1rem;
+      outline: none;
+      background: rgba(248, 251, 255, 0.98);
+      font: inherit;
+      color: var(--ink);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
+    }
+
+    #chat-input:focus {
+      border-color: rgba(15, 93, 184, 0.42);
+      box-shadow: 0 0 0 4px rgba(15, 93, 184, 0.12);
+    }
+
+    .composer button {
+      width: 44px;
+      height: 44px;
+      border-radius: 14px;
+      border: 1px solid rgba(126, 157, 193, 0.2);
+      background: linear-gradient(180deg, #ffffff 0%, #eef4fb 100%);
+      color: #39567d;
+      box-shadow: 0 6px 16px rgba(11, 31, 60, 0.06);
+      cursor: pointer;
+      font-size: 1.05rem;
+      transition: transform 0.16s ease, box-shadow 0.16s ease;
+    }
+
+    .composer button:hover,
+    .composer button:focus-visible {
+      transform: translateY(-1px);
+      box-shadow: 0 10px 22px rgba(11, 31, 60, 0.1);
+      outline: none;
+    }
+
+    #send-btn {
+      color: #fff;
+      background: linear-gradient(135deg, #0f5db8 0%, #1c82d6 100%);
+      border-color: rgba(15, 93, 184, 0.22);
+    }
+
+    #mic-btn.recording {
+      color: #fff;
+      background: linear-gradient(135deg, #d03c57 0%, #b62e47 100%);
+      border-color: rgba(208, 60, 87, 0.28);
+      box-shadow: 0 0 0 4px rgba(208, 60, 87, 0.14);
+    }
+
+    #send-btn.btn-disabled {
+      opacity: 0.48;
+      pointer-events: none;
+    }
+
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(8, 19, 36, 0.56);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      z-index: 50;
+    }
+
+    .modal-overlay.open {
+      display: flex;
+    }
+
+    .modal-card {
+      width: min(100%, 720px);
+      max-height: min(90vh, 900px);
+      overflow: hidden;
+      border-radius: 24px;
+      border: 1px solid rgba(15, 93, 184, 0.16);
+      background: rgba(255, 255, 255, 0.96);
+      backdrop-filter: blur(18px);
+      box-shadow: var(--shadow-lg);
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+    }
+
+    .modal-head {
+      padding: 1rem 1.1rem;
+      color: #fff;
+      background: linear-gradient(135deg, #0f5db8 0%, #083b78 100%);
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 1.05rem;
+      letter-spacing: 0.01em;
+    }
+
+    .modal-content {
+      padding: 1rem 1.1rem;
+      overflow: auto;
+      color: #1e2f46;
+      line-height: 1.7;
+      font-size: 0.97rem;
+    }
+
+    .modal-content p,
+    .modal-content li {
+      margin: 0 0 0.9rem;
+    }
+
+    .modal-content ul {
+      margin: 0 0 1rem 1.2rem;
+      padding: 0;
+    }
+
+    .modal-footer {
+      display: flex;
+      justify-content: flex-end;
+      gap: 0.7rem;
+      padding: 0.95rem 1.1rem 1.1rem;
+      border-top: 1px solid rgba(125, 154, 193, 0.16);
+      background: rgba(248, 251, 255, 0.7);
+    }
+
+    .modal-btn {
+      border: none;
+      border-radius: 999px;
+      padding: 0.72rem 1.1rem;
+      font: inherit;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .modal-btn.accept {
+      color: #fff;
+      background: linear-gradient(135deg, #0f5db8 0%, #1c82d6 100%);
+    }
+
+    .modal-btn.decline {
+      color: #0f5db8;
+      background: #f3f7fc;
+      border: 1px solid #c7d5ea;
+    }
+
+    .session-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.8rem 0.9rem;
+      border: 1px solid rgba(125, 154, 193, 0.16);
+      border-radius: 14px;
+      background: rgba(255, 255, 255, 0.95);
+      cursor: pointer;
+      transition: transform 0.16s ease, box-shadow 0.16s ease;
+    }
+
+    .session-item:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 10px 20px rgba(10, 30, 58, 0.08);
+    }
+
+    .session-item strong {
+      font-size: 0.94rem;
+    }
+
+    .del-session {
+      border: none;
+      background: transparent;
+      cursor: pointer;
+      font-size: 1.05rem;
+      color: #8d99ac;
+    }
+
+    .ki-modal-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 60;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      background: rgba(8, 19, 36, 0.56);
+    }
+
+    .ki-modal {
+      width: min(100%, 560px);
+      border-radius: 24px;
+      background: rgba(255, 255, 255, 0.97);
+      backdrop-filter: blur(18px);
+      box-shadow: var(--shadow-lg);
+      border: 1px solid rgba(15, 93, 184, 0.16);
+      padding: 1rem;
+    }
+
+    .ki-modal-title {
+      margin-bottom: 0.9rem;
+      color: #123a70;
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 1.2rem;
+    }
+
+    .ki-options {
+      display: grid;
+      gap: 0.75rem;
+    }
+
+    .ki-option-btn {
+      width: 100%;
+      text-align: left;
+      padding: 0.95rem 1rem;
+      border-radius: 16px;
+      border: 1px solid rgba(125, 154, 193, 0.2);
+      background: linear-gradient(180deg, #ffffff 0%, #f5f9ff 100%);
+      font: inherit;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform 0.16s ease, box-shadow 0.16s ease;
+    }
+
+    .ki-option-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 10px 20px rgba(10, 30, 58, 0.08);
+    }
+
+    .ki-text-input {
+      width: 100%;
+      min-height: 54px;
+      padding: 0.9rem 1rem;
+      border-radius: 16px;
+      border: 1px solid rgba(125, 154, 193, 0.2);
+      background: #fff;
+      font: inherit;
+      margin-bottom: 0.9rem;
+    }
+
+    .ki-text-input:focus {
+      outline: none;
+      border-color: rgba(15, 93, 184, 0.42);
+      box-shadow: 0 0 0 4px rgba(15, 93, 184, 0.12);
+    }
+
+    .ki-button-group {
+      display: flex;
+      gap: 0.7rem;
+    }
+
+    .ki-btn {
+      flex: 1;
+      padding: 0.82rem 1rem;
+      border: none;
+      border-radius: 999px;
+      font: inherit;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .ki-btn-primary {
+      color: #fff;
+      background: linear-gradient(135deg, #0f5db8 0%, #1c82d6 100%);
+    }
+
+    .ki-btn-secondary {
+      background: #f0f4fa;
+      color: #1f3047;
+      border: 1px solid #d9e3f1;
+    }
+
+    body.changed .message,
+    body.changed .sidebar p,
+    body.changed .sidebar span,
+    body.changed .modal-content,
+    body.changed .subtitle,
+    body.changed .feature-item span {
+      text-transform: uppercase;
+      letter-spacing: 0.02em;
+    }
+
+    @media (max-width: 980px) {
+      body {
+        padding: 8px;
+      }
+
+      .app-shell {
+        min-height: calc(100dvh - 16px);
+        grid-template-columns: 1fr;
+        grid-template-rows: auto minmax(0, 1fr);
+      }
+
+      .sidebar {
+        display: none;
+      }
+
+      .header {
+        padding: 0.9rem 0.9rem 0.85rem;
+        flex-wrap: wrap;
+      }
+
+      .header-badges {
+        width: 100%;
+        justify-content: flex-start;
+      }
+
+      .toolbar {
+        padding: 0.75rem 0.8rem;
+      }
+
+      .composer {
+        position: fixed;
+        left: 8px;
+        right: 8px;
+        bottom: 8px;
+        z-index: 30;
+        border-radius: 20px;
+      }
+
+      #chat {
+        padding: 0.85rem 0.85rem calc(var(--composer-h) + 18px + var(--safe-bottom));
+      }
+
+      .message {
+        max-width: 94%;
+      }
+
+      .subtitle {
+        font-size: 0.86rem;
+      }
+
+      .modal-overlay {
+        padding: 10px;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation: none !important;
+        transition: none !important;
+        scroll-behavior: auto !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-shell" aria-live="polite">
+    <aside class="sidebar">
+      <div class="portrait">
+        <img src="https://ntc-bot1.netlify.app/Bildschirmfoto%202025-06-26%20um%2021.09.25.png" alt="Linda" />
+      </div>
+      <div class="brand">
+        <h1>Linda</h1>
+        <p>Eine ruhige, klare Oberfläche für Ausbildung, Prüfung und schnelle Alltagsfragen.</p>
+      </div>
+      <div class="feature-list">
+        <div class="feature-item">
+          <i class="fa-solid fa-wand-magic-sparkles"></i>
+          <span>Moderner Chat mit klaren Bubbles, weichen Flächen und fokussiertem Layout.</span>
+        </div>
+        <div class="feature-item">
+          <i class="fa-solid fa-shield-heart"></i>
+          <span>Datenschutzhinweise direkt sichtbar, bevor der erste Dialog startet.</span>
+        </div>
+        <div class="feature-item">
+          <i class="fa-solid fa-graduation-cap"></i>
+          <span>Sessions, Sprachinput und die KI-Prüfungen bleiben weiterhin integriert.</span>
+        </div>
+      </div>
+      <div class="sidebar-foot">
+        Desktop und Mobile nutzen denselben Kern, aber mit einer angenehmeren Oberfläche.
+      </div>
+    </aside>
+
+    <main class="main">
+      <div class="header">
+        <div class="header-copy">
+          <div class="eyebrow">Linda 08/2026</div>
+          <div class="title-row">
+            <h2>Deine persönliche Assistentin</h2>
+            <span class="badge"><i class="fa-solid fa-sparkles"></i> Modernisiert</span>
+          </div>
+          <p class="subtitle">Chatten, Sessions verwalten, per Sprache eingeben und die KI-Prüfungen bei Bedarf starten.</p>
+        </div>
+        <div class="header-badges">
+          <span class="badge" id="status-badge">Bereit</span>
+          <button class="icon-btn primary" id="toggle-change" type="button" title="Textdarstellung ändern">Aa</button>
+          <button class="icon-btn" id="btnSessions" type="button" title="Gespeicherte Chats"><i class="fa-solid fa-list"></i></button>
+          <button class="icon-btn" id="btnNew" type="button" title="Neuer Chat"><i class="fa-solid fa-plus"></i></button>
+          <button class="icon-btn" id="btnDel" type="button" title="Chat löschen"><i class="fa-solid fa-trash"></i></button>
+        </div>
+      </div>
+
+      <div class="toolbar" id="source-toolbar">
+        <span class="chip on"><i class="fa-solid fa-comment-dots"></i> Chat</span>
+        <span class="chip"><i class="fa-solid fa-book"></i> Lernmodus</span>
+        <span class="chip"><i class="fa-solid fa-microphone"></i> Sprache</span>
+        <span class="chip"><i class="fa-solid fa-user-shield"></i> Privatmodus</span>
+      </div>
+
+      <div id="chat"></div>
+
+      <div class="composer" id="composer">
+        <div class="input-wrap">
+          <div id="snippet-popup"></div>
+          <textarea id="chat-input" rows="1" placeholder="Frage eingeben... (Shift+Enter für Zeilenumbruch)"></textarea>
+        </div>
+        <button id="mic-btn" type="button" aria-label="Spracheingabe"><i class="fa-solid fa-microphone"></i></button>
+        <button id="send-btn" type="button" aria-label="Senden"><i class="fa-solid fa-paper-plane"></i></button>
+      </div>
+    </main>
+  </div>
+
+  <div id="modal-disclaimer" class="modal-overlay open">
+    <div class="modal-card">
+      <div class="modal-head"><i class="fa-solid fa-shield-halved"></i>&nbsp;Datenschutzhinweis</div>
+      <div class="modal-content">
+        <p>Bitte keine vertraulichen personenbezogenen Daten eingeben. Inhalte können an aktivierte Dienste übermittelt werden.</p>
+        <p>Mit dem Start bestätigst du, dass du die nachfolgenden Hinweise verstanden hast:</p>
+        <ul>
+          <li>Deine Eingaben können an OpenAI und weitere aktivierte Schnittstellen gesendet werden.</li>
+          <li>Antworten werden automatisiert erzeugt und müssen bei wichtigen Entscheidungen geprüft werden.</li>
+          <li>Nutze den Chat ohne sensible Daten, wenn möglich mit anonymisierten Platzhaltern.</li>
+        </ul>
+      </div>
+      <div class="modal-footer">
+        <button class="modal-btn decline" id="declinePrivacy" type="button">Ablehnen</button>
+        <button class="modal-btn accept" id="acceptPrivacy" type="button">Zustimmen</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="usage-modal" class="modal-overlay">
+    <div class="modal-card">
+      <div class="modal-head"><i class="fa-solid fa-circle-info"></i>&nbsp;Wichtige Hinweise zur Bot-Nutzung</div>
+      <div class="modal-content">
+        <p>Bitte lies die Hinweise sorgfältig und bestätige sie vor der ersten Nutzung.</p>
+        <ul>
+          <li><strong>Automatisierte Antworten:</strong> Du sprichst mit einem KI-System, nicht mit einem Menschen.</li>
+          <li><strong>Keine Gewähr:</strong> Antworten können unvollständig, veraltet oder fehlerhaft sein.</li>
+          <li><strong>Kein Ersatz für Beratung:</strong> Die Seite ersetzt keine Rechts-, Steuer-, Medizin- oder Finanzberatung.</li>
+          <li><strong>Eigenverantwortung:</strong> Prüfe wichtige Inhalte immer mit zusätzlichen Quellen.</li>
+        </ul>
+      </div>
+      <div class="modal-footer">
+        <button class="modal-btn accept" id="acceptUsage" type="button">Einverstanden</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="sessions-modal" class="modal-overlay" onclick="if(event.target===this)hideSessionsModal()">
+    <div class="modal-card">
+      <div class="modal-head"><i class="fa-solid fa-clock-rotate-left"></i>&nbsp;Gespeicherte Chats</div>
+      <div class="modal-content" id="sessions-list"></div>
+      <div class="modal-footer">
+        <button class="modal-btn accept" id="sessions-close" type="button">Schließen</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const privacyModal = document.getElementById('modal-disclaimer');
+      const usageModal = document.getElementById('usage-modal');
+      const sessionsModal = document.getElementById('sessions-modal');
+      const chatEl = document.getElementById('chat');
+      const inputEl = document.getElementById('chat-input');
+      const composerEl = document.getElementById('composer');
+      const sendBtn = document.getElementById('send-btn');
+      const micBtn = document.getElementById('mic-btn');
+      const toggleBtn = document.getElementById('toggle-change');
+      const statusBadge = document.getElementById('status-badge');
+
+      const STORAGE_KEY = 'linda-082026-sessions';
+      const MAX_HISTORY_TO_SEND = 6;
+      const initialMsg = {
+        role: 'assistant',
+        content: 'Guten Tag, willkommen. Wie kann ich dich heute unterstützen? Für ein neues Thema kannst du jederzeit einen frischen Chat öffnen.'
+      };
+
+      let sessions = [];
+      let activeId = null;
+      let messages = [];
+      let isSending = false;
+
+      function escapeHtml(text) {
+        return String(text || '')
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#39;');
+      }
+
+      function renderAssistant(text) {
+        const markdown = window.marked ? marked.parse(String(text || '')) : escapeHtml(text);
+        return window.DOMPurify ? DOMPurify.sanitize(markdown) : markdown;
+      }
+
+      function renderUser(text) {
+        return escapeHtml(text).replace(/\n/g, '<br>');
+      }
+
+      function loadSessions() {
+        try {
+          sessions = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+        } catch (_) {
+          sessions = [];
+        }
+      }
+
+      function saveSessions() {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(sessions));
+      }
+
+      function createSession() {
+        const session = {
+          id: String(Date.now()),
+          name: '',
+          messages: [{ ...initialMsg }]
+        };
+        sessions.unshift(session);
+        activeId = session.id;
+        saveSessions();
+        return session;
+      }
+
+      function getActiveSession() {
+        return sessions.find((entry) => entry.id === activeId) || null;
+      }
+
+      function ensureSession() {
+        if (!sessions.length) {
+          const session = createSession();
+          messages = session.messages.slice();
+          return session;
+        }
+        const session = getActiveSession() || sessions[0];
+        activeId = session.id;
+        messages = session.messages.slice();
+        return session;
+      }
+
+      function normalizeMessages(list) {
+        return (Array.isArray(list) ? list : [])
+          .filter(Boolean)
+          .map((message) => ({
+            role: message.role === 'user' ? 'user' : 'assistant',
+            content: String(message.content || '')
+          }));
+      }
+
+      function ensureGreeting() {
+        messages = normalizeMessages(messages);
+        if (!messages.length || messages[0].role !== 'assistant') {
+          messages.unshift({ ...initialMsg });
+        }
+      }
+
+      function updateSession() {
+        const session = getActiveSession();
+        if (!session) return;
+        ensureGreeting();
+        session.messages = messages.slice();
+        const firstUser = messages.find((entry) => entry.role === 'user');
+        session.name = firstUser ? firstUser.content.slice(0, 42) : 'Chat';
+        saveSessions();
+        renderSessionList();
+      }
+
+      function deleteSession(id) {
+        sessions = sessions.filter((session) => session.id !== id);
+        if (!sessions.length) {
+          const session = createSession();
+          messages = session.messages.slice();
+        } else if (activeId === id) {
+          activeId = sessions[0].id;
+          messages = sessions[0].messages.slice();
+        }
+        saveSessions();
+        renderSessionList();
+        renderMessages();
+      }
+
+      function renderMessages() {
+        ensureGreeting();
+        chatEl.innerHTML = '';
+
+        messages.forEach((message) => {
+          const row = document.createElement('div');
+          row.className = `message ${message.role === 'assistant' ? 'bot' : 'user'}`;
+
+          const prefix = message.role === 'assistant' ? 'Linda' : 'Du';
+          const content = message.role === 'assistant'
+            ? renderAssistant(message.content)
+            : renderUser(message.content);
+
+          row.innerHTML = `<strong>${prefix}:</strong><br>${content}`;
+          chatEl.appendChild(row);
+        });
+
+        chatEl.scrollTop = chatEl.scrollHeight;
+      }
+
+      function renderSessionList() {
+        const list = document.getElementById('sessions-list');
+        list.innerHTML = sessions.map((session) => `
+          <div class="session-item" data-id="${session.id}">
+            <div>
+              <strong>${escapeHtml(session.name || 'Chat')}</strong><br>
+              <span class="mini">${session.messages.length} Nachrichten</span>
+            </div>
+            <button class="del-session" type="button" data-delete="${session.id}" aria-label="Chat löschen"><i class="fa-solid fa-trash"></i></button>
+          </div>
+        `).join('');
+
+        list.querySelectorAll('.session-item').forEach((item) => {
+          item.addEventListener('click', () => {
+            const session = sessions.find((entry) => entry.id === item.dataset.id);
+            if (!session) return;
+            activeId = session.id;
+            messages = session.messages.slice();
+            renderMessages();
+            hideSessionsModal();
+            setTimeout(() => inputEl.focus(), 50);
+          });
+        });
+
+        list.querySelectorAll('[data-delete]').forEach((button) => {
+          button.addEventListener('click', (event) => {
+            event.stopPropagation();
+            deleteSession(button.dataset.delete);
+          });
+        });
+      }
+
+      function showSessionsModal() {
+        renderSessionList();
+        sessionsModal.classList.add('open');
+      }
+
+      function hideSessionsModal() {
+        sessionsModal.classList.remove('open');
+      }
+
+      window.hideSessionsModal = hideSessionsModal;
+
+      function setSendingState(on) {
+        isSending = on;
+        sendBtn.classList.toggle('btn-disabled', on);
+        statusBadge.textContent = on ? 'Antwortet...' : 'Bereit';
+      }
+
+      function adjustChatPaddingForComposer() {
+        const height = composerEl ? composerEl.getBoundingClientRect().height : 86;
+        chatEl.style.paddingBottom = `${height + 18}px`;
+      }
+
+      function updateComposerBottomForKeyboard() {
+        if (!window.visualViewport) return;
+        const vv = window.visualViewport;
+        const keyboardHeight = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
+        composerEl.style.bottom = `${keyboardHeight}px`;
+        adjustChatPaddingForComposer();
+      }
+
+      function lastMessagesForApi(list) {
+        return normalizeMessages(list).slice(-MAX_HISTORY_TO_SEND);
+      }
+
+      function createAssistantPlaceholder() {
+        return { role: 'assistant', content: '⏳ Einen Moment bitte ...' };
+      }
+
+      function replaceAssistantPlaceholder(content) {
+        for (let index = messages.length - 1; index >= 0; index -= 1) {
+          const entry = messages[index];
+          if (entry.role === 'assistant' && entry.content.startsWith('⏳')) {
+            messages[index] = { role: 'assistant', content };
+            return true;
+          }
+        }
+        return false;
+      }
+
+      function openKiModal(stepContent) {
+        const overlay = document.createElement('div');
+        overlay.className = 'ki-modal-overlay';
+
+        const modal = document.createElement('div');
+        modal.className = 'ki-modal';
+
+        const title = document.createElement('div');
+        title.className = 'ki-modal-title';
+        title.textContent = stepContent.title || 'KI-Prüfungen';
+        modal.appendChild(title);
+
+        if (stepContent.type === 'modal') {
+          const options = document.createElement('div');
+          options.className = 'ki-options';
+
+          (Array.isArray(stepContent.options) ? stepContent.options : []).forEach((option) => {
+            const button = document.createElement('button');
+            button.className = 'ki-option-btn';
+            button.type = 'button';
+            button.textContent = option.label;
+            button.addEventListener('click', () => {
+              handleKiSelection(option.id);
+              overlay.remove();
+            });
+            options.appendChild(button);
+          });
+
+          if (stepContent.showOther) {
+            const button = document.createElement('button');
+            button.className = 'ki-option-btn';
+            button.type = 'button';
+            button.style.fontStyle = 'italic';
+            button.textContent = stepContent.otherLabel || 'Etwas anderes';
+            button.addEventListener('click', () => {
+              handleKiSelection('other');
+              overlay.remove();
+            });
+            options.appendChild(button);
+          }
+
+          modal.appendChild(options);
+        }
+
+        if (stepContent.type === 'text_input') {
+          const input = document.createElement('input');
+          input.className = 'ki-text-input';
+          input.type = 'text';
+          input.placeholder = stepContent.placeholder || 'Bitte eingeben';
+          modal.appendChild(input);
+
+          const buttonGroup = document.createElement('div');
+          buttonGroup.className = 'ki-button-group';
+
+          const submit = document.createElement('button');
+          submit.className = 'ki-btn ki-btn-primary';
+          submit.type = 'button';
+          submit.textContent = 'Senden';
+          submit.addEventListener('click', () => {
+            const value = input.value.trim();
+            if (value) {
+              handleKiTextInput(value);
+              overlay.remove();
+            }
+          });
+
+          const cancel = document.createElement('button');
+          cancel.className = 'ki-btn ki-btn-secondary';
+          cancel.type = 'button';
+          cancel.textContent = 'Abbrechen';
+          cancel.addEventListener('click', () => {
+            currentKiForm = null;
+            overlay.remove();
+            inputEl.focus();
+          });
+
+          buttonGroup.appendChild(submit);
+          buttonGroup.appendChild(cancel);
+          modal.appendChild(buttonGroup);
+          setTimeout(() => input.focus(), 100);
+        }
+
+        overlay.appendChild(modal);
+        document.body.appendChild(overlay);
+      }
+
+      let currentKiForm = null;
+
+      function startKiPruefungenForm() {
+        if (!window.KIPruefungenForm || typeof window.KIPruefungenForm.start !== 'function') return false;
+        currentKiForm = {};
+        const session = createSession();
+        messages = session.messages.slice();
+        messages.push({
+          role: 'assistant',
+          content: '🔄 **Neuer Dialog: KI-Prüfungen**\n\nDu startest jetzt einen speziellen Dialog zu KI in Prüfungen. Der bisherige Chat-Verlauf wird nicht berücksichtigt.'
+        });
+        renderMessages();
+        updateSession();
+        const stepContent = window.KIPruefungenForm.start();
+        if (stepContent) openKiModal(stepContent);
+        return true;
+      }
+
+      function handleKiSelection(optionId) {
+        if (!window.KIPruefungenForm) return;
+        const result = window.KIPruefungenForm.handleSelection(optionId);
+        if (result.complete) {
+          sendKiPruefungenFormToMake(result.data);
+          currentKiForm = null;
+          return;
+        }
+        if (result.nextStep) {
+          openKiModal(result.nextStep);
+        }
+      }
+
+      function handleKiTextInput(text) {
+        if (!window.KIPruefungenForm) return;
+        const result = window.KIPruefungenForm.handleTextInput(text);
+        if (result.complete) {
+          sendKiPruefungenFormToMake(result.data);
+          currentKiForm = null;
+        }
+      }
+
+      async function sendKiPruefungenFormToMake(formData) {
+        if (!window.KIPruefungenForm) return;
+
+        const contextDescription = window.KIPruefungenForm.buildContextDescription(formData);
+        messages.push({ role: 'user', content: contextDescription });
+        messages.push(createAssistantPlaceholder());
+        renderMessages();
+        updateSession();
+        setSendingState(true);
+
+        try {
+          const payload = {
+            mode: formData.role,
+            question: contextDescription,
+            history: lastMessagesForApi(messages),
+            kiPruefungenRole: formData.role,
+            kiPruefungenContext: formData.context,
+            kiPruefungenQuestion: formData.customQuestion || formData.question,
+            kiPruefungenContextLabel: window.KIPruefungenForm.getContextLabel(formData.role, formData.context),
+            kiPruefungenQuestionLabel: formData.customQuestion
+              ? formData.customQuestion
+              : window.KIPruefungenForm.getQuestionLabel(formData.role, formData.question)
+          };
+
+          const response = await fetch('/api/bot', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+
+          const reply = await response.text();
+          replaceAssistantPlaceholder(reply);
+        } catch (error) {
+          messages = messages.filter((entry) => !(entry.role === 'assistant' && entry.content.startsWith('⏳')));
+          messages.push({ role: 'assistant', content: '❌ Fehler beim Abrufen der Antwort.' });
+        } finally {
+          renderMessages();
+          updateSession();
+          setSendingState(false);
+          setTimeout(() => inputEl.focus(), 80);
+        }
+      }
+
+      async function sendMessage() {
+        if (isSending) return;
+        const text = inputEl.value.trim();
+        if (!text) return;
+
+        if (window.KIPruefungenForm && typeof window.KIPruefungenForm.detect === 'function' && window.KIPruefungenForm.detect(text)) {
+          startKiPruefungenForm();
+          return;
+        }
+
+        ensureSession();
+        ensureGreeting();
+
+        messages.push({ role: 'user', content: text });
+        messages.push(createAssistantPlaceholder());
+        renderMessages();
+        inputEl.value = '';
+        setSendingState(true);
+
+        try {
+          const payload = {
+            mode: 'standard',
+            question: text,
+            history: lastMessagesForApi(messages)
+          };
+
+          const response = await fetch('/api/bot', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+
+          const reply = await response.text();
+          replaceAssistantPlaceholder(reply);
+        } catch (error) {
+          messages = messages.filter((entry) => !(entry.role === 'assistant' && entry.content.startsWith('⏳')));
+          messages.push({ role: 'assistant', content: '❌ Fehler aufgetreten.' });
+        } finally {
+          renderMessages();
+          updateSession();
+          setSendingState(false);
+          setTimeout(() => inputEl.focus(), 80);
+        }
+      }
+
+      function initSpeechRecognition() {
+        const recognitionClass = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!recognitionClass) {
+          micBtn.disabled = true;
+          micBtn.title = 'Spracheingabe wird in diesem Browser nicht unterstützt';
+          return;
+        }
+
+        const recognition = new recognitionClass();
+        recognition.lang = 'de-DE';
+        recognition.interimResults = false;
+        recognition.maxAlternatives = 1;
+        recognition.onstart = () => micBtn.classList.add('recording');
+        recognition.onend = () => micBtn.classList.remove('recording');
+        recognition.onresult = (event) => {
+          inputEl.value = event.results[0][0].transcript;
+          inputEl.dispatchEvent(new Event('input'));
+        };
+        micBtn.addEventListener('click', () => recognition.start());
+      }
+
+      function initKeyboardHandling() {
+        function applyKeyboardOffset() {
+          if (!window.visualViewport) return;
+          const viewport = window.visualViewport;
+          const keyboardHeight = Math.max(0, window.innerHeight - viewport.height - viewport.offsetTop);
+          composerEl.style.bottom = `${keyboardHeight}px`;
+          adjustChatPaddingForComposer();
+        }
+
+        if (window.visualViewport) {
+          window.visualViewport.addEventListener('resize', applyKeyboardOffset);
+          window.visualViewport.addEventListener('scroll', applyKeyboardOffset);
+        }
+
+        window.addEventListener('resize', () => {
+          composerEl.style.bottom = '0px';
+          adjustChatPaddingForComposer();
+        });
+      }
+
+      function initUi() {
+        loadSessions();
+        if (!sessions.length) {
+          const session = createSession();
+          messages = session.messages.slice();
+        } else {
+          activeId = sessions[0].id;
+          messages = sessions[0].messages.slice();
+        }
+
+        ensureGreeting();
+        renderMessages();
+        adjustChatPaddingForComposer();
+      }
+
+      document.getElementById('acceptPrivacy').addEventListener('click', () => {
+        privacyModal.classList.remove('open');
+        usageModal.classList.add('open');
+      });
+
+      document.getElementById('declinePrivacy').addEventListener('click', () => {
+        location.reload();
+      });
+
+      document.getElementById('acceptUsage').addEventListener('click', () => {
+        usageModal.classList.remove('open');
+        document.querySelector('.app-shell').style.visibility = 'visible';
+        initUi();
+        setTimeout(() => inputEl.focus(), 80);
+      });
+
+      document.getElementById('btnSessions').addEventListener('click', showSessionsModal);
+      document.getElementById('sessions-close').addEventListener('click', hideSessionsModal);
+
+      document.getElementById('btnNew').addEventListener('click', () => {
+        const session = createSession();
+        messages = session.messages.slice();
+        ensureGreeting();
+        renderMessages();
+        updateSession();
+        setTimeout(() => inputEl.focus(), 80);
+      });
+
+      document.getElementById('btnDel').addEventListener('click', () => {
+        if (!confirm('Chat löschen?')) return;
+        if (activeId) deleteSession(activeId);
+      });
+
+      toggleBtn.addEventListener('click', () => {
+        document.body.classList.toggle('changed');
+      });
+
+      document.getElementById('send-btn').addEventListener('click', sendMessage);
+      inputEl.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter' && !event.shiftKey) {
+          event.preventDefault();
+          sendMessage();
+        }
+      });
+
+      inputEl.addEventListener('input', () => {
+        inputEl.style.height = 'auto';
+        inputEl.style.height = `${Math.min(inputEl.scrollHeight, 180)}px`;
+      });
+
+      initSpeechRecognition();
+      initKeyboardHandling();
+
+      privacyModal.classList.add('open');
+      document.querySelector('.app-shell').style.visibility = 'hidden';
+    });
+  </script>
+</body>
+</html>
