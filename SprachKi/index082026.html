@@ -271,7 +271,7 @@
     }
 
     select{
-      min-width: 220px;
+      min-width: 190px;
       max-width: 100%;
       background: #fff;
     }
@@ -322,7 +322,7 @@
     @media (max-width: 420px){
       :root{ --font: 16px; }
       .status{ max-width: 100%; }
-      select{ min-width: 180px; }
+      select{ min-width: 100%; }
     }
   </style>
 </head>
@@ -347,7 +347,7 @@
       <summary>
         <div class="accTitle">
           <b>Sprach-KI</b>
-          <span>Text verbessern oder als Vorbereitungsaufgabe umwandeln.</span>
+          <span>Texte einfacher, professioneller oder passend für E-Mails, Briefe und Rundschreiben formulieren.</span>
         </div>
         <div class="chev">⌄</div>
       </summary>
@@ -357,20 +357,32 @@
           <!-- links -->
           <div class="card">
             <div class="cardHead">
-              <div class="label">Aufgabe / Text</div>
+              <div class="label">Text / Entwurf</div>
               <div class="meta"><span id="cnt-rewrite">0</span>/1000</div>
             </div>
             <textarea id="in-rewrite" placeholder="Text einfügen … (max. 1000 Zeichen sind in diesem Feld möglich)"></textarea>
             <div class="foot">
               <div class="hint"><span class="dot"></span><span>Max. 1000 Zeichen in diesem Feld möglich</span></div>
               <div class="btnRow">
-                <select id="style-rewrite" aria-label="Modus">
-                  <option value="neutral" selected>Neutral / klar</option>
+                <select id="purpose-rewrite" aria-label="Schreibformat">
+                  <option value="allgemein" selected>Allgemein verbessern</option>
+                  <option value="email">E-Mail</option>
+                  <option value="brief">Brief</option>
+                  <option value="rundschreiben-studierende">Rundschreiben an Studierende</option>
+                  <option value="studenteninfo">Info an Studierende</option>
+                  <option value="feedback-student">Feedback an Studierende</option>
+                  <option value="termin">Termin / Organisation</option>
+                  <option value="erinnerung">Erinnerung / Hinweis</option>
+                  <option value="ihk-unterricht">Unterricht / IHK</option>
+                </select>
+                <select id="tone-rewrite" aria-label="Ton">
+                  <option value="klar-einfach" selected>Klar &amp; einfach</option>
                   <option value="freundlich">Freundlich</option>
+                  <option value="professionell">Professionell</option>
                   <option value="formell">Formell</option>
-                  <option value="kurz">Kürzer</option>
-                  <option value="besser">Besser formuliert</option>
-                  <option value="vorbereitungsaufgabe">Vorbereitungsaufgabe</option>
+                  <option value="motivierend">Motivierend</option>
+                  <option value="kurz">Kurz &amp; prägnant</option>
+                  <option value="wertschaetzend">Wertschätzend</option>
                 </select>
                 <button id="send-rewrite" type="button">Senden</button>
                 <button id="clear-rewrite" class="ghost" type="button">Leeren</button>
@@ -573,7 +585,30 @@
   const outRewrite = document.getElementById("out-rewrite");
   const cntRewrite = document.getElementById("cnt-rewrite");
   const msRewrite = document.getElementById("ms-rewrite");
-  const styleRewrite = document.getElementById("style-rewrite");
+  const purposeRewrite = document.getElementById("purpose-rewrite");
+  const toneRewrite = document.getElementById("tone-rewrite");
+
+  const purposeLabels = {
+    "allgemein": "allgemein sprachlich verbessern",
+    "email": "als professionelle E-Mail formulieren",
+    "brief": "als professionellen Brief formulieren",
+    "rundschreiben-studierende": "als Rundschreiben an Studierende formulieren",
+    "studenteninfo": "als klare Information an Studierende formulieren",
+    "feedback-student": "als konstruktives Feedback an Studierende formulieren",
+    "termin": "als klare Nachricht zu einem Termin oder organisatorischen Ablauf formulieren",
+    "erinnerung": "als freundliche Erinnerung bzw. klaren Hinweis formulieren",
+    "ihk-unterricht": "für den Unterricht bzw. IHK-Kontext professionell formulieren"
+  };
+
+  const toneLabels = {
+    "klar-einfach": "klar, einfach und leicht verständlich",
+    "freundlich": "freundlich und zugewandt",
+    "professionell": "professionell und souverän",
+    "formell": "formell und sachlich",
+    "motivierend": "motivierend und positiv",
+    "kurz": "kurz, prägnant und auf den Punkt",
+    "wertschaetzend": "wertschätzend und respektvoll"
+  };
   const sendRewrite = document.getElementById("send-rewrite");
   const clearRewrite = document.getElementById("clear-rewrite");
   const copyRewrite = document.getElementById("copy-rewrite");
@@ -604,9 +639,15 @@
 
     const t0 = performance.now();
     try {
+      const styleInstruction =
+        `${purposeLabels[purposeRewrite.value] || purposeLabels.allgemein}; ` +
+        `Ton: ${toneLabels[toneRewrite.value] || toneLabels["klar-einfach"]}. ` +
+        `Keine unnötigen Floskeln. Aussage und Fakten des Ausgangstextes beibehalten. ` +
+        `Nicht mehr Informationen hinzufügen als im Ausgangstext enthalten sind.`;
+
       const data = await postJSON("/api/rewrite", {
         text,
-        style: styleRewrite.value
+        style: styleInstruction
       });
 
       msRewrite.textContent = Math.round(performance.now() - t0) + " ms";
