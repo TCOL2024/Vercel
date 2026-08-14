@@ -626,7 +626,6 @@
   const send = document.getElementById("send");
   const mic = document.getElementById("mic");
   const effort = document.getElementById("effort");
-  const apiStatus = document.getElementById("apiStatus");
   const apiDiagnostic = document.getElementById("apiDiagnostic");
   const privacyModal = document.getElementById("privacyModal");
   const privacyCheck = document.getElementById("privacyCheck");
@@ -894,7 +893,7 @@
       fachmodus:"personal-bbig"
     };
 
-    apiStatus.textContent="POST /api/bot …"; if(apiDiagnostic) apiDiagnostic.textContent="Teste Verbindung …";
+    if(apiDiagnostic) apiDiagnostic.textContent="Teste Verbindung zu /api/bot …";
     try{
       const controller=new AbortController();
       const timeout=setTimeout(()=>controller.abort(),45000);
@@ -937,7 +936,7 @@
         throw new Error("HTTP 200 – /api/bot hat eine leere Antwort geliefert.");
       }
 
-      apiStatus.textContent="API OK · Antwort erhalten"; if(apiDiagnostic) apiDiagnostic.textContent="POST /api/bot erfolgreich";
+      if(apiDiagnostic) apiDiagnostic.textContent="POST /api/bot erfolgreich · Antwort erhalten";
       return {answer:String(answer),sources,followups};
     }catch(err){
       const message =
@@ -945,7 +944,7 @@
           ? "Zeitüberschreitung nach 45 Sekunden."
           : (err?.message || "Unbekannter API-Fehler");
 
-      apiStatus.textContent=message.slice(0,110); if(apiDiagnostic) apiDiagnostic.textContent=message.slice(0,180);
+      if(apiDiagnostic) apiDiagnostic.textContent=message.slice(0,180);
       throw new Error(message);
     }
   }
@@ -1057,7 +1056,8 @@ Der Vercel-Endpunkt **/api/bot** ist grundsätzlich vorhanden. Prüfe anhand die
   load();
   render();
   resizeInput();
-  setLocked(!privacyAccepted); if(apiDiagnostic) apiDiagnostic.textContent="Endpunkt: /api/bot";
+  setLocked(!privacyAccepted);
+  if(apiDiagnostic) apiDiagnostic.textContent="Endpunkt: /api/bot";
   if(!privacyAccepted){
     openModal("privacyModal");
   }
