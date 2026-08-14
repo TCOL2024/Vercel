@@ -678,6 +678,12 @@
 
   function renderMarkdown(md){
     let text = String(md ?? "").replace(/\r/g,"");
+    // Frontend safety net for older upstream replies containing escaped HTML.
+    text = text.replace(/\\</g, "<").replace(/\\>/g, ">").replace(/\\\*/g, "*")
+      .replace(/<strong\b[^>]*>/gi, "**").replace(/<\/strong>/gi, "**")
+      .replace(/<br\s*\/?>/gi, "\n").replace(/<div\b[^>]*>/gi, "").replace(/<\/div>/gi, "")
+      .replace(/<span\b[^>]*>/gi, "").replace(/<\/span>/gi, "").replace(/<p\b[^>]*>/gi, "").replace(/<\/p>/gi, "")
+      .replace(/<[^>]+>/g, "");
     const blocks = [];
     text = text.replace(/```(?:\w+)?\n([\s\S]*?)```/g,(_,code) => {
       const id = blocks.push(`<pre><code>${esc(code.trimEnd())}</code></pre>`) - 1;
