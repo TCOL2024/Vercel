@@ -537,6 +537,7 @@
               <button id="send" class="send-btn" type="button" title="Senden" aria-label="Senden"><i class="fa-solid fa-paper-plane"></i></button>
             </div>
             <div class="composer-note">Keine vertraulichen personenbezogenen Daten eingeben · Enter = senden · Shift+Enter = Zeilenumbruch</div>
+            <div id="apiDiagnostic" style="margin-top:4px;color:#9aa5b3;font-size:9px;text-align:center;min-height:12px;"></div>
             <div class="composer-privacy">
               Datenschutz: Bitte keine sensiblen oder vertraulichen personenbezogenen Daten eingeben. 
               Antworten von Linda sind KI-generiert, können Fehler enthalten und sind <strong>unverbindlich</strong>.
@@ -626,6 +627,7 @@
   const mic = document.getElementById("mic");
   const effort = document.getElementById("effort");
   const apiStatus = document.getElementById("apiStatus");
+  const apiDiagnostic = document.getElementById("apiDiagnostic");
   const privacyModal = document.getElementById("privacyModal");
   const privacyCheck = document.getElementById("privacyCheck");
   const privacyComposerLink = document.getElementById("privacyComposerLink");
@@ -889,37 +891,62 @@
       message:userText,
       history,
       routing:{reasoning_effort:effort.value},
-      fachmodus:"PERSONAL",
-      fm_user:"PERSONAL"
+      fachmodus:"personal-bbig"
     };
 
-    apiStatus.textContent="API wird aufgerufen…";
+    apiStatus.textContent="POST /api/bot …"; if(apiDiagnostic) apiDiagnostic.textContent="Teste Verbindung …";
     try{
       const controller=new AbortController();
       const timeout=setTimeout(()=>controller.abort(),45000);
+
       const response=await fetch(API_URL,{
         method:"POST",
-        headers:{"Content-Type":"application/json"},
+        headers:{
+          "Content-Type":"application/json",
+          "Accept":"text/plain, application/json"
+        },
         body:JSON.stringify(payload),
         signal:controller.signal
       });
+
       clearTimeout(timeout);
 
       const raw=await response.text();
-      if(!response.ok) throw new Error(`HTTP ${response.status}: ${raw.slice(0,300)}`);
+
+      if(!response.ok){
+        let detail=raw.trim();
+        try{
+          const errJson=JSON.parse(raw);
+          detail=errJson?.error || errJson?.detail || detail;
+          if(errJson?.status && !detail) detail=`Backend-Status ${errJson.status}`;
+        }catch(_){}
+
+        throw new Error(
+          `HTTP ${response.status}${detail ? " – " + detail.slice(0,800) : ""}`
+        );
+      }
 
       let data=null;
-      try{data=JSON.parse(raw)}catch{}
+      try{data=JSON.parse(raw)}catch(_){}
 
       const answer = data?.answer ?? data?.response ?? data?.content ?? data?.message ?? raw;
       const sources = data?.sources ?? data?.quellen ?? data?.references ?? [];
       const followups = data?.followups ?? data?.prompts ?? [];
 
-      apiStatus.textContent="API bereit";
-      return {answer:String(answer||"Keine Antwort erhalten."),sources,followups};
+      if(!String(answer||"").trim()){
+        throw new Error("HTTP 200 – /api/bot hat eine leere Antwort geliefert.");
+      }
+
+      apiStatus.textContent="API OK · Antwort erhalten"; if(apiDiagnostic) apiDiagnostic.textContent="POST /api/bot erfolgreich";
+      return {answer:String(answer),sources,followups};
     }catch(err){
-      apiStatus.textContent="API nicht erreichbar";
-      throw err;
+      const message =
+        err?.name==="AbortError"
+          ? "Zeitüberschreitung nach 45 Sekunden."
+          : (err?.message || "Unbekannter API-Fehler");
+
+      apiStatus.textContent=message.slice(0,110); if(apiDiagnostic) apiDiagnostic.textContent=message.slice(0,180);
+      throw new Error(message);
     }
   }
 
@@ -943,7 +970,11 @@
     }catch(err){
       messages[messages.length-1]={
         role:"assistant",
-        content:`**Die Anfrage konnte nicht verarbeitet werden.**\n\n${err?.name==="AbortError"?"Zeitüberschreitung nach 45 Sekunden.":"Die Verbindung zur Linda-API ist fehlgeschlagen."}\n\nBitte prüfe insbesondere den Vercel-Endpunkt **/api/bot**.`
+        content:`**Die Linda-API konnte die Anfrage nicht verarbeiten.**
+
+**Technische Diagnose:** ${String(err?.message || "Unbekannter Fehler")}
+
+Der Vercel-Endpunkt **/api/bot** ist grundsätzlich vorhanden. Prüfe anhand dieser Meldung den nächsten Fehlerpunkt (z. B. \`MAKE_WEBHOOK_URL\`, Make-Webhook oder Backend-Verarbeitung).`
       };
     }finally{
       busy=false;
@@ -1026,7 +1057,7 @@
   load();
   render();
   resizeInput();
-  setLocked(!privacyAccepted);
+  setLocked(!privacyAccepted); if(apiDiagnostic) apiDiagnostic.textContent="Endpunkt: /api/bot";
   if(!privacyAccepted){
     openModal("privacyModal");
   }
