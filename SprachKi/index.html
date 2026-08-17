@@ -801,7 +801,7 @@
           <div>
             <div class="backendGrid"><label>Upload-Endpunkt<input id="endpoint-upload" value="/api/context-upload" inputmode="url" autocomplete="off"></label><label>Retrieval-Endpunkt<input id="endpoint-search" value="/api/context-search" inputmode="url" autocomplete="off"></label></div>
             <p>Beim Upload sendet die Anwendung <code>multipart/form-data</code>: <code>file</code>, <code>context_id</code> und <code>metadata</code> (JSON). Der Server soll mindestens <code>file_id</code>, <code>name</code>, <code>type</code> sowie <code>indexed</code> oder <code>chunks</code>, <code>text</code> bzw. <code>parsed_text</code> zurückgeben.</p>
-            <p>Vor jeder Beratung erhält <code>/api/context-search</code> JSON mit <code>context_id</code> und <code>query</code>. Erwartet werden <code>relevant_context</code>, <code>chunks</code> und/oder <code>sources</code>. Ohne diese Endpunkte wird kein Dateiinhalt behauptet oder an die KI weitergegeben.</p>
+            <p>Der Upload läuft direkt über Vercel Blob; der Browser sendet die Datei nicht an die Function. Vor jeder Beratung erhält <code>/api/context-search</code> JSON mit <code>context_id</code> und <code>query</code>. Der Status wird über <code>/api/context-status</code> geprüft. Erwartet werden <code>relevant_context</code>, <code>chunks</code> und/oder <code>sources</code>. Ohne diese Endpunkte wird kein Dateiinhalt behauptet oder an die KI weitergegeben.</p>
             <p class="privacyNote">Datenschutz: API-Schlüssel gehören ausschließlich ins Backend. Die Datei verarbeitet Antworten nur als Text; KI-Ausgaben werden niemals ungefiltert als HTML eingesetzt.</p>
           </div>
         </details>
@@ -994,8 +994,7 @@
   </div>
 
 <script type="module">
-import { upload } from "https://esm.sh/@vercel/blob/client";
-window.__sprachkiBlobUpload = upload;
+  window.__sprachkiBlobUploadReady = import("https://esm.sh/@vercel/blob@2.3.0/client").then(module => module.upload).catch(error => { console.error("SprachKi Blob Client konnte nicht geladen werden", error); throw error; });
 </script>
 <script>
   const MAX = 1000;
@@ -1498,38 +1497,52 @@ window.__sprachkiBlobUpload = upload;
     });
     flush(); return output.join("") || "<p>Keine Antwort erhalten.</p>";
   }
-  async function postFormData(url, formData) {
-    const response = await fetch(url, { method: "POST", body: formData, credentials: "same-origin" });
+  function missingEndpoint(error, endpoint) {
+    return error && [404, 405, 501].includes(error.status) ? `Der Backend-Endpunkt ${endpoint} ist noch nicht eingerichtet. Dateiinhalt ist deshalb nicht verfügbar.` : "";
+  }
+  async function postBlobJSON(url, payload) {
+    const response = await fetch(url, { method: "POST", headers: { "Content-Type":"application/json", "Accept":"application/json" }, body: JSON.stringify(payload), credentials: "same-origin" });
     const data = await response.json().catch(() => ({}));
     if (!response.ok) { const error = new Error(data.error || data.message || `Serverfehler (${response.status})`); error.status = response.status; throw error; }
     return data;
   }
-  function missingEndpoint(error, endpoint) {
-    return error && [404, 405, 501].includes(error.status) ? `Der Backend-Endpunkt ${endpoint} ist noch nicht eingerichtet. Dateiinhalt ist deshalb nicht verfügbar.` : "";
-  }
   async function uploadSource(file, source) {
-    source.status = "analyzing"; source.message = "Wird an das Backend übertragen und analysiert …"; saveContextEngine(false); renderSources();
-    const formData = new FormData();
-    formData.append("file", file, file.name);
-    formData.append("context_id", stableContextId);
-    formData.append("metadata", JSON.stringify({ context_id: stableContextId, client_file_id: source.client_id, context_name: ctxEngine.name.value.trim(), course: ctxEngine.course.value.trim(), source_role: source.role, uploaded_at: new Date().toISOString() }));
+    source.status = "analyzing"; source.message = "Direkt-Upload zu Vercel Blob wird vorbereitet …"; saveContextEngine(false); renderSources();
     try {
-      const response = await postFormData(endpointValue(ctxEngine.uploadEndpoint.value, DEFAULT_ENDPOINTS.upload), formData);
+      if (!window.__sprachkiBlobUploadReady) throw new Error("Vercel-Blob-Uploadmodul ist noch nicht geladen. Bitte Seite einmal neu laden.");
+      const blobUpload = await window.__sprachkiBlobUploadReady;
+      if (typeof blobUpload !== "function") throw new Error("Vercel-Blob-Uploadmodul konnte nicht geladen werden.");
+      const metadata = { context_id: stableContextId, client_file_id: source.client_id, context_name: ctxEngine.name.value.trim(), course: ctxEngine.course.value.trim(), source_role: source.role, uploaded_at: new Date().toISOString() };
+      source.message = "Datei wird direkt zu Vercel Blob hochgeladen …"; saveContextEngine(false); renderSources();
+      const blob = await blobUpload(file.name, file, { access: "private", multipart: true, handleUploadUrl: "/api/context-upload-token", clientPayload: JSON.stringify({ context_id: stableContextId, metadata }) });
+      source.message = "Upload abgeschlossen. Übergabe an OpenAI …"; saveContextEngine(false); renderSources();
+      const response = await postBlobJSON(endpointValue(ctxEngine.uploadEndpoint.value, DEFAULT_ENDPOINTS.upload), { blob_url: blob.url, pathname: blob.pathname, name: file.name, type: file.type || "application/octet-stream", context_id: stableContextId, metadata });
       const result = (response && (response.data || response)) || {};
       source.file_id = String(result.file_id || result.id || source.file_id || "");
       source.type = result.type || result.mime_type || file.type || source.type;
       source.chunks = Number(result.chunks || result.chunk_count || 0);
-      source.indexed = result.indexed === true || source.chunks > 0 || Boolean(result.text || result.parsed_text);
-      const backendReady = ["indexed", "analyzed", "ready", "complete"].includes(String(result.status || "").toLowerCase());
-      source.status = source.indexed || backendReady ? "analyzed" : "analyzing";
-      source.message = source.status === "analyzed" ? "Analyse abgeschlossen und für Retrieval verfügbar." : "Upload angenommen; Analyse läuft im Backend noch.";
-      setStatus(source.status === "analyzed" ? `${source.name} analysiert` : `${source.name}: Analyse läuft im Backend`, "ok");
-    } catch (error) {
-      source.status = "error";
-      source.message = missingEndpoint(error, endpointValue(ctxEngine.uploadEndpoint.value, DEFAULT_ENDPOINTS.upload)) || `Upload/Analyse fehlgeschlagen: ${error.message || "unbekannter Fehler"}`;
-      setStatus(source.message, "err");
-    }
+      source.indexed = result.indexed === true;
+      source.vector_store_file_id = String(result.vector_store_file_id || source.vector_store_file_id || "");
+      const status = String(result.status || "").toLowerCase();
+      if (source.indexed || ["completed","indexed","analyzed","ready","complete"].includes(status)) { source.status = "analyzed"; source.message = "Analyse abgeschlossen und für Retrieval verfügbar."; setStatus(`${source.name} analysiert`, "ok"); }
+      else if (["failed","cancelled"].includes(status)) { source.status = "error"; source.message = result.last_error || "OpenAI konnte die Datei nicht indexieren."; setStatus(source.message, "err"); }
+      else { source.status = "analyzing"; source.message = "OpenAI verarbeitet die Datei noch …"; setStatus(`${source.name}: Analyse läuft`, "ok"); pollSourceStatus(source); }
+    } catch (error) { source.status = "error"; source.message = missingEndpoint(error, endpointValue(ctxEngine.uploadEndpoint.value, DEFAULT_ENDPOINTS.upload)) || `Upload/Analyse fehlgeschlagen: ${error.message || "unbekannter Fehler"}`; setStatus(source.message, "err"); }
     saveContextEngine(false); renderSources(); readinessEngine();
+  }
+  async function pollSourceStatus(source) {
+    if (!source.vector_store_file_id) return;
+    for (let attempt = 0; attempt < 30; attempt++) {
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      try {
+        const data = await postJSON("/api/context-status", { context_id: stableContextId, file_id: source.file_id, vector_store_file_id: source.vector_store_file_id });
+        const status = String(data.status || "").toLowerCase(); source.chunks = Number(data.chunks || source.chunks || 0); source.indexed = status === "completed";
+        if (status === "completed") { source.status = "analyzed"; source.message = "Analyse abgeschlossen und für Retrieval verfügbar."; saveContextEngine(false); renderSources(); readinessEngine(); setStatus(`${source.name} analysiert`, "ok"); return; }
+        if (["failed","cancelled"].includes(status)) { source.status = "error"; source.message = data.last_error || "OpenAI konnte die Datei nicht indexieren."; saveContextEngine(false); renderSources(); readinessEngine(); setStatus(source.message, "err"); return; }
+        source.status = "analyzing"; source.message = "OpenAI verarbeitet die Datei noch …"; saveContextEngine(false); renderSources();
+      } catch (error) { source.status = "error"; source.message = `Statusabfrage fehlgeschlagen: ${error.message || "unbekannter Fehler"}`; saveContextEngine(false); renderSources(); readinessEngine(); return; }
+    }
+    source.status = "error"; source.message = "Die Analyse dauert ungewöhnlich lange. Bitte später erneut versuchen."; saveContextEngine(false); renderSources(); readinessEngine();
   }
   function selectSources(files) {
     const selected = [...files], valid = selected.filter((file) => SUPPORTED_SOURCE.test(file.name));
