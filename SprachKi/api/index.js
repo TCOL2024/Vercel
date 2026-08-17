@@ -2,6 +2,7 @@ const { Buffer } = require("node:buffer");
 
 let openaiClient;
 let blobModule;
+let blobClientModule;
 
 async function deps() {
   if (!openaiClient) {
@@ -11,7 +12,8 @@ async function deps() {
     });
   }
   if (!blobModule) blobModule = await import("@vercel/blob");
-  return { openai: openaiClient, blob: blobModule };
+  if (!blobClientModule) blobClientModule = await import("@vercel/blob/client");
+  return { openai: openaiClient, blob: blobModule, blobClient: blobClientModule };
 }
 
 function send(res, status, body) {
@@ -103,11 +105,11 @@ async function contextUploadToken(req, res) {
     return send(res, 500, { error: "BLOB_READ_WRITE_TOKEN fehlt" });
   }
 
-  const { blob } = await deps();
+  const { blobClient } = await deps();
   const body = await readJson(req);
 
   try {
-    const result = await blob.handleUpload({
+    const result = await blobClient.handleUpload({
       token: process.env.BLOB_READ_WRITE_TOKEN,
       body,
       request: req,
