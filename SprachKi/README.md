@@ -1,28 +1,39 @@
-# SprachKi – eine API-Datei für Vercel
+# SprachKi – Vercel Blob + OpenAI Vector Store
 
 ## Struktur
-SprachKi/
-- index.html
-- api/index.js
-- vercel.json
-- package.json
+- `index.html`
+- `api/index.js` – einzige API-Datei
+- `vercel.json`
+- `package.json`
 
-`api/index.js` bedient:
-- /api/ask
-- /api/rewrite
-- /api/context-upload
-- /api/context-search
+## Endpunkte
+- `/api/ask`
+- `/api/rewrite`
+- `/api/context-upload-token`
+- `/api/context-upload`
+- `/api/context-search`
 
-## Vercel
-Root Directory dieses Vercel-Projekts: `SprachKi`
+## Warum Blob?
+Die Originaldatei wird direkt vom Browser zu Vercel Blob hochgeladen. Dadurch muss die Datei nicht durch den Vercel-Function-Request und die Function-Payload-Grenze wird nicht zum Upload-Flaschenhals.
 
-Environment Variables:
-- `ASK` = OpenAI API-Key
-- `OPENAI_VECTOR_STORE_ID` = OpenAI Vector Store ID
-- optional `OPENAI_MODEL` = gpt-5-mini
+## Vercel Environment Variables
+- `ASK` – OpenAI API-Key
+- `OPENAI_VECTOR_STORE_ID` – OpenAI Vector Store
+- `BLOB_READ_WRITE_TOKEN` – Token des Vercel Blob Stores
+- optional `OPENAI_MODEL` – Standard `gpt-5-mini`
 
-Der Upload erwartet multipart/form-data mit `file`, `context_id` und `metadata`.
-Der Retrieval-Endpunkt sucht semantisch im Vector Store und filtert nach `context_id`.
+Node.js: `24.x`
 
-## Node.js
-Set Vercel Project Settings → Node.js Version to `24.x`. The package.json pins `24.x` as well.
+## Blob Store
+In Vercel Storage einen Blob Store anlegen und für die passende Umgebung verfügbar machen. Das `BLOB_READ_WRITE_TOKEN` bleibt ausschließlich serverseitig.
+
+## Upload-Ablauf
+1. Browser ruft `/api/context-upload-token` auf.
+2. Server erzeugt einen Vercel-Blob-Client-Token.
+3. Browser lädt die Datei direkt zu Blob.
+4. Browser sendet nur Blob-URL + Kontextdaten an `/api/context-upload`.
+5. Backend lädt den Blob serverseitig herunter.
+6. Backend legt die Datei in OpenAI Files und im konfigurierten Vector Store ab.
+7. `/api/context-search` sucht später semantisch und filtert nach `context_id`.
+
+Status `in_progress` bedeutet, dass OpenAI die Datei noch verarbeitet. Erst `completed` ist für Retrieval belastbar.
