@@ -1,0 +1,1177 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0B5CAB">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Linda 4.0">
+  <meta name="description" content="Linda 4.0 – Lern- und Prüfungsassistentin für Ausbildung und Personalmanagement">
+  <title>Linda 4.0</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
+
+  <style>
+    :root{
+      --bg:#eef4fa;
+      --panel:#ffffff;
+      --panel-2:#f6f9fc;
+      --ink:#17263a;
+      --ink-2:#52647a;
+      --brand:#0b5cab;
+      --brand-2:#0e77d0;
+      --brand-soft:#e9f3ff;
+      --mint:#18a77d;
+      --danger:#c43d56;
+      --warning:#9a6a00;
+      --line:#dbe4ee;
+      --shadow:0 18px 50px rgba(22,44,71,.10);
+      --shadow-soft:0 8px 25px rgba(22,44,71,.07);
+      --radius-xl:26px;
+      --radius-lg:20px;
+      --radius-md:15px;
+      --safe-bottom:env(safe-area-inset-bottom,0px);
+    }
+
+    *{box-sizing:border-box}
+    html,body{margin:0;min-height:100%;background:var(--bg);color:var(--ink);font-family:Manrope,system-ui,sans-serif}
+    body{overflow-x:hidden}
+    button,input,textarea,select{font:inherit}
+    button{cursor:pointer}
+    a{color:var(--brand)}
+
+    .app{
+      width:min(1440px,100%);
+      min-height:100dvh;
+      margin:0 auto;
+      display:grid;
+      grid-template-columns:300px minmax(0,1fr);
+      background:
+        radial-gradient(900px 300px at 100% 0%, rgba(14,119,208,.10), transparent 65%),
+        linear-gradient(180deg,#f8fbfe 0%,#edf4fa 100%);
+    }
+
+    .sidebar{
+      position:sticky;
+      top:0;
+      height:100dvh;
+      padding:18px;
+      display:flex;
+      flex-direction:column;
+      background:linear-gradient(180deg,#0b5cab 0%,#073d7b 100%);
+      color:#fff;
+      overflow:hidden;
+    }
+
+    .sidebar-top{display:flex;align-items:center;gap:12px}
+    .avatar{
+      width:48px;height:48px;border-radius:16px;
+      display:grid;place-items:center;
+      background:rgba(255,255,255,.16);
+      border:1px solid rgba(255,255,255,.20);
+      font-family:"Space Grotesk",sans-serif;
+      font-weight:700;font-size:20px;
+    }
+    .brand-name{font-family:"Space Grotesk",sans-serif;font-size:25px;font-weight:700;line-height:1}
+    .brand-sub{margin-top:4px;font-size:12px;color:rgba(255,255,255,.72)}
+    .sidebar-card{
+      margin-top:22px;
+      padding:16px;
+      border-radius:18px;
+      background:rgba(255,255,255,.11);
+      border:1px solid rgba(255,255,255,.14);
+    }
+    .sidebar-card h3{margin:0 0 7px;font-size:13px}
+    .sidebar-card p{margin:0;font-size:12px;line-height:1.6;color:rgba(255,255,255,.80)}
+    .side-nav{display:grid;gap:8px;margin-top:18px}
+    .side-btn{
+      display:flex;align-items:center;gap:10px;
+      width:100%;padding:12px 13px;
+      border:1px solid rgba(255,255,255,.10);
+      border-radius:13px;
+      background:transparent;color:#fff;
+      text-align:left;
+    }
+    .side-btn:hover,.side-btn.active{background:rgba(255,255,255,.12)}
+    .side-btn i{width:18px;text-align:center}
+    .sidebar-foot{margin-top:auto;font-size:11px;color:rgba(255,255,255,.62);line-height:1.5}
+
+    .main{
+      min-width:0;
+      display:grid;
+      grid-template-rows:auto minmax(0,1fr) auto;
+      min-height:100dvh;
+    }
+
+    .topbar{
+      position:sticky;
+      top:0;
+      z-index:30;
+      padding:14px 18px;
+      background:rgba(248,251,254,.88);
+      backdrop-filter:blur(16px);
+      border-bottom:1px solid rgba(219,228,238,.84);
+    }
+    .topbar-inner{display:flex;align-items:center;justify-content:space-between;gap:12px;max-width:1180px;margin:0 auto}
+    .title-wrap{min-width:0}
+    .eyebrow{
+      color:var(--brand);
+      font-size:11px;font-weight:800;
+      letter-spacing:.11em;text-transform:uppercase;
+    }
+    .title-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+    h1{
+      margin:3px 0 0;
+      font-family:"Space Grotesk",sans-serif;
+      font-size:clamp(21px,3vw,29px);
+      letter-spacing:-.025em;
+    }
+    .pill{
+      display:inline-flex;align-items:center;gap:7px;
+      min-height:30px;padding:0 10px;
+      border:1px solid #cfe0f5;border-radius:999px;
+      background:#eef6ff;color:var(--brand);
+      font-size:11px;font-weight:800;
+    }
+    .pill-dot{width:6px;height:6px;border-radius:50%;background:var(--mint)}
+    .top-actions{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+    .icon-btn{
+      width:42px;height:42px;
+      border:1px solid var(--line);
+      border-radius:13px;
+      background:#fff;color:#48627f;
+      display:grid;place-items:center;
+      box-shadow:0 5px 15px rgba(22,44,71,.06);
+    }
+    .icon-btn:hover{transform:translateY(-1px);box-shadow:0 9px 20px rgba(22,44,71,.09)}
+    .icon-btn.primary{background:var(--brand);border-color:var(--brand);color:#fff}
+
+    .content{
+      min-height:0;
+      padding:18px;
+    }
+    .content-inner{
+      height:100%;
+      max-width:1180px;
+      margin:0 auto;
+      display:block;
+    }
+
+    .chat-panel,.insight-panel{
+      min-width:0;
+      background:rgba(255,255,255,.9);
+      border:1px solid var(--line);
+      border-radius:var(--radius-xl);
+      box-shadow:var(--shadow);
+    }
+
+    .chat-panel{
+      min-height:calc(100dvh - 126px);
+      display:grid;
+      grid-template-rows:minmax(0,1fr) auto;
+      overflow:hidden;
+    }
+
+    .chat{
+      min-height:0;
+      overflow-y:auto;
+      overflow-x:hidden;
+      padding:20px;
+      scroll-behavior:smooth;
+    }
+
+    .welcome{
+      display:grid;
+      grid-template-columns:minmax(0,1fr);
+      gap:14px;
+      margin-bottom:20px;
+    }
+    .welcome-card{
+      padding:18px;
+      border-radius:20px;
+      background:linear-gradient(135deg,#eef6ff 0%,#f7fbff 100%);
+      border:1px solid #d8e7f7;
+    }
+    .welcome-card h2{margin:0 0 8px;font-family:"Space Grotesk",sans-serif;font-size:22px}
+    .welcome-card p{margin:0;color:var(--ink-2);line-height:1.65;font-size:14px}
+    .starter-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+    .starter{
+      border:1px solid var(--line);
+      background:#fff;
+      border-radius:14px;
+      padding:12px;
+      text-align:left;
+      color:var(--ink);
+      line-height:1.45;
+      box-shadow:var(--shadow-soft);
+    }
+    .starter:hover{border-color:#bbd2eb;background:#f9fcff}
+    .starter small{display:block;color:var(--ink-2);font-size:11px;margin-top:4px}
+
+    .message-row{display:flex;margin:0 0 16px;min-width:0}
+    .message-row.user{justify-content:flex-end}
+    .message{
+      min-width:0;max-width:min(82%,850px);
+      border-radius:18px;
+      padding:13px 15px;
+      line-height:1.65;
+      overflow-wrap:anywhere;
+      word-break:break-word;
+    }
+    .message.user{
+      color:#fff;
+      background:linear-gradient(135deg,var(--brand) 0%,var(--brand-2) 100%);
+      border-bottom-right-radius:6px;
+      box-shadow:0 9px 20px rgba(11,92,171,.18);
+    }
+    .message.bot{
+      background:#fff;
+      border:1px solid #e0e7ef;
+      border-bottom-left-radius:6px;
+      box-shadow:var(--shadow-soft);
+    }
+    .message-label{font-size:11px;font-weight:800;margin-bottom:5px;opacity:.75}
+    .message p{margin:0 0 10px}
+    .message p:last-child{margin-bottom:0}
+    .message h2,.message h3{font-family:"Space Grotesk",sans-serif;margin:14px 0 8px}
+    .message ul,.message ol{margin:7px 0 12px;padding-left:20px}
+    .message blockquote{margin:12px 0;padding:10px 12px;border-left:4px solid #9abbe4;background:#f4f8fd;border-radius:0 11px 11px 0;color:#42556e}
+    .message pre{max-width:100%;overflow:auto;background:#111923;color:#eaf0f6;border-radius:11px;padding:12px}
+    .message code{overflow-wrap:anywhere}
+    .table-wrap{max-width:100%;overflow-x:auto;border:1px solid var(--line);border-radius:11px;margin:12px 0}
+    .message table{border-collapse:collapse;min-width:100%;width:max-content}
+    .message th,.message td{padding:8px 10px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+    .message th{background:#f6f9fc}
+    .message tr:last-child td{border-bottom:0}
+
+    .source{
+      margin-top:12px;
+      padding:12px;
+      border-left:4px solid var(--brand);
+      border-radius:12px;
+      background:#f5f9ff;
+      border-top:1px solid #dbe8f7;
+      border-right:1px solid #dbe8f7;
+      border-bottom:1px solid #dbe8f7;
+    }
+    .source-head{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
+    .source-title{font-size:12px;font-weight:800;color:#2d4a6d}
+    .source-meta{font-size:11px;color:var(--ink-2)}
+    .source-quote{margin:8px 0 0;font-size:12px;color:#4f6178;line-height:1.5}
+    .source-link{font-size:11px;font-weight:800;text-decoration:none;display:inline-block;margin-top:7px}
+
+    .disclaimer{
+      margin-top:11px;
+      padding:10px 12px;
+      border-radius:11px;
+      background:#fffbf1;
+      border:1px solid #eee3bf;
+      color:#615945;
+      font-size:11px;line-height:1.55;
+    }
+
+    .followups{
+      display:flex;gap:8px;flex-wrap:wrap;margin-top:10px
+    }
+    .followup{
+      border:1px solid #dce7f2;
+      background:#fff;
+      border-radius:999px;
+      padding:8px 11px;
+      font-size:11px;
+      color:#395a7e;
+      text-align:left;
+    }
+    .followup:hover{background:var(--brand-soft);border-color:#c4dbf1}
+
+    .composer{
+      padding:12px 14px calc(12px + var(--safe-bottom));
+      border-top:1px solid var(--line);
+      background:rgba(255,255,255,.94);
+      backdrop-filter:blur(14px);
+    }
+    .composer-inner{display:grid;grid-template-columns:auto minmax(0,1fr) auto auto;gap:8px;align-items:end}
+    .effort{
+      height:48px;
+      border:1px solid var(--line);
+      border-radius:14px;
+      background:#fff;
+      padding:0 11px;
+      color:#395a7e;
+      font-size:12px;font-weight:800;
+      min-width:126px;
+    }
+    .input-wrap{min-width:0}
+    #chatInput{
+      display:block;
+      width:100%;
+      min-height:48px;max-height:180px;resize:none;
+      border:1px solid var(--line);
+      border-radius:14px;
+      padding:13px 14px;
+      background:#fbfdff;
+      color:var(--ink);
+      outline:none;
+      line-height:1.45;
+    }
+    #chatInput:focus{border-color:#aac9e9;box-shadow:0 0 0 4px rgba(11,92,171,.08)}
+    .send-btn{
+      width:48px;height:48px;
+      border:1px solid var(--brand);border-radius:14px;
+      background:var(--brand);color:#fff;
+      display:grid;place-items:center;
+    }
+    .mic-btn{
+      width:48px;height:48px;
+      border:1px solid var(--line);border-radius:14px;
+      background:#fff;color:#46617f;
+      display:grid;place-items:center;
+    }
+    .mic-btn.recording{background:#fff0f3;color:var(--danger);border-color:#f1b3c1}
+    .composer-note{font-size:10px;color:#75859a;margin:7px 2px 0;text-align:center}
+
+    .composer-privacy{
+      margin:5px 2px 0;
+      color:#8a97a7;
+      font-size:10px;
+      line-height:1.45;
+      text-align:center;
+      user-select:none;
+    }
+    .composer-privacy a{color:#7d8998;text-decoration:underline}
+    .composer-privacy strong{font-weight:700}
+    .send-btn:disabled,.mic-btn:disabled{opacity:.45;cursor:not-allowed;transform:none!important}
+    .composer.locked #chatInput{background:#f1f3f6;color:#8a97a7}
+    .composer.locked #chatInput::placeholder{color:#9aa5b3}
+
+    .insight-panel{padding:16px;align-self:start}
+    .insight-title{font-family:"Space Grotesk",sans-serif;font-size:16px;margin:0 0 12px}
+    .info-card{padding:12px;border:1px solid var(--line);border-radius:14px;background:#fff;margin-bottom:9px}
+    .info-card strong{display:block;font-size:12px;margin-bottom:4px}
+    .info-card span{font-size:11px;line-height:1.5;color:var(--ink-2)}
+    .status-line{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--ink-2)}
+    .status-dot{width:8px;height:8px;border-radius:50%;background:var(--mint)}
+
+    .mobile-nav{display:none}
+
+    .modal-backdrop{
+      position:fixed;inset:0;z-index:100;
+      display:none;align-items:center;justify-content:center;
+      padding:16px;background:rgba(8,20,36,.54);
+    }
+    .modal-backdrop.open{display:flex}
+    .modal{
+      width:min(100%,620px);
+      max-height:min(90dvh,760px);
+      overflow:auto;
+      border-radius:22px;
+      background:#fff;
+      box-shadow:0 30px 90px rgba(0,0,0,.22);
+      border:1px solid rgba(255,255,255,.7);
+    }
+    .modal-head{padding:15px 17px;background:linear-gradient(135deg,var(--brand),#0a427f);color:#fff;font-family:"Space Grotesk",sans-serif;font-size:16px}
+    .modal-body{padding:17px;color:#31465f;line-height:1.65;font-size:13px}
+    .modal-body h3{font-family:"Space Grotesk",sans-serif;color:#173a63;margin:18px 0 7px}
+    .modal-body h3:first-child{margin-top:0}
+    .modal-body p{margin:0 0 10px}
+    .modal-body ul{margin:7px 0 0;padding-left:20px}
+    .modal-footer{display:flex;justify-content:flex-end;gap:8px;padding:12px 15px;border-top:1px solid var(--line);background:#fafcfe}
+    .modal-btn{border:0;border-radius:999px;padding:10px 15px;font-weight:800}
+    .modal-btn.primary{background:var(--brand);color:#fff}
+    .modal-btn.secondary{background:#edf2f7;color:#284866}
+
+    .privacy-choice{
+      display:grid;gap:8px;
+      margin-top:12px;
+      padding:12px;
+      border-radius:13px;
+      background:#f7fafd;
+      border:1px solid var(--line);
+    }
+    .privacy-choice label{display:flex;align-items:flex-start;gap:8px;font-size:12px;line-height:1.5;color:#44586f}
+    .privacy-choice input{margin-top:3px}
+
+    .typing{display:inline-flex;gap:4px;align-items:center}
+    .typing i{width:6px;height:6px;border-radius:50%;background:#9aa6b6;animation:dot 1.1s infinite}
+    .typing i:nth-child(2){animation-delay:.15s}.typing i:nth-child(3){animation-delay:.3s}
+    @keyframes dot{0%,70%,100%{transform:translateY(0);opacity:.4}35%{transform:translateY(-4px);opacity:1}}
+
+    @media (max-width:1100px){
+      .app{grid-template-columns:250px minmax(0,1fr)}
+      .content-inner{grid-template-columns:minmax(0,1fr)}
+      .insight-panel{display:none}
+    }
+
+    @media (max-width:760px){
+      .app{display:block}
+      .sidebar{display:none}
+      .main{min-height:100dvh;padding-bottom:74px}
+      .topbar{padding:10px 10px}
+      .topbar-inner{align-items:center}
+      .title-row{gap:6px}
+      .title-row h1{font-size:21px}
+      .top-actions{gap:5px}
+      .icon-btn{width:40px;height:40px}
+      .content{padding:10px 10px 0}
+      .chat-panel{min-height:calc(100dvh - 128px);border-radius:18px}
+      .chat{padding:14px 12px 16px}
+      .starter-grid{grid-template-columns:1fr}
+      .message{max-width:94%;font-size:15px}
+      .composer{
+        position:fixed;
+        left:10px;right:10px;bottom:calc(64px + var(--safe-bottom));
+        z-index:45;
+        border:1px solid var(--line);
+        border-radius:18px;
+        box-shadow:0 15px 38px rgba(20,42,68,.12);
+        padding:9px;
+      }
+      .composer-inner{grid-template-columns:auto minmax(0,1fr) auto}
+      .effort{grid-column:1 / -1;width:100%;height:39px;min-width:0}
+      .send-btn,.mic-btn{width:44px;height:44px}
+      .composer-note{display:none}
+      .mobile-nav{
+        display:grid;
+        grid-template-columns:repeat(4,1fr);
+        position:fixed;
+        z-index:50;
+        left:0;right:0;bottom:0;
+        padding:7px 8px calc(7px + var(--safe-bottom));
+        background:rgba(255,255,255,.96);
+        backdrop-filter:blur(14px);
+        border-top:1px solid var(--line);
+      }
+      .mobile-nav button{
+        border:0;background:transparent;color:#6a7d93;
+        display:grid;place-items:center;gap:3px;
+        padding:4px;
+        font-size:10px;
+      }
+      .mobile-nav button.active{color:var(--brand)}
+      .mobile-nav i{font-size:16px}
+      .welcome-card h2{font-size:20px}
+    }
+
+    @media (max-width:430px){
+      .pill{display:none}
+      .title-row h1{font-size:19px}
+      .top-actions .hide-xs{display:none}
+      .message{padding:12px 13px}
+    }
+
+    @media (prefers-reduced-motion:reduce){
+      *,*::before,*::after{scroll-behavior:auto!important;animation:none!important;transition:none!important}
+    }
+  </style>
+</head>
+
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <div class="sidebar-top">
+      <div class="avatar">L</div>
+      <div>
+        <div class="brand-name">Linda 4.0</div>
+        <div class="brand-sub">Ausbildung · Personalmanagement</div>
+      </div>
+    </div>
+
+    <div class="sidebar-card">
+      <h3>Wofür ist Linda da?</h3>
+      <p>Für konkrete Fragen zu Ausbildung, BBiG, Ausbilderthemen und Personalmanagement – als Lern- und Prüfungshilfe.</p>
+    </div>
+
+    <div class="side-nav">
+      <button class="side-btn active" data-action="new"><i class="fa-solid fa-message"></i><span>Neuer Chat</span></button>
+      <button class="side-btn" data-action="sessions"><i class="fa-solid fa-clock-rotate-left"></i><span>Gespeicherte Chats</span></button>
+      <button class="side-btn" data-action="help"><i class="fa-solid fa-circle-question"></i><span>Hilfe</span></button>
+      <button class="side-btn" data-action="privacy"><i class="fa-solid fa-shield-halved"></i><span>Datenschutz</span></button>
+    </div>
+
+    <div class="sidebar-foot">
+      Antworten werden automatisiert erzeugt. Bei wichtigen oder rechtlich relevanten Entscheidungen bitte Originalquellen prüfen.
+    </div>
+  </aside>
+
+  <main class="main">
+    <header class="topbar">
+      <div class="topbar-inner">
+        <div class="title-wrap">
+          <div class="eyebrow">Linda 4.0</div>
+          <div class="title-row">
+            <h1>Deine persönliche Assistentin</h1>
+            <span class="pill"><span class="pill-dot"></span> Personal &amp; BBiG</span><span class="pill exam-pill" id="examModePill" hidden><span class="pill-dot"></span> Prüfungsmodus</span>
+          </div>
+        </div>
+
+        <div class="top-actions">
+          <button class="icon-btn hide-xs" id="btnText" title="Textdarstellung ändern" aria-label="Textdarstellung ändern">Aa</button>
+          <button class="icon-btn primary" id="btnHelp" title="Hilfe" aria-label="Hilfe"><i class="fa-solid fa-question"></i></button>
+          <button class="icon-btn" id="btnSessions" title="Gespeicherte Chats" aria-label="Gespeicherte Chats"><i class="fa-solid fa-clock-rotate-left"></i></button>
+          <button class="icon-btn" id="btnNew" title="Neuer Chat" aria-label="Neuer Chat"><i class="fa-solid fa-plus"></i></button>
+        </div>
+      </div>
+    </header>
+
+    <section class="content">
+      <div class="content-inner">
+        <section class="chat-panel">
+          <div id="chat" class="chat" aria-live="polite"></div>
+
+          <div class="composer">
+            <div class="composer-inner">
+              <select id="effort" class="effort" title="Aufwand">
+                <option value="low">Aufwand: niedrig</option>
+                <option value="medium" selected>Aufwand: mittel</option>
+                <option value="high">Aufwand: hoch</option>
+              </select>
+
+              <div class="input-wrap">
+                <textarea id="chatInput" rows="1" placeholder="Frage an Linda …"></textarea>
+              </div>
+
+              <button id="mic" class="mic-btn" type="button" title="Spracheingabe" aria-label="Spracheingabe"><i class="fa-solid fa-microphone"></i></button>
+              <button id="send" class="send-btn" type="button" title="Senden" aria-label="Senden"><i class="fa-solid fa-paper-plane"></i></button>
+            </div>
+            <div class="composer-note">Keine vertraulichen personenbezogenen Daten eingeben · Enter = senden · Shift+Enter = Zeilenumbruch</div>
+            <div id="apiDiagnostic" style="margin-top:4px;color:#9aa5b3;font-size:9px;text-align:center;min-height:12px;"></div>
+            <div class="composer-privacy">
+              Datenschutz: Bitte keine sensiblen oder vertraulichen personenbezogenen Daten eingeben. 
+              Antworten von Linda sind KI-generiert, können Fehler enthalten und sind <strong>unverbindlich</strong>.
+              Rechtliche, steuerliche oder sonstige wichtige Entscheidungen bitte anhand der Originalquellen prüfen.
+              <a href="#" id="privacyComposerLink">Datenschutzhinweis</a>
+            </div>
+          </div>
+        </section>
+      </div>
+    </section>
+
+    <nav class="mobile-nav" aria-label="Navigation">
+      <button class="active" data-action="new"><i class="fa-solid fa-message"></i><span>Chat</span></button>
+      <button data-action="sessions"><i class="fa-solid fa-clock-rotate-left"></i><span>Chats</span></button>
+      <button data-action="help"><i class="fa-solid fa-circle-question"></i><span>Hilfe</span></button>
+      <button data-action="privacy"><i class="fa-solid fa-shield-halved"></i><span>Datenschutz</span></button>
+    </nav>
+  </main>
+</div>
+
+<!-- Help -->
+<div class="modal-backdrop" id="helpModal" role="dialog" aria-modal="true" aria-labelledby="helpTitle">
+  <div class="modal">
+    <div class="modal-head" id="helpTitle"><i class="fa-solid fa-circle-question"></i> Hilfe zu Linda</div>
+    <div class="modal-body">
+      <h3>Was bedeutet „Aufwand“?</h3>
+      <p><strong>Niedrig:</strong> kurze, direkte Antworten – gut für einfache Fragen oder eine schnelle Wiederholung.</p>
+      <p><strong>Mittel:</strong> ausgewogene Antworten mit Erklärung, Einordnung und den wesentlichen Details. Das ist die Standardstufe.</p>
+      <p><strong>Hoch:</strong> ausführlichere Antworten mit mehr Begründungen, Zusammenhängen, Beispielen und Prüfungshinweisen.</p>
+
+      <h3>Wichtig</h3>
+      <p>Ein höherer Aufwand bedeutet <strong>nicht automatisch eine höhere sachliche Richtigkeit</strong>. Bei rechtlich relevanten Fragen sollten die genannten Vorschriften und Quellen zusätzlich geprüft werden.</p>
+
+      <h3>Datenschutz</h3>
+      <p>Bitte keine vertraulichen oder sensiblen personenbezogenen Daten eingeben. Bei Fällen möglichst mit Platzhaltern arbeiten, z. B. „Ausbilder X“ oder „Auszubildende A“.</p>
+      <p>Deine Eingaben können an die für Linda aktivierten technischen Dienste übermittelt werden. Die konkrete Datenverarbeitung richtet sich nach der eingesetzten Infrastruktur und deren Datenschutzvorgaben.</p>
+      <p><strong>KI-Hinweis:</strong> Antworten sind KI-generiert, können Fehler enthalten und sind unverbindlich. Bei wichtigen Entscheidungen bitte die Originalquellen prüfen.</p>
+    </div>
+    <div class="modal-footer">
+      <button class="modal-btn primary" data-close="helpModal">Schließen</button>
+    </div>
+  </div>
+</div>
+
+<!-- Privacy -->
+<div class="modal-backdrop" id="privacyModal" role="dialog" aria-modal="true" aria-labelledby="privacyTitle">
+  <div class="modal">
+    <div class="modal-head" id="privacyTitle"><i class="fa-solid fa-shield-halved"></i> Datenschutzhinweis</div>
+    <div class="modal-body">
+      <p><strong>Bitte bestätige diesen Datenschutzhinweis vor der Nutzung.</strong></p>
+      <p>Bitte keine vertraulichen oder sensiblen personenbezogenen Daten eingeben. Für Fallbeispiele möglichst mit Platzhaltern wie „Ausbilder X“ oder „Auszubildende A“ arbeiten.</p>
+      <p>Deine Eingaben können an die für Linda aktivierten technischen Dienste übermittelt werden. Die konkrete Verarbeitung richtet sich nach der eingesetzten Infrastruktur und den hierfür geltenden Datenschutzinformationen.</p>
+      <p><strong>Wichtig:</strong> Linda ist ein KI-System. Antworten können unvollständig, veraltet oder fehlerhaft sein und stellen keine verbindliche Rechts-, Steuer-, Finanz- oder sonstige Fachberatung dar.</p>
+      <div class="privacy-choice">
+        <label><input id="privacyCheck" type="checkbox"> Ich habe den Datenschutzhinweis gelesen und verstanden und möchte Linda nutzen.</label>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="modal-btn secondary" data-close="privacyModal">Schließen</button>
+      <button class="modal-btn primary" id="privacyAccept">Bestätigen</button>
+    </div>
+  </div>
+</div>
+
+<!-- Sessions -->
+<div class="modal-backdrop" id="sessionsModal" role="dialog" aria-modal="true" aria-labelledby="sessionsTitle">
+  <div class="modal">
+    <div class="modal-head" id="sessionsTitle"><i class="fa-solid fa-clock-rotate-left"></i> Gespeicherte Chats</div>
+    <div class="modal-body" id="sessionsList"></div>
+    <div class="modal-footer">
+      <button class="modal-btn primary" data-close="sessionsModal">Schließen</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+  "use strict";
+
+  const API_URL = "/api/bot";
+  const STORAGE = "linda40_greenfield";
+  const MAX_HISTORY = 4;
+
+  // Prüfungslogik bleibt bewusst vollständig im Frontend. /api/bot wird nicht verändert.
+  const EXAM_ENGINE_VERSION = "1.0";
+  const EXAM_THRESHOLD = 4;
+  const EXAM_STRICT_INSTRUCTION = `
+LINDA – STRIKTER PRÜFUNGS- UND QUALITÄTSMODUS
+
+Diese Anfrage wurde als prüfungsrelevant erkannt. Behandle sie deshalb nicht wie eine beliebige Chatfrage, sondern wie eine fachliche Anfrage in einem anspruchsvollen IHK-Lern- und Prüfungskontext.
+
+ARBEITSAUFTRAG
+1. Bestimme zuerst präzise, was die Nutzerfrage tatsächlich verlangt. Beantworte nicht eine vermutete oder verwandte Frage.
+2. Ordne die Frage dem passenden Fachgebiet zu und identifiziere – soweit erkennbar – die einschlägigen Begriffe, Regeln, Rechtsgrundlagen oder fachlichen Konzepte.
+3. Prüfe vor der Antwort, ob wesentliche Informationen fehlen. Fehlen sie und ist dadurch keine belastbare eindeutige Antwort möglich, stelle höchstens 2 kurze, gezielte Rückfragen. Rate nicht.
+4. Trenne sichere Aussagen von Annahmen. Erfinde keine Rechtsnormen, Paragraphen, Urteile, Behördenpositionen, Zahlen, Quellen oder Prüfungsvorgaben.
+5. Bei Rechtsfragen: Norm, Anwendungsbereich und Rechtsfolge sauber auseinanderhalten. Prüfe besonders, ob eine Vorschrift tatsächlich zur geschilderten Konstellation passt.
+6. Bei Prüfungsfragen: berücksichtige den Maßstab einer IHK-Prüfung. Formuliere fachlich präzise, eindeutig und bewertbar. Bei Auswahlfragen prüfe jede Option gedanklich auf ihre Richtigkeit.
+7. Suche aktiv nach typischen Denkfehlern: Verwechslung von Voraussetzungen und Rechtsfolgen, zeitliche Fehler, falsche Kausalität, übergeneralisierte Aussagen, Begriffsverwechslungen und unbelegte Schlussfolgerungen.
+8. Führe vor der Ausgabe eine letzte Qualitätskontrolle durch: Ist die Antwort sachlich stimmig? Ist sie vollständig genug? Beantwortet sie genau die Frage? Gibt es Widersprüche oder unnötige Abschweifungen?
+9. Gib nur das Ergebnis der Prüfung aus. Gib keine interne Gedankenkette, keine versteckten Prüfschritte und keinen Arbeitsentwurf aus.
+10. Wenn die Frage mehrere vertretbare Antworten zulässt, benenne die entscheidende Abgrenzung ausdrücklich, statt eine Scheingenauigkeit zu erzeugen.
+
+ANTWORTSTIL
+- zuerst eine klare Antwort auf die konkrete Frage;
+- anschließend, soweit sinnvoll, kurze Begründung bzw. Herleitung;
+- bei Rechtsfragen möglichst mit genauer Rechtsgrundlage, sofern sicher;
+- bei Prüfungsfragen deutlich machen, was als prüfungsrelevant gilt;
+- keine Füllsätze und kein thematisches Abschweifen;
+- lieber eine begründete Einschränkung als eine elegant klingende falsche Aussage.
+
+QUALITÄTSSTANDARD
+Arbeite mit hoher fachlicher Sorgfalt und adaptiver Denktiefe. Bei einfachen Fragen genügt eine knappe Prüfung; bei komplexen, mehrdeutigen oder rechtlich relevanten Fällen vertiefe die Prüfung entsprechend.
+`;
+
+  const chat = document.getElementById("chat");
+  const input = document.getElementById("chatInput");
+  const send = document.getElementById("send");
+  const mic = document.getElementById("mic");
+  const effort = document.getElementById("effort");
+  const apiDiagnostic = document.getElementById("apiDiagnostic");
+  const examModePill = document.getElementById("examModePill");
+  const privacyModal = document.getElementById("privacyModal");
+  const privacyCheck = document.getElementById("privacyCheck");
+  const privacyComposerLink = document.getElementById("privacyComposerLink");
+  const composer = document.querySelector(".composer");
+
+  let messages = [];
+  let sessions = [];
+  let busy = false;
+  let privacyAccepted = localStorage.getItem(STORAGE + "_privacyAccepted") === "true";
+
+  const welcome = {
+    role: "assistant",
+    content: "Guten Tag! Ich bin Linda 4.0. Wie kann ich Dich heute im Bereich Ausbildung oder Personalmanagement unterstützen?",
+    sources: [],
+    followups: [
+      "Erkläre mir § 21 BBiG einfach.",
+      "Welche Pflichten hat ein Ausbilder?",
+      "Erstelle mir eine Prüfungsfrage zum BBiG."
+    ]
+  };
+
+  const starterHtml = `
+    <div class="welcome">
+      <div class="welcome-card">
+        <h2>Was möchtest du heute klären?</h2>
+        <p>Frage mich zu Ausbildung, BBiG, Ausbilderthemen und Personalmanagement. Je konkreter der Sachverhalt, desto besser kann Linda helfen.</p>
+      </div>
+      <div class="starter-grid">
+        <button class="starter" data-prompt="Erkläre mir § 21 BBiG einfach und prüfungsorientiert.">§ 21 BBiG<small>Beendigung des Berufsausbildungsverhältnisses</small></button>
+        <button class="starter" data-prompt="Welche Pflichten hat ein Ausbilder nach dem BBiG?">Ausbilderpflichten<small>Mit prüfungsrelevanten Punkten</small></button>
+        <button class="starter" data-prompt="Erstelle mir drei IHK-Prüfungsfragen zum Thema Berufsausbildung.">Prüfungsfragen<small>Direkt zum Üben</small></button>
+        <button class="starter" data-prompt="Erkläre mir den Unterschied zwischen Personalentwicklung und Personalplanung.">Personalmanagement<small>Mit einfachem Beispiel</small></button>
+      </div>
+    </div>`;
+
+  function esc(value){
+    return String(value ?? "")
+      .replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;")
+      .replaceAll('"',"&quot;").replaceAll("'","&#39;");
+  }
+
+  function inline(text){
+    let s = esc(text);
+    s = s.replace(/\*\*(.+?)\*\*/g,"<strong>$1</strong>");
+    s = s.replace(/`(.+?)`/g,"<code>$1</code>");
+    s = s.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g,'<a href="$2" target="_blank" rel="noopener">$1</a>');
+    return s;
+  }
+
+  function renderMarkdown(md){
+    let text = String(md ?? "").replace(/\r/g,"");
+    // Frontend safety net for older upstream replies containing escaped HTML.
+    text = text.replace(/\\</g, "<").replace(/\\>/g, ">").replace(/\\\*/g, "*")
+      .replace(/<strong\b[^>]*>/gi, "**").replace(/<\/strong>/gi, "**")
+      .replace(/<br\s*\/?>/gi, "\n").replace(/<div\b[^>]*>/gi, "").replace(/<\/div>/gi, "")
+      .replace(/<span\b[^>]*>/gi, "").replace(/<\/span>/gi, "").replace(/<p\b[^>]*>/gi, "").replace(/<\/p>/gi, "")
+      .replace(/<[^>]+>/g, "");
+    const blocks = [];
+    text = text.replace(/```(?:\w+)?\n([\s\S]*?)```/g,(_,code) => {
+      const id = blocks.push(`<pre><code>${esc(code.trimEnd())}</code></pre>`) - 1;
+      return `@@BLOCK${id}@@`;
+    });
+
+    const lines = text.split("\n");
+    let out = "", ul=false, ol=false;
+
+    const closeLists=()=>{
+      if(ul){out+="</ul>";ul=false}
+      if(ol){out+="</ol>";ol=false}
+    };
+
+    for(let i=0;i<lines.length;i++){
+      const line=lines[i];
+
+      if(/^@@BLOCK\d+@@$/.test(line.trim())){closeLists();out+=line.trim();continue}
+      if(!line.trim()){closeLists();continue}
+
+      if(/^\s*\|\s*Disclaimer\b/i.test(line)){
+        closeLists();
+        const clean=line.replace(/^\s*\|\s*/,"").replace(/\|\s*$/,"").replace(/^Disclaimer\s*:?\s*/i,"");
+        out+=`<div class="disclaimer"><strong>Hinweis / Disclaimer:</strong> ${inline(clean)}</div>`;
+        continue;
+      }
+
+      if(/^\s*\|/.test(line) && /^\s*\|?\s*:?-{3,}/.test(lines[i+1]||"")){
+        closeLists();
+        const head=line.trim().replace(/^\||\|$/g,"").split("|").map(x=>x.trim());
+        i+=2;
+        let rows=[];
+        while(i<lines.length && /^\s*\|/.test(lines[i])){
+          rows.push(lines[i].trim().replace(/^\||\|$/g,"").split("|").map(x=>x.trim()));
+          i++;
+        }
+        let t='<div class="table-wrap"><table><thead><tr>';
+        head.forEach(c=>t+=`<th>${inline(c)}</th>`);
+        t+='</tr></thead><tbody>';
+        rows.forEach(r=>{
+          t+='<tr>';
+          for(let c=0;c<head.length;c++) t+=`<td>${inline(r[c]||"")}</td>`;
+          t+='</tr>';
+        });
+        t+='</tbody></table></div>';
+        out+=t; i--; continue;
+      }
+
+      let m=line.match(/^(#{1,3})\s+(.+)$/);
+      if(m){closeLists();out+=`<h${m[1].length}>${inline(m[2])}</h${m[1].length}>`;continue}
+
+      if(/^\s*>\s?/.test(line)){closeLists();out+=`<blockquote>${inline(line.replace(/^\s*>\s?/,""))}</blockquote>`;continue}
+
+      if(/^\s*[-*]\s+/.test(line)){
+        if(!ul){closeLists();out+="<ul>";ul=true}
+        out+=`<li>${inline(line.replace(/^\s*[-*]\s+/,""))}</li>`;continue
+      }
+
+      if(/^\s*\d+[.)]\s+/.test(line)){
+        if(!ol){closeLists();out+="<ol>";ol=true}
+        out+=`<li>${inline(line.replace(/^\s*\d+[.)]\s+/,""))}</li>`;continue
+      }
+
+      if(/^(-{3,}|\*{3,})$/.test(line.trim())){closeLists();out+="<hr>";continue}
+
+      if(/^\s*\|.*\|\s*$/.test(line)){
+        const clean=line.replace(/\|/g," ").replace(/\s+/g," ").trim();
+        if(clean) out+=`<p>${inline(clean)}</p>`;
+        continue;
+      }
+
+      closeLists();
+      out+=`<p>${inline(line)}</p>`;
+    }
+    closeLists();
+
+    out=out.replace(/@@BLOCK(\d+)@@/g,(_,i)=>blocks[Number(i)]||"");
+    return out;
+  }
+
+  function sourcesHtml(sources){
+    if(!Array.isArray(sources) || !sources.length) return "";
+    return sources.slice(0,6).map(s => {
+      const title=s.title||s.name||"Quelle";
+      const meta=s.meta||s.page||s.seite||"";
+      const quote=s.quote||s.excerpt||s.text||"";
+      const url=s.url||s.href||"";
+      return `<div class="source">
+        <div class="source-head">
+          <span class="source-title">${esc(title)}</span>
+          <span class="source-meta">${esc(meta)}</span>
+        </div>
+        ${quote?`<div class="source-quote">„${esc(quote)}“</div>`:""}
+        ${url?`<a class="source-link" href="${esc(url)}" target="_blank" rel="noopener">Quelle öffnen ↗</a>`:""}
+      </div>`;
+    }).join("");
+  }
+
+  function followupsHtml(items){
+    if(!Array.isArray(items) || !items.length) return "";
+    return `<div class="followups">${items.slice(0,4).map(x=>`<button class="followup" data-followup="${esc(x)}">${esc(x)}</button>`).join("")}</div>`;
+  }
+
+  function render(){
+    chat.innerHTML="";
+    if(!messages.length){messages=[{...welcome}]}
+    if(messages.length===1 && messages[0].role==="assistant"){
+      chat.innerHTML=starterHtml;
+    }
+
+    messages.forEach((m,index)=>{
+      const row=document.createElement("div");
+      row.className=`message-row ${m.role==="user"?"user":""}`;
+      const box=document.createElement("div");
+      box.className=`message ${m.role==="user"?"user":"bot"}`;
+      const label=m.role==="user"?"Du":"Linda";
+      const content=m.role==="user"?esc(m.content).replace(/\n/g,"<br>"):renderMarkdown(m.content);
+      box.innerHTML=`<div class="message-label">${label}</div>${content}${m.role==="assistant"?sourcesHtml(m.sources):""}${m.role==="assistant"?followupsHtml(m.followups):""}`;
+      row.appendChild(box);
+      chat.appendChild(row);
+    });
+
+    chat.querySelectorAll(".starter,.followup").forEach(btn=>{
+      btn.addEventListener("click",()=>sendMessage(btn.dataset.prompt||btn.dataset.followup||""));
+    });
+    chat.scrollTop=chat.scrollHeight;
+  }
+
+  function setLocked(locked){
+    composer.classList.toggle("locked", locked);
+    input.disabled = locked;
+    send.disabled = locked || busy;
+    mic.disabled = locked || !(window.SpeechRecognition||window.webkitSpeechRecognition);
+    if(locked){
+      input.placeholder = "Bitte zuerst den Datenschutzhinweis bestätigen …";
+    }else{
+      input.placeholder = "Frage an Linda …";
+    }
+  }
+
+  function requirePrivacy(){
+    if(privacyAccepted) return true;
+    openModal("privacyModal");
+    return false;
+  }
+
+  function save(){
+    localStorage.setItem(STORAGE,JSON.stringify({messages,sessions}));
+  }
+
+  function load(){
+    try{
+      const obj=JSON.parse(localStorage.getItem(STORAGE)||"{}");
+      sessions=Array.isArray(obj.sessions)?obj.sessions:[];
+      messages=Array.isArray(obj.messages)?obj.messages:[{...welcome}];
+    }catch{
+      messages=[{...welcome}];
+      sessions=[];
+    }
+  }
+
+  function newChat(){
+    if(messages.length>1){
+      sessions.unshift({
+        id:Date.now().toString(),
+        title:(messages.find(x=>x.role==="user")?.content||"Chat").slice(0,50),
+        messages
+      });
+      sessions=sessions.slice(0,8);
+    }
+    messages=[{...welcome}];
+    save();
+    render();
+  }
+
+  function renderSessions(){
+    const list=document.getElementById("sessionsList");
+    if(!sessions.length){
+      list.innerHTML="<p>Noch keine gespeicherten Chats.</p>";
+      return;
+    }
+    list.innerHTML=sessions.map(s=>`
+      <div class="info-card" style="cursor:pointer" data-session="${esc(s.id)}">
+        <strong>${esc(s.title||"Chat")}</strong>
+        <span>${Array.isArray(s.messages)?s.messages.length:0} Nachrichten</span>
+      </div>`).join("");
+    list.querySelectorAll("[data-session]").forEach(el=>{
+      el.addEventListener("click",()=>{
+        const s=sessions.find(x=>x.id===el.dataset.session);
+        if(!s)return;
+        messages=Array.isArray(s.messages)?s.messages:[{...welcome}];
+        save(); render(); closeModal("sessionsModal");
+      });
+    });
+  }
+
+  function openModal(id){document.getElementById(id)?.classList.add("open")}
+  function closeModal(id){document.getElementById(id)?.classList.remove("open")}
+
+  function resizeInput(){
+    input.style.height="auto";
+    input.style.height=Math.min(input.scrollHeight,180)+"px";
+  }
+
+  function normalizeForClassification(text){
+    return String(text || "")
+      .toLowerCase()
+      .replace(/ä/g,"ae").replace(/ö/g,"oe").replace(/ü/g,"ue").replace(/ß/g,"ss")
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/§\s*/g, "paragraph ")
+      .replace(/[^a-z0-9äöüß\s.-]/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+  }
+
+  function classifyExamQuestion(userText){
+    const t = normalizeForClassification(userText);
+    const rules = [
+      {points:5, re:/\b(ihk|klausur|pruefung|pruefungsfrage|pruefungsaufgabe|pruefungsfall|pruefungsantwort|pruefungsschema|pruefungsrecht)\b/},
+      {points:4, re:/\b(richtig|falsch|korrekt|nicht korrekt|zutreffend|nicht zutreffend|bewerte|beurteile|begruende|begruendung|loesung|musterloesung)\b/},
+      {points:4, re:/\b(rechtsgrundlage|paragraph|norm|gesetz|bbig|bgb|arbzg|sgb|betrvg|ausbildungsverhaeltnis)\b/},
+      {points:4, re:/\b(welche aussage|welche antwort|welche option|was ist richtig|was ist falsch|welche der folgenden)\b/},
+      {points:3, re:/\b(erstelle|formuliere|entwickle)\b.*\b(pruefungsfrage|aufgabe|fall|mc|multiple choice)\b/},
+      {points:3, re:/\b(rollenspiel|fallbeispiel|sachverhalt)\b.*\b(pruefung|loesung|bewertung)\b/},
+      {points:2, re:/\b(pruefungsrelevant|pruefungssicher|examensrelevant|bewertung|punkt(e|system)|erwartungshorizont)\b/}
+    ];
+
+    let score=0;
+    const signals=[];
+    for(const rule of rules){
+      if(rule.re.test(t)){ score += rule.points; signals.push(rule.re.source); }
+    }
+
+    const legalDensity = (t.match(/\b(bb|bbig|bgb|arbzg|sgb|betrvg|vvg|vvg|sgb iv|sgb ix|sgb x|sgb xi|sgb v|ao|hgb|gew o|owig)\b/g)||[]).length;
+    if(legalDensity) score += Math.min(4, legalDensity);
+
+    const questionMark = /\?/.test(userText);
+    const looksLikeTask = /\b(erklaere|nenne|nennen|unterscheide|unterschied|pruefe|pruefen|ermittle|ordne|begruende|beurteile|analysiere|erstelle|formuliere)\b/i.test(t);
+    if(questionMark && looksLikeTask) score += 1;
+
+    return {
+      isExam: score >= EXAM_THRESHOLD,
+      score,
+      signals
+    };
+  }
+
+  function setExamIndicator(isExam){
+    if(!examModePill) return;
+    examModePill.hidden = !isExam;
+  }
+
+  function buildExamEnvelope(userText, classification){
+    return `[LINDA EXAM GATE – Frontend v${EXAM_ENGINE_VERSION}]\n\n${EXAM_STRICT_INSTRUCTION.trim()}\n\nKLASSIFIKATION\n- Prüfungsrelevanz: ${classification.isExam ? "hoch" : "nicht erkannt"}
+- Prüfungsindikator-Score: ${classification.score}
+\nORIGINALFRAGE DES NUTZERS:
+${String(userText || "").trim()}\n\nWICHTIG: Behandle den folgenden Text als die eigentliche Nutzerfrage. Die obigen Anweisungen steuern nur die Qualität und Tiefe der Bearbeitung. Wenn die Originalfrage ausreichend bestimmt ist, antworte direkt. Wenn für eine belastbare Antwort wesentliche Angaben fehlen, stelle stattdessen gezielte Rückfragen. Gib keine interne Gedankenkette aus.`;
+  }
+
+  async function requestLinda(userText){
+    const history=messages.slice(-MAX_HISTORY).map(m=>({role:m.role,content:m.content}));
+    const classification = classifyExamQuestion(userText);
+    setExamIndicator(classification.isExam);
+
+    // Die Frontend-Schicht ergänzt nur bei Prüfungsfragen einen strengen Qualitätsauftrag.
+    // Der bestehende Endpunkt /api/bot bleibt unverändert.
+    const effectiveQuestion = classification.isExam
+      ? buildExamEnvelope(userText, classification)
+      : userText;
+
+    const payload={
+      mode:classification.isExam ? "exam" : "standard",
+      question:effectiveQuestion,
+      message:effectiveQuestion,
+      history,
+      routing:{
+        reasoning_effort:classification.isExam ? (effort.value === "low" ? "medium" : "high") : effort.value,
+        exam_gate:classification.isExam,
+        exam_score:classification.score
+      },
+      fachmodus:"personal-bbig"
+    };
+
+    if(apiDiagnostic) apiDiagnostic.textContent=classification.isExam ? "Prüfungsmodus · strenge Qualitätsprüfung · /api/bot …" : "Teste Verbindung zu /api/bot …";
+    try{
+      const controller=new AbortController();
+      const timeout=setTimeout(()=>controller.abort(),45000);
+
+      const response=await fetch(API_URL,{
+        method:"POST",
+        headers:{
+          "Content-Type":"application/json",
+          "Accept":"text/plain, application/json"
+        },
+        body:JSON.stringify(payload),
+        signal:controller.signal
+      });
+
+      clearTimeout(timeout);
+
+      const raw=await response.text();
+
+      if(!response.ok){
+        let detail=raw.trim();
+        try{
+          const errJson=JSON.parse(raw);
+          detail=errJson?.error || errJson?.detail || detail;
+          if(errJson?.status && !detail) detail=`Backend-Status ${errJson.status}`;
+        }catch(_){}
+
+        throw new Error(
+          `HTTP ${response.status}${detail ? " – " + detail.slice(0,800) : ""}`
+        );
+      }
+
+      let data=null;
+      try{data=JSON.parse(raw)}catch(_){}
+
+      const answer = data?.answer ?? data?.response ?? data?.content ?? data?.message ?? raw;
+      const sources = data?.sources ?? data?.quellen ?? data?.references ?? [];
+      const followups = data?.followups ?? data?.prompts ?? [];
+
+      if(!String(answer||"").trim()){
+        throw new Error("HTTP 200 – /api/bot hat eine leere Antwort geliefert.");
+      }
+
+      if(apiDiagnostic) apiDiagnostic.textContent=classification.isExam ? "Prüfungsmodus · Antwort nach strenger Prüfung erhalten" : "POST /api/bot erfolgreich · Antwort erhalten";
+      return {answer:String(answer),sources,followups};
+    }catch(err){
+      const message =
+        err?.name==="AbortError"
+          ? "Zeitüberschreitung nach 45 Sekunden."
+          : (err?.message || "Unbekannter API-Fehler");
+
+      if(apiDiagnostic) apiDiagnostic.textContent=message.slice(0,180);
+      throw new Error(message);
+    }
+  }
+
+  async function sendMessage(value){
+    if(!requirePrivacy()) return;
+    const text=String(value||"").trim();
+    if(!text || busy)return;
+    const preClassification = classifyExamQuestion(text);
+    setExamIndicator(preClassification.isExam);
+    busy=true;
+    send.disabled=true;
+
+    if(messages.length===1 && messages[0].role==="assistant") messages=[];
+    messages.push({role:"user",content:text});
+    messages.push({role:"assistant",content:"⏳ Einen Moment bitte …"});
+    input.value="";
+    resizeInput();
+    render();
+
+    try{
+      const result=await requestLinda(text);
+      messages[messages.length-1]={role:"assistant",content:result.answer,sources:result.sources,followups:result.followups};
+    }catch(err){
+      messages[messages.length-1]={
+        role:"assistant",
+        content:`**Die Linda-API konnte die Anfrage nicht verarbeiten.**
+
+**Technische Diagnose:** ${String(err?.message || "Unbekannter Fehler")}
+
+Der Vercel-Endpunkt **/api/bot** ist grundsätzlich vorhanden. Prüfe anhand dieser Meldung den nächsten Fehlerpunkt (z. B. \`MAKE_WEBHOOK_URL\`, Make-Webhook oder Backend-Verarbeitung).`
+      };
+    }finally{
+      busy=false;
+      send.disabled=!privacyAccepted;
+      save();
+      render();
+      setTimeout(()=>input.focus(),50);
+    }
+  }
+
+  document.getElementById("btnHelp").addEventListener("click",()=>openModal("helpModal"));
+  document.getElementById("btnSessions").addEventListener("click",()=>{renderSessions();openModal("sessionsModal")});
+  document.getElementById("btnNew").addEventListener("click",newChat);
+  document.getElementById("btnText").addEventListener("click",()=>document.body.classList.toggle("large-text"));
+
+  document.querySelectorAll("[data-close]").forEach(btn=>btn.addEventListener("click",()=>closeModal(btn.dataset.close)));
+
+  document.querySelectorAll("[data-action]").forEach(btn=>{
+    btn.addEventListener("click",()=>{
+      const action=btn.dataset.action;
+      if(action==="new")newChat();
+      if(action==="sessions"){renderSessions();openModal("sessionsModal")}
+      if(action==="help")openModal("helpModal");
+      if(action==="privacy")openModal("privacyModal");
+    });
+  });
+
+  document.getElementById("privacyAccept").addEventListener("click",()=>{
+    if(!privacyCheck.checked){
+      alert("Bitte bestätige zuerst, dass du den Datenschutzhinweis gelesen und verstanden hast.");
+      return;
+    }
+    privacyAccepted=true;
+    localStorage.setItem(STORAGE + "_privacyAccepted","true");
+    closeModal("privacyModal");
+    setLocked(false);
+    input.focus();
+  });
+
+  privacyComposerLink.addEventListener("click",(e)=>{
+    e.preventDefault();
+    openModal("privacyModal");
+  });
+
+  document.getElementById("btnHelp").addEventListener("dblclick",()=>openModal("aiDisclaimerModal"));
+
+  document.querySelectorAll(".modal-backdrop").forEach(backdrop=>{
+    backdrop.addEventListener("click",e=>{
+      if(e.target===backdrop)backdrop.classList.remove("open");
+    });
+  });
+
+  send.addEventListener("click",()=>sendMessage(input.value));
+  input.addEventListener("input",resizeInput);
+  input.addEventListener("keydown",e=>{
+    if(e.key==="Enter"&&!e.shiftKey){
+      e.preventDefault();
+      sendMessage(input.value);
+    }
+  });
+
+  const recognitionClass=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(recognitionClass){
+    const recognition=new recognitionClass();
+    recognition.lang="de-DE";
+    recognition.interimResults=false;
+    recognition.onstart=()=>mic.classList.add("recording");
+    recognition.onend=()=>mic.classList.remove("recording");
+    recognition.onresult=e=>{
+      input.value=e.results[0][0].transcript;
+      resizeInput();
+      input.focus();
+    };
+    mic.addEventListener("click",()=>recognition.start());
+  }else{
+    mic.disabled=true;
+    mic.title="Spracheingabe wird in diesem Browser nicht unterstützt";
+  }
+
+  load();
+  render();
+  resizeInput();
+  setLocked(!privacyAccepted);
+  if(apiDiagnostic) apiDiagnostic.textContent="Endpunkt: /api/bot";
+  if(!privacyAccepted){
+    openModal("privacyModal");
+  }
+})();
+</script>
+</body>
+</html>
