@@ -27,30 +27,46 @@ function readRawBody(req, limitBytes = 32 * 1024) {
 
 function sendJson(res, status, obj) {
   res.statusCode = status;
+
   res.setHeader(
     "Content-Type",
     "application/json; charset=utf-8"
   );
-  res.end(JSON.stringify(obj));
+
+  res.end(
+    JSON.stringify(obj)
+  );
 }
 
 function getClientIp(req) {
-  const xf = req.headers["x-forwarded-for"];
+  const xf =
+    req.headers["x-forwarded-for"];
 
   if (
     typeof xf === "string" &&
     xf.length
   ) {
-    return xf.split(",")[0].trim();
+    return xf
+      .split(",")[0]
+      .trim();
   }
 
-  return req.socket?.remoteAddress || "unknown";
+  return (
+    req.socket?.remoteAddress ||
+    "unknown"
+  );
 }
 
 function allowSameOrigin(req) {
-  const origin = req.headers.origin || "";
-  const referer = req.headers.referer || "";
-  const host = req.headers.host || "";
+  const origin =
+    req.headers.origin || "";
+
+  const referer =
+    req.headers.referer || "";
+
+  const host =
+    req.headers.host || "";
+
   const proto =
     req.headers["x-forwarded-proto"] || "";
 
@@ -68,7 +84,9 @@ function allowSameOrigin(req) {
   ]);
 
   if (proto) {
-    allowed.add(`${proto}://${host}`);
+    allowed.add(
+      `${proto}://${host}`
+    );
   }
 
   const parseOrigin = (value) => {
@@ -107,8 +125,14 @@ function allowSameOrigin(req) {
   return false;
 }
 
+// ==========================================================
+// TEXT NORMALIZATION
+// ==========================================================
+
 function stripLeadingFillers(text) {
-  if (!text) return "";
+  if (!text) {
+    return "";
+  }
 
   let t =
     String(text).trim();
@@ -144,8 +168,12 @@ function stripLeadingFillers(text) {
   return t;
 }
 
-function isPlaceholderAssistantMessage(content) {
-  if (!content) return false;
+function isPlaceholderAssistantMessage(
+  content
+) {
+  if (!content) {
+    return false;
+  }
 
   const c =
     content
@@ -169,12 +197,19 @@ function clipContent(
   const t =
     (text || "").trim();
 
-  if (t.length <= maxLen) {
+  if (
+    t.length <= maxLen
+  ) {
     return t;
   }
 
-  if (role === "assistant") {
-    return "… " + t.slice(-maxLen);
+  if (
+    role === "assistant"
+  ) {
+    return (
+      "… " +
+      t.slice(-maxLen)
+    );
   }
 
   return (
@@ -187,7 +222,9 @@ function normalizeHistory(
   history,
   maxItems = 4
 ) {
-  if (!Array.isArray(history)) {
+  if (
+    !Array.isArray(history)
+  ) {
     return [];
   }
 
@@ -196,7 +233,9 @@ function normalizeHistory(
 
   const cleaned = [];
 
-  for (const h of last) {
+  for (
+    const h of last
+  ) {
     const role =
       (
         h &&
@@ -216,11 +255,15 @@ function normalizeHistory(
     raw =
       stripLeadingFillers(raw);
 
-    if (!raw) continue;
+    if (!raw) {
+      continue;
+    }
 
     if (
       role === "assistant" &&
-      isPlaceholderAssistantMessage(raw)
+      isPlaceholderAssistantMessage(
+        raw
+      )
     ) {
       continue;
     }
@@ -238,6 +281,10 @@ function normalizeHistory(
 
   return cleaned;
 }
+
+// ==========================================================
+// SHORT REPLIES
+// ==========================================================
 
 function isShortAffirmation(text) {
   const t =
@@ -290,7 +337,8 @@ function expandShortReply(
           .reverse()
           .find(
             (m) =>
-              m.role === "assistant" &&
+              m.role ===
+                "assistant" &&
               m.content
           )
       : null;
@@ -299,7 +347,9 @@ function expandShortReply(
     return q;
   }
 
-  if (isShortAffirmation(q)) {
+  if (
+    isShortAffirmation(q)
+  ) {
     return (
       "Ja. Bitte knüpfe an die letzte " +
       "Frage/Handlungsaufforderung an und " +
@@ -307,7 +357,9 @@ function expandShortReply(
     );
   }
 
-  if (isShortNegation(q)) {
+  if (
+    isShortNegation(q)
+  ) {
     return (
       "Nein. Bitte knüpfe an die letzte " +
       "Frage/Handlungsaufforderung an und " +
@@ -319,10 +371,12 @@ function expandShortReply(
 }
 
 // ==========================================================
-// ROUTER-META GUARD
+// ROUTER META GUARD
 // ==========================================================
 
-function looksLikeRouterMeta(text = "") {
+function looksLikeRouterMeta(
+  text = ""
+) {
   const t =
     String(text).trim();
 
@@ -360,18 +414,20 @@ function isLeakAttempt(text) {
 
   /*
    * WICHTIG:
-   * Begriffe wie "vector store", "file_search",
-   * "tools" oder "payload" sind KEINE automatischen
+   *
+   * "Vector Store", "file_search", "tools",
+   * "payload" usw. sind keine automatischen
    * Leak-Versuche.
    *
-   * Ein Nutzer darf ausdrücklich verlangen, dass
-   * Linda den Vector Store verwendet.
+   * Ein Nutzer darf ausdrücklich sagen:
+   * "Nutze den Vector Store."
    */
 
   const needles = [
     "system prompt",
     "systemprompt",
     "system_prompt",
+
     "[system]",
     "[developer]",
 
@@ -392,6 +448,7 @@ function isLeakAttempt(text) {
 
     "access token",
     "secret key",
+
     "geheime anweisung",
     "interne instruktion",
 
@@ -410,7 +467,9 @@ function isLeakAttempt(text) {
   if (
     t.includes("json") &&
     (
-      t.includes("system_prompt") ||
+      t.includes(
+        "system_prompt"
+      ) ||
       t.includes("secrets") ||
       t.includes("developer")
     )
@@ -524,13 +583,17 @@ function sanitizeReply(text) {
   lines =
     lines.filter(
       ln =>
-        !ROUTER_PIPELINE_RE.test(ln)
+        !ROUTER_PIPELINE_RE.test(
+          ln
+        )
     );
 
   lines =
     lines.filter(
       ln =>
-        !ROUTER_LINE_RE.test(ln)
+        !ROUTER_LINE_RE.test(
+          ln
+        )
     );
 
   out =
@@ -547,7 +610,9 @@ function sanitizeReply(text) {
       /\brisk\s*:/i.test(out)
     );
 
-  if (looksLikeMetaExplanation) {
+  if (
+    looksLikeMetaExplanation
+  ) {
     return (
       "Ich habe interne Steuer-/Routing-Informationen " +
       "ausgeblendet. Stelle bitte deine fachliche " +
@@ -556,7 +621,9 @@ function sanitizeReply(text) {
   }
 
   if (
-    looksLikeSecurityHallucination(out)
+    looksLikeSecurityHallucination(
+      out
+    )
   ) {
     return (
       "Ich kann dir helfen. Formuliere bitte deine " +
@@ -621,8 +688,12 @@ function getUserTextForVectorDecision(
     parts.push(q);
   }
 
-  if (Array.isArray(history)) {
-    for (const m of history) {
+  if (
+    Array.isArray(history)
+  ) {
+    for (
+      const m of history
+    ) {
       if (
         m &&
         m.role === "user" &&
@@ -733,21 +804,29 @@ function detectVectorYes(
   ];
 
   if (
-    /(^|\s)(§|art\.)\s*\d+/i.test(hay)
+    /(^|\s)(§|art\.)\s*\d+/i.test(
+      hay
+    )
   ) {
     return true;
   }
 
-  for (const t of triggers) {
+  for (
+    const t of triggers
+  ) {
     if (t === "§") {
-      if (hay.includes("§")) {
+      if (
+        hay.includes("§")
+      ) {
         return true;
       }
 
       continue;
     }
 
-    if (hay.includes(t)) {
+    if (
+      hay.includes(t)
+    ) {
       return true;
     }
   }
@@ -816,7 +895,9 @@ function getDeepSeekConfig() {
     ).trim();
 
   if (v) {
-    if (v.startsWith("sk-")) {
+    if (
+      v.startsWith("sk-")
+    ) {
       apiKey = v;
     } else {
       model = v;
@@ -944,72 +1025,105 @@ ARBEITSWEISE:
 1. Verstehe zuerst exakt die Frage und den konkreten Sachverhalt.
 2. Wenn eine für die Bewertung entscheidende Information fehlt oder mehrere Sachverhaltsvarianten zu unterschiedlichen Ergebnissen führen, stelle gezielte Rückfragen. Erfinde keine fehlenden Tatsachen.
 3. Bei komplexen Fällen identifiziere intern die entscheidungserheblichen Teilfragen und prüfe sie nacheinander. Gib keine interne Gedankenkette aus, sondern nur das Ergebnis und eine nachvollziehbare Begründung.
-4. Unterscheide strikt zwischen: ausdrücklich geregelt, aus einer Regel vertretbar ableitbar, fachlich naheliegend, nicht geregelt und unsicher.
+4. Unterscheide strikt zwischen:
+   - ausdrücklich geregelt
+   - aus einer Regel vertretbar ableitbar
+   - fachlich naheliegend
+   - nicht geregelt
+   - unsicher
 5. Erfinde keine Rechtsnormen, Paragraphen, Gerichtsentscheidungen, Fundstellen oder Quellen.
 
 RECHT UND AKTUALITÄT:
-Bei BBiG, Ausbildungsrecht, Prüfungsrecht und Prüferrecht ist das aktuell geltende Recht maßgeblich. Verwende die bereitgestellten Referenzdokumente aktiv. Wenn die verfügbaren Quellen eine aktuelle Rechtslage nicht sicher belegen, sage das ausdrücklich und behaupte keine veraltete Regel als aktuell.
+Bei BBiG, Ausbildungsrecht, Prüfungsrecht und Prüferrecht ist das aktuell geltende Recht maßgeblich.
+
+Verwende die bereitgestellten Referenzdokumente aktiv.
+
+Wenn die verfügbaren Quellen eine aktuelle Rechtslage nicht sicher belegen, sage das ausdrücklich.
+
+Behaupte keine veraltete Regel als aktuelle Rechtslage.
 
 QUELLENHIERARCHIE IM PRÜFUNGSKONTEXT:
 1. einschlägige Prüfungsordnung bzw. konkrete Rechtsvorschrift
 2. einschlägige Ausbildungs-, Umschulungs- oder Fortbildungsordnung
 3. bereitgestellte IHK-Prüferhandreichungen und Qualifizierungsunterlagen
 4. sonstige bereitgestellte Referenzdokumente
-5. allgemeines Modellwissen nur ergänzend und klar als solches einordnen
+5. allgemeines Modellwissen nur ergänzend
 
 Eine niedrigere Quelle darf eine höherrangige Regel nicht überdehnen oder ersetzen.
 
 PRÜFERROLLE:
-Die Rolle des Prüfers ist von persönlichen oder beruflichen Eigeninteressen zu trennen. Eine Einmischung, insbesondere persönliche oder berufliche Kontaktanbahnung im Prüfungszusammenhang, ist aus prüfungspraktischer Sicht nicht duldbar.
+Die Rolle des Prüfers ist strikt von persönlichen oder beruflichen Eigeninteressen zu trennen.
 
-Unterscheide dabei sauber zwischen:
-- nicht duldbar/unprofessionell
-- problematisch
+Eine Einmischung, insbesondere persönliche oder berufliche Kontaktanbahnung im Prüfungszusammenhang, ist aus prüfungspraktischer Sicht nicht duldbar.
+
+Unterscheide sauber zwischen:
+- nicht duldbar / unprofessionell
+- prüfungspraktisch problematisch
 - Befangenheit
-- konkretem formalen Rechtsverstoß
+- konkreter formaler Rechtsverstoß
 - Verfahrensfehler
 
-Eine dieser Kategorien darf nicht automatisch in eine andere umgedeutet werden.
+Diese Kategorien dürfen nicht automatisch gleichgesetzt werden.
 
-Prüfe bei Befangenheit, ob der konkrete Sachverhalt geeignet ist, Misstrauen gegen eine unparteiische Ausübung des Prüfungsamtes zu rechtfertigen.
+Bei Befangenheit ist zu prüfen, ob der konkrete Sachverhalt geeignet ist, Misstrauen gegen eine unparteiische Ausübung des Prüfungsamtes zu rechtfertigen.
 
-BEWERTUNG:
-Bei Prüfungsfragen muss die Antwort genau den vorgegebenen Sachverhalt bewerten.
+BEWERTUNG VON PRÜFUNGSFÄLLEN:
+Bewerte genau den vorgegebenen Sachverhalt.
 
-Keine pauschalen Verbote aus bloßen Fairness- oder Ethiküberlegungen ableiten.
+Keine pauschalen Verbote allein aus Fairness- oder Ethiküberlegungen ableiten.
 
-Wenn eine Handlung nicht ausdrücklich geregelt ist, darf aus dem Schweigen einer Vorschrift kein Verbot konstruiert werden.
+Wenn eine Handlung nicht ausdrücklich geregelt ist, darf aus dem Schweigen einer Vorschrift nicht automatisch ein Verbot konstruiert werden.
 
 Allgemeine Prüfungsgrundsätze dürfen nur so weit herangezogen werden, wie sie den konkreten Sachverhalt tatsächlich tragen.
+
+RÜCKFRAGEN:
+Wenn entscheidende Informationen fehlen, stelle lieber eine gezielte Rückfrage als eine scheinbar sichere Antwort zu geben.
+
+Bei komplexen Sachverhalten darfst du maximal zwei wesentliche Rückfragen stellen.
+
+Wenn eine Frage trotz kleiner Unklarheiten sinnvoll beantwortbar ist, beantworte sie und kennzeichne die notwendige Annahme kurz.
 
 VECTOR STORE / FILE SEARCH:
 Der bereitgestellte Vector Store enthält insbesondere Unterlagen aus Prüferseminaren sowie der Qualifizierung Erstausbildung/Ausbilder.
 
-Bei Fragen mit Bezug zu BBiG, Ausbildungsrecht, Prüfungsrecht, Prüferrecht, IHK-Prüfungen oder diesen Unterlagen ist File Search aktiv zu verwenden und die Antwort an den gefundenen Quellen zu spiegeln.
+Bei Fragen mit Bezug zu:
+- BBiG
+- Ausbildungsrecht
+- Prüfungsrecht
+- Prüferrecht
+- IHK-Prüfungen
+- Prüfungsordnung
+- Prüferseminar
+- Ausbilderqualifizierung
 
-Bei eindeutig allgemeinen Fragen darf das Modell ohne zwingende Suche antworten.
+ist File Search aktiv zu verwenden.
 
-QUELLENANGABEN:
-Nenne am Ende jeder Antwort, bei der Referenzdokumente verwendet wurden, einen klar sichtbaren Abschnitt "Quellen geprüft".
+Die Antwort muss an den gefundenen Quellen gespiegelt werden.
 
-Nenne nur tatsächlich verwendete bzw. vom File Search belegte Dokumente.
+QUELLEN:
+Nenne am Ende jeder Antwort, bei der Referenzdokumente verwendet wurden:
 
-Verwende die vom Tool gelieferten Dateinamen.
+### Quellen geprüft
 
-Erfinde keine Seitenzahlen oder Paragraphen.
+Nenne ausschließlich tatsächlich verwendete bzw. durch File Search gefundene Dokumente.
 
-Wenn eine konkrete Fundstelle aus dem Dokument sicher bekannt ist, darf sie genannt werden.
+Erfinde keine Seitenzahlen, Paragraphen oder Fundstellen.
 
 Trenne Quellenbeleg und eigene Schlussfolgerung sprachlich sauber.
 
 ANTWORTSTIL:
 Direkt, fachlich, strukturiert und verständlich.
 
+Bei Prüfungsfällen:
+1. Ergebnis
+2. Begründung
+3. rechtliche/praktische Einordnung
+4. gegebenenfalls Abgrenzung
+5. Quellen geprüft
+
 Keine unnötigen Disclaimer.
 
-Bei rechtlichen Unsicherheiten offen und präzise sein.
-
-Lieber eine begrenzte, belastbare Aussage als eine umfangreiche spekulative Antwort.
+Lieber eine begrenzte belastbare Aussage als eine umfangreiche spekulative Antwort.
 `;
 
 function isExamOrLegalQuestion(
@@ -1092,6 +1206,10 @@ function mapReasoningEffort(
   return "medium";
 }
 
+// ==========================================================
+// OPENAI TEXT EXTRACTION
+// ==========================================================
+
 function extractOpenAIText(
   resp
 ) {
@@ -1133,6 +1251,10 @@ function extractOpenAIText(
     .trim();
 }
 
+// ==========================================================
+// FILE SEARCH CITATIONS
+// ==========================================================
+
 function extractFileCitations(
   resp
 ) {
@@ -1145,6 +1267,7 @@ function extractFileCitations(
     const item of
       (resp?.output || [])
   ) {
+
     if (
       item?.type ===
         "file_search_call"
@@ -1341,6 +1464,10 @@ async function callOpenAI({
     }
   ];
 
+  // ========================================================
+  // VECTOR STORE
+  // ========================================================
+
   const tools = [
     {
       type: "file_search",
@@ -1352,6 +1479,10 @@ async function callOpenAI({
       max_num_results: 12
     }
   ];
+
+  // ========================================================
+  // OPENAI PAYLOAD
+  // ========================================================
 
   const payload = {
     model:
@@ -1372,42 +1503,55 @@ async function callOpenAI({
       effort
     },
 
-    max_output_tokens: 5000,
+    max_output_tokens:
+      5000,
 
-    store: false
+    store:
+      false
   };
 
   /*
-   * WICHTIG:
-   * Kein tool_choice = "required".
+   * KEIN tool_choice = "required".
    *
    * File Search steht dem Modell zur Verfügung.
    * Der System-Prompt fordert die Nutzung bei
    * Prüfungs-/Rechtsfragen ausdrücklich an.
    */
 
-  const r =
-    await fetch(
-      "https://api.openai.com/v1/responses",
-      {
-        method: "POST",
+  let r;
 
-        headers: {
-          "Content-Type":
-            "application/json",
+  try {
+    r =
+      await fetch(
+        "https://api.openai.com/v1/responses",
+        {
+          method: "POST",
 
-          "Authorization":
-            `Bearer ${apiKey}`
-        },
+          headers: {
+            "Content-Type":
+              "application/json",
 
-        body:
-          JSON.stringify(
-            payload
-          ),
+            "Authorization":
+              `Bearer ${apiKey}`
+          },
 
-        signal
-      }
+          body:
+            JSON.stringify(
+              payload
+            ),
+
+          signal
+        }
+      );
+  } catch (networkError) {
+    throw new Error(
+      "Netzwerkfehler beim Aufruf der OpenAI Responses API: " +
+      (
+        networkError?.message ||
+        "Unbekannter Netzwerkfehler"
+      )
     );
+  }
 
   const txt =
     await r.text();
@@ -1468,12 +1612,10 @@ async function callOpenAI({
     );
 
   /*
-   * WICHTIG:
-   * Wir geben das tatsächlich von OpenAI
-   * zurückgemeldete Modell an den Handler zurück.
+   * ENTSCHEIDEND:
    *
-   * Dadurch können wir prüfen, ob tatsächlich
-   * GPT-5.6 Luna verwendet wurde.
+   * Wir geben das tatsächlich von OpenAI
+   * zurückgemeldete Modell zurück.
    */
 
   return {
@@ -1504,6 +1646,10 @@ export default async function handler(
   req,
   res
 ) {
+  // ========================================================
+  // METHOD
+  // ========================================================
+
   if (
     req.method !== "POST"
   ) {
@@ -1522,6 +1668,10 @@ export default async function handler(
     );
   }
 
+  // ========================================================
+  // SAME ORIGIN
+  // ========================================================
+
   if (
     !allowSameOrigin(req)
   ) {
@@ -1534,6 +1684,10 @@ export default async function handler(
       }
     );
   }
+
+  // ========================================================
+  // CONTENT TYPE
+  // ========================================================
 
   const ct =
     (
@@ -1557,6 +1711,10 @@ export default async function handler(
     );
   }
 
+  // ========================================================
+  // BODY
+  // ========================================================
+
   let raw = "";
 
   try {
@@ -1566,6 +1724,7 @@ export default async function handler(
         32 * 1024
       );
   } catch (e) {
+
     if (
       e &&
       e.code ===
@@ -1612,6 +1771,10 @@ export default async function handler(
     );
   }
 
+  // ========================================================
+  // QUESTION
+  // ========================================================
+
   const questionRaw =
     typeof body.question ===
       "string"
@@ -1622,6 +1785,10 @@ export default async function handler(
     stripLeadingFillers(
       questionRaw
     );
+
+  // ========================================================
+  // ROUTER META
+  // ========================================================
 
   if (
     looksLikeRouterMeta(
@@ -1641,6 +1808,10 @@ export default async function handler(
       "Bitte stelle deine fachliche Frage in einem normalen Satz, dann beantworte ich sie direkt."
     );
   }
+
+  // ========================================================
+  // HISTORY
+  // ========================================================
 
   let history =
     normalizeHistory(
@@ -1679,6 +1850,10 @@ export default async function handler(
     );
   }
 
+  // ========================================================
+  // LEAK PROTECTION
+  // ========================================================
+
   if (
     isLeakAttempt(
       question
@@ -1697,6 +1872,10 @@ export default async function handler(
       "Stelle mir bitte deine fachliche Frage, dann helfe ich dir gern weiter."
     );
   }
+
+  // ========================================================
+  // META
+  // ========================================================
 
   const fm_user =
     normalizeFm(
@@ -1734,6 +1913,10 @@ export default async function handler(
       body
     );
 
+  // ========================================================
+  // TIMEOUT
+  // ========================================================
+
   const controller =
     new AbortController();
 
@@ -1754,6 +1937,7 @@ export default async function handler(
       fastRequested
     ) {
       try {
+
         const dsText =
           await callDeepSeek({
             question,
@@ -1859,38 +2043,33 @@ export default async function handler(
       "text/plain; charset=utf-8"
     );
 
-    /*
-     * ======================================================
-     * NEU:
-     *
-     * Wir geben das tatsächlich zurückgemeldete
-     * OpenAI-Modell über einen HTTP-Header zurück.
-     *
-     * Die eigentliche Linda-Antwort bleibt unverändert.
-     * ======================================================
-     */
-
-    res.setHeader(
-      "X-Linda-Model",
-      result.model ||
-      OPENAI_MODEL
-    );
+    // ======================================================
+    // DEBUG: TATSÄCHLICHES MODELL
+    // ======================================================
 
     /*
-     * Zusätzlich geben wir die OpenAI Response-ID
-     * technisch zurück.
+     * Diese beiden Informationen werden TEMPORÄR
+     * direkt an die Antwort angehängt.
      *
-     * Das hilft bei der Zuordnung in OpenAI Logs.
+     * Damit sehen wir ohne Browser-Netzwerktools,
+     * welches Modell OpenAI tatsächlich zurückmeldet.
      */
 
-    res.setHeader(
-      "X-Linda-Response-ID",
-      result.response_id ||
-      ""
-    );
+    const modelInfo =
+      "\n\n" +
+      `[LINDA-DEBUG-MODELL: ${
+        result.model ||
+        OPENAI_MODEL
+      }]` +
+      "\n" +
+      `[LINDA-DEBUG-RESPONSE: ${
+        result.response_id ||
+        "unbekannt"
+      }]`;
 
     return res.end(
-      cleaned
+      cleaned +
+      modelInfo
     );
 
   } catch (e) {
