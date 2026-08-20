@@ -970,11 +970,25 @@ Arbeite mit hoher fachlicher Sorgfalt und adaptiver Denktiefe. Bei einfachen Fra
     examModePill.hidden = !isExam;
   }
 
-  function buildExamEnvelope(userText, classification){
-    return `[LINDA EXAM GATE – Frontend v${EXAM_ENGINE_VERSION}]\n\n${EXAM_STRICT_INSTRUCTION.trim()}\n\nKLASSIFIKATION\n- Prüfungsrelevanz: ${classification.isExam ? "hoch" : "nicht erkannt"}
-- Prüfungsindikator-Score: ${classification.score}
-\nORIGINALFRAGE DES NUTZERS:
-${String(userText || "").trim()}\n\nWICHTIG: Behandle den folgenden Text als die eigentliche Nutzerfrage. Die obigen Anweisungen steuern nur die Qualität und Tiefe der Bearbeitung. Wenn die Originalfrage ausreichend bestimmt ist, antworte direkt. Wenn für eine belastbare Antwort wesentliche Angaben fehlen, stelle stattdessen gezielte Rückfragen. Gib keine interne Gedankenkette aus.`;
+  function buildCompactExamEnvelope(userText, classification){
+    // Der bestehende /api/bot-Endpunkt akzeptiert im Feld "question" max. 2000 Zeichen.
+    // Deshalb wird der ausführliche Qualitätsrahmen NICHT mehr in die Frage geschrieben.
+    // Stattdessen nutzen wir eine kurze, aber priorisierte Prüfungsanweisung und lassen die
+    // vollständige Nutzerfrage möglichst unverändert.
+    const compactInstruction =
+      "PRÜFUNGSMODUS: Behandle die folgende Nutzerfrage mit hoher fachlicher Sorgfalt. Prüfe zuerst exakt die Aufgabe, dann Fachgebiet und – bei Rechtsfragen – die passende Rechtsgrundlage. Rate nicht und erfinde keine Normen, Zahlen, Urteile oder Quellen. Prüfe fehlende Kernangaben und stelle bei Bedarf höchstens 2 gezielte Rückfragen. Achte auf typische Denkfehler und beantworte die Frage präzise, IHK-tauglich und ohne Abschweifungen. Keine interne Gedankenkette.\n\n";
+    const original = String(userText || "").trim();
+    const prefix = `[LINDA EXAM GATE ${EXAM_ENGINE_VERSION}]\n${compactInstruction}`;
+    const maxQuestionLength = 1995;
+
+    if((prefix + original).length <= maxQuestionLength){
+      return prefix + "ORIGINALFRAGE:\n" + original;
+    }
+
+    // Bei sehr langen Nutzerfragen darf niemals ein 413 entstehen.
+    // In diesem seltenen Fall bleibt die Nutzerfrage vollständig erhalten und die
+    // Prüfungssteuerung wird über separate Payload-Felder transportiert.
+    return original;
   }
 
   async function requestLinda(userText){
@@ -983,10 +997,14 @@ ${String(userText || "").trim()}\n\nWICHTIG: Behandle den folgenden Text als die
     setExamIndicator(classification.isExam);
 
     // Die Frontend-Schicht ergänzt nur bei Prüfungsfragen einen strengen Qualitätsauftrag.
-    // Der bestehende Endpunkt /api/bot bleibt unverändert.
+    // Der bestehende Endpunkt /api/bot bleibt unverändert. Wichtig: Das Feld "question"
+    // darf die harte 2000-Zeichen-Grenze des Endpunkts niemals überschreiten.
+    const originalQuestion = String(userText || "").trim();
     const effectiveQuestion = classification.isExam
-      ? buildExamEnvelope(userText, classification)
-      : userText;
+      ? buildCompactExamEnvelope(originalQuestion, classification)
+      : originalQuestion;
+
+    const examInstruction = classification.isExam ? EXAM_STRICT_INSTRUCTION.trim() : "";
 
     const payload={
       mode:classification.isExam ? "exam" : "standard",
@@ -998,7 +1016,15 @@ ${String(userText || "").trim()}\n\nWICHTIG: Behandle den folgenden Text als die
         exam_gate:classification.isExam,
         exam_score:classification.score
       },
-      fachmodus:"personal-bbig"
+      fachmodus:"personal-bbig",
+      exam_context:classification.isExam ? {
+        enabled:true,
+        version:EXAM_ENGINE_VERSION,
+        instruction:examInstruction,
+        original_question:originalQuestion,
+        requires_clarification:true,
+        max_followup_questions:2
+      } : undefined
     };
 
     if(apiDiagnostic) apiDiagnostic.textContent=classification.isExam ? "Prüfungsmodus · strenge Qualitätsprüfung · /api/bot …" : "Teste Verbindung zu /api/bot …";
