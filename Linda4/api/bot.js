@@ -1,4 +1,5 @@
-// /api/bot.js  (Vercel Serverless Function, ohne Next.js)
+// /api/bot.js
+// Vercel Serverless Function, ohne Next.js
 
 function readRawBody(req, limitBytes = 32 * 1024) {
   return new Promise((resolve, reject) => {
@@ -36,7 +37,10 @@ function sendJson(res, status, obj) {
 function getClientIp(req) {
   const xf = req.headers["x-forwarded-for"];
 
-  if (typeof xf === "string" && xf.length) {
+  if (
+    typeof xf === "string" &&
+    xf.length
+  ) {
     return xf.split(",")[0].trim();
   }
 
@@ -47,10 +51,16 @@ function allowSameOrigin(req) {
   const origin = req.headers.origin || "";
   const referer = req.headers.referer || "";
   const host = req.headers.host || "";
-  const proto = req.headers["x-forwarded-proto"] || "";
+  const proto =
+    req.headers["x-forwarded-proto"] || "";
 
-  if (!origin && !referer) return true;
-  if (!host) return false;
+  if (!origin && !referer) {
+    return true;
+  }
+
+  if (!host) {
+    return false;
+  }
 
   const allowed = new Set([
     `https://${host}`,
@@ -69,15 +79,20 @@ function allowSameOrigin(req) {
     }
   };
 
-  const reqOrigin = origin
-    ? parseOrigin(origin)
-    : "";
+  const reqOrigin =
+    origin
+      ? parseOrigin(origin)
+      : "";
 
-  const refOrigin = referer
-    ? parseOrigin(referer)
-    : "";
+  const refOrigin =
+    referer
+      ? parseOrigin(referer)
+      : "";
 
-  if (reqOrigin && allowed.has(reqOrigin)) {
+  if (
+    reqOrigin &&
+    allowed.has(reqOrigin)
+  ) {
     return true;
   }
 
@@ -95,24 +110,36 @@ function allowSameOrigin(req) {
 function stripLeadingFillers(text) {
   if (!text) return "";
 
-  let t = String(text).trim();
+  let t =
+    String(text).trim();
 
-  t = t.replace(
-    /^(?:(?:hallo|hi|hey|moin|guten\s+morgen|guten\s+tag|guten\s+abend)\b[\s,!.-]*)(?:linda\b[\s,!.-]*)?/i,
-    ""
-  ).trim();
+  t =
+    t.replace(
+      /^(?:(?:hallo|hi|hey|moin|guten\s+morgen|guten\s+tag|guten\s+abend)\b[\s,!.-]*)(?:linda\b[\s,!.-]*)?/i,
+      ""
+    )
+    .trim();
 
-  t = t.replace(
-    /^(ich\s+m(?:ö|oe)chte|ich\s+will)\s+(bitte\s+)?/i,
-    ""
-  ).trim();
+  t =
+    t.replace(
+      /^(ich\s+m(?:ö|oe)chte|ich\s+will)\s+(bitte\s+)?/i,
+      ""
+    )
+    .trim();
 
-  t = t.replace(
-    /^(kannst\s+du|könntest\s+du)\s+(bitte\s+)?/i,
-    ""
-  ).trim();
+  t =
+    t.replace(
+      /^(kannst\s+du|könntest\s+du)\s+(bitte\s+)?/i,
+      ""
+    )
+    .trim();
 
-  t = t.replace(/\s{2,}/g, " ").trim();
+  t =
+    t.replace(
+      /\s{2,}/g,
+      " "
+    )
+    .trim();
 
   return t;
 }
@@ -121,7 +148,9 @@ function isPlaceholderAssistantMessage(content) {
   if (!content) return false;
 
   const c =
-    content.trim().toLowerCase();
+    content
+      .trim()
+      .toLowerCase();
 
   return (
     c.includes("⏳") ||
@@ -148,7 +177,10 @@ function clipContent(
     return "… " + t.slice(-maxLen);
   }
 
-  return t.slice(0, maxLen) + " …";
+  return (
+    t.slice(0, maxLen) +
+    " …"
+  );
 }
 
 function normalizeHistory(
@@ -248,7 +280,9 @@ function expandShortReply(
   const q =
     (question || "").trim();
 
-  if (!q) return q;
+  if (!q) {
+    return q;
+  }
 
   const lastAssistant =
     Array.isArray(history)
@@ -288,9 +322,7 @@ function expandShortReply(
 // ROUTER-META GUARD
 // ==========================================================
 
-function looksLikeRouterMeta(
-  text = ""
-) {
+function looksLikeRouterMeta(text = "") {
   const t =
     String(text).trim();
 
@@ -326,34 +358,45 @@ function isLeakAttempt(text) {
   const t =
     (text || "").toLowerCase();
 
+  /*
+   * WICHTIG:
+   * Begriffe wie "vector store", "file_search",
+   * "tools" oder "payload" sind KEINE automatischen
+   * Leak-Versuche.
+   *
+   * Ein Nutzer darf ausdrücklich verlangen, dass
+   * Linda den Vector Store verwendet.
+   */
+
   const needles = [
     "system prompt",
     "systemprompt",
     "system_prompt",
-    "developer",
     "[system]",
     "[developer]",
+
     "hidden instruction",
     "versteckte anweisung",
     "interne anweisung",
     "interne anweisungen",
+
     "zeige den prompt",
     "zeige deinen prompt",
     "prompt ausgeben",
+    "zeige mir den systemprompt",
+    "gib mir deine systemanweisung",
+
     "api key",
     "apikey",
+    "api schlüssel",
+
     "access token",
-    "thread id",
-    "thread_id",
-    "vector store",
-    "vectorstore",
-    "file_search",
-    "tools",
-    "logs",
-    "payload",
+    "secret key",
+    "geheime anweisung",
+    "interne instruktion",
+
     "\"system_prompt\":",
-    "\"secrets\":",
-    "secrets"
+    "\"secrets\":"
   ];
 
   if (
@@ -400,6 +443,10 @@ function looksLikeSecurityHallucination(
     ).length >= 2
   );
 }
+
+// ==========================================================
+// REPLY SANITIZATION
+// ==========================================================
 
 function sanitizeReply(text) {
   let out =
@@ -537,7 +584,9 @@ function normalizeFm(value) {
       ? ""
       : String(value).trim();
 
-  if (!v) return "";
+  if (!v) {
+    return "";
+  }
 
   const u =
     v.toUpperCase();
@@ -737,7 +786,6 @@ function detectNeed(
 
 // ==========================================================
 // SCHNELLMODUS - DEEPSEEK
-// NICHT MIT OPENAI VERMISCHEN
 // ==========================================================
 
 function wantsFastMode(body) {
@@ -877,7 +925,7 @@ async function callDeepSeek({
 }
 
 // ==========================================================
-// OPENAI RESPONSES API - NORMALMODUS
+// OPENAI RESPONSES API
 // ==========================================================
 
 const OPENAI_VECTOR_STORE_ID =
@@ -896,112 +944,72 @@ ARBEITSWEISE:
 1. Verstehe zuerst exakt die Frage und den konkreten Sachverhalt.
 2. Wenn eine für die Bewertung entscheidende Information fehlt oder mehrere Sachverhaltsvarianten zu unterschiedlichen Ergebnissen führen, stelle gezielte Rückfragen. Erfinde keine fehlenden Tatsachen.
 3. Bei komplexen Fällen identifiziere intern die entscheidungserheblichen Teilfragen und prüfe sie nacheinander. Gib keine interne Gedankenkette aus, sondern nur das Ergebnis und eine nachvollziehbare Begründung.
-4. Unterscheide strikt zwischen:
-   - ausdrücklich geregelt
-   - aus einer Regel vertretbar ableitbar
-   - fachlich naheliegend
-   - nicht geregelt
-   - unsicher
+4. Unterscheide strikt zwischen: ausdrücklich geregelt, aus einer Regel vertretbar ableitbar, fachlich naheliegend, nicht geregelt und unsicher.
 5. Erfinde keine Rechtsnormen, Paragraphen, Gerichtsentscheidungen, Fundstellen oder Quellen.
 
 RECHT UND AKTUALITÄT:
-Bei BBiG, Ausbildungsrecht, Prüfungsrecht und Prüferrecht ist das aktuell geltende Recht maßgeblich.
+Bei BBiG, Ausbildungsrecht, Prüfungsrecht und Prüferrecht ist das aktuell geltende Recht maßgeblich. Verwende die bereitgestellten Referenzdokumente aktiv. Wenn die verfügbaren Quellen eine aktuelle Rechtslage nicht sicher belegen, sage das ausdrücklich und behaupte keine veraltete Regel als aktuell.
 
-Verwende die bereitgestellten Referenzdokumente aktiv.
-
-Wenn die verfügbaren Quellen eine Aussage nicht sicher belegen, sage das ausdrücklich.
-
-Behaupte keine veraltete Regel als aktuelle Rechtslage.
-
-QUELLENHIERARCHIE:
+QUELLENHIERARCHIE IM PRÜFUNGSKONTEXT:
 1. einschlägige Prüfungsordnung bzw. konkrete Rechtsvorschrift
 2. einschlägige Ausbildungs-, Umschulungs- oder Fortbildungsordnung
 3. bereitgestellte IHK-Prüferhandreichungen und Qualifizierungsunterlagen
 4. sonstige bereitgestellte Referenzdokumente
-5. allgemeines Modellwissen nur ergänzend
+5. allgemeines Modellwissen nur ergänzend und klar als solches einordnen
 
 Eine niedrigere Quelle darf eine höherrangige Regel nicht überdehnen oder ersetzen.
 
 PRÜFERROLLE:
-Die Rolle des Prüfers ist strikt von persönlichen oder beruflichen Eigeninteressen zu trennen.
+Die Rolle des Prüfers ist von persönlichen oder beruflichen Eigeninteressen zu trennen. Eine Einmischung, insbesondere persönliche oder berufliche Kontaktanbahnung im Prüfungszusammenhang, ist aus prüfungspraktischer Sicht nicht duldbar.
 
-Eine Einmischung, insbesondere persönliche oder berufliche Kontaktanbahnung im Prüfungszusammenhang, ist aus prüfungspraktischer Sicht nicht duldbar.
-
-Unterscheide aber sauber zwischen:
-
-- nicht duldbar / unprofessionell
-- prüfungspraktisch problematisch
+Unterscheide dabei sauber zwischen:
+- nicht duldbar/unprofessionell
+- problematisch
 - Befangenheit
-- konkreter formaler Rechtsverstoß
+- konkretem formalen Rechtsverstoß
 - Verfahrensfehler
 
-Diese Kategorien dürfen nicht automatisch gleichgesetzt werden.
+Eine dieser Kategorien darf nicht automatisch in eine andere umgedeutet werden.
 
-Bei Befangenheit ist zu prüfen, ob der konkrete Sachverhalt geeignet ist, Misstrauen gegen eine unparteiische Ausübung des Prüfungsamtes zu rechtfertigen.
+Prüfe bei Befangenheit, ob der konkrete Sachverhalt geeignet ist, Misstrauen gegen eine unparteiische Ausübung des Prüfungsamtes zu rechtfertigen.
 
-BEWERTUNG VON PRÜFUNGSFÄLLEN:
-Bewerte genau den vorgegebenen Sachverhalt.
+BEWERTUNG:
+Bei Prüfungsfragen muss die Antwort genau den vorgegebenen Sachverhalt bewerten.
 
-Keine pauschalen Verbote allein aus Fairness- oder Ethiküberlegungen ableiten.
+Keine pauschalen Verbote aus bloßen Fairness- oder Ethiküberlegungen ableiten.
 
-Wenn eine Handlung nicht ausdrücklich geregelt ist, darf aus dem Schweigen einer Vorschrift nicht automatisch ein Verbot konstruiert werden.
+Wenn eine Handlung nicht ausdrücklich geregelt ist, darf aus dem Schweigen einer Vorschrift kein Verbot konstruiert werden.
 
 Allgemeine Prüfungsgrundsätze dürfen nur so weit herangezogen werden, wie sie den konkreten Sachverhalt tatsächlich tragen.
-
-Wichtig:
-Wenn ein Prüfer seine Prüfungsrolle für eigene berufliche Interessen nutzt oder während bzw. unmittelbar im Zusammenhang mit der Prüfung eine berufliche Kontaktanbahnung vornimmt, ist diese Rollenvermischung kritisch und grundsätzlich nicht hinnehmbar.
-
-Das bedeutet jedoch nicht automatisch, dass bereits ein bestimmter formaler Befangenheitsgrund oder ein konkreter Rechtsverstoß vorliegt. Dies ist anhand der einschlägigen Prüfungsordnung und der konkreten Umstände zu prüfen.
-
-RÜCKFRAGEN:
-Wenn entscheidende Informationen fehlen, stelle lieber eine gezielte Rückfrage als eine scheinbar sichere Antwort zu geben.
-
-Bei komplexen Sachverhalten darfst du maximal zwei wesentliche Rückfragen stellen.
-
-Wenn eine Frage trotz kleiner Unklarheiten sinnvoll beantwortbar ist, beantworte sie und kennzeichne die notwendige Annahme kurz.
 
 VECTOR STORE / FILE SEARCH:
 Der bereitgestellte Vector Store enthält insbesondere Unterlagen aus Prüferseminaren sowie der Qualifizierung Erstausbildung/Ausbilder.
 
-Bei Fragen mit Bezug zu:
+Bei Fragen mit Bezug zu BBiG, Ausbildungsrecht, Prüfungsrecht, Prüferrecht, IHK-Prüfungen oder diesen Unterlagen ist File Search aktiv zu verwenden und die Antwort an den gefundenen Quellen zu spiegeln.
 
-- BBiG
-- Ausbildungsrecht
-- Prüfungsrecht
-- Prüferrecht
-- IHK-Prüfungen
-- Prüfungsordnung
-- Prüferseminar
-- Ausbilderqualifizierung
+Bei eindeutig allgemeinen Fragen darf das Modell ohne zwingende Suche antworten.
 
-ist File Search aktiv zu verwenden.
+QUELLENANGABEN:
+Nenne am Ende jeder Antwort, bei der Referenzdokumente verwendet wurden, einen klar sichtbaren Abschnitt "Quellen geprüft".
 
-Die Antwort muss an den gefundenen Quellen gespiegelt werden.
+Nenne nur tatsächlich verwendete bzw. vom File Search belegte Dokumente.
 
-QUELLEN:
-Nenne am Ende jeder Antwort, bei der Referenzdokumente verwendet wurden:
+Verwende die vom Tool gelieferten Dateinamen.
 
-### Quellen geprüft
+Erfinde keine Seitenzahlen oder Paragraphen.
 
-Nenne ausschließlich tatsächlich verwendete bzw. durch File Search gefundene Dokumente.
-
-Erfinde keine Seitenzahlen, Paragraphen oder Fundstellen.
+Wenn eine konkrete Fundstelle aus dem Dokument sicher bekannt ist, darf sie genannt werden.
 
 Trenne Quellenbeleg und eigene Schlussfolgerung sprachlich sauber.
 
 ANTWORTSTIL:
 Direkt, fachlich, strukturiert und verständlich.
 
-Bei Prüfungsfällen:
-1. Ergebnis
-2. Begründung
-3. rechtliche/praktische Einordnung
-4. gegebenenfalls Abgrenzung
-5. Quellen geprüft
-
 Keine unnötigen Disclaimer.
 
-Lieber eine begrenzte belastbare Aussage als eine umfangreiche spekulative Antwort.
+Bei rechtlichen Unsicherheiten offen und präzise sein.
+
+Lieber eine begrenzte, belastbare Aussage als eine umfangreiche spekulative Antwort.
 `;
 
 function isExamOrLegalQuestion(
@@ -1120,7 +1128,9 @@ function extractOpenAIText(
     }
   }
 
-  return parts.join("\n").trim();
+  return parts
+    .join("\n")
+    .trim();
 }
 
 function extractFileCitations(
@@ -1279,8 +1289,7 @@ async function callOpenAI({
   const contextBlock =
     context
       ? (
-          "\nZusätzlicher Kontext aus Linda " +
-          "(nicht als verbindliche Quelle behandeln):\n" +
+          "\nZusätzlicher Kontext aus Linda:\n" +
           String(context).slice(
             0,
             5000
@@ -1332,9 +1341,6 @@ async function callOpenAI({
     }
   ];
 
-  // File Search ist für den Normalmodus verfügbar.
-  // Bei Prüfungs-/Rechtsfragen ist der Vector Store
-  // die zentrale Referenzquelle.
   const tools = [
     {
       type: "file_search",
@@ -1373,47 +1379,35 @@ async function callOpenAI({
 
   /*
    * WICHTIG:
-   * tool_choice wird NICHT auf "required" gesetzt.
+   * Kein tool_choice = "required".
    *
-   * Dadurch kann die Responses API File Search
-   * normal verwenden, ohne dass wir den Tool-Aufruf
-   * unnötig erzwingen.
+   * File Search steht dem Modell zur Verfügung.
+   * Der System-Prompt fordert die Nutzung bei
+   * Prüfungs-/Rechtsfragen ausdrücklich an.
    */
 
-  let r;
+  const r =
+    await fetch(
+      "https://api.openai.com/v1/responses",
+      {
+        method: "POST",
 
-  try {
-    r =
-      await fetch(
-        "https://api.openai.com/v1/responses",
-        {
-          method: "POST",
+        headers: {
+          "Content-Type":
+            "application/json",
 
-          headers: {
-            "Content-Type":
-              "application/json",
+          "Authorization":
+            `Bearer ${apiKey}`
+        },
 
-            "Authorization":
-              `Bearer ${apiKey}`
-          },
+        body:
+          JSON.stringify(
+            payload
+          ),
 
-          body:
-            JSON.stringify(
-              payload
-            ),
-
-          signal
-        }
-      );
-  } catch (networkError) {
-    throw new Error(
-      "Netzwerkfehler beim Aufruf der OpenAI Responses API: " +
-      (
-        networkError?.message ||
-        "Unbekannter Netzwerkfehler"
-      )
+        signal
+      }
     );
-  }
 
   const txt =
     await r.text();
@@ -1473,6 +1467,15 @@ async function callOpenAI({
       resp
     );
 
+  /*
+   * WICHTIG:
+   * Wir geben das tatsächlich von OpenAI
+   * zurückgemeldete Modell an den Handler zurück.
+   *
+   * Dadurch können wir prüfen, ob tatsächlich
+   * GPT-5.6 Luna verwendet wurde.
+   */
+
   return {
     text:
       appendSourceBlock(
@@ -1485,7 +1488,8 @@ async function callOpenAI({
       OPENAI_MODEL,
 
     response_id:
-      resp?.id || "",
+      resp?.id ||
+      "",
 
     sources:
       filenames
@@ -1744,7 +1748,6 @@ export default async function handler(
 
     // ======================================================
     // SCHNELLMODUS
-    // BLEIBT DEEPSEEK
     // ======================================================
 
     if (
@@ -1775,6 +1778,16 @@ export default async function handler(
         res.setHeader(
           "Content-Type",
           "text/plain; charset=utf-8"
+        );
+
+        /*
+         * Schnellmodus bleibt vollständig
+         * getrennt von OpenAI.
+         */
+
+        res.setHeader(
+          "X-Linda-Model",
+          "DeepSeek"
         );
 
         return res.end(
@@ -1810,10 +1823,6 @@ export default async function handler(
     // ======================================================
     // NORMALMODUS
     // OPENAI RESPONSES API
-    // GPT-5.6 LUNA
-    // FILE SEARCH
-    // VECTOR STORE
-    // KEIN MAKE
     // ======================================================
 
     const result =
@@ -1848,6 +1857,36 @@ export default async function handler(
     res.setHeader(
       "Content-Type",
       "text/plain; charset=utf-8"
+    );
+
+    /*
+     * ======================================================
+     * NEU:
+     *
+     * Wir geben das tatsächlich zurückgemeldete
+     * OpenAI-Modell über einen HTTP-Header zurück.
+     *
+     * Die eigentliche Linda-Antwort bleibt unverändert.
+     * ======================================================
+     */
+
+    res.setHeader(
+      "X-Linda-Model",
+      result.model ||
+      OPENAI_MODEL
+    );
+
+    /*
+     * Zusätzlich geben wir die OpenAI Response-ID
+     * technisch zurück.
+     *
+     * Das hilft bei der Zuordnung in OpenAI Logs.
+     */
+
+    res.setHeader(
+      "X-Linda-Response-ID",
+      result.response_id ||
+      ""
     );
 
     return res.end(
@@ -1893,21 +1932,6 @@ export default async function handler(
         }
       );
     }
-
-    /*
-     * WICHTIG:
-     * Wir geben die tatsächliche technische
-     * Fehlermeldung zurück.
-     *
-     * Dadurch sehen wir beim nächsten Test
-     * beispielsweise:
-     *
-     * OpenAI HTTP 400: ...
-     *
-     * statt nur:
-     *
-     * HTTP 500
-     */
 
     return sendJson(
       res,
