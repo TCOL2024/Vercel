@@ -477,6 +477,30 @@ function isLeakAttempt(text) {
     return true;
   }
 
+  // Zusätzlicher Schutz gegen explizite Debug-/Prompt-Extraktionsversuche.
+  // Diese Muster ergänzen den bestehenden Schutz; normale Fachfragen
+  // mit dem Wort "Debugging" bleiben möglich.
+  const debugLeakPatterns = [
+    /<\s*debug\s*>/i,
+    /<\s*debugmodus\s*>/i,
+    /debug\s*modus/i,
+    /debug.*(?:prompt|anweisung|anweisungen|system|request|response)/i,
+    /(?:letzte|vorherige|bisherige)\s+(?:anfragen|prompts|prompt)/i,
+    /(?:zeige|gib|geben|nenn|liste).*?(?:letzte|vorherige|bisherige).*?(?:anfragen|prompts|prompt)/i,
+    /(?:gebe|gib|zeige).*?(?:deine|deinen).*?(?:prompt|prompting|systemprompt|systemanweisung)/i,
+    /(?:was steht|zeige|gib).*?(?:systemprompt|system\s*prompt)/i,
+    /(?:developer|system).*(?:instructions|anweisungen|prompt)/i,
+    /(?:internen?|versteckten?).*(?:prompt|anweisung|anweisungen|instructions)/i
+  ];
+
+  if (
+    debugLeakPatterns.some(
+      pattern => pattern.test(t)
+    )
+  ) {
+    return true;
+  }
+
   return false;
 }
 
@@ -2043,33 +2067,10 @@ export default async function handler(
       "text/plain; charset=utf-8"
     );
 
-    // ======================================================
-    // DEBUG: TATSÄCHLICHES MODELL
-    // ======================================================
-
-    /*
-     * Diese beiden Informationen werden TEMPORÄR
-     * direkt an die Antwort angehängt.
-     *
-     * Damit sehen wir ohne Browser-Netzwerktools,
-     * welches Modell OpenAI tatsächlich zurückmeldet.
-     */
-
-    const modelInfo =
-      "\n\n" +
-      `[LINDA-DEBUG-MODELL: ${
-        result.model ||
-        OPENAI_MODEL
-      }]` +
-      "\n" +
-      `[LINDA-DEBUG-RESPONSE: ${
-        result.response_id ||
-        "unbekannt"
-      }]`;
-
+    // Debug-Informationen werden nicht an den Client ausgegeben.
+    // Das tatsächlich verwendete Modell bleibt intern im Resultat verfügbar.
     return res.end(
-      cleaned +
-      modelInfo
+      cleaned
     );
 
   } catch (e) {
