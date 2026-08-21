@@ -1389,6 +1389,39 @@ async function callOpenAI({
     );
   }
 
+  // ========================================================
+  // TEMPORÄRE DIAGNOSE
+  // ========================================================
+  // Nur serverseitig in den Vercel-Logs.
+  // Diese Informationen werden NICHT an den Nutzer gesendet.
+
+  console.log(
+    "LINDA OPENAI REQUESTED MODEL:",
+    OPENAI_MODEL
+  );
+
+  console.log(
+    "LINDA OPENAI ACTUAL MODEL:",
+    resp?.model
+  );
+
+  console.log(
+    "LINDA OPENAI RESPONSE:",
+    resp?.id
+  );
+
+  console.log(
+    "LINDA SKILL ENABLED:",
+    exam
+  );
+
+  console.log(
+    "LINDA SKILL ID:",
+    exam
+      ? "skill_6a883223b538819182b27ae64dde89fd0dfdff51dc43042682"
+      : "not-used"
+  );
+
   const answer =
     extractOpenAIText(
       resp
