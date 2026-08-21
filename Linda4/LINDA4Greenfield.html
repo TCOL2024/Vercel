@@ -621,35 +621,10 @@
   const STORAGE = "linda40_greenfield";
   const MAX_HISTORY = 4;
 
-  // Prüfungslogik bleibt bewusst vollständig im Frontend. /api/bot wird nicht verändert.
-  const EXAM_ENGINE_VERSION = "2.0";
+  // Die fachliche Prüfungslogik liegt jetzt in der OpenAI Skill.
+  // Das Frontend erkennt nur weiterhin, ob die UI den Prüfungsmodus anzeigen soll.
+  const EXAM_ENGINE_VERSION = "3.0-skill";
   const EXAM_THRESHOLD = 4;
-  const EXAM_STRICT_INSTRUCTION = `
-LINDA – STRIKTER PRÜFUNGS- UND QUALITÄTSMODUS
-
-PRIMÄRREFERENZ: Prüfungsordnung für die Durchführung von Abschluss- und Umschulungsprüfungen der Oldenburgischen IHK, Fassung Beschluss 19.03.2026.
-SEKUNDÄRREFERENZ: „Informationen für Prüferinnen und Prüfer in der Berufsbildung“, IHK Lüneburg-Wolfsburg, Stand September 2024.
-
-QUELLENHIERARCHIE
-1. einschlägige Prüfungsordnung der zuständigen IHK;
-2. einschlägige Ausbildungs-/Umschulungs-/Fortbildungsordnung und gesetzliche Vorgaben;
-3. vorliegende IHK-Prüferhandreichung;
-4. sonstiges gesichertes Fachwissen.
-Eine niedrigere Quelle darf eine höhere nicht überstimmen. Ist ein Punkt in der Primärquelle nicht geregelt, darf daraus kein Verbot erfunden werden.
-
-PRÜFUNGSLEITLINIEN
-- Bestimme exakt die gestellte Frage und trenne Sachverhalt, Regel und Bewertung.
-- Prüfe zuerst, ob eine konkrete Regelung existiert; erst danach folgt die Anwendung auf den Sachverhalt.
-- Unterstelle keine Tatsachen und erfinde keine Normen, Quellen, Verbote oder Befangenheitsgründe.
-- Unterscheide ausdrücklich zwischen: (1) ausdrücklich verboten/unzulässig, (2) nicht automatisch verboten, aber mit der Prüferrolle unvereinbar bzw. nicht duldbar, (3) zulässig, aber problematisch, (4) offen wegen fehlender Tatsachen.
-- Bei Prüfern gilt ein strenger Rollentrennungsgrundsatz: Die Prüfungsrolle darf nicht für eigene persönliche oder berufliche Interessen genutzt werden. Kontaktanbahnung, Recruiting oder sonstige Einmischung zugunsten eines Prüfers/Unternehmens im Prüfungszusammenhang ist als nicht duldbares Rollenvermischen zu bewerten. Das ist jedoch nur dann zusätzlich als Befangenheit/Ausschlussgrund zu qualifizieren, wenn der Sachverhalt einen Grund trägt, der Misstrauen gegen eine unparteiische Ausübung des Prüfungsamtes rechtfertigt.
-- Nach der Prüfung ist zu beachten: Die Bewertung bezieht sich auf die gezeigte Prüfungsleistung; die Bewertungsentscheidung und das Prüfungsergebnis werden nach den dafür vorgesehenen Regeln festgestellt. Persönliche oder sachfremde Interessen dürfen die Bewertung nicht beeinflussen.
-- Bei fehlenden entscheidungserheblichen Tatsachen höchstens 2 gezielte Rückfragen; sonst direkt antworten.
-- Letzte Kontrolle: Beantwortet die Antwort exakt die Frage? Ist jede Rechtsfolge durch eine konkrete Regel oder klar gekennzeichnete Schlussfolgerung gedeckt? Wurde aus „nicht duldbar“ fälschlich „automatisch rechtswidrig“ oder „automatisch befangen“ gemacht?
-- Keine interne Gedankenkette ausgeben.
-
-ANTWORTSTIL
-Zuerst die klare Kernaussage. Danach kurze, belastbare Begründung. Bei Rechtsfragen konkrete Vorschrift nennen, wenn sicher. Bei Prüfungsfragen sauber zwischen Regel, Anwendung und Bewertung unterscheiden. Keine Füllsätze, keine erfundenen Quellen, keine thematischen Abschweifungen.`
 
   const chat = document.getElementById("chat");
   const input = document.getElementById("chatInput");
@@ -969,72 +944,31 @@ Zuerst die klare Kernaussage. Danach kurze, belastbare Begründung. Bei Rechtsfr
     examModePill.hidden = !isExam;
   }
 
-  function buildCompactExamEnvelope(userText, classification){
-    // Der bestehende /api/bot-Endpunkt akzeptiert im Feld "question" max. 2000 Zeichen.
-    // Deshalb wird der ausführliche Qualitätsrahmen NICHT mehr in die Frage geschrieben.
-    // Stattdessen nutzen wir eine kurze, aber priorisierte Prüfungsanweisung und lassen die
-    // vollständige Nutzerfrage möglichst unverändert.
-    const compactInstruction =
-      "PRÜFUNGSMODUS: Primärquelle ist die Prüfungsordnung der Oldenburgischen IHK (Fassung 19.03.2026), ergänzend die Prüferhandreichung. Prüfe zuerst die konkrete Regel, dann den Sachverhalt. Keine erfundenen Verbote. Bei Prüfern gilt strikte Rollentrennung: persönliche/berufliche Einmischung oder Recruiting im Prüfungszusammenhang ist nicht duldbar; das ist aber nicht automatisch Rechtswidrigkeit oder Befangenheit. Befangenheit nur bei einem Sachverhalt, der Misstrauen gegen unparteiische Amtsausübung rechtfertigt. Bewertung darf nicht durch sachfremde Interessen beeinflusst werden. Unterscheide ausdrücklich: verboten, nicht duldbar/rollenwidrig, problematisch, offen. Bei fehlenden Tatsachen höchstens 2 Rückfragen. Präzise, prüfungsgeeignet, keine interne Gedankenkette.\n\n";
-    const original = String(userText || "").trim();
-    const prefix = `[LINDA EXAM GATE ${EXAM_ENGINE_VERSION}]\n${compactInstruction}`;
-    const maxQuestionLength = 1995;
-
-    if((prefix + original).length <= maxQuestionLength){
-      return prefix + "ORIGINALFRAGE:\n" + original;
-    }
-
-    // Bei sehr langen Nutzerfragen darf niemals ein 413 entstehen.
-    // In diesem seltenen Fall bleibt die Nutzerfrage vollständig erhalten und die
-    // Prüfungssteuerung wird über separate Payload-Felder transportiert.
-    return original;
-  }
-
   async function requestLinda(userText){
     const history=messages.slice(-MAX_HISTORY).map(m=>({role:m.role,content:m.content}));
     const classification = classifyExamQuestion(userText);
     setExamIndicator(classification.isExam);
 
-    // Die Frontend-Schicht ergänzt nur bei Prüfungsfragen einen strengen Qualitätsauftrag.
-    // Der bestehende Endpunkt /api/bot bleibt unverändert. Wichtig: Das Feld "question"
-    // darf die harte 2000-Zeichen-Grenze des Endpunkts niemals überschreiten.
+    // WICHTIG:
+    // Das Frontend sendet jetzt KEINEN fachlichen Prüfungs-Prompt mehr.
+    // Die Prüfungslogik liegt in der OpenAI Skill LINDA_PRUEFUNGSMODUS.
+    // Dadurch gibt es nur noch eine fachliche Orchestrierung.
     const originalQuestion = String(userText || "").trim();
-    const effectiveQuestion = classification.isExam
-      ? buildCompactExamEnvelope(originalQuestion, classification)
-      : originalQuestion;
-
-    const examInstruction = classification.isExam ? EXAM_STRICT_INSTRUCTION.trim() : "";
 
     const payload={
       mode:classification.isExam ? "exam" : "standard",
-      question:effectiveQuestion,
-      message:effectiveQuestion,
+      question:originalQuestion,
+      message:originalQuestion,
       history,
       routing:{
-        reasoning_effort:classification.isExam ? (effort.value === "low" ? "medium" : "high") : effort.value,
+        reasoning_effort:classification.isExam ? (effort.value === "low" ? "medium" : effort.value) : effort.value,
         exam_gate:classification.isExam,
         exam_score:classification.score
       },
-      fachmodus:"personal-bbig",
-      exam_context:classification.isExam ? {
-        enabled:true,
-        version:EXAM_ENGINE_VERSION,
-        instruction:examInstruction,
-        source_policy:{
-          primary:"Pruefungsordnung Oldenburgische IHK · Fassung 19.03.2026",
-          secondary:"Informationen fuer Prueferinnen und Pruefer · IHK Lueneburg-Wolfsburg · Stand September 2024",
-          hierarchy:["Pruefungsordnung","Ausbildungs-/Umschulungsordnung und Gesetz","Prueferhandreichung","sonstiges gesichertes Fachwissen"],
-          role_separation:"Einmischung/Recruiting durch einen Prüfer im Prüfungszusammenhang ist nicht duldbar; daraus folgt nicht automatisch Rechtswidrigkeit oder Befangenheit.",
-          bias_rule:"Befangenheit/Ausschluss nur bei einem Grund, der Misstrauen gegen eine unparteiische Ausuebung des Pruefungsamtes rechtfertigt.",
-          scoring_rule:"Die Bewertung darf nicht durch sachfremde Interessen beeinflusst werden."
-        },
-        original_question:originalQuestion,
-        requires_clarification:true,
-        max_followup_questions:2
-      } : undefined
+      fachmodus:"personal-bbig"
     };
 
-    if(apiDiagnostic) apiDiagnostic.textContent=classification.isExam ? "Prüfungsmodus · strenge Qualitätsprüfung · /api/bot …" : "Teste Verbindung zu /api/bot …";
+    if(apiDiagnostic) apiDiagnostic.textContent=classification.isExam ? "Prüfungsmodus · Skill + Vector Store · /api/bot …" : "Teste Verbindung zu /api/bot …";
     try{
       const controller=new AbortController();
       const timeout=setTimeout(()=>controller.abort(),45000);
@@ -1077,7 +1011,7 @@ Zuerst die klare Kernaussage. Danach kurze, belastbare Begründung. Bei Rechtsfr
         throw new Error("HTTP 200 – /api/bot hat eine leere Antwort geliefert.");
       }
 
-      if(apiDiagnostic) apiDiagnostic.textContent=classification.isExam ? "Prüfungsmodus · Antwort nach strenger Prüfung erhalten" : "POST /api/bot erfolgreich · Antwort erhalten";
+      if(apiDiagnostic) apiDiagnostic.textContent=classification.isExam ? "Prüfungsmodus · Skill + Vector Store · Antwort erhalten" : "POST /api/bot erfolgreich · Antwort erhalten";
       return {answer:String(answer),sources,followups};
     }catch(err){
       const message =
