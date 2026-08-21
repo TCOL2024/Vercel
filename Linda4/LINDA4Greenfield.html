@@ -621,9 +621,11 @@
   const STORAGE = "linda40_greenfield";
   const MAX_HISTORY = 4;
 
-  // Die fachliche Prüfungslogik liegt jetzt in der OpenAI Skill.
-  // Das Frontend erkennt nur weiterhin, ob die UI den Prüfungsmodus anzeigen soll.
-  const EXAM_ENGINE_VERSION = "3.0-skill";
+  // Prüfungslogik bleibt bewusst vollständig im Frontend. /api/bot wird nicht verändert.
+  // Frontend bleibt bewusst schlank:
+  // Die fachliche Prüfungslogik liegt in /api/bot + LINDA_PRUEFUNGSMODUS.
+  // Das Frontend erkennt nur, ob die Anfrage als Prüfungsfrage markiert werden soll,
+  // damit die UI den Prüfungsmodus anzeigen kann. Es verändert NICHT die Nutzerfrage.
   const EXAM_THRESHOLD = 4;
 
   const chat = document.getElementById("chat");
@@ -711,7 +713,6 @@
       if(!line.trim()){closeLists();continue}
 
       if(/^\s*\|\s*Disclaimer\b/i.test(line)){
-        closeLists();
         const clean=line.replace(/^\s*\|\s*/,"").replace(/\|\s*$/,"").replace(/^Disclaimer\s*:?\s*/i,"");
         out+=`<div class="disclaimer"><strong>Hinweis / Disclaimer:</strong> ${inline(clean)}</div>`;
         continue;
@@ -741,7 +742,7 @@
       let m=line.match(/^(#{1,3})\s+(.+)$/);
       if(m){closeLists();out+=`<h${m[1].length}>${inline(m[2])}</h${m[1].length}>`;continue}
 
-      if(/^\s*>\s?/.test(line)){closeLists();out+=`<blockquote>${inline(line.replace(/^\s*>\s?/,""))}</blockquote>`;continue}
+      if(/^\s*>\s?/.test(line)){closeLists();out+=`<blockquote>${inline(line.replace(/^\s*>\s?/ ,""))}</blockquote>`;continue}
 
       if(/^\s*[-*]\s+/.test(line)){
         if(!ul){closeLists();out+="<ul>";ul=true}
@@ -815,6 +816,7 @@
     chat.querySelectorAll(".starter,.followup").forEach(btn=>{
       btn.addEventListener("click",()=>sendMessage(btn.dataset.prompt||btn.dataset.followup||""));
     });
+
     chat.scrollTop=chat.scrollHeight;
   }
 
@@ -916,16 +918,21 @@
       {points:4, re:/\b(welche aussage|welche antwort|welche option|was ist richtig|was ist falsch|welche der folgenden)\b/},
       {points:3, re:/\b(erstelle|formuliere|entwickle)\b.*\b(pruefungsfrage|aufgabe|fall|mc|multiple choice)\b/},
       {points:3, re:/\b(rollenspiel|fallbeispiel|sachverhalt|visitenkarte|vorstellungsgespraech|rekrutier|einstell)\b.*\b(pruefung|pruefer|pruefling|bewertung|ausschuss)\b/},
-      {points:2, re:/\b(pruefungsrelevant|pruefungssicher|examensrelevant|bewertung|punkt(e|system)|erwartungshorizont)\b/}
+      {points:2, re:/\b(pruefungsrelevant|pruefungssicher|examensrelevant|bewertung|punkt(e|system)|erwartungshorizont)\b/},
+      {points:4, re:/\b(eignung|persoenliche eignung|fachliche eignung|ausbildungseignung|ausbildungsstaette|ausbildender|ausbilder)\b/}
     ];
 
     let score=0;
     const signals=[];
+
     for(const rule of rules){
-      if(rule.re.test(t)){ score += rule.points; signals.push(rule.re.source); }
+      if(rule.re.test(t)){
+        score += rule.points;
+        signals.push(rule.re.source);
+      }
     }
 
-    const legalDensity = (t.match(/\b(bb|bbig|bgb|arbzg|sgb|betrvg|vvg|vvg|sgb iv|sgb ix|sgb x|sgb xi|sgb v|ao|hgb|gew o|owig)\b/g)||[]).length;
+    const legalDensity = (t.match(/\b(bb|bbig|bgb|arbzg|sgb|betrvg|vvg|sgb iv|sgb ix|sgb x|sgb xi|sgb v|ao|hgb|gew o|owig)\b/g)||[]).length;
     if(legalDensity) score += Math.min(4, legalDensity);
 
     const questionMark = /\?/.test(userText);
@@ -949,10 +956,8 @@
     const classification = classifyExamQuestion(userText);
     setExamIndicator(classification.isExam);
 
-    // WICHTIG:
-    // Das Frontend sendet jetzt KEINEN fachlichen Prüfungs-Prompt mehr.
-    // Die Prüfungslogik liegt in der OpenAI Skill LINDA_PRUEFUNGSMODUS.
-    // Dadurch gibt es nur noch eine fachliche Orchestrierung.
+    // Die echte Nutzerfrage bleibt unverändert.
+    // Die fachliche Prüfungslogik liegt vollständig im Backend / in der Skill.
     const originalQuestion = String(userText || "").trim();
 
     const payload={
@@ -961,14 +966,21 @@
       message:originalQuestion,
       history,
       routing:{
-        reasoning_effort:classification.isExam ? (effort.value === "low" ? "medium" : effort.value) : effort.value,
+        reasoning_effort:classification.isExam
+          ? (effort.value === "low" ? "medium" : "high")
+          : effort.value,
         exam_gate:classification.isExam,
         exam_score:classification.score
       },
       fachmodus:"personal-bbig"
     };
 
-    if(apiDiagnostic) apiDiagnostic.textContent=classification.isExam ? "Prüfungsmodus · Skill + Vector Store · /api/bot …" : "Teste Verbindung zu /api/bot …";
+    if(apiDiagnostic){
+      apiDiagnostic.textContent=classification.isExam
+        ? "Prüfungsmodus · /api/bot …"
+        : "Teste Verbindung zu /api/bot …";
+    }
+
     try{
       const controller=new AbortController();
       const timeout=setTimeout(()=>controller.abort(),45000);
@@ -989,11 +1001,14 @@
 
       if(!response.ok){
         let detail=raw.trim();
+
         try{
           const errJson=JSON.parse(raw);
           detail=errJson?.error || errJson?.detail || detail;
-          if(errJson?.status && !detail) detail=`Backend-Status ${errJson.status}`;
-        }catch(_){}
+          if(errJson?.status && !detail){
+            detail=`Backend-Status ${errJson.status}`;
+          }
+        }catch(_){ }
 
         throw new Error(
           `HTTP ${response.status}${detail ? " – " + detail.slice(0,800) : ""}`
@@ -1001,25 +1016,57 @@
       }
 
       let data=null;
-      try{data=JSON.parse(raw)}catch(_){}
+      try{
+        data=JSON.parse(raw);
+      }catch(_){ }
 
-      const answer = data?.answer ?? data?.response ?? data?.content ?? data?.message ?? raw;
-      const sources = data?.sources ?? data?.quellen ?? data?.references ?? [];
-      const followups = data?.followups ?? data?.prompts ?? [];
+      const answer =
+        data?.answer ??
+        data?.response ??
+        data?.content ??
+        data?.message ??
+        raw;
+
+      const sources =
+        data?.sources ??
+        data?.quellen ??
+        data?.references ??
+        [];
+
+      const followups =
+        data?.followups ??
+        data?.prompts ??
+        [];
 
       if(!String(answer||"").trim()){
-        throw new Error("HTTP 200 – /api/bot hat eine leere Antwort geliefert.");
+        throw new Error(
+          "HTTP 200 – /api/bot hat eine leere Antwort geliefert."
+        );
       }
 
-      if(apiDiagnostic) apiDiagnostic.textContent=classification.isExam ? "Prüfungsmodus · Skill + Vector Store · Antwort erhalten" : "POST /api/bot erfolgreich · Antwort erhalten";
-      return {answer:String(answer),sources,followups};
+      if(apiDiagnostic){
+        apiDiagnostic.textContent=classification.isExam
+          ? "Prüfungsmodus · Antwort erhalten"
+          : "POST /api/bot erfolgreich · Antwort erhalten";
+      }
+
+      return {
+        answer:String(answer),
+        sources,
+        followups
+      };
+
     }catch(err){
       const message =
         err?.name==="AbortError"
           ? "Zeitüberschreitung nach 45 Sekunden."
           : (err?.message || "Unbekannter API-Fehler");
 
-      if(apiDiagnostic) apiDiagnostic.textContent=message.slice(0,180);
+      if(apiDiagnostic){
+        apiDiagnostic.textContent=
+          message.slice(0,180);
+      }
+
       throw new Error(message);
     }
   }
