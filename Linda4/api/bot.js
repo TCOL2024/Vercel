@@ -1277,23 +1277,9 @@ async function callOpenAI({
   // SKILL
   // ========================================================
 
-  if (exam) {
-    tools.push({
-      type: "shell",
-
-      environment: {
-        type: "container_auto",
-
-        skills: [
-          {
-            type: "skill_reference",
-            skill_id: LINDA_SKILL_ID,
-            version: "1"
-          }
-        ]
-      }
-    });
-  }
+if (exam) {
+  // SKILL VORÜBERGEHEND DEAKTIVIERT
+}
 
   const payload = {
     model:
