@@ -34,6 +34,7 @@
       --radius-lg:20px;
       --radius-md:15px;
       --safe-bottom:env(safe-area-inset-bottom,0px);
+      --keyboard-offset:0px;
     }
 
     *{box-sizing:border-box}
@@ -405,65 +406,325 @@
       .insight-panel{display:none}
     }
 
+    /* =========================================================
+       MOBILE ONLY
+       Desktop wird durch diese Regeln NICHT verändert.
+       ========================================================= */
+
     @media (max-width:760px){
-      .app{display:block}
-      .sidebar{display:none}
-      .main{min-height:100dvh;padding-bottom:74px}
-      .topbar{padding:10px 10px}
-      .topbar-inner{align-items:center}
-      .title-row{gap:6px}
-      .title-row h1{font-size:21px}
-      .top-actions{gap:5px}
-      .icon-btn{width:40px;height:40px}
-      .content{padding:10px 10px 0}
-      .chat-panel{min-height:calc(100dvh - 128px);border-radius:18px}
-      .chat{padding:14px 12px 16px}
-      .starter-grid{grid-template-columns:1fr}
-      .message{max-width:94%;font-size:15px}
+
+      html,
+      body{
+        height:100%;
+        min-height:100%;
+        overflow:hidden;
+      }
+
+      .app{
+        display:block;
+        height:100dvh;
+        min-height:100dvh;
+        overflow:hidden;
+      }
+
+      .sidebar{
+        display:none;
+      }
+
+      .main{
+        min-height:100dvh;
+        height:100dvh;
+        padding-bottom:0;
+        display:grid;
+        grid-template-rows:auto minmax(0,1fr);
+        overflow:hidden;
+      }
+
+      .topbar{
+        padding:10px 10px;
+        flex:none;
+      }
+
+      .topbar-inner{
+        align-items:center;
+      }
+
+      .title-row{
+        gap:6px;
+      }
+
+      .title-row h1{
+        font-size:21px;
+      }
+
+      .top-actions{
+        gap:5px;
+      }
+
+      .icon-btn{
+        width:40px;
+        height:40px;
+      }
+
+      .content{
+        min-height:0;
+        height:100%;
+        padding:10px 10px 0;
+        overflow:hidden;
+      }
+
+      .content-inner{
+        height:100%;
+        min-height:0;
+      }
+
+      .chat-panel{
+        height:100%;
+        min-height:0;
+        border-radius:18px;
+        overflow:hidden;
+        display:grid;
+        grid-template-rows:minmax(0,1fr);
+      }
+
+      .chat{
+        min-height:0;
+        height:100%;
+        overflow-y:auto;
+        -webkit-overflow-scrolling:touch;
+        overscroll-behavior-y:contain;
+        padding:14px 12px calc(190px + var(--safe-bottom) + var(--keyboard-offset));
+        scroll-padding-bottom:190px;
+      }
+
+      .starter-grid{
+        grid-template-columns:1fr;
+      }
+
+      .message{
+        max-width:94%;
+        font-size:15px;
+      }
+
+      /*
+       * Mobile Composer:
+       * - größer
+       * - über der Navigation
+       * - über der iPhone-Tastatur
+       */
       .composer{
         position:fixed;
-        left:10px;right:10px;bottom:calc(64px + var(--safe-bottom));
+        left:10px;
+        right:10px;
+        bottom:calc(64px + var(--safe-bottom) + var(--keyboard-offset));
         z-index:45;
+
         border:1px solid var(--line);
         border-radius:18px;
-        box-shadow:0 15px 38px rgba(20,42,68,.12);
-        padding:9px;
+        box-shadow:0 15px 38px rgba(20,42,68,.14);
+
+        padding:10px;
+        max-height:calc(
+          100dvh -
+          70px -
+          var(--keyboard-offset) -
+          var(--safe-bottom)
+        );
+
+        overflow:hidden;
+        transition:
+          bottom .18s ease,
+          box-shadow .18s ease;
       }
-      .composer-inner{grid-template-columns:auto minmax(0,1fr) auto}
-      .effort{grid-column:1 / -1;width:100%;height:39px;min-width:0}
-      .send-btn,.mic-btn{width:44px;height:44px}
-      .composer-note{display:none}
+
+      .composer-inner{
+        display:grid;
+        grid-template-columns:minmax(0,1fr) auto auto;
+        gap:8px;
+        align-items:end;
+      }
+
+      .effort{
+        grid-column:1 / -1;
+        width:100%;
+        height:40px;
+        min-width:0;
+        border-radius:13px;
+        padding:0 11px;
+      }
+
+      .input-wrap{
+        min-width:0;
+        width:100%;
+      }
+
+      #chatInput{
+        width:100%;
+        min-height:56px;
+        max-height:140px;
+        height:56px;
+        padding:14px 14px;
+        border-radius:15px;
+        font-size:16px;
+        line-height:1.45;
+        -webkit-appearance:none;
+        appearance:none;
+        overflow-y:auto;
+        -webkit-overflow-scrolling:touch;
+      }
+
+      .send-btn,
+      .mic-btn{
+        width:48px;
+        height:48px;
+        min-width:48px;
+        border-radius:15px;
+      }
+
+      .composer-note{
+        display:none;
+      }
+
+      .composer-privacy{
+        display:none;
+      }
+
+      #apiDiagnostic{
+        margin-top:4px!important;
+        min-height:11px;
+        max-height:13px;
+        overflow:hidden;
+        white-space:nowrap;
+        text-overflow:ellipsis;
+        font-size:8px!important;
+      }
+
+      /*
+       * Die mobile Navigation bleibt unten.
+       * Bei geöffneter Tastatur wird sie per JS ausgeblendet,
+       * damit der Eingabebereich mehr Platz bekommt.
+       */
       .mobile-nav{
         display:grid;
         grid-template-columns:repeat(4,1fr);
         position:fixed;
         z-index:50;
-        left:0;right:0;bottom:0;
+        left:0;
+        right:0;
+        bottom:0;
+
         padding:7px 8px calc(7px + var(--safe-bottom));
+
         background:rgba(255,255,255,.96);
         backdrop-filter:blur(14px);
+        -webkit-backdrop-filter:blur(14px);
+
         border-top:1px solid var(--line);
+
+        transition:
+          transform .18s ease,
+          opacity .18s ease;
       }
+
+      .mobile-nav.keyboard-open{
+        transform:translateY(110%);
+        opacity:0;
+        pointer-events:none;
+      }
+
       .mobile-nav button{
-        border:0;background:transparent;color:#6a7d93;
-        display:grid;place-items:center;gap:3px;
+        border:0;
+        background:transparent;
+        color:#6a7d93;
+        display:grid;
+        place-items:center;
+        gap:3px;
         padding:4px;
         font-size:10px;
       }
-      .mobile-nav button.active{color:var(--brand)}
-      .mobile-nav i{font-size:16px}
-      .welcome-card h2{font-size:20px}
-    }
 
-    @media (max-width:430px){
-      .pill{display:none}
-      .title-row h1{font-size:19px}
-      .top-actions .hide-xs{display:none}
-      .message{padding:12px 13px}
+      .mobile-nav button.active{
+        color:var(--brand);
+      }
+
+      .mobile-nav i{
+        font-size:16px;
+      }
+
+      .welcome-card h2{
+        font-size:20px;
+      }
+
+      /*
+       * Wenn die Tastatur geöffnet ist, bekommt der Chat
+       * zusätzlichen Raum bis zum Composer.
+       */
+      body.keyboard-open .chat{
+        padding-bottom:calc(
+          180px +
+          var(--keyboard-offset) +
+          var(--safe-bottom)
+        );
+      }
+
+      body.keyboard-open .composer{
+        box-shadow:0 8px 30px rgba(20,42,68,.18);
+      }
+
+      /*
+       * Kleine Geräte / iPhone
+       */
+      @media (max-width:430px){
+
+        .pill{
+          display:none;
+        }
+
+        .title-row h1{
+          font-size:19px;
+        }
+
+        .top-actions .hide-xs{
+          display:none;
+        }
+
+        .message{
+          padding:12px 13px;
+        }
+
+        #chatInput{
+          min-height:58px;
+          height:58px;
+          max-height:132px;
+        }
+
+        .send-btn,
+        .mic-btn{
+          width:48px;
+          height:48px;
+          min-width:48px;
+        }
+
+        .composer{
+          left:8px;
+          right:8px;
+          padding:9px;
+          border-radius:17px;
+        }
+
+        .chat{
+          padding-left:10px;
+          padding-right:10px;
+        }
+      }
     }
 
     @media (prefers-reduced-motion:reduce){
-      *,*::before,*::after{scroll-behavior:auto!important;animation:none!important;transition:none!important}
+      *,*::before,*::after{
+        scroll-behavior:auto!important;
+        animation:none!important;
+        transition:none!important
+      }
     }
   </style>
 </head>
@@ -503,15 +764,24 @@
           <div class="eyebrow">Linda 4.0</div>
           <div class="title-row">
             <h1>Deine persönliche Assistentin</h1>
-            <span class="pill"><span class="pill-dot"></span> Personal &amp; BBiG</span><span class="pill exam-pill" id="examModePill" hidden><span class="pill-dot"></span> Prüfungsmodus</span>
+            <span class="pill"><span class="pill-dot"></span> Personal &amp; BBiG</span>
+            <span class="pill exam-pill" id="examModePill" hidden>
+              <span class="pill-dot"></span> Prüfungsmodus
+            </span>
           </div>
         </div>
 
         <div class="top-actions">
           <button class="icon-btn hide-xs" id="btnText" title="Textdarstellung ändern" aria-label="Textdarstellung ändern">Aa</button>
-          <button class="icon-btn primary" id="btnHelp" title="Hilfe" aria-label="Hilfe"><i class="fa-solid fa-question"></i></button>
-          <button class="icon-btn" id="btnSessions" title="Gespeicherte Chats" aria-label="Gespeicherte Chats"><i class="fa-solid fa-clock-rotate-left"></i></button>
-          <button class="icon-btn" id="btnNew" title="Neuer Chat" aria-label="Neuer Chat"><i class="fa-solid fa-plus"></i></button>
+          <button class="icon-btn primary" id="btnHelp" title="Hilfe" aria-label="Hilfe">
+            <i class="fa-solid fa-question"></i>
+          </button>
+          <button class="icon-btn" id="btnSessions" title="Gespeicherte Chats" aria-label="Gespeicherte Chats">
+            <i class="fa-solid fa-clock-rotate-left"></i>
+          </button>
+          <button class="icon-btn" id="btnNew" title="Neuer Chat" aria-label="Neuer Chat">
+            <i class="fa-solid fa-plus"></i>
+          </button>
         </div>
       </div>
     </header>
@@ -523,6 +793,7 @@
 
           <div class="composer">
             <div class="composer-inner">
+
               <select id="effort" class="effort" title="Aufwand">
                 <option value="low">Aufwand: niedrig</option>
                 <option value="medium" selected>Aufwand: mittel</option>
@@ -530,16 +801,46 @@
               </select>
 
               <div class="input-wrap">
-                <textarea id="chatInput" rows="1" placeholder="Frage an Linda …"></textarea>
+                <textarea
+                  id="chatInput"
+                  rows="1"
+                  placeholder="Frage an Linda …"
+                ></textarea>
               </div>
 
-              <button id="mic" class="mic-btn" type="button" title="Spracheingabe" aria-label="Spracheingabe"><i class="fa-solid fa-microphone"></i></button>
-              <button id="send" class="send-btn" type="button" title="Senden" aria-label="Senden"><i class="fa-solid fa-paper-plane"></i></button>
+              <button
+                id="mic"
+                class="mic-btn"
+                type="button"
+                title="Spracheingabe"
+                aria-label="Spracheingabe"
+              >
+                <i class="fa-solid fa-microphone"></i>
+              </button>
+
+              <button
+                id="send"
+                class="send-btn"
+                type="button"
+                title="Senden"
+                aria-label="Senden"
+              >
+                <i class="fa-solid fa-paper-plane"></i>
+              </button>
+
             </div>
-            <div class="composer-note">Keine vertraulichen personenbezogenen Daten eingeben · Enter = senden · Shift+Enter = Zeilenumbruch</div>
-            <div id="apiDiagnostic" style="margin-top:4px;color:#9aa5b3;font-size:9px;text-align:center;min-height:12px;"></div>
+
+            <div class="composer-note">
+              Keine vertraulichen personenbezogenen Daten eingeben · Enter = senden · Shift+Enter = Zeilenumbruch
+            </div>
+
+            <div
+              id="apiDiagnostic"
+              style="margin-top:4px;color:#9aa5b3;font-size:9px;text-align:center;min-height:12px;"
+            ></div>
+
             <div class="composer-privacy">
-              Datenschutz: Bitte keine sensiblen oder vertraulichen personenbezogenen Daten eingeben. 
+              Datenschutz: Bitte keine sensiblen oder vertraulichen personenbezogenen Daten eingeben.
               Antworten von Linda sind KI-generiert, können Fehler enthalten und sind <strong>unverbindlich</strong>.
               Rechtliche, steuerliche oder sonstige wichtige Entscheidungen bitte anhand der Originalquellen prüfen.
               <a href="#" id="privacyComposerLink">Datenschutzhinweis</a>
@@ -550,10 +851,22 @@
     </section>
 
     <nav class="mobile-nav" aria-label="Navigation">
-      <button class="active" data-action="new"><i class="fa-solid fa-message"></i><span>Chat</span></button>
-      <button data-action="sessions"><i class="fa-solid fa-clock-rotate-left"></i><span>Chats</span></button>
-      <button data-action="help"><i class="fa-solid fa-circle-question"></i><span>Hilfe</span></button>
-      <button data-action="privacy"><i class="fa-solid fa-shield-halved"></i><span>Datenschutz</span></button>
+      <button class="active" data-action="new">
+        <i class="fa-solid fa-message"></i>
+        <span>Chat</span>
+      </button>
+      <button data-action="sessions">
+        <i class="fa-solid fa-clock-rotate-left"></i>
+        <span>Chats</span>
+      </button>
+      <button data-action="help">
+        <i class="fa-solid fa-circle-question"></i>
+        <span>Hilfe</span>
+      </button>
+      <button data-action="privacy">
+        <i class="fa-solid fa-shield-halved"></i>
+        <span>Datenschutz</span>
+      </button>
     </nav>
   </main>
 </div>
@@ -561,7 +874,10 @@
 <!-- Help -->
 <div class="modal-backdrop" id="helpModal" role="dialog" aria-modal="true" aria-labelledby="helpTitle">
   <div class="modal">
-    <div class="modal-head" id="helpTitle"><i class="fa-solid fa-circle-question"></i> Hilfe zu Linda</div>
+    <div class="modal-head" id="helpTitle">
+      <i class="fa-solid fa-circle-question"></i> Hilfe zu Linda
+    </div>
+
     <div class="modal-body">
       <h3>Was bedeutet „Aufwand“?</h3>
       <p><strong>Niedrig:</strong> kurze, direkte Antworten – gut für einfache Fragen oder eine schnelle Wiederholung.</p>
@@ -569,13 +885,26 @@
       <p><strong>Hoch:</strong> ausführlichere Antworten mit mehr Begründungen, Zusammenhängen, Beispielen und Prüfungshinweisen.</p>
 
       <h3>Wichtig</h3>
-      <p>Ein höherer Aufwand bedeutet <strong>nicht automatisch eine höhere sachliche Richtigkeit</strong>. Bei rechtlich relevanten Fragen sollten die genannten Vorschriften und Quellen zusätzlich geprüft werden.</p>
+      <p>
+        Ein höherer Aufwand bedeutet <strong>nicht automatisch eine höhere sachliche Richtigkeit</strong>.
+        Bei rechtlich relevanten Fragen sollten die genannten Vorschriften und Quellen zusätzlich geprüft werden.
+      </p>
 
       <h3>Datenschutz</h3>
-      <p>Bitte keine vertraulichen oder sensiblen personenbezogenen Daten eingeben. Bei Fällen möglichst mit Platzhaltern arbeiten, z. B. „Ausbilder X“ oder „Auszubildende A“.</p>
-      <p>Deine Eingaben können an die für Linda aktivierten technischen Dienste übermittelt werden. Die konkrete Datenverarbeitung richtet sich nach der eingesetzten Infrastruktur und deren Datenschutzvorgaben.</p>
-      <p><strong>KI-Hinweis:</strong> Antworten sind KI-generiert, können Fehler enthalten und sind unverbindlich. Bei wichtigen Entscheidungen bitte die Originalquellen prüfen.</p>
+      <p>
+        Bitte keine vertraulichen oder sensiblen personenbezogenen Daten eingeben.
+        Bei Fällen möglichst mit Platzhaltern arbeiten, z. B. „Ausbilder X“ oder „Auszubildende A“.
+      </p>
+      <p>
+        Deine Eingaben können an die für Linda aktivierten technischen Dienste übermittelt werden.
+        Die konkrete Datenverarbeitung richtet sich nach der eingesetzten Infrastruktur und deren Datenschutzvorgaben.
+      </p>
+      <p>
+        <strong>KI-Hinweis:</strong> Antworten sind KI-generiert, können Fehler enthalten und sind unverbindlich.
+        Bei wichtigen Entscheidungen bitte die Originalquellen prüfen.
+      </p>
     </div>
+
     <div class="modal-footer">
       <button class="modal-btn primary" data-close="helpModal">Schließen</button>
     </div>
@@ -585,16 +914,33 @@
 <!-- Privacy -->
 <div class="modal-backdrop" id="privacyModal" role="dialog" aria-modal="true" aria-labelledby="privacyTitle">
   <div class="modal">
-    <div class="modal-head" id="privacyTitle"><i class="fa-solid fa-shield-halved"></i> Datenschutzhinweis</div>
+    <div class="modal-head" id="privacyTitle">
+      <i class="fa-solid fa-shield-halved"></i> Datenschutzhinweis
+    </div>
+
     <div class="modal-body">
       <p><strong>Bitte bestätige diesen Datenschutzhinweis vor der Nutzung.</strong></p>
-      <p>Bitte keine vertraulichen oder sensiblen personenbezogenen Daten eingeben. Für Fallbeispiele möglichst mit Platzhaltern wie „Ausbilder X“ oder „Auszubildende A“ arbeiten.</p>
-      <p>Deine Eingaben können an die für Linda aktivierten technischen Dienste übermittelt werden. Die konkrete Verarbeitung richtet sich nach der eingesetzten Infrastruktur und den hierfür geltenden Datenschutzinformationen.</p>
-      <p><strong>Wichtig:</strong> Linda ist ein KI-System. Antworten können unvollständig, veraltet oder fehlerhaft sein und stellen keine verbindliche Rechts-, Steuer-, Finanz- oder sonstige Fachberatung dar.</p>
+      <p>
+        Bitte keine vertraulichen oder sensiblen personenbezogenen Daten eingeben.
+        Für Fallbeispiele möglichst mit Platzhaltern wie „Ausbilder X“ oder „Auszubildende A“ arbeiten.
+      </p>
+      <p>
+        Deine Eingaben können an die für Linda aktivierten technischen Dienste übermittelt werden.
+        Die konkrete Verarbeitung richtet sich nach der eingesetzten Infrastruktur und den hierfür geltenden Datenschutzinformationen.
+      </p>
+      <p>
+        <strong>Wichtig:</strong> Linda ist ein KI-System.
+        Antworten können unvollständig, veraltet oder fehlerhaft sein und stellen keine verbindliche Rechts-, Steuer-, Finanz- oder sonstige Fachberatung dar.
+      </p>
+
       <div class="privacy-choice">
-        <label><input id="privacyCheck" type="checkbox"> Ich habe den Datenschutzhinweis gelesen und verstanden und möchte Linda nutzen.</label>
+        <label>
+          <input id="privacyCheck" type="checkbox">
+          Ich habe den Datenschutzhinweis gelesen und verstanden und möchte Linda nutzen.
+        </label>
       </div>
     </div>
+
     <div class="modal-footer">
       <button class="modal-btn secondary" data-close="privacyModal">Schließen</button>
       <button class="modal-btn primary" id="privacyAccept">Bestätigen</button>
@@ -605,8 +951,12 @@
 <!-- Sessions -->
 <div class="modal-backdrop" id="sessionsModal" role="dialog" aria-modal="true" aria-labelledby="sessionsTitle">
   <div class="modal">
-    <div class="modal-head" id="sessionsTitle"><i class="fa-solid fa-clock-rotate-left"></i> Gespeicherte Chats</div>
+    <div class="modal-head" id="sessionsTitle">
+      <i class="fa-solid fa-clock-rotate-left"></i> Gespeicherte Chats
+    </div>
+
     <div class="modal-body" id="sessionsList"></div>
+
     <div class="modal-footer">
       <button class="modal-btn primary" data-close="sessionsModal">Schließen</button>
     </div>
@@ -639,6 +989,7 @@
   const privacyCheck = document.getElementById("privacyCheck");
   const privacyComposerLink = document.getElementById("privacyComposerLink");
   const composer = document.querySelector(".composer");
+  const mobileNav = document.querySelector(".mobile-nav");
 
   let messages = [];
   let sessions = [];
@@ -662,39 +1013,76 @@
         <h2>Was möchtest du heute klären?</h2>
         <p>Frage mich zu Ausbildung, BBiG, Ausbilderthemen und Personalmanagement. Je konkreter der Sachverhalt, desto besser kann Linda helfen.</p>
       </div>
+
       <div class="starter-grid">
-        <button class="starter" data-prompt="Erkläre mir § 21 BBiG einfach und prüfungsorientiert.">§ 21 BBiG<small>Beendigung des Berufsausbildungsverhältnisses</small></button>
-        <button class="starter" data-prompt="Welche Pflichten hat ein Ausbilder nach dem BBiG?">Ausbilderpflichten<small>Mit prüfungsrelevanten Punkten</small></button>
-        <button class="starter" data-prompt="Erstelle mir drei IHK-Prüfungsfragen zum Thema Berufsausbildung.">Prüfungsfragen<small>Direkt zum Üben</small></button>
-        <button class="starter" data-prompt="Erkläre mir den Unterschied zwischen Personalentwicklung und Personalplanung.">Personalmanagement<small>Mit einfachem Beispiel</small></button>
+        <button class="starter" data-prompt="Erkläre mir § 21 BBiG einfach und prüfungsorientiert.">
+          § 21 BBiG
+          <small>Beendigung des Berufsausbildungsverhältnisses</small>
+        </button>
+
+        <button class="starter" data-prompt="Welche Pflichten hat ein Ausbilder nach dem BBiG?">
+          Ausbilderpflichten
+          <small>Mit prüfungsrelevanten Punkten</small>
+        </button>
+
+        <button class="starter" data-prompt="Erstelle mir drei IHK-Prüfungsfragen zum Thema Berufsausbildung.">
+          Prüfungsfragen
+          <small>Direkt zum Üben</small>
+        </button>
+
+        <button class="starter" data-prompt="Erkläre mir den Unterschied zwischen Personalentwicklung und Personalplanung.">
+          Personalmanagement
+          <small>Mit einfachem Beispiel</small>
+        </button>
       </div>
     </div>`;
 
   function esc(value){
     return String(value ?? "")
-      .replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;")
-      .replaceAll('"',"&quot;").replaceAll("'","&#39;");
+      .replaceAll("&","&amp;")
+      .replaceAll("<","&lt;")
+      .replaceAll(">","&gt;")
+      .replaceAll('"',"&quot;")
+      .replaceAll("'","&#39;");
   }
 
   function inline(text){
     let s = esc(text);
     s = s.replace(/\*\*(.+?)\*\*/g,"<strong>$1</strong>");
     s = s.replace(/`(.+?)`/g,"<code>$1</code>");
-    s = s.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g,'<a href="$2" target="_blank" rel="noopener">$1</a>');
+    s = s.replace(
+      /\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g,
+      '<a href="$2" target="_blank" rel="noopener">$1</a>'
+    );
     return s;
   }
 
   function renderMarkdown(md){
     let text = String(md ?? "").replace(/\r/g,"");
+
     // Frontend safety net for older upstream replies containing escaped HTML.
-    text = text.replace(/\\</g, "<").replace(/\\>/g, ">").replace(/\\\*/g, "*")
-      .replace(/<strong\b[^>]*>/gi, "**").replace(/<\/strong>/gi, "**")
-      .replace(/<br\s*\/?>/gi, "\n").replace(/<div\b[^>]*>/gi, "").replace(/<\/div>/gi, "")
-      .replace(/<span\b[^>]*>/gi, "").replace(/<\/span>/gi, "").replace(/<p\b[^>]*>/gi, "").replace(/<\/p>/gi, "")
+    text = text
+      .replace(/\\</g, "<")
+      .replace(/\\>/g, ">")
+      .replace(/\\\*/g, "*")
+      .replace(/<strong\b[^>]*>/gi, "**")
+      .replace(/<\/strong>/gi, "**")
+      .replace(/<br\s*\/?>/gi, "\n")
+      .replace(/<div\b[^>]*>/gi, "")
+      .replace(/<\/div>/gi, "")
+      .replace(/<span\b[^>]*>/gi, "")
+      .replace(/<\/span>/gi, "")
+      .replace(/<p\b[^>]*>/gi, "")
+      .replace(/<\/p>/gi, "")
       .replace(/<[^>]+>/g, "");
+
     const blocks = [];
+
     text = text.replace(/```(?:\w+)?\n([\s\S]*?)```/g,(_,code) => {
-      const id = blocks.push(`<pre><code>${esc(code.trimEnd())}</code></pre>`) - 1;
+      const id = blocks.push(
+        `<pre><code>${esc(code.trimEnd())}</code></pre>`
+      ) - 1;
+
       return `@@BLOCK${id}@@`;
     });
 
@@ -702,88 +1090,174 @@
     let out = "", ul=false, ol=false;
 
     const closeLists=()=>{
-      if(ul){out+="</ul>";ul=false}
-      if(ol){out+="</ol>";ol=false}
+      if(ul){
+        out+="</ul>";
+        ul=false;
+      }
+
+      if(ol){
+        out+="</ol>";
+        ol=false;
+      }
     };
 
     for(let i=0;i<lines.length;i++){
       const line=lines[i];
 
-      if(/^@@BLOCK\d+@@$/.test(line.trim())){closeLists();out+=line.trim();continue}
-      if(!line.trim()){closeLists();continue}
+      if(/^@@BLOCK\d+@@$/.test(line.trim())){
+        closeLists();
+        out+=line.trim();
+        continue;
+      }
+
+      if(!line.trim()){
+        closeLists();
+        continue;
+      }
 
       if(/^\s*\|\s*Disclaimer\b/i.test(line)){
-        const clean=line.replace(/^\s*\|\s*/,"").replace(/\|\s*$/,"").replace(/^Disclaimer\s*:?\s*/i,"");
+        const clean=line
+          .replace(/^\s*\|\s*/,"")
+          .replace(/\|\s*$/,"")
+          .replace(/^Disclaimer\s*:?\s*/i,"");
+
         out+=`<div class="disclaimer"><strong>Hinweis / Disclaimer:</strong> ${inline(clean)}</div>`;
         continue;
       }
 
       if(/^\s*\|/.test(line) && /^\s*\|?\s*:?-{3,}/.test(lines[i+1]||"")){
         closeLists();
-        const head=line.trim().replace(/^\||\|$/g,"").split("|").map(x=>x.trim());
+
+        const head=line
+          .trim()
+          .replace(/^\||\|$/g,"")
+          .split("|")
+          .map(x=>x.trim());
+
         i+=2;
+
         let rows=[];
+
         while(i<lines.length && /^\s*\|/.test(lines[i])){
-          rows.push(lines[i].trim().replace(/^\||\|$/g,"").split("|").map(x=>x.trim()));
+          rows.push(
+            lines[i]
+              .trim()
+              .replace(/^\||\|$/g,"")
+              .split("|")
+              .map(x=>x.trim())
+          );
           i++;
         }
+
         let t='<div class="table-wrap"><table><thead><tr>';
+
         head.forEach(c=>t+=`<th>${inline(c)}</th>`);
+
         t+='</tr></thead><tbody>';
+
         rows.forEach(r=>{
           t+='<tr>';
-          for(let c=0;c<head.length;c++) t+=`<td>${inline(r[c]||"")}</td>`;
+
+          for(let c=0;c<head.length;c++){
+            t+=`<td>${inline(r[c]||"")}</td>`;
+          }
+
           t+='</tr>';
         });
+
         t+='</tbody></table></div>';
-        out+=t; i--; continue;
+
+        out+=t;
+        i--;
+        continue;
       }
 
       let m=line.match(/^(#{1,3})\s+(.+)$/);
-      if(m){closeLists();out+=`<h${m[1].length}>${inline(m[2])}</h${m[1].length}>`;continue}
 
-      if(/^\s*>\s?/.test(line)){closeLists();out+=`<blockquote>${inline(line.replace(/^\s*>\s?/ ,""))}</blockquote>`;continue}
+      if(m){
+        closeLists();
+        out+=`<h${m[1].length}>${inline(m[2])}</h${m[1].length}>`;
+        continue;
+      }
+
+      if(/^\s*>\s?/.test(line)){
+        closeLists();
+        out+=`<blockquote>${inline(line.replace(/^\s*>\s?/ ,""))}</blockquote>`;
+        continue;
+      }
 
       if(/^\s*[-*]\s+/.test(line)){
-        if(!ul){closeLists();out+="<ul>";ul=true}
-        out+=`<li>${inline(line.replace(/^\s*[-*]\s+/,""))}</li>`;continue
+        if(!ul){
+          closeLists();
+          out+="<ul>";
+          ul=true;
+        }
+
+        out+=`<li>${inline(line.replace(/^\s*[-*]\s+/,""))}</li>`;
+        continue;
       }
 
       if(/^\s*\d+[.)]\s+/.test(line)){
-        if(!ol){closeLists();out+="<ol>";ol=true}
-        out+=`<li>${inline(line.replace(/^\s*\d+[.)]\s+/,""))}</li>`;continue
+        if(!ol){
+          closeLists();
+          out+="<ol>";
+          ol=true;
+        }
+
+        out+=`<li>${inline(line.replace(/^\s*\d+[.)]\s+/,""))}</li>`;
+        continue;
       }
 
-      if(/^(-{3,}|\*{3,})$/.test(line.trim())){closeLists();out+="<hr>";continue}
+      if(/^(-{3,}|\*{3,})$/.test(line.trim())){
+        closeLists();
+        out+="<hr>";
+        continue;
+      }
 
       if(/^\s*\|.*\|\s*$/.test(line)){
-        const clean=line.replace(/\|/g," ").replace(/\s+/g," ").trim();
-        if(clean) out+=`<p>${inline(clean)}</p>`;
+        const clean=line
+          .replace(/\|/g," ")
+          .replace(/\s+/g," ")
+          .trim();
+
+        if(clean){
+          out+=`<p>${inline(clean)}</p>`;
+        }
+
         continue;
       }
 
       closeLists();
       out+=`<p>${inline(line)}</p>`;
     }
+
     closeLists();
 
-    out=out.replace(/@@BLOCK(\d+)@@/g,(_,i)=>blocks[Number(i)]||"");
+    out=out.replace(
+      /@@BLOCK(\d+)@@/g,
+      (_,i)=>blocks[Number(i)]||""
+    );
+
     return out;
   }
 
   function sourcesHtml(sources){
     if(!Array.isArray(sources) || !sources.length) return "";
+
     return sources.slice(0,6).map(s => {
       const title=s.title||s.name||"Quelle";
       const meta=s.meta||s.page||s.seite||"";
       const quote=s.quote||s.excerpt||s.text||"";
       const url=s.url||s.href||"";
+
       return `<div class="source">
         <div class="source-head">
           <span class="source-title">${esc(title)}</span>
           <span class="source-meta">${esc(meta)}</span>
         </div>
+
         ${quote?`<div class="source-quote">„${esc(quote)}“</div>`:""}
+
         ${url?`<a class="source-link" href="${esc(url)}" target="_blank" rel="noopener">Quelle öffnen ↗</a>`:""}
       </div>`;
     }).join("");
@@ -791,40 +1265,81 @@
 
   function followupsHtml(items){
     if(!Array.isArray(items) || !items.length) return "";
-    return `<div class="followups">${items.slice(0,4).map(x=>`<button class="followup" data-followup="${esc(x)}">${esc(x)}</button>`).join("")}</div>`;
+
+    return `<div class="followups">${
+      items.slice(0,4).map(x=>
+        `<button class="followup" data-followup="${esc(x)}">${esc(x)}</button>`
+      ).join("")
+    }</div>`;
+  }
+
+  function scrollChatToBottom(behavior="smooth"){
+    if(!chat) return;
+
+    requestAnimationFrame(()=>{
+      chat.scrollTo({
+        top:chat.scrollHeight,
+        behavior
+      });
+    });
   }
 
   function render(){
     chat.innerHTML="";
-    if(!messages.length){messages=[{...welcome}]}
+
+    if(!messages.length){
+      messages=[{...welcome}];
+    }
+
     if(messages.length===1 && messages[0].role==="assistant"){
       chat.innerHTML=starterHtml;
     }
 
     messages.forEach((m,index)=>{
       const row=document.createElement("div");
+
       row.className=`message-row ${m.role==="user"?"user":""}`;
+
       const box=document.createElement("div");
+
       box.className=`message ${m.role==="user"?"user":"bot"}`;
+
       const label=m.role==="user"?"Du":"Linda";
-      const content=m.role==="user"?esc(m.content).replace(/\n/g,"<br>"):renderMarkdown(m.content);
-      box.innerHTML=`<div class="message-label">${label}</div>${content}${m.role==="assistant"?sourcesHtml(m.sources):""}${m.role==="assistant"?followupsHtml(m.followups):""}`;
+
+      const content=m.role==="user"
+        ?esc(m.content).replace(/\n/g,"<br>")
+        :renderMarkdown(m.content);
+
+      box.innerHTML=
+        `<div class="message-label">${label}</div>`+
+        content+
+        `${m.role==="assistant"?sourcesHtml(m.sources):""}`+
+        `${m.role==="assistant"?followupsHtml(m.followups):""}`;
+
       row.appendChild(box);
       chat.appendChild(row);
     });
 
     chat.querySelectorAll(".starter,.followup").forEach(btn=>{
-      btn.addEventListener("click",()=>sendMessage(btn.dataset.prompt||btn.dataset.followup||""));
+      btn.addEventListener("click",()=>{
+        sendMessage(
+          btn.dataset.prompt ||
+          btn.dataset.followup ||
+          ""
+        );
+      });
     });
 
-    chat.scrollTop=chat.scrollHeight;
+    scrollChatToBottom("auto");
   }
 
   function setLocked(locked){
     composer.classList.toggle("locked", locked);
+
     input.disabled = locked;
     send.disabled = locked || busy;
     mic.disabled = locked || !(window.SpeechRecognition||window.webkitSpeechRecognition);
+
     if(locked){
       input.placeholder = "Bitte zuerst den Datenschutzhinweis bestätigen …";
     }else{
@@ -834,19 +1349,32 @@
 
   function requirePrivacy(){
     if(privacyAccepted) return true;
+
     openModal("privacyModal");
     return false;
   }
 
   function save(){
-    localStorage.setItem(STORAGE,JSON.stringify({messages,sessions}));
+    localStorage.setItem(
+      STORAGE,
+      JSON.stringify({messages,sessions})
+    );
   }
 
   function load(){
     try{
-      const obj=JSON.parse(localStorage.getItem(STORAGE)||"{}");
-      sessions=Array.isArray(obj.sessions)?obj.sessions:[];
-      messages=Array.isArray(obj.messages)?obj.messages:[{...welcome}];
+      const obj=JSON.parse(
+        localStorage.getItem(STORAGE)||"{}"
+      );
+
+      sessions=Array.isArray(obj.sessions)
+        ?obj.sessions
+        :[];
+
+      messages=Array.isArray(obj.messages)
+        ?obj.messages
+        :[{...welcome}];
+
     }catch{
       messages=[{...welcome}];
       sessions=[];
@@ -860,46 +1388,97 @@
         title:(messages.find(x=>x.role==="user")?.content||"Chat").slice(0,50),
         messages
       });
+
       sessions=sessions.slice(0,8);
     }
+
     messages=[{...welcome}];
+
     save();
     render();
+
+    setTimeout(()=>{
+      if(isMobile()){
+        scrollChatToBottom("auto");
+      }
+    },50);
   }
 
   function renderSessions(){
     const list=document.getElementById("sessionsList");
+
     if(!sessions.length){
       list.innerHTML="<p>Noch keine gespeicherten Chats.</p>";
       return;
     }
+
     list.innerHTML=sessions.map(s=>`
       <div class="info-card" style="cursor:pointer" data-session="${esc(s.id)}">
         <strong>${esc(s.title||"Chat")}</strong>
         <span>${Array.isArray(s.messages)?s.messages.length:0} Nachrichten</span>
-      </div>`).join("");
+      </div>
+    `).join("");
+
     list.querySelectorAll("[data-session]").forEach(el=>{
       el.addEventListener("click",()=>{
-        const s=sessions.find(x=>x.id===el.dataset.session);
+        const s=sessions.find(
+          x=>x.id===el.dataset.session
+        );
+
         if(!s)return;
-        messages=Array.isArray(s.messages)?s.messages:[{...welcome}];
-        save(); render(); closeModal("sessionsModal");
+
+        messages=Array.isArray(s.messages)
+          ?s.messages
+          :[{...welcome}];
+
+        save();
+        render();
+        closeModal("sessionsModal");
       });
     });
   }
 
-  function openModal(id){document.getElementById(id)?.classList.add("open")}
-  function closeModal(id){document.getElementById(id)?.classList.remove("open")}
+  function openModal(id){
+    document.getElementById(id)?.classList.add("open");
+  }
+
+  function closeModal(id){
+    document.getElementById(id)?.classList.remove("open");
+  }
 
   function resizeInput(){
+    if(!input)return;
+
     input.style.height="auto";
-    input.style.height=Math.min(input.scrollHeight,180)+"px";
+
+    const isMobileWidth =
+      window.matchMedia("(max-width: 760px)").matches;
+
+    const maxHeight=isMobileWidth ? 140 : 180;
+
+    const minHeight=isMobileWidth ? 56 : 48;
+
+    const nextHeight=Math.max(
+      minHeight,
+      Math.min(input.scrollHeight,maxHeight)
+    );
+
+    input.style.height=nextHeight+"px";
+
+    if(isMobileWidth){
+      requestAnimationFrame(()=>{
+        updateMobileViewport();
+      });
+    }
   }
 
   function normalizeForClassification(text){
     return String(text || "")
       .toLowerCase()
-      .replace(/ä/g,"ae").replace(/ö/g,"oe").replace(/ü/g,"ue").replace(/ß/g,"ss")
+      .replace(/ä/g,"ae")
+      .replace(/ö/g,"oe")
+      .replace(/ü/g,"ue")
+      .replace(/ß/g,"ss")
       .normalize("NFD")
       .replace(/[\u0300-\u036f]/g, "")
       .replace(/§\s*/g, "paragraph ")
@@ -910,16 +1489,44 @@
 
   function classifyExamQuestion(userText){
     const t = normalizeForClassification(userText);
+
     const rules = [
-      {points:5, re:/\b(ihk|klausur|pruefung|pruefungsfrage|pruefungsaufgabe|pruefungsfall|pruefungsantwort|pruefungsschema|pruefungsrecht)\b/},
-      {points:5, re:/\b(pruefer|prueferin|pruefling|pruefungsausschuss|prueferdelegation|befangenheit|unparteiisch|mitwirkung|pruefungsamt)\b/},
-      {points:4, re:/\b(richtig|falsch|korrekt|nicht korrekt|zutreffend|nicht zutreffend|bewerte|beurteile|begruende|begruendung|loesung|musterloesung)\b/},
-      {points:4, re:/\b(rechtsgrundlage|paragraph|norm|gesetz|bbig|bgb|arbzg|sgb|betrvg|ausbildungsverhaeltnis|pruefungsordnung)\b/},
-      {points:4, re:/\b(welche aussage|welche antwort|welche option|was ist richtig|was ist falsch|welche der folgenden)\b/},
-      {points:3, re:/\b(erstelle|formuliere|entwickle)\b.*\b(pruefungsfrage|aufgabe|fall|mc|multiple choice)\b/},
-      {points:3, re:/\b(rollenspiel|fallbeispiel|sachverhalt|visitenkarte|vorstellungsgespraech|rekrutier|einstell)\b.*\b(pruefung|pruefer|pruefling|bewertung|ausschuss)\b/},
-      {points:2, re:/\b(pruefungsrelevant|pruefungssicher|examensrelevant|bewertung|punkt(e|system)|erwartungshorizont)\b/},
-      {points:4, re:/\b(eignung|persoenliche eignung|fachliche eignung|ausbildungseignung|ausbildungsstaette|ausbildender|ausbilder)\b/}
+      {
+        points:5,
+        re:/\b(ihk|klausur|pruefung|pruefungsfrage|pruefungsaufgabe|pruefungsfall|pruefungsantwort|pruefungsschema|pruefungsrecht)\b/
+      },
+      {
+        points:5,
+        re:/\b(pruefer|prueferin|pruefling|pruefungsausschuss|prueferdelegation|befangenheit|unparteiisch|mitwirkung|pruefungsamt)\b/
+      },
+      {
+        points:4,
+        re:/\b(richtig|falsch|korrekt|nicht korrekt|zutreffend|nicht zutreffend|bewerte|beurteile|begruende|begruendung|loesung|musterloesung)\b/
+      },
+      {
+        points:4,
+        re:/\b(rechtsgrundlage|paragraph|norm|gesetz|bbig|bgb|arbzg|sgb|betrvg|ausbildungsverhaeltnis|pruefungsordnung)\b/
+      },
+      {
+        points:4,
+        re:/\b(welche aussage|welche antwort|welche option|was ist richtig|was ist falsch|welche der folgenden)\b/
+      },
+      {
+        points:3,
+        re:/\b(erstelle|formuliere|entwickle)\b.*\b(pruefungsfrage|aufgabe|fall|mc|multiple choice)\b/
+      },
+      {
+        points:3,
+        re:/\b(rollenspiel|fallbeispiel|sachverhalt|visitenkarte|vorstellungsgespraech|rekrutier|einstell)\b.*\b(pruefung|pruefer|pruefling|bewertung|ausschuss)\b/
+      },
+      {
+        points:2,
+        re:/\b(pruefungsrelevant|pruefungssicher|examensrelevant|bewertung|punkt(e|system)|erwartungshorizont)\b/
+      },
+      {
+        points:4,
+        re:/\b(eignung|persoenliche eignung|fachliche eignung|ausbildungseignung|ausbildungsstaette|ausbildender|ausbilder)\b/
+      }
     ];
 
     let score=0;
@@ -932,68 +1539,107 @@
       }
     }
 
-    const legalDensity = (t.match(/\b(bb|bbig|bgb|arbzg|sgb|betrvg|vvg|sgb iv|sgb ix|sgb x|sgb xi|sgb v|ao|hgb|gew o|owig)\b/g)||[]).length;
-    if(legalDensity) score += Math.min(4, legalDensity);
+    const legalDensity =
+      (
+        t.match(
+          /\b(bb|bbig|bgb|arbzg|sgb|betrvg|vvg|sgb iv|sgb ix|sgb x|sgb xi|sgb v|ao|hgb|gew o|owig)\b/g
+        )||[]
+      ).length;
 
-    const questionMark = /\?/.test(userText);
-    const looksLikeTask = /\b(erklaere|nenne|nennen|unterscheide|unterschied|pruefe|pruefen|ermittle|ordne|begruende|beurteile|analysiere|erstelle|formuliere)\b/i.test(t);
-    if(questionMark && looksLikeTask) score += 1;
+    if(legalDensity){
+      score += Math.min(4,legalDensity);
+    }
+
+    const questionMark=/\?/.test(userText);
+
+    const looksLikeTask=
+      /\b(erklaere|nenne|nennen|unterscheide|unterschied|pruefe|pruefen|ermittle|ordne|begruende|beurteile|analysiere|erstelle|formuliere)\b/i.test(t);
+
+    if(questionMark && looksLikeTask){
+      score += 1;
+    }
 
     return {
-      isExam: score >= EXAM_THRESHOLD,
+      isExam:score>=EXAM_THRESHOLD,
       score,
       signals
     };
   }
 
   function setExamIndicator(isExam){
-    if(!examModePill) return;
-    examModePill.hidden = !isExam;
+    if(!examModePill)return;
+
+    examModePill.hidden=!isExam;
   }
 
   async function requestLinda(userText){
-    const history=messages.slice(-MAX_HISTORY).map(m=>({role:m.role,content:m.content}));
-    const classification = classifyExamQuestion(userText);
+    const history=messages
+      .slice(-MAX_HISTORY)
+      .map(m=>({
+        role:m.role,
+        content:m.content
+      }));
+
+    const classification=classifyExamQuestion(userText);
+
     setExamIndicator(classification.isExam);
 
     // Die echte Nutzerfrage bleibt unverändert.
     // Die fachliche Prüfungslogik liegt vollständig im Backend / in der Skill.
-    const originalQuestion = String(userText || "").trim();
+    const originalQuestion=String(userText||"").trim();
 
     const payload={
       mode:classification.isExam ? "exam" : "standard",
+
       question:originalQuestion,
+
       message:originalQuestion,
+
       history,
+
       routing:{
-        reasoning_effort:classification.isExam
-          ? (effort.value === "low" ? "medium" : "high")
-          : effort.value,
+        reasoning_effort:
+          classification.isExam
+            ?(effort.value==="low" ? "medium" : "high")
+            :effort.value,
+
         exam_gate:classification.isExam,
         exam_score:classification.score
       },
+
       fachmodus:"personal-bbig"
     };
 
     if(apiDiagnostic){
-      apiDiagnostic.textContent=classification.isExam
-        ? "Prüfungsmodus · /api/bot …"
-        : "Teste Verbindung zu /api/bot …";
+      apiDiagnostic.textContent=
+        classification.isExam
+          ?"Prüfungsmodus · /api/bot …"
+          :"Teste Verbindung zu /api/bot …";
     }
 
     try{
       const controller=new AbortController();
-      const timeout=setTimeout(()=>controller.abort(),45000);
 
-      const response=await fetch(API_URL,{
-        method:"POST",
-        headers:{
-          "Content-Type":"application/json",
-          "Accept":"text/plain, application/json"
-        },
-        body:JSON.stringify(payload),
-        signal:controller.signal
-      });
+      const timeout=setTimeout(
+        ()=>controller.abort(),
+        45000
+      );
+
+      const response=await fetch(
+        API_URL,
+        {
+          method:"POST",
+
+          headers:{
+            "Content-Type":"application/json",
+            "Accept":"text/plain, application/json"
+          },
+
+          body:JSON.stringify(payload),
+
+          signal:controller.signal
+        }
+      );
 
       clearTimeout(timeout);
 
@@ -1004,36 +1650,47 @@
 
         try{
           const errJson=JSON.parse(raw);
-          detail=errJson?.error || errJson?.detail || detail;
+
+          detail=
+            errJson?.error ||
+            errJson?.detail ||
+            detail;
+
           if(errJson?.status && !detail){
             detail=`Backend-Status ${errJson.status}`;
           }
-        }catch(_){ }
+
+        }catch(_){}
 
         throw new Error(
-          `HTTP ${response.status}${detail ? " – " + detail.slice(0,800) : ""}`
+          `HTTP ${response.status}${
+            detail
+              ?" – "+detail.slice(0,800)
+              :""
+          }`
         );
       }
 
       let data=null;
+
       try{
         data=JSON.parse(raw);
-      }catch(_){ }
+      }catch(_){}
 
-      const answer =
+      const answer=
         data?.answer ??
         data?.response ??
         data?.content ??
         data?.message ??
         raw;
 
-      const sources =
+      const sources=
         data?.sources ??
         data?.quellen ??
         data?.references ??
         [];
 
-      const followups =
+      const followups=
         data?.followups ??
         data?.prompts ??
         [];
@@ -1045,9 +1702,10 @@
       }
 
       if(apiDiagnostic){
-        apiDiagnostic.textContent=classification.isExam
-          ? "Prüfungsmodus · Antwort erhalten"
-          : "POST /api/bot erfolgreich · Antwort erhalten";
+        apiDiagnostic.textContent=
+          classification.isExam
+            ?"Prüfungsmodus · Antwort erhalten"
+            :"POST /api/bot erfolgreich · Antwort erhalten";
       }
 
       return {
@@ -1057,10 +1715,11 @@
       };
 
     }catch(err){
-      const message =
+
+      const message=
         err?.name==="AbortError"
-          ? "Zeitüberschreitung nach 45 Sekunden."
-          : (err?.message || "Unbekannter API-Fehler");
+          ?"Zeitüberschreitung nach 45 Sekunden."
+          :(err?.message || "Unbekannter API-Fehler");
 
       if(apiDiagnostic){
         apiDiagnostic.textContent=
@@ -1072,119 +1731,486 @@
   }
 
   async function sendMessage(value){
-    if(!requirePrivacy()) return;
+    if(!requirePrivacy())return;
+
     const text=String(value||"").trim();
+
     if(!text || busy)return;
-    const preClassification = classifyExamQuestion(text);
+
+    const preClassification=
+      classifyExamQuestion(text);
+
     setExamIndicator(preClassification.isExam);
+
     busy=true;
     send.disabled=true;
 
-    if(messages.length===1 && messages[0].role==="assistant") messages=[];
-    messages.push({role:"user",content:text});
-    messages.push({role:"assistant",content:"⏳ Einen Moment bitte …"});
+    if(messages.length===1 && messages[0].role==="assistant"){
+      messages=[];
+    }
+
+    messages.push({
+      role:"user",
+      content:text
+    });
+
+    messages.push({
+      role:"assistant",
+      content:"⏳ Einen Moment bitte …"
+    });
+
     input.value="";
     resizeInput();
+
     render();
 
     try{
+
       const result=await requestLinda(text);
-      messages[messages.length-1]={role:"assistant",content:result.answer,sources:result.sources,followups:result.followups};
-    }catch(err){
+
       messages[messages.length-1]={
         role:"assistant",
-        content:`**Die Linda-API konnte die Anfrage nicht verarbeiten.**
+        content:result.answer,
+        sources:result.sources,
+        followups:result.followups
+      };
 
-**Technische Diagnose:** ${String(err?.message || "Unbekannter Fehler")}
+    }catch(err){
+
+      messages[messages.length-1]={
+        role:"assistant",
+
+        content:
+          `**Die Linda-API konnte die Anfrage nicht verarbeiten.**
+
+**Technische Diagnose:** ${String(
+            err?.message || "Unbekannter Fehler"
+          )}
 
 Der Vercel-Endpunkt **/api/bot** ist grundsätzlich vorhanden. Prüfe anhand dieser Meldung den nächsten Fehlerpunkt (z. B. \`MAKE_WEBHOOK_URL\`, Make-Webhook oder Backend-Verarbeitung).`
       };
+
     }finally{
+
       busy=false;
+
       send.disabled=!privacyAccepted;
+
       save();
+
       render();
-      setTimeout(()=>input.focus(),50);
+
+      /*
+       * Mobil nach der Antwort wieder sauber
+       * zum Ende des Chats scrollen.
+       */
+      if(isMobile()){
+        setTimeout(()=>{
+          scrollChatToBottom("smooth");
+        },80);
+      }
+
+      setTimeout(()=>{
+        if(!isMobile()){
+          input.focus();
+        }
+      },50);
     }
   }
 
-  document.getElementById("btnHelp").addEventListener("click",()=>openModal("helpModal"));
-  document.getElementById("btnSessions").addEventListener("click",()=>{renderSessions();openModal("sessionsModal")});
-  document.getElementById("btnNew").addEventListener("click",newChat);
-  document.getElementById("btnText").addEventListener("click",()=>document.body.classList.toggle("large-text"));
+  function isMobile(){
+    return window.matchMedia(
+      "(max-width: 760px)"
+    ).matches;
+  }
 
-  document.querySelectorAll("[data-close]").forEach(btn=>btn.addEventListener("click",()=>closeModal(btn.dataset.close)));
+  /*
+   * ---------------------------------------------------------
+   * iPhone / iPad Keyboard Handling
+   * ---------------------------------------------------------
+   *
+   * Desktop wird hiervon nicht berührt.
+   *
+   * visualViewport liefert bei Safari die tatsächlich sichtbare
+   * Höhe, wenn die Bildschirmtastatur geöffnet ist.
+   */
+
+  function updateMobileViewport(){
+    if(!isMobile()){
+      document.documentElement.style.setProperty(
+        "--keyboard-offset",
+        "0px"
+      );
+
+      document.body.classList.remove("keyboard-open");
+
+      if(mobileNav){
+        mobileNav.classList.remove("keyboard-open");
+      }
+
+      return;
+    }
+
+    const viewport=window.visualViewport;
+
+    if(!viewport){
+      return;
+    }
+
+    const windowHeight=window.innerHeight;
+
+    const keyboardHeight=Math.max(
+      0,
+      windowHeight -
+      viewport.height -
+      viewport.offsetTop
+    );
+
+    /*
+     * Kleine Schwankungen von Safari nicht als Tastatur
+     * interpretieren.
+     */
+    const keyboardOpen=
+      keyboardHeight>120 &&
+      document.activeElement===input;
+
+    const offset=keyboardOpen
+      ?keyboardHeight
+      :0;
+
+    document.documentElement.style.setProperty(
+      "--keyboard-offset",
+      `${Math.round(offset)}px`
+    );
+
+    document.body.classList.toggle(
+      "keyboard-open",
+      keyboardOpen
+    );
+
+    if(mobileNav){
+      mobileNav.classList.toggle(
+        "keyboard-open",
+        keyboardOpen
+      );
+    }
+
+    /*
+     * Wenn die Tastatur geöffnet wurde, den Cursor bzw.
+     * den Composer sichtbar halten.
+     */
+    if(keyboardOpen){
+      setTimeout(()=>{
+        ensureInputVisible();
+      },60);
+    }
+  }
+
+  function ensureInputVisible(){
+    if(!isMobile() || !input)return;
+
+    const composerRect=
+      composer.getBoundingClientRect();
+
+    const viewportHeight=
+      window.visualViewport
+        ?window.visualViewport.height
+        :window.innerHeight;
+
+    const bottomLimit=
+      viewportHeight-8;
+
+    if(composerRect.bottom>bottomLimit){
+      chat.scrollTop=
+        chat.scrollHeight;
+
+      return;
+    }
+
+    scrollChatToBottom("smooth");
+  }
+
+  if(window.visualViewport){
+
+    window.visualViewport.addEventListener(
+      "resize",
+      ()=>{
+        updateMobileViewport();
+
+        if(isMobile() && document.activeElement===input){
+          setTimeout(()=>{
+            scrollChatToBottom("auto");
+          },80);
+        }
+      },
+      {passive:true}
+    );
+
+    window.visualViewport.addEventListener(
+      "scroll",
+      ()=>{
+        if(isMobile()){
+          updateMobileViewport();
+        }
+      },
+      {passive:true}
+    );
+  }
+
+  window.addEventListener(
+    "resize",
+    ()=>{
+      if(isMobile()){
+        updateMobileViewport();
+      }
+    },
+    {passive:true}
+  );
+
+  document.getElementById("btnHelp").addEventListener(
+    "click",
+    ()=>openModal("helpModal")
+  );
+
+  document.getElementById("btnSessions").addEventListener(
+    "click",
+    ()=>{
+      renderSessions();
+      openModal("sessionsModal");
+    }
+  );
+
+  document.getElementById("btnNew").addEventListener(
+    "click",
+    newChat
+  );
+
+  document.getElementById("btnText").addEventListener(
+    "click",
+    ()=>document.body.classList.toggle("large-text")
+  );
+
+  document.querySelectorAll("[data-close]").forEach(btn=>{
+    btn.addEventListener(
+      "click",
+      ()=>closeModal(btn.dataset.close)
+    );
+  });
 
   document.querySelectorAll("[data-action]").forEach(btn=>{
     btn.addEventListener("click",()=>{
       const action=btn.dataset.action;
-      if(action==="new")newChat();
-      if(action==="sessions"){renderSessions();openModal("sessionsModal")}
-      if(action==="help")openModal("helpModal");
-      if(action==="privacy")openModal("privacyModal");
+
+      if(action==="new"){
+        newChat();
+      }
+
+      if(action==="sessions"){
+        renderSessions();
+        openModal("sessionsModal");
+      }
+
+      if(action==="help"){
+        openModal("helpModal");
+      }
+
+      if(action==="privacy"){
+        openModal("privacyModal");
+      }
     });
   });
 
-  document.getElementById("privacyAccept").addEventListener("click",()=>{
-    if(!privacyCheck.checked){
-      alert("Bitte bestätige zuerst, dass du den Datenschutzhinweis gelesen und verstanden hast.");
-      return;
+  document.getElementById("privacyAccept").addEventListener(
+    "click",
+    ()=>{
+      if(!privacyCheck.checked){
+        alert(
+          "Bitte bestätige zuerst, dass du den Datenschutzhinweis gelesen und verstanden hast."
+        );
+        return;
+      }
+
+      privacyAccepted=true;
+
+      localStorage.setItem(
+        STORAGE + "_privacyAccepted",
+        "true"
+      );
+
+      closeModal("privacyModal");
+
+      setLocked(false);
+
+      input.focus();
+
+      if(isMobile()){
+        setTimeout(()=>{
+          updateMobileViewport();
+          scrollChatToBottom("auto");
+        },100);
+      }
     }
-    privacyAccepted=true;
-    localStorage.setItem(STORAGE + "_privacyAccepted","true");
-    closeModal("privacyModal");
-    setLocked(false);
-    input.focus();
-  });
+  );
 
-  privacyComposerLink.addEventListener("click",(e)=>{
-    e.preventDefault();
-    openModal("privacyModal");
-  });
+  privacyComposerLink.addEventListener(
+    "click",
+    (e)=>{
+      e.preventDefault();
+      openModal("privacyModal");
+    }
+  );
 
-  document.getElementById("btnHelp").addEventListener("dblclick",()=>openModal("aiDisclaimerModal"));
+  document.getElementById("btnHelp").addEventListener(
+    "dblclick",
+    ()=>openModal("aiDisclaimerModal")
+  );
 
   document.querySelectorAll(".modal-backdrop").forEach(backdrop=>{
     backdrop.addEventListener("click",e=>{
-      if(e.target===backdrop)backdrop.classList.remove("open");
+      if(e.target===backdrop){
+        backdrop.classList.remove("open");
+      }
     });
   });
 
-  send.addEventListener("click",()=>sendMessage(input.value));
-  input.addEventListener("input",resizeInput);
-  input.addEventListener("keydown",e=>{
-    if(e.key==="Enter"&&!e.shiftKey){
-      e.preventDefault();
-      sendMessage(input.value);
-    }
-  });
+  send.addEventListener(
+    "click",
+    ()=>sendMessage(input.value)
+  );
 
-  const recognitionClass=window.SpeechRecognition||window.webkitSpeechRecognition;
+  input.addEventListener(
+    "input",
+    ()=>{
+      resizeInput();
+
+      if(isMobile()){
+        setTimeout(()=>{
+          updateMobileViewport();
+        },30);
+      }
+    }
+  );
+
+  input.addEventListener(
+    "focus",
+    ()=>{
+      if(!isMobile())return;
+
+      /*
+       * Safari braucht häufig einen kurzen Moment,
+       * bevor visualViewport die Tastaturhöhe kennt.
+       */
+      setTimeout(()=>{
+        updateMobileViewport();
+        scrollChatToBottom("auto");
+      },80);
+
+      setTimeout(()=>{
+        updateMobileViewport();
+        ensureInputVisible();
+      },300);
+    }
+  );
+
+  input.addEventListener(
+    "blur",
+    ()=>{
+      if(!isMobile())return;
+
+      setTimeout(()=>{
+        updateMobileViewport();
+      },100);
+    }
+  );
+
+  input.addEventListener(
+    "keydown",
+    e=>{
+      if(e.key==="Enter" && !e.shiftKey){
+        e.preventDefault();
+        sendMessage(input.value);
+      }
+    }
+  );
+
+  const recognitionClass=
+    window.SpeechRecognition ||
+    window.webkitSpeechRecognition;
+
   if(recognitionClass){
-    const recognition=new recognitionClass();
+
+    const recognition=
+      new recognitionClass();
+
     recognition.lang="de-DE";
     recognition.interimResults=false;
-    recognition.onstart=()=>mic.classList.add("recording");
-    recognition.onend=()=>mic.classList.remove("recording");
-    recognition.onresult=e=>{
-      input.value=e.results[0][0].transcript;
-      resizeInput();
-      input.focus();
+
+    recognition.onstart=()=>{
+      mic.classList.add("recording");
     };
-    mic.addEventListener("click",()=>recognition.start());
+
+    recognition.onend=()=>{
+      mic.classList.remove("recording");
+    };
+
+    recognition.onresult=e=>{
+      input.value=
+        e.results[0][0].transcript;
+
+      resizeInput();
+
+      input.focus();
+
+      if(isMobile()){
+        setTimeout(()=>{
+          updateMobileViewport();
+          scrollChatToBottom("auto");
+        },100);
+      }
+    };
+
+    mic.addEventListener(
+      "click",
+      ()=>{
+        try{
+          recognition.start();
+        }catch(_){}
+      }
+    );
+
   }else{
+
     mic.disabled=true;
-    mic.title="Spracheingabe wird in diesem Browser nicht unterstützt";
+
+    mic.title=
+      "Spracheingabe wird in diesem Browser nicht unterstützt";
   }
 
   load();
   render();
   resizeInput();
+
   setLocked(!privacyAccepted);
-  if(apiDiagnostic) apiDiagnostic.textContent="Endpunkt: /api/bot";
+
+  if(apiDiagnostic){
+    apiDiagnostic.textContent=
+      "Endpunkt: /api/bot";
+  }
+
   if(!privacyAccepted){
     openModal("privacyModal");
   }
+
+  /*
+   * Initiale Mobil-Erkennung nach vollständigem Laden.
+   */
+  if(isMobile()){
+    setTimeout(()=>{
+      updateMobileViewport();
+      resizeInput();
+    },100);
+  }
+
 })();
 </script>
 </body>
