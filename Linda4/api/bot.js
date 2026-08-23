@@ -1288,7 +1288,7 @@ async function callOpenAI({
           {
             type: "skill_reference",
             skill_id: LINDA_SKILL_ID,
-            version: 1
+            version: "1"
           }
         ]
       }
