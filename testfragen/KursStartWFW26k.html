@@ -1,0 +1,627 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Wirtschaftsfachwirte – Kursstart</title>
+<style>
+:root{--navy:#10233f;--blue:#1769e0;--bg:#f4f6f9;--card:#fff;--line:#d9e0e8;--text:#172033;--muted:#667085}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif}
+header{background:var(--navy);color:white;padding:38px 20px}
+.wrap{max-width:1120px;margin:auto}
+h1{font-size:clamp(30px,5vw,48px);margin:0 0 7px;letter-spacing:-.04em}
+.sub{opacity:.82;font-size:17px}
+main{max-width:1120px;margin:24px auto;padding:0 18px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:25px;margin-bottom:18px;box-shadow:0 5px 20px #10233f0b}
+h2{margin:0 0 18px;font-size:22px}
+h3{margin:25px 0 10px;font-size:17px}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
+@media(max-width:720px){.grid{grid-template-columns:1fr}}
+label{display:block;font-weight:700;margin:14px 0 7px}
+input,textarea,select{width:100%;font:inherit;padding:12px 13px;border:1px solid #cbd5e1;border-radius:10px;background:white}
+textarea{min-height:90px;resize:vertical}
+.hint{font-size:12px;color:var(--muted);margin-top:5px}
+.scale{display:flex;gap:8px}
+.scale label{margin:0}
+.scale input{display:none}
+.scale span{display:flex;align-items:center;justify-content:center;width:46px;height:40px;border:1px solid #cbd5e1;border-radius:9px;color:var(--muted);cursor:pointer}
+.scale input:checked+span{background:var(--blue);border-color:var(--blue);color:#fff;font-weight:800}
+button{background:var(--blue);border:0;color:white;font:inherit;font-weight:800;padding:14px 20px;border-radius:10px;cursor:pointer}
+button:disabled{opacity:.5}
+.status{display:none;margin-top:14px;padding:12px;border-radius:10px;background:#eef5ff}
+.status.show{display:block}
+#results{display:none}
+.resulttop{display:flex;justify-content:space-between;gap:15px;align-items:center;flex-wrap:wrap}
+.live{font-size:13px;font-weight:800}
+.bubble-grid{display:flex;flex-wrap:wrap;align-items:center;gap:10px;min-height:55px}
+.bubble{border:1px solid #d5deea;background:#edf2f8;border-radius:999px;padding:11px 17px;line-height:1.15;animation:pop .55s ease both;max-width:330px}
+.bubble small{opacity:.6;margin-left:7px;font-size:11px}
+.empty{color:var(--muted);font-size:14px}
+@keyframes pop{
+from{opacity:0;transform:scale(.65) translateY(10px)}
+to{opacity:1;transform:scale(1) translateY(0)}
+}
+.bars .row{display:grid;grid-template-columns:150px 1fr 35px;gap:10px;align-items:center;margin:9px 0}
+.bar{height:12px;background:#edf1f5;border-radius:99px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--blue);border-radius:99px}
+@media(max-width:600px){
+.bars .row{grid-template-columns:80px 1fr 30px}
+}
+footer{max-width:1120px;margin:auto;padding:0 18px 35px;color:var(--muted);font-size:12px;line-height:1.5}
+</style>
+</head>
+
+<body>
+
+<header>
+<div class="wrap">
+<h1>Wirtschaftsfachwirte · Kursstart</h1>
+<div class="sub">Wer sitzt eigentlich in diesem Kurs? – anonymes Live-Kursbild</div>
+</div>
+</header>
+
+<main>
+
+<section class="card">
+<h2>1 · Ein bisschen über dich</h2>
+
+<div class="grid">
+
+<div>
+<label>Meine Hobbys</label>
+<input id="hobbies" maxlength="180" placeholder="z. B. Fußball, Reisen, Gaming">
+</div>
+
+<div>
+<label>Netflix / Streaming</label>
+<input id="streaming" maxlength="150" placeholder="z. B. Netflix, Disney+, Prime, YouTube …">
+</div>
+
+<div>
+<label>Meine Lieblingsserie</label>
+<input id="series" maxlength="120" placeholder="z. B. Breaking Bad">
+</div>
+
+<div>
+<label>Mein Lieblingsessen</label>
+<input id="food" maxlength="120" placeholder="z. B. Pizza, Sushi, Curry">
+</div>
+
+</div>
+</section>
+
+
+<section class="card">
+
+<h2>2 · Was soll dieser Unterricht bringen?</h2>
+
+<label>Was wünschst du dir vom Unterricht?</label>
+<textarea id="wishes" maxlength="500"
+placeholder="Was würde dir den Unterricht wirklich hilfreich machen?"></textarea>
+
+<label>Was möchtest du am Ende besonders gut können?</label>
+<textarea id="goal" maxlength="350"
+placeholder="z. B. VWL verstehen, Prüfungsfragen sicher lösen …"></textarea>
+
+<label>Was macht für dich guten Unterricht aus?</label>
+<textarea id="goodTeaching" maxlength="350"
+placeholder="z. B. Praxisbeispiele, Diskussion, klare Erklärungen …"></textarea>
+
+</section>
+
+
+<section class="card">
+
+<h2>3 · Dein Vorwissen</h2>
+
+<div class="grid">
+
+<div>
+<label>VWL-Kenntnisse</label>
+<div class="scale" id="vwlScale"></div>
+<div class="hint">1 = kaum Vorwissen · 5 = sehr sicher</div>
+</div>
+
+<div>
+<label>KI-Kenntnisse</label>
+<div class="scale" id="aiScale"></div>
+<div class="hint">1 = Anfänger · 5 = sehr erfahren</div>
+</div>
+
+</div>
+
+<label>Mein Lieblings-KI-Tool</label>
+<input id="aiTool" maxlength="120"
+placeholder="z. B. ChatGPT, Claude, Gemini, Copilot …">
+
+<label>Was soll KI im Unterricht für dich leisten?</label>
+<input id="aiUse" maxlength="300"
+placeholder="z. B. Lernen, Zusammenfassen, Prüfungsvorbereitung …">
+
+</section>
+
+
+<section class="card">
+
+<h2>4 · Ein Wort zum Kursstart</h2>
+
+<label>Mit welchem Gefühl startest du?</label>
+
+<select id="feeling">
+<option value="">Bitte auswählen</option>
+<option>Neugierig</option>
+<option>Motiviert</option>
+<option>Gespannt</option>
+<option>Respekt vor der Prüfung</option>
+<option>Etwas unsicher</option>
+<option>Sehr zuversichtlich</option>
+</select>
+
+<label>Was bringst du in den Kurs mit?</label>
+<input id="bring" maxlength="250"
+placeholder="z. B. Berufserfahrung, Neugier, Praxiswissen …">
+
+</section>
+
+
+<section class="card">
+
+<button id="send" onclick="submitSurvey()">Anonym absenden</button>
+
+<div id="status" class="status"></div>
+
+<p class="hint" style="margin-top:18px">
+<strong>Anonym:</strong> Es werden keine Namen, E-Mail-Adressen oder Kontaktdaten abgefragt.
+</p>
+
+</section>
+
+
+<section class="card" id="results">
+
+<div class="resulttop">
+
+<div>
+<h2 style="margin:0 0 4px">Das ist unser Kurs</h2>
+<div class="hint">Live zusammengeführt · anonym</div>
+</div>
+
+<div class="live" id="live">● LIVE</div>
+
+</div>
+
+
+<h3>🏃 Hobbys</h3>
+<div class="bubble-grid" id="rHobbies"></div>
+
+<h3>📺 Streaming</h3>
+<div class="bubble-grid" id="rStreaming"></div>
+
+<h3>🎬 Lieblingsserien</h3>
+<div class="bubble-grid" id="rSeries"></div>
+
+<h3>🍕 Lieblingsessen</h3>
+<div class="bubble-grid" id="rFood"></div>
+
+<h3>🤖 Lieblings-KI-Tools</h3>
+<div class="bubble-grid" id="rAiTool"></div>
+
+<h3>💡 Was soll KI leisten?</h3>
+<div class="bubble-grid" id="rAiUse"></div>
+
+<h3>🎯 Kursziele</h3>
+<div class="bubble-grid" id="rGoal"></div>
+
+<h3>📚 Was macht guten Unterricht aus?</h3>
+<div class="bubble-grid" id="rGood"></div>
+
+<h3>🙂 Kursstart-Gefühl</h3>
+<div class="bubble-grid" id="rFeeling"></div>
+
+<h3>💪 Was bringen wir mit?</h3>
+<div class="bubble-grid" id="rBring"></div>
+
+<h3>VWL-Kenntnisse</h3>
+<div class="bars" id="rVwl"></div>
+
+<h3>KI-Kenntnisse</h3>
+<div class="bars" id="rAi"></div>
+
+</section>
+
+</main>
+
+
+<footer>
+Für den klassenweiten Live-Betrieb ist diese Seite mit der Firebase Realtime Database verbunden.
+Die Datenstruktur ist auf einen gemeinsamen Kursbereich ausgelegt.
+</footer>
+
+
+<script>
+
+const FIELDS=[
+"hobbies",
+"streaming",
+"series",
+"food",
+"wishes",
+"goal",
+"goodTeaching",
+"aiTool",
+"aiUse",
+"feeling",
+"bring"
+];
+
+
+function makeScale(id,name){
+
+document.getElementById(id).innerHTML=[1,2,3,4,5]
+.map(n=>`
+<label>
+<input type="radio" name="${name}" value="${n}">
+<span>${n}</span>
+</label>
+`).join("");
+
+}
+
+makeScale("vwlScale","vwl");
+makeScale("aiScale","ai");
+
+
+function val(id){
+
+return document
+.getElementById(id)
+.value
+.trim()
+.replace(/\s+/g," ")
+.slice(0,500);
+
+}
+
+
+function collect(){
+
+let x={};
+
+FIELDS.forEach(k=>x[k]=val(k));
+
+x.vwl=
++(document.querySelector('input[name=vwl]:checked')?.value||0)||null;
+
+x.ai=
++(document.querySelector('input[name=ai]:checked')?.value||0)||null;
+
+return x;
+
+}
+
+
+function esc(s){
+
+return String(s).replace(/[&<>"']/g,m=>({
+"&":"&amp;",
+"<":"&lt;",
+">":"&gt;",
+'"':"&quot;",
+"'":"&#039;"
+}[m]));
+
+}
+
+
+function bubbles(id,vals){
+
+let e=document.getElementById(id);
+let c={};
+
+e.innerHTML="";
+
+vals
+.filter(Boolean)
+.forEach(v=>c[v]=(c[v]||0)+1);
+
+let a=Object.entries(c)
+.sort((x,y)=>y[1]-x[1]);
+
+if(!a.length){
+
+e.innerHTML='<span class="empty">Noch keine Antworten.</span>';
+
+return;
+
+}
+
+a.forEach(([t,n],i)=>{
+
+let b=document.createElement("span");
+
+b.className="bubble";
+
+b.style.fontSize=
+(14+Math.min(12,Math.log2(n+1)*3))+"px";
+
+b.style.animationDelay=
+(i*.025)+"s";
+
+b.innerHTML=
+esc(t)+`<small>${n}×</small>`;
+
+e.appendChild(b);
+
+});
+
+}
+
+
+function bars(id,vals){
+
+let e=document.getElementById(id);
+
+let a=[1,2,3,4,5]
+.map(n=>vals.filter(v=>v===n).length);
+
+let max=Math.max(...a,1);
+
+e.innerHTML=a.map((n,i)=>`
+
+<div class="row">
+
+<strong>${i+1}</strong>
+
+<div class="bar">
+<i style="width:${n/max*100}%"></i>
+</div>
+
+<span>${n}</span>
+
+</div>
+
+`).join("");
+
+}
+
+
+function render(data){
+
+document.getElementById("results").style.display="block";
+
+document.getElementById("live").textContent=
+`● ${data.length} Antwort${data.length==1?"":"en"} · LIVE`;
+
+bubbles("rHobbies",data.map(x=>x.hobbies));
+bubbles("rStreaming",data.map(x=>x.streaming));
+bubbles("rSeries",data.map(x=>x.series));
+bubbles("rFood",data.map(x=>x.food));
+bubbles("rAiTool",data.map(x=>x.aiTool));
+bubbles("rAiUse",data.map(x=>x.aiUse));
+bubbles("rGoal",data.map(x=>x.goal));
+bubbles("rGood",data.map(x=>x.goodTeaching));
+bubbles("rFeeling",data.map(x=>x.feeling));
+bubbles("rBring",data.map(x=>x.bring));
+
+bars("rVwl",data.map(x=>x.vwl));
+bars("rAi",data.map(x=>x.ai));
+
+}
+
+
+function status(t){
+
+let e=document.getElementById("status");
+
+e.textContent=t;
+
+e.className="status show";
+
+}
+
+
+const FIREBASE_CONFIG={
+
+apiKey:"AIzaSyCS5ch0Gv61reuGFqGxA1WQVlyqfDmZqJ0",
+
+authDomain:"onboarding-ffbda.firebaseapp.com",
+
+databaseURL:
+"https://onboarding-ffbda-default-rtdb.europe-west1.firebasedatabase.app",
+
+projectId:"onboarding-ffbda",
+
+storageBucket:
+"onboarding-ffbda.firebasestorage.app",
+
+messagingSenderId:"369325546798",
+
+appId:
+"1:369325546798:web:669bc05fd069805130eebf",
+
+measurementId:"G-6F2BRD6L6B"
+
+};
+
+
+const firebaseConfigured=
+!String(FIREBASE_CONFIG.databaseURL).startsWith("HIER_");
+
+
+async function submitSurvey(){
+
+const x=collect();
+
+if(!Object.values(x).some(Boolean)){
+
+status("Bitte mindestens eine Antwort geben.");
+
+return;
+
+}
+
+document.getElementById("send").disabled=true;
+
+
+if(!firebaseConfigured){
+
+let a=
+JSON.parse(localStorage.getItem("wf26")||"[]");
+
+a.push(x);
+
+localStorage.setItem(
+"wf26",
+JSON.stringify(a)
+);
+
+render(a);
+
+status(
+"Demo-Modus: lokal gespeichert. Für alle Rechner muss Firebase eingerichtet werden."
+);
+
+document.getElementById("send").disabled=false;
+
+return;
+
+}
+
+
+try{
+
+const {initializeApp}=
+await import(
+"https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js"
+);
+
+const {getDatabase,ref,push,set}=
+await import(
+"https://www.gstatic.com/firebasejs/12.1.0/firebase-database.js"
+);
+
+const {getAuth,signInAnonymously}=
+await import(
+"https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js"
+);
+
+
+const app=
+window.__firebaseApp ||
+initializeApp(FIREBASE_CONFIG);
+
+window.__firebaseApp=app;
+
+
+const auth=getAuth(app);
+
+if(!auth.currentUser){
+
+await signInAnonymously(auth);
+
+}
+
+
+const db=getDatabase(app);
+
+
+await set(
+push(ref(db,"wirtschaftsfachwirte/answers")),
+x
+);
+
+
+status("Danke – anonym übermittelt.");
+
+
+}
+catch(e){
+
+console.error(e);
+
+status(
+"Übermittlung fehlgeschlagen. Bitte Firebase-Konfiguration prüfen."
+);
+
+}
+
+
+document.getElementById("send").disabled=false;
+
+}
+
+
+async function startLive(){
+
+if(!firebaseConfigured){
+
+let a=
+JSON.parse(localStorage.getItem("wf26")||"[]");
+
+if(a.length)render(a);
+
+return;
+
+}
+
+
+try{
+
+const {initializeApp}=
+await import(
+"https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js"
+);
+
+const {getDatabase,ref,onValue}=
+await import(
+"https://www.gstatic.com/firebasejs/12.1.0/firebase-database.js"
+);
+
+const {getAuth,signInAnonymously}=
+await import(
+"https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js"
+);
+
+
+const app=
+window.__firebaseApp ||
+initializeApp(FIREBASE_CONFIG);
+
+window.__firebaseApp=app;
+
+
+const auth=getAuth(app);
+
+if(!auth.currentUser){
+
+await signInAnonymously(auth);
+
+}
+
+
+const db=getDatabase(app);
+
+
+onValue(
+ref(db,"wirtschaftsfachwirte/answers"),
+s=>render(Object.values(s.val()||{}))
+);
+
+
+}
+catch(e){
+
+console.error(e);
+
+}
+
+}
+
+
+startLive();
+
+</script>
+
+</body>
+</html>
