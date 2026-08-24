@@ -3,7 +3,7 @@ const OPENROUTER_CHAT_URL = "https://openrouter.ai/api/v1/chat/completions";
 const DEEPSEEK_CHAT_URL = "https://api.deepseek.com/v1/chat/completions";
 
 const OPENAI_MODEL = readFirstEnv(["VWL_OPENAI_MODEL"]) || "gpt-5.6-luna";
-const CLAUDE_MODEL = "anthropic/claude-haiku-4.5";
+const CLAUDE_MODEL = readFirstEnv(["VWL_OPENAI_MODEL"]) || "gpt-5.6-luna";
 const DEEPSEEK_MODEL = readFirstEnv(["VWL_DEEPSEEK_MODEL", "VWL_FAST_MODEL", "DEEPSEEK_MODEL"]) || "deepseek-reasoner";
 
 const MODE_CONFIG = {
