@@ -631,6 +631,105 @@
       line-height: 1.35;
     }
 
+    /* Prüfungsmodus – ruhiges, reduziertes Layout */
+    .chat-board.quiz-active .conversation-bar {
+      background: linear-gradient(180deg, #fffdf5, #fffaf0);
+    }
+
+    .quiz-panel {
+      width: min(760px, 100%);
+      margin: 0 auto;
+      display: grid;
+      gap: 14px;
+    }
+
+    .quiz-label {
+      display: inline-flex;
+      width: fit-content;
+      align-items: center;
+      gap: 7px;
+      padding: 7px 11px;
+      border: 1px solid rgba(239, 187, 66, 0.45);
+      border-radius: 999px;
+      background: #fff8df;
+      color: #6b5510;
+      font-size: .76rem;
+      font-weight: 800;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+
+    .quiz-question-card {
+      padding: 20px 21px;
+      border: 1px solid #e8dfbf;
+      border-radius: 20px;
+      background: #fff;
+      box-shadow: 0 10px 28px rgba(24, 33, 29, .06);
+    }
+
+    .quiz-question-card h3 {
+      margin: 0 0 8px;
+      color: var(--muted);
+      font-size: .75rem;
+      font-weight: 800;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+    }
+
+    .quiz-question-card p {
+      margin: 0;
+      font-size: clamp(1.08rem, 2vw, 1.35rem);
+      line-height: 1.5;
+      font-weight: 700;
+    }
+
+    .quiz-evaluation {
+      padding: 16px 18px;
+      border: 1px solid #dce7e1;
+      border-radius: 18px;
+      background: #f8fbf9;
+    }
+
+    .quiz-score {
+      font-size: 1.15rem;
+      font-weight: 800;
+      color: var(--accent-strong);
+      margin-bottom: 9px;
+    }
+
+    .quiz-evaluation ul {
+      margin: 7px 0 0;
+      padding-left: 1.2rem;
+      display: grid;
+      gap: 5px;
+    }
+
+    .quiz-evaluation .next-question {
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px solid #dce7e1;
+    }
+
+    .quiz-evaluation .next-question strong {
+      display: block;
+      margin-bottom: 5px;
+      color: var(--accent-strong);
+      font-size: .75rem;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+
+    .chat-board.quiz-active .messages {
+      background:
+        radial-gradient(circle at 20% 10%, rgba(239, 187, 66, .07), transparent 18rem),
+        linear-gradient(180deg, #fbfaf6, #f7f6ef);
+      background-size: auto;
+    }
+
+    .chat-board.quiz-active .composer-wrap {
+      background: #f7f6ef;
+    }
+
     @media (max-width: 780px) {
       .shell {
         width: min(calc(100% - 18px), 720px);
@@ -1125,6 +1224,10 @@
       return activeMode === "pruefen";
     }
 
+    function updateQuizVisualState() {
+      document.querySelector(".chat-board")?.classList.toggle("quiz-active", isQuizMode());
+    }
+
     async function startQuizMode() {
       quizQuestionAsked = false;
       quizWaitingForAnswer = false;
@@ -1132,8 +1235,9 @@
       setProfile("fortgeschritten");
       updateModeUI();
       question.value = "";
+      question.placeholder = "Deine Stichpunkte zur Prüfungsfrage ...";
       hideWelcomeCard();
-      appendPlainMessage("🎯 Prüfung gestartet. Ich stelle Dir jetzt eine VWL-Frage.", "bot");
+      appendPlainMessage("🎯 Prüfungsmodus gestartet – zuerst kommt die Frage. Antworte anschließend einfach in Stichpunkten.", "bot");
       await sendQuizRequest("Start");
     }
 
@@ -1176,6 +1280,7 @@
       });
       updateContextState();
       updateModePills();
+      updateQuizVisualState();
       status.textContent = readyStatusText();
     }
 
@@ -1498,12 +1603,21 @@ Verwende ausschließlich GPT-5.6 Luna über das Profil „Fortgeschritten“ und
           : `PRÜFUNGSMODUS – ANTWORT BEWERTEN UND NÄCHSTE FRAGE.
 Die Teilnehmer-Eingabe ist die Antwort auf Deine unmittelbar zuvor gestellte VWL-Prüfungsfrage.
 
-1. Bewerte die Antwort mit 0–10 Punkten.
-2. Zeige kurz, was richtig war.
-3. Zeige konkret, was fehlte oder fachlich falsch war.
-4. Gib eine kurze Musterantwort.
-5. Stelle anschließend GENAU EINE neue VWL-Prüfungsfrage.
-6. Gib zur neuen Frage KEINE Lösung und KEINE Hinweise.
+Bewerte großzügig und fachlich. Stichpunkte und kurze Antworten sind ausdrücklich zulässig. Entscheidend sind die wesentlichen fachlichen Aussagen, nicht schöne Formulierungen. Kleine sprachliche Ungenauigkeiten oder fehlende Nebenaspekte sollen die Bewertung nur wenig beeinflussen.
+
+Vergib 0–10 Punkte als grobe Orientierung:
+8–10 = wesentliche Inhalte vollständig und fachlich sicher
+5–7 = richtige Grundidee bzw. wesentliche Aspekte vorhanden, aber erkennbare Lücken
+2–4 = einzelne richtige fachliche Aspekte
+0–1 = kaum verwertbare fachliche Aussage
+
+Antworte KOMPAKT in Stichpunkten:
+- Punkte: X/10
+- Richtig: 1–3 kurze Stichpunkte
+- Fehlt/zu verbessern: 1–3 kurze Stichpunkte
+- Kurzfazit: ein Satz
+
+Danach stelle GENAU EINE neue VWL-Prüfungsfrage. Keine Lösung und keine Hinweise zur neuen Frage.
 
 Nutze die Lehrgangsunterlagen im Vector Store als fachliche Grundlage. Verwende ausschließlich GPT-5.6 Luna über das Profil „Fortgeschritten“.`;
 
