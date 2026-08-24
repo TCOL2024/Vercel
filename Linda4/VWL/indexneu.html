@@ -1115,6 +1115,7 @@
     const conversationHistory = [];
     const creativeHistory = [];
     let quizQuestionAsked = false;
+    let quizWaitingForAnswer = false;
 
     function isCreativeMode() {
       return activeMode === "kreativ";
@@ -1124,13 +1125,16 @@
       return activeMode === "pruefen";
     }
 
-    function startQuizMode() {
+    async function startQuizMode() {
       quizQuestionAsked = false;
+      quizWaitingForAnswer = false;
       activeMode = "pruefen";
       setProfile("fortgeschritten");
       updateModeUI();
       question.value = "";
-      question.focus();
+      hideWelcomeCard();
+      appendPlainMessage("🎯 Prüfung gestartet. Ich stelle Dir jetzt eine VWL-Frage.", "bot");
+      await sendQuizRequest("Start");
     }
 
     function activeHistory() {
@@ -1426,12 +1430,13 @@
 
     modes.addEventListener("click", (event) => {
       const button = event.target.closest("[data-mode]");
-      if (!button) return;
+      if (!button || button.disabled) return;
       if (button.dataset.mode === "pruefen") {
         startQuizMode();
         return;
       }
       quizQuestionAsked = false;
+      quizWaitingForAnswer = false;
       activeMode = button.dataset.mode;
       updateModeUI();
       question.focus();
@@ -1456,6 +1461,8 @@
       activeHistory().length = 0;
       quizQuestionAsked = false;
       activeMode = "fragen";
+      quizQuestionAsked = false;
+      quizWaitingForAnswer = false;
       setProfile("fortgeschritten");
       messages.innerHTML = '<div class="welcome-card" id="welcomeCard"><strong>Neue Konversation gestartet.</strong><span>Wähle unten Modus und Profil, dann stell Deine Frage.</span></div>';
       updateModeUI();
@@ -1472,12 +1479,98 @@
       form.requestSubmit();
     });
 
+    async function sendQuizRequest(text) {
+      const endpoint = apiEndpoint;
+      if (!endpoint) {
+        appendPlainMessage("Die VWL-API wurde im Deployment nicht gefunden. Erwartet wird /api/vwl.", "bot").classList.add("error");
+        return;
+      }
+
+      const historySnapshot = conversationHistory.slice(-8);
+      setLoading(true);
+
+      try {
+        const firstQuestion = !quizQuestionAsked;
+        const quizInstruction = firstQuestion
+          ? `PRÜFUNGSMODUS – ERSTE FRAGE.
+Stelle genau EINE anspruchsvolle, aber faire VWL-Prüfungsfrage auf Niveau Wirtschaftsfachwirt. Die Frage soll aus den Lehrgangsunterlagen ableitbar sein. Gib KEINE Lösung und KEINE Hinweise. Beende Deine Antwort nach der Frage.
+Verwende ausschließlich GPT-5.6 Luna über das Profil „Fortgeschritten“ und nutze den VWL-Vector-Store als fachliche Grundlage.`
+          : `PRÜFUNGSMODUS – ANTWORT BEWERTEN UND NÄCHSTE FRAGE.
+Die Teilnehmer-Eingabe ist die Antwort auf Deine unmittelbar zuvor gestellte VWL-Prüfungsfrage.
+
+1. Bewerte die Antwort mit 0–10 Punkten.
+2. Zeige kurz, was richtig war.
+3. Zeige konkret, was fehlte oder fachlich falsch war.
+4. Gib eine kurze Musterantwort.
+5. Stelle anschließend GENAU EINE neue VWL-Prüfungsfrage.
+6. Gib zur neuen Frage KEINE Lösung und KEINE Hinweise.
+
+Nutze die Lehrgangsunterlagen im Vector Store als fachliche Grundlage. Verwende ausschließlich GPT-5.6 Luna über das Profil „Fortgeschritten“.`;
+
+        const payload = {
+          mode: "uebungen",
+          question: `${quizInstruction}
+
+Teilnehmer-Eingabe: ${text}`,
+          history: historySnapshot,
+          responseProfile: "fortgeschritten"
+        };
+
+        const response = await fetch(endpoint, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+
+        const raw = await response.text();
+        let data;
+        try {
+          data = raw ? JSON.parse(raw) : {};
+        } catch (error) {
+          data = { error: `Die API hat keine JSON-Antwort geliefert. HTTP ${response.status}`, details: raw.slice(0, 220) };
+        }
+
+        if (!response.ok) {
+          const detail = data.details?.message || data.details?.type || data.details || "";
+          appendPlainMessage([data.error || "Die Anfrage konnte nicht verarbeitet werden.", detail].filter(Boolean).join("\n"), "bot").classList.add("error");
+          return;
+        }
+
+        const answer = data.answer || "Ich habe keine Antwort erhalten.";
+        appendBotAnswer(answer);
+        appendDataUse(data.dataUse);
+        appendSources(data.sources);
+
+        rememberIn(conversationHistory, "user", text, 8);
+        rememberIn(conversationHistory, "assistant", answer, 8);
+
+        quizQuestionAsked = true;
+        quizWaitingForAnswer = true;
+        question.placeholder = "Deine Antwort auf die aktuelle Prüfungsfrage ...";
+        question.focus();
+      } catch (error) {
+        appendPlainMessage(`Die API ist gerade nicht erreichbar.\n${error.message}`, "bot").classList.add("error");
+      } finally {
+        setLoading(false);
+        question.focus();
+      }
+    }
+
     form.addEventListener("submit", async (event) => {
       event.preventDefault();
       const text = question.value.trim();
       if (!text) return;
 
       const creative = isCreativeMode();
+
+      if (isQuizMode()) {
+        if (!quizQuestionAsked || !quizWaitingForAnswer) return;
+        appendPlainMessage(text, "user");
+        question.value = "";
+        await sendQuizRequest(text);
+        return;
+      }
+
       const endpoint = creative ? creativeApiEndpoint : apiEndpoint;
       if (!endpoint) {
         appendPlainMessage(creative ? "Die Kreativ-API wurde im Deployment nicht gefunden. Erwartet wird /api/vwl-kreativ." : "Die VWL-API wurde im Deployment nicht gefunden. Erwartet wird /api/vwl.", "bot").classList.add("error");
@@ -1490,28 +1583,9 @@
       setLoading(true);
 
       try {
-        let requestText = text;
-        let requestProfile = responseProfile;
-        let requestMode = activeMode;
-
-        if (isQuizMode()) {
-          requestProfile = "fortgeschritten";
-          requestMode = "uebungen";
-          const quizInstruction = quizQuestionAsked
-            ? `PRÜFUNGSMODUS – Bewertung.
-Die Teilnehmer-Eingabe ist die Antwort auf Deine zuletzt gestellte VWL-Prüfungsfrage. Bewerte sie für Wirtschaftsfachwirte mit 0–10 Punkten. Zeige kurz: Punkte, was richtig war, was fehlt oder falsch ist und eine prägnante Musterantwort. Stelle danach genau eine neue VWL-Prüfungsfrage.
-Nutze die Lehrgangsunterlagen im Vector Store als fachliche Grundlage. Verwende ausschließlich GPT-5.6 Luna über das Profil „Fortgeschritten“.`
-            : `PRÜFUNGSMODUS – Start.
-Stelle genau eine anspruchsvolle, aber faire VWL-Prüfungsfrage auf Niveau Wirtschaftsfachwirt. Wenn der Teilnehmer ein Thema genannt hat, beziehe die Frage darauf; bei „Start“ wähle ein sinnvolles VWL-Thema. Warte danach auf die Antwort und gib noch keine Lösung.
-Nutze die Lehrgangsunterlagen im Vector Store als fachliche Grundlage. Verwende ausschließlich GPT-5.6 Luna über das Profil „Fortgeschritten“.`;
-          requestText = `${quizInstruction}
-
-Teilnehmer-Eingabe: ${text}`;
-        }
-
         const payload = creative
           ? { mode: "kreativ", question: text, history: historySnapshot }
-          : { mode: requestMode, question: requestText, history: historySnapshot, responseProfile: requestProfile };
+          : { mode: activeMode, question: text, history: historySnapshot, responseProfile };
         const response = await fetch(endpoint, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -1539,10 +1613,6 @@ Teilnehmer-Eingabe: ${text}`;
         if (creative) {
           rememberIn(creativeHistory, "user", text, 8);
           rememberIn(creativeHistory, "assistant", answer, 8);
-        } else if (isQuizMode()) {
-          rememberIn(conversationHistory, "user", text, 8);
-          rememberIn(conversationHistory, "assistant", answer, 8);
-          quizQuestionAsked = true;
         } else if (!data.context?.needsClarification) {
           rememberIn(conversationHistory, "user", text, 8);
           rememberIn(conversationHistory, "assistant", answer, 8);
