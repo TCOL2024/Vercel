@@ -857,7 +857,7 @@ const OPENAI_VECTOR_STORE_ID =
   "vs_6916eafa6a3481918ccf6ef526fa9aa3";
 
 const OPENAI_MODEL =
-  "gpt-5.6-luna";
+  "gpt-5.6-terra";
 
 const LINDA_SKILL_ID =
   "skill_6a883223b538819182b27ae64dde89fd0dfdff51dc43042682";
