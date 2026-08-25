@@ -1659,7 +1659,7 @@ export default async function handler(
   const timeout =
     setTimeout(
       () => controller.abort(),
-      90000
+      120000
     );
 
   try {
